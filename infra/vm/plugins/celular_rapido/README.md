@@ -11,4 +11,6 @@ Ferramenta `celular` para o Agent Zero: **uma ação por passo**, com a resposta
 
 Cada ação leva ~1,4–2,8 s na ferramenta (inclui as animações do Android). A tarefa "abrir o 2048, jogar para a esquerda e dizer o que mudou" levou 13,6 s no total.
 
+**Sequência num passo** (`acoes`): até 15 ações numa chamada, devolvendo só a tela final e uma linha por ação; para no primeiro erro ou texto não encontrado. Ex.: 4 ações (início, gaveta, abrir 2048, jogada) em 7,4 s num passo, contra ~16 s em 4 passos.
+
 O uiautomator2 é instalado no contêiner por `agent_tools.sh` (venv do servidor e `/opt/venv` dos scripts); `piloto.py` também usa ele quando disponível.

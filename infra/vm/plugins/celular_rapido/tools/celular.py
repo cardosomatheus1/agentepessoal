@@ -32,13 +32,41 @@ def _aparelho():
 
 
 class Celular(Tool):
-    async def execute(self, acao: str = "ver", **kwargs) -> Response:
+    async def execute(self, acao: str = "ver", acoes: list | None = None, **kwargs) -> Response:
         self._imagem: bytes | None = None
         try:
-            texto = await asyncio.to_thread(self._rodar, str(acao or "ver").strip().lower(), kwargs)
+            if acoes:
+                texto = await asyncio.to_thread(self._sequencia, acoes, kwargs)
+            else:
+                texto = await asyncio.to_thread(self._rodar, str(acao or "ver").strip().lower(), kwargs)
         except Exception as exc:
             texto = f"ERRO no celular: {str(exc)[:500]}"
         return Response(message=texto, break_loop=False)
+
+    def _sequencia(self, acoes: list, geral: dict) -> str:
+        """Several actions in one step; only the final screen is returned. Stops at the first problem."""
+        feitas = []
+        for i, item in enumerate(acoes[:15], 1):
+            item = dict(item or {})
+            acao = str(item.pop("acao", "ver")).strip().lower()
+            ultima = i == len(acoes[:15])
+            if ultima and "imagem" in geral and "imagem" not in item:
+                item["imagem"] = geral["imagem"]
+            if not ultima:
+                item["imagem"] = "false"
+            try:
+                saida = self._rodar(acao, item)
+            except Exception as exc:
+                feitas.append(f"{i}. {acao}: ERRO {str(exc)[:200]} — parei aqui")
+                return "\n".join(feitas) + "\n" + self._rodar("ver", {"imagem": geral.get("imagem", "auto")})
+            cabecalho = saida.splitlines()[0]
+            problema = "não achei" in saida.split("TELA:")[0]  # "NÃO MUDOU" is reported but not fatal (e.g. home on home)
+            feitas.append(f"{i}. {acao}: {cabecalho}")
+            if ultima or problema:
+                if problema and not ultima:
+                    feitas[-1] += " — parei aqui; o resto não foi feito"
+                return "\n".join(feitas) + "\n" + saida.split("\n", 1)[1]
+        return "\n".join(feitas)
 
     def _rodar(self, acao: str, a: dict) -> str:
         ap = _aparelho()
@@ -48,8 +76,8 @@ class Celular(Tool):
             antes = ap.estado(d)
             antes_xml = antes[0]
             nota = self._agir(d, ap, acao, a, antes_xml)
-            if acao == "ver":
-                xml, mudou = antes_xml, None
+            if acao == "ver" or nota.startswith("não achei"):
+                xml, mudou = antes_xml, (None if acao == "ver" else False)
             else:
                 xml, mudou = ap.esperar_parar(d, antes, maximo=float(a.get("esperar_max", 2) or 2))
             els = ap.elementos(xml)
