@@ -9,17 +9,27 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import urllib.request
 
 import boto3
+from botocore.config import Config
 
 INSTANCE_ID = os.environ["INSTANCE_ID"]
 PASSWORD_SHA256 = os.environ["PASSWORD_SHA256"]
 URL_PARAM = os.environ.get("URL_PARAM", "/agentepessoal/agent-url")
 PHONE_PARAM = os.environ.get("PHONE_PARAM", "/agentepessoal/phone-url")
+BUCKET = os.environ.get("BUCKET", "")
+INBOX = "entrada/"
+MAX_UPLOAD = 5 * 1024**3  # single PUT limit
 
 ec2 = boto3.client("ec2")
 ssm = boto3.client("ssm")
+s3 = boto3.client(
+    "s3",
+    region_name=os.environ.get("AWS_REGION", "us-east-1"),
+    config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
+)
 
 
 def _authorized(password: str) -> bool:
@@ -81,6 +91,23 @@ def _hibernate() -> None:
         ec2.stop_instances(InstanceIds=[INSTANCE_ID], Hibernate=True)
 
 
+def _safe_name(name: str) -> str:
+    name = os.path.basename(str(name or "").replace("\\", "/")).strip()
+    name = re.sub(r"[\x00-\x1f/]", "", name)[:180]
+    return name if name not in ("", ".", "..") else "arquivo"
+
+
+def _upload_url(name: str, size: int) -> dict:
+    """Presigned PUT straight to S3 (no tunnel size limit; works while the VM is off)."""
+    if not BUCKET:
+        return {"error": "envio de arquivos não configurado"}
+    if not 0 <= int(size or 0) <= MAX_UPLOAD:
+        return {"error": "arquivo maior que 5 GB"}
+    key = INBOX + _safe_name(name)
+    url = s3.generate_presigned_url("put_object", Params={"Bucket": BUCKET, "Key": key}, ExpiresIn=6 * 3600)
+    return {"url": url, "name": key[len(INBOX):]}
+
+
 def _json(body: dict, code: int = 200) -> dict:
     return {
         "statusCode": code,
@@ -109,6 +136,8 @@ def handler(event, _context):
         return _json({"error": "senha incorreta"}, 401)
 
     action = data.get("action", "status")
+    if action == "upload":
+        return _json(_upload_url(data.get("name", ""), data.get("size", 0)))
     if action == "start":
         if _state() == "stopped":
             _set(URL_PARAM, "starting")
@@ -137,6 +166,10 @@ input{width:100%;background:#111;border:1px solid var(--line);border-radius:14px
 button,a.btn{display:block;width:100%;text-align:center;border:0;border-radius:999px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;margin-top:10px}
 .primary{background:#fff;color:#0d0d0d}.secondary{background:transparent;color:var(--muted);border:1px solid var(--line)!important}
 button:disabled{opacity:.4;cursor:default}.err{color:#ff6b6b;margin-top:10px;min-height:1.5em}
+label.btn{display:block;text-align:center;border-radius:999px;padding:13px;font-weight:600;cursor:pointer;margin-top:10px}
+.up{margin-top:18px;border-top:1px solid var(--line);padding-top:8px}
+.file{margin-top:10px;font-size:13px}.file .bar{height:6px;background:#111;border-radius:99px;overflow:hidden;margin-top:4px}
+.file .bar i{display:block;height:100%;width:0;background:var(--ok)}.file.erro{color:#ff6b6b}
 </style></head><body><div class="card">
 <h1>Agente</h1><p>Liga a máquina só quando você for usar.</p>
 <div id="nokey" hidden><div style="height:18px"></div><p>Abra esta página pelo seu link pessoal (o que tem <code>#k=</code> no final).</p></div>
@@ -146,6 +179,12 @@ button:disabled{opacity:.4;cursor:default}.err{color:#ff6b6b;margin-top:10px;min
 <a id="phone" class="btn secondary" target="_blank" rel="noopener" hidden>Ver celular</a>
 <button id="start" class="primary" onclick="act('start')" hidden>Ligar</button>
 <button id="stop" class="secondary" onclick="act('stop')" hidden>Hibernar agora</button>
+<div class="up">
+<label class="btn secondary" for="files">Enviar arquivos</label>
+<input id="files" type="file" multiple hidden onchange="sendFiles(this.files)">
+<div id="uplist"></div>
+<p style="font-size:13px;margin-top:8px">Até 5 GB por arquivo. Vão direto para o armazenamento da sua conta (funciona com a máquina desligada) e aparecem na pasta <b>entrada</b> do agente (botão Files) até 30 s depois de ele estar ligado.</p>
+</div>
 <p style="margin-top:16px;font-size:13px">Hiberna sozinha após 30 min sem uso (guarda tudo e volta de onde parou). Depois de clicar em Ligar, o agente abre sozinho quando estiver pronto.</p>
 </div><div id="err" class="err"></div></div>
 <script>
@@ -163,5 +202,15 @@ if(s.ready&&autoOpen){location.href=s.url;return}
 clearTimeout(timer);if((!s.ready||!s.phone_url)&&s.state!=="stopped")timer=setTimeout(refresh,2500)}
 async function refresh(){try{$("err").textContent="";render(await call("status"))}catch(e){$("err").textContent=e.message}}
 async function act(a){autoOpen=a==="start";try{$("err").textContent="";render(await call(a))}catch(e){$("err").textContent=e.message}}
+function sendFiles(list){[...list].forEach(sendOne);$("files").value=""}
+async function sendOne(f){const row=document.createElement("div");row.className="file";
+row.innerHTML='<span></span><div class="bar"><i></i></div>';row.firstChild.textContent=f.name+" — preparando…";$("uplist").appendChild(row);
+const label=t=>row.firstChild.textContent=f.name+" — "+t;
+try{const r=await fetch(location.origin+location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:key,action:"upload",name:f.name,size:f.size})});
+const d=await r.json();if(!d.url)throw new Error(d.error||"falhou");
+await new Promise((ok,fail)=>{const x=new XMLHttpRequest();x.open("PUT",d.url);
+x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded*100/e.total);row.querySelector("i").style.width=p+"%";label(p+"%")}};
+x.onload=()=>x.status<300?ok():fail(new Error("erro "+x.status));x.onerror=()=>fail(new Error("conexão caiu"));x.send(f)});
+row.querySelector("i").style.width="100%";label("enviado ✓ (entrada/"+d.name+")")}catch(e){row.className="file erro";label(e.message)}}
 if(key){$("panel").hidden=false;refresh()}else{$("nokey").hidden=false}
 </script></body></html>"""

@@ -376,6 +376,11 @@ def ensure_control(instance_id: str, password: str) -> str:
                         f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_PHONE}",
                     ],
                 },
+                {   # "Enviar arquivos": presigned PUTs into the inbox the VM pulls from
+                    "Effect": "Allow",
+                    "Action": "s3:PutObject",
+                    "Resource": f"arn:aws:s3:::{BUCKET}/entrada/*",
+                },
                 {   # "Desligar agora" runs hibernate.sh on the VM (backup, then hibernate)
                     "Effect": "Allow",
                     "Action": "ssm:SendCommand",
@@ -396,6 +401,7 @@ def ensure_control(instance_id: str, password: str) -> str:
             "PASSWORD_SHA256": hashlib.sha256(password.encode()).hexdigest(),
             "URL_PARAM": PARAM_URL,
             "PHONE_PARAM": PARAM_PHONE,
+            "BUCKET": BUCKET,
         }
     }
     try:
@@ -439,7 +445,23 @@ def ensure_control(instance_id: str, password: str) -> str:
             lam.add_permission(FunctionName=FUNCTION, StatementId=sid, Principal="*", **kwargs)
         except lam.exceptions.ResourceConflictException:
             pass
+    ensure_upload_cors(url)
     return url
+
+
+def ensure_upload_cors(page_url: str) -> None:
+    """Let only the control page PUT files into the bucket from the browser."""
+    origin = page_url.rstrip("/")
+    s3.put_bucket_cors(
+        Bucket=BUCKET,
+        CORSConfiguration={"CORSRules": [{
+            "AllowedOrigins": [origin],
+            "AllowedMethods": ["PUT"],
+            "AllowedHeaders": ["*"],
+            "ExposeHeaders": ["ETag"],
+            "MaxAgeSeconds": 3600,
+        }]},
+    )
 
 
 def main() -> None:

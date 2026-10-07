@@ -40,7 +40,7 @@ modprobe binder_linux devices="binder,hwbinder,vndbinder" || true
 mkdir -p /opt/agentepessoal /var/lib/agentepessoal /opt/a0/usr /opt/android-data
 [ -x /opt/agentepessoal/venv/bin/python ] || python3 -m venv /opt/agentepessoal/venv
 /opt/agentepessoal/venv/bin/pip install --quiet --upgrade boto3 aws-bedrock-token-generator
-install -m 755 "$B/bedrock_proxy.py" "$B/report_url.py" "$B/watchdog.sh" "$B/backup.sh" "$B/hibernate.sh" /opt/agentepessoal/
+install -m 755 "$B/bedrock_proxy.py" "$B/report_url.py" "$B/watchdog.sh" "$B/backup.sh" "$B/hibernate.sh" "$B/entrada.sh" /opt/agentepessoal/
 install -m 755 "$B/phone/install_apps.sh" "$B/phone/google_id.sh" "$B/agent_tools.sh" /opt/agentepessoal/
 
 # Mark resumes from hibernation so the idle timer restarts.
@@ -216,6 +216,28 @@ OnUnitActiveSec=1h
 WantedBy=timers.target
 EOF
 
+# Files sent from the control page land in S3; pull them into the workdir every 30 s.
+cat > /etc/systemd/system/agentepessoal-entrada.service <<'EOF'
+[Unit]
+Description=Move files uploaded from the control page into the agent workdir
+After=network-online.target
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/agentepessoal.env
+ExecStart=/opt/agentepessoal/entrada.sh
+EOF
+
+cat > /etc/systemd/system/agentepessoal-entrada.timer <<'EOF'
+[Unit]
+Description=Check for files uploaded from the control page
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=30s
+AccuracySec=5s
+[Install]
+WantedBy=timers.target
+EOF
+
 # Full stops (not hibernation) also get a final backup.
 cat > /etc/systemd/system/agentepessoal-backup-on-shutdown.service <<'EOF'
 [Unit]
@@ -235,9 +257,9 @@ EOF
 
 systemctl daemon-reload
 systemctl enable agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-agent-tools \
-  agentepessoal-watchdog.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown
+  agentepessoal-watchdog.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer
 systemctl restart agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url
-systemctl start agentepessoal-agent-tools agentepessoal-watchdog.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown
+systemctl start agentepessoal-agent-tools agentepessoal-watchdog.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer
 
 # First boot only: install test apps on the phone.
 [ -f /var/lib/agentepessoal/apps-installed ] || { /opt/agentepessoal/install_apps.sh && touch /var/lib/agentepessoal/apps-installed; } || true
