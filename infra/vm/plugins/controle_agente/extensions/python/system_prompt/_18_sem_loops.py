@@ -9,8 +9,8 @@ from agent import LoopData
 from helpers.extension import Extension
 
 REGRAS = """## Evite loops (vale para você e para subagentes)
-- **Imagens:** cabem no máximo 30 no contexto; as mais antigas são removidas e aparecem como "embedded data removed". Antes de carregar outro lote, escreva em texto (num arquivo de notas, ex.: notas_imagens.md) o que viu em cada imagem. **Nunca recarregue imagens que já descreveu** — releia as suas notas. Para comparar muitas imagens, analise em lotes pequenos e compare as notas, não as imagens de novo.
-- Se você repetir a mesma ação (mesma ferramenta com os mesmos arquivos/argumentos) pela 2ª vez sem avanço, **pare**: responda dizendo onde travou e qual outro caminho propõe.
+- **Imagens:** com mais de ~5 imagens use a ferramenta **`analisar_imagens`** (analisa uma a uma e devolve texto + arquivo de notas) e compare pelas notas. `vision_load` é para olhar poucas imagens: cabem no máximo 30 na conversa e as mais antigas são removidas ("embedded data removed"). **Nunca recarregue imagens que já analisou** — releia as notas.
+- Um detector pausa a tarefa se a mesma ação se repetir com o mesmo resultado. Se você repetir a mesma ação (mesma ferramenta com os mesmos arquivos/argumentos) pela 2ª vez sem avanço, **pare**: responda dizendo onde travou e qual outro caminho propõe.
 """
 
 

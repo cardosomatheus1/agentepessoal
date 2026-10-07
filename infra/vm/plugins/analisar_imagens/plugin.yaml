@@ -1,0 +1,4 @@
+name: analisar_imagens
+title: Analisar imagens em lote
+description: Ferramenta analisar_imagens — descreve dezenas de imagens uma a uma (em paralelo) e devolve só texto, salvo num arquivo de notas; não enche o contexto do agente.
+version: 1.0.0
