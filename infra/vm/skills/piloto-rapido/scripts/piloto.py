@@ -11,12 +11,17 @@ Só biblioteca padrão do Python.
 import hashlib
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
+import xml.etree.ElementTree as ET
+
+# Bibliotecas extras embutidas (ex.: python-chess) em scripts/vendor.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "vendor"))
 
 SERIAL = os.environ.get("CELULAR_SERIAL", "android:5555")
 JEV_URL = os.environ.get("JEV_URL", "http://host.docker.internal:8787/typesafe/v1/systemone")
@@ -42,6 +47,36 @@ class Tela:
     def pixel(self, x: int, y: int) -> tuple[int, int, int]:
         i = (int(y) * self.largura + int(x)) * 4
         return self._px[i], self._px[i + 1], self._px[i + 2]
+
+
+    def regiao(self, x1: int, y1: int, x2: int, y2: int, passo: int = 4) -> dict:
+        """Estatísticas de cor de um retângulo: média RGB e variação de brilho.
+
+        Variação alta costuma indicar que há algo desenhado (peça, ícone, texto);
+        baixa indica fundo liso (casa vazia, botão sem texto)."""
+        pts = [self.pixel(x, y) for y in range(int(y1), int(y2), passo) for x in range(int(x1), int(x2), passo)]
+        if not pts:
+            return {"media": (0, 0, 0), "variacao": 0.0}
+        n = len(pts)
+        media = tuple(sum(p[i] for p in pts) / n for i in range(3))
+        brilho = [sum(p) / 3 for p in pts]
+        mb = sum(brilho) / n
+        return {"media": tuple(round(v) for v in media), "variacao": round((sum((b - mb) ** 2 for b in brilho) / n) ** 0.5, 1)}
+
+    def grade(self, x1: int, y1: int, x2: int, y2: int, linhas: int, colunas: int, margem: float = 0.15) -> list:
+        """Divide um retângulo (tabuleiro, grade de botões) em células e mede cada uma.
+
+        Devolve linhas x colunas de dicts {centro, media, variacao}. `margem` ignora as bordas da célula."""
+        cw, ch = (x2 - x1) / colunas, (y2 - y1) / linhas
+        out = []
+        for r in range(linhas):
+            linha = []
+            for c in range(colunas):
+                cx1, cy1 = x1 + c * cw, y1 + r * ch
+                st = self.regiao(cx1 + cw * margem, cy1 + ch * margem, cx1 + cw * (1 - margem), cy1 + ch * (1 - margem))
+                linha.append({"centro": (round(cx1 + cw / 2), round(cy1 + ch / 2)), **st})
+            out.append(linha)
+        return out
 
 
 def cor_mais_proxima(rgb, paleta: dict) -> tuple:
@@ -90,6 +125,48 @@ class Celular:
             raise PrecisaLLM(f"app {pacote} não encontrado no celular")
         self._adb("shell", "am", "start", "-n", atividade)
         time.sleep(1.5)
+
+    def elementos(self) -> list:
+        """Árvore da interface (apps comuns): lista de {texto, id, descricao, clicavel, bounds, centro}.
+
+        Não funciona em jogos/telas desenhadas como imagem (vem vazia) — aí use tela()/grade()."""
+        self._adb("shell", "uiautomator", "dump", "/sdcard/ui.xml")
+        xml = self._adb("exec-out", "cat", "/sdcard/ui.xml")
+        out = []
+        for n in ET.fromstring(xml[xml.find("<"):]).iter("node"):
+            m = re.findall(r"\d+", n.get("bounds", ""))
+            if len(m) != 4:
+                continue
+            x1, y1, x2, y2 = map(int, m)
+            texto, desc = n.get("text", ""), n.get("content-desc", "")
+            if not (texto or desc or n.get("clickable") == "true"):
+                continue
+            out.append({
+                "texto": texto, "descricao": desc, "id": n.get("resource-id", ""),
+                "clicavel": n.get("clickable") == "true", "bounds": (x1, y1, x2, y2),
+                "centro": ((x1 + x2) // 2, (y1 + y2) // 2),
+            })
+        return out
+
+    def tocar_texto(self, texto: str, parcial: bool = True):
+        """Toca no primeiro elemento cujo texto/descrição contém `texto`."""
+        alvo = texto.lower()
+        for e in self.elementos():
+            rotulo = f"{e['texto']} {e['descricao']}".lower()
+            if (alvo in rotulo) if parcial else (alvo in (e["texto"].lower(), e["descricao"].lower())):
+                self.tocar(*e["centro"])
+                return e
+        raise PrecisaLLM(f"não achei '{texto}' na tela")
+
+    def esperar_estavel(self, timeout: float = 5.0, intervalo: float = 0.4) -> Tela:
+        """Espera a tela parar de mudar (fim de animação, adversário pensando)."""
+        fim, ultimo = time.time() + timeout, None
+        while True:
+            t = self.tela()
+            if ultimo is not None and t.hash == ultimo.hash or time.time() > fim:
+                return t
+            ultimo = t
+            time.sleep(intervalo)
 
     def esperar_mudar(self, antes: str, timeout: float = 2.0) -> Tela:
         """Espera a tela mudar depois de uma ação; devolve a tela nova (ou a mesma, se não mudou)."""

@@ -1,69 +1,95 @@
 ---
 name: piloto-rapido
-description: "Executar tarefas repetitivas no celular (jogos, muitos cliques parecidos, formulários em série) com um loop rápido: código lê a tela, o Jev decide em ~0,3 s, e o LLM só entra quando algo foge do previsto."
-version: 1.0.0
-tags: ["celular", "jogo", "jev", "typesafe", "automacao", "rapido", "loop"]
+description: "Fazer sozinho tarefas no celular que exigem muitas decisões rápidas (jogos por turno como xadrez, damas, 2048, sudoku; apps com muitos passos parecidos). Você planeja uma vez e escreve um script; o código lê a tela, o Jev decide cada passo em ~0,3 s, e você só volta quando o script pedir."
+version: 2.0.0
+tags: ["celular", "jogo", "xadrez", "jev", "typesafe", "automacao", "rapido", "loop", "autonomo"]
 trigger_patterns:
   - "jogar"
+  - "jogue"
   - "jogo"
+  - "partida"
+  - "xadrez"
   - "repetir"
   - "várias vezes"
   - "em série"
   - "piloto rápido"
 ---
 
-# Piloto rápido (LLM planeja, Jev decide, código executa)
+# Piloto rápido — você decide sozinho como fazer
 
-Chamar o LLM a cada passo leva 15–30 s. Para tarefas repetitivas, divida assim:
+Você (LLM) é lento para decidir cada passo (15–30 s). Para tarefas com muitas decisões, **não jogue/clique passo a passo pelo chat**. Em vez disso:
 
-| Camada | Quem | O que faz |
-|---|---|---|
-| Entender e planejar | você (LLM) | Uma vez: olha a tela, entende a tarefa e escreve/escolhe o script |
-| Ler e agir | código (`piloto.py`) | Lê pixels/árvore da interface, toca, desliza, confere se a tela mudou |
-| Decidir cada passo | **Jev** (TypeSafe) | Recebe estado + perguntas tipadas e responde em ~0,3 s com probabilidades |
-| Exceções | você (LLM) | Quando o script sai com `PRECISA_LLM: ...`, analise, corrija e rode de novo |
+1. **Entenda** a tarefa e a tela (poucos passos manuais).
+2. **Escreva um script** que faz o loop sozinho: lê a tela → monta o estado → pergunta ao **Jev** → age → confere.
+3. **Rode**. O script só devolve o controle quando algo foge do previsto (`PRECISA_LLM: motivo`).
+4. **Corrija e continue** a partir do motivo. **Guarde** o script bom para a próxima vez.
 
-## Tarefas prontas
+Ninguém vai te dizer qual app usar, onde fica cada coisa ou qual estratégia seguir: descubra, decida e explique ao usuário em 2–3 linhas o que escolheu.
 
-| Tarefa | Comando |
-|---|---|
-| Jogar 2048 | `python3 /a0/usr/skills/piloto-rapido/scripts/tarefas/jogar_2048.py 30` |
+## Passo 0 — já existe?
 
-O script abre o app sozinho, imprime uma linha por jogada (decisão, tempo, placar). Se o Jev não estiver configurado, ele sai com `PRECISA_LLM: Jev indisponível`; nesse caso avise o usuário e, se ele quiser, rode com `--sem-jev` (regra simples em código).
+Veja `/a0/usr/skills/piloto-rapido/scripts/tarefas/README.md`. Se já há um script para a tarefa, rode-o direto.
 
-## Criar uma tarefa nova
+## Passo 1 — explorar (use a skill **celular**)
 
-1. Tire um print (`acao.sh print` da skill **celular**) e entenda a tela.
-2. Escreva `/a0/usr/skills/piloto-rapido/scripts/tarefas/<nome>.py` usando a biblioteca:
+- Apps instalados: `adb -s android:5555 shell pm list packages -3`. Se faltar um app, instale (F-Droid: `curl -sL https://f-droid.org/api/v1/packages/<pacote>` dá a versão; APK em `https://f-droid.org/repo/<pacote>_<versão>.apk`; ou Play Store/Aurora Store).
+- Abra o app (`acao.sh abrir <pacote>`), tire print (`acao.sh print` + `vision_load`) e resolva diálogos iniciais (boas-vindas, permissões, "novidades").
+- Descubra **como ler o estado** sem visão do LLM:
+  - Apps comuns: `cel.elementos()` (textos, botões e posições da interface).
+  - Jogos desenhados como imagem: localize a área (ex.: tabuleiro) no print e use `tela.grade(x1, y1, x2, y2, linhas, colunas)` — cada célula traz cor média e `variacao` (alta = tem peça/desenho; baixa = vazia). Calibre olhando os números de 1–2 telas.
+- Descubra **como agir**: tocar origem → destino, deslizar, tocar botão por texto.
+
+## Passo 2 — escrever o script
+
+Crie `/a0/usr/skills/piloto-rapido/scripts/tarefas/<nome>.py`:
 
 ```python
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from piloto import Celular, PrecisaLLM, cor_mais_proxima, escolha, sim_nao, nota, jev, rodar
+from piloto import Celular, PrecisaLLM, escolha, sim_nao, nota, jev, rodar
 
 def main():
     cel = Celular()
-    for passo in range(20):
-        tela = cel.tela()                      # tela.pixel(x, y) -> (r, g, b); tela.hash
-        estado = {...}                         # o que o código consegue ler da tela
-        r = jev(estado, {"acao": escolha("Qual a próxima ação?", ["tocar_ok", "rolar", "voltar"])})["acao"]
-        if r["confidence"] < 0.3:
-            raise PrecisaLLM(f"decisão incerta: {r['probabilities']}")
-        ...                                    # cel.tocar / cel.deslizar / cel.digitar / cel.tecla
+    cel.abrir("<pacote>")
+    for passo in range(200):
+        tela = cel.esperar_estavel()                 # espera animações / o adversário
+        estado = ...                                  # do código: grade, elementos, regras
+        opcoes = {...}                                # rótulo -> descrição curta (só ações válidas!)
+        r = jev({"objetivo": "...", "estado": estado}, {"acao": escolha("Qual a melhor próxima ação?", opcoes)})["acao"]
+        ...                                           # executar r["choice"]
         if cel.esperar_mudar(tela.hash).hash == tela.hash:
-            raise PrecisaLLM("a ação não mudou a tela")
+            raise PrecisaLLM(f"'{r['choice']}' não mudou a tela")
+        print(f"passo {passo}: {r['choice']} (confiança {r['confidence']:.2f})", flush=True)
 
 rodar(main)
 ```
 
-3. Regras de ouro:
-   - Coloque no **código** tudo que é regra fixa (posições, cores, simulação do jogo, validação).
-   - Use o **Jev** para julgamentos rápidos entre opções conhecidas: `escolha` (uma opção), `sim_nao` (probabilidade), `nota` (níveis ordenados). Envie no estado só o necessário (até ~32 mil tokens).
-   - Levante `PrecisaLLM` sempre que algo inesperado acontecer, em vez de insistir.
-   - Para ler textos e posições de botões, prefira `adb -s android:5555 shell uiautomator dump` à leitura de pixels.
-4. Rode o script, acompanhe a saída e, ao terminar, mostre um print final ao usuário.
+Divisão de trabalho dentro do script:
+
+| O quê | Quem |
+|---|---|
+| Regras fixas: ler a tela, listar ações válidas, simular, validar, detectar o fim | **código** |
+| Julgamento entre opções válidas (melhor lance, melhor botão, "isso combina?") | **Jev**: `escolha(instr, opcoes)`, `sim_nao(instr)`, `nota(instr, niveis)` — ~0,3 s, até ~32 mil tokens de estado |
+| Situação inesperada, tela desconhecida, Jev inseguro, ação sem efeito, passo irreversível | **você**: `raise PrecisaLLM("...")` |
+
+Boas práticas:
+- Dê ao Jev **só opções válidas** e, para cada uma, as consequências que o código consegue calcular (pontos, risco, o que muda). Peça a ele o julgamento; não peça para ele descobrir regras.
+- Jogos com regras conhecidas: use uma biblioteca de regras em vez de visão. Já disponível: **python-chess** (`import chess`) para xadrez — dá lances legais, simula lances, detecta xeque/mate e permite descobrir o lance do adversário comparando a ocupação das casas antes/depois com os lances legais.
+- Se houver adversário (computador), espere a tela estabilizar e identifique o lance dele antes de decidir o seu.
+- Imprima uma linha curta por passo (o usuário acompanha) e um resumo no fim.
+
+## Passo 3 — rodar, acompanhar, corrigir
+
+- Teste com poucos passos primeiro (`python3 script.py` com um limite pequeno). Funcionou? Rode a tarefa completa.
+- Saiu com `PRECISA_LLM: ...`? Olhe um print, entenda, ajuste o script (ou resolva a tela à mão com a skill **celular**) e rode de novo — o script deve conseguir **retomar do estado atual da tela**.
+- Mais de 3 correções seguidas sem progresso: pare e explique ao usuário o que está bloqueando.
+- O usuário pode assistir ao vivo pelo **Ver celular** da página de controle.
+
+## Passo 4 — guardar
+
+Ao terminar, registre em `tarefas/README.md`: nome do script, o que faz, app/pacote, como rodar e limitações conhecidas.
 
 ## Regras
 
-- Nunca faça compras, pagamentos ou cadastros sem confirmação explícita do usuário — nem dentro de scripts.
-- Mantenha os scripts curtos e específicos; guarde os bons em `tarefas/` para reutilizar.
+- Nunca faça compras, pagamentos, cadastros, envios ou aceite termos sem confirmação explícita do usuário — nem dentro de scripts (use `PrecisaLLM` antes do passo irreversível).
+- Não faça login em contas do usuário; peça que ele faça pelo **Ver celular**.
