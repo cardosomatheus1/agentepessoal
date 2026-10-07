@@ -1,4 +1,4 @@
 name: arquivo_grande
-title: Arquivo grande
-description: Botão "Arquivo grande" no menu + do chat — envia arquivos de até 5 GB direto para o S3 (sem o limite de 100 MB do túnel) e entrega na pasta de anexos desta conversa.
-version: 1.0.0
+title: Anexos de qualquer tamanho
+description: 'O "+ → Attach files" aceita arquivos de até 5 GB: os grandes vão direto para o S3 (sem o limite de ~100 MB do túnel) e chegam na pasta de anexos da conversa.'
+version: 1.1.0
