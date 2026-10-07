@@ -34,6 +34,7 @@ PARAM_PASSWORD = f"/{NAME}/password"
 PARAM_URL = f"/{NAME}/agent-url"
 PARAM_PHONE = f"/{NAME}/phone-url"
 VM_ROLE = f"{NAME}-vm"
+META_ROLE = f"{NAME}-segredo-meta"
 CONTROL_ROLE = f"{NAME}-control"
 FUNCTION = f"{NAME}-control"
 
@@ -158,6 +159,12 @@ def ensure_vm_role() -> str:
             ],
         },
     )
+    # credenciais_meta.py hands the agent short-lived credentials of META_ROLE
+    iam.put_role_policy(RoleName=VM_ROLE, PolicyName=f"{VM_ROLE}-segredo-meta", PolicyDocument=json.dumps({
+        "Version": "2012-10-17",
+        "Statement": [{"Effect": "Allow", "Action": "sts:AssumeRole",
+                       "Resource": f"arn:aws:iam::{account}:role/{META_ROLE}"}],
+    }))
     try:
         iam.get_instance_profile(InstanceProfileName=VM_ROLE)
     except iam.exceptions.NoSuchEntityException:
@@ -169,6 +176,28 @@ def ensure_vm_role() -> str:
         log("waiting for instance profile to propagate")
         time.sleep(15)
     return profile["Arn"]
+
+
+def ensure_meta_secret_role() -> None:
+    """Only what `pnpm --filter @ros/infra-aws segredo-meta` (NEXOS repo) needs: the Meta app
+    secret and a restart of api/worker. Assumed by the VM for the agent (credenciais_meta.py)."""
+    trust = {"Version": "2012-10-17", "Statement": [{
+        "Effect": "Allow", "Principal": {"AWS": f"arn:aws:iam::{account}:role/{VM_ROLE}"}, "Action": "sts:AssumeRole"}]}
+    services = [f"arn:aws:ecs:{REGION}:{account}:service/ros-dev-cluster/ros-dev-{s}" for s in ("api", "worker")]
+    policy = {"Version": "2012-10-17", "Statement": [
+        {"Effect": "Allow", "Resource": f"arn:aws:secretsmanager:{REGION}:{account}:secret:ros-dev-meta/app-*",
+         "Action": ["secretsmanager:DescribeSecret", "secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue"]},
+        {"Effect": "Allow", "Action": ["ecs:UpdateService", "ecs:DescribeServices"], "Resource": services},
+        {"Effect": "Allow", "Action": "ecs:ListServices", "Resource": "*",
+         "Condition": {"ArnEquals": {"ecs:cluster": f"arn:aws:ecs:{REGION}:{account}:cluster/ros-dev-cluster"}}},
+    ]}
+    try:
+        iam.get_role(RoleName=META_ROLE)
+        iam.update_assume_role_policy(RoleName=META_ROLE, PolicyDocument=json.dumps(trust))
+    except iam.exceptions.NoSuchEntityException:
+        iam.create_role(RoleName=META_ROLE, AssumeRolePolicyDocument=json.dumps(trust), MaxSessionDuration=3600, Tags=TAGS)
+        log(f"created role {META_ROLE}")
+    iam.put_role_policy(RoleName=META_ROLE, PolicyName="segredo-meta", PolicyDocument=json.dumps(policy))
 
 
 # ---------------------------------------------------------------- network
@@ -475,6 +504,7 @@ def main() -> None:
     password, created = ensure_parameters()
     ensure_bucket()
     profile = ensure_vm_role()
+    ensure_meta_secret_role()
     upload_bundle()
     subnet, vpc = default_subnet_and_vpc()
     sg = ensure_security_group(vpc)
