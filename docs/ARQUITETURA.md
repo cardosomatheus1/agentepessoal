@@ -4,97 +4,142 @@ Status: **proposta** (nada disso foi provisionado ainda).
 
 ## Objetivo
 
-- App com experiência parecida com o Grok: tela limpa, campo de mensagem central, histórico na lateral, resposta em streaming, etapas de "pensando" que dá para expandir, voz e anexos.
-- O cérebro é o Agent Zero com Claude via Bedrock, rodando numa VM EC2.
-- A VM **só liga quando o app é usado** e **desliga sozinha** quando fica ociosa.
+- App com experiência parecida com o Grok: resposta **instantânea** em streaming, tela limpa, campo de mensagem central, histórico na lateral, etapas de "pensando" que dá para expandir, voz e anexos.
+- Pagar computação **só quando usar**.
+- Usar VM só onde ela é realmente necessária.
 
-## Visão geral
+## A VM é necessária?
+
+Só para o **modo agente**, quando o Agent Zero executa código, navega na web, mexe em arquivos ou roda tarefas longas. Isso precisa de um ambiente Linux com estado.
+
+Para **conversar**, que é a maior parte do uso de um app estilo Grok, não precisa de VM. Uma Lambda chama o Claude no Bedrock e devolve a resposta em streaming na hora. Se toda mensagem dependesse de acordar uma VM, cada conversa nova começaria com ~60–90s de espera, o que mata a sensação de Grok.
+
+### Opções avaliadas
+
+| Opção | Partida a frio | Custo ocioso | Esforço | Veredito |
+|---|---|---|---|---|
+| **A. Tudo no EC2 liga/desliga** | 60–90s em toda conversa nova | só disco (~$3) | baixo | simples, mas UX lenta |
+| **B. Tudo no Fargate (escala a zero)** | 1–3 min (imagem grande) | disco EFS | médio | sem ganho real sobre A |
+| **C. 100% serverless (Bedrock AgentCore / agente próprio)** | ~0 | ~0 | **alto**: abandona o Agent Zero | caminho futuro se virar produto multiusuário |
+| **D. Híbrido: chat serverless + agente no EC2 sob demanda** | **chat 0s**, agente 60–90s | só disco (~$3) | médio | ✅ **recomendado** |
+
+## Arquitetura recomendada (D, híbrida)
 
 ```mermaid
 flowchart LR
-  U[App / PWA<br/>estilo Grok] -->|1. status / ligar| CP[Control API<br/>API Gateway + Lambda]
+  U[App / PWA<br/>estilo Grok] -->|chat| CH[Lambda de chat<br/>streaming]
+  CH --> BR[Bedrock<br/>Claude]
+  CH <--> DB[(DynamoDB<br/>conversas + estado)]
+  U -->|modo agente| CP[Control API<br/>Lambda]
   CP -->|Start/Stop| EC2[(EC2<br/>Agent Zero + Gateway)]
-  CP <--> DB[(DynamoDB<br/>estado + última atividade)]
-  U -->|2. chat em streaming| CF[Cloudflare Tunnel<br/>agente.seudominio.com]
-  CF --> EC2
-  EC2 -->|IAM role, sem chaves| BR[Bedrock<br/>Claude]
-  EB[EventBridge a cada 5 min] --> IDLE[Lambda auto-stop] --> EC2
-  EC2 --- EBS[(EBS gp3<br/>memória, chats, arquivos)]
+  U -->|streaming das etapas| CF[Cloudflare Tunnel] --> EC2
+  EC2 -->|IAM role| BR
+  EC2 -->|resultado| DB
+  EB[EventBridge 5 min] --> IDLE[Lambda auto-stop] --> EC2
+  EC2 --- EBS[(EBS gp3<br/>memória e arquivos do agente)]
 ```
 
-Separação central: o que está **sempre ligado** é barato e serverless (frontend estático + Lambda). O que é **caro** (a VM) só existe quando você está usando.
+### Como o uso flui
+1. Você abre o app e manda uma mensagem. A **Lambda de chat** responde em streaming na hora, usando Haiku, Sonnet ou Opus conforme o modo.
+2. Quando a tarefa pede execução (rodar código, pesquisar a fundo, mexer em arquivos), você liga o **modo agente**, ou o próprio Claude sugere ligar.
+   - O app liga a VM e mostra "Acordando o agente… ~60s".
+   - A tarefa entra na fila e é enviada ao Agent Zero quando ele estiver pronto.
+3. As etapas do agente aparecem num bloco "Pensando…" recolhível, como no Grok. O resultado final volta para a mesma conversa.
+4. Sem uso, a VM desliga sozinha.
 
-## Componentes
+### Componentes
 
-### 1. Frontend (sempre ligado, ~grátis)
-- **Next.js como PWA**: instala no celular e no desktop como app. Hospedado em S3 + CloudFront (ou Vercel).
+**1. Frontend (sempre ligado, ~grátis)**
+- **Next.js como PWA**, hospedado em S3 + CloudFront (ou Vercel). Instala no celular e no desktop como app.
 - Se depois quiser app nas lojas: **Expo / React Native**, reaproveitando a mesma API.
 - UX estilo Grok:
-  - tema escuro, saudação e campo de entrada centralizados na tela inicial;
-  - chips de modo: **Rápido** (Haiku) / **Padrão** (Sonnet) / **Power** (Opus), que são os presets do Agent Zero;
-  - etapas do agente (planejar → executar comando → responder) num bloco recolhível "Pensando…";
-  - lateral com histórico, busca e projetos;
-  - anexos (arquivos/imagens) e modo voz (o Agent Zero já tem Whisper para STT e Kokoro para TTS).
-- **Partida a frio sem fricção**: ao abrir, o app chama `/status`. Se a VM estiver desligada, ele pede para ligar e mostra "Acordando seu agente… ~60s", e você já pode digitar. A mensagem fica na fila e é enviada quando a VM fica pronta.
+  - tema escuro, saudação e campo de entrada centralizados;
+  - chips **Rápido / Padrão / Power** e o botão **Agente**;
+  - **"ver tela"**: acompanhar ao vivo o navegador e o desktop do agente (ver seção 5);
+  - histórico com busca;
+  - anexos e modo voz.
 
-### 2. Control API (sempre ligado, ~grátis)
-API Gateway (HTTP API) + Lambda, autenticada (Cognito ou JWT do provedor de login):
+**2. Lambda de chat (sempre disponível, paga por uso)**
+- Lambda **Function URL com response streaming**, que chama a Bedrock `ConverseStream`.
+- Conversas no **DynamoDB**. Assim o histórico abre na hora, mesmo com a VM desligada.
+- Login: **Cognito**, ou um provedor como Clerk/Auth0.
+
+**3. Control API + auto-stop**
 
 | Rota | Função |
 |---|---|
-| `GET /status` | estado da VM: `stopped / starting / ready / stopping` |
-| `POST /start` | `ec2:StartInstances`, devolve quando o health check passa |
-| `POST /stop` | desliga manualmente |
-| `POST /heartbeat` | o app avisa que está em uso, atualizando `last_activity` |
+| `GET /agent/status` | estado da VM: `stopped / starting / ready / busy / stopping` |
+| `POST /agent/start` | `ec2:StartInstances` e espera o health check passar |
+| `POST /agent/stop` | desliga manualmente |
+| `POST /agent/task` | põe a tarefa na fila (SQS) e liga a VM se precisar |
 
-### 3. Desligamento automático
-- **EventBridge** roda uma Lambda a cada 5 min. Ela desliga a VM se:
-  - `last_activity` tem mais de **20 min** (configurável), **e**
-  - o Agent Zero **não tem tarefa em execução**. O gateway na VM expõe isso, para nunca matar uma tarefa longa no meio.
-- Rede de segurança 1: **tempo máximo ligado** (ex.: 6h) e desliga mesmo assim, avisando antes.
-- Rede de segurança 2: **AWS Budgets** com alerta por e-mail se o gasto mensal passar de um valor.
+- **EventBridge** a cada 5 min desliga a VM se:
+  - está ociosa há **20 min** (configurável), **e**
+  - **nenhuma tarefa está rodando**. Nunca mata uma tarefa no meio.
+- Redes de segurança: **tempo máximo ligado** (ex.: 6h) e **AWS Budgets** com alerta por e-mail.
 
-### 4. VM (liga sob demanda)
-- **EC2 `t3.large`** (2 vCPU, 8 GB) em `us-east-1`. Dá para medir e reduzir ou aumentar depois.
-- **AMI própria** já com Docker, imagem do Agent Zero, dependências e `cloudflared`, para o boot ser rápido.
-- Serviço `systemd` sobe tudo no boot. Alvo: **pronto em ~60–90s** após o `start`. Depois dá para avaliar **EC2 Hibernate** para retomar ainda mais rápido.
+**4. VM do agente (só liga sob demanda)**
+- **EC2 `t3.large`** (2 vCPU, 8 GB), `us-east-1`.
+- **AMI própria** já com Docker, Agent Zero, dependências e `cloudflared`. Serviço `systemd` sobe tudo no boot.
 - **Gateway fino (FastAPI)** ao lado do Agent Zero:
-  - traduz a API do Agent Zero (`/api_message`, `/api_log_get`, websocket) para **SSE/streaming** num formato próprio do app;
-  - informa "ocupado / ocioso" para o auto-stop;
-  - isola o app do Agent Zero: se um dia trocar de motor, o frontend não muda.
-- **Credenciais**: **IAM Instance Role** com `bedrock:InvokeModel*`. Nenhuma chave guardada na VM.
-- **Dados** no volume EBS (memória, chats, arquivos de trabalho). Persistem com a VM desligada. Snapshot diário via Data Lifecycle Manager.
+  - consome a fila SQS;
+  - traduz a API do Agent Zero (`/api_message`, `/api_log_get`, websocket) para SSE;
+  - grava o resultado no DynamoDB;
+  - informa "ocupado / ocioso" ao auto-stop.
+- **IAM Instance Role** com `bedrock:InvokeModel*`. Nenhuma chave guardada na VM.
+- Memória do agente e arquivos ficam no **EBS**, que persiste desligado. Snapshot diário.
+- Acesso por **Cloudflare Tunnel**: domínio fixo, HTTPS, nenhuma porta aberta.
 
-### 5. Rede e acesso
-- **Cloudflare Tunnel**: endereço fixo (`agente.seudominio.com`), HTTPS grátis, **nenhuma porta aberta** na VM e sem custo de Elastic IP. Pode somar com **Cloudflare Access** como uma segunda camada de login.
-- Alternativa só-AWS: a Lambda atualiza um registro no Route 53 a cada boot (o IP muda). É mais simples de explicar, mas expõe a porta.
+### 5. Tela ao vivo: ver o que o agente está fazendo
+
+Como no Grok, dá para clicar e ver a tela do computador do agente em tempo real. O Agent Zero já traz as duas peças. Elas só existem no **modo agente**, porque rodam na VM:
+
+| Superfície | O que mostra | Tecnologia (já no Agent Zero) |
+|---|---|---|
+| **Navegador ao vivo** | o Chromium que o agente usa para pesquisar e preencher formulários | screencast via websocket, com histórico de screenshots |
+| **Desktop** | área de trabalho Linux (XFCE): terminal, arquivos, LibreOffice | Xvfb + **Xpra** (cliente HTML5 no navegador) |
+
+UX no app:
+- Enquanto o agente trabalha, aparece na conversa um card **"Agente trabalhando · ver tela"** com uma miniatura ao vivo.
+- Ao clicar, abre um painel lateral no desktop ou tela cheia no celular, com abas **Navegador / Desktop**.
+- Botão **"Assumir controle"**: você mexe mouse e teclado, por exemplo para fazer um login ou resolver um captcha. Depois clica em **"Devolver ao agente"**.
+- Por padrão é **só assistir**. O controle precisa ser ativado, para evitar cliques sem querer.
+- Depois que a tarefa termina, a linha do tempo das etapas guarda os screenshots, para rever o que foi feito.
+
+Implementação:
+- O gateway na VM faz proxy autenticado dos websockets do screencast e do Xpra pelo mesmo Cloudflare Tunnel. Nada fica exposto sem login.
+- Na VM roda a **imagem Docker oficial do Agent Zero**, que já vem com Xpra, XFCE, Chromium e LibreOffice. Na execução de teste desta sessão (sem Docker) essas peças não estavam instaladas.
+- Com desktop e navegador abertos ao mesmo tempo, considerar **`t3.xlarge`** (16 GB, ~$0,166/h) no lugar de `t3.large`.
 
 ## Custos estimados (us-east-1, uso pessoal)
 
 | Item | Premissa | ~USD/mês |
 |---|---|---|
-| EC2 t3.large | 2h/dia × 30 dias = 60h × $0,083 | ~5 |
+| EC2 t3.large | modo agente 1h/dia × 30 = 30h × $0,083 | ~2,5 |
 | EBS gp3 40 GB | cobrado mesmo desligada | ~3,2 |
-| Lambda + API Gateway + DynamoDB + EventBridge | uso pessoal | <1 |
-| Frontend (S3/CloudFront ou Vercel) | | ~0–1 |
-| Cloudflare Tunnel | | 0 |
+| Lambda + DynamoDB + SQS + EventBridge + API | uso pessoal | <1 |
+| Frontend + Cloudflare Tunnel | | ~0–1 |
 | **Bedrock (tokens)** | depende do uso e do modelo | **variável, é o maior custo** |
 
-Se a VM ficasse ligada direto: ~$60/mês só de EC2.
+Para comparar: VM ligada direto custaria ~$60/mês só de EC2.
 
 ## Infra como código
 
-Tudo em **AWS CDK (TypeScript)**, na mesma linguagem do frontend: VPC/SG, EC2 + role, Lambdas, API Gateway, DynamoDB, EventBridge, Budgets. Um `cdk deploy` cria tudo; um `cdk destroy` remove tudo.
+**AWS CDK (TypeScript)**, na mesma linguagem do frontend. Um `cdk deploy` cria tudo; um `cdk destroy` remove tudo.
 
 ## Fases
 
-1. **Infra liga/desliga**: CDK + AMI + Control API + auto-stop + túnel. Ao final, a UI atual do Agent Zero já abre sob demanda pelo seu domínio.
-2. **App estilo Grok (PWA)**: chat com streaming, histórico, presets, tela de "acordando", login.
-3. **Extras**: voz, anexos, notificação push quando uma tarefa longa terminar, app nas lojas (Expo).
+1. **Chat serverless + app estilo Grok (PWA)**: já entrega valor sem nenhuma VM.
+2. **Modo agente**: EC2 sob demanda + AMI + gateway + auto-stop + túnel + **tela ao vivo** (navegador e desktop).
+3. **Extras**: voz, anexos, push quando uma tarefa longa termina, app nas lojas.
+
+## Evolução possível
+
+Se virar produto para outras pessoas, trocar a VM única por sessões isoladas por usuário: **Bedrock AgentCore Runtime**, ou containers por usuário. O frontend e a Lambda de chat continuam iguais, porque o gateway isola o motor do agente.
 
 ## Decisões em aberto
 
-- Só você vai usar, ou outras pessoas também? Com várias pessoas, a arquitetura muda para uma VM ou container por usuário.
-- PWA primeiro, ou app nativo nas lojas desde o início?
-- Tem domínio próprio e conta Cloudflare? Se não, uso a alternativa com Route 53.
-- Acesso à conta AWS para deploy: precisa de um usuário/role com permissão de EC2, Lambda, IAM, API Gateway, DynamoDB e CloudFormation. Hoje este ambiente só tem acesso ao Bedrock.
+- Só você vai usar, ou outras pessoas também?
+- PWA primeiro, ou app nas lojas desde o início?
+- Tem domínio próprio e conta Cloudflare?
+- Acesso à conta AWS para deploy: precisa de permissões de EC2, Lambda, IAM, API Gateway, DynamoDB, SQS e CloudFormation. Hoje este ambiente só tem acesso ao Bedrock.
