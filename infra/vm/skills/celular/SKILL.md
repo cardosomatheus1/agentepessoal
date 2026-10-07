@@ -37,7 +37,9 @@ Faz a ação, tira o print novo e diz se a tela mudou — use em vez de comandos
 /a0/usr/skills/celular/scripts/acao.sh abrir com.android.vending   # abrir um app pelo pacote
 ```
 
-Depois de cada ação, olhe `/a0/tmp/celular.png` com `vision_load`. Se a saída for **NAO_MUDOU**, a ação não fez nada: **não repita a mesma ação** — escolha outra.
+Cada ação já devolve **o texto da tela** (botões e textos com a posição de cada um). **Decida por esse texto**; só use `vision_load` em `/a0/tmp/celular.png` quando a tela não tiver texto (jogo, imagem) ou o texto não bastar — olhar imagem leva 10–30 s. Se a saída for **NAO_MUDOU**, a ação não fez nada: **não repita a mesma ação** — escolha outra.
+
+Use o celular só para o que é de celular (app Android, pedido explícito). Sites e programas: prefira o Browser/Desktop do computador.
 
 ## Ver a tela (comandos soltos)
 

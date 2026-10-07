@@ -26,3 +26,6 @@ after=$(md5sum < "$OUT" | cut -d' ' -f1)
 if [ "${1:-print}" = print ]; then echo "PRINT $OUT"
 elif [ "$before" = "$after" ]; then echo "NAO_MUDOU — a ação não teve efeito; NÃO repita, tente outra. Print: $OUT"
 else echo "MUDOU — print: $OUT"; fi
+# Texto da tela (rápido de ler; use o print com vision_load só se isto não bastar).
+adb -s "$A" shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+adb -s "$A" exec-out cat /sdcard/ui.xml 2>/dev/null | python3 "$(dirname "$0")/ui_texto.py"
