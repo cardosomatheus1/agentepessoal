@@ -226,11 +226,12 @@ def presets_yaml() -> str:
     )
 
 
-def project_tgz() -> bytes:
+def tgz(src: Path) -> bytes:
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
-        src = HERE / "vm/project-carreira"
         for path in sorted(src.rglob("*")):
+            if "__pycache__" in path.parts:
+                continue
             tar.add(path, arcname=str(path.relative_to(src)), recursive=False)
     return buf.getvalue()
 
@@ -245,7 +246,9 @@ def user_data() -> bytes:
         "REPORT_PY_B64": b64((HERE / "vm/report_url.py").read_text()),
         "WATCHDOG_B64": b64((HERE / "vm/watchdog.sh").read_text()),
         "BACKUP_B64": b64((HERE / "vm/backup.sh").read_text()),
-        "PROJECT_TGZ_B64": base64.b64encode(project_tgz()).decode(),
+        "PROJECT_TGZ_B64": base64.b64encode(tgz(HERE / "vm/project-carreira")).decode(),
+        "PLUGIN_TGZ_B64": base64.b64encode(tgz(HERE / "vm/plugins/memoria_pessoal")).decode(),
+        "PROFILE_B64": b64((HERE / "vm/memoria/sobre-voce.md").read_text()),
         "BUCKET": BUCKET,
         "PRESETS_B64": b64(presets_yaml()),
         "CODEEXEC_B64": b64(json.dumps(code_exec, indent=2)),

@@ -25,7 +25,19 @@ O agente não tem tela de login (uso individual). A proteção é: a VM não tem
 
 ## Memória e dados
 
-Tudo o que o agente sabe fica em `/opt/a0/usr` na VM: conversas, memória de longo prazo, projetos, arquivos enviados, configurações.
+Três níveis de contexto, como no Grok (plugin `vm/plugins/memoria_pessoal`):
+
+| Nível | Onde fica | Quem enxerga |
+|---|---|---|
+| **Sobre você** | `/a0/usr/memoria/sobre-voce.md` | Todas as conversas e agentes |
+| **Agente** (projeto do Agent Zero) | `/a0/usr/projects/<agente>/` + memória vetorial própria | Só as conversas daquele agente |
+| **Conversa** | `/a0/usr/chats/<id>/contexto.md`, `anexos/` e memória vetorial própria | Só aquela conversa |
+
+- O agente atualiza essas fichas sozinho: dados gerais seus → "Sobre você"; o que é só daquela conversa → contexto da conversa; anexos são copiados para `anexos/` e resumidos.
+- Para criar um agente novo, peça no chat ("crie um agente de finanças") ou use **Projects → Create project**. Ele aparece no seletor do canto superior direito; cada agente tem instruções, arquivos e memória separados.
+- Apagar uma conversa apaga a ficha e os anexos dela.
+
+Tudo isso fica em `/opt/a0/usr` na VM:
 
 - **O disco da VM continua existindo quando ela desliga**, então nada se perde entre usos.
 - **Backup no S3** a cada hora, antes do desligamento por inatividade e em todo desligamento. O bucket guarda versões antigas por 30 dias.

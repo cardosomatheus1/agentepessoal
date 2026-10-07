@@ -43,6 +43,12 @@ if [ ! -d /opt/a0/usr/projects/carreira ]; then
   echo '{{PROJECT_TGZ_B64}}' | base64 -d | tar -xz -C /opt/a0/usr/projects/carreira
 fi
 
+# Memory per chat and per agent (plugin code is always refreshed; the profile is kept).
+mkdir -p /opt/a0/usr/plugins/memoria_pessoal /opt/a0/usr/memoria
+rm -rf /opt/a0/usr/plugins/memoria_pessoal/*
+echo '{{PLUGIN_TGZ_B64}}' | base64 -d | tar -xz -C /opt/a0/usr/plugins/memoria_pessoal
+[ -f /opt/a0/usr/memoria/sobre-voce.md ] || echo '{{PROFILE_B64}}' | base64 -d > /opt/a0/usr/memoria/sobre-voce.md
+
 # Single user: no Agent Zero login. The VM has no open ports; the only way in is the
 # random tunnel URL, which is revealed only by the key-protected control page.
 # Agent Zero always allows its own tunnel origin; localhost covers local checks.
