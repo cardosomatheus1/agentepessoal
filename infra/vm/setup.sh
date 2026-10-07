@@ -59,7 +59,7 @@ fi
 mkdir -p /opt/a0/usr/plugins/_model_config /opt/a0/usr/plugins/_code_execution /opt/a0/usr/memoria /opt/a0/usr/skills
 cp "$B/generated/presets.yaml" /opt/a0/usr/plugins/_model_config/presets.yaml
 cp "$B/generated/code_execution.json" /opt/a0/usr/plugins/_code_execution/config.json
-rm -rf /opt/a0/usr/plugins/memoria_pessoal && cp -r "$B/plugins/memoria_pessoal" /opt/a0/usr/plugins/
+for d in "$B"/plugins/*/; do n=$(basename "$d"); rm -rf "/opt/a0/usr/plugins/$n" && cp -r "$d" /opt/a0/usr/plugins/; done
 # Overlay (no delete): keeps scripts the agent saved itself, e.g. skills/piloto-rapido/scripts/tarefas/.
 for d in "$B"/skills/*/; do n=$(basename "$d"); mkdir -p "/opt/a0/usr/skills/$n" && cp -r "$d". "/opt/a0/usr/skills/$n/"; done
 [ -f /opt/a0/usr/memoria/sobre-voce.md ] || cp "$B/memoria/sobre-voce.md" /opt/a0/usr/memoria/

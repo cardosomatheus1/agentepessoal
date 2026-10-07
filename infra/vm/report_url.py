@@ -24,6 +24,16 @@ CONTAINER = "agent-zero"
 LOCAL_UI = "http://127.0.0.1:50080/"
 PHONE_UNIT = "agentepessoal-phone-tunnel"
 REFRESH_S = 60
+PHONE_FILE = "/opt/a0/usr/celular/url.txt"  # read by the Agent Zero "Celular" panel
+
+
+def write_phone_file(url: str) -> None:
+    try:
+        os.makedirs(os.path.dirname(PHONE_FILE), exist_ok=True)
+        with open(PHONE_FILE, "w") as f:
+            f.write(url)
+    except OSError as exc:
+        print(f"report_url: {exc}", flush=True)
 
 ssm = boto3.client("ssm", region_name=REGION)
 
@@ -88,6 +98,8 @@ def main() -> None:
                     checked[param] = time.time()
                     if url:
                         live[param] = url
+                        if param == PHONE_PARAM:
+                            write_phone_file(url)
                         if current != url:
                             ssm.put_parameter(Name=param, Value=url, Type="String", Overwrite=True)
             except Exception as exc:  # keep trying; the page shows "starting" meanwhile

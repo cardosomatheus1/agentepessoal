@@ -1,0 +1,38 @@
+<html>
+<head>
+  <script type="module">
+    import { store } from "/plugins/celular_tela/webui/celular-store.js";
+  </script>
+  <style>
+    .celular-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 8px; padding: 8px; box-sizing: border-box; }
+    .celular-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+    .celular-toolbar select, .celular-toolbar button { background: transparent; color: inherit; border: 1px solid var(--color-border, #444); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+    .celular-frame { flex: 1; min-height: 0; width: 100%; border: 0; border-radius: 10px; background: #000; }
+    .celular-msg { flex: 1; display: grid; place-items: center; text-align: center; opacity: .75; padding: 16px; }
+  </style>
+</head>
+<body>
+  <div x-data>
+    <template x-if="$store.celular">
+      <div class="celular-panel" x-init="$store.celular.load()">
+        <div class="celular-toolbar">
+          <strong>Celular</strong>
+          <select :value="$store.celular.player" @change="$store.celular.setPlayer($event.target.value)" title="Modo de vídeo">
+            <template x-for="(nome, id) in $store.celular.players" :key="id">
+              <option :value="id" x-text="nome"></option>
+            </template>
+          </select>
+          <button type="button" @click="$store.celular.load().then(() => $store.celular.reload())" title="Recarregar">Recarregar</button>
+          <a :href="$store.celular.streamUrl" target="_blank" rel="noopener" x-show="$store.celular.streamUrl">Abrir em nova aba</a>
+          <span style="opacity:.7">Só assista enquanto o agente joga — tocar muda o tabuleiro sem ele saber.</span>
+        </div>
+        <template x-if="$store.celular.status === 'ok'">
+          <iframe class="celular-frame" :src="$store.celular.streamUrl" allow="autoplay; fullscreen; clipboard-write"></iframe>
+        </template>
+        <div class="celular-msg" x-show="$store.celular.status !== 'ok'"
+             x-text="$store.celular.status === 'carregando' ? 'Conectando ao celular…' : 'Tela do celular indisponível agora. Clique em Recarregar em alguns segundos.'"></div>
+      </div>
+    </template>
+  </div>
+</body>
+</html>

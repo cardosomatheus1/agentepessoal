@@ -1,0 +1,4 @@
+name: celular_tela
+title: Celular
+description: Tela ao vivo do celular Android virtual (ws-scrcpy) num painel da barra direita, ao lado de Desktop e Navegador.
+version: 1.0.0

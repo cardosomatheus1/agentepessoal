@@ -1,0 +1,14 @@
+<div
+  class="right-canvas-surface-panel celular-canvas-surface"
+  data-surface-id="celular"
+  :class="{
+    'is-active': $store.rightCanvas?.isSurfaceVisible('celular'),
+    'is-mounted': $store.rightCanvas?.isSurfaceRendered('celular')
+  }"
+  :aria-hidden="(!$store.rightCanvas?.isSurfaceVisible('celular')).toString()"
+  style="height:100%"
+>
+  <template x-if="$store.rightCanvas?.isSurfaceRendered('celular')">
+    <x-component path="/plugins/celular_tela/webui/celular-panel.html" style="height:100%"></x-component>
+  </template>
+</div>
