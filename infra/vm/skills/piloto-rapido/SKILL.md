@@ -29,7 +29,7 @@ Chamar o LLM a cada passo leva 15–30 s. Para tarefas repetitivas, divida assim
 |---|---|
 | Jogar 2048 | `python3 /a0/usr/skills/piloto-rapido/scripts/tarefas/jogar_2048.py 30` |
 
-Antes, abra o app (`adb -s android:5555 shell monkey -p com.uberspot.a2048 -c android.intent.category.LAUNCHER 1`). O script imprime uma linha por jogada (decisão, tempo, placar). Se o Jev não estiver configurado, ele sai com `PRECISA_LLM: Jev indisponível`; nesse caso avise o usuário e, se ele quiser, rode com `--sem-jev` (regra simples em código).
+O script abre o app sozinho, imprime uma linha por jogada (decisão, tempo, placar). Se o Jev não estiver configurado, ele sai com `PRECISA_LLM: Jev indisponível`; nesse caso avise o usuário e, se ele quiser, rode com `--sem-jev` (regra simples em código).
 
 ## Criar uma tarefa nova
 

@@ -34,6 +34,7 @@ Faz a ação, tira o print novo e diz se a tela mudou — use em vez de comandos
 /a0/usr/skills/celular/scripts/acao.sh tap 360 640
 /a0/usr/skills/celular/scripts/acao.sh texto "olá mundo"
 /a0/usr/skills/celular/scripts/acao.sh voltar           # voltar | inicio
+/a0/usr/skills/celular/scripts/acao.sh abrir com.android.vending   # abrir um app pelo pacote
 ```
 
 Depois de cada ação, olhe `/a0/tmp/celular.png` com `vision_load`. Se a saída for **NAO_MUDOU**, a ação não fez nada: **não repita a mesma ação** — escolha outra.
@@ -62,11 +63,11 @@ Cada elemento tem `text`, `resource-id` e `bounds="[x1,y1][x2,y2]"`; toque no ce
 | Deslizar | `adb -s android:5555 shell input swipe X1 Y1 X2 Y2 200` |
 | Digitar | `adb -s android:5555 shell input text 'ola%smundo'` (`%s` = espaço) |
 | Voltar / Início / Enter | `adb -s android:5555 shell input keyevent 4` / `3` / `66` |
-| Abrir app | `adb -s android:5555 shell monkey -p PACOTE -c android.intent.category.LAUNCHER 1` |
+| Abrir app | `/a0/usr/skills/celular/scripts/acao.sh abrir PACOTE` (usa `am start`; o `monkey` não funciona nesta imagem) |
 | Apps instalados | `adb -s android:5555 shell pm list packages -3` |
 | Instalar APK | baixe com `curl -L -o /a0/tmp/app.apk URL` e rode `adb -s android:5555 install -r /a0/tmp/app.apk` |
 
-Apps já instalados: **2048** (`com.uberspot.a2048`) e **Aurora Store** (`com.aurora.store`, baixa apps da Play Store sem conta Google — use o login anônimo). Apps de código aberto também podem vir do F-Droid (`https://f-droid.org/repo/<pacote>_<versão>.apk`).
+Apps já instalados: **Play Store** (`com.android.vending`; o usuário faz o login), **2048** (`com.uberspot.a2048`) e **Aurora Store** (`com.aurora.store`, baixa apps da Play Store sem conta Google — use o login anônimo). Apps de código aberto também podem vir do F-Droid (`https://f-droid.org/repo/<pacote>_<versão>.apk`).
 
 ## Como trabalhar
 

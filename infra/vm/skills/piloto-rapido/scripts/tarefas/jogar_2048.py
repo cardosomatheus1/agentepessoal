@@ -100,6 +100,7 @@ def main():
     sem_jev = "--sem-jev" in sys.argv
     jogadas = int(args[0]) if args else 30
     cel = Celular()
+    cel.abrir("com.uberspot.a2048")
     tela = cel.tela()
     tab = ler_tabuleiro(tela)
     placar, inicio = 0, time.time()

@@ -84,7 +84,12 @@ class Celular:
         self._adb("shell", "input", "keyevent", str(codigo))
 
     def abrir(self, pacote: str):
-        self._adb("shell", "monkey", "-p", pacote, "-c", "android.intent.category.LAUNCHER", "1")
+        atividade = self._adb("shell", "cmd", "package", "resolve-activity", "--brief",
+                              "-c", "android.intent.category.LAUNCHER", pacote).strip().splitlines()[-1].strip()
+        if "/" not in atividade:
+            raise PrecisaLLM(f"app {pacote} não encontrado no celular")
+        self._adb("shell", "am", "start", "-n", atividade)
+        time.sleep(1.5)
 
     def esperar_mudar(self, antes: str, timeout: float = 2.0) -> Tela:
         """Espera a tela mudar depois de uma ação; devolve a tela nova (ou a mesma, se não mudou)."""

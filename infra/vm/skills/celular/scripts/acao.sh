@@ -1,6 +1,6 @@
 #!/bin/bash
 # Uma ação no celular + print novo + aviso se a tela mudou.
-# Uso: acao.sh cima|baixo|esquerda|direita | tap X Y | texto "algo" | voltar | inicio | print
+# Uso: acao.sh cima|baixo|esquerda|direita | tap X Y | texto "algo" | voltar | inicio | abrir PACOTE | print
 set -u
 A=android:5555
 OUT=/a0/tmp/celular.png
@@ -15,6 +15,8 @@ case "${1:-print}" in
   texto)    adb -s "$A" shell input text "$(printf '%s' "$2" | sed 's/ /%s/g')" ;;
   voltar)   adb -s "$A" shell input keyevent 4 ;;
   inicio)   adb -s "$A" shell input keyevent 3 ;;
+  abrir)    act=$(adb -s "$A" shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER "$2" | tail -1 | tr -d '\r')
+            adb -s "$A" shell am start -n "$act" >/dev/null; sleep 1.5 ;;
   print)    ;;
   *) echo "ação desconhecida: $1"; exit 2 ;;
 esac
