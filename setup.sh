@@ -25,9 +25,12 @@ cp "$HERE/config/code_execution.json" "$A0_DIR/usr/plugins/_code_execution/confi
 # Chave do Bedrock: usa AWS_BEARER_TOKEN_BEDROCK se existir; senão um placeholder
 # (no Claude Code na web o proxy injeta a credencial real).
 touch "$A0_DIR/usr/.env"
-if ! grep -q '^API_KEY_BEDROCK=' "$A0_DIR/usr/.env"; then
-  echo "API_KEY_BEDROCK=${AWS_BEARER_TOKEN_BEDROCK:-proxy-injected}" >> "$A0_DIR/usr/.env"
-fi
+# API_KEY_OTHER: modelos OpenAI via endpoint OpenAI-compatível do Bedrock (bedrock-mantle).
+for key in API_KEY_BEDROCK API_KEY_OTHER; do
+  if ! grep -q "^$key=" "$A0_DIR/usr/.env"; then
+    echo "$key=${AWS_BEARER_TOKEN_BEDROCK:-proxy-injected}" >> "$A0_DIR/usr/.env"
+  fi
+done
 export AWS_REGION="${AWS_REGION:-us-east-1}"
 
 # O modo "dockerized" faz o agente executar código neste próprio ambiente
