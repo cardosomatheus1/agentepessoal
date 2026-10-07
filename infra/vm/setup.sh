@@ -41,7 +41,7 @@ mkdir -p /opt/agentepessoal /var/lib/agentepessoal /opt/a0/usr /opt/android-data
 [ -x /opt/agentepessoal/venv/bin/python ] || python3 -m venv /opt/agentepessoal/venv
 /opt/agentepessoal/venv/bin/pip install --quiet --upgrade boto3 aws-bedrock-token-generator
 install -m 755 "$B/bedrock_proxy.py" "$B/report_url.py" "$B/watchdog.sh" "$B/backup.sh" "$B/hibernate.sh" /opt/agentepessoal/
-install -m 755 "$B/phone/install_apps.sh" "$B/agent_tools.sh" /opt/agentepessoal/
+install -m 755 "$B/phone/install_apps.sh" "$B/phone/google_id.sh" "$B/agent_tools.sh" /opt/agentepessoal/
 
 # Mark resumes from hibernation so the idle timer restarts.
 cat > /usr/lib/systemd/system-sleep/agentepessoal <<'EOF'
@@ -77,10 +77,30 @@ chmod 600 /opt/a0/usr/.env
 # --- containers -------------------------------------------------------------------
 docker network inspect phone >/dev/null 2>&1 || docker network create phone
 
-if ! docker container inspect android >/dev/null 2>&1; then
+# Android 14 + Google Play (MindTheGapps, checksum-pinned), built locally on top of redroid.
+ANDROID_IMAGE=redroid-gapps:14
+if ! docker image inspect "$ANDROID_IMAGE" >/dev/null 2>&1; then
+  G=/opt/agentepessoal/gapps-build
+  rm -rf "$G" && mkdir -p "$G/mindthegapps"
+  curl -sSfL -o "$G/mtg.zip" https://github.com/s1204IT/MindTheGappsBuilder/releases/download/20240226/MindTheGapps-14.0.0-arm64-20240226.zip
+  echo "a0905cc7bf3f4f4f2e3f59a4e1fc789b  $G/mtg.zip" | md5sum -c -
+  unzip -q "$G/mtg.zip" 'system/*' -d "$G/mindthegapps"
+  cp "$B/phone/gapps.Dockerfile" "$G/Dockerfile"
+  docker build -q -t "$ANDROID_IMAGE" "$G"
+  rm -f "$G/mtg.zip"
+fi
+current=$(docker container inspect -f '{{.Config.Image}}' android 2>/dev/null || true)
+if [ "$current" != "$ANDROID_IMAGE" ]; then
+  docker rm -f android 2>/dev/null || true
+  # Google services need a fresh /data; keep the previous one aside once.
+  if [ -n "$current" ] && [ ! -d /opt/android-data.pre-gapps ]; then
+    mv /opt/android-data /opt/android-data.pre-gapps
+    rm -f /var/lib/agentepessoal/apps-installed
+  fi
+  mkdir -p /opt/android-data
   docker run -d --privileged --name android --restart unless-stopped --network phone \
     -p 127.0.0.1:5555:5555 -v /opt/android-data:/data \
-    redroid/redroid:14.0.0_64only-latest \
+    "$ANDROID_IMAGE" \
     androidboot.redroid_width=720 androidboot.redroid_height=1280 androidboot.redroid_dpi=320 \
     androidboot.redroid_gpu_mode=guest
 fi
