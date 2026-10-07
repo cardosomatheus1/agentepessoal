@@ -1,6 +1,6 @@
 # Arquitetura — App pessoal com Agent Zero na AWS
 
-Status: **proposta** (nada disso foi provisionado ainda).
+Status: **proposta**. Fase 1 em andamento: o app (`app/`) roda localmente; nada foi provisionado na AWS ainda.
 
 ## Objetivo
 
@@ -137,9 +137,12 @@ Para comparar: VM ligada direto custaria ~$60/mês só de EC2.
 
 Se virar produto para outras pessoas, trocar a VM única por sessões isoladas por usuário: **Bedrock AgentCore Runtime**, ou containers por usuário. O frontend e a Lambda de chat continuam iguais, porque o gateway isola o motor do agente.
 
+## Decisões tomadas
+
+- **Usuário único** (por enquanto): login de uma pessoa só, uma VM, sem separação de dados por usuário. Se isso mudar, ver "Evolução possível".
+
 ## Decisões em aberto
 
-- Só você vai usar, ou outras pessoas também?
 - PWA primeiro, ou app nas lojas desde o início?
 - Tem domínio próprio e conta Cloudflare?
 - Acesso à conta AWS para deploy: precisa de permissões de EC2, Lambda, IAM, API Gateway, DynamoDB, SQS e CloudFormation. Hoje este ambiente só tem acesso ao Bedrock.
