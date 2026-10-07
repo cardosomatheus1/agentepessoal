@@ -1,0 +1,4 @@
+name: navegador_rapido
+title: Navegador rápido
+description: Deixa o navegador do agente mais rápido — leitura da página 3–6× mais rápida, texto da página limitado no prompt, Voltar/Avançar sem espera de 10 s e clique que abre outra página não conta como erro.
+version: 1.1.0
