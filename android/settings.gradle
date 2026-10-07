@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        google()
+        maven { url "https://maven-central.storage-download.googleapis.com/maven2/" }  // Google mirror of Maven Central (avoids 429s)
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        maven { url "https://maven-central.storage-download.googleapis.com/maven2/" }  // Google mirror of Maven Central (avoids 429s)
+        mavenCentral()
+    }
+}
+rootProject.name = "Agente"
+include ":app"

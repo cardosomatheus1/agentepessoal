@@ -1,0 +1,35 @@
+plugins { id "com.android.application" }
+
+android {
+    namespace "com.agentepessoal.app"
+    compileSdk 35
+    defaultConfig {
+        applicationId "com.agentepessoal.app"
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+    }
+    // Release signing comes from env vars set by build.sh (keystore kept outside git).
+    signingConfigs {
+        release {
+            def ks = System.getenv("AGENTE_KEYSTORE")
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv("AGENTE_KEYSTORE_PASSWORD")
+                keyAlias "agente"
+                keyPassword System.getenv("AGENTE_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

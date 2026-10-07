@@ -222,7 +222,7 @@ def presets_yaml() -> str:
             f"    kwargs:\n{kwargs}"
         )
 
-    chat_extra = "    ctx_history: 0.7\n    vision: true\n    max_embeds: 10\n"
+    chat_extra = "    ctx_history: 0.7\n    vision: true\n    max_embeds: 30\n"  # images kept in context; at 10 a 7+5 image comparison looped forever
     util_extra = "    ctx_input: 0.7\n"
     embedding = (
         "  embedding:\n    provider: huggingface\n    name: sentence-transformers/all-MiniLM-L6-v2\n"
@@ -375,6 +375,11 @@ def ensure_control(instance_id: str, password: str) -> str:
                         f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_URL}",
                         f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_PHONE}",
                     ],
+                },
+                {   # "Baixar app Android": presigned GET of the APK built by android/build.sh
+                    "Effect": "Allow",
+                    "Action": "s3:GetObject",
+                    "Resource": f"arn:aws:s3:::{BUCKET}/app/agente.apk",
                 },
                 {   # "Enviar arquivos": presigned PUTs into the inbox the VM pulls from
                     "Effect": "Allow",

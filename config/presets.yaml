@@ -6,7 +6,7 @@
     ctx_length: 200000
     ctx_history: 0.7
     vision: true
-    max_embeds: 10
+    max_embeds: 30
     rl_requests: 0
     rl_input: 0
     rl_output: 0
@@ -40,7 +40,7 @@
     ctx_length: 200000
     ctx_history: 0.7
     vision: true
-    max_embeds: 10
+    max_embeds: 30
     rl_requests: 0
     rl_input: 0
     rl_output: 0

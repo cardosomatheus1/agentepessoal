@@ -108,6 +108,20 @@ def _upload_url(name: str, size: int) -> dict:
     return {"url": url, "name": key[len(INBOX):]}
 
 
+def _apk_url() -> dict:
+    """Short-lived download link for the Android app built by android/build.sh."""
+    if not BUCKET:
+        return {"error": "app não publicado"}
+    url = s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": BUCKET, "Key": "app/agente.apk",
+                "ResponseContentDisposition": 'attachment; filename="Agente.apk"',
+                "ResponseContentType": "application/vnd.android.package-archive"},
+        ExpiresIn=600,
+    )
+    return {"url": url}
+
+
 def _json(body: dict, code: int = 200) -> dict:
     return {
         "statusCode": code,
@@ -138,6 +152,8 @@ def handler(event, _context):
     action = data.get("action", "status")
     if action == "upload":
         return _json(_upload_url(data.get("name", ""), data.get("size", 0)))
+    if action == "apk":
+        return _json(_apk_url())
     if action == "start":
         if _state() == "stopped":
             _set(URL_PARAM, "starting")
@@ -185,6 +201,7 @@ label.btn{display:block;text-align:center;border-radius:999px;padding:13px;font-
 <div id="uplist"></div>
 <p style="font-size:13px;margin-top:8px">Até 5 GB por arquivo. Vão direto para o armazenamento da sua conta (funciona com a máquina desligada) e aparecem na pasta <b>entrada</b> do agente (botão Files) até 30 s depois de ele estar ligado.</p>
 </div>
+<button id="apk" class="secondary" onclick="baixarApp()" hidden>Baixar app Android</button>
 <p style="margin-top:16px;font-size:13px">Hiberna sozinha após 30 min sem uso (guarda tudo e volta de onde parou). Depois de clicar em Ligar, o agente abre sozinho quando estiver pronto.</p>
 </div><div id="err" class="err"></div></div>
 <script>
@@ -202,6 +219,8 @@ if(s.ready&&autoOpen){location.href=s.url;return}
 clearTimeout(timer);if((!s.ready||!s.phone_url)&&s.state!=="stopped")timer=setTimeout(refresh,2500)}
 async function refresh(){try{$("err").textContent="";render(await call("status"))}catch(e){$("err").textContent=e.message}}
 async function act(a){autoOpen=a==="start";try{$("err").textContent="";render(await call(a))}catch(e){$("err").textContent=e.message}}
+if(!/AgenteApp/.test(navigator.userAgent)&&/Android/i.test(navigator.userAgent))$("apk").hidden=false;
+async function baixarApp(){try{$("err").textContent="";const d=await call("apk");if(!d.url)throw new Error(d.error||"falhou");location.href=d.url}catch(e){$("err").textContent=e.message}}
 function sendFiles(list){[...list].forEach(sendOne);$("files").value=""}
 async function sendOne(f){const row=document.createElement("div");row.className="file";
 row.innerHTML='<span></span><div class="bar"><i></i></div>';row.firstChild.textContent=f.name+" — preparando…";$("uplist").appendChild(row);
