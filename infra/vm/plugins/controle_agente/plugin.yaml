@@ -1,0 +1,4 @@
+name: controle_agente
+title: Controle do agente
+description: Mensagem enviada com o agente trabalhando chega na hora; Pausar congela os scripts em execução; Parar/Destravar encerra-os; nenhuma mensagem se perde no fim da tarefa.
+version: 1.0.0
