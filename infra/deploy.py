@@ -23,8 +23,9 @@ from botocore.exceptions import ClientError
 REGION = "us-east-1"
 NAME = "agentepessoal"
 # Graviton (ARM): Android apps run natively in the redroid container. Hibernation needs
-# Ubuntu 22.04 on Graviton and a root disk larger than RAM.
-INSTANCE_TYPE = "t4g.xlarge"
+# Ubuntu 22.04 on Graviton and a root disk larger than RAM. m8g (Graviton4, 4 vCPU, 16 GB)
+# measured ~2x faster than t4g.xlarge on page capture and CPU work, for ~+34% per hour.
+INSTANCE_TYPE = "m8g.xlarge"
 DISK_GB = 80
 AMI_PARAM = "/aws/service/canonical/ubuntu/server/22.04/stable/current/arm64/hvm/ebs-gp2/ami-id"
 IDLE_MINUTES = 30
