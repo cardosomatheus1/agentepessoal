@@ -1,4 +1,7 @@
-"""Local proxy to Bedrock's OpenAI-compatible endpoint (bedrock-mantle).
+"""Local proxy for the agent's model APIs, so no keys live inside the Agent Zero container.
+
+- /openai/...   -> Bedrock's OpenAI-compatible endpoint (bedrock-mantle), short-term token from the VM role
+- /typesafe/... -> TypeSafe (Jev), API key read from SSM /agentepessoal/typesafe-api-key
 
 Agent Zero only reads its API key at startup, while Bedrock short-term API keys
 expire. This proxy injects a fresh bearer token (generated from the VM's IAM
@@ -22,11 +25,14 @@ UPSTREAM = os.environ.get("UPSTREAM_HOST", f"bedrock-mantle.{REGION}.api.aws")
 LISTEN = (os.environ.get("LISTEN_HOST", "0.0.0.0"), int(os.environ.get("LISTEN_PORT", "8787")))
 ACTIVITY_FILE = Path(os.environ.get("ACTIVITY_FILE", "/var/lib/agentepessoal/last-activity"))
 TOKEN_TTL = 30 * 60  # refresh well before the 1h token expiry
+TYPESAFE_HOST = "api.typesafe.ai"
+TYPESAFE_PARAM = "/agentepessoal/typesafe-api-key"
 
 HOP_HEADERS = {"host", "authorization", "content-length", "connection", "accept-encoding", "transfer-encoding"}
 SKIP_RESPONSE_HEADERS = {"transfer-encoding", "connection", "content-length", "content-encoding"}
 
 _token = {"value": "", "at": 0.0}
+_typesafe = {"value": "", "at": 0.0}
 _lock = threading.Lock()
 _ssl = ssl.create_default_context()
 
@@ -37,6 +43,20 @@ def bearer_token() -> str:
             _token["value"] = provide_token(region=REGION, expiry=timedelta(hours=1))
             _token["at"] = time.time()
         return _token["value"]
+
+
+def typesafe_key() -> str:
+    with _lock:
+        if time.time() - _typesafe["at"] > 300:
+            import boto3  # only needed for this route
+
+            try:
+                _typesafe["value"] = boto3.client("ssm", region_name=REGION).get_parameter(
+                    Name=TYPESAFE_PARAM, WithDecryption=True)["Parameter"]["Value"]
+            except Exception:
+                _typesafe["value"] = ""
+            _typesafe["at"] = time.time()
+        return _typesafe["value"]
 
 
 def mark_activity() -> None:
@@ -55,13 +75,27 @@ class Handler(http.server.BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(length) if length else None
         headers = {k: v for k, v in self.headers.items() if k.lower() not in HOP_HEADERS}
-        headers["Authorization"] = f"Bearer {bearer_token()}"
+        upstream, path = UPSTREAM, self.path
+        if path.startswith("/typesafe/"):
+            key = typesafe_key()
+            if not key:
+                msg = b'{"error": "TypeSafe API key not configured (SSM /agentepessoal/typesafe-api-key)"}'
+                self.send_response(503)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(msg)))
+                self.end_headers()
+                self.wfile.write(msg)
+                return
+            upstream, path = TYPESAFE_HOST, path[len("/typesafe"):]
+            headers["Authorization"] = f"Bearer {key}"
+        else:
+            headers["Authorization"] = f"Bearer {bearer_token()}"
         if body is not None:
             headers["Content-Length"] = str(len(body))
 
-        conn = http.client.HTTPSConnection(UPSTREAM, timeout=900, context=_ssl)
+        conn = http.client.HTTPSConnection(upstream, timeout=900, context=_ssl)
         try:
-            conn.request(self.command, self.path, body=body, headers=headers)
+            conn.request(self.command, path, body=body, headers=headers)
             resp = conn.getresponse()
             self.send_response(resp.status)
             for key, value in resp.getheaders():

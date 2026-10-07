@@ -1,22 +1,31 @@
-"""Keep Agent Zero's built-in Cloudflare tunnel up and publish its URL to SSM.
+"""Keep the agent and phone tunnels up and publish their URLs to SSM.
 
-The quick-tunnel URL changes on every boot, so the control page reads it from
-the SSM parameter this loop maintains.
+- agent: Agent Zero's built-in Cloudflare tunnel (handles its origin checks)
+- phone: a host cloudflared quick tunnel in front of ws-scrcpy
+
+Quick-tunnel URLs change on reboot (not on hibernate/resume). The control page
+writes "starting"/"stopped" into the parameters, so we compare against SSM on
+every pass and republish whenever the stored value differs from the live URL.
 """
 
 import json
 import os
+import re
 import subprocess
 import time
 import urllib.request
 
 import boto3
 
-PARAM = os.environ.get("URL_PARAM", "/agentepessoal/agent-url")
-CONTAINER = os.environ.get("CONTAINER", "agent-zero")
-LOCAL_UI = os.environ.get("LOCAL_UI", "http://127.0.0.1:50080/")
+REGION = os.environ.get("AWS_REGION", "us-east-1")
+AGENT_PARAM = "/agentepessoal/agent-url"
+PHONE_PARAM = "/agentepessoal/phone-url"
+CONTAINER = "agent-zero"
+LOCAL_UI = "http://127.0.0.1:50080/"
+PHONE_UNIT = "agentepessoal-phone-tunnel"
+REFRESH_S = 60
 
-ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+ssm = boto3.client("ssm", region_name=REGION)
 
 
 def tunnel(action: str) -> dict:
@@ -43,25 +52,47 @@ def ui_up() -> bool:
         return False
 
 
-def publish(value: str) -> None:
-    ssm.put_parameter(Name=PARAM, Value=value, Type="String", Overwrite=True)
+def agent_url() -> str | None:
+    if not ui_up():
+        return None
+    return (tunnel("get") or {}).get("tunnel_url") or (tunnel("create") or {}).get("tunnel_url")
+
+
+def phone_url() -> str | None:
+    out = subprocess.run(
+        ["journalctl", "-u", PHONE_UNIT, "-b", "--no-pager", "-o", "cat"],
+        capture_output=True, text=True, timeout=30,
+    ).stdout
+    found = re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com", out)
+    return found[-1] if found else None
+
+
+def stored(name: str) -> str:
+    try:
+        return ssm.get_parameter(Name=name)["Parameter"]["Value"]
+    except Exception:
+        return ""
 
 
 def main() -> None:
-    publish("starting")
-    published = "starting"
+    sources = {AGENT_PARAM: agent_url, PHONE_PARAM: phone_url}
+    live: dict[str, str] = {}
+    checked: dict[str, float] = {}
     while True:
-        try:
-            if ui_up():
-                url = (tunnel("get") or {}).get("tunnel_url")
-                if not url:
-                    url = (tunnel("create") or {}).get("tunnel_url")
-                if url and url != published:
-                    publish(url)
-                    published = url
-        except Exception as exc:  # keep trying; the page shows "starting" meanwhile
-            print(f"report_url: {exc}", flush=True)
-        time.sleep(3 if published == "starting" else 60)
+        for param, source in sources.items():
+            try:
+                current = stored(param)
+                due = time.time() - checked.get(param, 0) > REFRESH_S
+                if param not in live or current != live[param] or due:
+                    url = source()
+                    checked[param] = time.time()
+                    if url:
+                        live[param] = url
+                        if current != url:
+                            ssm.put_parameter(Name=param, Value=url, Type="String", Overwrite=True)
+            except Exception as exc:  # keep trying; the page shows "starting" meanwhile
+                print(f"report_url {param}: {exc}", flush=True)
+        time.sleep(4)
 
 
 if __name__ == "__main__":

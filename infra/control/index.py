@@ -1,4 +1,4 @@
-"""Control page for the agent VM: shows status, starts and stops it.
+"""Control page for the agent + phone VM: shows status, starts it and hibernates it.
 
 Served through a Lambda Function URL. Every action requires the personal key (sent from the
 link's #k= fragment); only its SHA-256 lives in the function's environment.
@@ -16,6 +16,7 @@ import boto3
 INSTANCE_ID = os.environ["INSTANCE_ID"]
 PASSWORD_SHA256 = os.environ["PASSWORD_SHA256"]
 URL_PARAM = os.environ.get("URL_PARAM", "/agentepessoal/agent-url")
+PHONE_PARAM = os.environ.get("PHONE_PARAM", "/agentepessoal/phone-url")
 
 ec2 = boto3.client("ec2")
 ssm = boto3.client("ssm")
@@ -31,11 +32,15 @@ def _state() -> str:
     return res["Reservations"][0]["Instances"][0]["State"]["Name"]
 
 
-def _url() -> str:
+def _param(name: str) -> str:
     try:
-        return ssm.get_parameter(Name=URL_PARAM)["Parameter"]["Value"]
+        return ssm.get_parameter(Name=name)["Parameter"]["Value"]
     except Exception:
         return ""
+
+
+def _set(name: str, value: str) -> None:
+    ssm.put_parameter(Name=name, Value=value, Type="String", Overwrite=True)
 
 
 def _reachable(url: str) -> bool:
@@ -50,9 +55,30 @@ def _reachable(url: str) -> bool:
 
 def _status() -> dict:
     state = _state()
-    url = _url() if state == "running" else ""
+    url = _param(URL_PARAM) if state == "running" else ""
+    phone = _param(PHONE_PARAM) if state == "running" else ""
     ready = bool(url.startswith("https://") and _reachable(url))
-    return {"state": state, "url": url if ready else "", "ready": ready}
+    phone_ready = bool(phone.startswith("https://") and _reachable(phone))
+    return {
+        "state": state,
+        "url": url if ready else "",
+        "ready": ready,
+        "phone_url": phone if phone_ready else "",
+    }
+
+
+def _hibernate() -> None:
+    """Back up and hibernate from inside the VM; fall back to a direct hibernate."""
+    _set(URL_PARAM, "stopped")
+    _set(PHONE_PARAM, "stopped")
+    try:
+        ssm.send_command(
+            InstanceIds=[INSTANCE_ID],
+            DocumentName="AWS-RunShellScript",
+            Parameters={"commands": ["nohup /opt/agentepessoal/hibernate.sh >/var/log/agentepessoal-hibernate.log 2>&1 &"]},
+        )
+    except Exception:
+        ec2.stop_instances(InstanceIds=[INSTANCE_ID], Hibernate=True)
 
 
 def _json(body: dict, code: int = 200) -> dict:
@@ -84,13 +110,13 @@ def handler(event, _context):
 
     action = data.get("action", "status")
     if action == "start":
-        if _state() in ("stopped", "stopping"):
-            ssm.put_parameter(Name=URL_PARAM, Value="starting", Type="String", Overwrite=True)
+        if _state() == "stopped":
+            _set(URL_PARAM, "starting")
+            _set(PHONE_PARAM, "starting")
             ec2.start_instances(InstanceIds=[INSTANCE_ID])
     elif action == "stop":
         if _state() == "running":
-            ssm.put_parameter(Name=URL_PARAM, Value="stopped", Type="String", Overwrite=True)
-            ec2.stop_instances(InstanceIds=[INSTANCE_ID])
+            _hibernate()
     return _json(_status())
 
 
@@ -117,9 +143,10 @@ button:disabled{opacity:.4;cursor:default}.err{color:#ff6b6b;margin-top:10px;min
 <div id="panel" hidden>
 <div class="status"><span id="dot" class="dot"></span><span id="label">…</span></div>
 <a id="open" class="btn primary" hidden>Abrir o agente</a>
+<a id="phone" class="btn secondary" target="_blank" rel="noopener" hidden>Ver celular</a>
 <button id="start" class="primary" onclick="act('start')" hidden>Ligar</button>
-<button id="stop" class="secondary" onclick="act('stop')" hidden>Desligar agora</button>
-<p style="margin-top:16px;font-size:13px">Desliga sozinha após 30 min sem uso. Depois de clicar em Ligar, o agente abre sozinho quando estiver pronto.</p>
+<button id="stop" class="secondary" onclick="act('stop')" hidden>Hibernar agora</button>
+<p style="margin-top:16px;font-size:13px">Hiberna sozinha após 30 min sem uso (guarda tudo e volta de onde parou). Depois de clicar em Ligar, o agente abre sozinho quando estiver pronto.</p>
 </div><div id="err" class="err"></div></div>
 <script>
 // The personal link carries the key in the URL fragment (never sent in requests or logs);
@@ -129,11 +156,11 @@ const m=location.hash.match(/k=([^&]+)/);
 try{if(m){key=decodeURIComponent(m[1]);localStorage.setItem("agkey",key)}else{key=localStorage.getItem("agkey")||""}}catch(e){if(m)key=decodeURIComponent(m[1])}
 async function call(action){const r=await fetch(location.origin+location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:key,action})});
 const d=await r.json();if(r.status===401){try{localStorage.removeItem("agkey")}catch(e){}$("panel").hidden=true;$("nokey").hidden=false;throw new Error("Link pessoal inválido.")}return d}
-function render(s){const L={running:s.ready?"Ligado e pronto":"Ligando o agente… (1–2 min)",pending:"Ligando a máquina…",stopping:"Desligando…",stopped:"Desligado"};
+function render(s){const L={running:s.ready?"Ligado e pronto":"Acordando o agente…",pending:"Ligando a máquina…",stopping:"Hibernando…",stopped:"Desligado (hibernado)"};
 $("label").textContent=L[s.state]||s.state;$("dot").className="dot "+(s.ready?"ok":(s.state==="stopped"?"":"warn"));
-$("open").hidden=!s.ready;if(s.ready)$("open").href=s.url;$("start").hidden=s.state!=="stopped";$("stop").hidden=s.state!=="running";
+$("open").hidden=!s.ready;if(s.ready)$("open").href=s.url;$("phone").hidden=!s.phone_url;if(s.phone_url)$("phone").href=s.phone_url;$("start").hidden=s.state!=="stopped";$("stop").hidden=s.state!=="running";
 if(s.ready&&autoOpen){location.href=s.url;return}
-clearTimeout(timer);if(!s.ready&&s.state!=="stopped")timer=setTimeout(refresh,2500)}
+clearTimeout(timer);if((!s.ready||!s.phone_url)&&s.state!=="stopped")timer=setTimeout(refresh,2500)}
 async function refresh(){try{$("err").textContent="";render(await call("status"))}catch(e){$("err").textContent=e.message}}
 async function act(a){autoOpen=a==="start";try{$("err").textContent="";render(await call(a))}catch(e){$("err").textContent=e.message}}
 if(key){$("panel").hidden=false;refresh()}else{$("nokey").hidden=false}

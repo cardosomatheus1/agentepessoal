@@ -1,15 +1,16 @@
-"""Create (or update) the on-demand agent VM and its control page on AWS.
+"""Create (or update) the on-demand agent + phone VM and its control page on AWS.
 
 Idempotent: re-running reuses existing resources (found by name/tag).
-Usage:  python infra/deploy.py
+Usage:  python infra/deploy.py            create / update cloud resources
+        python infra/deploy.py --update   also push vm/ changes to the running VM (re-runs setup.sh)
 """
 
-import base64
 import gzip
 import hashlib
 import io
-import tarfile
 import json
+import sys
+import tarfile
 import secrets
 import string
 import time
@@ -21,12 +22,16 @@ from botocore.exceptions import ClientError
 
 REGION = "us-east-1"
 NAME = "agentepessoal"
-INSTANCE_TYPE = "t3.large"
-DISK_GB = 40
+# Graviton (ARM): Android apps run natively in the redroid container. Hibernation needs
+# Ubuntu 22.04 on Graviton and a root disk larger than RAM.
+INSTANCE_TYPE = "t4g.xlarge"
+DISK_GB = 80
+AMI_PARAM = "/aws/service/canonical/ubuntu/server/22.04/stable/current/arm64/hvm/ebs-gp2/ami-id"
 IDLE_MINUTES = 30
 IMAGE = "agent0ai/agent-zero:v2.13"
 PARAM_PASSWORD = f"/{NAME}/password"
 PARAM_URL = f"/{NAME}/agent-url"
+PARAM_PHONE = f"/{NAME}/phone-url"
 VM_ROLE = f"{NAME}-vm"
 CONTROL_ROLE = f"{NAME}-control"
 FUNCTION = f"{NAME}-control"
@@ -61,10 +66,11 @@ def ensure_parameters() -> tuple[str, bool]:
         ssm.put_parameter(Name=PARAM_PASSWORD, Value=password, Type="SecureString", Tags=TAGS)
         created = True
         log("created password parameter")
-    try:
-        ssm.get_parameter(Name=PARAM_URL)
-    except ssm.exceptions.ParameterNotFound:
-        ssm.put_parameter(Name=PARAM_URL, Value="stopped", Type="String", Tags=TAGS)
+    for name in (PARAM_URL, PARAM_PHONE):
+        try:
+            ssm.get_parameter(Name=name)
+        except ssm.exceptions.ParameterNotFound:
+            ssm.put_parameter(Name=name, Value="stopped", Type="String", Tags=TAGS)
     return password, created
 
 
@@ -142,6 +148,12 @@ def ensure_vm_role() -> str:
                     "Resource": "*",
                     "Condition": {"StringEquals": {"kms:ViaService": f"ssm.{REGION}.amazonaws.com"}},
                 },
+                {   # the idle watchdog hibernates its own instance
+                    "Effect": "Allow",
+                    "Action": "ec2:StopInstances",
+                    "Resource": f"arn:aws:ec2:{REGION}:{account}:instance/*",
+                    "Condition": {"StringEquals": {"aws:ResourceTag/Project": NAME}},
+                },
             ],
         },
     )
@@ -168,7 +180,7 @@ def default_subnet_and_vpc() -> tuple[str, str]:
     subnets = ec2.describe_subnets(
         Filters=[{"Name": "vpc-id", "Values": [vpc]}, {"Name": "default-for-az", "Values": ["true"]}]
     )["Subnets"]
-    # t3 is not offered in every AZ (e.g. use1-az3); prefer the common ones.
+    # Not every instance type is offered in every AZ; keep the ones that have it.
     offered = {
         o["Location"]
         for o in ec2.describe_instance_type_offerings(
@@ -226,43 +238,64 @@ def presets_yaml() -> str:
     )
 
 
-def tgz(src: Path) -> bytes:
+def bundle() -> bytes:
+    """vm/ plus generated config, uploaded to S3 and unpacked by the VM."""
+    code_exec = json.loads((ROOT / "config/code_execution.json").read_text())
+    code_exec["ssh_enabled"] = "auto"  # inside the Docker image this resolves to local shell
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        src = HERE / "vm"
         for path in sorted(src.rglob("*")):
-            if "__pycache__" in path.parts:
+            if "__pycache__" in path.parts or path.name == "user-data.sh.tpl":
                 continue
             tar.add(path, arcname=str(path.relative_to(src)), recursive=False)
+        for name, text in {
+            "generated/presets.yaml": presets_yaml(),
+            "generated/code_execution.json": json.dumps(code_exec, indent=2),
+        }.items():
+            data = text.encode()
+            info = tarfile.TarInfo(name)
+            info.size, info.mode, info.mtime = len(data), 0o644, int(time.time())
+            tar.addfile(info, io.BytesIO(data))
     return buf.getvalue()
 
 
+def upload_bundle() -> None:
+    s3.put_object(Bucket=BUCKET, Key="bootstrap/bundle.tgz", Body=bundle())
+    log(f"uploaded setup bundle to s3://{BUCKET}/bootstrap/bundle.tgz")
+
+
 def user_data() -> bytes:
-    b64 = lambda text: base64.b64encode(text.encode()).decode()  # noqa: E731
-    code_exec = json.loads((ROOT / "config/code_execution.json").read_text())
-    code_exec["ssh_enabled"] = "auto"  # inside the Docker image this resolves to local shell
     rendered = (HERE / "vm/user-data.sh.tpl").read_text()
-    for key, value in {
-        "PROXY_PY_B64": b64((HERE / "vm/bedrock_proxy.py").read_text()),
-        "REPORT_PY_B64": b64((HERE / "vm/report_url.py").read_text()),
-        "WATCHDOG_B64": b64((HERE / "vm/watchdog.sh").read_text()),
-        "BACKUP_B64": b64((HERE / "vm/backup.sh").read_text()),
-        "PROJECT_TGZ_B64": base64.b64encode(tgz(HERE / "vm/project-carreira")).decode(),
-        "PLUGIN_TGZ_B64": base64.b64encode(tgz(HERE / "vm/plugins/memoria_pessoal")).decode(),
-        "PROFILE_B64": b64((HERE / "vm/memoria/sobre-voce.md").read_text()),
-        "BUCKET": BUCKET,
-        "PRESETS_B64": b64(presets_yaml()),
-        "CODEEXEC_B64": b64(json.dumps(code_exec, indent=2)),
-        "IMAGE": IMAGE,
-        "IDLE_MINUTES": str(IDLE_MINUTES),
-    }.items():
+    for key, value in {"BUCKET": BUCKET, "IMAGE": IMAGE, "IDLE_MINUTES": str(IDLE_MINUTES)}.items():
         rendered = rendered.replace("{{" + key + "}}", value)
     if "{{" in rendered:
         raise SystemExit("unrendered placeholder in user data")
-    # cloud-init accepts gzip-compressed user data; this keeps us under the 16 KB limit.
-    packed = gzip.compress(rendered.encode())
-    if len(packed) > 16000:
-        raise SystemExit("user data too large")
-    return packed
+    return gzip.compress(rendered.encode())
+
+
+def update_running_vm(instance_id: str) -> None:
+    """Push vm/ changes: re-download the bundle and re-run the idempotent setup."""
+    cmd = (
+        f"set -e; aws s3 cp s3://{BUCKET}/bootstrap/bundle.tgz /tmp/bundle.tgz --only-show-errors; "
+        "rm -rf /opt/agentepessoal/bundle && mkdir -p /opt/agentepessoal/bundle; "
+        "tar -xzf /tmp/bundle.tgz -C /opt/agentepessoal/bundle; "
+        "bash /opt/agentepessoal/bundle/setup.sh > /var/log/agentepessoal-update.log 2>&1; tail -3 /var/log/agentepessoal-update.log"
+    )
+    cid = ssm.send_command(
+        InstanceIds=[instance_id], DocumentName="AWS-RunShellScript",
+        Parameters={"commands": [f"export PATH=$PATH:/usr/local/bin; {cmd}"]}, TimeoutSeconds=1800,
+    )["Command"]["CommandId"]
+    log("updating running VM (setup.sh)…")
+    for _ in range(360):
+        time.sleep(5)
+        try:
+            r = ssm.get_command_invocation(CommandId=cid, InstanceId=instance_id)
+        except ssm.exceptions.InvocationDoesNotExist:
+            continue
+        if r["Status"] not in ("Pending", "InProgress", "Delayed"):
+            log(f"update {r['Status']}: {r['StandardOutputContent'].strip()[-500:]}")
+            return
 
 
 def find_instance() -> dict | None:
@@ -283,9 +316,7 @@ def ensure_instance(profile_arn: str, subnet: str, sg: str) -> str:
     if existing:
         log(f"reusing instance {existing['InstanceId']} ({existing['State']['Name']})")
         return existing["InstanceId"]
-    ami = ssm.get_parameter(
-        Name="/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id"
-    )["Parameter"]["Value"]
+    ami = ssm.get_parameter(Name=AMI_PARAM)["Parameter"]["Value"]
     for attempt in range(5):
         try:
             inst = ec2.run_instances(
@@ -301,6 +332,7 @@ def ensure_instance(profile_arn: str, subnet: str, sg: str) -> str:
                     {"DeviceName": "/dev/sda1", "Ebs": {"VolumeSize": DISK_GB, "VolumeType": "gp3", "Encrypted": True}}
                 ],
                 MetadataOptions={"HttpTokens": "required", "HttpEndpoint": "enabled"},
+                HibernationOptions={"Configured": True},
                 InstanceInitiatedShutdownBehavior="stop",
                 UserData=user_data(),
                 TagSpecifications=[
@@ -338,7 +370,18 @@ def ensure_control(instance_id: str, password: str) -> str:
                 {
                     "Effect": "Allow",
                     "Action": ["ssm:GetParameter", "ssm:PutParameter"],
-                    "Resource": f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_URL}",
+                    "Resource": [
+                        f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_URL}",
+                        f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_PHONE}",
+                    ],
+                },
+                {   # "Desligar agora" runs hibernate.sh on the VM (backup, then hibernate)
+                    "Effect": "Allow",
+                    "Action": "ssm:SendCommand",
+                    "Resource": [
+                        f"arn:aws:ec2:{REGION}:{account}:instance/{instance_id}",
+                        f"arn:aws:ssm:{REGION}::document/AWS-RunShellScript",
+                    ],
                 },
             ],
         },
@@ -351,6 +394,7 @@ def ensure_control(instance_id: str, password: str) -> str:
             "INSTANCE_ID": instance_id,
             "PASSWORD_SHA256": hashlib.sha256(password.encode()).hexdigest(),
             "URL_PARAM": PARAM_URL,
+            "PHONE_PARAM": PARAM_PHONE,
         }
     }
     try:
@@ -402,16 +446,20 @@ def main() -> None:
     password, created = ensure_parameters()
     ensure_bucket()
     profile = ensure_vm_role()
+    upload_bundle()
     subnet, vpc = default_subnet_and_vpc()
     sg = ensure_security_group(vpc)
+    existed = find_instance() is not None
     instance_id = ensure_instance(profile, subnet, sg)
     url = ensure_control(instance_id, password)
+    if existed and "--update" in sys.argv:
+        update_running_vm(instance_id)
     print()
     print(f"Instance:      {instance_id}")
     print(f"Control page:  {url}")
     print(f"Personal link: {url}#k={password}")
     print(f"               stored in SSM parameter {PARAM_PASSWORD}")
-    print(f"Backups:       s3://{BUCKET}/usr (hourly and on every shutdown)")
+    print(f"Backups:       s3://{BUCKET}/usr (hourly and before every hibernation)")
 
 
 if __name__ == "__main__":

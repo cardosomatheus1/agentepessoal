@@ -10,7 +10,7 @@ import time
 import boto3
 from botocore.exceptions import ClientError
 
-from deploy import BUCKET, CONTROL_ROLE, FUNCTION, NAME, PARAM_PASSWORD, PARAM_URL, REGION, VM_ROLE, find_instance
+from deploy import BUCKET, CONTROL_ROLE, FUNCTION, NAME, PARAM_PASSWORD, PARAM_PHONE, PARAM_URL, REGION, VM_ROLE, find_instance
 
 session = boto3.Session(region_name=REGION)
 ec2, iam, ssm, lam, s3 = (session.client(n) for n in ("ec2", "iam", "ssm", "lambda", "s3"))
@@ -64,7 +64,7 @@ def main() -> None:
                 time.sleep(10)
 
     print("deleting parameters")
-    quiet(ssm.delete_parameters, Names=[PARAM_PASSWORD, PARAM_URL])
+    quiet(ssm.delete_parameters, Names=[PARAM_PASSWORD, PARAM_URL, PARAM_PHONE])
 
     if "--delete-backups" in sys.argv:
         print(f"deleting bucket {BUCKET} and all backups")
