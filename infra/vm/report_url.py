@@ -61,7 +61,7 @@ def main() -> None:
                     published = url
         except Exception as exc:  # keep trying; the page shows "starting" meanwhile
             print(f"report_url: {exc}", flush=True)
-        time.sleep(15 if published == "starting" else 60)
+        time.sleep(3 if published == "starting" else 60)
 
 
 if __name__ == "__main__":

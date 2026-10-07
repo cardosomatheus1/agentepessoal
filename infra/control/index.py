@@ -40,7 +40,7 @@ def _url() -> str:
 
 def _reachable(url: str) -> bool:
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, method="GET"), timeout=4) as r:
+        with urllib.request.urlopen(urllib.request.Request(url, method="GET"), timeout=3) as r:
             return r.status < 500
     except urllib.error.HTTPError as e:
         return e.code < 500
@@ -133,7 +133,7 @@ function render(s){const L={running:s.ready?"Ligado e pronto":"Ligando o agenteâ
 $("label").textContent=L[s.state]||s.state;$("dot").className="dot "+(s.ready?"ok":(s.state==="stopped"?"":"warn"));
 $("open").hidden=!s.ready;if(s.ready)$("open").href=s.url;$("start").hidden=s.state!=="stopped";$("stop").hidden=s.state!=="running";
 if(s.ready&&autoOpen){location.href=s.url;return}
-clearTimeout(timer);if(!s.ready&&s.state!=="stopped")timer=setTimeout(refresh,4000)}
+clearTimeout(timer);if(!s.ready&&s.state!=="stopped")timer=setTimeout(refresh,2500)}
 async function refresh(){try{$("err").textContent="";render(await call("status"))}catch(e){$("err").textContent=e.message}}
 async function act(a){autoOpen=a==="start";try{$("err").textContent="";render(await call(a))}catch(e){$("err").textContent=e.message}}
 if(key){$("panel").hidden=false;refresh()}else{$("nokey").hidden=false}
