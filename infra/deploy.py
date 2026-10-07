@@ -179,13 +179,16 @@ def ensure_vm_role() -> str:
 
 
 def ensure_meta_secret_role() -> None:
-    """Only what `pnpm --filter @ros/infra-aws segredo-meta` (NEXOS repo) needs: the Meta app
-    secret and a restart of api/worker. Assumed by the VM for the agent (credenciais_meta.py)."""
+    """Only what `pnpm --filter @ros/infra-aws segredo-meta` (NEXOS repo) needs: the Meta app,
+    Meta sandbox and WhatsApp webhook secrets, and a restart of api/worker. Assumed by the VM
+    for the agent (credenciais_meta.py)."""
     trust = {"Version": "2012-10-17", "Statement": [{
         "Effect": "Allow", "Principal": {"AWS": f"arn:aws:iam::{account}:role/{VM_ROLE}"}, "Action": "sts:AssumeRole"}]}
     services = [f"arn:aws:ecs:{REGION}:{account}:service/ros-dev-cluster/ros-dev-{s}" for s in ("api", "worker")]
     policy = {"Version": "2012-10-17", "Statement": [
-        {"Effect": "Allow", "Resource": f"arn:aws:secretsmanager:{REGION}:{account}:secret:ros-dev-meta/app-*",
+        {"Effect": "Allow",
+         "Resource": [f"arn:aws:secretsmanager:{REGION}:{account}:secret:{s}-*"
+                      for s in ("ros-dev-meta/app", "ros-dev-meta/sandbox", "ros-dev-whatsapp/webhook")],
          "Action": ["secretsmanager:DescribeSecret", "secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue"]},
         {"Effect": "Allow", "Action": ["ecs:UpdateService", "ecs:DescribeServices"], "Resource": services},
         {"Effect": "Allow", "Action": "ecs:ListServices", "Resource": "*",
