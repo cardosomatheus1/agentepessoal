@@ -1,6 +1,6 @@
 ---
 name: celular
-description: "Controlar o celular Android virtual do usuário: instalar e abrir apps, tocar, deslizar, digitar e jogar, olhando a tela por prints."
+description: "Controlar o celular Android virtual do usuário: instalar e abrir apps, tocar, deslizar, digitar e jogar, com a ferramenta celular (ação + texto da tela num passo só)."
 version: 1.0.0
 tags: ["android", "celular", "app", "jogo", "adb", "phone"]
 trigger_patterns:
@@ -16,30 +16,25 @@ trigger_patterns:
 
 O usuário tem um Android (720x1280, Android 14) rodando na mesma máquina. Você o controla pelo terminal com `adb`. O usuário pode assistir e tocar ao vivo pelo botão **Ver celular** da página de controle.
 
-## Conectar (sempre primeiro)
+## Use a ferramenta `celular` (um passo por ação)
 
-```bash
-adb connect android:5555 >/dev/null; adb -s android:5555 wait-for-device; echo ok
+Para tudo no celular use a ferramenta **`celular`**: ela faz a ação, espera a tela parar e devolve no mesmo passo o texto da tela (botões e textos com posição), se mudou e o app aberto — ~0,5–2 s. Telas sem texto (jogo, foto, vídeo) já vêm com uma imagem pequena anexada. **Não** tire print + `vision_load` separado: são 3 passos lentos.
+
+```json
+{"tool_name": "celular", "tool_args": {"acao": "abrir", "pacote": "com.android.vending"}}
+{"tool_name": "celular", "tool_args": {"acao": "tocar_texto", "texto": "Sign in"}}
+{"tool_name": "celular", "tool_args": {"acao": "digitar", "texto": "olá", "enviar": true}}
+{"tool_name": "celular", "tool_args": {"acao": "deslizar", "direcao": "cima"}}
+{"tool_name": "celular", "tool_args": {"acao": "ver", "imagem": "true"}}
 ```
 
-Use sempre `adb -s android:5555 ...`.
-
-## Atalho recomendado: `acao.sh`
-
-Faz a ação, tira o print novo e diz se a tela mudou — use em vez de comandos soltos:
-
-```bash
-/a0/usr/skills/celular/scripts/acao.sh print            # só o print
-/a0/usr/skills/celular/scripts/acao.sh baixo            # cima | baixo | esquerda | direita (deslizar)
-/a0/usr/skills/celular/scripts/acao.sh tap 360 640
-/a0/usr/skills/celular/scripts/acao.sh texto "olá mundo"
-/a0/usr/skills/celular/scripts/acao.sh voltar           # voltar | inicio
-/a0/usr/skills/celular/scripts/acao.sh abrir com.android.vending   # abrir um app pelo pacote
-```
-
-Cada ação já devolve **o texto da tela** (botões e textos com a posição de cada um). **Decida por esse texto**; só use `vision_load` em `/a0/tmp/celular.png` quando a tela não tiver texto (jogo, imagem) ou o texto não bastar — olhar imagem leva 10–30 s. Se a saída for **NAO_MUDOU**, a ação não fez nada: **não repita a mesma ação** — escolha outra.
+Se vier **NÃO MUDOU**, a ação não fez nada: **não repita a mesma ação** — escolha outra. Para dezenas de passos repetidos (jogos), escreva um script com a skill **piloto-rapido**.
 
 Use o celular só para o que é de celular (app Android, pedido explícito). Sites e programas: prefira o Browser/Desktop do computador.
+
+## Terminal (só para o que a ferramenta não faz)
+
+Instalar APK, `pm`, arquivos: `adb connect android:5555 >/dev/null; adb -s android:5555 ...`. O atalho antigo `/a0/usr/skills/celular/scripts/acao.sh` ainda existe, mas é mais lento que a ferramenta.
 
 ## Ver a tela (comandos soltos)
 

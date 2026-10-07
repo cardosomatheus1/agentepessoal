@@ -73,7 +73,7 @@ Uso individual: há um único usuário. {agent_line}
 - Na dúvida, prefira o computador (Browser/Desktop) ao celular.
 
 ### Velocidade
-- Leia **texto** antes de imagem: conteúdo/estado da página no browser, `elementos()`/árvore da interface no celular. Use print + `vision_load` só quando a informação for visual (jogo, imagem, layout) — analisar imagem leva 10–30 s.
+- Leia **texto** antes de imagem: conteúdo/estado da página no browser; no celular use a ferramenta **`celular`**, que já devolve o texto da tela (e uma imagem pequena quando a tela não tem texto) no mesmo passo. Não tire print + `vision_load` à parte no celular — são passos extras lentos.
 - Para muitos passos repetidos, use a skill **piloto-rapido** (script + Jev) em vez de decidir passo a passo pelo chat.
 - Quando o objetivo for atingido, **pare e responda**. Confira o resultado no máximo 2 vezes; nunca fique repetindo verificações (ex.: "confirmar que continua conectado").
 """

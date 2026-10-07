@@ -130,8 +130,7 @@ class Celular:
         """Árvore da interface (apps comuns): lista de {texto, id, descricao, clicavel, bounds, centro}.
 
         Não funciona em jogos/telas desenhadas como imagem (vem vazia) — aí use tela()/grade()."""
-        self._adb("shell", "uiautomator", "dump", "/sdcard/ui.xml")
-        xml = self._adb("exec-out", "cat", "/sdcard/ui.xml")
+        xml = self._arvore()
         out = []
         for n in ET.fromstring(xml[xml.find("<"):]).iter("node"):
             m = re.findall(r"\d+", n.get("bounds", ""))
@@ -147,6 +146,22 @@ class Celular:
                 "centro": ((x1 + x2) // 2, (y1 + y2) // 2),
             })
         return out
+
+    def _arvore(self) -> str:
+        """Interface tree: persistent uiautomator2 server (~0.1 s) or `uiautomator dump` (~2 s)."""
+        if not hasattr(self, "_u2"):
+            try:
+                import uiautomator2
+                self._u2 = uiautomator2.connect(self.serial)
+            except Exception:
+                self._u2 = None
+        if self._u2 is not None:
+            try:
+                return self._u2.dump_hierarchy(compressed=True)
+            except Exception:
+                self._u2 = None
+        self._adb("shell", "uiautomator", "dump", "/sdcard/ui.xml")
+        return self._adb("exec-out", "cat", "/sdcard/ui.xml")
 
     def tocar_texto(self, texto: str, parcial: bool = True):
         """Toca no primeiro elemento cujo texto/descrição contém `texto`."""

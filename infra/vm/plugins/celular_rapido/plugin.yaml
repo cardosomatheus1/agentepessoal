@@ -1,0 +1,4 @@
+name: celular_rapido
+title: Celular rápido
+description: Ferramenta "celular" — faz a ação no Android, espera a tela parar e devolve texto da tela (e uma imagem pequena quando útil) no mesmo passo, com leitor de tela permanente (~0,1 s por leitura).
+version: 1.0.0

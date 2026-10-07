@@ -6,3 +6,10 @@ for i in $(seq 1 20); do
   sleep 15   # the container may be running its own apt at startup
 done
 docker exec agent-zero adb connect android:5555 >/dev/null 2>&1 || true
+# Persistent screen reader for the "celular" tool (server venv) and piloto-rapido scripts (/opt/venv).
+for py in /opt/venv-a0/bin/python /opt/venv/bin/python; do
+  for i in 1 2 3; do
+    docker exec agent-zero sh -c "$py -c 'import uiautomator2' 2>/dev/null || $py -m pip install -q uiautomator2" && break
+    sleep 10
+  done
+done
