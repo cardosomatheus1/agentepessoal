@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d0d0d">
+<title>Agente · Entrar</title>
+<style>
+:root{--bg:#0d0d0d;--surface:#1b1b1b;--line:#2b2b2b;--fg:#ededed;--muted:#9a9a9a}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,sans-serif;padding:16px}
+.card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:28px}
+h1{font-size:22px;font-weight:600;margin:0 0 4px}p{margin:0 0 20px;color:var(--muted)}
+label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px}
+input{width:100%;background:#111;border:1px solid var(--line);border-radius:14px;color:var(--fg);padding:13px 14px;font-size:16px;margin-bottom:14px}
+button{width:100%;border:0;border-radius:999px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;background:#fff;color:#0d0d0d;margin-top:6px}
+.err{color:#ff6b6b;margin:0 0 14px;font-size:14px}
+</style></head><body>
+<form class="card" method="post" action="/login" autocomplete="on">
+<h1>Agente</h1><p>Entre para continuar. Você fica conectado neste aparelho.</p>
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+<label for="username">Usuário</label>
+<input id="username" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required autofocus>
+<label for="password">Senha</label>
+<input id="password" name="password" type="password" autocomplete="current-password" required>
+<input type="hidden" name="next" value="{{ next or '' }}">
+<button type="submit">Entrar</button>
+</form></body></html>

@@ -62,16 +62,30 @@ cp "$B/generated/code_execution.json" /opt/a0/usr/plugins/_code_execution/config
 for d in "$B"/plugins/*/; do n=$(basename "$d"); rm -rf "/opt/a0/usr/plugins/$n" && cp -r "$d" /opt/a0/usr/plugins/; done
 # Overlay (no delete): keeps scripts the agent saved itself, e.g. skills/piloto-rapido/scripts/tarefas/.
 for d in "$B"/skills/*/; do n=$(basename "$d"); mkdir -p "/opt/a0/usr/skills/$n" && cp -r "$d". "/opt/a0/usr/skills/$n/"; done
-[ -f /opt/a0/usr/memoria/sobre-voce.md ] || cp "$B/memoria/sobre-voce.md" /opt/a0/usr/memoria/
+# One profile per person (login_usuarios); the original single profile becomes the owner's.
+mkdir -p /opt/a0/usr/memoria/usuarios
+if [ ! -f /opt/a0/usr/memoria/usuarios/matheus.md ]; then
+  if [ -f /opt/a0/usr/memoria/sobre-voce.md ]; then mv /opt/a0/usr/memoria/sobre-voce.md /opt/a0/usr/memoria/usuarios/matheus.md
+  else cp "$B/memoria/sobre-voce.md" /opt/a0/usr/memoria/usuarios/matheus.md; fi
+fi
 [ -d /opt/a0/usr/projects/carreira ] || { mkdir -p /opt/a0/usr/projects/carreira && cp -r "$B/project-carreira/." /opt/a0/usr/projects/carreira/; }
 
-# Single user, no Agent Zero login: the VM has no open ports and the random tunnel URL is
-# only revealed by the key-protected control page. Agent Zero always allows its own tunnel.
+# Login: the people in /opt/a0/usr/usuarios.json (plugin login_usuarios; create them with
+# usuarios.py). Agent Zero itself needs one AUTH pair to require a login: a random "master"
+# pair kept in /opt/agentepessoal/auth-master. A fixed FLASK_SECRET_KEY keeps sessions valid
+# when the server restarts. Agent Zero always allows its own tunnel origin.
+[ -s /opt/agentepessoal/auth-master ] || { umask 077; head -c 32 /dev/urandom | base64 | tr -dc A-Za-z0-9 > /opt/agentepessoal/auth-master; }
+[ -s /opt/agentepessoal/flask-secret ] || { umask 077; head -c 48 /dev/urandom | base64 | tr -dc A-Za-z0-9 > /opt/agentepessoal/flask-secret; }
 touch /opt/a0/usr/.env
-sed -i -E '/^(AUTH_LOGIN|AUTH_PASSWORD|API_KEY_OTHER|ALLOWED_ORIGINS)=/d' /opt/a0/usr/.env
+sed -i -E '/^(AUTH_LOGIN|AUTH_PASSWORD|API_KEY_OTHER|ALLOWED_ORIGINS|FLASK_SECRET_KEY)=/d' /opt/a0/usr/.env
 {
   echo "API_KEY_OTHER=local-proxy"
   echo "ALLOWED_ORIGINS=*://localhost,*://localhost:*,*://127.0.0.1,*://127.0.0.1:*"
+  if [ -s /opt/a0/usr/usuarios.json ]; then
+    echo "AUTH_LOGIN=_agentepessoal"
+    echo "AUTH_PASSWORD=$(cat /opt/agentepessoal/auth-master)"
+  fi
+  echo "FLASK_SECRET_KEY=$(cat /opt/agentepessoal/flask-secret)"
 } >> /opt/a0/usr/.env
 chmod 600 /opt/a0/usr/.env
 

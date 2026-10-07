@@ -1,6 +1,7 @@
-"""Inject the user's shared profile and this chat's own context into every turn.
+"""Inject the speaker's profile and this chat's own context into every turn.
 
-- /a0/usr/memoria/sobre-voce.md      shared by every chat and agent
+- /a0/usr/memoria/usuarios/<login>.md  one profile per person (shared by all their chats/agents);
+                                      the speaker comes from the login (login_usuarios plugin)
 - /a0/usr/chats/<id>/contexto.md    private to one chat (deleted with it)
 - /a0/usr/chats/<id>/anexos/        files attached in that chat
 Agents are Agent Zero projects, whose vector memory is already isolated.
@@ -13,7 +14,9 @@ from helpers import projects
 from helpers.extension import Extension
 
 USR = Path("/a0/usr")
-PROFILE = USR / "memoria" / "sobre-voce.md"
+PROFILES = USR / "memoria" / "usuarios"
+DONO = "matheus"  # whose profile applies when nobody is logged in (API, scheduled tasks)
+USUARIOS = USR / "usuarios.json"
 MAX_CHARS = 12000  # keep each injected file to a few thousand tokens
 
 
@@ -38,6 +41,15 @@ class MemoriaPessoal(Extension):
         attachments = chat_dir / "anexos"
         project = projects.get_context_project_name(self.agent.context) or ""
 
+        quem = (self.agent.context.get_data("usuario") or DONO).strip().lower()
+        nome = self.agent.context.get_data("usuario_nome") or quem.title()
+        PROFILE = PROFILES / f"{quem}.md"
+        try:
+            import json
+
+            todos = [u.get("nome") or k.title() for k, u in json.loads(USUARIOS.read_text()).get("usuarios", {}).items()]
+        except Exception:
+            todos = [nome]
         profile = _read(PROFILE) or "(vazio)"
         chat_context = _read(context_file) or "(vazio — crie o arquivo quando houver algo a guardar)"
         try:
@@ -55,9 +67,9 @@ class MemoriaPessoal(Extension):
         system_prompt.append(
             f"""## Memória pessoal do usuário
 
-Uso individual: há um único usuário. {agent_line}
+Pessoas que usam este agente: {", ".join(todos)} (cada uma com a sua ficha). **Quem está falando nesta conversa: {nome}.** Trate essa pessoa pelo nome dela e não misture informações pessoais de uma com a outra. {agent_line}
 
-### Sobre o usuário (compartilhado entre todas as conversas e agentes) — {PROFILE}
+### Sobre {nome} (ficha desta pessoa, compartilhada entre as conversas e agentes dela) — {PROFILE}
 {profile}
 
 ### Contexto desta conversa (só desta conversa) — {context_file}
@@ -67,7 +79,7 @@ Uso individual: há um único usuário. {agent_line}
 {anexos}
 
 ### Como manter essa memória
-- Quando o usuário contar algo duradouro sobre ele (nome, cidade, profissão, família, preferências, jeito de responder), atualize {PROFILE} na hora.
+- Quando {nome} contar algo duradouro sobre si (nome, cidade, profissão, família, preferências, jeito de responder), atualize {PROFILE} na hora — só a ficha de quem está falando.
 - Quando surgir algo importante só para esta conversa (objetivo, decisões, dados combinados, pendências, resumo do que foi feito), atualize {context_file}. Mantenha o arquivo curto e organizado em seções; reescreva em vez de só acrescentar.
 - Arquivos que o usuário manda da máquina dele: pelo **+ → Attach files** desta conversa, os grandes (até 5 GB) já ficam em {attachments}/ (lista acima; a mensagem traz o caminho) e os pequenos chegam como anexo normal; pela página de controle ("Enviar arquivos", funciona com a máquina desligada) chegam em /a0/usr/workdir/entrada/; pelo botão Files vão para a pasta que ele escolher. Se ele disser que mandou um arquivo, procure nesses lugares.
 - Anexos enviados nesta conversa: copie o arquivo para {attachments}/ (crie a pasta se preciso), registre nome e do que se trata em {context_file} e extraia as informações úteis (ex.: currículo → dados no perfil e no contexto).

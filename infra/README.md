@@ -29,7 +29,7 @@ Três níveis de contexto, como no Grok (plugin `vm/plugins/memoria_pessoal`):
 
 | Nível | Onde fica | Quem enxerga |
 |---|---|---|
-| **Sobre você** | `/a0/usr/memoria/sobre-voce.md` | Todas as conversas e agentes |
+| **Sobre você** | `/a0/usr/memoria/usuarios/<login>.md` (uma ficha por pessoa) | Todas as conversas e agentes daquela pessoa |
 | **Agente** (projeto do Agent Zero) | `/a0/usr/projects/<agente>/` + memória vetorial própria | Só as conversas daquele agente |
 | **Conversa** | `/a0/usr/chats/<id>/contexto.md`, `anexos/` e memória vetorial própria | Só aquela conversa |
 

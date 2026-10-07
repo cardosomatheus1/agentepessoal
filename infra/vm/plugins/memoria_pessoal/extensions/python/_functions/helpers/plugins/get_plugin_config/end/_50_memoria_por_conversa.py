@@ -3,7 +3,7 @@
 Agent Zero already isolates memory per project ("agent"); chats outside a
 project would otherwise share one global memory. Here the _memory config gets
 a per-chat subdir, so facts from one conversation never surface in another.
-Shared facts about the user live in /a0/usr/memoria/sobre-voce.md instead.
+Shared facts about each person live in /a0/usr/memoria/usuarios/<login>.md instead.
 """
 
 from helpers import projects

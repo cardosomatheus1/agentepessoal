@@ -1,0 +1,4 @@
+name: login_usuarios
+title: Login com vários usuários
+description: Login próprio para mais de uma pessoa (senhas só em hash, em /a0/usr/usuarios.json), sessão de 400 dias no navegador e no app, bloqueio após tentativas erradas, e o agente sabe quem está falando.
+version: 1.0.0
