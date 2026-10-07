@@ -24,7 +24,6 @@ NAME = "agentepessoal"
 INSTANCE_TYPE = "t3.large"
 DISK_GB = 40
 IDLE_MINUTES = 30
-LOGIN = "admin"
 IMAGE = "agent0ai/agent-zero:v2.13"
 PARAM_PASSWORD = f"/{NAME}/password"
 PARAM_URL = f"/{NAME}/agent-url"
@@ -251,7 +250,6 @@ def user_data() -> bytes:
         "PRESETS_B64": b64(presets_yaml()),
         "CODEEXEC_B64": b64(json.dumps(code_exec, indent=2)),
         "IMAGE": IMAGE,
-        "LOGIN": LOGIN,
         "IDLE_MINUTES": str(IDLE_MINUTES),
     }.items():
         rendered = rendered.replace("{{" + key + "}}", value)
@@ -408,8 +406,7 @@ def main() -> None:
     print()
     print(f"Instance:      {instance_id}")
     print(f"Control page:  {url}")
-    print(f"Agent login:   {LOGIN}")
-    print(f"Password:      {'(new) ' if created else ''}{password}")
+    print(f"Personal link: {url}#k={password}")
     print(f"               stored in SSM parameter {PARAM_PASSWORD}")
     print(f"Backups:       s3://{BUCKET}/usr (hourly and on every shutdown)")
 

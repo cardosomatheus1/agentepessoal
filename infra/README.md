@@ -9,20 +9,19 @@ VM EC2 com o Agent Zero que liga só quando você usa, e desliga sozinha.
 | EC2 `t3.large` (Ubuntu 24.04, disco 40 GB criptografado) | `agentepessoal-agent` | Roda o Agent Zero (imagem Docker `agent0ai/agent-zero:v2.13`) |
 | Security group sem nenhuma porta de entrada | `agentepessoal-vm` | Acesso só pelo túnel HTTPS e pelo AWS Systems Manager |
 | Role IAM da VM | `agentepessoal-vm` | Bedrock (GPT-6.1 Sol / GPT-6 Luna), backup no S3, parâmetros SSM |
-| Lambda + Function URL | `agentepessoal-control` | Página de controle: Ligar / Desligar / Abrir o agente |
+| Lambda + Function URL | `agentepessoal-control` | Página de controle (link pessoal): Ligar / Desligar / Abrir o agente |
 | Bucket S3 privado e versionado | `agentepessoal-backup-<conta>` | Backup dos dados do agente |
-| Parâmetros SSM | `/agentepessoal/password`, `/agentepessoal/agent-url` | Senha (criptografada) e link atual do agente |
+| Parâmetros SSM | `/agentepessoal/password`, `/agentepessoal/agent-url` | Chave do link pessoal (criptografada) e endereço atual do agente |
 
 Rodar de novo atualiza o que já existe, sem duplicar. `python infra/destroy.py` remove tudo (mantém os backups; use `--delete-backups` para apagar também).
 
 ## Como usar
 
-1. Abra a página de controle (Function URL impressa pelo deploy) e entre com a senha.
-2. **Ligar** → em ~1,5 min aparece **Abrir o agente**.
-3. Login do agente: usuário `admin`, mesma senha.
-4. Sem uso por 30 min, a VM faz backup e desliga sozinha. Também dá para **Desligar agora**.
+1. Abra o **link pessoal** (Function URL + `#k=<chave>`, impresso pelo deploy) e salve nos favoritos. Não pede senha nem login.
+2. **Ligar** → em ~1,5 min o agente abre sozinho. Se já estiver ligado, clique em **Abrir o agente**.
+3. Sem uso por 30 min, a VM faz backup e desliga sozinha. Também dá para **Desligar agora**.
 
-A senha fica no AWS Systems Manager → Parameter Store → `/agentepessoal/password`.
+O agente não tem tela de login (uso individual). A proteção é: a VM não tem portas abertas, o endereço do agente é aleatório e muda a cada boot, e só a página de controle o revela — e ela só responde a quem tem a chave do link pessoal. A chave fica no AWS Systems Manager → Parameter Store → `/agentepessoal/password`; quem tiver o link pessoal consegue ligar e usar o agente, então não compartilhe.
 
 ## Memória e dados
 

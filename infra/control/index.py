@@ -1,7 +1,7 @@
 """Control page for the agent VM: shows status, starts and stops it.
 
-Served through a Lambda Function URL. Every action requires the password; only
-its SHA-256 lives in the function's environment.
+Served through a Lambda Function URL. Every action requires the personal key (sent from the
+link's #k= fragment); only its SHA-256 lives in the function's environment.
 """
 
 import base64
@@ -113,27 +113,28 @@ button,a.btn{display:block;width:100%;text-align:center;border:0;border-radius:9
 button:disabled{opacity:.4;cursor:default}.err{color:#ff6b6b;margin-top:10px;min-height:1.5em}
 </style></head><body><div class="card">
 <h1>Agente</h1><p>Liga a máquina só quando você for usar.</p>
-<div id="login"><div style="height:18px"></div><input id="pw" type="password" placeholder="Senha" autocomplete="current-password">
-<button class="primary" onclick="enter()">Entrar</button></div>
+<div id="nokey" hidden><div style="height:18px"></div><p>Abra esta página pelo seu link pessoal (o que tem <code>#k=</code> no final).</p></div>
 <div id="panel" hidden>
 <div class="status"><span id="dot" class="dot"></span><span id="label">…</span></div>
-<a id="open" class="btn primary" target="_blank" rel="noopener" hidden>Abrir o agente</a>
+<a id="open" class="btn primary" hidden>Abrir o agente</a>
 <button id="start" class="primary" onclick="act('start')" hidden>Ligar</button>
 <button id="stop" class="secondary" onclick="act('stop')" hidden>Desligar agora</button>
-<p style="margin-top:16px;font-size:13px">Desliga sozinha após 30 min sem uso. O link muda a cada vez que liga.</p>
+<p style="margin-top:16px;font-size:13px">Desliga sozinha após 30 min sem uso. Depois de clicar em Ligar, o agente abre sozinho quando estiver pronto.</p>
 </div><div id="err" class="err"></div></div>
 <script>
-let pw="";try{pw=localStorage.getItem("agpw")||""}catch(e){}
-const $=id=>document.getElementById(id);let timer=null;
-async function call(action){const r=await fetch(location.href,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw,action})});
-const d=await r.json();if(r.status===401){try{localStorage.removeItem("agpw")}catch(e){}$("panel").hidden=true;$("login").hidden=false;throw new Error(d.error)}return d}
-function render(s){const L={running:s.ready?"Ligado e pronto":"Ligando o agente… (1–3 min)",pending:"Ligando a máquina…",stopping:"Desligando…",stopped:"Desligado"};
+// The personal link carries the key in the URL fragment (never sent in requests or logs);
+// it is also remembered on this device so the bare page works next time.
+const $=id=>document.getElementById(id);let timer=null,autoOpen=false,key="";
+const m=location.hash.match(/k=([^&]+)/);
+try{if(m){key=decodeURIComponent(m[1]);localStorage.setItem("agkey",key)}else{key=localStorage.getItem("agkey")||""}}catch(e){if(m)key=decodeURIComponent(m[1])}
+async function call(action){const r=await fetch(location.origin+location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:key,action})});
+const d=await r.json();if(r.status===401){try{localStorage.removeItem("agkey")}catch(e){}$("panel").hidden=true;$("nokey").hidden=false;throw new Error("Link pessoal inválido.")}return d}
+function render(s){const L={running:s.ready?"Ligado e pronto":"Ligando o agente… (1–2 min)",pending:"Ligando a máquina…",stopping:"Desligando…",stopped:"Desligado"};
 $("label").textContent=L[s.state]||s.state;$("dot").className="dot "+(s.ready?"ok":(s.state==="stopped"?"":"warn"));
 $("open").hidden=!s.ready;if(s.ready)$("open").href=s.url;$("start").hidden=s.state!=="stopped";$("stop").hidden=s.state!=="running";
-clearTimeout(timer);if(!s.ready&&s.state!=="stopped")timer=setTimeout(refresh,5000)}
+if(s.ready&&autoOpen){location.href=s.url;return}
+clearTimeout(timer);if(!s.ready&&s.state!=="stopped")timer=setTimeout(refresh,4000)}
 async function refresh(){try{$("err").textContent="";render(await call("status"))}catch(e){$("err").textContent=e.message}}
-async function act(a){try{$("err").textContent="";render(await call(a))}catch(e){$("err").textContent=e.message}}
-async function enter(){pw=$("pw").value;try{const s=await call("status");try{localStorage.setItem("agpw",pw)}catch(e){}$("login").hidden=true;$("panel").hidden=false;render(s)}catch(e){$("err").textContent=e.message}}
-$("pw").addEventListener("keydown",e=>{if(e.key==="Enter")enter()});
-if(pw){$("login").hidden=true;$("panel").hidden=false;refresh()}
+async function act(a){autoOpen=a==="start";try{$("err").textContent="";render(await call(a))}catch(e){$("err").textContent=e.message}}
+if(key){$("panel").hidden=false;refresh()}else{$("nokey").hidden=false}
 </script></body></html>"""

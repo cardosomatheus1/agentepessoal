@@ -43,13 +43,14 @@ if [ ! -d /opt/a0/usr/projects/carreira ]; then
   echo '{{PROJECT_TGZ_B64}}' | base64 -d | tar -xz -C /opt/a0/usr/projects/carreira
 fi
 
-PASSWORD=$(/opt/agentepessoal/venv/bin/python -c "import boto3; print(boto3.client('ssm', region_name='$REGION').get_parameter(Name='/agentepessoal/password', WithDecryption=True)['Parameter']['Value'])")
+# Single user: no Agent Zero login. The VM has no open ports; the only way in is the
+# random tunnel URL, which is revealed only by the key-protected control page.
+# Agent Zero always allows its own tunnel origin; localhost covers local checks.
 touch /opt/a0/usr/.env
-sed -i -E '/^(AUTH_LOGIN|AUTH_PASSWORD|API_KEY_OTHER)=/d' /opt/a0/usr/.env
+sed -i -E '/^(AUTH_LOGIN|AUTH_PASSWORD|API_KEY_OTHER|ALLOWED_ORIGINS)=/d' /opt/a0/usr/.env
 {
-  echo "AUTH_LOGIN={{LOGIN}}"
-  echo "AUTH_PASSWORD=${PASSWORD}"
   echo "API_KEY_OTHER=local-proxy"
+  echo "ALLOWED_ORIGINS=*://localhost,*://localhost:*,*://127.0.0.1,*://127.0.0.1:*"
 } >> /opt/a0/usr/.env
 chmod 600 /opt/a0/usr/.env
 
