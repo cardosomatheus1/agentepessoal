@@ -1,0 +1,139 @@
+"""Control page for the agent VM: shows status, starts and stops it.
+
+Served through a Lambda Function URL. Every action requires the password; only
+its SHA-256 lives in the function's environment.
+"""
+
+import base64
+import hashlib
+import hmac
+import json
+import os
+import urllib.request
+
+import boto3
+
+INSTANCE_ID = os.environ["INSTANCE_ID"]
+PASSWORD_SHA256 = os.environ["PASSWORD_SHA256"]
+URL_PARAM = os.environ.get("URL_PARAM", "/agentepessoal/agent-url")
+
+ec2 = boto3.client("ec2")
+ssm = boto3.client("ssm")
+
+
+def _authorized(password: str) -> bool:
+    digest = hashlib.sha256((password or "").encode()).hexdigest()
+    return hmac.compare_digest(digest, PASSWORD_SHA256)
+
+
+def _state() -> str:
+    res = ec2.describe_instances(InstanceIds=[INSTANCE_ID])
+    return res["Reservations"][0]["Instances"][0]["State"]["Name"]
+
+
+def _url() -> str:
+    try:
+        return ssm.get_parameter(Name=URL_PARAM)["Parameter"]["Value"]
+    except Exception:
+        return ""
+
+
+def _reachable(url: str) -> bool:
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, method="GET"), timeout=4) as r:
+            return r.status < 500
+    except urllib.error.HTTPError as e:
+        return e.code < 500
+    except Exception:
+        return False
+
+
+def _status() -> dict:
+    state = _state()
+    url = _url() if state == "running" else ""
+    ready = bool(url.startswith("https://") and _reachable(url))
+    return {"state": state, "url": url if ready else "", "ready": ready}
+
+
+def _json(body: dict, code: int = 200) -> dict:
+    return {
+        "statusCode": code,
+        "headers": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+        "body": json.dumps(body),
+    }
+
+
+def handler(event, _context):
+    method = event.get("requestContext", {}).get("http", {}).get("method", "GET")
+    if method == "GET":
+        return {
+            "statusCode": 200,
+            "headers": {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store"},
+            "body": PAGE,
+        }
+
+    raw = event.get("body") or "{}"
+    if event.get("isBase64Encoded"):
+        raw = base64.b64decode(raw).decode()
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return _json({"error": "bad request"}, 400)
+    if not _authorized(data.get("password", "")):
+        return _json({"error": "senha incorreta"}, 401)
+
+    action = data.get("action", "status")
+    if action == "start":
+        if _state() in ("stopped", "stopping"):
+            ssm.put_parameter(Name=URL_PARAM, Value="starting", Type="String", Overwrite=True)
+            ec2.start_instances(InstanceIds=[INSTANCE_ID])
+    elif action == "stop":
+        if _state() == "running":
+            ssm.put_parameter(Name=URL_PARAM, Value="stopped", Type="String", Overwrite=True)
+            ec2.stop_instances(InstanceIds=[INSTANCE_ID])
+    return _json(_status())
+
+
+PAGE = """<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d0d0d">
+<title>Agente · Controle</title>
+<style>
+:root{--bg:#0d0d0d;--surface:#1b1b1b;--line:#2b2b2b;--fg:#ededed;--muted:#9a9a9a;--ok:#4ade80;--warn:#fbbf24}
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-height:100dvh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,sans-serif;padding:16px}
+.card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:28px}
+h1{font-size:22px;font-weight:600;margin:0 0 4px}p{margin:0;color:var(--muted)}
+.status{display:flex;align-items:center;gap:10px;margin:22px 0;font-size:16px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--muted)}.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn);animation:p 1s infinite}
+@keyframes p{50%{opacity:.3}}
+input{width:100%;background:#111;border:1px solid var(--line);border-radius:14px;color:var(--fg);padding:13px 14px;font-size:15px;margin-bottom:12px}
+button,a.btn{display:block;width:100%;text-align:center;border:0;border-radius:999px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;margin-top:10px}
+.primary{background:#fff;color:#0d0d0d}.secondary{background:transparent;color:var(--muted);border:1px solid var(--line)!important}
+button:disabled{opacity:.4;cursor:default}.err{color:#ff6b6b;margin-top:10px;min-height:1.5em}
+</style></head><body><div class="card">
+<h1>Agente</h1><p>Liga a máquina só quando você for usar.</p>
+<div id="login"><div style="height:18px"></div><input id="pw" type="password" placeholder="Senha" autocomplete="current-password">
+<button class="primary" onclick="enter()">Entrar</button></div>
+<div id="panel" hidden>
+<div class="status"><span id="dot" class="dot"></span><span id="label">…</span></div>
+<a id="open" class="btn primary" target="_blank" rel="noopener" hidden>Abrir o agente</a>
+<button id="start" class="primary" onclick="act('start')" hidden>Ligar</button>
+<button id="stop" class="secondary" onclick="act('stop')" hidden>Desligar agora</button>
+<p style="margin-top:16px;font-size:13px">Desliga sozinha após 30 min sem uso. O link muda a cada vez que liga.</p>
+</div><div id="err" class="err"></div></div>
+<script>
+let pw="";try{pw=localStorage.getItem("agpw")||""}catch(e){}
+const $=id=>document.getElementById(id);let timer=null;
+async function call(action){const r=await fetch(location.href,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw,action})});
+const d=await r.json();if(r.status===401){try{localStorage.removeItem("agpw")}catch(e){}$("panel").hidden=true;$("login").hidden=false;throw new Error(d.error)}return d}
+function render(s){const L={running:s.ready?"Ligado e pronto":"Ligando o agente… (1–3 min)",pending:"Ligando a máquina…",stopping:"Desligando…",stopped:"Desligado"};
+$("label").textContent=L[s.state]||s.state;$("dot").className="dot "+(s.ready?"ok":(s.state==="stopped"?"":"warn"));
+$("open").hidden=!s.ready;if(s.ready)$("open").href=s.url;$("start").hidden=s.state!=="stopped";$("stop").hidden=s.state!=="running";
+clearTimeout(timer);if(!s.ready&&s.state!=="stopped")timer=setTimeout(refresh,5000)}
+async function refresh(){try{$("err").textContent="";render(await call("status"))}catch(e){$("err").textContent=e.message}}
+async function act(a){try{$("err").textContent="";render(await call(a))}catch(e){$("err").textContent=e.message}}
+async function enter(){pw=$("pw").value;try{const s=await call("status");try{localStorage.setItem("agpw",pw)}catch(e){}$("login").hidden=true;$("panel").hidden=false;render(s)}catch(e){$("err").textContent=e.message}}
+$("pw").addEventListener("keydown",e=>{if(e.key==="Enter")enter()});
+if(pw){$("login").hidden=true;$("panel").hidden=false;refresh()}
+</script></body></html>"""

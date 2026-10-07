@@ -1,6 +1,6 @@
 # Arquitetura — App pessoal com Agent Zero na AWS
 
-Status: **proposta**. Fase 1 em andamento: o app (`app/`) roda localmente; nada foi provisionado na AWS ainda.
+Status: o app (`app/`) roda localmente; a **VM do agente sob demanda já está na AWS** (ver `infra/README.md`): página de controle Ligar/Desligar, desligamento automático após 30 min sem uso, túnel HTTPS e backup no S3.
 
 ## Objetivo
 
