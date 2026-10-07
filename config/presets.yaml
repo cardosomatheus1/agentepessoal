@@ -1,54 +1,84 @@
 - name: Default
   chat:
-    provider: bedrock
-    name: us.anthropic.claude-sonnet-5-5
-    api_base: ""
+    provider: other
+    name: openai.gpt-5.6-terra
+    api_base: https://bedrock-mantle.us-east-1.api.aws/openai/v1
     ctx_length: 200000
+    kwargs:
+      a0_api_mode: responses
+      responses_state: local
     ctx_history: 0.7
     vision: true
     max_embeds: 10
     rl_requests: 0
     rl_input: 0
     rl_output: 0
-    kwargs: {}
   utility:
-    provider: bedrock
-    name: us.anthropic.claude-haiku-4-5-20251001-v1:0
-    api_base: ""
+    provider: other
+    name: openai.gpt-5.6-luna
+    api_base: https://bedrock-mantle.us-east-1.api.aws/openai/v1
     ctx_length: 200000
+    kwargs:
+      a0_api_mode: responses
+      responses_state: local
     ctx_input: 0.7
     rl_requests: 0
     rl_input: 0
     rl_output: 0
-    kwargs: {}
   embedding:
     provider: huggingface
     name: sentence-transformers/all-MiniLM-L6-v2
-    api_base: ""
+    api_base: ''
     rl_requests: 0
     rl_input: 0
     kwargs: {}
-
+- name: Economico
+  chat:
+    provider: other
+    name: openai.gpt-oss-120b
+    api_base: https://bedrock-mantle.us-east-1.api.aws/v1
+    ctx_length: 128000
+    kwargs:
+      a0_api_mode: chat
+    ctx_history: 0.7
+    vision: false
+  utility:
+    provider: other
+    name: openai.gpt-oss-20b
+    api_base: https://bedrock-mantle.us-east-1.api.aws/v1
+    ctx_length: 128000
+    kwargs:
+      a0_api_mode: chat
+    ctx_input: 0.7
 - name: Power
   chat:
-    provider: bedrock
-    name: us.anthropic.claude-opus-5-5
-    api_base: ""
+    provider: other
+    name: openai.gpt-5.6-sol
+    api_base: https://bedrock-mantle.us-east-1.api.aws/openai/v1
     ctx_length: 200000
+    kwargs:
+      a0_api_mode: responses
+      responses_state: local
     ctx_history: 0.7
     vision: true
   utility:
-    provider: bedrock
-    name: us.anthropic.claude-sonnet-5-5
-
-- name: Efficiency
+    provider: other
+    name: openai.gpt-5.6-luna
+    api_base: https://bedrock-mantle.us-east-1.api.aws/openai/v1
+    ctx_length: 200000
+    kwargs:
+      a0_api_mode: responses
+      responses_state: local
+    ctx_input: 0.7
+- name: Claude
   chat:
     provider: bedrock
-    name: us.anthropic.claude-haiku-4-5-20251001-v1:0
-    api_base: ""
+    name: us.anthropic.claude-sonnet-5-5
+    api_base: ''
     ctx_length: 200000
     ctx_history: 0.7
     vision: true
   utility:
     provider: bedrock
     name: us.anthropic.claude-haiku-4-5-20251001-v1:0
+    api_base: ''

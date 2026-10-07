@@ -1,23 +1,25 @@
 # App — interface estilo Grok
 
-Next.js (PWA) com chat em streaming usando Claude no AWS Bedrock.
+Next.js (PWA) com chat em streaming usando modelos da OpenAI servidos pelo **Amazon Bedrock** (API Converse).
 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
 ```
 
-Precisa de credenciais AWS com acesso ao Bedrock em `us-east-1` (variáveis padrão da AWS ou role).
+Precisa de credenciais AWS com acesso ao Bedrock em `us-east-1` (variáveis padrão da AWS ou role IAM).
 
-| Modo | Modelo (Bedrock) | Raciocínio |
-|---|---|---|
-| Rápido | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | desligado |
-| Padrão | `us.anthropic.claude-sonnet-5-5` | adaptativo, effort `medium` |
-| Power | `us.anthropic.claude-opus-5-5` | adaptativo, effort `high` |
+| Modo | Modelo (Bedrock) |
+|---|---|
+| Rápido | `us.openai.gpt-5.6-luna` |
+| Padrão | `us.openai.gpt-5.6-terra` |
+| Power | `us.openai.gpt-5.6-sol` |
+
+Para trocar de modelo (por exemplo `openai.gpt-oss-120b-1:0`, o mais barato, ou um Claude), basta mudar o ID em `lib/models.ts`.
 
 Estrutura:
 
-- `lib/chat.ts` — chamada ao Claude em streaming (vira a Lambda de chat na fase 1 da AWS).
+- `lib/chat.ts` — chamada ao modelo em streaming (Bedrock ConverseStream) (vira a Lambda de chat na fase 1 da AWS).
 - `app/api/chat/route.ts` — endpoint que transmite eventos NDJSON (`thinking`, `text`, `done`, `error`).
 - `components/` — interface (barra lateral, campo de mensagem, mensagens, bloco "Pensando").
 - `lib/store.ts` — histórico no navegador (temporário; vai para o DynamoDB).

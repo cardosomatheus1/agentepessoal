@@ -1,5 +1,8 @@
-import { AnthropicBedrock } from "@anthropic-ai/bedrock-sdk";
-import type Anthropic from "@anthropic-ai/sdk";
+import {
+  BedrockRuntimeClient,
+  ConverseStreamCommand,
+  type Message as BedrockMessage,
+} from "@aws-sdk/client-bedrock-runtime";
 import { MODES, type ModeId } from "./models";
 
 /** Events streamed to the browser, one JSON object per line. */
@@ -14,8 +17,9 @@ export interface ChatTurn {
   content: string;
 }
 
-const client = new AnthropicBedrock({
-  awsRegion: process.env.AWS_REGION ?? "us-east-1",
+// Uses the default AWS credential chain (env vars locally, IAM role on Lambda/EC2).
+const client = new BedrockRuntimeClient({
+  region: process.env.AWS_REGION ?? "us-east-1",
 });
 
 function systemPrompt() {
@@ -37,37 +41,31 @@ export async function* streamChat(
   signal?: AbortSignal,
 ): AsyncGenerator<ChatEvent> {
   const mode = MODES[modeId] ?? MODES.padrao;
-  const messages: Anthropic.MessageParam[] = turns.map((t) => ({
+  const messages: BedrockMessage[] = turns.map((t) => ({
     role: t.role,
-    content: t.content,
+    content: [{ text: t.content }],
   }));
 
   try {
-    const stream = client.messages.stream(
-      {
-        model: mode.model,
-        max_tokens: 64000,
-        system: systemPrompt(),
+    const res = await client.send(
+      new ConverseStreamCommand({
+        modelId: mode.model,
+        system: [{ text: systemPrompt() }],
         messages,
-        ...(mode.thinking
-          ? { thinking: { type: "adaptive", display: "summarized" } }
-          : {}),
-        ...(mode.effort ? { output_config: { effort: mode.effort } } : {}),
-      } as Anthropic.MessageStreamParams,
-      { signal },
+        inferenceConfig: { maxTokens: 32000 },
+      }),
+      { abortSignal: signal },
     );
 
-    for await (const ev of stream) {
-      if (ev.type === "content_block_delta") {
-        if (ev.delta.type === "thinking_delta") {
-          yield { t: "thinking", d: ev.delta.thinking };
-        } else if (ev.delta.type === "text_delta") {
-          yield { t: "text", d: ev.delta.text };
-        }
-      }
+    let stop: string | null = null;
+    for await (const ev of res.stream ?? []) {
+      const delta = ev.contentBlockDelta?.delta;
+      // Only some models (e.g. gpt-oss, Claude) return readable reasoning text.
+      if (delta?.reasoningContent?.text) yield { t: "thinking", d: delta.reasoningContent.text };
+      if (delta?.text) yield { t: "text", d: delta.text };
+      if (ev.messageStop) stop = ev.messageStop.stopReason ?? null;
     }
-    const final = await stream.finalMessage();
-    yield { t: "done", stop: final.stop_reason };
+    yield { t: "done", stop };
   } catch (err) {
     if (signal?.aborted) return;
     const message = err instanceof Error ? err.message : String(err);
