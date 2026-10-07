@@ -2,6 +2,8 @@
 
 - /openai/...   -> Bedrock's OpenAI-compatible endpoint (bedrock-mantle), short-term token from the VM role
 - /typesafe/... -> TypeSafe (Jev), API key read from SSM /agentepessoal/typesafe-api-key
+- /arquivos/...  -> big-file uploads into a chat: presigned S3 PUT (from the VM role) and
+                    an on-demand run of entrada.sh, which moves the file into the chat's anexos/
 
 Agent Zero only reads its API key at startup, while Bedrock short-term API keys
 expire. This proxy injects a fresh bearer token (generated from the VM's IAM
@@ -11,8 +13,11 @@ records the time of the last model call, which the idle watchdog reads.
 
 import http.client
 import http.server
+import json
 import os
+import re
 import ssl
+import subprocess
 import threading
 import time
 from datetime import timedelta
@@ -27,6 +32,10 @@ ACTIVITY_FILE = Path(os.environ.get("ACTIVITY_FILE", "/var/lib/agentepessoal/las
 TOKEN_TTL = 30 * 60  # refresh well before the 1h token expiry
 TYPESAFE_HOST = "api.typesafe.ai"
 TYPESAFE_PARAM = "/agentepessoal/typesafe-api-key"
+BUCKET = os.environ.get("BACKUP_BUCKET", "")
+ENTRADA = "/opt/agentepessoal/entrada.sh"
+CHAT_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+MAX_UPLOAD = 5 * 1024**3
 
 HOP_HEADERS = {"host", "authorization", "content-length", "connection", "accept-encoding", "transfer-encoding"}
 SKIP_RESPONSE_HEADERS = {"transfer-encoding", "connection", "content-length", "content-encoding"}
@@ -59,6 +68,48 @@ def typesafe_key() -> str:
         return _typesafe["value"]
 
 
+def safe_name(name: str) -> str:
+    name = os.path.basename(str(name or "").replace("\\", "/")).strip()
+    name = re.sub(r"[\x00-\x1f/]", "", name)[:180]
+    return name if name not in ("", ".", "..") else "arquivo"
+
+
+_s3 = {}
+_pull = {"thread": None}
+_pull_lock = threading.Lock()
+
+
+def presign(chat: str, name: str, size: int) -> dict:
+    if not BUCKET:
+        return {"error": "bucket não configurado"}
+    if not CHAT_ID.match(chat or ""):
+        return {"error": "conversa inválida"}
+    if not 0 <= int(size or 0) <= MAX_UPLOAD:
+        return {"error": "arquivo maior que 5 GB"}
+    if "client" not in _s3:
+        import boto3
+        from botocore.config import Config
+
+        _s3["client"] = boto3.client("s3", region_name=REGION,
+                                     config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}))
+    name = safe_name(name)
+    key = f"entrada/chats/{chat}/{name}"
+    url = _s3["client"].generate_presigned_url("put_object", Params={"Bucket": BUCKET, "Key": key}, ExpiresIn=6 * 3600)
+    return {"url": url, "name": name}
+
+
+def pull(wait: float) -> bool:
+    """Run entrada.sh now (one run at a time); True once it finished within `wait` seconds."""
+    with _pull_lock:
+        t = _pull["thread"]
+        if t is None or not t.is_alive():
+            t = threading.Thread(target=lambda: subprocess.run([ENTRADA], timeout=3600), daemon=True)
+            t.start()
+            _pull["thread"] = t
+    t.join(wait)
+    return not t.is_alive()
+
+
 def mark_activity() -> None:
     try:
         ACTIVITY_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -70,7 +121,30 @@ def mark_activity() -> None:
 class Handler(http.server.BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
+    def _reply(self, code: int, body: dict) -> None:
+        data = json.dumps(body).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _arquivos(self) -> None:
+        length = int(self.headers.get("Content-Length") or 0)
+        try:
+            data = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            if self.path == "/arquivos/presign":
+                out = presign(data.get("chat", ""), data.get("name", ""), data.get("size", 0))
+                return self._reply(400 if "error" in out else 200, out)
+            if self.path == "/arquivos/puxar":
+                return self._reply(200, {"done": pull(float(data.get("wait", 40)))})
+            return self._reply(404, {"error": "not found"})
+        except Exception as exc:
+            return self._reply(500, {"error": str(exc)[:300]})
+
     def _proxy(self) -> None:
+        if self.path.startswith("/arquivos/"):
+            return self._arquivos()
         mark_activity()
         length = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(length) if length else None

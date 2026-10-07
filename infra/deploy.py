@@ -450,12 +450,13 @@ def ensure_control(instance_id: str, password: str) -> str:
 
 
 def ensure_upload_cors(page_url: str) -> None:
-    """Let only the control page PUT files into the bucket from the browser."""
+    """Let the control page and the agent UI PUT files into the bucket from the browser (presigned only)."""
     origin = page_url.rstrip("/")
     s3.put_bucket_cors(
         Bucket=BUCKET,
         CORSConfiguration={"CORSRules": [{
-            "AllowedOrigins": [origin],
+            # control page + the agent UI behind its quick tunnel (the URL changes on reboot)
+            "AllowedOrigins": [origin, "https://*.trycloudflare.com"],
             "AllowedMethods": ["PUT"],
             "AllowedHeaders": ["*"],
             "ExposeHeaders": ["ETag"],

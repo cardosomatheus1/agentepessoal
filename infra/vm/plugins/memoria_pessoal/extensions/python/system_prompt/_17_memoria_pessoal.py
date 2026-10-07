@@ -40,6 +40,11 @@ class MemoriaPessoal(Extension):
 
         profile = _read(PROFILE) or "(vazio)"
         chat_context = _read(context_file) or "(vazio — crie o arquivo quando houver algo a guardar)"
+        try:
+            files = sorted(p for p in attachments.iterdir() if p.is_file())
+        except OSError:
+            files = []
+        anexos = "\n".join(f"- {p.name} ({p.stat().st_size / 1024**2:.1f} MB)" for p in files[:40]) or "(nenhum)"
         agent_line = (
             f'Você está atuando como o agente "{project}" (projeto em /a0/usr/projects/{project}/). '
             "A memória de longo prazo deste agente é separada da dos outros agentes."
@@ -58,10 +63,13 @@ Uso individual: há um único usuário. {agent_line}
 ### Contexto desta conversa (só desta conversa) — {context_file}
 {chat_context}
 
+### Anexos desta conversa — {attachments}/
+{anexos}
+
 ### Como manter essa memória
 - Quando o usuário contar algo duradouro sobre ele (nome, cidade, profissão, família, preferências, jeito de responder), atualize {PROFILE} na hora.
 - Quando surgir algo importante só para esta conversa (objetivo, decisões, dados combinados, pendências, resumo do que foi feito), atualize {context_file}. Mantenha o arquivo curto e organizado em seções; reescreva em vez de só acrescentar.
-- Arquivos que o usuário manda da máquina dele chegam em /a0/usr/workdir/entrada/ (pelo botão "Enviar arquivos" da página de controle, até 5 GB; ou pelo botão Files, até 100 MB). Se ele disser que mandou um arquivo, procure lá primeiro.
+- Arquivos que o usuário manda da máquina dele: os enviados nesta conversa pelo botão "Arquivo grande" (até 5 GB) já ficam em {attachments}/ (lista acima); os enviados pela página de controle ("Enviar arquivos", funciona com a máquina desligada) chegam em /a0/usr/workdir/entrada/; pelo botão Files (até 100 MB) vão para a pasta que ele escolher. Se ele disser que mandou um arquivo, procure nesses lugares.
 - Anexos enviados nesta conversa: copie o arquivo para {attachments}/ (crie a pasta se preciso), registre nome e do que se trata em {context_file} e extraia as informações úteis (ex.: currículo → dados no perfil e no contexto).
 - Assunto de um agente (projeto ativo): guarde também nos arquivos do projeto e na memória do agente.
 - Não precisa avisar a cada atualização; mencione só quando for relevante. Nunca grave senhas, códigos ou tokens nesses arquivos.

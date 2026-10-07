@@ -1,0 +1,35 @@
+<html>
+<head>
+  <title>Arquivo grande</title>
+  <script type="module" src="/plugins/arquivo_grande/webui/arquivo-grande-store.js"></script>
+</head>
+<body>
+  <div x-data>
+    <template x-if="$store.arquivoGrande">
+      <div class="agr-wrap">
+        <button class="text-button" @click="$store.arquivoGrande.escolher()" :disabled="!$store.chats?.selected"
+                title="Enviar arquivo de até 5 GB para esta conversa (sem o limite de 100 MB)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true">
+            <path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 20h16"/>
+          </svg>
+          <p>Arquivo grande</p>
+        </button>
+        <template x-for="e in $store.arquivoGrande.envios" :key="e.nome">
+          <div class="agr-item">
+            <span x-text="e.nome + ' — ' + (e.estado === 'enviando' ? e.pct + '%' : e.estado)"></span>
+            <div class="agr-bar"><i :style="`width:${e.pct}%`"></i></div>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+  <style>
+    .agr-wrap { display: contents; }
+    .agr-item { font-size: 0.75rem; opacity: 0.85; min-width: 160px; max-width: 260px; }
+    .agr-item span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .agr-bar { height: 4px; background: var(--color-background-muted, #252525); border-radius: 99px; overflow: hidden; margin-top: 2px; }
+    .agr-bar i { display: block; height: 100%; background: #4ade80; transition: width 0.2s; }
+  </style>
+</body>
+</html>

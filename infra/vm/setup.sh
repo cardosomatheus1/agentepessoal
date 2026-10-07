@@ -130,6 +130,7 @@ After=network-online.target
 Wants=network-online.target
 [Service]
 Environment=AWS_REGION=us-east-1
+EnvironmentFile=/etc/agentepessoal.env
 ExecStart=/opt/agentepessoal/venv/bin/python /opt/agentepessoal/bedrock_proxy.py
 Restart=always
 RestartSec=3
