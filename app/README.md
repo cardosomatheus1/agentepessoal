@@ -11,11 +11,10 @@ Precisa de credenciais AWS com acesso ao Bedrock em `us-east-1` (variáveis padr
 
 | Modo | Modelo (Bedrock) |
 |---|---|
-| Rápido | `us.openai.gpt-5.6-luna` |
-| Padrão | `us.openai.gpt-5.6-terra` |
-| Power | `us.openai.gpt-5.6-sol` |
+| Rápido (padrão) | `us.openai.gpt-6-luna` |
+| Avançado | `us.openai.gpt-6.1-sol` |
 
-Para trocar de modelo (por exemplo `openai.gpt-oss-120b-1:0`, o mais barato, ou um Claude), basta mudar o ID em `lib/models.ts`.
+Para trocar de modelo, basta mudar o ID em `lib/models.ts`.
 
 Estrutura:
 

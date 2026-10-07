@@ -1,5 +1,5 @@
 import { streamChat, type ChatTurn } from "@/lib/chat";
-import { MODES, type ModeId } from "@/lib/models";
+import { DEFAULT_MODE, MODES, type ModeId } from "@/lib/models";
 
 export const maxDuration = 300;
 
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (!turns.length || turns[turns.length - 1].role !== "user") {
     return Response.json({ error: "última mensagem deve ser do usuário" }, { status: 400 });
   }
-  const mode = body.mode && body.mode in MODES ? body.mode : "padrao";
+  const mode = body.mode && body.mode in MODES ? body.mode : DEFAULT_MODE;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

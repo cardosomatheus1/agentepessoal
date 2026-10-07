@@ -12,7 +12,7 @@ Status: **proposta**. Fase 1 em andamento: o app (`app/`) roda localmente; nada 
 
 Só para o **modo agente**, quando o Agent Zero executa código, navega na web, mexe em arquivos ou roda tarefas longas. Isso precisa de um ambiente Linux com estado.
 
-Para **conversar**, que é a maior parte do uso de um app estilo Grok, não precisa de VM. Uma Lambda chama o Claude no Bedrock e devolve a resposta em streaming na hora. Se toda mensagem dependesse de acordar uma VM, cada conversa nova começaria com ~60–90s de espera, o que mata a sensação de Grok.
+Para **conversar**, que é a maior parte do uso de um app estilo Grok, não precisa de VM. Uma Lambda chama o modelo no Bedrock e devolve a resposta em streaming na hora. Se toda mensagem dependesse de acordar uma VM, cada conversa nova começaria com ~60–90s de espera, o que mata a sensação de Grok.
 
 ### Opções avaliadas
 
@@ -28,7 +28,7 @@ Para **conversar**, que é a maior parte do uso de um app estilo Grok, não prec
 ```mermaid
 flowchart LR
   U[App / PWA<br/>estilo Grok] -->|chat| CH[Lambda de chat<br/>streaming]
-  CH --> BR[Bedrock<br/>Claude]
+  CH --> BR[Bedrock<br/>GPT-6.1 Sol / GPT-6 Luna]
   CH <--> DB[(DynamoDB<br/>conversas + estado)]
   U -->|modo agente| CP[Control API<br/>Lambda]
   CP -->|Start/Stop| EC2[(EC2<br/>Agent Zero + Gateway)]
@@ -40,8 +40,8 @@ flowchart LR
 ```
 
 ### Como o uso flui
-1. Você abre o app e manda uma mensagem. A **Lambda de chat** responde em streaming na hora, usando Haiku, Sonnet ou Opus conforme o modo.
-2. Quando a tarefa pede execução (rodar código, pesquisar a fundo, mexer em arquivos), você liga o **modo agente**, ou o próprio Claude sugere ligar.
+1. Você abre o app e manda uma mensagem. A **Lambda de chat** responde em streaming na hora, usando GPT-6 Luna (Rápido) ou GPT-6.1 Sol (Avançado).
+2. Quando a tarefa pede execução (rodar código, pesquisar a fundo, mexer em arquivos), você liga o **modo agente**, ou o próprio assistente sugere ligar.
    - O app liga a VM e mostra "Acordando o agente… ~60s".
    - A tarefa entra na fila e é enviada ao Agent Zero quando ele estiver pronto.
 3. As etapas do agente aparecem num bloco "Pensando…" recolhível, como no Grok. O resultado final volta para a mesma conversa.
@@ -139,6 +139,7 @@ Se virar produto para outras pessoas, trocar a VM única por sessões isoladas p
 
 ## Decisões tomadas
 
+- **Modelos**: só OpenAI no Bedrock — **GPT-6.1 Sol** (principal/avançado) e **GPT-6 Luna** (rápido/utilitário).
 - **Usuário único** (por enquanto): login de uma pessoa só, uma VM, sem separação de dados por usuário. Se isso mudar, ver "Evolução possível".
 
 ## Decisões em aberto

@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Check, ChevronDown, Monitor, Paperclip, Square, Zap, Sparkles, Brain } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, Monitor, Paperclip, Square, Zap, Brain } from "lucide-react";
 import { MODES, type ModeId } from "@/lib/models";
 
 const MODE_ICONS: Record<ModeId, typeof Zap> = {
   rapido: Zap,
-  padrao: Sparkles,
-  power: Brain,
+  avancado: Brain,
 };
 
 interface Props {

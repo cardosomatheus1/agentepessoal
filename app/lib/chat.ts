@@ -40,7 +40,7 @@ export async function* streamChat(
   turns: ChatTurn[],
   signal?: AbortSignal,
 ): AsyncGenerator<ChatEvent> {
-  const mode = MODES[modeId] ?? MODES.padrao;
+  const mode = MODES[modeId] ?? MODES.rapido;
   const messages: BedrockMessage[] = turns.map((t) => ({
     role: t.role,
     content: [{ text: t.content }],

@@ -1,6 +1,6 @@
 # agentepessoal
 
-Configuração para rodar o [Agent Zero](https://github.com/agent0ai/agent-zero) com modelos da **OpenAI servidos pelo AWS Bedrock** (Claude continua como opção).
+Configuração para rodar o [Agent Zero](https://github.com/agent0ai/agent-zero) com modelos da **OpenAI servidos pelo AWS Bedrock** (GPT-6.1 Sol e GPT-6 Luna).
 
 ## Rodar
 
@@ -17,13 +17,11 @@ Abre em http://localhost:50001.
 
 | Preset | Modelo principal | Modelo utilitário |
 | --- | --- | --- |
-| Default | GPT-5.6 Terra | GPT-5.6 Luna |
-| Economico | gpt-oss-120b | gpt-oss-20b |
-| Power | GPT-5.6 Sol | GPT-5.6 Luna |
-| Claude | Claude Sonnet 5.5 | Claude Haiku 4.5 |
+| Default | GPT-6.1 Sol | GPT-6 Luna |
+| Rapido | GPT-6 Luna | GPT-6 Luna |
 
-Os GPT-5.6 usam o endpoint OpenAI-compatível do Bedrock (`bedrock-mantle.us-east-1.api.aws/openai/v1`, API Responses).
-Embeddings: `sentence-transformers/all-MiniLM-L6-v2` local (sem custo).
+Os dois usam o endpoint compatível com OpenAI do Bedrock (`bedrock-mantle.us-east-1.api.aws/openai/v1`, API Responses).
+Embeddings (memória): `sentence-transformers/all-MiniLM-L6-v2`, roda localmente, sem custo.
 
 ## Credenciais
 
