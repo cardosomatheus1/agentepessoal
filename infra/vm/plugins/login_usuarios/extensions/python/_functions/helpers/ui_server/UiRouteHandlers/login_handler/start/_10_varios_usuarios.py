@@ -43,6 +43,10 @@ class VariosUsuarios(Extension):
         if not u.carregar():
             return  # no users file: keep Agent Zero's own login
         current_app.permanent_session_lifetime = DURACAO
+        # A permanent session is re-sent on every response by default; with the page's parallel
+        # requests an older copy then overwrites the CSRF token another request just stored
+        # (every API call failed with 403). Only write the cookie when the session changes.
+        current_app.config["SESSION_REFRESH_EACH_REQUEST"] = False
         proximo = request.form.get("next") if request.method == "POST" else request.args.get("next")
         proximo = proximo if (proximo or "").startswith("/") and not (proximo or "").startswith("//") else ""
 
@@ -66,5 +70,6 @@ class VariosUsuarios(Extension):
         session.permanent = True
         session["authentication"] = login.get_credentials_hash()
         session["usuario"] = (request.form.get("username", "").strip().lower())
+        session["user_id"] = session["usuario"]  # Agent Zero's WebSocket layer keys connections by this
         session["usuario_nome"] = usuario.get("nome") or session["usuario"].title()
         data["result"] = redirect(proximo or url_for("serve_index"))

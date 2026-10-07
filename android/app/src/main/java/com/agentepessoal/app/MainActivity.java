@@ -19,6 +19,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
@@ -33,6 +34,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONObject;
+
 /**
  * Wraps the personal control page (start / hibernate the VM) and the Agent Zero UI it opens.
  *
@@ -42,6 +45,8 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
     private static final String PREFS = "agente";
     private static final String KEY_LINK = "link";
+    private static final String KEY_USER = "login_usuario";
+    private static final String KEY_PASS = "login_senha";
     private static final int REQ_FILES = 1;
     private static final int REQ_MIC = 2;
 
@@ -49,6 +54,8 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> filesCallback;
     private PermissionRequest pendingPermission;
     private long lastBack;
+    private volatile String currentUrl = "";
+    private long lastAutoLogin;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -142,7 +149,14 @@ public class MainActivity extends Activity {
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true);
 
+        web.addJavascriptInterface(new LoginBridge(), "AgenteApp");
         web.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                currentUrl = url == null ? "" : url;
+                if (isLoginPage(currentUrl)) injectLogin(view);
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
@@ -220,6 +234,51 @@ public class MainActivity extends Activity {
         }
     }
 
+    // ------------------------------------------------------------------ remembered login
+
+    /** The agent's login page (its address changes when the VM reboots; it is always a Cloudflare tunnel). */
+    private static boolean isLoginPage(String url) {
+        try {
+            Uri u = Uri.parse(url);
+            String host = u.getHost() == null ? "" : u.getHost();
+            String path = u.getPath() == null ? "" : u.getPath();
+            return "https".equals(u.getScheme()) && host.endsWith(".trycloudflare.com") && path.startsWith("/login");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Remember what is typed (when "Lembrar" is checked) and log in by itself with saved credentials. */
+    private void injectLogin(WebView view) {
+        String user = prefs().getString(KEY_USER, "");
+        String pass = prefs().getString(KEY_PASS, "");
+        boolean auto = !user.isEmpty() && System.currentTimeMillis() - lastAutoLogin > 30000;
+        if (auto) lastAutoLogin = System.currentTimeMillis();
+        String js = "(function(){var f=document.querySelector('form');if(!f)return;"
+                + "f.addEventListener('submit',function(){var l=document.getElementById('lembrar');"
+                + "AgenteApp.salvarLogin(document.getElementById('username').value,document.getElementById('password').value,!l||l.checked);});"
+                + (auto
+                    ? "if(!document.querySelector('.err')){document.getElementById('username').value=" + JSONObject.quote(user)
+                        + ";document.getElementById('password').value=" + JSONObject.quote(pass) + ";f.requestSubmit?f.requestSubmit():f.submit();}"
+                    : "")
+                + "})();";
+        view.evaluateJavascript(js, null);
+    }
+
+    private class LoginBridge {
+        @JavascriptInterface
+        public void salvarLogin(String user, String pass, boolean lembrar) {
+            if (!isLoginPage(currentUrl)) return; // only the agent's own login page may store credentials
+            SharedPreferences.Editor e = prefs().edit();
+            if (lembrar && user != null && !user.trim().isEmpty()) {
+                e.putString(KEY_USER, user.trim()).putString(KEY_PASS, pass == null ? "" : pass);
+            } else {
+                e.remove(KEY_USER).remove(KEY_PASS);
+            }
+            e.apply();
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode != REQ_FILES || filesCallback == null) {
@@ -266,11 +325,16 @@ public class MainActivity extends Activity {
         if (now - lastBack < 2000) {
             new AlertDialog.Builder(this)
                     .setTitle("Agente")
-                    .setItems(new CharSequence[]{"Sair", "Recarregar", "Trocar o link pessoal"}, (d, which) -> {
+                    .setItems(new CharSequence[]{"Fechar o app", "Recarregar", "Sair da conta (esquecer senha)", "Trocar o link pessoal"}, (d, which) -> {
                         if (which == 0) finish();
                         else if (which == 1) web.reload();
-                        else {
-                            prefs().edit().remove(KEY_LINK).apply();
+                        else if (which == 2) {
+                            prefs().edit().remove(KEY_USER).remove(KEY_PASS).apply();
+                            CookieManager.getInstance().removeAllCookies(null);
+                            CookieManager.getInstance().flush();
+                            web.loadUrl(prefs().getString(KEY_LINK, ""));
+                        } else {
+                            prefs().edit().remove(KEY_LINK).remove(KEY_USER).remove(KEY_PASS).apply();
                             web.clearHistory();
                             showSetup();
                         }

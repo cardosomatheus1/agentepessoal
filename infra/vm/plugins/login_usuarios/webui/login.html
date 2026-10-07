@@ -21,5 +21,14 @@ button{width:100%;border:0;border-radius:999px;padding:13px;font-size:15px;font-
 <label for="password">Senha</label>
 <input id="password" name="password" type="password" autocomplete="current-password" required>
 <input type="hidden" name="next" value="{{ next or '' }}">
+<label style="display:flex;gap:8px;align-items:center;color:var(--fg);font-size:14px;margin:2px 0 10px">
+<input id="lembrar" type="checkbox" checked style="width:auto;margin:0"> Lembrar usuário e senha neste aparelho</label>
 <button type="submit">Entrar</button>
-</form></body></html>
+</form>
+<script>
+// The browser's password manager keeps the password (autocomplete attributes above); we keep the
+// user name so the form comes pre-filled. The Android app stores both and logs in by itself.
+try{const u=localStorage.getItem("agente.usuario");if(u&&!document.getElementById("username").value){document.getElementById("username").value=u;document.getElementById("password").focus()}
+document.querySelector("form").addEventListener("submit",()=>{const u=document.getElementById("username").value.trim();
+if(document.getElementById("lembrar").checked)localStorage.setItem("agente.usuario",u);else localStorage.removeItem("agente.usuario")})}catch(e){}
+</script></body></html>
