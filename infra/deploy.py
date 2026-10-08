@@ -247,11 +247,11 @@ def presets_yaml() -> str:
     base = "http://host.docker.internal:8787/openai/v1"
     kwargs = "      a0_api_mode: responses\n      responses_state: local\n"
 
-    def model(slot: str, name: str, extra: str) -> str:
+    def model(slot: str, name: str, extra: str, effort: str = "") -> str:
         return (
             f"  {slot}:\n    provider: other\n    name: {name}\n    api_base: {base}\n"
             f"    ctx_length: 200000\n{extra}    rl_requests: 0\n    rl_input: 0\n    rl_output: 0\n"
-            f"    kwargs:\n{kwargs}"
+            f"    kwargs:\n{kwargs}" + (f"      reasoning_effort: {effort}\n" if effort else "")
         )
 
     def claude(slot: str, name: str, extra: str, effort: str = "") -> str:
@@ -279,6 +279,9 @@ def presets_yaml() -> str:
         + embedding
         + "- name: Rapido\n"
         + model("chat", "openai.gpt-6-luna", chat_extra)
+        + model("utility", "openai.gpt-6-luna", util_extra)
+        + "- name: Luna max\n"
+        + model("chat", "openai.gpt-6-luna", chat_extra, effort="max")
         + model("utility", "openai.gpt-6-luna", util_extra)
         + "- name: Sol + Haiku\n"
         + model("chat", "openai.gpt-6.1-sol", chat_extra)
