@@ -1,7 +1,7 @@
 - name: Default
   chat:
     provider: other
-    name: openai.gpt-6.1-sol
+    name: openai.gpt-6-luna
     api_base: https://bedrock-mantle.us-east-1.api.aws/openai/v1
     ctx_length: 200000
     ctx_history: 0.7
@@ -32,10 +32,10 @@
     rl_requests: 0
     rl_input: 0
     kwargs: {}
-- name: Rapido
+- name: Sol
   chat:
     provider: other
-    name: openai.gpt-6-luna
+    name: openai.gpt-6.1-sol
     api_base: https://bedrock-mantle.us-east-1.api.aws/openai/v1
     ctx_length: 200000
     ctx_history: 0.7

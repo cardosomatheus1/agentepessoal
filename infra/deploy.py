@@ -273,12 +273,12 @@ def presets_yaml() -> str:
         "    api_base: ''\n    rl_requests: 0\n    rl_input: 0\n    kwargs: {}\n"
     )
     return (
-        "- name: Default\n"
-        + model("chat", "openai.gpt-6.1-sol", chat_extra)
+        "- name: Default\n"  # GPT-6 Luna at its default (medium) effort: in the model tests it was as accurate as Sol and faster
+        + model("chat", "openai.gpt-6-luna", chat_extra)
         + model("utility", "openai.gpt-6-luna", util_extra)
         + embedding
-        + "- name: Rapido\n"
-        + model("chat", "openai.gpt-6-luna", chat_extra)
+        + "- name: Sol\n"
+        + model("chat", "openai.gpt-6.1-sol", chat_extra)
         + model("utility", "openai.gpt-6-luna", util_extra)
         + "- name: Luna alto\n"
         + model("chat", "openai.gpt-6-luna", chat_extra, effort="high")
@@ -286,17 +286,8 @@ def presets_yaml() -> str:
         + "- name: Luna max\n"
         + model("chat", "openai.gpt-6-luna", chat_extra, effort="max")
         + model("utility", "openai.gpt-6-luna", util_extra)
-        + "- name: Sol + Haiku\n"
-        + model("chat", "openai.gpt-6.1-sol", chat_extra)
-        + claude("utility", haiku, util_extra)
-        + "- name: Haiku\n"
-        + claude("chat", haiku, chat_extra)
-        + claude("utility", haiku, util_extra)
         + "- name: Haiku alto\n"
         + claude("chat", haiku, chat_extra, effort="high")
-        + claude("utility", haiku, util_extra)
-        + "- name: Haiku max\n"
-        + claude("chat", haiku, chat_extra, effort="max")
         + claude("utility", haiku, util_extra)
     )
 

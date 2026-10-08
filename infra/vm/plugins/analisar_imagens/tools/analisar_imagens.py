@@ -20,7 +20,7 @@ from pathlib import Path
 from helpers.tool import Response, Tool
 
 URL = "http://host.docker.internal:8787/openai/v1/responses"
-MODELO = "openai.gpt-6.1-sol"
+MODELO = "openai.gpt-6-luna"
 EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
 PARALELO = 4
 MAX_ARQUIVOS = 300

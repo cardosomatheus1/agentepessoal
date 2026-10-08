@@ -17,8 +17,8 @@ Abre em http://localhost:50001.
 
 | Preset | Modelo principal | Modelo utilitário |
 | --- | --- | --- |
-| Default | GPT-6.1 Sol | GPT-6 Luna |
-| Rapido | GPT-6 Luna | GPT-6 Luna |
+| Default | GPT-6 Luna | GPT-6 Luna |
+| Sol | GPT-6.1 Sol | GPT-6 Luna |
 
 Os dois usam o endpoint compatível com OpenAI do Bedrock (`bedrock-mantle.us-east-1.api.aws/openai/v1`, API Responses).
 Embeddings (memória): `sentence-transformers/all-MiniLM-L6-v2`, roda localmente, sem custo.
