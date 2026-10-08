@@ -6,8 +6,11 @@ vê prints. `assistir_video` resolve pelos dois lados:
 
 1. baixa o vídeo com `yt-dlp` (sem login; se o site exigir, com os cookies do próprio navegador do agente,
    onde ele já está logado) ou usa um arquivo já anexado;
-2. tira até 16 quadros espalhados pelo vídeo (`ffmpeg`) e transcreve o áudio (faster-whisper);
-3. manda quadros + transcrição numa chamada ao modelo de visão e devolve a descrição, a transcrição e
-   os caminhos dos arquivos (`/a0/usr/workdir/videos/<id>/`).
+2. o **Amazon Nova 2 Lite** (Bedrock, pelo proxy da VM) assiste o vídeo inteiro e, junto com a transcrição
+   da fala (o Nova não ouve áudio), descreve em ordem com os tempos; vídeos acima de 20 MB são recodificados
+   em 480p antes de enviar. (O TwelveLabs Pegasus ouve o áudio também, mas exige assinatura no AWS Marketplace.)
+3. a transcrição da fala (faster-whisper, com tempos) vai antes, no mesmo pedido, e volta junto para citações;
+4. se o Nova falhar: até 16 quadros (`ffmpeg`) + transcrição numa chamada ao modelo de visão.
 
-Limites: até 20 min e 300 MB por vídeo.
+Tudo fica em `/a0/usr/workdir/videos/<id>/`. Limites: até 20 min e 300 MB por vídeo. Um vídeo de 1 min
+leva ~10 s no Nova (mais a transcrição).

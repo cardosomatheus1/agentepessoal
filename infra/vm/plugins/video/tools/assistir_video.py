@@ -1,7 +1,10 @@
-"""Watch a video: download it, take frames across it, transcribe the audio, describe it in one model call.
+"""Watch a video: download it and have a video model watch all of it (picture and sound).
 
 The agent's Playwright Chromium has no H.264/AAC, so Instagram (and many sites) fail to play in the
-browser, and screenshots of a player were never "watching" anyway.
+browser, and screenshots of a player were never "watching" anyway. Amazon Nova 2 Lite (Bedrock)
+watches the whole video; it does not hear the sound, so the faster-whisper transcript (with times)
+goes in the same request. If Nova fails, frames + a vision model are the fallback. (TwelveLabs
+Pegasus also hears the audio, but it is sold through AWS Marketplace and needs a subscription.)
 """
 
 import asyncio
@@ -21,6 +24,8 @@ PASTA = Path("/a0/usr/workdir/videos")
 PERFIL = "/a0/tmp/browser/sessions/shared/Default"  # the agent's own browser, already logged in
 MAX_SEGUNDOS = 20 * 60
 MAX_QUADROS = 16
+NOVA = "http://host.docker.internal:8787/bedrock/model/us.amazon.nova-2-lite-v1:0/converse"
+MAX_BASE64 = 20 * 1024 * 1024  # bigger videos are re-encoded smaller before sending
 YTDLP = ["/opt/venv-a0/bin/python", "-m", "yt_dlp"]
 _WHISPER = None
 
@@ -93,6 +98,38 @@ def _descrever(quadros: list[tuple[float, Path]], transcricao: str, pergunta: st
                    for c in item.get("content", []) if c.get("type") == "output_text").strip()
 
 
+def _caber(video: Path, duracao: float) -> Path:
+    """Re-encode (480p, bitrate for ~18 MB) when the video is too big to send inline."""
+    if video.stat().st_size <= MAX_BASE64:
+        return video
+    menor = video.with_name("video_menor.mp4")
+    if not menor.exists():
+        kbps = max(150, int(18 * 8 * 1024 / max(duracao, 1)) - 64)
+        subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-i", str(video), "-vf", "scale=-2:'min(480,ih)'",
+                        "-c:v", "libx264", "-preset", "veryfast", "-b:v", f"{kbps}k", "-c:a", "aac", "-b:a", "64k",
+                        str(menor)], timeout=900, check=True)
+    return menor
+
+
+def _assistir_nova(video: Path, duracao: float, transcricao: str, pergunta: str, legenda: str) -> str:
+    prompt = ("Assista o vídeo inteiro e responda em português. Você não ouve o áudio: a transcrição da fala, com os "
+              "tempos, está abaixo; junte o que aparece na tela com o que é falado em cada momento. Primeiro descreva em "
+              "ordem, com os tempos (mm:ss), o que acontece: o que aparece, textos legíveis, telas de programas, o que a "
+              "pessoa fala e mostra. Depois responda à pergunta do usuário, se houver. Não invente o que não está no "
+              "vídeo nem na transcrição; diga quando algo não dá para ler.\n\n"
+              f"Pergunta do usuário: {pergunta or '(nenhuma: resuma o vídeo)'}\n\n"
+              + (f"Legenda do post (contexto): {legenda[:1000]}\n\n" if legenda else "")
+              + f"Transcrição da fala:\n{transcricao[:15000] or '(sem fala)'}")
+    dados = base64.b64encode(_caber(video, duracao).read_bytes()).decode()
+    corpo = {"messages": [{"role": "user", "content": [{"video": {"format": "mp4", "source": {"bytes": dados}}},
+                                                       {"text": prompt}]}],
+             "inferenceConfig": {"maxTokens": 4000, "temperature": 0}}
+    req = urllib.request.Request(NOVA, data=json.dumps(corpo).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=600) as r:
+        saida = json.loads(r.read())
+    return "".join(c.get("text", "") for c in saida["output"]["message"]["content"]).strip()
+
+
 def _legenda(url: str) -> str:
     try:
         r = subprocess.run([*YTDLP, "--skip-download", "--print", "%(description)s", "--quiet", "--no-warnings", url],
@@ -117,17 +154,23 @@ def assistir(url: str, caminho: str, pergunta: str) -> str:
         return "Não consegui ler esse vídeo (formato ou arquivo inválido)."
     if duracao > MAX_SEGUNDOS:
         return f"O vídeo tem {int(duracao // 60)} min; o limite é {MAX_SEGUNDOS // 60} min. Peça um trecho ou um vídeo menor."
-    quadros = _quadros(video, destino, duracao)
+    legenda = _legenda(url) if url else ""
     try:
         transcricao = _transcrever(video)
     except Exception as exc:
         transcricao = f"(não consegui transcrever: {str(exc)[:200]})"
     (destino / "transcricao.txt").write_text(transcricao, encoding="utf-8")
-    descricao = _descrever(quadros, transcricao, pergunta, _legenda(url) if url else "")
+    try:
+        descricao, como = _assistir_nova(video, duracao, transcricao, pergunta, legenda), "assistido inteiro + fala transcrita"
+    except Exception as exc:  # fallback: frames + vision model
+        print(f"video: Nova failed, using frames: {exc}", flush=True)
+        quadros = _quadros(video, destino, duracao)
+        descricao = _descrever(quadros, transcricao, pergunta, legenda)
+        como = f"{len(quadros)} quadros analisados (o modelo de vídeo falhou)"
     (destino / "descricao.md").write_text(descricao, encoding="utf-8")
-    return (f"Vídeo assistido ({int(duracao // 60)}:{int(duracao % 60):02d}, {len(quadros)} quadros analisados).\n\n"
-            f"{descricao}\n\n--- Transcrição do áudio ---\n{transcricao[:4000] or '(sem fala)'}\n\n"
-            f"Arquivos: {destino} (vídeo, quadro_*.jpg, transcricao.txt, descricao.md)")
+    return (f"Vídeo {int(duracao // 60)}:{int(duracao % 60):02d} — {como}.\n\n"
+            f"{descricao}\n\n--- Transcrição exata do áudio ---\n{transcricao[:4000] or '(sem fala)'}\n\n"
+            f"Arquivos: {destino} (vídeo, transcricao.txt, descricao.md)")
 
 
 class AssistirVideo(Tool):
