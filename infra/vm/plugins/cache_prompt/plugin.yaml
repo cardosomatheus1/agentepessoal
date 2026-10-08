@@ -1,0 +1,4 @@
+name: cache_prompt
+title: Cache do prompt
+description: Faz cada chamada ao modelo começar exatamente com a chamada anterior, para o Bedrock cobrar o que se repete como cache (1/10 do preço) — o bloco de extras (hora, navegador, memórias) entra no histórico só com o que mudou, em vez de ser trocado no fim de cada chamada.
+version: 1.0.0
