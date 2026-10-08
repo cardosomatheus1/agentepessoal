@@ -3,7 +3,8 @@
 - agent: Agent Zero's built-in Cloudflare tunnel (handles its origin checks)
 - phone: a host cloudflared quick tunnel in front of ws-scrcpy
 
-Quick-tunnel URLs change on reboot (not on hibernate/resume). The control page
+Quick-tunnel URLs change on reboot. After hibernate/resume the agent tunnel may
+keep its URL but stop answering; it is recreated after a few failed checks. The control page
 writes "starting"/"stopped" into the parameters, so we compare against SSM on
 every pass and republish whenever the stored value differs from the live URL.
 """
@@ -62,10 +63,36 @@ def ui_up() -> bool:
         return False
 
 
+def reachable(url: str) -> bool:
+    """The public side of the tunnel answers (any status below 500 means Cloudflare reached the UI)."""
+    try:
+        with urllib.request.urlopen(url.rstrip("/") + "/login", timeout=15) as r:
+            return r.status < 500
+    except urllib.error.HTTPError as e:
+        return e.code < 500
+    except Exception:
+        return False
+
+
+_dead_checks = {"n": 0}
+DEAD_LIMIT = 3  # ~3 refreshes (3 min) of a dead public URL before recreating the tunnel
+
+
 def agent_url() -> str | None:
     if not ui_up():
         return None
-    return (tunnel("get") or {}).get("tunnel_url") or (tunnel("create") or {}).get("tunnel_url")
+    url = (tunnel("get") or {}).get("tunnel_url")
+    # After hibernate/resume the quick tunnel often keeps reporting its old URL while
+    # Cloudflare answers 530/connection errors: recreate it instead of publishing a dead link.
+    if url and not reachable(url):
+        _dead_checks["n"] += 1
+        if _dead_checks["n"] < DEAD_LIMIT:
+            return url
+        print(f"report_url: {url} unreachable, recreating the agent tunnel", flush=True)
+        tunnel("stop")
+        url = None
+    _dead_checks["n"] = 0
+    return url or (tunnel("create") or {}).get("tunnel_url")
 
 
 def phone_url() -> str | None:
