@@ -34,7 +34,7 @@ ACAO = {"browser", "code_execution_tool", "code_execution", "terminal", "code_ex
 
 def _age(tool_name: str) -> bool:
     nome = (tool_name or "").lower()
-    return nome in ACAO or "__" in nome  # MCP tools (name__action) act on external systems
+    return nome in ACAO  # not MCP connectors (server.tool): one that sends mail could carry the value to others
 
 
 class SegredosDaPessoa(Extension):

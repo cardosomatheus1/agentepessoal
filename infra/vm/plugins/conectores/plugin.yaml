@@ -1,0 +1,4 @@
+name: conectores
+title: Conectores por pessoa
+description: Conectores MCP (Google, GitHub…) ligados à conta de uma pessoa só podem ser usados nas conversas dessa pessoa.
+version: 1.0.0

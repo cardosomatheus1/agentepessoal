@@ -105,8 +105,10 @@ def precisa_revisao(tool: str, args: dict, intencao: str) -> bool:
         return bool(PALAVRAS.search(intencao + " " + _texto(args)))
     if nome in ("code_execution_tool", "code_execution", "terminal"):
         return bool(DESTRUTIVO.search(_texto(args)))
-    if "__" in nome or nome.startswith("mcp"):  # MCP connectors: anything that writes
-        return bool(re.search(r"send|create|update|delete|post|write|remove|reply|insert|modify", nome))
+    if "." in nome or "__" in nome or nome.startswith("mcp"):  # MCP connectors (Agent Zero: server.tool): anything that writes
+        acao = nome.split(".", 1)[-1]
+        return bool(re.search(r"send|create|update|delete|post|write|remove|reply|insert|modify|draft|share|move|"
+                              r"trash|import|upload|copy|rename|manage|set_|add_|patch", acao))
     return False
 
 

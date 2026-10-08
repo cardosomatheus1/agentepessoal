@@ -145,6 +145,10 @@ EOF
 # faster-whisper for voice notes (plugins/whatsapp): ~2x faster than Agent Zero's Whisper on CPU
 docker exec agent-zero /opt/venv-a0/bin/pip install --quiet faster-whisper || true
 
+# Google connector (MCP, plugins/conectores): its own venv under usr/ so it survives container rebuilds
+docker exec agent-zero sh -c '[ -x /a0/usr/mcp/venv-google/bin/workspace-mcp ] || (mkdir -p /a0/usr/mcp/google &&
+  uv venv -q -p 3.12 /a0/usr/mcp/venv-google && VIRTUAL_ENV=/a0/usr/mcp/venv-google uv pip install -q workspace-mcp==2.0.1)' || true
+
 # --- systemd units ---------------------------------------------------------------
 cat > /etc/systemd/system/agentepessoal-proxy.service <<'EOF'
 [Unit]
