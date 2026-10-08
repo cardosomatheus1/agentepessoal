@@ -261,7 +261,7 @@ def presets_yaml() -> str:
             f"  {slot}:\n    provider: bedrock\n    name: converse/{name}\n"
             f"    ctx_length: 200000\n{extra}    rl_requests: 0\n    rl_input: 0\n    rl_output: 0\n"
             "    kwargs:\n      a0_api_mode: chat\n      api_base: http://host.docker.internal:8787/bedrock\n"
-            "      api_key: proxy\n      aws_region_name: us-east-1\n"
+            "      api_key: proxy\n      aws_region_name: us-east-1\n      max_tokens: 32000\n"
             + (f"      output_config:\n        effort: {effort}\n" if effort else "")
         )
 
