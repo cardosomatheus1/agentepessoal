@@ -259,8 +259,16 @@ def ciclo_entrada() -> None:
             continue
         for m in r.get("Messages", []):
             item = json.loads(m["Body"])
-            mid = item["mensagem"].get("id", "")
             ativo()
+            if "gatilho" in item:  # an event trigger fired from outside (control function /gatilho)
+                try:
+                    entregar({"usuario": item["usuario"], "conversa": "gatilhos", "gatilho": item["gatilho"],
+                              "texto": item.get("conteudo", ""), "id": f"gatilho-{m['MessageId']}"})
+                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+                except Exception as exc:  # stays in the queue and is retried after the visibility timeout
+                    log(f"trigger {item.get('gatilho')} not delivered: {exc}")
+                continue
+            mid = item["mensagem"].get("id", "")
             try:
                 if mid and mid in _vistos():
                     sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
@@ -303,8 +311,14 @@ class Saida(http.server.BaseHTTPRequestHandler):
         self.wfile.write(dados)
 
     def do_POST(self):
-        if self.path != "/enviar" or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
+        if self.path not in ("/enviar", "/gatilho_url") or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
             return self._responder(403, {"erro": "sem acesso"})
+        if self.path == "/gatilho_url":  # the address a service calls to fire one of the agent's triggers
+            pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+            c = cfg()
+            if not c.get("base_url") or not c.get("caminho_gatilhos"):
+                return self._responder(503, {"erro": "abra a caixa WhatsApp da página de controle uma vez para ativar os gatilhos"})
+            return self._responder(200, {"url": f"{c['base_url']}/gatilho/{c['caminho_gatilhos']}/{pedido.get('usuario')}/{pedido.get('nome')}"})
         try:
             pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
             numeros = {u: n for n, u in (cfg().get("numeros") or {}).items()}

@@ -74,6 +74,7 @@ class EnviarResposta(Extension):
         else:
             ultima = float(ctx.get_data("_whatsapp_ultima_do_usuario") or 0)
             ausente = bool(ultima) and time.time() - ultima > AUSENTE
+            tarefa = tarefa or bool(ctx.get_data("avisar_sempre"))  # the "Gatilhos" chat
             if not (tarefa or ausente):
                 return
             destino, mensagem = p.dono(ctx), _aviso(ctx, texto, tarefa)

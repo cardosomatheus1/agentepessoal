@@ -160,6 +160,12 @@ def ensure_vm_role() -> str:
                     "Action": ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:GetQueueUrl"],
                     "Resource": f"arn:aws:sqs:{REGION}:{account}:{WHATSAPP_QUEUE}",
                 },
+                {   # proximo_despertar.py: wake exactly for the next scheduled task
+                    "Effect": "Allow",
+                    "Action": ["scheduler:CreateSchedule", "scheduler:UpdateSchedule", "scheduler:DeleteSchedule"],
+                    "Resource": f"arn:aws:scheduler:{REGION}:{account}:schedule/default/{NAME}-acordar-tarefa",
+                },
+                {"Effect": "Allow", "Action": "iam:PassRole", "Resource": f"arn:aws:iam::{account}:role/{WAKE_ROLE}"},
                 {   # the idle watchdog hibernates its own instance
                     "Effect": "Allow",
                     "Action": "ec2:StopInstances",
@@ -418,32 +424,27 @@ def ensure_instance(profile_arn: str, subnet: str, sg: str) -> str:
 
 
 def ensure_wake_schedule(instance_id: str) -> None:
-    """The VM hibernates when idle, which would also stop the agent's own scheduled tasks.
-    Start it 10 minutes before they run (00/06/12/18 America/Bahia = 03/09/15/21 UTC)."""
+    """Role that EventBridge Scheduler uses to start the VM: for the agent's next scheduled task
+    (proximo_despertar.py, set at every hibernation) and for WhatsApp messages that arrive while
+    it is still hibernating. The old fixed 4-times-a-day wake-up is removed."""
     name = WAKE_ROLE
     trust = {"Version": "2012-10-17", "Statement": [{
         "Effect": "Allow", "Principal": {"Service": "scheduler.amazonaws.com"}, "Action": "sts:AssumeRole",
         "Condition": {"StringEquals": {"aws:SourceAccount": account}}}]}
     try:
-        role_arn = iam.get_role(RoleName=name)["Role"]["Arn"]
+        iam.get_role(RoleName=name)
     except iam.exceptions.NoSuchEntityException:
-        role_arn = iam.create_role(RoleName=name, AssumeRolePolicyDocument=json.dumps(trust), Tags=TAGS)["Role"]["Arn"]
+        iam.create_role(RoleName=name, AssumeRolePolicyDocument=json.dumps(trust), Tags=TAGS)
         time.sleep(10)
     iam.put_role_policy(RoleName=name, PolicyName="start-vm", PolicyDocument=json.dumps({
         "Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "ec2:StartInstances",
                                                 "Resource": f"arn:aws:ec2:{REGION}:{account}:instance/{instance_id}"}]}))
     scheduler = boto3.client("scheduler", region_name=REGION)
-    args = dict(
-        Name=name, ScheduleExpression="cron(50 2,8,14,20 * * ? *)", ScheduleExpressionTimezone="UTC",
-        FlexibleTimeWindow={"Mode": "OFF"}, State="ENABLED",
-        Target={"Arn": "arn:aws:scheduler:::aws-sdk:ec2:startInstances", "RoleArn": role_arn,
-                "Input": json.dumps({"InstanceIds": [instance_id]})},
-    )
     try:
-        scheduler.create_schedule(**args)
-        log(f"created schedule {name}")
-    except scheduler.exceptions.ConflictException:
-        scheduler.update_schedule(**args)
+        scheduler.delete_schedule(Name=f"{NAME}-acordar-vm")
+        log("removed the fixed wake-up schedule")
+    except scheduler.exceptions.ResourceNotFoundException:
+        pass
 
 
 # ---------------------------------------------------------------- control page

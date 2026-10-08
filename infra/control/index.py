@@ -160,6 +160,10 @@ def _json(body: dict, code: int = 200) -> dict:
 
 def handler(event, _context):
     method = event.get("requestContext", {}).get("http", {}).get("method", "GET")
+    if event.get("rawPath", "").startswith("/gatilho/") and method == "POST":
+        raw = event.get("body") or ""
+        raw = base64.b64decode(raw) if event.get("isBase64Encoded") else raw.encode()
+        return whatsapp.gatilho(event["rawPath"], raw, _state, _start, _start_later)
     if event.get("rawPath", "").startswith("/whatsapp/"):
         if not whatsapp.caminho_ok(event["rawPath"]):
             return {"statusCode": 404, "body": "not found"}

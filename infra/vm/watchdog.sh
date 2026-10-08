@@ -30,5 +30,9 @@ if awk -v l="$load5" -v c="$cpus" 'BEGIN { exit !(l >= c * 0.5) }'; then
   exit 0
 fi
 
+# a scheduled task is about to run: stay up rather than sleep and wake again
+/opt/agentepessoal/venv/bin/python /opt/agentepessoal/proximo_despertar.py --perto 15
+[ $? -eq 3 ] && exit 0
+
 logger -t agentepessoal "idle for ${IDLE_MINUTES} min (load5=${load5}); hibernating"
 exec /opt/agentepessoal/hibernate.sh

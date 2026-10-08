@@ -53,7 +53,8 @@ def save_config(updates: dict) -> dict:
     cfg = dict(config())
     cfg.setdefault("verify_token", secrets.token_urlsafe(24))
     cfg.setdefault("caminho", secrets.token_urlsafe(24))
-    for campo in ("token", "app_secret", "phone_number_id", "modelo_aviso"):
+    cfg.setdefault("caminho_gatilhos", secrets.token_urlsafe(24))
+    for campo in ("token", "app_secret", "phone_number_id", "modelo_aviso", "base_url"):
         valor = str(updates.get(campo) or "").strip()
         if valor:
             cfg[campo] = valor
@@ -74,8 +75,8 @@ def save_config(updates: dict) -> dict:
 
 def status(base_url: str) -> dict:
     cfg = config()
-    if not cfg.get("caminho"):
-        cfg = save_config({})
+    if not cfg.get("caminho_gatilhos") or cfg.get("base_url") != base_url.rstrip("/"):
+        cfg = save_config({"base_url": base_url.rstrip("/")})  # the VM builds trigger URLs from it
     return {
         "webhook": f"{base_url.rstrip('/')}/whatsapp/{cfg['caminho']}",
         "verify_token": cfg["verify_token"],
@@ -89,6 +90,28 @@ def status(base_url: str) -> dict:
 def caminho_ok(path: str) -> bool:
     esperado = config().get("caminho", "")
     return bool(esperado) and hmac.compare_digest(path.rstrip("/").rsplit("/", 1)[-1], esperado)
+
+
+def gatilho(path: str, raw: bytes, vm_state, start_vm, start_vm_later) -> dict:
+    """POST /gatilho/<caminho_gatilhos>/<login>/<nome>: any service fires one of the agent's
+    triggers; the body (up to 20k chars) goes to that person's "Gatilhos" chat and the VM wakes."""
+    partes = path.strip("/").split("/")
+    cfg = config()
+    esperado = cfg.get("caminho_gatilhos", "")
+    if len(partes) != 4 or not esperado or not hmac.compare_digest(partes[1], esperado):
+        return _text("not found", 404)
+    usuario, nome = partes[2].lower(), partes[3]
+    if not re.fullmatch(r"[a-z0-9_]{1,40}", usuario) or not re.fullmatch(r"[A-Za-z0-9_-]{1,60}", nome):
+        return _text("bad request", 400)
+    conteudo = raw.decode("utf-8", "replace")[:20000]
+    sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=json.dumps(
+        {"gatilho": nome, "usuario": usuario, "conteudo": conteudo, "recebida": time.time()}, ensure_ascii=False))
+    estado = vm_state()
+    if estado == "stopped":
+        start_vm()
+    elif estado == "stopping":
+        start_vm_later()
+    return _text("ok")
 
 
 def _text(body: str, code: int = 200) -> dict:

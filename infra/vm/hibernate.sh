@@ -4,6 +4,8 @@
 set -u
 REGION=us-east-1
 /opt/agentepessoal/backup.sh || true
+# wake exactly for the agent's next scheduled task (one-shot AWS schedule; none = stays asleep)
+/opt/agentepessoal/venv/bin/python /opt/agentepessoal/proximo_despertar.py 2>&1 | logger -t agentepessoal || true
 TOKEN=$(curl -sS -X PUT http://169.254.169.254/latest/api/token -H "X-aws-ec2-metadata-token-ttl-seconds: 60")
 IID=$(curl -sS -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
 for p in agent-url phone-url; do
