@@ -143,7 +143,7 @@ docker exec -i agent-zero sh -c 'mkdir -p /etc/chromium/policies/managed && cat 
 EOF
 
 # faster-whisper for voice notes (plugins/whatsapp): ~2x faster than Agent Zero's Whisper on CPU
-docker exec agent-zero /opt/venv-a0/bin/pip install --quiet faster-whisper || true
+docker exec agent-zero /opt/venv-a0/bin/pip install --quiet faster-whisper yt-dlp || true  # yt-dlp: plugins/video
 
 # Google connector (MCP, plugins/conectores): its own venv under usr/ so it survives container rebuilds
 docker exec agent-zero sh -c '[ -x /a0/usr/mcp/venv-google/bin/workspace-mcp ] || (mkdir -p /a0/usr/mcp/google &&
