@@ -31,7 +31,8 @@ class CofrePrompt(Extension):
         nomes = sorted(c.carregar(c.dono(self.agent.context)))
         linhas = ["## Cofre de senhas do usuário",
                   "Para senhas, tokens e dados sensíveis use o cofre: escreva `§§secret(NOME)` no argumento da ferramenta "
-                  "(ex.: no campo de senha do navegador) e o valor real entra só na hora de executar — você nunca o vê. "
+                  "(ex.: no campo de senha do navegador, ou no `texto` da ação `digitar` do celular) e o valor real entra só na hora de "
+                  "executar — você nunca o vê. Vale para navegador, celular virtual, desktop e terminal. "
                   "Depois disso, a página e os resultados mostram `§§secret(NOME)` no lugar do valor (ele é mascarado "
                   "para você), e campos de senha costumam aparecer VAZIOS ou com pontos: isso NÃO quer dizer que falhou — o "
                   "valor real está no campo. Digite uma vez e clique em Avançar/Entrar; só conclua que falhou se o site "

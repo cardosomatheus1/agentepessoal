@@ -26,7 +26,10 @@ from helpers.extension import Extension
 # Only tools that act on a site or system get the real value. Anything that produces text for a
 # person or for storage (response, WhatsApp/Telegram, files, memory, subordinates, Sol) keeps the
 # placeholder: an answer mentioning §§secret(NAME) once went out with the real password in it.
-ACAO = {"browser", "code_execution_tool", "code_execution", "terminal", "code_execution_remote"}
+# The virtual phone and the desktop/terminal typing tools count too: without them a login on the
+# phone typed the placeholder name instead of the password.
+ACAO = {"browser", "code_execution_tool", "code_execution", "terminal", "code_execution_remote",
+        "celular", "input", "input_remote", "computer_use_remote"}
 
 
 def _age(tool_name: str) -> bool:
