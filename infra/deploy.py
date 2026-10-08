@@ -254,6 +254,17 @@ def presets_yaml() -> str:
             f"    kwargs:\n{kwargs}"
         )
 
+    def claude(slot: str, name: str, extra: str) -> str:
+        # Claude runs on the Bedrock runtime (Converse API) behind the proxy's /bedrock route; the
+        # proxy swaps the placeholder key for a fresh bearer token
+        return (
+            f"  {slot}:\n    provider: bedrock\n    name: converse/{name}\n"
+            f"    ctx_length: 200000\n{extra}    rl_requests: 0\n    rl_input: 0\n    rl_output: 0\n"
+            "    kwargs:\n      a0_api_mode: chat\n      api_base: http://host.docker.internal:8787/bedrock\n"
+            "      api_key: proxy\n      aws_region_name: us-east-1\n"
+        )
+
+    haiku = "us.anthropic.claude-haiku-5-5"
     chat_extra = "    ctx_history: 0.7\n    vision: true\n    max_embeds: 30\n"  # images kept in context; at 10 a 7+5 image comparison looped forever
     util_extra = "    ctx_input: 0.7\n"
     embedding = (
@@ -268,6 +279,12 @@ def presets_yaml() -> str:
         + "- name: Rapido\n"
         + model("chat", "openai.gpt-6-luna", chat_extra)
         + model("utility", "openai.gpt-6-luna", util_extra)
+        + "- name: Sol + Haiku\n"
+        + model("chat", "openai.gpt-6.1-sol", chat_extra)
+        + claude("utility", haiku, util_extra)
+        + "- name: Haiku\n"
+        + claude("chat", haiku, chat_extra)
+        + claude("utility", haiku, util_extra)
     )
 
 

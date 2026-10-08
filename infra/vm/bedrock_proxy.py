@@ -1,6 +1,7 @@
 """Local proxy for the agent's model APIs, so no keys live inside the Agent Zero container.
 
 - /openai/...   -> Bedrock's OpenAI-compatible endpoint (bedrock-mantle), short-term token from the VM role
+- /bedrock/...  -> Bedrock runtime (Converse API, for the Claude models), same token
 - /typesafe/... -> TypeSafe (Jev), API key read from SSM /agentepessoal/typesafe-api-key
 - /arquivos/...  -> big-file uploads into a chat: presigned S3 PUT (from the VM role) and
                     an on-demand run of entrada.sh, which moves the file into the chat's anexos/
@@ -27,6 +28,7 @@ from aws_bedrock_token_generator import provide_token
 
 REGION = os.environ.get("AWS_REGION", "us-east-1")
 UPSTREAM = os.environ.get("UPSTREAM_HOST", f"bedrock-mantle.{REGION}.api.aws")
+RUNTIME = f"bedrock-runtime.{REGION}.amazonaws.com"
 LISTEN = (os.environ.get("LISTEN_HOST", "0.0.0.0"), int(os.environ.get("LISTEN_PORT", "8787")))
 ACTIVITY_FILE = Path(os.environ.get("ACTIVITY_FILE", "/var/lib/agentepessoal/last-activity"))
 TOKEN_TTL = 30 * 60  # refresh well before the 1h token expiry
@@ -162,6 +164,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return
             upstream, path = TYPESAFE_HOST, path[len("/typesafe"):]
             headers["Authorization"] = f"Bearer {key}"
+        elif path.startswith("/bedrock/"):
+            upstream, path = RUNTIME, path[len("/bedrock"):]
+            headers["Authorization"] = f"Bearer {bearer_token()}"
         else:
             headers["Authorization"] = f"Bearer {bearer_token()}"
         if body is not None:
