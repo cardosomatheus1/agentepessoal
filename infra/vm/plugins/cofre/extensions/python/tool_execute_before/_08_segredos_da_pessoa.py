@@ -23,9 +23,36 @@ def cofre():
 from helpers.extension import Extension
 
 
+# Only tools that act on a site or system get the real value. Anything that produces text for a
+# person or for storage (response, WhatsApp/Telegram, files, memory, subordinates, Sol) keeps the
+# placeholder: an answer mentioning §§secret(NAME) once went out with the real password in it.
+ACAO = {"browser", "code_execution_tool", "code_execution", "terminal", "code_execution_remote"}
+
+
+def _age(tool_name: str) -> bool:
+    nome = (tool_name or "").lower()
+    return nome in ACAO or "__" in nome  # MCP tools (name__action) act on external systems
+
+
 class SegredosDaPessoa(Extension):
-    async def execute(self, tool_args: dict | None = None, **kwargs):
+    async def execute(self, tool_args: dict | None = None, tool_name: str = "", **kwargs):
         if not self.agent or not tool_args:
+            return
+        if not _age(tool_name):
+            self.agent.set_data("_cofre_usados", [])
+            c = cofre()
+
+            def nome(v):  # §§secret(NAME) -> NAME: never the value (and no "unknown secret" error)
+                if isinstance(v, str):
+                    return c.PADRAO.sub(lambda m: m.group(1), v)
+                if isinstance(v, dict):
+                    return {k: nome(x) for k, x in v.items()}
+                if isinstance(v, list):
+                    return [nome(x) for x in v]
+                return v
+
+            for k, v in list(tool_args.items()):
+                tool_args[k] = nome(v)
             return
         c = cofre()
         dados = c.carregar(c.dono(self.agent.context))
