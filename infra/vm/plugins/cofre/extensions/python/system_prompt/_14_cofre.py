@@ -32,8 +32,13 @@ class CofrePrompt(Extension):
         linhas = ["## Cofre de senhas do usuário",
                   "Para senhas, tokens e dados sensíveis use o cofre: escreva `§§secret(NOME)` no argumento da ferramenta "
                   "(ex.: no campo de senha do navegador) e o valor real entra só na hora de executar — você nunca o vê. "
+                  "Depois disso, a página e os resultados mostram `§§secret(NOME)` no lugar do valor (ele é mascarado "
+                  "para você): isso NÃO quer dizer que o marcador foi digitado — o valor real está no campo; siga e envie "
+                  "o formulário normalmente. "
                   "Nunca peça senha na conversa nem a escreva em arquivos, contexto.md ou memória; se faltar uma senha, "
-                  "peça para o usuário guardá-la no **Cofre de senhas** (menu lateral) com um nome, ou use `pedir_codigo` "
-                  "para códigos de 2FA/SMS/e-mail."]
+                  "peça para o usuário mandar no Telegram/WhatsApp `/senha NOME valor` (ex.: `/senha GMAIL_SENHA ...`; a "
+                  "mensagem é apagada e você nunca vê o valor) ou usar o **Cofre de senhas** no menu do app. Para códigos "
+                  "de 2FA/SMS/e-mail use `pedir_codigo`. Se o usuário mandar uma senha solta na conversa, não a use: peça "
+                  "para reenviar com /senha e apagar a mensagem."]
         linhas.append("Nomes disponíveis: " + (", ".join(nomes) if nomes else "(nenhum ainda)"))
         system_prompt.append("\n".join(linhas))

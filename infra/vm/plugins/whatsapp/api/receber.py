@@ -122,6 +122,7 @@ AJUDA = """*Comandos*
 /parar — para tudo o que o agente está fazendo para você
 /atividade — últimas ações importantes (aprovadas, bloqueadas, recusadas)
 /gasto — quanto o agente gastou hoje e no mês
+/senha NOME valor — guarda uma senha no seu cofre (o agente nunca vê; a mensagem é apagada)
 Áudio, foto e arquivo também valem. Os botões Aprovar/Recusar respondem pedidos de aprovação."""
 
 

@@ -279,6 +279,45 @@ def preparar_tg(item: dict) -> dict:
             "id": f"tg-{update.get('update_id')}"}
 
 
+COFRE = USR_HOST / "segredos"  # same per-person vault as plugins/cofre (/a0/usr/segredos/<login>.json)
+AJUDA_SENHA = ("🔒 Para guardar uma senha no seu cofre (o agente usa pelo nome e nunca vê o valor):\n"
+               "/senha NOME valor\nex.: /senha GMAIL_SENHA minhaSenha123\n\n"
+               "/senhas lista os nomes guardados · /apagarsenha NOME apaga uma.\n"
+               "Sua mensagem é apagada do chat logo depois.")
+
+
+def comando_cofre(usuario: str, texto: str) -> str | None:
+    """/senha, /senhas, /apagarsenha: handled here and never delivered to the agent.
+    Returns the reply, or None when the text is not a vault command."""
+    partes = texto.strip().split(maxsplit=2)
+    if not partes or partes[0].lower().split("@")[0] not in ("/senha", "/senhas", "/apagarsenha", "/cofre"):
+        return None
+    comando = partes[0].lower().split("@")[0]
+    arquivo = COFRE / f"{re.sub(r'[^a-z0-9_.-]', '', usuario.lower())}.json"
+    try:
+        dados = json.loads(arquivo.read_text(encoding="utf-8"))
+    except Exception:
+        dados = {}
+    if comando in ("/senhas", "/cofre") or (comando == "/senha" and len(partes) < 3):
+        nomes = ", ".join(sorted(dados)) or "nenhuma ainda"
+        return f"{AJUDA_SENHA}\n\nGuardadas: {nomes}"
+    nome = re.sub(r"[^A-Z0-9_]", "_", partes[1].upper())
+    if not re.fullmatch(r"[A-Z][A-Z0-9_]{1,63}", nome):
+        return "Nome inválido: use letras, números e _ começando com letra (ex.: GMAIL_SENHA)."
+    if comando == "/apagarsenha":
+        dados.pop(nome, None)
+        resposta = f"🗑️ {nome} apagada do cofre."
+    else:
+        dados[nome] = partes[2].strip()
+        resposta = f"🔒 Guardada no cofre como {nome}. O agente usa pelo nome e nunca vê o valor."
+    COFRE.mkdir(parents=True, exist_ok=True)
+    os.chmod(COFRE, 0o700)
+    arquivo.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
+    os.chmod(arquivo, 0o600)
+    log(f"vault: {usuario} {comando} {nome}")
+    return resposta
+
+
 DIGITANDO: dict[str, float] = {}  # chat -> until when to keep "typing…" on
 
 
@@ -460,7 +499,15 @@ def ciclo_entrada() -> None:
             if item.get("canal") == "telegram":
                 try:
                     msg = (item["update"].get("message") or {})
-                    if (msg.get("text") or "").strip().lower() == "/gasto":
+                    resposta_cofre = comando_cofre(item["usuario"], msg.get("text") or "")
+                    if resposta_cofre is not None:  # passwords never reach the agent
+                        if (msg.get("text") or "").split()[0].lower().startswith("/senha") and len((msg.get("text") or "").split()) > 2:
+                            try:
+                                tg("deleteMessage", {"chat_id": item["chat"], "message_id": msg.get("message_id")})
+                            except Exception:
+                                resposta_cofre += "\n(Não consegui apagar sua mensagem: apague você no chat.)"
+                        tg_texto(item["chat"], resposta_cofre)
+                    elif (msg.get("text") or "").strip().lower() == "/gasto":
                         tg_texto(item["chat"], texto_gasto())
                     else:
                         DIGITANDO[item["chat"]] = time.time() + 120
@@ -495,6 +542,12 @@ def ciclo_entrada() -> None:
                     sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
                     continue
                 lido_e_digitando(mid)
+                resposta_cofre = comando_cofre(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
+                if resposta_cofre is not None:  # passwords never reach the agent (WhatsApp cannot delete it)
+                    enviar_texto(item["numero"], resposta_cofre + "\nApague sua mensagem com a senha deste chat.")
+                    _lembrar(mid)
+                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+                    continue
                 if (item["mensagem"].get("text") or {}).get("body", "").strip().lower() == "/gasto":
                     enviar_texto(item["numero"], texto_gasto())  # answered here: the usage log is on the host
                     _lembrar(mid)
