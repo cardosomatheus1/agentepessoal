@@ -671,11 +671,27 @@ class Saida(http.server.BaseHTTPRequestHandler):
             self._responder(502, {"erro": str(exc)[:500]})
 
 
+def ciclo_destravar() -> None:
+    """Every minute, ask the whatsapp plugin to nudge chats stuck on a model call."""
+    while True:
+        time.sleep(60)
+        try:
+            req = urllib.request.Request(f"{A0}/api/plugins/whatsapp/destravar", data=b"{}",
+                                         headers={"Content-Type": "application/json", "X-Chave": chave()})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                feitos = json.loads(r.read() or b"{}").get("destravados") or []
+            if feitos:
+                log(f"nudged stuck chats: {feitos}")
+        except Exception:
+            pass  # Agent Zero starting or restarting
+
+
 def main() -> None:
     chave()
     threading.Thread(target=ciclo_entrada, daemon=True).start()
     threading.Thread(target=ciclo_alerta, daemon=True).start()
     threading.Thread(target=ciclo_digitando, daemon=True).start()
+    threading.Thread(target=ciclo_destravar, daemon=True).start()
     log("ready")
     http.server.ThreadingHTTPServer(LISTEN, Saida).serve_forever()
 
