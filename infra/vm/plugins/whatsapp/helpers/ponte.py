@@ -10,6 +10,7 @@ import urllib.request
 from pathlib import Path
 
 URL = "http://host.docker.internal:8789/enviar"
+PEDIDOS: dict[str, dict] = {}  # login -> code the agent asked for on WhatsApp (pedir_codigo)
 CHAVE = Path("/a0/usr/whatsapp/.chave")
 
 

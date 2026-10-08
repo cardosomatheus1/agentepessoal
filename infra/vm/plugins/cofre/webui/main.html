@@ -1,0 +1,47 @@
+<html>
+<head>
+  <title>Cofre de senhas</title>
+</head>
+<body>
+  <div x-data="{ nomes: [], nome: '', valor: '', msg: '',
+        async chamar(dados) {
+          const r = await globalThis.sendJsonData('/plugins/cofre/cofre', dados);
+          this.nomes = r.nomes || []; this.msg = r.ok ? '' : (r.erro || 'falhou');
+          return r.ok;
+        },
+        async salvar() {
+          if (!this.nome || !this.valor) { this.msg = 'Preencha nome e valor.'; return; }
+          if (await this.chamar({acao: 'salvar', nome: this.nome, valor: this.valor})) {
+            this.msg = 'Guardado ✓ ' + this.nome.toUpperCase(); this.nome = ''; this.valor = '';
+          }
+        } }" x-init="chamar({acao: 'listar'})" class="cofre">
+    <p class="cofre-desc">Senhas, tokens e dados sensíveis <b>só seus</b>. O agente usa pelo nome
+      (<code>§§secret(NOME)</code>) e nunca vê o valor; nada daqui aparece na conversa. O valor não pode ser
+      lido de volta, só substituído ou apagado.</p>
+    <div class="cofre-form">
+      <input x-model="nome" placeholder="NOME (ex.: FACEBOOK_SENHA)" autocomplete="off"
+             @input="nome = nome.toUpperCase().replace(/[^A-Z0-9_]/g, '_')">
+      <input x-model="valor" type="password" placeholder="Valor" autocomplete="new-password">
+      <button class="btn btn-ok" @click="salvar()">Guardar</button>
+    </div>
+    <div class="cofre-msg" x-text="msg"></div>
+    <template x-if="!nomes.length"><p class="cofre-desc">Nenhuma senha guardada ainda.</p></template>
+    <template x-for="n in nomes" :key="n">
+      <div class="cofre-item">
+        <code x-text="n"></code>
+        <button class="btn" @click="if (confirm('Apagar ' + n + '?')) chamar({acao: 'apagar', nome: n})">Apagar</button>
+      </div>
+    </template>
+  </div>
+  <style>
+    .cofre { display: flex; flex-direction: column; gap: 10px; min-width: min(460px, 86vw); }
+    .cofre-desc { opacity: 0.8; font-size: 0.9rem; margin: 0; }
+    .cofre-form { display: flex; flex-direction: column; gap: 8px; }
+    .cofre-form input { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--color-border, #333);
+                        background: var(--color-input, #111); color: var(--color-text); }
+    .cofre-msg { min-height: 1.2em; font-size: 0.85rem; }
+    .cofre-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0;
+                  border-bottom: 1px solid var(--color-border, #2b2b2b); }
+  </style>
+</body>
+</html>

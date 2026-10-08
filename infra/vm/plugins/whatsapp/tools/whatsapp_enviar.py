@@ -21,8 +21,9 @@ def carregar(nome: str, caminho: Path):
         modulo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(modulo)
         modulo._mtime = mtime
-        if antigo is not None and hasattr(antigo, "PENDENTES"):
-            modulo.PENDENTES = antigo.PENDENTES
+        for estado in ("PENDENTES", "PEDIDOS"):  # waiting approvals / code requests survive
+            if antigo is not None and hasattr(antigo, estado):
+                setattr(modulo, estado, getattr(antigo, estado))
         sys.modules[nome] = modulo
     return sys.modules[nome]
 

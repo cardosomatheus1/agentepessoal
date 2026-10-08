@@ -1,0 +1,8 @@
+<!-- Cofre de senhas -->
+<div x-data>
+  <button class="dropdown-item" id="cofre-dropdown" title="Cofre de senhas"
+          @click="ensureModalOpen('/plugins/cofre/webui/main.html'); $store.sidebar.menuClose()">
+    <x-icon name="lock"></x-icon>
+    <span>Cofre de senhas</span>
+  </button>
+</div>

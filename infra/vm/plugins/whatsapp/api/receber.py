@@ -27,8 +27,9 @@ def carregar(nome: str, caminho: Path):
         modulo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(modulo)
         modulo._mtime = mtime
-        if antigo is not None and hasattr(antigo, "PENDENTES"):
-            modulo.PENDENTES = antigo.PENDENTES
+        for estado in ("PENDENTES", "PEDIDOS"):  # waiting approvals / code requests survive
+            if antigo is not None and hasattr(antigo, estado):
+                setattr(modulo, estado, getattr(antigo, estado))
         sys.modules[nome] = modulo
     return sys.modules[nome]
 
@@ -116,6 +117,13 @@ class Receber(ApiHandler):
             else:
                 ponte().enviar(usuario, {"aprovar": "✅ Aprovado.", "sempre": "✅ Aprovado (e vou permitir sempre).",
                                          "recusar": "❌ Recusado. Não vou fazer."}[decisao])
+            return {"ok": True}
+
+        pedido = ponte().PEDIDOS.get(usuario)
+        if pedido and not pedido.get("codigo") and texto and len(texto) <= 40 and "\n" not in texto \
+                and any(ch.isdigit() for ch in texto):
+            pedido["codigo"] = texto.strip()  # a 2FA code the agent is waiting for (pedir_codigo)
+            ponte().enviar(usuario, "🔑 Código entregue ao agente.")
             return {"ok": True}
 
         if texto.lower() in ("/nova", "/novo", "nova conversa"):

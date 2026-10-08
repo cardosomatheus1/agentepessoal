@@ -1,0 +1,4 @@
+name: cofre
+title: Cofre de senhas
+description: Senhas e códigos de cada pessoa, que o agente usa pelo nome (§§secret(NOME)) sem nunca ver o valor; 2FA pedido pelo WhatsApp.
+version: 1.0.0
