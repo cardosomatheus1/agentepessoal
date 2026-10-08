@@ -149,9 +149,9 @@ def ensure_vm_role() -> str:
                     "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
                     "Resource": f"arn:aws:s3:::{BUCKET}/*",
                 },
-                {
+                {   # SecureString parameters (ponte_whatsapp saves the WhatsApp token)
                     "Effect": "Allow",
-                    "Action": "kms:Decrypt",
+                    "Action": ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey"],
                     "Resource": "*",
                     "Condition": {"StringEquals": {"kms:ViaService": f"ssm.{REGION}.amazonaws.com"}},
                 },

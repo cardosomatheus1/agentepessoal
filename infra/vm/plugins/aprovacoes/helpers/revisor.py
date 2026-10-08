@@ -48,6 +48,42 @@ DESTRUTIVO = re.compile(
 )
 
 PENDENTES: dict[str, dict] = {}  # context id -> approval waiting for the user
+LEITURA = "/a0/usr/aprovacoes/somente_leitura.json"  # chat ids where nothing may change
+ATIVIDADE = "/a0/usr/aprovacoes/atividade"  # <login>.jsonl: every reviewed action and its outcome
+
+
+def somente_leitura() -> set:
+    try:
+        with open(LEITURA, encoding="utf-8") as f:
+            return set(json.load(f))
+    except Exception:
+        return set()
+
+
+def marcar_somente_leitura(ctx_id: str) -> None:
+    import os
+
+    ids = somente_leitura() | {ctx_id}
+    os.makedirs(os.path.dirname(LEITURA), exist_ok=True)
+    with open(LEITURA, "w", encoding="utf-8") as f:
+        json.dump(sorted(ids), f)
+
+
+def registrar_atividade(context, tool: str, analise: dict, decisao: str) -> None:
+    """Activity log of consequential actions (what /atividade on WhatsApp shows)."""
+    import os
+    import sys
+
+    try:
+        sep = sys.modules.get("login_usuarios_separacao")
+        dono = sep.dono_contexto(context) if sep else (context.get_data("dono") or "matheus")
+        os.makedirs(ATIVIDADE, exist_ok=True)
+        linha = {"em": time.time(), "conversa": context.name or context.id, "ferramenta": tool,
+                 "categoria": analise.get("categoria"), "decisao": decisao, "resumo": analise.get("resumo")}
+        with open(f"{ATIVIDADE}/{dono}.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps(linha, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
 
 
 def _texto(v) -> str:

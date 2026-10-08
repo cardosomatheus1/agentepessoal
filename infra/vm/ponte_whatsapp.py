@@ -18,7 +18,9 @@ import os
 import secrets
 import threading
 import time
+import re
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
@@ -37,6 +39,11 @@ CHAVE = PASTA / ".chave"
 VISTOS = Path("/var/lib/agentepessoal/whatsapp_vistos.json")
 ATIVIDADE = Path("/var/lib/agentepessoal/last-activity")
 LIMITE_TEXTO = 3800  # WhatsApp allows 4096 per message
+USO = Path("/var/lib/agentepessoal/uso.jsonl")  # every model call, written by bedrock_proxy
+ALERTA = Path("/var/lib/agentepessoal/alerta_gasto.json")
+# US$ per million tokens: input, cached input (1/10), output; cache writes cost 1.25x input
+PRECOS = {"sol": (2.20, 0.22, 11.0), "luna": (0.11, 0.011, 0.55)}
+LIMITE_DIA_PADRAO = 15.0  # US$; cfg "limite_dia_usd" overrides
 
 ssm = boto3.client("ssm", region_name=REGION)
 sqs = boto3.client("sqs", region_name=REGION)
@@ -177,6 +184,74 @@ def enviar_arquivo(numero: str, caminho: Path, legenda: str = "") -> None:
     _mensagem(numero, {"type": tipo, tipo: item})
 
 
+# ------------------------------------------------------------------ spending
+
+def gasto() -> tuple[float, float]:
+    """(today, this month) in US$, by Bahia time, from the proxy's usage log."""
+    from zoneinfo import ZoneInfo
+    import datetime as dt
+
+    agora = dt.datetime.now(ZoneInfo("America/Bahia"))
+    hoje, mes = 0.0, 0.0
+    try:
+        linhas = USO.read_text().splitlines()
+    except OSError:
+        return 0.0, 0.0
+    for linha in linhas:
+        try:
+            u = json.loads(linha)
+            quando = dt.datetime.fromisoformat(u["em"].replace("Z", "+00:00")).astimezone(ZoneInfo("America/Bahia"))
+        except Exception:
+            continue
+        if (quando.year, quando.month) != (agora.year, agora.month):
+            continue
+        p_in, p_cache, p_out = PRECOS["sol"] if "sol" in u.get("modelo", "") else PRECOS["luna"]
+        cache, gravado = u.get("cache", 0) or 0, u.get("cache_gravado", 0) or 0
+        normal = max(0, (u.get("entrada", 0) or 0) - cache - gravado)
+        custo = (normal * p_in + cache * p_cache + gravado * p_in * 1.25 + (u.get("saida", 0) or 0) * p_out) / 1e6
+        mes += custo
+        if quando.date() == agora.date():
+            hoje += custo
+    return hoje, mes
+
+
+def texto_gasto() -> str:
+    hoje, mes = gasto()
+    limite = float(cfg().get("limite_dia_usd") or LIMITE_DIA_PADRAO)
+    return (f"💰 *Gasto com modelos*\nHoje: US$ {hoje:.2f} (limite de alerta: US$ {limite:.0f})\n"
+            f"Este mês: US$ {mes:.2f}\n_(estimativa pelo uso registrado; a VM é cobrada à parte)_")
+
+
+def ciclo_alerta() -> None:
+    """Once a day, warn the owner when today's model spending passes the limit."""
+    while True:
+        time.sleep(600)
+        try:
+            hoje, _ = gasto()
+            limite = float(cfg().get("limite_dia_usd") or LIMITE_DIA_PADRAO)
+            dia = time.strftime("%Y-%m-%d")
+            ja = json.loads(ALERTA.read_text()).get("dia") if ALERTA.exists() else ""
+            if hoje > limite and ja != dia:
+                dono = next((n for n, u in (cfg().get("numeros") or {}).items() if u == "matheus"), "")
+                if dono:
+                    enviar_texto(dono, f"⚠️ O agente já gastou US$ {hoje:.2f} hoje (limite de alerta US$ {limite:.0f}). "
+                                       "Mande /parar para parar tudo ou /gasto para ver o total.")
+                ALERTA.write_text(json.dumps({"dia": dia}))
+            expira = float(cfg().get("token_expira") or 0)
+            aviso_token = Path("/var/lib/agentepessoal/alerta_token.json")
+            ja_token = json.loads(aviso_token.read_text()).get("dia") if aviso_token.exists() else ""
+            if expira and expira - time.time() < 7 * 86400 and ja_token != dia:
+                dono = next((n for n, u in (cfg().get("numeros") or {}).items() if u == "matheus"), "")
+                if dono:
+                    dias = max(0, int((expira - time.time()) / 86400))
+                    enviar_texto(dono, f"🔑 O acesso do agente ao WhatsApp vence em {dias} dia(s). Peça ao agente: "
+                                       "\"gere um token novo na Configuração da API do app Agente Pessoal e guarde com "
+                                       "whatsapp_guardar_token\".")
+                aviso_token.write_text(json.dumps({"dia": dia}))
+        except Exception as exc:
+            log(f"spending check failed: {exc}")
+
+
 # ------------------------------------------------------------------ in: queue -> agent
 
 def _vistos() -> list[str]:
@@ -274,6 +349,11 @@ def ciclo_entrada() -> None:
                     sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
                     continue
                 lido_e_digitando(mid)
+                if (item["mensagem"].get("text") or {}).get("body", "").strip().lower() == "/gasto":
+                    enviar_texto(item["numero"], texto_gasto())  # answered here: the usage log is on the host
+                    _lembrar(mid)
+                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+                    continue
                 dados = preparar(item)
                 if dados:
                     for tentativa in range(30):  # right after waking, Agent Zero may still be starting
@@ -311,8 +391,37 @@ class Saida(http.server.BaseHTTPRequestHandler):
         self.wfile.write(dados)
 
     def do_POST(self):
-        if self.path not in ("/enviar", "/gatilho_url") or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
+        if self.path not in ("/enviar", "/gatilho_url", "/configurar") or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
             return self._responder(403, {"erro": "sem acesso"})
+        if self.path == "/configurar":  # the token, read from the Meta page by a tool (never by the model)
+            global _cfg
+            pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+            atual = json.loads(ssm.get_parameter(Name=PARAM, WithDecryption=True)["Parameter"]["Value"])
+            token = str(pedido.get("token") or "").strip()
+            segredo = str(pedido.get("app_secret") or "").strip()
+            if token and (not token.startswith("EAA") or len(token) < 80):
+                return self._responder(400, {"erro": "token inválido"})
+            if segredo and not re.fullmatch(r"[0-9a-f]{32}", segredo):
+                return self._responder(400, {"erro": "chave do app inválida"})
+            if token:  # only token/app secret: numbers are set on the control page alone
+                atual["token"] = token
+            if segredo:
+                atual["app_secret"] = segredo
+            aviso = ""
+            if atual.get("token") and atual.get("app_secret") and atual.get("app_id"):
+                try:  # the API Setup token lasts ~1 h: trade it for a 60-day one
+                    q = urllib.parse.urlencode({"grant_type": "fb_exchange_token", "client_id": atual["app_id"],
+                                                "client_secret": atual["app_secret"], "fb_exchange_token": atual["token"]})
+                    with urllib.request.urlopen(f"{GRAPH}/oauth/access_token?{q}", timeout=30) as r:
+                        longo = json.loads(r.read())
+                    atual["token"] = longo["access_token"]
+                    atual["token_expira"] = int(time.time()) + int(longo.get("expires_in") or 60 * 86400)
+                    aviso = "token trocado pelo de longa duração"
+                except Exception as exc:
+                    aviso = f"troca pelo token longo falhou: {str(exc)[:120]}"
+            ssm.put_parameter(Name=PARAM, Value=json.dumps(atual), Type="SecureString", Overwrite=True)
+            _cfg = atual
+            return self._responder(200, {"ok": True, "final": atual.get("token", "")[-4:], "aviso": aviso})
         if self.path == "/gatilho_url":  # the address a service calls to fire one of the agent's triggers
             pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
             c = cfg()
@@ -352,6 +461,7 @@ class Saida(http.server.BaseHTTPRequestHandler):
 def main() -> None:
     chave()
     threading.Thread(target=ciclo_entrada, daemon=True).start()
+    threading.Thread(target=ciclo_alerta, daemon=True).start()
     log("ready")
     http.server.ThreadingHTTPServer(LISTEN, Saida).serve_forever()
 

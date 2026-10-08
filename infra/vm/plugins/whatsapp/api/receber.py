@@ -92,6 +92,33 @@ def _texto_gatilho(usuario: str, nome: str, conteudo: str) -> str:
             f"{conteudo}")
 
 
+AJUDA = """*Comandos*
+/nova — começa outra conversa
+/parar — para tudo o que o agente está fazendo para você
+/atividade — últimas ações importantes (aprovadas, bloqueadas, recusadas)
+/gasto — quanto o agente gastou hoje e no mês
+Áudio, foto e arquivo também valem. Os botões Aprovar/Recusar respondem pedidos de aprovação."""
+
+
+def _atividade(usuario: str) -> str:
+    import json
+    import datetime as dt
+
+    try:
+        linhas = Path(f"/a0/usr/aprovacoes/atividade/{usuario}.jsonl").read_text(encoding="utf-8").splitlines()[-10:]
+    except OSError:
+        return "Nenhuma ação importante registrada ainda."
+    saida = ["*Últimas ações importantes*"]
+    for linha in reversed(linhas):
+        try:
+            a = json.loads(linha)
+        except ValueError:
+            continue
+        quando = dt.datetime.fromtimestamp(a["em"]).strftime("%d/%m %H:%M")
+        saida.append(f"• {quando} — {a.get('resumo')} _({a.get('categoria')}: {a.get('decisao')}; {a.get('conversa')})_")
+    return "\n".join(saida)
+
+
 class Receber(ApiHandler):
     @classmethod
     def requires_auth(cls) -> bool:
@@ -139,6 +166,27 @@ class Receber(ApiHandler):
                 and any(ch.isdigit() for ch in texto):
             pedido["codigo"] = texto.strip()  # a 2FA code the agent is waiting for (pedir_codigo)
             ponte().enviar(usuario, "🔑 Código entregue ao agente.")
+            return {"ok": True}
+
+        comando = texto.strip().lower()
+        if comando in ("/parar", "/pare", "parar tudo"):
+            from agent import AgentContext
+
+            parados = []
+            for ctx in AgentContext.all():
+                if ponte().dono(ctx) == usuario and ctx.is_running():
+                    ctx.kill_process()
+                    ctx.paused = False
+                    ctx.log.set_progress("", active=False)
+                    ctx.log.log(type="info", content="Parado pelo usuário (/parar no WhatsApp).", finished=True)
+                    parados.append(ctx.name or ctx.id)
+            ponte().enviar(usuario, ("⏹️ Parei: " + ", ".join(parados)) if parados else "Nada estava rodando.")
+            return {"ok": True}
+        if comando == "/atividade":
+            ponte().enviar(usuario, _atividade(usuario))
+            return {"ok": True}
+        if comando in ("/ajuda", "/comandos", "/help"):
+            ponte().enviar(usuario, AJUDA)
             return {"ok": True}
 
         if texto.lower() in ("/nova", "/novo", "nova conversa"):

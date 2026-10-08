@@ -72,7 +72,10 @@ class RevisarAcao(Extension):
             analise = {"categoria": "contas_reais", "sempre_permitida": False,
                        "resumo": f"{tool_name} (o revisor falhou: {str(exc)[:80]})"}
             decisao = "perguntar"
+        if analise["categoria"] != "nenhuma" and agent.context.id in rv.somente_leitura():
+            decisao = "nunca"  # read-only chats (daily brief, proactive research) never change anything
         print(f"aprovacoes: {tool_name} -> {analise['categoria']}/{decisao}: {analise['resumo']}", flush=True)
+        rv.registrar_atividade(agent.context, tool_name, analise, decisao)
         if decisao == "permitir":
             return
 
@@ -82,6 +85,19 @@ class RevisarAcao(Extension):
             self._devolver(agent, f"[Regra do usuário] A ação «{analise['resumo']}» é da categoria "
                                   f"«{analise['categoria']}», que o usuário marcou como NUNCA. Ela não foi executada. "
                                   "Não tente de novo nem por outro caminho; siga sem ela ou explique ao usuário o que falta.")
+
+        # Loop guard: the same kind of approval asked over and over (e.g. "send the verification
+        # code" retried, each one texting the user) is refused on the 3rd time within 10 minutes.
+        agora = time.time()
+        historico = [h for h in (ctx.get_data("_aprovacoes_hist") or []) if agora - h[1] < 600]
+        historico.append((analise["categoria"], agora))
+        ctx.set_data("_aprovacoes_hist", historico)
+        if sum(1 for c, _ in historico if c == analise["categoria"]) >= 3:
+            self._registrar(agent, f"🔁 Recusado por repetição ({analise['categoria']}, 3ª vez em 10 min): {analise['resumo']}")
+            rv.registrar_atividade(ctx, tool_name, analise, "recusado por repetição")
+            self._devolver(agent, f"[Proteção contra loop] Você pediu aprovação para «{analise['categoria']}» pela 3ª vez "
+                                  "em 10 minutos. A ação NÃO foi executada. Pare agora, não tente de novo e explique ao "
+                                  "usuário o que está travando.")
 
         pendente = rv.abrir(ctx.id, analise, tool_name)
         texto = f"🔐 *Aprovação necessária* — {ctx.name or 'conversa'}\n\n{pendente['resumo']}\n_(categoria: {analise['categoria']})_"
@@ -114,6 +130,7 @@ class RevisarAcao(Extension):
                 await asyncio.sleep(1)
         finally:
             rv.PENDENTES.pop(ctx.id, None)
+        rv.registrar_atividade(ctx, tool_name, analise, f"resposta: {escolha or 'sem resposta'}")
 
         if escolha in ("aprovar", "sempre"):
             if escolha == "sempre":
