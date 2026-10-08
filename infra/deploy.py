@@ -524,6 +524,7 @@ def ensure_control(instance_id: str, password: str) -> str:
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(HERE / "control/index.py", "index.py")
         z.write(HERE / "control/whatsapp.py", "whatsapp.py")
+        z.write(HERE / "control/telegram.py", "telegram.py")
     env = {
         "Variables": {
             "INSTANCE_ID": instance_id,

@@ -88,11 +88,15 @@ class RevisarAcao(Extension):
 
         # Loop guard: the same kind of approval asked over and over (e.g. "send the verification
         # code" retried, each one texting the user) is refused on the 3rd time within 10 minutes.
+        import difflib
+
         agora = time.time()
         historico = [h for h in (ctx.get_data("_aprovacoes_hist") or []) if agora - h[1] < 600]
-        historico.append((analise["categoria"], agora))
+        parecidos = sum(1 for c, _, r in historico if c == analise["categoria"]
+                        and difflib.SequenceMatcher(None, r, analise["resumo"].lower()).ratio() > 0.6)
+        historico.append((analise["categoria"], agora, analise["resumo"].lower()))
         ctx.set_data("_aprovacoes_hist", historico)
-        if sum(1 for c, _ in historico if c == analise["categoria"]) >= 3:
+        if parecidos >= 2:  # 3rd similar request of the same kind (different steps of one task pass)
             self._registrar(agent, f"🔁 Recusado por repetição ({analise['categoria']}, 3ª vez em 10 min): {analise['resumo']}")
             rv.registrar_atividade(ctx, tool_name, analise, "recusado por repetição")
             self._devolver(agent, f"[Proteção contra loop] Você pediu aprovação para «{analise['categoria']}» pela 3ª vez "

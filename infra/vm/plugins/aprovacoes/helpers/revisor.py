@@ -25,8 +25,8 @@ CATEGORIAS = {
     "apagar": "apagar ou desativar arquivos, contas, dados, campanhas, repositórios (irreversível ou difícil de desfazer)",
     "contas_reais": "alterar configurações de contas reais (banco, anúncios, governo, empresa)",
     "senha_seguranca": "MUDAR a segurança da conta: trocar senha, ativar/desativar 2FA, trocar e-mail ou telefone de "
-                       "recuperação, criar/revogar chaves de acesso (digitar a senha atual para entrar ou confirmar a "
-                       "identidade NÃO é esta categoria)",
+                       "recuperação (digitar a senha atual para entrar ou confirmar a identidade NÃO é esta categoria)",
+    "chaves_acesso": "gerar, copiar ou revogar tokens, chaves de API ou credenciais de aplicativos",
     "producao": "mexer em sistemas em produção: deploy, banco de dados, servidores, DNS",
 }
 

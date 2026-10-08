@@ -9,6 +9,7 @@ regras:
   apagar: perguntar           # apagar arquivos, contas, dados, campanhas
   contas_reais: perguntar     # alterar configurações de contas reais (bancos, anúncios, governo)
   senha_seguranca: nunca      # trocar senha, 2FA, e-mail de recuperação
+  chaves_acesso: perguntar    # gerar/revogar tokens e chaves de API
   producao: perguntar         # mexer em sistemas em produção, deploy, banco de dados
 # Actions you chose "Sempre permitir" for (one per line, filled by the buttons)
 sempre_permitir: ""

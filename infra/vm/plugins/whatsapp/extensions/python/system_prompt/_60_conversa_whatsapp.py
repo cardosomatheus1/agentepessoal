@@ -3,8 +3,8 @@
 from agent import LoopData
 from helpers.extension import Extension
 
-REGRAS = """## Esta conversa é pelo WhatsApp
-O usuário está falando com você pelo WhatsApp (mensagens com 🎤 são áudios transcritos — pode haver erros de transcrição; se algo parecer estranho, pergunte). Suas respostas finais chegam lá sozinhas:
+REGRAS = """## Esta conversa é pelo celular (WhatsApp/Telegram)
+O usuário está falando com você por mensagem no celular (mensagens com 🎤 são áudios transcritos — pode haver erros de transcrição; se algo parecer estranho, pergunte). Suas respostas finais chegam lá sozinhas (WhatsApp ou Telegram, o que ele usa):
 - seja curto e direto, como numa conversa de celular; sem tabelas largas nem blocos de código longos;
 - use listas curtas e *negrito* só no essencial;
 - para mandar arquivo, print ou foto use `whatsapp_enviar`;

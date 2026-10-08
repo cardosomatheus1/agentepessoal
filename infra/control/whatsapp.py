@@ -73,6 +73,12 @@ def save_config(updates: dict) -> dict:
     return cfg
 
 
+def gravar(cfg: dict) -> None:
+    global _config, _config_at
+    ssm.put_parameter(Name=CONFIG_PARAM, Value=json.dumps(cfg), Type="SecureString", Overwrite=True)
+    _config, _config_at = cfg, time.time()
+
+
 def status(base_url: str) -> dict:
     cfg = config()
     if not cfg.get("caminho_gatilhos") or cfg.get("base_url") != base_url.rstrip("/"):

@@ -184,6 +184,110 @@ def enviar_arquivo(numero: str, caminho: Path, legenda: str = "") -> None:
     _mensagem(numero, {"type": tipo, tipo: item})
 
 
+# ------------------------------------------------------------------ Telegram
+
+TG_LIMITE = 4000  # Telegram allows 4096 per message
+
+
+def tg(metodo: str, dados: dict | None = None, arquivo: tuple[str, Path] | None = None) -> dict:
+    url = f"https://api.telegram.org/bot{cfg()['tg_token']}/{metodo}"
+    if arquivo:
+        campo, caminho = arquivo
+        limite = uuid.uuid4().hex
+        partes = [f"--{limite}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n".encode()
+                  for k, v in (dados or {}).items()]
+        partes.append(f"--{limite}\r\nContent-Disposition: form-data; name=\"{campo}\"; filename=\"{caminho.name}\"\r\n"
+                      f"Content-Type: application/octet-stream\r\n\r\n".encode() + caminho.read_bytes() + b"\r\n")
+        corpo, tipo = b"".join(partes) + f"--{limite}--\r\n".encode(), f"multipart/form-data; boundary={limite}"
+    else:
+        corpo, tipo = json.dumps(dados or {}).encode(), "application/json"
+    req = urllib.request.Request(url, data=corpo, headers={"Content-Type": tipo})
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(e.read().decode()[:300]) from None
+
+
+def tg_chat(usuario: str) -> str:
+    return next((c for c, u in (cfg().get("tg_chats") or {}).items() if u == usuario), "")
+
+
+def tg_texto(chat: str, texto: str, botoes: list | None = None) -> None:
+    partes = [texto[i:i + TG_LIMITE] for i in range(0, len(texto), TG_LIMITE)] or [""]
+    for i, parte in enumerate(partes):
+        dados = {"chat_id": chat, "text": parte, "parse_mode": "Markdown", "disable_web_page_preview": True}
+        if botoes and i == len(partes) - 1:
+            dados["reply_markup"] = {"inline_keyboard": [[{"text": b["titulo"], "callback_data": str(b["id"])[:64]}
+                                                          for b in botoes[:3]]]}
+        try:
+            tg("sendMessage", dados)
+        except RuntimeError:  # unbalanced * or _ in the text: send it plain
+            dados.pop("parse_mode")
+            tg("sendMessage", dados)
+
+
+def tg_arquivo(chat: str, caminho: Path, legenda: str = "") -> None:
+    foto = caminho.suffix.lower() in (".jpg", ".jpeg", ".png")
+    tg("sendPhoto" if foto else "sendDocument", {"chat_id": chat, "caption": legenda[:1000]},
+       ("photo" if foto else "document", caminho))
+
+
+def tg_baixar(file_id: str, destino: Path) -> Path:
+    info = tg("getFile", {"file_id": file_id})["result"]
+    destino = destino.with_suffix(Path(info["file_path"]).suffix or destino.suffix)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    with urllib.request.urlopen(f"https://api.telegram.org/file/bot{cfg()['tg_token']}/{info['file_path']}", timeout=120) as r:
+        destino.write_bytes(r.read())
+    return destino
+
+
+def preparar_tg(item: dict) -> dict:
+    """Telegram update -> what the plugin needs (same shape as preparar)."""
+    update = item["update"]
+    if update.get("callback_query"):
+        q = update["callback_query"]
+        try:
+            tg("answerCallbackQuery", {"callback_query_id": q["id"]})
+        except Exception:
+            pass
+        return {"usuario": item["usuario"], "texto": "", "botao": q.get("data", ""), "anexos": [], "audio": "",
+                "id": f"tg-{update.get('update_id')}"}
+    msg = update.get("message") or {}
+    try:
+        tg("sendChatAction", {"chat_id": item["chat"], "action": "typing"})
+    except Exception:
+        pass
+    pasta = PASTA / item["usuario"] / time.strftime("%Y-%m")
+    base = pasta / f"{time.strftime('%d-%H%M%S')}-tg{msg.get('message_id', '')}"
+    no_a0 = lambda p: USR_A0 + str(p)[len(str(USR_HOST)):]
+    texto, anexos, audio = msg.get("text") or msg.get("caption") or "", [], ""
+    if msg.get("voice") or msg.get("audio"):
+        audio = no_a0(tg_baixar((msg.get("voice") or msg.get("audio"))["file_id"], base.with_suffix(".ogg")))
+    for chave in ("document", "video", "video_note"):
+        if msg.get(chave):
+            nome = msg[chave].get("file_name") or ""
+            anexos.append(no_a0(tg_baixar(msg[chave]["file_id"], pasta / nome if nome else base)))
+    if msg.get("photo"):
+        anexos.append(no_a0(tg_baixar(msg["photo"][-1]["file_id"], base.with_suffix(".jpg"))))
+    if msg.get("location"):
+        texto = f"Minha localização: {msg['location'].get('latitude')}, {msg['location'].get('longitude')}"
+    if not (texto or anexos or audio):
+        texto = "(mensagem de um tipo que eu ainda não sei abrir)"
+    return {"usuario": item["usuario"], "texto": texto, "audio": audio, "anexos": anexos, "botao": "",
+            "id": f"tg-{update.get('update_id')}"}
+
+
+def avisar(usuario: str, texto: str) -> None:
+    """Plain notice to a person on their channel: Telegram when linked, else WhatsApp."""
+    chat = tg_chat(usuario)
+    if chat:
+        return tg_texto(chat, texto)
+    numero = next((n for n, u in (cfg().get("numeros") or {}).items() if u == usuario), "")
+    if numero:
+        enviar_texto(numero, texto)
+
+
 # ------------------------------------------------------------------ spending
 
 def gasto() -> tuple[float, float]:
@@ -232,19 +336,17 @@ def ciclo_alerta() -> None:
             dia = time.strftime("%Y-%m-%d")
             ja = json.loads(ALERTA.read_text()).get("dia") if ALERTA.exists() else ""
             if hoje > limite and ja != dia:
-                dono = next((n for n, u in (cfg().get("numeros") or {}).items() if u == "matheus"), "")
-                if dono:
-                    enviar_texto(dono, f"⚠️ O agente já gastou US$ {hoje:.2f} hoje (limite de alerta US$ {limite:.0f}). "
+                if True:
+                    avisar("matheus", f"⚠️ O agente já gastou US$ {hoje:.2f} hoje (limite de alerta US$ {limite:.0f}). "
                                        "Mande /parar para parar tudo ou /gasto para ver o total.")
                 ALERTA.write_text(json.dumps({"dia": dia}))
             expira = float(cfg().get("token_expira") or 0)
             aviso_token = Path("/var/lib/agentepessoal/alerta_token.json")
             ja_token = json.loads(aviso_token.read_text()).get("dia") if aviso_token.exists() else ""
             if expira and expira - time.time() < 7 * 86400 and ja_token != dia:
-                dono = next((n for n, u in (cfg().get("numeros") or {}).items() if u == "matheus"), "")
-                if dono:
+                if True:
                     dias = max(0, int((expira - time.time()) / 86400))
-                    enviar_texto(dono, f"🔑 O acesso do agente ao WhatsApp vence em {dias} dia(s). Peça ao agente: "
+                    avisar("matheus", f"🔑 O acesso do agente ao WhatsApp vence em {dias} dia(s). Peça ao agente: "
                                        "\"gere um token novo na Configuração da API do app Agente Pessoal e guarde com "
                                        "whatsapp_guardar_token\".")
                 aviso_token.write_text(json.dumps({"dia": dia}))
@@ -335,6 +437,29 @@ def ciclo_entrada() -> None:
         for m in r.get("Messages", []):
             item = json.loads(m["Body"])
             ativo()
+            if item.get("canal") == "telegram":
+                try:
+                    msg = (item["update"].get("message") or {})
+                    if (msg.get("text") or "").strip().lower() == "/gasto":
+                        tg_texto(item["chat"], texto_gasto())
+                    else:
+                        dados = preparar_tg(item)
+                        for tentativa in range(30):  # right after waking, Agent Zero may still be starting
+                            try:
+                                entregar(dados)
+                                break
+                            except (urllib.error.URLError, ConnectionError) as exc:
+                                if tentativa == 29:
+                                    raise
+                                time.sleep(5)
+                except Exception as exc:
+                    log(f"telegram message failed: {exc}")
+                    try:
+                        tg_texto(item["chat"], "⚠️ Não consegui entregar sua mensagem ao agente. Tente de novo em instantes.")
+                    except Exception:
+                        pass
+                sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+                continue
             if "gatilho" in item:  # an event trigger fired from outside (control function /gatilho)
                 try:
                     entregar({"usuario": item["usuario"], "conversa": "gatilhos", "gatilho": item["gatilho"],
@@ -430,11 +555,25 @@ class Saida(http.server.BaseHTTPRequestHandler):
             return self._responder(200, {"url": f"{c['base_url']}/gatilho/{c['caminho_gatilhos']}/{pedido.get('usuario')}/{pedido.get('nome')}"})
         try:
             pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+            usuario = str(pedido.get("usuario", "")).lower()
             numeros = {u: n for n, u in (cfg().get("numeros") or {}).items()}
-            numero = numeros.get(str(pedido.get("usuario", "")).lower())
-            if not numero:
-                return self._responder(404, {"erro": "pessoa sem WhatsApp cadastrado"})
+            numero = numeros.get(usuario)
+            chat = tg_chat(usuario)  # Telegram, when linked, is where this person is answered
+            if not (numero or chat):
+                return self._responder(404, {"erro": "pessoa sem WhatsApp/Telegram cadastrado"})
             ativo()
+            if chat:
+                if pedido.get("texto"):
+                    tg_texto(chat, str(pedido["texto"]), pedido.get("botoes") or None)
+                if pedido.get("arquivo"):
+                    caminho = Path(str(pedido["arquivo"]))
+                    if str(caminho).startswith(USR_A0 + "/"):
+                        caminho = USR_HOST / str(caminho)[len(USR_A0) + 1:]
+                    caminho = caminho.resolve()
+                    if not str(caminho).startswith(str(USR_HOST) + "/") or not caminho.is_file():
+                        return self._responder(400, {"erro": "arquivo não encontrado em /a0/usr"})
+                    tg_arquivo(chat, caminho, str(pedido.get("legenda") or ""))
+                return self._responder(200, {"ok": True})
             if pedido.get("texto") and pedido.get("botoes"):
                 try:
                     enviar_botoes(numero, str(pedido["texto"]), pedido["botoes"])

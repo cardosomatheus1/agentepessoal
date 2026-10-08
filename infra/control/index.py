@@ -15,6 +15,7 @@ import urllib.request
 import boto3
 from botocore.config import Config
 
+import telegram
 import whatsapp
 
 INSTANCE_ID = os.environ["INSTANCE_ID"]
@@ -164,6 +165,13 @@ def handler(event, _context):
         raw = event.get("body") or ""
         raw = base64.b64decode(raw) if event.get("isBase64Encoded") else raw.encode()
         return whatsapp.gatilho(event["rawPath"], raw, _state, _start, _start_later)
+    if event.get("rawPath", "").startswith("/telegram/") and method == "POST":
+        if not whatsapp.caminho_ok(event["rawPath"]):
+            return {"statusCode": 404, "body": "not found"}
+        raw = event.get("body") or ""
+        raw = base64.b64decode(raw) if event.get("isBase64Encoded") else raw.encode()
+        headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
+        return telegram.receive(raw, headers, _state, _start, _start_later)
     if event.get("rawPath", "").startswith("/whatsapp/"):
         if not whatsapp.caminho_ok(event["rawPath"]):
             return {"statusCode": 404, "body": "not found"}
@@ -195,11 +203,16 @@ def handler(event, _context):
         return _json(_upload_url(data.get("name", ""), data.get("size", 0)))
     if action == "apk":
         return _json(_apk_url())
-    if action in ("whatsapp", "whatsapp_salvar"):
+    if action in ("whatsapp", "whatsapp_salvar", "telegram_salvar"):
         base = "https://" + event.get("requestContext", {}).get("domainName", "")
         if action == "whatsapp_salvar":
             whatsapp.save_config(data.get("campos") or {})
-        return _json(whatsapp.status(base))
+        if action == "telegram_salvar":
+            try:
+                telegram.configurar(str((data.get("campos") or {}).get("tg_token") or ""), base, ["matheus", "fernanda"])
+            except Exception as exc:
+                return _json({"error": f"Telegram recusou o token: {str(exc)[:120]}"}, 400)
+        return _json({**whatsapp.status(base), **telegram.status()})
     if action == "start":
         if _state() == "stopped":
             _start()
@@ -258,6 +271,12 @@ details.up summary{cursor:pointer;font-weight:600;padding:10px 0}textarea{width:
 <textarea id="waNums" placeholder="Uma pessoa por linha: login = número&#10;matheus = +55 71 99999-0000"></textarea>
 <button class="primary" onclick="waSalvar()">Salvar</button>
 </details>
+<details class="up" id="tg" ontoggle="if(this.open)waStatus()"><summary>Telegram</summary>
+<p style="font-size:13px;margin-bottom:10px">1. No Telegram, abra o <b>@BotFather</b>, mande <code>/newbot</code>, escolha um nome e um usuário terminado em <code>bot</code>. 2. Cole aqui o token que ele der. 3. Toque no link do seu login abaixo para conectar.</p>
+<input id="tgToken" type="password" placeholder="Token do bot (123456:ABC…)" autocomplete="off">
+<button class="primary" onclick="tgSalvar()">Salvar</button>
+<div class="kv" id="tgEstado" style="margin-top:12px"></div>
+</details>
 <button id="apk" class="secondary" onclick="baixarApp()" hidden>Baixar app Android</button>
 <p style="margin-top:16px;font-size:13px">Hiberna sozinha após 30 min sem uso (guarda tudo e volta de onde parou). Depois de clicar em Ligar, o agente abre sozinho quando estiver pronto.</p>
 </div><div id="err" class="err"></div></div>
@@ -290,9 +309,15 @@ x.onload=()=>x.status<300?ok():fail(new Error("erro "+x.status));x.onerror=()=>f
 row.querySelector("i").style.width="100%";label("enviado ✓ (entrada/"+d.name+")")}catch(e){row.className="file erro";label(e.message)}}
 function waRender(d){$("waHook").textContent=d.webhook;$("waVerify").textContent=d.verify_token;
 $("waEstado").innerHTML="Token: <b>"+(d.tem_token?"salvo ✓":"falta")+"</b> · Chave do app: <b>"+(d.tem_segredo?"salva ✓":"não")+"</b> · Phone number ID: <b>"+(d.phone_number_id||"falta")+"</b><br>Números: <b>"+(d.numeros?d.numeros.replace(/\\n/g,", "):"nenhum")+"</b>"}
-async function waStatus(){try{$("err").textContent="";waRender(await call("whatsapp"))}catch(e){$("err").textContent=e.message}}
+async function waStatus(){try{$("err").textContent="";const d=await call("whatsapp");waRender(d);tgRender(d)}catch(e){$("err").textContent=e.message}}
 async function waSalvar(){try{$("err").textContent="";const campos={token:$("waToken").value,phone_number_id:$("waPhone").value,app_secret:$("waSecret").value,numeros:$("waNums").value};
 const r=await fetch(location.origin+location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:key,action:"whatsapp_salvar",campos})});
 const d=await r.json();if(!r.ok)throw new Error(d.error||"falhou");["waToken","waSecret","waNums","waPhone"].forEach(i=>$(i).value="");waRender(d);$("err").textContent="Salvo ✓"}catch(e){$("err").textContent=e.message}}
+function tgRender(d){if(!d.tg_bot){$("tgEstado").textContent=d.tem_tg_token?"Token salvo, bot não encontrado.":"Nenhum bot ainda.";return}
+let h="Bot: <b>@"+d.tg_bot+"</b><br>Conectados: <b>"+((d.tg_ligados||[]).join(", ")||"ninguém")+"</b>";
+for(const [login,url] of Object.entries(d.tg_links||{}))h+='<a class="btn secondary" href="'+url+'">Conectar '+login+'</a>';
+$("tgEstado").innerHTML=h}
+async function tgSalvar(){try{$("err").textContent="";const r=await fetch(location.origin+location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:key,action:"telegram_salvar",campos:{tg_token:$("tgToken").value}})});
+const d=await r.json();if(!r.ok)throw new Error(d.error||"falhou");$("tgToken").value="";waRender(d);tgRender(d);$("err").textContent="Salvo ✓"}catch(e){$("err").textContent=e.message}}
 if(key){$("panel").hidden=false;refresh()}else{$("nokey").hidden=false}
 </script></body></html>"""
