@@ -30,3 +30,11 @@ class Mascarar(Extension):
         dados = c.carregar(c.dono(self.agent.context))
         if dados:
             response.message = c.mascarar(response.message, dados)
+        usados = self.agent.get_data("_cofre_usados") or []
+        if usados:
+            self.agent.set_data("_cofre_usados", [])
+            nomes = ", ".join(f"{n} ({t} caracteres)" for n, t in usados)
+            response.message += (f"\n\n✅ Cofre: o valor real de {nomes} foi usado nesta ação. Campos de senha e o texto "
+                                 "digitado aparecem vazios ou como §§secret(...) para você por segurança — isso é normal. "
+                                 "Siga em frente (ex.: clique em Avançar/Entrar); só conclua que falhou se o site disser "
+                                 "que a senha está errada.")

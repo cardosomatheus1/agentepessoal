@@ -29,7 +29,27 @@ class SegredosDaPessoa(Extension):
             return
         c = cofre()
         dados = c.carregar(c.dono(self.agent.context))
-        if not dados:
-            return
+        import json
+
+        bruto = json.dumps(tool_args, ensure_ascii=False, default=str)
+        usados = sorted({n for n in c.PADRAO.findall(bruto) if n in dados})
         for k, v in list(tool_args.items()):
             tool_args[k] = c.trocar(v, dados)
+        # for _08_mascarar: tell the agent plainly that the value went in (it only ever sees it masked)
+        self.agent.set_data("_cofre_usados", [(n, len(dados[n])) for n in usados])
+        faltando = sorted({n for n in c.PADRAO.findall(bruto) if n not in dados})
+        if faltando:
+            try:  # Agent Zero's own (global) secrets still apply to names it knows
+                from helpers.secrets import get_secrets_manager
+
+                globais = set(get_secrets_manager(self.agent.context).load_secrets())
+            except Exception:
+                globais = set()
+            faltando = [n for n in faltando if n not in globais]
+        if faltando:
+            from helpers.errors import RepairableException
+
+            raise RepairableException(
+                f"{', '.join(faltando)} não está no cofre do usuário. Nomes disponíveis: "
+                f"{', '.join(sorted(dados)) or 'nenhum'}. Use um desses ou peça para ele mandar no Telegram/WhatsApp "
+                f"`/senha {faltando[0]} valor`.")
