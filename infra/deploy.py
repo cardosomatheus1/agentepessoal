@@ -384,6 +384,35 @@ def ensure_instance(profile_arn: str, subnet: str, sg: str) -> str:
     raise SystemExit("could not launch instance")
 
 
+def ensure_wake_schedule(instance_id: str) -> None:
+    """The VM hibernates when idle, which would also stop the agent's own scheduled tasks.
+    Start it 10 minutes before they run (00/06/12/18 America/Bahia = 03/09/15/21 UTC)."""
+    name = f"{NAME}-acordar-vm"
+    trust = {"Version": "2012-10-17", "Statement": [{
+        "Effect": "Allow", "Principal": {"Service": "scheduler.amazonaws.com"}, "Action": "sts:AssumeRole",
+        "Condition": {"StringEquals": {"aws:SourceAccount": account}}}]}
+    try:
+        role_arn = iam.get_role(RoleName=name)["Role"]["Arn"]
+    except iam.exceptions.NoSuchEntityException:
+        role_arn = iam.create_role(RoleName=name, AssumeRolePolicyDocument=json.dumps(trust), Tags=TAGS)["Role"]["Arn"]
+        time.sleep(10)
+    iam.put_role_policy(RoleName=name, PolicyName="start-vm", PolicyDocument=json.dumps({
+        "Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "ec2:StartInstances",
+                                                "Resource": f"arn:aws:ec2:{REGION}:{account}:instance/{instance_id}"}]}))
+    scheduler = boto3.client("scheduler", region_name=REGION)
+    args = dict(
+        Name=name, ScheduleExpression="cron(50 2,8,14,20 * * ? *)", ScheduleExpressionTimezone="UTC",
+        FlexibleTimeWindow={"Mode": "OFF"}, State="ENABLED",
+        Target={"Arn": "arn:aws:scheduler:::aws-sdk:ec2:startInstances", "RoleArn": role_arn,
+                "Input": json.dumps({"InstanceIds": [instance_id]})},
+    )
+    try:
+        scheduler.create_schedule(**args)
+        log(f"created schedule {name}")
+    except scheduler.exceptions.ConflictException:
+        scheduler.update_schedule(**args)
+
+
 # ---------------------------------------------------------------- control page
 
 def ensure_control(instance_id: str, password: str) -> str:
@@ -514,6 +543,7 @@ def main() -> None:
     existed = find_instance() is not None
     instance_id = ensure_instance(profile, subnet, sg)
     url = ensure_control(instance_id, password)
+    ensure_wake_schedule(instance_id)
     if existed and "--update" in sys.argv:
         update_running_vm(instance_id)
     print()
