@@ -76,6 +76,8 @@ def receive(raw: bytes, headers: dict, vm_state, start_vm, start_vm_later) -> di
         return whatsapp._text("ok")
 
     texto = (msg.get("text") or "").strip()
+    if texto.startswith("/start") or chat not in (cfg.get("tg_chats") or {}):
+        cfg = whatsapp.config(fresca=True)  # another Lambda instance may have just saved a code or link
     if texto.startswith("/start"):
         codigo = texto.split(" ", 1)[1].strip() if " " in texto else ""
         login = (cfg.get("tg_codigos") or {}).get(codigo)

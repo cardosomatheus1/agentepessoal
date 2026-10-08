@@ -35,9 +35,9 @@ _config: dict = {}
 _config_at = 0.0
 
 
-def config() -> dict:
+def config(fresca: bool = False) -> dict:
     global _config, _config_at
-    if not _config or time.time() - _config_at > 300:
+    if fresca or not _config or time.time() - _config_at > 300:
         try:
             raw = ssm.get_parameter(Name=CONFIG_PARAM, WithDecryption=True)["Parameter"]["Value"]
             _config, _config_at = json.loads(raw), time.time()
