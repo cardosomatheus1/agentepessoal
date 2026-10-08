@@ -229,7 +229,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if body is not None:
             headers["Content-Length"] = str(len(body))
 
-        conn = http.client.HTTPSConnection(upstream, timeout=900, context=_ssl)
+        # 240 s without a byte from upstream = hung call: fail it so Agent Zero retries (with 900 s a
+        # stuck model call left a Telegram request "Calling LLM…" for 15 minutes).
+        conn = http.client.HTTPSConnection(upstream, timeout=240, context=_ssl)
         started = time.time()
         try:
             conn.request(self.command, path, body=body, headers=headers)
