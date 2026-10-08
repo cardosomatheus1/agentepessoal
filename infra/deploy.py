@@ -280,6 +280,9 @@ def presets_yaml() -> str:
         + "- name: Rapido\n"
         + model("chat", "openai.gpt-6-luna", chat_extra)
         + model("utility", "openai.gpt-6-luna", util_extra)
+        + "- name: Luna alto\n"
+        + model("chat", "openai.gpt-6-luna", chat_extra, effort="high")
+        + model("utility", "openai.gpt-6-luna", util_extra)
         + "- name: Luna max\n"
         + model("chat", "openai.gpt-6-luna", chat_extra, effort="max")
         + model("utility", "openai.gpt-6-luna", util_extra)
