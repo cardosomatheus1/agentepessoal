@@ -214,8 +214,7 @@ def tg_chat(usuario: str) -> str:
 
 
 def tg_texto(chat: str, texto: str, botoes: list | None = None) -> None:
-    if not texto.startswith("🎤"):  # the echo of a voice note is not the answer: keep "typing…"
-        DIGITANDO.pop(chat, None)
+    DIGITANDO.pop(chat, None)  # an answer went out: stop "typing…"
     partes = [texto[i:i + TG_LIMITE] for i in range(0, len(texto), TG_LIMITE)] or [""]
     for i, parte in enumerate(partes):
         dados = {"chat_id": chat, "text": parte, "parse_mode": "Markdown", "disable_web_page_preview": True}

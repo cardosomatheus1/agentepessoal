@@ -227,9 +227,6 @@ class Receber(ApiHandler):
                 print(f"whatsapp: transcription failed: {exc}", flush=True)
             if transcrito:
                 texto = f"🎤 {transcrito}" + (f"\n\n{texto}" if texto else "")
-                import asyncio  # show at once what was understood, while the agent thinks
-
-                asyncio.get_running_loop().run_in_executor(None, ponte().enviar, usuario, f"🎤 _{transcrito}_")
             else:
                 anexos.append(audio)
                 texto = texto or "(mandei um áudio, mas a transcrição falhou — o arquivo está anexado)"
