@@ -1,0 +1,47 @@
+<script type="module" src="/plugins/interface_celular/webui/interface-celular.js"></script>
+<style>
+/* Desktop keeps Agent Zero's layout; everything below is for the phone (same 768px cut the
+   sidebar uses). */
+.ic-ferramentas-host { display: none; }
+
+@media (max-width: 768px) {
+  /* Tools: hidden until the top-bar button opens them, then a column under that button
+     (no drag grip: dragging it was what made the bar slide along with the finger). */
+  .ic-ferramentas-host { display: flex; }
+  .ic-ferramentas-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; padding: 0; border-radius: 8px;
+    border: 1px solid var(--color-border, #333); background: transparent; color: var(--color-text);
+  }
+  body.ic-ferramentas .ic-ferramentas-btn { background: var(--color-background-hover, #2a2a2a); }
+  body.right-canvas-mobile-mode .right-canvas-rail { display: none !important; }
+  body.right-canvas-mobile-mode.ic-ferramentas .right-canvas-rail {
+    display: flex !important;
+    top: 64px !important;
+    right: 12px !important;
+    transform: none !important;
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  }
+  .right-canvas-rail .right-canvas-rail-grip { display: none !important; }
+
+  /* Scroll buttons: only "go to the end", and only when the chat is scrolled up. */
+  #chat-nav-buttons .btn-icon-action:not(:last-child) { display: none !important; }
+  #chat-nav-buttons { opacity: 0 !important; pointer-events: none !important; transition: none; }
+  body.ic-longe-do-fim #chat-nav-buttons { opacity: 0.9 !important; pointer-events: auto !important; }
+
+  /* Scrolling a list never drags the page or the list behind it. */
+  #chat-history, #left-panel, #left-panel *, .modal-body, .modal-content {
+    overscroll-behavior: contain;
+  }
+  html, body { overscroll-behavior: none; }
+
+  /* Fewer effects to repaint on a phone: the chat area animated every style change
+     ("transition: all") and modals blurred the whole screen behind them. */
+  #chat-history, #chat-history *, #chat-history *::before, #chat-history *::after,
+  #left-panel, .sidebar-overlay {
+    transition: none !important;
+  }
+  * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+}
+</style>

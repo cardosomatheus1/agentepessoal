@@ -1,0 +1,8 @@
+<!-- Phone only: one button in the top bar opens the tools (files, browser, desktop, phone...),
+     which otherwise float over the chat text. -->
+<div x-data class="ic-ferramentas-host">
+  <button type="button" class="ic-ferramentas-btn" title="Ferramentas" aria-label="Ferramentas"
+          @click.stop="globalThis.interfaceCelular?.alternarFerramentas()">
+    <x-icon name="apps"></x-icon>
+  </button>
+</div>

@@ -1,0 +1,4 @@
+name: interface_celular
+title: Interface leve no celular
+description: Conversas longas abrem rápido (passos antigos vão resumidos), o menu fecha ao escolher uma conversa, as ferramentas ficam num botão no topo em vez de cobrir o texto, e os principais textos aparecem em português.
+version: 1.0.0
