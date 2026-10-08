@@ -79,10 +79,19 @@ def _filtrar(snapshot: dict, usuario: str | None) -> dict:
         ctx = AgentContext.get(cid) if cid else None
         return ctx is not None and usuario is not None and dono_contexto(ctx) == usuario
 
+    def subagente(cid):
+        ctx = AgentContext.get(cid) if cid else None
+        return ctx is not None and bool(_pai_id(ctx))
+
     for chave in ("contexts", "tasks"):
         lista = snapshot.get(chave)
         if isinstance(lista, list):
             snapshot[chave] = [c for c in lista if meu(c.get("id") or c.get("context_id"))]
+    # Subordinate and parallel-worker chats are the main chat's working space, not conversations:
+    # keep them out of the chat list (they still open from the main chat, and a message typed in
+    # one goes to the main chat — controle_agente/_10_encaminhar_subagente.py).
+    if isinstance(snapshot.get("contexts"), list):
+        snapshot["contexts"] = [c for c in snapshot["contexts"] if not subagente(c.get("id"))]
     if snapshot.get("context") and not meu(snapshot["context"]):
         snapshot.update({"context": "", "deselect_chat": True, "logs": [], "log_guid": "",
                          "log_version": 0, "log_progress": 0, "log_progress_active": False, "paused": False})
