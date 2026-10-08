@@ -1,11 +1,26 @@
 # Plano: o que o Dots e o Grok Bot fazem e o nosso agente ainda não
 
-Status: **proposta** (08/10/2026). Fica de fora, por decisão do Matheus: **VM ligada 24h**. A VM continua
+Status: **em execução** (08/10/2026). Fica de fora, por decisão do Matheus: **VM ligada 24h**. A VM continua
 acordando sob demanda e hibernando quando ociosa. O que eles resolvem ficando sempre ligados, aqui se
 resolve acordando a VM na hora certa (fases 1 e 5).
 
 Referências: OpenAI **Dots** (agente pessoal no ChatGPT, lançado em 29/09/2026) e xAI **Grok Bot**
 (agentes persistentes, agosto/2026). Pesquisa detalhada em `reports/` quando concluída.
+
+## Estado (08/10/2026)
+
+| Fase | Estado | Onde |
+|---|---|---|
+| 1. WhatsApp | **Pronto no servidor; falta um número brasileiro.** Recepção (Lambda + fila + acordar VM), ponte, áudio (Whisper `small`, PT), respostas, avisos, botões, `/nova /parar /atividade /gasto /ajuda`, alerta de gasto e de token. App "Agente Pessoal" (portfólio "Matheus Cardoso - Pessoal"), token de 60 dias e chave do app guardados sem passar pela conversa, webhook ativo. O **número de teste da Meta (EUA) não pode mandar mensagem para o Brasil** (erro 130497); é preciso registrar um número BR na conta (WABA 1084080951097350) e trocar o `phone_number_id` na caixa WhatsApp da página de controle. | `infra/control/whatsapp.py`, `infra/vm/ponte_whatsapp.py`, plugin `whatsapp` |
+| 2. Aprovações e regras | **Pronto e testado** (recusa manteve os arquivos; proteção contra loop: 3ª aprovação igual em 10 min é recusada) | plugin `aprovacoes` |
+| 3. Cofre + 2FA | **Pronto** (cofre por pessoa; `FACEBOOK_SENHA` guardada; senha vazada trocada pelo nome em 13 arquivos; `pedir_codigo`) | plugin `cofre`, `whatsapp/tools/pedir_codigo.py` |
+| 4. Rotinas | **Pronto e testado** (`salvar_rotina`, correções, `me_mostre`) | plugin `rotinas` |
+| 5. Gatilhos + despertar exato | **Pronto e testado** (despertar 5 min antes da próxima tarefa; fixo 4x/dia removido; gatilho chegou na conversa "Gatilhos") | `proximo_despertar.py`, `criar_gatilho` |
+| 6. Resumo diário só leitura | **Pronto e testado** (07h45, conversa marcada como só leitura) | tarefa "📰 Resumo do dia" |
+| 7. Conectores Google | **Falta o login do Matheus** (ver abaixo) | — |
+| 8. Áreas com função | **Pronto**: projetos "Meta e NEXOS" e "Saúde" com regras próprias (+ "Carreira") | projetos do Agent Zero |
+| 9. Voz | **Avaliado** (ver abaixo) | — |
+| Extras da pesquisa | registro de atividades, medidor/alerta de gasto, `/parar`, revisor independente, modo só leitura | — |
 
 ## Ordem e esforço
 
@@ -106,6 +121,11 @@ chega no WhatsApp; um `/goal` que trava esperando você manda aviso no WhatsApp.
 
 - Gmail, Google Agenda e Drive por MCP (o Agent Zero já suporta), autorizados uma vez com a sua conta;
   começando **só leitura**. Mais rápido e confiável que pelo navegador.
+- **O que falta**: o consentimento OAuth do Google só pode ser dado por você, logado na sua conta (o
+  agente não aceita termos nem faz login novo em contas reais por conta própria). Caminho: um projeto no
+  Google Cloud com tela de consentimento "Testing" e você como usuário de teste, cliente OAuth "Desktop",
+  e um servidor MCP de Google Workspace no Agent Zero; o revisor de aprovações já trata ferramentas MCP
+  que escrevem (enviar, criar, apagar) como ações a aprovar.
 
 ## Fase 8 — Agentes com função
 
@@ -113,10 +133,13 @@ chega no WhatsApp; um `/goal` que trava esperando você manda aviso no WhatsApp.
   regras próprias, sobre os projetos do Agent Zero.
 - Um "chefe de gabinete" que junta o estado de todos no resumo diário.
 
-## Fase 9 — Chamada de voz (avaliar)
+## Fase 9 — Chamada de voz (avaliação)
 
-- A Meta tem API de chamadas no WhatsApp Business; avaliar custo e latência de conversa por voz em tempo
-  real depois que a fase 1 estiver estável.
+- A API de chamadas do WhatsApp Business existe, mas exige número real (não o de teste) e WebRTC no
+  servidor, que precisa estar ligado na hora da ligação; com a VM hibernando, a primeira chamada levaria
+  ~1 min para atender. Áudio já resolve o dia a dia (transcrição em ~8 s).
+- Recomendação: não fazer agora. Revisitar com o número BR ativo, se quiser "ligar para o agente";
+  dá para responder com áudio (voz sintética) usando o Kokoro que já vem no Agent Zero.
 
 ## Decisões pendentes (Matheus)
 

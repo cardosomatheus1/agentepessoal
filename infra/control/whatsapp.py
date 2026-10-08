@@ -152,6 +152,7 @@ def receive(raw: bytes, headers: dict, vm_state, start_vm, start_vm_later) -> di
     it has finished hibernating (a stopping instance cannot be started)."""
     cfg = config()
     if cfg.get("app_secret") and not _signed(raw, headers.get("x-hub-signature-256", ""), cfg["app_secret"]):
+        print("whatsapp: rejected a POST with a bad signature")
         return _text("bad signature", 401)
     try:
         payload = json.loads(raw)
@@ -163,6 +164,10 @@ def receive(raw: bytes, headers: dict, vm_state, start_vm, start_vm_later) -> di
     for entry in payload.get("entry", []):
         for change in entry.get("changes", []):
             value = change.get("value") or {}
+            for st in value.get("statuses", []):  # delivery receipts: only failures matter
+                if st.get("status") == "failed":
+                    erros = [(e.get("code"), e.get("title")) for e in st.get("errors", [])]
+                    print(f"whatsapp: message to …{str(st.get('recipient_id'))[-4:]} failed: {erros}")
             nomes = {c.get("wa_id"): (c.get("profile") or {}).get("name", "") for c in value.get("contacts", [])}
             for msg in value.get("messages", []):
                 numero = msg.get("from", "")
