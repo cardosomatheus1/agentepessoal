@@ -205,6 +205,25 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
+cat > /etc/systemd/system/agentepessoal-google-mcp.service <<'EOF'
+[Unit]
+Description=Google connector (workspace-mcp, read-only) running inside the agent container
+After=docker.service
+Wants=docker.service
+[Service]
+# A long-lived HTTP server, not stdio: Agent Zero starts stdio servers per call, so the OAuth
+# callback (localhost:8765/oauth2callback, opened by the agent's browser) had nobody listening.
+ExecStartPre=/bin/sh -c 'until docker exec agent-zero test -f /a0/usr/mcp/google/client_secret.json; do sleep 10; done'
+ExecStart=/usr/bin/docker exec -e GOOGLE_CLIENT_SECRET_PATH=/a0/usr/mcp/google/client_secret.json \
+  -e WORKSPACE_MCP_CREDENTIALS_DIR=/a0/usr/mcp/google/credenciais -e USER_GOOGLE_EMAIL=falhanosistema1111@gmail.com \
+  -e WORKSPACE_MCP_PORT=8765 -e PORT=8765 agent-zero /a0/usr/mcp/venv-google/bin/workspace-mcp \
+  --single-user --read-only --tools gmail calendar drive --transport streamable-http
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target
+EOF
+
 cat > /etc/systemd/system/agentepessoal-phone-tunnel.service <<'EOF'
 [Unit]
 Description=Cloudflare quick tunnel for the phone screen (ws-scrcpy)
@@ -326,8 +345,9 @@ EOF
 systemctl daemon-reload
 systemctl enable agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-agent-tools \
   agentepessoal-watchdog.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer \
-  agentepessoal-credenciais-meta agentepessoal-whatsapp
+  agentepessoal-credenciais-meta agentepessoal-whatsapp agentepessoal-google-mcp
 systemctl restart agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-credenciais-meta agentepessoal-whatsapp
+systemctl restart --no-block agentepessoal-google-mcp
 systemctl start agentepessoal-agent-tools agentepessoal-watchdog.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer
 
 # First boot only: install test apps on the phone.
