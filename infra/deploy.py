@@ -254,7 +254,7 @@ def presets_yaml() -> str:
             f"    kwargs:\n{kwargs}"
         )
 
-    def claude(slot: str, name: str, extra: str) -> str:
+    def claude(slot: str, name: str, extra: str, effort: str = "") -> str:
         # Claude runs on the Bedrock runtime (Converse API) behind the proxy's /bedrock route; the
         # proxy swaps the placeholder key for a fresh bearer token
         return (
@@ -262,6 +262,7 @@ def presets_yaml() -> str:
             f"    ctx_length: 200000\n{extra}    rl_requests: 0\n    rl_input: 0\n    rl_output: 0\n"
             "    kwargs:\n      a0_api_mode: chat\n      api_base: http://host.docker.internal:8787/bedrock\n"
             "      api_key: proxy\n      aws_region_name: us-east-1\n"
+            + (f"      output_config:\n        effort: {effort}\n" if effort else "")
         )
 
     haiku = "us.anthropic.claude-haiku-5-5"
@@ -284,6 +285,9 @@ def presets_yaml() -> str:
         + claude("utility", haiku, util_extra)
         + "- name: Haiku\n"
         + claude("chat", haiku, chat_extra)
+        + claude("utility", haiku, util_extra)
+        + "- name: Haiku max\n"
+        + claude("chat", haiku, chat_extra, effort="max")
         + claude("utility", haiku, util_extra)
     )
 
