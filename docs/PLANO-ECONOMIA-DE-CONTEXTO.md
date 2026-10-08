@@ -9,8 +9,9 @@ Status: **em execução** (08/10/2026).
 | Medição | o proxy grava `entrada`, `cache`, `cache_gravado` e `saida` de cada chamada em `/var/lib/agentepessoal/uso.jsonl` | linha de base: ~78 mil tokens por passo na conversa da Meta, **0% de cache** |
 | Alavancas 1, 3 e 7 | `ctx_history` 0.25; página do navegador ≤ 20 mil caracteres; 3 memórias e 1 solução lembradas; não reler o `contexto.md` | passo na conversa da Meta: ~78 mil → ~44–56 mil tokens |
 | Alavanca 5 (cache) | plugin `cache_prompt`: extras no histórico só com o que mudou, sem bloco no fim (o cache do Bedrock só aproveita quando o prompt novo começa com o anterior inteiro) | mesma tarefa: 0% → **79%** da entrada em cache, custo **−55%**, mesmo acerto |
-
-Pendentes: alavanca 2 (resultados grandes em arquivo), 4 (manuais sob demanda), 6 (subagente limpo).
+| Alavanca 2 | plugin `resultados_grandes`: resultado de ferramenta acima de 8 mil caracteres vai para `chats/<id>/saidas/`; no histórico ficam começo, fim e caminho | no teste, um resultado do navegador de 72 mil caracteres ficou com ~6,5 mil no histórico; **83%** em cache, ~US$ 0,0015 por passo (sem as mudanças: ~US$ 0,0038) |
+| Alavanca 6 | regra: tarefa nova e independente → `call_subordinate` com `reset: true`; navegação longa em subagente limpo | — |
+| Alavanca 4 | **não feita**: com o cache, instruções e definições de ferramentas (~17 mil tokens fixos) já saem a 1/10 do preço; o ganho não compensa o risco de o agente usar mal as ferramentas | — |
 
 ## O problema, medido
 

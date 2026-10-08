@@ -1,0 +1,4 @@
+name: resultados_grandes
+title: Resultados grandes em arquivo
+description: Resultado de ferramenta muito grande (terminal, navegador, subagente) vai inteiro para um arquivo da conversa; no histórico fica o começo, o fim e o caminho — o agente lê o trecho que precisar.
+version: 1.0.0
