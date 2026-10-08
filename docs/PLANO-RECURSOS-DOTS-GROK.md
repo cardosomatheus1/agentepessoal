@@ -11,9 +11,9 @@ Referências: OpenAI **Dots** (agente pessoal no ChatGPT, lançado em 29/09/2026
 
 | Fase | Estado | Onde |
 |---|---|---|
-| 1. WhatsApp | **Pronto no servidor; falta um número brasileiro.** Recepção (Lambda + fila + acordar VM), ponte, áudio (Whisper `small`, PT), respostas, avisos, botões, `/nova /parar /atividade /gasto /ajuda`, alerta de gasto e de token. App "Agente Pessoal" (portfólio "Matheus Cardoso - Pessoal"), token de 60 dias e chave do app guardados sem passar pela conversa, webhook ativo. O **número de teste da Meta (EUA) não pode mandar mensagem para o Brasil** (erro 130497); é preciso registrar um número BR na conta (WABA 1084080951097350) e trocar o `phone_number_id` na caixa WhatsApp da página de controle. | `infra/control/whatsapp.py`, `infra/vm/ponte_whatsapp.py`, plugin `whatsapp` |
+| 1. Celular (Telegram / WhatsApp) | **Pronto no Telegram** (@Luffycardoso_bot): texto, áudio (faster-whisper, ~6–8 s), foto, arquivo, botões de aprovação, "digitando…", `/nova /parar /atividade /gasto /senha /ajuda`, alertas de gasto e de token. Matheus ligado; Fernanda tem o link e ainda não entrou. **WhatsApp bloqueado pela Meta**: o número de teste (EUA) não fala com o Brasil (130497) e a conta nova com o chip Vivo (WABA 2125721711639357) foi REJEITADA sem revisão; o código continua pronto para quando houver conta aprovada (ou CNPJ). | `infra/control/whatsapp.py`, `infra/control/telegram.py`, `infra/vm/ponte_whatsapp.py`, plugin `whatsapp` |
 | 2. Aprovações e regras | **Pronto e testado** (recusa manteve os arquivos; proteção contra loop: 3ª aprovação igual em 10 min é recusada) | plugin `aprovacoes` |
-| 3. Cofre + 2FA | **Pronto** (cofre por pessoa; `FACEBOOK_SENHA` guardada; senha vazada trocada pelo nome em 13 arquivos; `pedir_codigo`) | plugin `cofre`, `whatsapp/tools/pedir_codigo.py` |
+| 3. Cofre + 2FA | **Pronto e testado** (cofre por pessoa; `/senha` pelo Telegram apaga a mensagem; valor nunca aparece para o agente, no histórico nem no log; login no Gmail feito pelo cofre; `pedir_codigo`) | plugin `cofre`, `whatsapp/tools/pedir_codigo.py` |
 | 4. Rotinas | **Pronto e testado** (`salvar_rotina`, correções, `me_mostre`) | plugin `rotinas` |
 | 5. Gatilhos + despertar exato | **Pronto e testado** (despertar 5 min antes da próxima tarefa; fixo 4x/dia removido; gatilho chegou na conversa "Gatilhos") | `proximo_despertar.py`, `criar_gatilho` |
 | 6. Resumo diário só leitura | **Pronto e testado** (07h45, conversa marcada como só leitura) | tarefa "📰 Resumo do dia" |
@@ -21,6 +21,7 @@ Referências: OpenAI **Dots** (agente pessoal no ChatGPT, lançado em 29/09/2026
 | 8. Áreas com função | **Pronto**: projetos "Meta e NEXOS" e "Saúde" com regras próprias (+ "Carreira") | projetos do Agent Zero |
 | 9. Voz | **Avaliado** (ver abaixo) | — |
 | Extras da pesquisa | registro de atividades, medidor/alerta de gasto, `/parar`, revisor independente, modo só leitura | — |
+| Travamentos | **Pronto**: chamada ao modelo sem resposta por 4 min é cortada e refeita; conversa parada em "Calling LLM" por 6 min é destravada sozinha (máx. 2 vezes em 30 min) com aviso no Telegram | `bedrock_proxy.py`, `whatsapp/api/destravar.py` |
 
 ## Ordem e esforço
 
