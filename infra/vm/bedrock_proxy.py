@@ -115,6 +115,7 @@ def pull(wait: float) -> bool:
 
 USAGE_FILE = Path(os.environ.get("USAGE_FILE", "/var/lib/agentepessoal/uso.jsonl"))
 USAGE_TAIL = 256 * 1024  # the usage block is in the last event of a response
+DUMP_DIR = USAGE_FILE.parent / "pedidos"  # exists only while debugging the prompt cache
 _usage_lock = threading.Lock()
 
 
@@ -152,12 +153,18 @@ def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: 
             "status": status,
             "entrada": u.get("input_tokens", u.get("prompt_tokens", u.get("inputTokens", 0))),
             "cache": details.get("cached_tokens", u.get("cacheReadInputTokens", 0)) or 0,
+            "cache_gravado": details.get("cache_write_tokens", u.get("cacheWriteInputTokens", 0)) or 0,
             "saida": u.get("output_tokens", u.get("completion_tokens", u.get("outputTokens", 0))),
             "segundos": round(seconds, 1),
             "bytes_pedido": len(body or b""),
         }
         with _usage_lock, USAGE_FILE.open("a") as f:
             f.write(json.dumps(row) + "\n")
+        if body and DUMP_DIR.is_dir():  # debugging only: `mkdir` the folder to capture request bodies
+            names = sorted(DUMP_DIR.glob("*.json"))
+            for old in names[:-9]:
+                old.unlink(missing_ok=True)
+            (DUMP_DIR / f"{time.time():.3f}.json").write_bytes(body)
     except Exception:
         pass
 
@@ -223,6 +230,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             headers["Content-Length"] = str(len(body))
 
         conn = http.client.HTTPSConnection(upstream, timeout=900, context=_ssl)
+        started = time.time()
         try:
             conn.request(self.command, path, body=body, headers=headers)
             resp = conn.getresponse()
@@ -233,7 +241,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_header("Transfer-Encoding", "chunked")
             self.send_header("Connection", "close")
             self.end_headers()
-            started, tail = time.time(), b""
+            tail = b""
             while True:
                 chunk = resp.read1(65536)
                 if not chunk:
