@@ -9,7 +9,8 @@
 Agent Zero only reads its API key at startup, while Bedrock short-term API keys
 expire. This proxy injects a fresh bearer token (generated from the VM's IAM
 role) into every request and streams the response back unchanged. It also
-records the time of the last model call, which the idle watchdog reads.
+records the time of the last model call, which the idle watchdog reads, and appends each
+call's token usage (input, cached, output) to /var/lib/agentepessoal/uso.jsonl.
 """
 
 import http.client
@@ -112,6 +113,55 @@ def pull(wait: float) -> bool:
     return not t.is_alive()
 
 
+USAGE_FILE = Path(os.environ.get("USAGE_FILE", "/var/lib/agentepessoal/uso.jsonl"))
+USAGE_TAIL = 256 * 1024  # the usage block is in the last event of a response
+_usage_lock = threading.Lock()
+
+
+def _last_usage(tail: bytes) -> dict:
+    """The last `"usage": {...}` object in a (streamed) response, whatever the API flavour."""
+    text = tail.decode("utf-8", "ignore")
+    decoder = json.JSONDecoder()
+    for m in reversed(list(re.finditer(r'"usage"\s*:\s*\{', text))):
+        try:
+            return decoder.raw_decode(text, m.end() - 1)[0]
+        except ValueError:
+            continue
+    return {}
+
+
+def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: float) -> None:
+    """One JSON line per model call: model, input/cached/output tokens and duration (for the
+    context-economy measurements). Never breaks the proxied call."""
+    try:
+        u = _last_usage(tail)
+        if not u:
+            return
+        model = ""
+        if body:
+            try:
+                model = json.loads(body).get("model", "")
+            except ValueError:
+                pass
+        if not model and "/model/" in path:
+            model = path.split("/model/", 1)[1].split("/", 1)[0]
+        details = u.get("input_tokens_details") or u.get("prompt_tokens_details") or {}
+        row = {
+            "em": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "modelo": model,
+            "status": status,
+            "entrada": u.get("input_tokens", u.get("prompt_tokens", u.get("inputTokens", 0))),
+            "cache": details.get("cached_tokens", u.get("cacheReadInputTokens", 0)) or 0,
+            "saida": u.get("output_tokens", u.get("completion_tokens", u.get("outputTokens", 0))),
+            "segundos": round(seconds, 1),
+            "bytes_pedido": len(body or b""),
+        }
+        with _usage_lock, USAGE_FILE.open("a") as f:
+            f.write(json.dumps(row) + "\n")
+    except Exception:
+        pass
+
+
 def mark_activity() -> None:
     try:
         ACTIVITY_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -183,14 +233,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_header("Transfer-Encoding", "chunked")
             self.send_header("Connection", "close")
             self.end_headers()
+            started, tail = time.time(), b""
             while True:
                 chunk = resp.read1(65536)
                 if not chunk:
                     break
+                tail = (tail + chunk)[-USAGE_TAIL:]
                 self.wfile.write(b"%x\r\n%s\r\n" % (len(chunk), chunk))
                 self.wfile.flush()
             self.wfile.write(b"0\r\n\r\n")
             self.wfile.flush()
+            if upstream != TYPESAFE_HOST:
+                log_usage(path, body, resp.status, tail, time.time() - started)
         except (BrokenPipeError, ConnectionResetError):
             pass
         finally:
