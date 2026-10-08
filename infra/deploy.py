@@ -266,7 +266,9 @@ def presets_yaml() -> str:
         )
 
     haiku = "us.anthropic.claude-haiku-5-5"
-    chat_extra = "    ctx_history: 0.7\n    vision: true\n    max_embeds: 30\n"  # images kept in context; at 10 a 7+5 image comparison looped forever
+    # ctx_history 0.25: the history is summarized past ~50k tokens instead of ~140k (every step
+    # resends it). max_embeds 30: images kept in context; at 10 a 7+5 image comparison looped forever
+    chat_extra = "    ctx_history: 0.25\n    vision: true\n    max_embeds: 30\n"
     util_extra = "    ctx_input: 0.7\n"
     embedding = (
         "  embedding:\n    provider: huggingface\n    name: sentence-transformers/all-MiniLM-L6-v2\n"

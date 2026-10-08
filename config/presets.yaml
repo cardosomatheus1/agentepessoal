@@ -4,7 +4,7 @@
     name: openai.gpt-6-luna
     api_base: https://bedrock-mantle.us-east-1.api.aws/openai/v1
     ctx_length: 200000
-    ctx_history: 0.7
+    ctx_history: 0.25
     vision: true
     max_embeds: 30
     rl_requests: 0
@@ -38,7 +38,7 @@
     name: openai.gpt-6.1-sol
     api_base: https://bedrock-mantle.us-east-1.api.aws/openai/v1
     ctx_length: 200000
-    ctx_history: 0.7
+    ctx_history: 0.25
     vision: true
     max_embeds: 30
     rl_requests: 0

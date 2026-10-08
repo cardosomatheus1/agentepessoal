@@ -81,6 +81,7 @@ Pessoas que usam este agente: {", ".join(todos)} (cada uma com a sua ficha). **Q
 ### Como manter essa memória
 - Quando {nome} contar algo duradouro sobre si (nome, cidade, profissão, família, preferências, jeito de responder), atualize {PROFILE} na hora — só a ficha de quem está falando.
 - Quando surgir algo importante só para esta conversa (objetivo, decisões, dados combinados, pendências, resumo do que foi feito), atualize {context_file}. Mantenha o arquivo curto e organizado em seções; reescreva em vez de só acrescentar.
+- O texto acima **já é** o {context_file} atual: não o leia de novo (nem com text_editor nem com cat) — isso só repete o mesmo texto no histórico. Para atualizar, reescreva o arquivo inteiro de uma vez a partir do que está acima.
 - Arquivos que o usuário manda da máquina dele: pelo **+ → Attach files** desta conversa, os grandes (até 5 GB) já ficam em {attachments}/ (lista acima; a mensagem traz o caminho) e os pequenos chegam como anexo normal; pela página de controle ("Enviar arquivos", funciona com a máquina desligada) chegam em /a0/usr/workdir/entrada/; pelo botão Files vão para a pasta que ele escolher. Se ele disser que mandou um arquivo, procure nesses lugares.
 - Anexos enviados nesta conversa: copie o arquivo para {attachments}/ (crie a pasta se preciso), registre nome e do que se trata em {context_file} e extraia as informações úteis (ex.: currículo → dados no perfil e no contexto).
 - Assunto de um agente (projeto ativo): guarde também nos arquivos do projeto e na memória do agente.

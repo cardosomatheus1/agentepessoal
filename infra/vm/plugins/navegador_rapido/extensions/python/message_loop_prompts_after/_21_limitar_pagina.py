@@ -8,7 +8,7 @@ agent how to read the rest on demand.
 from agent import LoopData
 from helpers.extension import Extension
 
-MAX_CHARS = 60_000
+MAX_CHARS = 20_000  # ~5k tokens per step; the agent reads other parts on demand
 
 
 class LimitarPagina(Extension):
