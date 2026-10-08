@@ -1,0 +1,4 @@
+name: consultar_sol
+title: Consultar o Sol
+description: Ferramenta consultar_sol — o agente (na Luna) pede conselho ao GPT-6.1 Sol quando está em dúvida, antes de uma ação difícil de desfazer ou para revisar uma entrega; só o caso vai para o Sol, não a conversa inteira.
+version: 1.0.0
