@@ -286,6 +286,9 @@ def presets_yaml() -> str:
         + "- name: Haiku\n"
         + claude("chat", haiku, chat_extra)
         + claude("utility", haiku, util_extra)
+        + "- name: Haiku alto\n"
+        + claude("chat", haiku, chat_extra, effort="high")
+        + claude("utility", haiku, util_extra)
         + "- name: Haiku max\n"
         + claude("chat", haiku, chat_extra, effort="max")
         + claude("utility", haiku, util_extra)
