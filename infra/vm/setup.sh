@@ -135,6 +135,12 @@ else
   docker restart agent-zero
 fi
 docker network connect phone agent-zero 2>/dev/null || true
+# The agent's browser kept a "Save password?" bubble over every page (and every screen recording):
+# turn the password manager and autofill off with a Chromium managed policy (lives in the
+# container's /etc, so it is rewritten on every setup)
+docker exec -i agent-zero sh -c 'mkdir -p /etc/chromium/policies/managed && cat > /etc/chromium/policies/managed/agentepessoal.json' <<'EOF'
+{"PasswordManagerEnabled": false, "PasswordLeakDetectionEnabled": false, "AutofillAddressEnabled": false, "AutofillCreditCardEnabled": false}
+EOF
 
 # --- systemd units ---------------------------------------------------------------
 cat > /etc/systemd/system/agentepessoal-proxy.service <<'EOF'
