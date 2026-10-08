@@ -214,6 +214,8 @@ def tg_chat(usuario: str) -> str:
 
 
 def tg_texto(chat: str, texto: str, botoes: list | None = None) -> None:
+    if not texto.startswith("🎤"):  # the echo of a voice note is not the answer: keep "typing…"
+        DIGITANDO.pop(chat, None)
     partes = [texto[i:i + TG_LIMITE] for i in range(0, len(texto), TG_LIMITE)] or [""]
     for i, parte in enumerate(partes):
         dados = {"chat_id": chat, "text": parte, "parse_mode": "Markdown", "disable_web_page_preview": True}
@@ -276,6 +278,25 @@ def preparar_tg(item: dict) -> dict:
         texto = "(mensagem de um tipo que eu ainda não sei abrir)"
     return {"usuario": item["usuario"], "texto": texto, "audio": audio, "anexos": anexos, "botao": "",
             "id": f"tg-{update.get('update_id')}"}
+
+
+DIGITANDO: dict[str, float] = {}  # chat -> until when to keep "typing…" on
+
+
+def ciclo_digitando() -> None:
+    """Keep Telegram's "typing…" on while the agent works (it lasts 5 s per call); stops when an
+    answer goes out or after 2 minutes."""
+    while True:
+        agora = time.time()
+        for chat, ate in list(DIGITANDO.items()):
+            if agora > ate:
+                DIGITANDO.pop(chat, None)
+                continue
+            try:
+                tg("sendChatAction", {"chat_id": chat, "action": "typing"})
+            except Exception:
+                pass
+        time.sleep(4)
 
 
 def avisar(usuario: str, texto: str) -> None:
@@ -443,6 +464,7 @@ def ciclo_entrada() -> None:
                     if (msg.get("text") or "").strip().lower() == "/gasto":
                         tg_texto(item["chat"], texto_gasto())
                     else:
+                        DIGITANDO[item["chat"]] = time.time() + 120
                         dados = preparar_tg(item)
                         for tentativa in range(30):  # right after waking, Agent Zero may still be starting
                             try:
@@ -601,6 +623,7 @@ def main() -> None:
     chave()
     threading.Thread(target=ciclo_entrada, daemon=True).start()
     threading.Thread(target=ciclo_alerta, daemon=True).start()
+    threading.Thread(target=ciclo_digitando, daemon=True).start()
     log("ready")
     http.server.ThreadingHTTPServer(LISTEN, Saida).serve_forever()
 

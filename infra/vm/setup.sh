@@ -142,6 +142,9 @@ docker exec -i agent-zero sh -c 'mkdir -p /etc/chromium/policies/managed && cat 
 {"PasswordManagerEnabled": false, "PasswordLeakDetectionEnabled": false, "AutofillAddressEnabled": false, "AutofillCreditCardEnabled": false}
 EOF
 
+# faster-whisper for voice notes (plugins/whatsapp): ~2x faster than Agent Zero's Whisper on CPU
+docker exec agent-zero /opt/venv-a0/bin/pip install --quiet faster-whisper || true
+
 # --- systemd units ---------------------------------------------------------------
 cat > /etc/systemd/system/agentepessoal-proxy.service <<'EOF'
 [Unit]

@@ -49,12 +49,37 @@ def _chave_ok(request: Request) -> bool:
     return bool(esperada) and secrets.compare_digest(request.headers.get("X-Chave", ""), esperada)
 
 
-async def _transcrever(caminho: str) -> str:
-    from plugins._whisper_stt.helpers import runtime
+_RAPIDO = None  # faster-whisper model, loaded once (~2x faster than Agent Zero's Whisper on this CPU)
 
-    dados = base64.b64encode(Path(caminho).read_bytes()).decode()
-    resultado = await runtime._transcribe(MODELO_WHISPER, dados, language="pt")
-    return str(resultado.get("text") or "").strip()
+
+def _transcrever_rapido(caminho: str) -> str:
+    """faster-whisper (int8) on audio decoded by ffmpeg — its own PyAV clashes with Agent Zero's."""
+    global _RAPIDO
+    import subprocess
+
+    import numpy as np
+    from faster_whisper import WhisperModel
+
+    if _RAPIDO is None:
+        _RAPIDO = WhisperModel(MODELO_WHISPER, device="cpu", compute_type="int8", cpu_threads=4)
+    bruto = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-i", caminho, "-f", "s16le", "-ac", "1",
+                            "-ar", "16000", "-"], capture_output=True, check=True).stdout
+    audio = np.frombuffer(bruto, np.int16).astype(np.float32) / 32768.0
+    segmentos, _ = _RAPIDO.transcribe(audio, language="pt", beam_size=1, vad_filter=True)
+    return " ".join(s.text.strip() for s in segmentos).strip()
+
+
+async def _transcrever(caminho: str) -> str:
+    import asyncio
+
+    try:
+        return await asyncio.to_thread(_transcrever_rapido, caminho)
+    except ImportError:  # faster-whisper missing: Agent Zero's own Whisper (slower)
+        from plugins._whisper_stt.helpers import runtime
+
+        dados = base64.b64encode(Path(caminho).read_bytes()).decode()
+        resultado = await runtime._transcribe(MODELO_WHISPER, dados, language="pt")
+        return str(resultado.get("text") or "").strip()
 
 
 def _conversa(usuario: str, nova: bool, chave: str = "whatsapp_de", nome: str = "WhatsApp"):
@@ -202,6 +227,9 @@ class Receber(ApiHandler):
                 print(f"whatsapp: transcription failed: {exc}", flush=True)
             if transcrito:
                 texto = f"🎤 {transcrito}" + (f"\n\n{texto}" if texto else "")
+                import asyncio  # show at once what was understood, while the agent thinks
+
+                asyncio.get_running_loop().run_in_executor(None, ponte().enviar, usuario, f"🎤 _{transcrito}_")
             else:
                 anexos.append(audio)
                 texto = texto or "(mandei um áudio, mas a transcrição falhou — o arquivo está anexado)"
