@@ -1,0 +1,50 @@
+<html>
+<head>
+  <title>Aprovações e regras</title>
+</head>
+<body>
+  <div x-data>
+    <template x-if="config">
+      <div class="plugin-config-page">
+        <div class="section-title">Aprovações e regras</div>
+        <div class="section-description">
+          Antes de uma ação de risco, um revisor separado identifica o tipo da ação e aplica a sua regra:
+          <b>permitir</b> (faz sozinho), <b>perguntar</b> (cartão com botões na conversa e no WhatsApp) ou
+          <b>nunca</b> (bloqueia, mesmo que você tenha marcado "sempre permitir").
+        </div>
+        <template x-for="[chave, titulo] in [
+            ['pagamento','Pagamento ou forma de pagamento'], ['compra','Finalizar compra ou reserva'],
+            ['termos','Aceitar termos e políticas'], ['enviar_analise','Enviar para análise de terceiros'],
+            ['mensagem_terceiros','Mensagem para outras pessoas'], ['publicar','Publicar conteúdo ou anúncio'],
+            ['apagar','Apagar ou desativar'], ['contas_reais','Mudar contas reais (banco, anúncios, governo)'],
+            ['senha_seguranca','Senha, 2FA, recuperação'], ['producao','Sistemas em produção']]" :key="chave">
+          <div class="field">
+            <div class="field-label"><div class="field-title" x-text="titulo"></div></div>
+            <div class="field-control">
+              <select x-model="config.regras[chave]">
+                <option value="permitir">Permitir</option>
+                <option value="perguntar">Perguntar</option>
+                <option value="nunca">Nunca</option>
+              </select>
+            </div>
+          </div>
+        </template>
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Sempre permitir</div>
+            <div class="field-description">Ações que você aprovou com "Sempre permitir" (uma por linha). Apague uma linha para voltar a perguntar.</div>
+          </div>
+          <div class="field-control"><textarea rows="5" x-model="config.sempre_permitir"></textarea></div>
+        </div>
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Esperar resposta por (minutos)</div>
+            <div class="field-description">Depois disso a ação é cancelada e o agente segue sem ela.</div>
+          </div>
+          <div class="field-control"><input type="number" min="5" x-model.number="config.espera_minutos"></div>
+        </div>
+      </div>
+    </template>
+  </div>
+</body>
+</html>

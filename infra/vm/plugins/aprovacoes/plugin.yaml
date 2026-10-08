@@ -1,0 +1,4 @@
+name: aprovacoes
+title: Aprovações e regras
+description: Antes de ações de risco (enviar, aceitar, pagar, apagar, publicar…), um revisor separado confere suas regras e libera, pede sua aprovação com botões (na tela e no WhatsApp) ou bloqueia.
+version: 1.0.0

@@ -18,16 +18,26 @@ CHAVE = Path("/a0/usr/whatsapp/.chave")
 MODELO_WHISPER = "small"  # "base" (the UI default) garbles Portuguese voice notes
 
 
-def ponte():
-    """helpers/ponte.py of this plugin (user plugins are not an importable package)."""
-    nome = "whatsapp_ponte"
-    if nome not in sys.modules:
-        caminho = Path(__file__).resolve().parents[1] / "helpers" / "ponte.py"
+def carregar(nome: str, caminho: Path):
+    """Load a helper by path, again when the file changed (a deploy), keeping pending state."""
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
         spec = importlib.util.spec_from_file_location(nome, caminho)
         modulo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
+        if antigo is not None and hasattr(antigo, "PENDENTES"):
+            modulo.PENDENTES = antigo.PENDENTES
         sys.modules[nome] = modulo
     return sys.modules[nome]
+
+
+def ponte():
+    """helpers/ponte.py of this plugin (user plugins are not an importable package)."""
+    nome = "whatsapp_ponte"
+    caminho = Path(__file__).resolve().parents[1] / "helpers" / "ponte.py"
+    return carregar(nome, caminho)
 
 
 def _chave_ok(request: Request) -> bool:
@@ -93,6 +103,20 @@ class Receber(ApiHandler):
         texto = str(input.get("texto") or "").strip()
         anexos = [str(a) for a in input.get("anexos") or []]
         audio = str(input.get("audio") or "")
+
+        botao = str(input.get("botao") or "")
+        if botao.startswith("aprov:"):  # a button of plugins/aprovacoes
+            _, ctx_id, pid, decisao = (botao.split(":") + ["", "", "", ""])[:4]
+            from agent import AgentContext
+
+            alvo = AgentContext.get(ctx_id)
+            rv = sys.modules.get("aprovacoes_revisor")
+            if alvo is None or rv is None or ponte().dono(alvo) != usuario or not rv.decidir(ctx_id, decisao, pid):
+                ponte().enviar(usuario, "Essa aprovação já não está mais pendente.")
+            else:
+                ponte().enviar(usuario, {"aprovar": "✅ Aprovado.", "sempre": "✅ Aprovado (e vou permitir sempre).",
+                                         "recusar": "❌ Recusado. Não vou fazer."}[decisao])
+            return {"ok": True}
 
         if texto.lower() in ("/nova", "/novo", "nova conversa"):
             ctx, _ = _conversa(usuario, nova=True)

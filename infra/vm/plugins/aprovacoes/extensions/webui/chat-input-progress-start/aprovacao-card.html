@@ -1,0 +1,39 @@
+<!-- Approval card: shows above the input while an action waits for the user's decision. -->
+<div x-data="{p: null, t: null, async olhar() {
+        const ctx = $store.chats && $store.chats.selected;
+        if (!ctx) { this.p = null; return; }
+        try { const r = await globalThis.sendJsonData('/plugins/aprovacoes/pendente', {context: ctx}); this.p = r.pendente; }
+        catch (e) { this.p = null; }
+      },
+      async decidir(d) {
+        const ctx = $store.chats.selected, id = this.p && this.p.id;
+        this.p = null;
+        try { await globalThis.sendJsonData('/plugins/aprovacoes/decidir', {context: ctx, decisao: d, id}); } catch (e) {}
+      } }"
+     x-init="olhar(); t = setInterval(() => { if (document.visibilityState === 'visible') olhar(); }, 2500)"
+     x-destroy="clearInterval(t)">
+  <template x-if="p">
+    <div class="apr-card">
+      <div class="apr-titulo">🔐 Aprovação necessária</div>
+      <div class="apr-resumo" x-text="p.resumo"></div>
+      <div class="apr-cat" x-text="'categoria: ' + p.categoria"></div>
+      <div class="apr-botoes">
+        <button class="apr-ok" @click="decidir('aprovar')">Aprovar</button>
+        <button class="apr-sempre" @click="decidir('sempre')">Sempre permitir</button>
+        <button class="apr-nao" @click="decidir('recusar')">Recusar</button>
+      </div>
+    </div>
+  </template>
+  <style>
+    .apr-card { width: 100%; border: 1px solid #fbbf24; border-radius: 14px; padding: 12px 14px; margin: 6px 0;
+                background: color-mix(in srgb, #fbbf24 8%, var(--color-panel, #1b1b1b)); }
+    .apr-titulo { font-weight: 600; margin-bottom: 4px; }
+    .apr-resumo { font-size: 0.95rem; }
+    .apr-cat { font-size: 0.75rem; opacity: 0.7; margin-top: 2px; }
+    .apr-botoes { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .apr-botoes button { border: 0; border-radius: 999px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+    .apr-ok { background: #4ade80; color: #0d0d0d; }
+    .apr-sempre { background: transparent; color: var(--color-text); border: 1px solid #4ade80 !important; }
+    .apr-nao { background: transparent; color: #ff6b6b; border: 1px solid #ff6b6b !important; }
+  </style>
+</div>

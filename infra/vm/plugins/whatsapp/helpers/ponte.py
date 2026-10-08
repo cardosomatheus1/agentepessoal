@@ -20,11 +20,12 @@ def chave() -> str:
         return ""
 
 
-def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "") -> str:
-    """'' when sent, else the reason it was not."""
+def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", botoes: list | None = None) -> str:
+    """'' when sent, else the reason it was not. botoes: up to 3 [{"id", "titulo"}] reply buttons."""
     if not usuario:
         return "conversa sem dono"
-    corpo = {"usuario": usuario, "texto": formatar(texto) if texto else "", "arquivo": arquivo, "legenda": legenda}
+    corpo = {"usuario": usuario, "texto": formatar(texto) if texto else "", "arquivo": arquivo, "legenda": legenda,
+             "botoes": botoes or []}
     req = urllib.request.Request(URL, data=json.dumps(corpo).encode(),
                                  headers={"Content-Type": "application/json", "X-Chave": chave()})
     try:

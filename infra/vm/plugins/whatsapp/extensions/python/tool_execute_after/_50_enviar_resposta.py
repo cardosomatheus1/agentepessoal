@@ -18,15 +18,25 @@ AUSENTE = 5 * 60
 RESUMO = 700
 
 
-def ponte():
-    nome = "whatsapp_ponte"
-    if nome not in sys.modules:
-        caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
-        spec = importlib.util.spec_from_file_location(nome, caminho / "helpers" / "ponte.py")
+def carregar(nome: str, caminho: Path):
+    """Load a helper by path, again when the file changed (a deploy), keeping pending state."""
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location(nome, caminho)
         modulo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
+        if antigo is not None and hasattr(antigo, "PENDENTES"):
+            modulo.PENDENTES = antigo.PENDENTES
         sys.modules[nome] = modulo
     return sys.modules[nome]
+
+
+def ponte():
+    nome = "whatsapp_ponte"
+    caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
+    return carregar(nome, caminho / "helpers" / "ponte.py")
 
 
 def _aviso(ctx, texto: str, tarefa: bool) -> str:

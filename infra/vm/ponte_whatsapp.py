@@ -149,6 +149,15 @@ def enviar_texto(numero: str, texto: str) -> None:
         }})
 
 
+def enviar_botoes(numero: str, texto: str, botoes: list) -> None:
+    """Up to 3 reply buttons (titles up to 20 characters); the reply comes back as its id."""
+    _mensagem(numero, {"type": "interactive", "interactive": {
+        "type": "button", "body": {"text": texto[:1000]},
+        "action": {"buttons": [{"type": "reply", "reply": {"id": str(b["id"])[:256], "title": str(b["titulo"])[:20]}}
+                               for b in botoes[:3]]},
+    }})
+
+
 def enviar_arquivo(numero: str, caminho: Path, legenda: str = "") -> None:
     mime = mimetypes.guess_type(caminho.name)[0] or "application/octet-stream"
     limite = uuid.uuid4().hex
@@ -188,7 +197,7 @@ def preparar(item: dict) -> dict:
     tipo = msg.get("type", "")
     pasta = PASTA / item["usuario"] / time.strftime("%Y-%m")
     base = pasta / f"{time.strftime('%d-%H%M%S')}-{msg.get('id', '')[-8:]}"
-    texto, anexos, audio = "", [], ""
+    texto, anexos, audio, botao = "", [], "", ""
 
     def no_a0(p: Path) -> str:
         return USR_A0 + str(p)[len(str(USR_HOST)):]
@@ -209,6 +218,7 @@ def preparar(item: dict) -> dict:
     elif tipo == "interactive":
         resp = msg["interactive"].get("button_reply") or msg["interactive"].get("list_reply") or {}
         texto = resp.get("title", "")
+        botao = resp.get("id", "")
     elif tipo == "button":
         texto = msg["button"].get("text", "")
     elif tipo == "reaction":
@@ -218,7 +228,7 @@ def preparar(item: dict) -> dict:
 
     contexto = msg.get("context") or {}
     return {"usuario": item["usuario"], "nome": item.get("nome", ""), "texto": texto, "audio": audio,
-            "anexos": anexos, "id": msg.get("id", ""), "responde_a": contexto.get("id", "")}
+            "anexos": anexos, "id": msg.get("id", ""), "responde_a": contexto.get("id", ""), "botao": botao}
 
 
 def entregar(dados: dict) -> None:
@@ -302,7 +312,12 @@ class Saida(http.server.BaseHTTPRequestHandler):
             if not numero:
                 return self._responder(404, {"erro": "pessoa sem WhatsApp cadastrado"})
             ativo()
-            if pedido.get("texto"):
+            if pedido.get("texto") and pedido.get("botoes"):
+                try:
+                    enviar_botoes(numero, str(pedido["texto"]), pedido["botoes"])
+                except RuntimeError:  # outside the 24 h window buttons cannot go: plain notice
+                    enviar_texto(numero, str(pedido["texto"]) + "\n\nResponda: aprovar, sempre ou recusar.")
+            elif pedido.get("texto"):
                 enviar_texto(numero, str(pedido["texto"]))
             if pedido.get("arquivo"):
                 caminho = Path(str(pedido["arquivo"]))

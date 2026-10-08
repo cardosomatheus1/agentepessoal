@@ -1,0 +1,16 @@
+# What happens per kind of action: permitir | perguntar | nunca
+regras:
+  pagamento: nunca            # pagar, cadastrar cartão/forma de pagamento, assinar plano pago
+  compra: nunca               # finalizar compra, pedido, reserva com cobrança
+  termos: perguntar           # aceitar termos, políticas, contratos em seu nome
+  enviar_analise: perguntar   # enviar algo para análise/aprovação de terceiros (ex.: revisão da Meta)
+  mensagem_terceiros: perguntar  # mandar mensagem/e-mail/comentário para outras pessoas
+  publicar: perguntar         # publicar post, anúncio, página, campanha ativa
+  apagar: perguntar           # apagar arquivos, contas, dados, campanhas
+  contas_reais: perguntar     # alterar configurações de contas reais (bancos, anúncios, governo)
+  senha_seguranca: nunca      # trocar senha, 2FA, e-mail de recuperação
+  producao: perguntar         # mexer em sistemas em produção, deploy, banco de dados
+# Actions you chose "Sempre permitir" for (one per line, filled by the buttons)
+sempre_permitir: ""
+# Minutes to wait for your answer before giving up on the action
+espera_minutos: 360
