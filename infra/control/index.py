@@ -15,11 +15,15 @@ import urllib.request
 import boto3
 from botocore.config import Config
 
+import whatsapp
+
 INSTANCE_ID = os.environ["INSTANCE_ID"]
 PASSWORD_SHA256 = os.environ["PASSWORD_SHA256"]
 URL_PARAM = os.environ.get("URL_PARAM", "/agentepessoal/agent-url")
 PHONE_PARAM = os.environ.get("PHONE_PARAM", "/agentepessoal/phone-url")
 BUCKET = os.environ.get("BUCKET", "")
+WAKE_ROLE_ARN = os.environ.get("WAKE_ROLE_ARN", "")
+WAKE_LATER = os.environ.get("WAKE_LATER_SCHEDULE", "agentepessoal-acordar-depois")
 INBOX = "entrada/"
 MAX_UPLOAD = 5 * 1024**3  # single PUT limit
 
@@ -91,6 +95,30 @@ def _hibernate() -> None:
         ec2.stop_instances(InstanceIds=[INSTANCE_ID], Hibernate=True)
 
 
+def _start() -> None:
+    _set(URL_PARAM, "starting")
+    _set(PHONE_PARAM, "starting")
+    ec2.start_instances(InstanceIds=[INSTANCE_ID])
+
+
+def _start_later() -> None:
+    """The VM is still hibernating: start it once that is done (one-shot schedule, 2 min)."""
+    import datetime
+
+    when = (datetime.datetime.utcnow() + datetime.timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%S")
+    args = dict(
+        Name=WAKE_LATER, ScheduleExpression=f"at({when})", ScheduleExpressionTimezone="UTC",
+        FlexibleTimeWindow={"Mode": "OFF"}, ActionAfterCompletion="DELETE",
+        Target={"Arn": "arn:aws:scheduler:::aws-sdk:ec2:startInstances", "RoleArn": WAKE_ROLE_ARN,
+                "Input": json.dumps({"InstanceIds": [INSTANCE_ID]})},
+    )
+    scheduler = boto3.client("scheduler")
+    try:
+        scheduler.create_schedule(**args)
+    except scheduler.exceptions.ConflictException:
+        scheduler.update_schedule(**args)
+
+
 def _safe_name(name: str) -> str:
     name = os.path.basename(str(name or "").replace("\\", "/")).strip()
     name = re.sub(r"[\x00-\x1f/]", "", name)[:180]
@@ -132,6 +160,15 @@ def _json(body: dict, code: int = 200) -> dict:
 
 def handler(event, _context):
     method = event.get("requestContext", {}).get("http", {}).get("method", "GET")
+    if event.get("rawPath", "").startswith("/whatsapp/"):
+        if not whatsapp.caminho_ok(event["rawPath"]):
+            return {"statusCode": 404, "body": "not found"}
+        if method == "GET":
+            return whatsapp.verify(event.get("queryStringParameters") or {})
+        raw = event.get("body") or ""
+        raw = base64.b64decode(raw) if event.get("isBase64Encoded") else raw.encode()
+        headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
+        return whatsapp.receive(raw, headers, _state, _start, _start_later)
     if method == "GET":
         return {
             "statusCode": 200,
@@ -154,11 +191,14 @@ def handler(event, _context):
         return _json(_upload_url(data.get("name", ""), data.get("size", 0)))
     if action == "apk":
         return _json(_apk_url())
+    if action in ("whatsapp", "whatsapp_salvar"):
+        base = "https://" + event.get("requestContext", {}).get("domainName", "")
+        if action == "whatsapp_salvar":
+            whatsapp.save_config(data.get("campos") or {})
+        return _json(whatsapp.status(base))
     if action == "start":
         if _state() == "stopped":
-            _set(URL_PARAM, "starting")
-            _set(PHONE_PARAM, "starting")
-            ec2.start_instances(InstanceIds=[INSTANCE_ID])
+            _start()
     elif action == "stop":
         if _state() == "running":
             _hibernate()
@@ -186,6 +226,8 @@ label.btn{display:block;text-align:center;border-radius:999px;padding:13px;font-
 .up{margin-top:18px;border-top:1px solid var(--line);padding-top:8px}
 .file{margin-top:10px;font-size:13px}.file .bar{height:6px;background:#111;border-radius:99px;overflow:hidden;margin-top:4px}
 .file .bar i{display:block;height:100%;width:0;background:var(--ok)}.file.erro{color:#ff6b6b}
+details.up summary{cursor:pointer;font-weight:600;padding:10px 0}textarea{width:100%;min-height:70px;background:#111;border:1px solid var(--line);border-radius:14px;color:var(--fg);padding:12px 14px;font:14px/1.4 inherit;margin-bottom:12px}
+.kv{font-size:13px;color:var(--muted);word-break:break-all;margin-bottom:10px}.kv b{color:var(--fg);font-weight:500}.kv code{color:var(--fg)}
 </style></head><body><div class="card">
 <h1>Agente</h1><p>Liga a máquina só quando você for usar.</p>
 <div id="nokey" hidden><div style="height:18px"></div><p>Abra esta página pelo seu link pessoal (o que tem <code>#k=</code> no final).</p></div>
@@ -201,6 +243,17 @@ label.btn{display:block;text-align:center;border-radius:999px;padding:13px;font-
 <div id="uplist"></div>
 <p style="font-size:13px;margin-top:8px">Até 5 GB por arquivo. Vão direto para o armazenamento da sua conta (funciona com a máquina desligada) e aparecem na pasta <b>entrada</b> do agente (botão Files) até 30 s depois de ele estar ligado.</p>
 </div>
+<details class="up" id="wa" ontoggle="if(this.open)waStatus()"><summary>WhatsApp</summary>
+<p style="font-size:13px;margin-bottom:10px">O token e os números ficam só no cofre da sua conta AWS, nunca na conversa do agente. Campo em branco mantém o que já está salvo.</p>
+<div class="kv">Webhook (cole no app da Meta): <code id="waHook">…</code></div>
+<div class="kv">Token de verificação: <code id="waVerify">…</code></div>
+<div class="kv" id="waEstado"></div>
+<input id="waToken" type="password" placeholder="Token de acesso (EAA…)" autocomplete="off">
+<input id="waPhone" placeholder="Phone number ID (do número de teste)" autocomplete="off">
+<input id="waSecret" type="password" placeholder="Chave secreta do app (opcional, recomendado)" autocomplete="off">
+<textarea id="waNums" placeholder="Uma pessoa por linha: login = número&#10;matheus = +55 71 99999-0000"></textarea>
+<button class="primary" onclick="waSalvar()">Salvar</button>
+</details>
 <button id="apk" class="secondary" onclick="baixarApp()" hidden>Baixar app Android</button>
 <p style="margin-top:16px;font-size:13px">Hiberna sozinha após 30 min sem uso (guarda tudo e volta de onde parou). Depois de clicar em Ligar, o agente abre sozinho quando estiver pronto.</p>
 </div><div id="err" class="err"></div></div>
@@ -231,5 +284,11 @@ await new Promise((ok,fail)=>{const x=new XMLHttpRequest();x.open("PUT",d.url);
 x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded*100/e.total);row.querySelector("i").style.width=p+"%";label(p+"%")}};
 x.onload=()=>x.status<300?ok():fail(new Error("erro "+x.status));x.onerror=()=>fail(new Error("conexão caiu"));x.send(f)});
 row.querySelector("i").style.width="100%";label("enviado ✓ (entrada/"+d.name+")")}catch(e){row.className="file erro";label(e.message)}}
+function waRender(d){$("waHook").textContent=d.webhook;$("waVerify").textContent=d.verify_token;
+$("waEstado").innerHTML="Token: <b>"+(d.tem_token?"salvo ✓":"falta")+"</b> · Chave do app: <b>"+(d.tem_segredo?"salva ✓":"não")+"</b> · Phone number ID: <b>"+(d.phone_number_id||"falta")+"</b><br>Números: <b>"+(d.numeros?d.numeros.replace(/\\n/g,", "):"nenhum")+"</b>"}
+async function waStatus(){try{$("err").textContent="";waRender(await call("whatsapp"))}catch(e){$("err").textContent=e.message}}
+async function waSalvar(){try{$("err").textContent="";const campos={token:$("waToken").value,phone_number_id:$("waPhone").value,app_secret:$("waSecret").value,numeros:$("waNums").value};
+const r=await fetch(location.origin+location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:key,action:"whatsapp_salvar",campos})});
+const d=await r.json();if(!r.ok)throw new Error(d.error||"falhou");["waToken","waSecret","waNums","waPhone"].forEach(i=>$(i).value="");waRender(d);$("err").textContent="Salvo ✓"}catch(e){$("err").textContent=e.message}}
 if(key){$("panel").hidden=false;refresh()}else{$("nokey").hidden=false}
 </script></body></html>"""

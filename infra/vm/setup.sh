@@ -40,7 +40,7 @@ modprobe binder_linux devices="binder,hwbinder,vndbinder" || true
 mkdir -p /opt/agentepessoal /var/lib/agentepessoal /opt/a0/usr /opt/android-data
 [ -x /opt/agentepessoal/venv/bin/python ] || python3 -m venv /opt/agentepessoal/venv
 /opt/agentepessoal/venv/bin/pip install --quiet --upgrade boto3 aws-bedrock-token-generator
-install -m 755 "$B/bedrock_proxy.py" "$B/report_url.py" "$B/watchdog.sh" "$B/backup.sh" "$B/hibernate.sh" "$B/entrada.sh" "$B/credenciais_meta.py" /opt/agentepessoal/
+install -m 755 "$B/bedrock_proxy.py" "$B/report_url.py" "$B/watchdog.sh" "$B/backup.sh" "$B/hibernate.sh" "$B/entrada.sh" "$B/credenciais_meta.py" "$B/ponte_whatsapp.py" /opt/agentepessoal/
 install -m 755 "$B/phone/install_apps.sh" "$B/phone/google_id.sh" "$B/agent_tools.sh" /opt/agentepessoal/
 
 # Mark resumes from hibernation so the idle timer restarts.
@@ -184,6 +184,20 @@ region = us-east-1
 credential_process = python3 /a0/usr/.aws/segredo-meta.py
 EOF
 
+cat > /etc/systemd/system/agentepessoal-whatsapp.service <<'EOF'
+[Unit]
+Description=WhatsApp bridge: queued messages in, agent answers and notices out
+After=network-online.target docker.service
+Wants=network-online.target
+[Service]
+Environment=AWS_REGION=us-east-1
+ExecStart=/opt/agentepessoal/venv/bin/python /opt/agentepessoal/ponte_whatsapp.py
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
+EOF
+
 cat > /etc/systemd/system/agentepessoal-phone-tunnel.service <<'EOF'
 [Unit]
 Description=Cloudflare quick tunnel for the phone screen (ws-scrcpy)
@@ -305,8 +319,8 @@ EOF
 systemctl daemon-reload
 systemctl enable agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-agent-tools \
   agentepessoal-watchdog.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer \
-  agentepessoal-credenciais-meta
-systemctl restart agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-credenciais-meta
+  agentepessoal-credenciais-meta agentepessoal-whatsapp
+systemctl restart agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-credenciais-meta agentepessoal-whatsapp
 systemctl start agentepessoal-agent-tools agentepessoal-watchdog.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer
 
 # First boot only: install test apps on the phone.

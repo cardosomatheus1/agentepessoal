@@ -37,6 +37,10 @@ VM_ROLE = f"{NAME}-vm"
 META_ROLE = f"{NAME}-segredo-meta"
 CONTROL_ROLE = f"{NAME}-control"
 FUNCTION = f"{NAME}-control"
+WAKE_ROLE = f"{NAME}-acordar-vm"
+WAKE_LATER = f"{NAME}-acordar-depois"
+WHATSAPP_QUEUE = f"{NAME}-whatsapp"
+PARAM_WHATSAPP = f"/{NAME}/whatsapp/config"
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
@@ -48,6 +52,7 @@ iam = session.client("iam")
 ssm = session.client("ssm")
 lam = session.client("lambda")
 s3 = session.client("s3")
+sqs = session.client("sqs")
 account = session.client("sts").get_caller_identity()["Account"]
 BUCKET = f"{NAME}-backup-{account}"
 
@@ -149,6 +154,11 @@ def ensure_vm_role() -> str:
                     "Action": "kms:Decrypt",
                     "Resource": "*",
                     "Condition": {"StringEquals": {"kms:ViaService": f"ssm.{REGION}.amazonaws.com"}},
+                },
+                {   # ponte_whatsapp reads what the control function queued
+                    "Effect": "Allow",
+                    "Action": ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:GetQueueUrl"],
+                    "Resource": f"arn:aws:sqs:{REGION}:{account}:{WHATSAPP_QUEUE}",
                 },
                 {   # the idle watchdog hibernates its own instance
                     "Effect": "Allow",
@@ -410,7 +420,7 @@ def ensure_instance(profile_arn: str, subnet: str, sg: str) -> str:
 def ensure_wake_schedule(instance_id: str) -> None:
     """The VM hibernates when idle, which would also stop the agent's own scheduled tasks.
     Start it 10 minutes before they run (00/06/12/18 America/Bahia = 03/09/15/21 UTC)."""
-    name = f"{NAME}-acordar-vm"
+    name = WAKE_ROLE
     trust = {"Version": "2012-10-17", "Statement": [{
         "Effect": "Allow", "Principal": {"Service": "scheduler.amazonaws.com"}, "Action": "sts:AssumeRole",
         "Condition": {"StringEquals": {"aws:SourceAccount": account}}}]}
@@ -437,6 +447,14 @@ def ensure_wake_schedule(instance_id: str) -> None:
 
 
 # ---------------------------------------------------------------- control page
+
+def ensure_whatsapp_queue() -> str:
+    """Messages from WhatsApp wait here while the VM wakes up (kept 4 days)."""
+    url = sqs.create_queue(QueueName=WHATSAPP_QUEUE, Attributes={
+        "MessageRetentionPeriod": str(4 * 24 * 3600), "VisibilityTimeout": "120", "SqsManagedSseEnabled": "true",
+    }, tags={"Project": NAME})["QueueUrl"]
+    return url
+
 
 def ensure_control(instance_id: str, password: str) -> str:
     role_arn = ensure_role(
@@ -470,6 +488,26 @@ def ensure_control(instance_id: str, password: str) -> str:
                     "Action": "s3:PutObject",
                     "Resource": f"arn:aws:s3:::{BUCKET}/entrada/*",
                 },
+                {   # WhatsApp: settings (token, app secret, numbers), filled from this page
+                    "Effect": "Allow",
+                    "Action": ["ssm:GetParameter", "ssm:PutParameter"],
+                    "Resource": f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_WHATSAPP}",
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey"],
+                    "Resource": "*",
+                    "Condition": {"StringEquals": {"kms:ViaService": f"ssm.{REGION}.amazonaws.com"}},
+                },
+                {"Effect": "Allow", "Action": "sqs:SendMessage",
+                 "Resource": f"arn:aws:sqs:{REGION}:{account}:{WHATSAPP_QUEUE}"},
+                {   # a message that arrives while the VM is still hibernating wakes it 2 min later
+                    "Effect": "Allow",
+                    "Action": ["scheduler:CreateSchedule", "scheduler:UpdateSchedule"],
+                    "Resource": f"arn:aws:scheduler:{REGION}:{account}:schedule/default/{WAKE_LATER}",
+                },
+                {"Effect": "Allow", "Action": "iam:PassRole",
+                 "Resource": f"arn:aws:iam::{account}:role/{WAKE_ROLE}"},
                 {   # "Desligar agora" runs hibernate.sh on the VM (backup, then hibernate)
                     "Effect": "Allow",
                     "Action": "ssm:SendCommand",
@@ -484,6 +522,7 @@ def ensure_control(instance_id: str, password: str) -> str:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(HERE / "control/index.py", "index.py")
+        z.write(HERE / "control/whatsapp.py", "whatsapp.py")
     env = {
         "Variables": {
             "INSTANCE_ID": instance_id,
@@ -491,6 +530,10 @@ def ensure_control(instance_id: str, password: str) -> str:
             "URL_PARAM": PARAM_URL,
             "PHONE_PARAM": PARAM_PHONE,
             "BUCKET": BUCKET,
+            "WHATSAPP_PARAM": PARAM_WHATSAPP,
+            "WHATSAPP_QUEUE_URL": ensure_whatsapp_queue(),
+            "WAKE_ROLE_ARN": f"arn:aws:iam::{account}:role/{WAKE_ROLE}",
+            "WAKE_LATER_SCHEDULE": WAKE_LATER,
         }
     }
     try:
@@ -565,8 +608,8 @@ def main() -> None:
     sg = ensure_security_group(vpc)
     existed = find_instance() is not None
     instance_id = ensure_instance(profile, subnet, sg)
-    url = ensure_control(instance_id, password)
     ensure_wake_schedule(instance_id)
+    url = ensure_control(instance_id, password)
     if existed and "--update" in sys.argv:
         update_running_vm(instance_id)
     print()
