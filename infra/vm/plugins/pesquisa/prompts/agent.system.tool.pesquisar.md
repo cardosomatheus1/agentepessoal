@@ -1,5 +1,5 @@
 ### pesquisar
-Pesquisa na web em UMA chamada (~1–2 min): faz várias buscas ao mesmo tempo, lê as melhores páginas, assiste inteiros (Pegasus, imagem e áudio) os 2 vídeos do YouTube mais relevantes e lê as legendas dos outros, tudo em paralelo; extrai o que importa de cada fonte e devolve uma síntese com fontes numeradas [n].
+Pesquisa na web em UMA chamada (~1–2 min): faz várias buscas ao mesmo tempo, lê as melhores páginas, assiste inteiros (Gemini, direto do link, imagem e áudio) os 3 vídeos do YouTube mais relevantes e lê as legendas dos outros, tudo em paralelo; extrai o que importa de cada fonte e devolve uma síntese com fontes numeradas [n].
 Use para QUALQUER pesquisa que precise de várias fontes: comparar produtos/modelos, avaliações e reclamações de usuários, rankings, reviews em vídeo, preços, "qual o melhor…". É muito mais rápido que buscar e abrir páginas uma por uma — não faça isso passo a passo, nem com ajudantes.
 - `pergunta`: o que precisa ser respondido, com as restrições (ex.: medidas máximas, orçamento, uso)
 - `buscas` (opcional): lista de 4–8 buscas que você quer; se não passar, a ferramenta cria

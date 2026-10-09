@@ -18,6 +18,20 @@ from pathlib import Path
 
 from helpers.tool import Response, Tool
 
+
+def gemini():
+    """plugins/video/helpers/gemini.py (YouTube watched from its link, no download)."""
+    import importlib.util
+    import sys
+
+    nome = "video_gemini"
+    if nome not in sys.modules:
+        spec = importlib.util.spec_from_file_location(nome, Path(__file__).resolve().parents[1] / "helpers" / "gemini.py")
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
+
 URL = "http://host.docker.internal:8787/openai/v1/responses"
 MODELO = "openai.gpt-6-luna"
 PASTA = Path("/a0/usr/workdir/videos")
@@ -204,12 +218,27 @@ def _pelas_legendas(legendas: str, pergunta: str, legenda: str) -> str:
                    for c in item.get("content", []) if c.get("type") == "output_text").strip()
 
 
+_PROMPT_VER = ("Assista o vídeo inteiro (imagem e áudio) e responda em português. Primeiro descreva em ordem, com os "
+               "tempos (mm:ss), o que acontece: o que aparece na tela, textos legíveis, o que a pessoa fala e mostra. "
+               "Depois responda à pergunta do usuário. Não invente o que não está no vídeo.\n\nPergunta do usuário: {pergunta}")
+
+
 def assistir(url: str, caminho: str, pergunta: str, modo: str = "") -> str:
     chave = hashlib.sha1((url or caminho).encode()).hexdigest()[:10]
     destino = PASTA / chave
     destino.mkdir(parents=True, exist_ok=True)
+    youtube = gemini().e_youtube(url)
+    if youtube and modo != "rapido":  # YouTube: Gemini watches it from the link; nothing is downloaded
+        try:
+            descricao = gemini().assistir(url, _PROMPT_VER.format(pergunta=pergunta[:800] or "(nenhuma: resuma o vídeo)"))
+            (destino / "descricao.md").write_text(descricao, encoding="utf-8")
+            return f"Vídeo assistido inteiro pelo Gemini, imagem e áudio (direto do link, sem baixar).\n\n{descricao}"
+        except Exception as exc:
+            print(f"video: Gemini failed, using captions: {exc}", flush=True)
     falas = _legendas(url, destino) if url else ""
-    if falas and modo == "rapido":  # only what is said matters: captions, no download
+    if youtube and not falas:
+        return "Não consegui assistir esse vídeo do YouTube (o Gemini falhou e ele não tem legendas)."
+    if falas and (modo == "rapido" or youtube):  # captions, no download (YouTube is never downloaded)
         legenda = _legenda(url)
         (destino / "transcricao.txt").write_text(falas, encoding="utf-8")
         descricao = _pelas_legendas(falas, pergunta, legenda)

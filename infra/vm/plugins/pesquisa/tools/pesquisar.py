@@ -122,31 +122,28 @@ def legendas(url: str, pasta: Path) -> str:
 
 PEGASUS_S3 = "http://host.docker.internal:8787/arquivos/pegasus"
 VIDEOS = Path("/a0/usr/workdir/videos")
-ASSISTIR = 2  # videos Pegasus watches (picture and sound); the others are read from captions
+ASSISTIR = 3  # videos Gemini watches from the link (picture and sound); the others are read from captions
 
 
 def assistir(url: str, pergunta: str) -> str:
-    """Download (480p, up to 40 min) and have Pegasus watch the whole video through S3."""
-    import hashlib
+    """Gemini watches the whole video from its link (plugins/video/helpers/gemini.py); nothing is downloaded."""
+    import importlib.util
+    import sys
 
-    destino = VIDEOS / ("p" + hashlib.sha1(url.encode()).hexdigest()[:10])
-    destino.mkdir(parents=True, exist_ok=True)
-    video = next(iter(sorted(destino.glob("video.*"))), None)
-    if video is None:
-        subprocess.run([*YTDLP, "--cookies-from-browser", f"chromium:{PERFIL}", "--no-playlist",
-                        "--match-filter", "duration < 2400", "-f", "b[height<=480][ext=mp4]/bv*[height<=480]+ba/b[height<=480]/b",
-                        "--merge-output-format", "mp4", "-o", str(destino / "video.%(ext)s"), "--quiet", "--no-warnings", url],
-                       capture_output=True, text=True, timeout=240)
-        video = next(iter(sorted(destino.glob("video.*"))), None)
-        if video is None:
-            return ""
+    nome = "video_gemini"
+    if nome not in sys.modules:
+        spec = importlib.util.spec_from_file_location(nome, Path("/a0/usr/plugins/video/helpers/gemini.py"))
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        sys.modules[nome] = modulo
     prompt = ("Assista o vídeo inteiro (imagem e áudio) e responda em português, com detalhes concretos: o que é mostrado "
               "e testado, resultados que aparecem na tela, o que o apresentador conclui, prós, contras e defeitos citados, "
               "com os tempos (mm:ss) dos momentos importantes. Não invente.\n\nPergunta: " + pergunta[:800])
-    req = urllib.request.Request(PEGASUS_S3, data=json.dumps({"arquivo": str(video), "prompt": prompt}).encode(),
-                                 headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=420) as r:
-        return str(json.loads(r.read()).get("message") or "").strip()
+    try:
+        return sys.modules[nome].assistir(url, prompt, timeout=240)
+    except Exception as exc:
+        print(f"pesquisa: Gemini did not watch {url}: {exc}", flush=True)
+        return ""
 
 
 def _e_video(url: str) -> bool:
@@ -220,7 +217,7 @@ async def _rodada(pergunta: str, buscas: list[str], videos: bool, vistos: set[st
         c = c if isinstance(c, str) else ""
         visto = vistas[i] if i < len(vistas) and isinstance(vistas[i], str) else ""
         if visto:
-            texto = "O que o vídeo mostra (assistido inteiro, imagem e áudio):\n" + visto + ("\n\nFala (legendas):\n" + c if c else "")
+            texto = "O que o vídeo mostra (assistido inteiro pelo Gemini, imagem e áudio):\n" + visto + ("\n\nFala (legendas):\n" + c if c else "")
             fontes.append({"url": f["url"], "titulo": f["titulo"], "tipo": "vídeo assistido", "texto": texto[:MAX_TEXTO * 2]})
         elif len(c) > 200:
             fontes.append({"url": f["url"], "titulo": f["titulo"], "tipo": "vídeo (legendas)", "texto": c[:MAX_TEXTO]})
@@ -355,7 +352,7 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
     por_legenda = sum(1 for f in fontes if f["tipo"] == "vídeo (legendas)")
     web = sum(1 for f in fontes if f["tipo"] == "busca na web")
     return (f"Pesquisa feita em {segundos} s: {len(todas_buscas)} buscas + {web} buscas na web do modelo, {len(fontes)} fontes úteis "
-            f"({assistidos} vídeos assistidos inteiros pelo Pegasus, {por_legenda} pelas legendas).\n\n{sintese}\n\nFontes:\n{lista}\n\n"
+            f"({assistidos} vídeos assistidos inteiros pelo Gemini, {por_legenda} pelas legendas).\n\n{sintese}\n\nFontes:\n{lista}\n\n"
             f"Notas completas de cada fonte: {pasta / 'notas.md'}")
 
 
