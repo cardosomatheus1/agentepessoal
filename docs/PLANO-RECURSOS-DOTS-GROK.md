@@ -22,7 +22,7 @@ Referências: OpenAI **Dots** (agente pessoal no ChatGPT, lançado em 29/09/2026
 | 9. Voz | **Fora** (decisão do Matheus, 09/10): áudio gravado já atende; sem chamada em tempo real | — |
 | Extras da pesquisa | registro de atividades, medidor/alerta de gasto, `/parar`, revisor independente, modo só leitura | — |
 | Travamentos | **Pronto**: chamada ao modelo sem resposta por 4 min é cortada e refeita; conversa parada em "Calling LLM" por 6 min é destravada sozinha (máx. 2 vezes em 30 min) com aviso no Telegram | `bedrock_proxy.py`, `whatsapp/api/destravar.py` |
-| Paridade com o Dots (09/10) | **Pronto**: navegador separado por pessoa; avisos por tipo + horário de silêncio (`/silencio`); Radar proativo no Gmail/Agenda (5x/dia, só leitura) + `monitor`; tarefas com intervalo mínimo de 10 min, fim em 30 dias e histórico (`tarefa_limite`); `/painel`; regras de memória, conferência real e ajudantes em paralelo. **Falta**: conector GitHub (token do Matheus) | plugins `navegador_por_pessoa`, `radar`, `agenda_confiavel`, `whatsapp` |
+| Paridade com o Dots (09/10) | **Pronto**: navegador separado por pessoa; avisos por tipo + horário de silêncio (`/silencio`); Radar proativo no Gmail/Agenda (5x/dia, só leitura) + `monitor`; tarefas com intervalo mínimo de 10 min, fim em 30 dias e histórico (`tarefa_limite`); `/painel`; regras de memória, conferência real e ajudantes em paralelo. conector GitHub ligado (só leitura, só do Matheus) | plugins `navegador_por_pessoa`, `radar`, `agenda_confiavel`, `whatsapp` |
 
 ## Ordem e esforço
 
