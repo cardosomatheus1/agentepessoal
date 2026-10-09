@@ -470,6 +470,18 @@ def gasto() -> tuple[float, float]:
     return hoje, mes
 
 
+def texto_painel(usuario: str) -> str:
+    """/painel: one screen of activity (from Agent Zero) plus today's spend (from the usage log here)."""
+    try:
+        req = urllib.request.Request(f"{A0}/api/plugins/whatsapp/painel", data=json.dumps({"usuario": usuario}).encode(),
+                                     headers={"Content-Type": "application/json", "X-Chave": chave()})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            corpo = json.loads(r.read() or b"{}").get("texto") or ""
+    except Exception as exc:
+        corpo = f"(não consegui ler o agente agora: {str(exc)[:120]})"
+    return "📊 *Painel*\n\n" + corpo + "\n\n" + texto_gasto()
+
+
 def texto_gasto() -> str:
     hoje, mes = gasto()
     limite = float(cfg().get("limite_dia_usd") or LIMITE_DIA_PADRAO)
@@ -604,6 +616,8 @@ def ciclo_entrada() -> None:
                         tg_texto(item["chat"], resposta_cofre)
                     elif (msg.get("text") or "").strip().lower() == "/gasto":
                         tg_texto(item["chat"], texto_gasto())
+                    elif (msg.get("text") or "").strip().lower().split("@")[0] in ("/painel", "/status"):
+                        tg_texto(item["chat"], texto_painel(item["usuario"]))
                     else:
                         DIGITANDO[item["chat"]] = time.time() + 120
                         dados = preparar_tg(item)
@@ -643,6 +657,11 @@ def ciclo_entrada() -> None:
                     resposta_cofre = comando_silencio(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
                 if resposta_cofre is not None:  # passwords never reach the agent (WhatsApp cannot delete it)
                     enviar_texto(item["numero"], resposta_cofre + "\nApague sua mensagem com a senha deste chat.")
+                    _lembrar(mid)
+                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+                    continue
+                if (item["mensagem"].get("text") or {}).get("body", "").strip().lower() in ("/painel", "/status"):
+                    enviar_texto(item["numero"], texto_painel(item["usuario"]))
                     _lembrar(mid)
                     sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
                     continue
