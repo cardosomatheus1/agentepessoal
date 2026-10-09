@@ -232,6 +232,31 @@ async def _rodada(pergunta: str, buscas: list[str], videos: bool, vistos: set[st
     return uteis
 
 
+FOCOS = [
+    "especificações e medidas oficiais, preços atuais e onde comprar",
+    "avaliações e reclamações de quem comprou e usa (lojas, Reclame Aqui, fóruns), pontos fortes e defeitos recorrentes",
+    "rankings, comparativos e testes de sites especializados e reviews em vídeo",
+]
+
+
+def busca_modelo(pergunta: str, foco: str) -> dict:
+    """The model's own web search (Bedrock web search; needs bedrock-websearch:InvokeSearch on the VM role)."""
+    corpo = {"model": MODELO, "reasoning": {"effort": "low"}, "tools": [{"type": "web_search"}],
+             "input": [{"role": "user", "content": [{"type": "input_text", "text": (
+                 f"Pesquise na web e responda em português, com fatos concretos e a fonte (link) de cada um. Foco: {foco}."
+                 f"\n\nPergunta: {pergunta}")}]}]}
+    req = urllib.request.Request(MODELO_URL, data=json.dumps(corpo).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=240) as r:
+        dados = json.loads(r.read())
+    texto, urls = "", []
+    for item in dados.get("output", []):
+        for c in item.get("content", []) or []:
+            if c.get("type") == "output_text":
+                texto += c.get("text", "")
+                urls += [a.get("url", "") for a in c.get("annotations", []) if a.get("url")]
+    return {"texto": texto.strip(), "urls": list(dict.fromkeys(urls))}
+
+
 def _buscas_iniciais(pergunta: str) -> list[str]:
     texto = _modelo(
         "Gere de 5 a 8 buscas na web (em português e, se ajudar, em inglês) que juntas cobrem bem esta pergunta: "
@@ -248,7 +273,16 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
     if not buscas:
         buscas = await asyncio.to_thread(_buscas_iniciais, pergunta)
     vistos: set[str] = set()
-    fontes = await _rodada(pergunta, buscas, videos, vistos, pasta, sem)
+    modelo, fontes = await asyncio.gather(
+        asyncio.gather(*[asyncio.to_thread(busca_modelo, pergunta, f) for f in FOCOS], return_exceptions=True),
+        _rodada(pergunta, buscas, videos, vistos, pasta, sem))
+    for foco, m in zip(FOCOS, modelo):
+        if isinstance(m, dict) and len(m["texto"]) > 100:
+            fontes.insert(0, {"url": (m["urls"] or [""])[0], "titulo": f"Busca na web do modelo ({foco.split(',')[0]})",
+                              "tipo": "busca na web", "texto": m["texto"],
+                              "nota": m["texto"][:3000] + ("\nLinks: " + " ".join(m["urls"][:8]) if m["urls"] else "")})
+        elif not isinstance(m, dict):
+            print(f"pesquisa: model web search failed: {m}", flush=True)
     todas_buscas = list(buscas)
     if profundidade >= 2 and fontes:
         resumo = "\n".join(f"- {f['nota'][:400]}" for f in fontes)
@@ -269,7 +303,8 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
     segundos = int(time.time() - inicio)
     assistidos = sum(1 for f in fontes if f["tipo"] == "vídeo assistido")
     por_legenda = sum(1 for f in fontes if f["tipo"] == "vídeo (legendas)")
-    return (f"Pesquisa feita em {segundos} s: {len(todas_buscas)} buscas, {len(fontes)} fontes úteis "
+    web = sum(1 for f in fontes if f["tipo"] == "busca na web")
+    return (f"Pesquisa feita em {segundos} s: {len(todas_buscas)} buscas + {web} buscas na web do modelo, {len(fontes)} fontes úteis "
             f"({assistidos} vídeos assistidos inteiros pelo Pegasus, {por_legenda} pelas legendas).\n\n{sintese}\n\nFontes:\n{lista}\n\n"
             f"Notas completas de cada fonte: {pasta / 'notas.md'}")
 
