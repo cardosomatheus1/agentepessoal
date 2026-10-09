@@ -142,9 +142,10 @@ def ensure_vm_role() -> str:
             "Version": "2012-10-17",
             "Statement": [
                 {"Effect": "Allow", "Action": ["bedrock:*", "bedrock-mantle:*"], "Resource": "*"},
-                # web search/fetch for the GPT models (plugins/pesquisa): SearXNG engines block AWS addresses
-                {"Effect": "Allow", "Action": ["bedrock-websearch:InvokeSearch", "bedrock-websearch:InvokeFetch"],
-                 "Resource": "*"},
+                # web search/fetch for the GPT models (plugins/pesquisa): SearXNG engines block AWS addresses.
+                # ExternalWebAccess: fetch reads the live page (default); without it every fetch is a 401.
+                {"Effect": "Allow", "Action": ["bedrock-websearch:InvokeSearch", "bedrock-websearch:InvokeFetch",
+                                               "bedrock-websearch:ExternalWebAccess"], "Resource": "*"},
                 {   # third-party Bedrock models (TwelveLabs Pegasus for plugins/video) subscribe on first use
                     "Effect": "Allow",
                     "Action": ["aws-marketplace:ViewSubscriptions", "aws-marketplace:Subscribe"],
