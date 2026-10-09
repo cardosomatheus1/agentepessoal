@@ -156,6 +156,8 @@ def _e_video(url: str) -> bool:
 # ------------------------------------------------------------------ one round
 
 PROMPT_NOTA = """Você está ajudando numa pesquisa. Pergunta: {pergunta}
+(Se a pergunta é sobre preço: anote cada oferta com loja, preço à vista/Pix e parcelado, voltagem, cor, código do
+modelo, vendedor e estoque, exatamente como aparecem.)
 
 Abaixo está o conteúdo de UMA fonte ({tipo}: {url}). Extraia só o que ajuda a responder a pergunta: fatos, números
 (medidas, preços, notas, datas), opiniões de quem usou (o que elogiam, do que reclamam), comparações e ressalvas.
@@ -239,12 +241,29 @@ FOCOS = [
 ]
 
 
+# Price questions: an earlier answer leaned on the official site and comparator teasers, quoted a 220 V
+# listing for a 127 V home, and missed cheaper listings (Webcontinental, Leroy Merlin).
+PRECO = re.compile(r"\b(pre[çc]os?|mais barat[oa]s?|onde comprar|oferta|promo[çc][ãa]o|quanto custa|valor)\b", re.I)
+FOCOS_PRECO = [
+    "menor preço atual em comparadores (Buscapé, Zoom, Google Shopping) e sites de ofertas (Pelando, Escorrega o Preço)",
+    "preço atual nas grandes lojas: Magazine Luiza, Casas Bahia, Ponto, Amazon, Mercado Livre, Americanas, Fast Shop, Carrefour",
+    "preço atual em lojas menores e regionais (ex.: Leroy Merlin, Webcontinental, Casa e Vídeo, Gazin, Engage Eletro, Fujioka, eFácil)",
+]
+REGRAS_PRECO = (
+    "Regras de preço: o código exato do modelo, a VOLTAGEM e a cor têm de bater com o anúncio (127 V e 220 V são "
+    "produtos diferentes; use a voltagem informada na pergunta). Para cada oferta dê: loja, preço "
+    "à vista/Pix e parcelado, voltagem, vendedor (a própria loja ou terceiro no marketplace), se está em estoque e o "
+    "link. Ignore produto usado, vitrine, recondicionado ou esgotado (ou marque como tal). Diga quando o preço vem só "
+    "de um comparador sem confirmação na loja.")
+
+
 def busca_modelo(pergunta: str, foco: str) -> dict:
     """The model's own web search (Bedrock web search; needs bedrock-websearch:InvokeSearch on the VM role)."""
     corpo = {"model": MODELO, "reasoning": {"effort": "low"}, "tools": [{"type": "web_search"}],
              "input": [{"role": "user", "content": [{"type": "input_text", "text": (
                  f"Pesquise na web e responda em português, com fatos concretos e a fonte (link) de cada um. Foco: {foco}."
-                 f"\n\nPergunta: {pergunta}")}]}]}
+                 + (f"\n{REGRAS_PRECO}" if PRECO.search(pergunta) else "")
+                 + f"\n\nPergunta: {pergunta}")}]}]}
     req = urllib.request.Request(MODELO_URL, data=json.dumps(corpo).encode(), headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=240) as r:
         dados = json.loads(r.read())
@@ -261,7 +280,11 @@ def _buscas_iniciais(pergunta: str) -> list[str]:
     texto = _modelo(
         "Gere de 5 a 8 buscas na web (em português e, se ajudar, em inglês) que juntas cobrem bem esta pergunta: "
         "especificações oficiais, rankings/comparativos, avaliações de usuários, reclamações (ex.: Reclame Aqui), "
-        "reviews em vídeo no YouTube. Uma busca por linha, sem numeração.\n\nPergunta: " + pergunta, "low", 90)
+        "reviews em vídeo no YouTube. Uma busca por linha, sem numeração.\n\nPergunta: " + pergunta, "low", 90) \
+        if not PRECO.search(pergunta) else _modelo(
+        "Gere 8 buscas na web para achar o MENOR PREÇO atual de cada produto da pergunta: para cada modelo, busque pelo "
+        "código exato + voltagem certa + 'preço' + 'pix', e também em Buscapé, Leroy Merlin, Webcontinental, Zoom, Mercado Livre, Amazon, Magazine Luiza e "
+        "Casas Bahia. Uma busca por linha, sem numeração.\n\nPergunta: " + pergunta, "low", 90)
     return [l.strip(" -•\t") for l in texto.splitlines() if l.strip(" -•\t")][:8]
 
 
@@ -273,10 +296,11 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
     if not buscas:
         buscas = await asyncio.to_thread(_buscas_iniciais, pergunta)
     vistos: set[str] = set()
+    focos = FOCOS_PRECO if PRECO.search(pergunta) else FOCOS
     modelo, fontes = await asyncio.gather(
-        asyncio.gather(*[asyncio.to_thread(busca_modelo, pergunta, f) for f in FOCOS], return_exceptions=True),
+        asyncio.gather(*[asyncio.to_thread(busca_modelo, pergunta, f) for f in focos], return_exceptions=True),
         _rodada(pergunta, buscas, videos, vistos, pasta, sem))
-    for foco, m in zip(FOCOS, modelo):
+    for foco, m in zip(focos, modelo):
         if isinstance(m, dict) and len(m["texto"]) > 100:
             fontes.insert(0, {"url": (m["urls"] or [""])[0], "titulo": f"Busca na web do modelo ({foco.split(',')[0]})",
                               "tipo": "busca na web", "texto": m["texto"],
@@ -296,7 +320,9 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
     if not fontes:
         return "Não achei fontes úteis com essas buscas. Tente buscas mais específicas (modelo, marca, termos em inglês)."
     notas = "\n\n".join(f"[{i}] {f['titulo'] or f['url']} ({f['tipo']}) — {f['url']}\n{f['nota']}" for i, f in enumerate(fontes, 1))
-    sintese = await _modelo_async(PROMPT_SINTESE.format(pergunta=pergunta, n=len(fontes), notas=notas, extra=""), "medium")
+    extra = ("\nÉ uma pesquisa de preço: monte por modelo a lista de ofertas do menor para o maior preço, só com a "
+             "voltagem e o código certos. " + REGRAS_PRECO) if PRECO.search(pergunta) else ""
+    sintese = await _modelo_async(PROMPT_SINTESE.format(pergunta=pergunta, n=len(fontes), notas=notas, extra=extra), "medium")
     lista = "\n".join(f"[{i}] {f['titulo'] or ''} — {f['url']}" for i, f in enumerate(fontes, 1))
     (pasta / "notas.md").write_text(f"# {pergunta}\n\nBuscas: {todas_buscas}\n\n{notas}\n", encoding="utf-8")
     (pasta / "sintese.md").write_text(sintese + "\n\n" + lista, encoding="utf-8")
