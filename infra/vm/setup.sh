@@ -144,6 +144,28 @@ EOF
 
 # faster-whisper for voice notes (plugins/whatsapp): ~2x faster than Agent Zero's Whisper on CPU
 docker exec agent-zero /opt/venv-a0/bin/pip install --quiet faster-whisper yt-dlp || true  # yt-dlp: plugins/video
+# yt-dlp's YouTube challenge solver (ejs); it runs on the image's node (deno has no ARM build here)
+docker exec agent-zero /opt/venv-a0/bin/pip install --quiet -U "yt-dlp[default]" || true
+# Web search: from an AWS address Google/Startpage/Mojeek/Qwant refuse and Brave rate-limits, so plain searches
+# came back empty. Turn on the engines that answer (Yandex, Bing) and off the ones that only time out.
+docker exec agent-zero sh -c 'grep -q "agentepessoal: motores" /etc/searxng/settings.yml || cat >> /etc/searxng/settings.yml <<EOS
+
+# agentepessoal: motores que respondem a um endereço da AWS
+engines:
+  - name: yandex
+    disabled: false
+  - name: bing
+    disabled: false
+  - name: google
+    disabled: true
+  - name: startpage
+    disabled: true
+  - name: qwant
+    disabled: true
+  - name: mojeek
+    disabled: true
+EOS
+supervisorctl restart run_searxng' || true
 
 # Google connector (MCP, plugins/conectores): its own venv under usr/ so it survives container rebuilds
 docker exec agent-zero sh -c '[ -x /a0/usr/mcp/venv-google/bin/workspace-mcp ] || (mkdir -p /a0/usr/mcp/google &&

@@ -1,0 +1,4 @@
+name: pesquisa
+title: Pesquisa em paralelo
+description: Uma chamada faz várias buscas, lê as páginas e as legendas de vídeos ao mesmo tempo e devolve uma síntese com fontes.
+version: 1.0.0

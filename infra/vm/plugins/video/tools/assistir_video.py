@@ -27,15 +27,18 @@ MAX_QUADROS = 16
 PEGASUS = "http://host.docker.internal:8787/bedrock/model/us.twelvelabs.pegasus-1-5-v1:0/invoke"
 NOVA = "http://host.docker.internal:8787/bedrock/model/us.amazon.nova-2-lite-v1:0/converse"
 MAX_BASE64 = 20 * 1024 * 1024  # bigger videos are re-encoded smaller before sending
-YTDLP = ["/opt/venv-a0/bin/python", "-m", "yt_dlp"]
+YTDLP = ["/opt/venv-a0/bin/python", "-m", "yt_dlp", "--js-runtimes", "node", "--remote-components", "ejs:github"]
+# YouTube needs a JS runtime for its challenges (node is in the image; deno has no ARM build here)
 _WHISPER = None
 
 
 def _baixar(url: str, destino: Path) -> Path:
-    base = [*YTDLP, "--no-playlist", "--max-filesize", "300M", "-f", "b[ext=mp4]/bv*+ba/b", "--merge-output-format", "mp4",
+    base = [*YTDLP, "--no-playlist", "--max-filesize", "300M", "-f", "b[height<=480][ext=mp4]/bv*[height<=480]+ba/b[height<=480]/b", "--merge-output-format", "mp4",
             "-o", str(destino / "video.%(ext)s"), "--quiet", "--no-warnings", url]
     erro = ""
-    for extra in ([], ["--cookies-from-browser", f"chromium:{PERFIL}"]):  # logged-in only when the site requires it
+    com_cookies = ["--cookies-from-browser", f"chromium:{PERFIL}"]
+    tentativas = [com_cookies, []] if re.search(r"youtu\.?be", url) else [[], com_cookies]  # YouTube: AWS needs sign-in
+    for extra in tentativas:
         r = subprocess.run([*base[:-1], *extra, base[-1]], capture_output=True, text=True, timeout=300)
         achados = sorted(destino.glob("video.*"))
         if r.returncode == 0 and achados:
@@ -156,10 +159,56 @@ def _legenda(url: str) -> str:
         return ""
 
 
-def assistir(url: str, caminho: str, pergunta: str) -> str:
+def _legendas(url: str, destino: Path) -> str:
+    """The video's own or automatic captions, without downloading it (seconds instead of minutes)."""
+    try:
+        for f in destino.glob("leg*"):
+            f.unlink()
+        subprocess.run([*YTDLP, "--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", "pt-orig,pt,pt-BR,en-orig,en",
+                        "--cookies-from-browser", f"chromium:{PERFIL}",  # YouTube asks AWS addresses to sign in
+                        "--sub-format", "vtt", "-o", str(destino / "leg.%(ext)s"), "--quiet", "--no-warnings", url],
+                       capture_output=True, text=True, timeout=90)
+        arquivos = sorted(destino.glob("leg*.vtt"), key=lambda p: (".pt" not in p.name, "-orig" not in p.name, p.name))
+        if not arquivos:
+            return ""
+        vistos, saida = set(), []
+        for linha in arquivos[0].read_text(errors="ignore").splitlines():
+            linha = re.sub(r"<[^>]+>", "", linha).strip()
+            if linha and "-->" not in linha and not linha.startswith(("WEBVTT", "Kind:", "Language:")) and linha not in vistos:
+                vistos.add(linha)
+                saida.append(linha)
+        return " ".join(saida)
+    except Exception:
+        return ""
+
+
+def _pelas_legendas(legendas: str, pergunta: str, legenda: str) -> str:
+    texto = ("Esta é a transcrição (legendas) de um vídeo. Responda em português à pergunta do usuário com base nela: "
+             "o que a pessoa diz, mostra e conclui, com detalhes concretos (números, prós e contras, defeitos citados). "
+             "Não invente o que não está na transcrição.\n\n"
+             f"Pergunta do usuário: {pergunta or '(nenhuma: resuma o vídeo)'}\n\n"
+             + (f"Descrição do vídeo: {legenda[:1500]}\n\n" if legenda else "") + f"Transcrição:\n{legendas[:60000]}")
+    corpo = {"model": MODELO, "reasoning": {"effort": "low"}, "input": [{"role": "user", "content": [{"type": "input_text", "text": texto}]}]}
+    req = urllib.request.Request(URL, data=json.dumps(corpo).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=240) as r:
+        dados = json.loads(r.read())
+    return "".join(c.get("text", "") for item in dados.get("output", []) if item.get("type") == "message"
+                   for c in item.get("content", []) if c.get("type") == "output_text").strip()
+
+
+def assistir(url: str, caminho: str, pergunta: str, modo: str = "") -> str:
     chave = hashlib.sha1((url or caminho).encode()).hexdigest()[:10]
     destino = PASTA / chave
     destino.mkdir(parents=True, exist_ok=True)
+    falas = _legendas(url, destino) if url else ""
+    if falas and modo != "completo":  # what people say in a review is in the captions: no download needed
+        legenda = _legenda(url)
+        (destino / "transcricao.txt").write_text(falas, encoding="utf-8")
+        descricao = _pelas_legendas(falas, pergunta, legenda)
+        (destino / "descricao.md").write_text(descricao, encoding="utf-8")
+        return (f"Vídeo lido pelas legendas (rápido, sem baixar). Se a resposta depende do que aparece na imagem, "
+                f"chame de novo com \"modo\": \"completo\" (Pegasus assiste imagem e áudio).\n\n{descricao}\n\n"
+                f"--- Transcrição (início) ---\n{falas[:3000]}\n\nArquivos: {destino}")
     if url:
         video = next(iter(sorted(destino.glob("video.*"))), None) or _baixar(url, destino)
     else:
@@ -173,7 +222,7 @@ def assistir(url: str, caminho: str, pergunta: str) -> str:
         return f"O vídeo tem {int(duracao // 60)} min; o limite é {MAX_SEGUNDOS // 60} min. Peça um trecho ou um vídeo menor."
     legenda = _legenda(url) if url else ""
     try:
-        transcricao = _transcrever(video)
+        transcricao = falas or _transcrever(video)  # captions when there are any: Whisper on CPU is slow
     except Exception as exc:
         transcricao = f"(não consegui transcrever: {str(exc)[:200]})"
     (destino / "transcricao.txt").write_text(transcricao, encoding="utf-8")
@@ -195,14 +244,14 @@ def assistir(url: str, caminho: str, pergunta: str) -> str:
 
 
 class AssistirVideo(Tool):
-    async def execute(self, url: str = "", caminho: str = "", pergunta: str = "", **kwargs) -> Response:
+    async def execute(self, url: str = "", caminho: str = "", pergunta: str = "", modo: str = "", **kwargs) -> Response:
         url, caminho = str(url or "").strip(), str(caminho or "").strip()
         if not (url or caminho):
             return Response(message="Informe `url` (link do vídeo) ou `caminho` (arquivo).", break_loop=False)
         if url and not re.match(r"https?://", url):
             return Response(message="`url` precisa começar com http:// ou https://", break_loop=False)
         try:
-            texto = await asyncio.to_thread(assistir, url, caminho, str(pergunta or ""))
+            texto = await asyncio.to_thread(assistir, url, caminho, str(pergunta or ""), str(modo or "").strip().lower())
         except Exception as exc:
             texto = f"Não consegui assistir: {str(exc)[:500]}"
         return Response(message=texto, break_loop=False)

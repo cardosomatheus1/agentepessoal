@@ -20,6 +20,7 @@ REGRAS = """## Rotinas e correções
 
 ## Ajudantes em paralelo
 - Partes independentes (pesquisar várias coisas, comparar opções, analisar vários arquivos/sites): use `parallel` com vários `call_subordinate` ao mesmo tempo (no máximo 4), cada um com uma parte diferente — nunca dois pesquisando a mesma coisa —, só o contexto que precisa e um resultado bem definido; depois junte e confira. Partes que dependem uma da outra continuam em sequência.
+- Pesquisa na web com várias fontes (comparar produtos, avaliações, rankings, reviews em vídeo): use `pesquisar` — uma chamada faz as buscas e lê páginas e vídeos em paralelo em ~1–2 min. Não pesquise página por página nem abra ajudantes para isso.
 - Pergunta simples (um produto, um preço, uma informação) você mesmo pesquisa; ajudante é para trabalho grande. Ajudantes não abrem outros ajudantes.
 
 ## Memória
