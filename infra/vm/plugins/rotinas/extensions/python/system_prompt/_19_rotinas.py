@@ -19,7 +19,8 @@ REGRAS = """## Rotinas e correções
 - Em tarefas longas, a cada etapa grande anote no contexto.md o que já está comprovado e o que falta.
 
 ## Ajudantes em paralelo
-- Partes independentes (pesquisar várias coisas, comparar opções, analisar vários arquivos/sites): use `parallel` com vários `call_subordinate` ao mesmo tempo, cada um com só o contexto que precisa e um resultado bem definido; depois junte e confira. Partes que dependem uma da outra continuam em sequência.
+- Partes independentes (pesquisar várias coisas, comparar opções, analisar vários arquivos/sites): use `parallel` com vários `call_subordinate` ao mesmo tempo (no máximo 4), cada um com uma parte diferente — nunca dois pesquisando a mesma coisa —, só o contexto que precisa e um resultado bem definido; depois junte e confira. Partes que dependem uma da outra continuam em sequência.
+- Pergunta simples (um produto, um preço, uma informação) você mesmo pesquisa; ajudante é para trabalho grande. Ajudantes não abrem outros ajudantes.
 
 ## Memória
 - O que você lembra é pista, não fonte: antes de agir com base em memória (valor, data, endereço, status), reabra o dado de origem.
