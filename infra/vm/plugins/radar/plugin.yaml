@@ -1,0 +1,4 @@
+name: radar
+title: Radar (pesquisa proativa)
+description: Lê Gmail e Agenda algumas vezes por dia, só leitura, e avisa só o que pede ação; guarda os monitores de evento ("me avise quando...").
+version: 1.0.0
