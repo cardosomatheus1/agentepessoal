@@ -1,10 +1,10 @@
 """Watch a video: download it and have a video model watch all of it (picture and sound).
 
 The agent's Playwright Chromium has no H.264/AAC, so Instagram (and many sites) fail to play in the
-browser, and screenshots of a player were never "watching" anyway. Amazon Nova 2 Lite (Bedrock)
-watches the whole video; it does not hear the sound, so the faster-whisper transcript (with times)
-goes in the same request. If Nova fails, frames + a vision model are the fallback. (TwelveLabs
-Pegasus also hears the audio, but it is sold through AWS Marketplace and needs a subscription.)
+browser, and screenshots of a player were never "watching" anyway. TwelveLabs Pegasus 1.5
+(Bedrock, AWS Marketplace) watches the whole video, picture and sound. If it fails, Amazon Nova 2
+Lite watches it with the faster-whisper transcript alongside (Nova does not hear audio); if that
+fails too, frames + a vision model. The exact transcript always goes back for quotes.
 """
 
 import asyncio
@@ -24,6 +24,7 @@ PASTA = Path("/a0/usr/workdir/videos")
 PERFIL = "/a0/tmp/browser/sessions/shared/Default"  # the agent's own browser, already logged in
 MAX_SEGUNDOS = 20 * 60
 MAX_QUADROS = 16
+PEGASUS = "http://host.docker.internal:8787/bedrock/model/us.twelvelabs.pegasus-1-5-v1:0/invoke"
 NOVA = "http://host.docker.internal:8787/bedrock/model/us.amazon.nova-2-lite-v1:0/converse"
 MAX_BASE64 = 20 * 1024 * 1024  # bigger videos are re-encoded smaller before sending
 YTDLP = ["/opt/venv-a0/bin/python", "-m", "yt_dlp"]
@@ -111,6 +112,22 @@ def _caber(video: Path, duracao: float) -> Path:
     return menor
 
 
+def _assistir_pegasus(video: Path, duracao: float, pergunta: str, legenda: str) -> str:
+    prompt = ("Assista o vídeo inteiro (imagem e áudio) e responda em português. Primeiro descreva em ordem, com os "
+              "tempos (mm:ss), o que acontece: o que aparece na tela, textos legíveis, telas de programas, o que a pessoa "
+              "fala e mostra. Depois responda à pergunta do usuário, se houver. Não invente o que não está no vídeo.\n\n"
+              f"Pergunta do usuário: {pergunta[:500] or '(nenhuma: resuma o vídeo)'}"
+              + (f"\n\nLegenda do post (contexto): {legenda[:600]}" if legenda else ""))
+    dados = base64.b64encode(_caber(video, duracao).read_bytes()).decode()
+    corpo = {"inputPrompt": prompt, "mediaSource": {"base64String": dados}, "temperature": 0}
+    req = urllib.request.Request(PEGASUS, data=json.dumps(corpo).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=600) as r:
+        texto = str(json.loads(r.read()).get("message") or "").strip()
+    if not texto:
+        raise RuntimeError("Pegasus sem resposta")
+    return texto
+
+
 def _assistir_nova(video: Path, duracao: float, transcricao: str, pergunta: str, legenda: str) -> str:
     prompt = ("Assista o vídeo inteiro e responda em português. Você não ouve o áudio: a transcrição da fala, com os "
               "tempos, está abaixo; junte o que aparece na tela com o que é falado em cada momento. Primeiro descreva em "
@@ -161,12 +178,16 @@ def assistir(url: str, caminho: str, pergunta: str) -> str:
         transcricao = f"(não consegui transcrever: {str(exc)[:200]})"
     (destino / "transcricao.txt").write_text(transcricao, encoding="utf-8")
     try:
-        descricao, como = _assistir_nova(video, duracao, transcricao, pergunta, legenda), "assistido inteiro + fala transcrita"
-    except Exception as exc:  # fallback: frames + vision model
-        print(f"video: Nova failed, using frames: {exc}", flush=True)
-        quadros = _quadros(video, destino, duracao)
-        descricao = _descrever(quadros, transcricao, pergunta, legenda)
-        como = f"{len(quadros)} quadros analisados (o modelo de vídeo falhou)"
+        descricao, como = _assistir_pegasus(video, duracao, pergunta, legenda), "assistido inteiro, imagem e áudio (Pegasus)"
+    except Exception as exc:
+        print(f"video: Pegasus failed, trying Nova: {exc}", flush=True)
+        try:
+            descricao, como = _assistir_nova(video, duracao, transcricao, pergunta, legenda), "assistido inteiro + fala transcrita (Nova)"
+        except Exception as exc2:  # last resort: frames + vision model
+            print(f"video: Nova failed, using frames: {exc2}", flush=True)
+            quadros = _quadros(video, destino, duracao)
+            descricao = _descrever(quadros, transcricao, pergunta, legenda)
+            como = f"{len(quadros)} quadros analisados (os modelos de vídeo falharam)"
     (destino / "descricao.md").write_text(descricao, encoding="utf-8")
     return (f"Vídeo {int(duracao // 60)}:{int(duracao % 60):02d} — {como}.\n\n"
             f"{descricao}\n\n--- Transcrição exata do áudio ---\n{transcricao[:4000] or '(sem fala)'}\n\n"

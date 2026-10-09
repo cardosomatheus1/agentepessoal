@@ -142,6 +142,12 @@ def ensure_vm_role() -> str:
             "Version": "2012-10-17",
             "Statement": [
                 {"Effect": "Allow", "Action": ["bedrock:*", "bedrock-mantle:*"], "Resource": "*"},
+                {   # third-party Bedrock models (TwelveLabs Pegasus for plugins/video) subscribe on first use
+                    "Effect": "Allow",
+                    "Action": ["aws-marketplace:ViewSubscriptions", "aws-marketplace:Subscribe"],
+                    "Resource": "*",
+                    "Condition": {"StringEquals": {"aws:CalledViaLast": "bedrock.amazonaws.com"}},
+                },
                 {"Effect": "Allow", "Action": ["ssm:GetParameter", "ssm:PutParameter"], "Resource": params},
                 {"Effect": "Allow", "Action": "s3:ListBucket", "Resource": f"arn:aws:s3:::{BUCKET}"},
                 {
