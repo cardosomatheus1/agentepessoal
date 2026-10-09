@@ -8,6 +8,7 @@ parallel after each incoming message now sends a short "on it" notice.
 import asyncio
 import importlib.util
 import sys
+import time
 from pathlib import Path
 
 from helpers.extension import Extension
@@ -44,6 +45,7 @@ class AvisarDemora(Extension):
         if not destino or not entrada or (ctx.get_data("whatsapp_aviso_demora") or 0) >= entrada:
             return
         ctx.set_data("whatsapp_aviso_demora", entrada)  # once per incoming message
+        ctx.set_data("whatsapp_ultimo_andamento", time.time())  # the progress loop counts from here
         erro = await asyncio.to_thread(ponte().enviar, destino, AVISO)
         if erro:
             print(f"whatsapp: on-it notice not delivered: {erro}", flush=True)
