@@ -44,7 +44,7 @@ class PedirCodigo(Tool):
         p.PEDIDOS[usuario] = pedido
         texto = (f"🔑 *Preciso de um código* — {self.agent.context.name or 'conversa'}\n\n"
                  f"{pergunta.strip() or 'Código de verificação'}\n\nResponda só com o código.")
-        erro = await asyncio.to_thread(p.enviar, usuario, texto)
+        erro = await asyncio.to_thread(p.enviar, usuario, texto, "", "", None, "urgente")
         if erro:
             p.PEDIDOS.pop(usuario, None)
             return Response(message=f"Não consegui pedir pelo WhatsApp ({erro}). Peça o código ao usuário pela conversa.",

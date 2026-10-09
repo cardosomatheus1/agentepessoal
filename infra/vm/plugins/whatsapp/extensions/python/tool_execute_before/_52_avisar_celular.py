@@ -55,6 +55,8 @@ class AvisarCelular(Extension):
                 return
             destino = p.dono(ctx)
         mensagem = (f"🔔 *{titulo}*\n" if titulo else "🔔 ") + texto[:LIMITE]
-        erro = await asyncio.to_thread(p.enviar, destino, mensagem)
+        nivel = str(args.get("type") or "").lower()
+        tipo = "urgente" if nivel in ("error", "warning") or p.URGENTE.match(titulo or texto) else "progresso"
+        erro = await asyncio.to_thread(p.enviar, destino, mensagem, "", "", None, tipo)
         if erro:
             print(f"whatsapp: notice not delivered: {erro}", flush=True)

@@ -21,12 +21,18 @@ def chave() -> str:
         return ""
 
 
-def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", botoes: list | None = None) -> str:
-    """'' when sent, else the reason it was not. botoes: up to 3 [{"id", "titulo"}] reply buttons."""
+URGENTE = re.compile(r"^\W*(precisa de voc[eê]|urgente|decis[aã]o|aten[cç][aã]o|bloquead|falh|erro|⚠️|❗|🚨)", re.I)
+
+
+def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", botoes: list | None = None,
+           tipo: str = "") -> str:
+    """'' when sent, else the reason it was not. botoes: up to 3 [{"id", "titulo"}] reply buttons.
+    tipo: "resposta" (default: answer to the person), "urgente" (needs them now: goes even in quiet hours) or
+    "progresso" (held during their quiet hours and delivered together afterwards)."""
     if not usuario:
         return "conversa sem dono"
     corpo = {"usuario": usuario, "texto": formatar(texto) if texto else "", "arquivo": arquivo, "legenda": legenda,
-             "botoes": botoes or []}
+             "botoes": botoes or [], "tipo": tipo or ("urgente" if botoes else "resposta")}
     req = urllib.request.Request(URL, data=json.dumps(corpo).encode(),
                                  headers={"Content-Type": "application/json", "X-Chave": chave()})
     try:

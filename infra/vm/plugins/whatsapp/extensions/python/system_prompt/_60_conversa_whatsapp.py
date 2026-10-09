@@ -28,6 +28,7 @@ Registre no checkpoint/contexto.md o que viu e o que fez, para não repetir aç�
 
 Sua resposta final de cada rodada chega sozinha no celular do usuário (Telegram/WhatsApp), resumida: seja curto e comece pelo que importa.
 - Se a tarefa disser para ficar em silêncio quando não houver novidade e esta rodada não tiver nada novo, comece a resposta final com `SEM NOVIDADE` (ela não é enviada).
+- Se a rodada precisa do usuário agora (decisão, aprovação, algo travado ou falhou), comece a resposta final com `PRECISA DE VOCÊ:` — chega na hora mesmo no horário de silêncio dele; o resto é progresso e, de madrugada, fica guardado para um resumo quando ele acordar.
 - Termine cada rodada com a resposta final; não fique esperando a próxima rodada dentro desta."""
 
 

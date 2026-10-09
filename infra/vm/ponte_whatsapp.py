@@ -286,6 +286,98 @@ AJUDA_SENHA = ("🔒 Para guardar uma senha no seu cofre (o agente usa pelo nome
                "Sua mensagem é apagada do chat logo depois.")
 
 
+SILENCIO = Path("/opt/a0/usr/whatsapp/silencio.json")  # {login: {"inicio": "23:00", "fim": "07:00"} | {"desligado": true}}
+FILA = Path("/opt/a0/usr/whatsapp/fila")  # progress notices held during quiet hours, one .jsonl per person
+SILENCIO_PADRAO = {"inicio": "23:00", "fim": "07:00"}
+ACORDADO = 30 * 60  # wrote in the last 30 min: awake, progress goes out at once
+ULTIMA_ENTRADA: dict[str, float] = {}
+
+
+def _silencio(usuario: str) -> dict:
+    try:
+        return json.loads(SILENCIO.read_text(encoding="utf-8")).get(usuario) or SILENCIO_PADRAO
+    except Exception:
+        return SILENCIO_PADRAO
+
+
+def em_silencio(usuario: str) -> bool:
+    """Quiet hours (America/Bahia) and the person has not written recently."""
+    regra = _silencio(usuario)
+    if regra.get("desligado") or time.time() - ULTIMA_ENTRADA.get(usuario, 0) < ACORDADO:
+        return False
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    agora = datetime.now(ZoneInfo("America/Bahia")).strftime("%H:%M")
+    inicio, fim = regra.get("inicio", "23:00"), regra.get("fim", "07:00")
+    return (inicio <= agora or agora < fim) if inicio > fim else (inicio <= agora < fim)
+
+
+def guardar_para_depois(usuario: str, texto: str) -> None:
+    FILA.mkdir(parents=True, exist_ok=True)
+    with (FILA / f"{re.sub(r'[^a-z0-9_.-]', '', usuario)}.jsonl").open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"em": time.time(), "texto": texto}, ensure_ascii=False) + "\n")
+
+
+def ciclo_fila() -> None:
+    """When quiet hours end (or the person writes), deliver what was held as one summary."""
+    while True:
+        time.sleep(60)
+        try:
+            for arq in sorted(FILA.glob("*.jsonl")) if FILA.is_dir() else []:
+                usuario = arq.stem
+                if em_silencio(usuario):
+                    continue
+                itens = [json.loads(l) for l in arq.read_text(encoding="utf-8").splitlines() if l.strip()]
+                arq.unlink()
+                if not itens:
+                    continue
+                partes, total = [], 0
+                for it in itens:
+                    from datetime import datetime
+                    from zoneinfo import ZoneInfo
+
+                    hora = datetime.fromtimestamp(it["em"], ZoneInfo("America/Bahia")).strftime("%H:%M")
+                    trecho = f"• {hora} — {it['texto'].strip()[:700]}"
+                    if total + len(trecho) > LIMITE_TEXTO - 200:
+                        partes.append(f"… e mais {len(itens) - len(partes)} avisos (veja no app).")
+                        break
+                    partes.append(trecho)
+                    total += len(trecho)
+                avisar(usuario, "🌅 *Enquanto você descansava* (avisos de progresso guardados):\n\n" + "\n\n".join(partes))
+                log(f"quiet hours over: delivered {len(itens)} held notices to {usuario}")
+        except Exception as exc:
+            log(f"held notices failed: {exc}")
+
+
+def comando_silencio(usuario: str, texto: str) -> str | None:
+    """/silencio 23-7 | /silencio off | /silencio : quiet hours for progress notices."""
+    partes = texto.strip().split()
+    if not partes or partes[0].lower().split("@")[0] != "/silencio":
+        return None
+    try:
+        todos = json.loads(SILENCIO.read_text(encoding="utf-8"))
+    except Exception:
+        todos = {}
+    if len(partes) > 1:
+        arg = partes[1].lower()
+        if arg in ("off", "desligar", "nao", "não"):
+            todos[usuario] = {"desligado": True}
+        else:
+            m = re.fullmatch(r"(\d{1,2})(?::(\d{2}))?-(\d{1,2})(?::(\d{2}))?", arg)
+            if not m:
+                return "Use /silencio 23-7 (das 23h às 7h), /silencio 22:30-6:30 ou /silencio off."
+            todos[usuario] = {"inicio": f"{int(m[1]):02d}:{m[2] or '00'}", "fim": f"{int(m[3]):02d}:{m[4] or '00'}"}
+        SILENCIO.parent.mkdir(parents=True, exist_ok=True)
+        SILENCIO.write_text(json.dumps(todos, ensure_ascii=False, indent=1), encoding="utf-8")
+    regra = todos.get(usuario) or SILENCIO_PADRAO
+    if regra.get("desligado"):
+        return "🔔 Horário de silêncio desligado: todos os avisos chegam na hora."
+    return (f"🌙 Horário de silêncio: {regra['inicio']}–{regra['fim']}. Nesse horário, avisos de progresso ficam "
+            "guardados e chegam juntos quando acabar; o que precisa de você (aprovação, código, decisão, erro) "
+            "chega na hora. Se você escrever, entende que está acordado. Mude com /silencio 23-7 ou /silencio off.")
+
+
 def comando_cofre(usuario: str, texto: str) -> str | None:
     """/senha, /senhas, /apagarsenha: handled here and never delivered to the agent.
     Returns the reply, or None when the text is not a vault command."""
@@ -499,7 +591,10 @@ def ciclo_entrada() -> None:
             if item.get("canal") == "telegram":
                 try:
                     msg = (item["update"].get("message") or {})
+                    ULTIMA_ENTRADA[item["usuario"]] = time.time()
                     resposta_cofre = comando_cofre(item["usuario"], msg.get("text") or "")
+                    if resposta_cofre is None:
+                        resposta_cofre = comando_silencio(item["usuario"], msg.get("text") or "")
                     if resposta_cofre is not None:  # passwords never reach the agent
                         if (msg.get("text") or "").split()[0].lower().startswith("/senha") and len((msg.get("text") or "").split()) > 2:
                             try:
@@ -542,7 +637,10 @@ def ciclo_entrada() -> None:
                     sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
                     continue
                 lido_e_digitando(mid)
+                ULTIMA_ENTRADA[item["usuario"]] = time.time()
                 resposta_cofre = comando_cofre(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
+                if resposta_cofre is None:
+                    resposta_cofre = comando_silencio(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
                 if resposta_cofre is not None:  # passwords never reach the agent (WhatsApp cannot delete it)
                     enviar_texto(item["numero"], resposta_cofre + "\nApague sua mensagem com a senha deste chat.")
                     _lembrar(mid)
@@ -636,6 +734,10 @@ class Saida(http.server.BaseHTTPRequestHandler):
             if not (numero or chat):
                 return self._responder(404, {"erro": "pessoa sem WhatsApp/Telegram cadastrado"})
             ativo()
+            tipo = str(pedido.get("tipo") or ("urgente" if pedido.get("botoes") else "resposta"))
+            if tipo == "progresso" and pedido.get("texto") and not pedido.get("arquivo") and em_silencio(usuario):
+                guardar_para_depois(usuario, str(pedido["texto"]))
+                return self._responder(200, {"ok": True, "adiado": True})
             if chat:
                 if pedido.get("texto"):
                     tg_texto(chat, str(pedido["texto"]), pedido.get("botoes") or None)
@@ -692,6 +794,7 @@ def main() -> None:
     threading.Thread(target=ciclo_alerta, daemon=True).start()
     threading.Thread(target=ciclo_digitando, daemon=True).start()
     threading.Thread(target=ciclo_destravar, daemon=True).start()
+    threading.Thread(target=ciclo_fila, daemon=True).start()
     log("ready")
     http.server.ThreadingHTTPServer(LISTEN, Saida).serve_forever()
 
