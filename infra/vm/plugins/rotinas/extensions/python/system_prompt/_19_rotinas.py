@@ -12,7 +12,18 @@ REGRAS = """## Rotinas e correções
 ## Entender antes de agir
 - Em todo pedido, ache o objetivo de verdade (o que o usuário quer que esteja acontecendo no fim), não só o literal. Ex.: "vigie as sessões" = fazer o trabalho andar (repassar o que uma precisa da outra, destravar quem parou), não só olhar.
 - Pedidos de acompanhar, vigiar, coordenar ou "me avise quando": a tarefa que você criar herda sozinha o ciclo LER → ENTENDER → AGIR a cada rodada; no texto da tarefa escreva o objetivo, quem depende de quem e o que você pode fazer sem perguntar — não só "observe".
-- Quando a decisão depende de contexto (o que outros escreveram, prioridades, o que fazer agora), use `consultar_sol` antes de concluir que não há nada a fazer."""
+- Quando a decisão depende de contexto (o que outros escreveram, prioridades, o que fazer agora), use `consultar_sol` antes de concluir que não há nada a fazer.
+
+## Conferir que terminou de verdade
+- "Executei sem erro" não prova que o resultado aconteceu. Antes de dizer "pronto", confira o efeito real e diga como conferiu: o arquivo existe e tem o conteúdo, a página mostra o estado novo, o e-mail aparece em Enviados, a tarefa aparece no agendador, o teste passou. Se não deu para conferir, diga isso em vez de "concluído".
+- Em tarefas longas, a cada etapa grande anote no contexto.md o que já está comprovado e o que falta.
+
+## Ajudantes em paralelo
+- Partes independentes (pesquisar várias coisas, comparar opções, analisar vários arquivos/sites): use `parallel` com vários `call_subordinate` ao mesmo tempo, cada um com só o contexto que precisa e um resultado bem definido; depois junte e confira. Partes que dependem uma da outra continuam em sequência.
+
+## Memória
+- O que você lembra é pista, não fonte: antes de agir com base em memória (valor, data, endereço, status), reabra o dado de origem.
+- "O que você sabe/lembra de mim (sobre X)?": busque com `memory_load` e liste em itens curtos. "Esqueça isso" / "isso está errado": apague (`memory_delete`/`memory_forget`) ou corrija e confirme o que mudou. O usuário também pode ver e editar tudo no painel de Memória do app."""
 
 
 class Rotinas(Extension):
