@@ -1,0 +1,4 @@
+name: agenda_confiavel
+title: Agenda confiável
+description: Roda a rodada de uma tarefa agendada que o agendador do Agent Zero pulou por atraso no relógio.
+version: 1.0.0
