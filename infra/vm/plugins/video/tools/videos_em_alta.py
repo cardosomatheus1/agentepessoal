@@ -21,7 +21,9 @@ from helpers.tool import Response, Tool
 
 # YouTube search filters, sorted by views, type video: upload date today / this week (the window is then cut by
 # the real upload time, so "today + yesterday" is not limited to the calendar day YouTube calls today)
-FILTROS = {"hoje": "CAMSBAgCEAE%3D", "semana": "CAMSBAgDEAE%3D"}
+FILTROS = {"hoje": "CAMSBAgCEAE%3D",           # today, by views
+           "semana": "CAMSBAgDEAE%3D",         # this week, by views (older videos dominate)
+           "recentes": "CAISBAgDEAE%3D"}       # this week, newest first: fills today and yesterday
 PARALELO = 10  # Gemini calls only: nothing runs on the VM
 
 
@@ -42,7 +44,7 @@ def _ytdlp(*args: str, timeout: int = 120) -> str:
     return r.stdout
 
 
-def buscar(consulta: str, filtro: str, limite: int = 20) -> list[dict]:
+def buscar(consulta: str, filtro: str, limite: int = 30) -> list[dict]:
     url = (f"https://www.youtube.com/results?search_query={urllib.parse.quote(consulta)}"
            f"&sp={FILTROS[filtro]}")
     try:
@@ -70,7 +72,8 @@ def escolher(tema: str, candidatos: list[dict], quantidade: int) -> list[str]:
                       for c in candidatos)
     texto = (f"Tema: {tema}\n\nVídeos recentes do YouTube (id | visualizações | duração | canal | título). Marque TODOS "
              "os que são DE FATO sobre o tema (novidades, lançamentos, notícias, análises) — descarte política, "
-             "entretenimento, vídeos fora do tema e Shorts de menos de 2 min. Responda só com os ids, um por linha, "
+             "entretenimento, vídeos fora do tema, Shorts de menos de 2 min e vídeos que não sejam em português ou inglês "
+             "(pelo título/canal). Responda só com os ids, um por linha, "
              "na ordem da lista.\n\n" + lista)
     corpo = {"model": v.MODELO, "reasoning": {"effort": "low"},
              "input": [{"role": "user", "content": [{"type": "input_text", "text": texto}]}]}
@@ -116,9 +119,9 @@ async def em_alta(tema: str, consultas: list[str], quantidade: int, horas: int, 
     if not candidatos:
         return "A busca do YouTube não devolveu vídeos de hoje para essas consultas."
     candidatos.sort(key=lambda c: c["views"], reverse=True)
-    relevantes = await asyncio.to_thread(escolher, tema, candidatos[:150], quantidade)
-    relevantes = relevantes[:quantidade * 4]  # most viewed first; upload time confirmed for these
-    sem_det = asyncio.Semaphore(4)  # yt-dlp metadata runs node for YouTube's challenge: 12 at once overloaded the VM
+    relevantes = await asyncio.to_thread(escolher, tema, candidatos[:220], quantidade)
+    relevantes = relevantes[:quantidade * 7]  # most viewed first; upload time confirmed for these
+    sem_det = asyncio.Semaphore(6)  # yt-dlp metadata runs node for YouTube's challenge: 12 at once overloaded the VM
 
     async def det(i):
         async with sem_det:
