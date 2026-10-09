@@ -175,7 +175,7 @@ Abaixo estão notas extraídas de {n} fontes numeradas. Escreva a resposta em po
 - depois os pontos que sustentam, com a fonte entre colchetes [n] em cada afirmação importante;
 - diga onde as fontes concordam, onde divergem e o que ficou sem confirmação;
 - números (medidas, preços, notas) só como aparecem nas fontes, com a fonte;
-- seja completo mas direto (sem enrolação), no máximo ~600 palavras.
+- seja completo mas direto (sem enrolação), no máximo ~{limite} palavras.
 {extra}
 --- notas ---
 {notas}"""
@@ -244,16 +244,20 @@ FOCOS = [
 # Price questions: an earlier answer leaned on the official site and comparator teasers, quoted a 220 V
 # listing for a 127 V home, and missed cheaper listings (Webcontinental, Leroy Merlin).
 PRECO = re.compile(r"\b(pre[çc]os?|mais barat[oa]s?|onde comprar|oferta|promo[çc][ãa]o|quanto custa|valor)\b", re.I)
-FOCOS_PRECO = [
-    "menor preço atual em comparadores (Buscapé, Zoom, Google Shopping) e sites de ofertas (Pelando, Escorrega o Preço)",
-    "preço atual nas grandes lojas: Magazine Luiza, Casas Bahia, Ponto, Amazon, Mercado Livre, Americanas, Fast Shop, Carrefour",
-    "preço atual em lojas menores e regionais (ex.: Leroy Merlin, Webcontinental, Casa e Vídeo, Gazin, Engage Eletro, Fujioka, eFácil)",
+FOCOS_PRECO = [  # fixed store list, one search per group: letting the model pick stores missed different ones each run
+    "comparadores e ofertas: Buscapé, Zoom, Google Shopping, Pelando e Escorrega o Preço (o menor preço que eles mostram e em qual loja)",
+    "lojas Casas Bahia, Ponto (Pontofrio) e Extra",
+    "lojas Magazine Luiza, Americanas e Carrefour",
+    "Amazon e Mercado Livre (vendido pela própria loja ou loja oficial da marca, e o menor de terceiros)",
+    "lojas Leroy Merlin, Webcontinental e Fast Shop",
+    "site oficial da marca e lojas menores (ex.: Multiloja, Fujioka, Gazin, Casa e Vídeo, eFácil, Engage Eletro)",
 ]
 REGRAS_PRECO = (
     "Regras de preço: o código exato do modelo, a VOLTAGEM e a cor têm de bater com o anúncio (127 V e 220 V são "
     "produtos diferentes; use a voltagem informada na pergunta; anúncio '110 V' ou '110V/127V' é a mesma versão 127 V). Para cada oferta dê: loja, preço "
     "à vista/Pix e parcelado, voltagem, vendedor (a própria loja ou terceiro no marketplace), se está em estoque e o "
-    "link. Ignore produto usado, vitrine, recondicionado ou esgotado (ou marque como tal). Diga quando o preço vem só "
+    "link. Ignore produto usado, vitrine, recondicionado ou esgotado (ou marque como tal) e preço absurdo de página "
+    "quebrada (ex.: R$ 999.999,99 ou muito abaixo/acima dos outros sem explicação). Diga quando o preço vem só "
     "de um comparador sem confirmação na loja.")
 
 
@@ -261,7 +265,11 @@ def busca_modelo(pergunta: str, foco: str) -> dict:
     """The model's own web search (Bedrock web search; needs bedrock-websearch:InvokeSearch on the VM role)."""
     corpo = {"model": MODELO, "reasoning": {"effort": "low"}, "tools": [{"type": "web_search"}],
              "input": [{"role": "user", "content": [{"type": "input_text", "text": (
-                 f"Pesquise na web e responda em português, com fatos concretos e a fonte (link) de cada um. Foco: {foco}."
+                 (f"Procure o anúncio exato deste produto em cada uma destas lojas — {foco} — e ABRA a página de cada "
+                  "anúncio encontrado para ler o preço atual. Para cada loja: preço à vista/Pix, parcelado, voltagem, vendedor, "
+                  "estoque e link; se a loja não tem o produto, diga 'não encontrado'. Responda em português."
+                  if PRECO.search(pergunta) and foco in FOCOS_PRECO else
+                  f"Pesquise na web e responda em português, com fatos concretos e a fonte (link) de cada um. Foco: {foco}.")
                  + (f"\n{REGRAS_PRECO}" if PRECO.search(pergunta) else "")
                  + f"\n\nPergunta: {pergunta}")}]}]}
     req = urllib.request.Request(MODELO_URL, data=json.dumps(corpo).encode(), headers={"Content-Type": "application/json"})
@@ -332,11 +340,13 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
         return "Não achei fontes úteis com essas buscas. Tente buscas mais específicas (modelo, marca, termos em inglês)."
     notas = "\n\n".join(f"[{i}] {f['titulo'] or f['url']} ({f['tipo']}) — {f['url']}\n{f['nota']}" for i, f in enumerate(fontes, 1))
     extra = ("\nÉ uma pesquisa de preço: monte por modelo a lista de ofertas do menor para o maior preço, só com a "
-             "voltagem e o código certos. " + REGRAS_PRECO + " Não esconda ofertas: o que tem preço na página da loja e "
+             "voltagem e o código certos — TODAS as lojas em que achou o produto, não só as mais baratas — e, no fim, as lojas "
+             "consultadas onde não achou. " + REGRAS_PRECO + " Não esconda ofertas: o que tem preço na página da loja e "
              "voltagem certa entra na lista; o que não deu para confirmar (estoque, voltagem, vendedor) vai numa seção "
              "'A conferir' com o motivo. Só fique de fora usado, recondicionado, esgotado ou voltagem errada.") \
         if PRECO.search(pergunta) else ""
-    sintese = await _modelo_async(PROMPT_SINTESE.format(pergunta=pergunta, n=len(fontes), notas=notas, extra=extra), "medium")
+    sintese = await _modelo_async(PROMPT_SINTESE.format(pergunta=pergunta, n=len(fontes), notas=notas, extra=extra,
+                                                              limite=1200 if extra else 600), "medium")
     lista = "\n".join(f"[{i}] {f['titulo'] or ''} — {f['url']}" for i, f in enumerate(fontes, 1))
     (pasta / "notas.md").write_text(f"# {pergunta}\n\nBuscas: {todas_buscas}\n\n{notas}\n", encoding="utf-8")
     (pasta / "sintese.md").write_text(sintese + "\n\n" + lista, encoding="utf-8")
