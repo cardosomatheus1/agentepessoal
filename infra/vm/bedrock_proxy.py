@@ -113,6 +113,36 @@ def pull(wait: float) -> bool:
     return not t.is_alive()
 
 
+VIDEOS = Path("/opt/a0/usr/workdir/videos")  # /a0/usr/workdir/videos inside the agent container
+PEGASUS = "us.twelvelabs.pegasus-1-5-v1:0"
+_aws = {}
+
+
+def pegasus(arquivo: str, prompt: str) -> dict:
+    """Pegasus watches a video the agent downloaded: sent through S3, so long videos need no re-encoding
+    to fit the ~20 MB inline limit (the agent container has no AWS credentials of its own)."""
+    if not BUCKET:
+        return {"error": "bucket não configurado"}
+    caminho = (VIDEOS / str(arquivo or "").replace("/a0/usr/workdir/videos/", "", 1)).resolve()
+    if VIDEOS.resolve() not in caminho.parents or not caminho.is_file():
+        return {"error": "vídeo não encontrado na pasta de vídeos"}
+    import boto3
+
+    if "s3" not in _aws:
+        _aws["s3"] = boto3.client("s3", region_name=REGION)
+        _aws["br"] = boto3.client("bedrock-runtime", region_name=REGION)
+        _aws["conta"] = boto3.client("sts", region_name=REGION).get_caller_identity()["Account"]
+    chave = f"tmp/videos/{caminho.parent.name}-{int(time.time())}{caminho.suffix}"
+    _aws["s3"].upload_file(str(caminho), BUCKET, chave)
+    try:
+        r = _aws["br"].invoke_model(modelId=PEGASUS, body=json.dumps({
+            "inputPrompt": str(prompt or "")[:4000], "temperature": 0,
+            "mediaSource": {"s3Location": {"uri": f"s3://{BUCKET}/{chave}", "bucketOwner": _aws["conta"]}}}))
+        return {"message": str(json.loads(r["body"].read()).get("message") or "")}
+    finally:
+        _aws["s3"].delete_object(Bucket=BUCKET, Key=chave)
+
+
 USAGE_FILE = Path(os.environ.get("USAGE_FILE", "/var/lib/agentepessoal/uso.jsonl"))
 USAGE_TAIL = 256 * 1024  # the usage block is in the last event of a response
 DUMP_DIR = USAGE_FILE.parent / "pedidos"  # exists only while debugging the prompt cache
@@ -197,6 +227,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self._reply(400 if "error" in out else 200, out)
             if self.path == "/arquivos/puxar":
                 return self._reply(200, {"done": pull(float(data.get("wait", 40)))})
+            if self.path == "/arquivos/pegasus":
+                mark_activity()
+                out = pegasus(data.get("arquivo", ""), data.get("prompt", ""))
+                return self._reply(400 if "error" in out else 200, out)
             return self._reply(404, {"error": "not found"})
         except Exception as exc:
             return self._reply(500, {"error": str(exc)[:300]})

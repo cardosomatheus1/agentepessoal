@@ -120,6 +120,35 @@ def legendas(url: str, pasta: Path) -> str:
     return (f"Título do vídeo: {titulo}\n" if titulo else "") + _vtt_texto(arquivos[0].read_text(errors="ignore"))
 
 
+PEGASUS_S3 = "http://host.docker.internal:8787/arquivos/pegasus"
+VIDEOS = Path("/a0/usr/workdir/videos")
+ASSISTIR = 2  # videos Pegasus watches (picture and sound); the others are read from captions
+
+
+def assistir(url: str, pergunta: str) -> str:
+    """Download (480p, up to 40 min) and have Pegasus watch the whole video through S3."""
+    import hashlib
+
+    destino = VIDEOS / ("p" + hashlib.sha1(url.encode()).hexdigest()[:10])
+    destino.mkdir(parents=True, exist_ok=True)
+    video = next(iter(sorted(destino.glob("video.*"))), None)
+    if video is None:
+        subprocess.run([*YTDLP, "--cookies-from-browser", f"chromium:{PERFIL}", "--no-playlist",
+                        "--match-filter", "duration < 2400", "-f", "b[height<=480][ext=mp4]/bv*[height<=480]+ba/b[height<=480]/b",
+                        "--merge-output-format", "mp4", "-o", str(destino / "video.%(ext)s"), "--quiet", "--no-warnings", url],
+                       capture_output=True, text=True, timeout=240)
+        video = next(iter(sorted(destino.glob("video.*"))), None)
+        if video is None:
+            return ""
+    prompt = ("Assista o vídeo inteiro (imagem e áudio) e responda em português, com detalhes concretos: o que é mostrado "
+              "e testado, resultados que aparecem na tela, o que o apresentador conclui, prós, contras e defeitos citados, "
+              "com os tempos (mm:ss) dos momentos importantes. Não invente.\n\nPergunta: " + pergunta[:800])
+    req = urllib.request.Request(PEGASUS_S3, data=json.dumps({"arquivo": str(video), "prompt": prompt}).encode(),
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=420) as r:
+        return str(json.loads(r.read()).get("message") or "").strip()
+
+
 def _e_video(url: str) -> bool:
     return bool(re.search(r"(youtube\.com/watch|youtu\.be/|youtube\.com/shorts/)", url))
 
@@ -180,10 +209,18 @@ async def _rodada(pergunta: str, buscas: list[str], videos: bool, vistos: set[st
         t = t or p.get("trecho", "")
         if len(t) > 200:
             fontes.append({"url": p["url"], "titulo": p["titulo"], "tipo": "página", "texto": t[:MAX_TEXTO]})
-    caps = await asyncio.gather(*[asyncio.to_thread(legendas, f["url"], pasta / f"video{i}") for i, f in enumerate(filmes)],
-                                return_exceptions=True)
-    for f, c in zip(filmes, caps):
-        if isinstance(c, str) and len(c) > 200:
+    caps, vistas = await asyncio.gather(
+        asyncio.gather(*[asyncio.to_thread(legendas, f["url"], pasta / f"video{i}") for i, f in enumerate(filmes)],
+                       return_exceptions=True),
+        asyncio.gather(*[asyncio.to_thread(assistir, f["url"], pergunta) for f in filmes[:ASSISTIR]],
+                       return_exceptions=True))
+    for i, (f, c) in enumerate(zip(filmes, caps)):
+        c = c if isinstance(c, str) else ""
+        visto = vistas[i] if i < len(vistas) and isinstance(vistas[i], str) else ""
+        if visto:
+            texto = "O que o vídeo mostra (assistido inteiro, imagem e áudio):\n" + visto + ("\n\nFala (legendas):\n" + c if c else "")
+            fontes.append({"url": f["url"], "titulo": f["titulo"], "tipo": "vídeo assistido", "texto": texto[:MAX_TEXTO * 2]})
+        elif len(c) > 200:
             fontes.append({"url": f["url"], "titulo": f["titulo"], "tipo": "vídeo (legendas)", "texto": c[:MAX_TEXTO]})
     notas = await asyncio.gather(*[
         _modelo_async(PROMPT_NOTA.format(pergunta=pergunta, tipo=f["tipo"], url=f["url"], texto=f["texto"]), "low", sem)
@@ -230,9 +267,10 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
     (pasta / "notas.md").write_text(f"# {pergunta}\n\nBuscas: {todas_buscas}\n\n{notas}\n", encoding="utf-8")
     (pasta / "sintese.md").write_text(sintese + "\n\n" + lista, encoding="utf-8")
     segundos = int(time.time() - inicio)
-    videos_lidos = sum(1 for f in fontes if f["tipo"].startswith("vídeo"))
+    assistidos = sum(1 for f in fontes if f["tipo"] == "vídeo assistido")
+    por_legenda = sum(1 for f in fontes if f["tipo"] == "vídeo (legendas)")
     return (f"Pesquisa feita em {segundos} s: {len(todas_buscas)} buscas, {len(fontes)} fontes úteis "
-            f"({videos_lidos} vídeos pelas legendas).\n\n{sintese}\n\nFontes:\n{lista}\n\n"
+            f"({assistidos} vídeos assistidos inteiros pelo Pegasus, {por_legenda} pelas legendas).\n\n{sintese}\n\nFontes:\n{lista}\n\n"
             f"Notas completas de cada fonte: {pasta / 'notas.md'}")
 
 

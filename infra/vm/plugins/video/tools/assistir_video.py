@@ -22,9 +22,10 @@ URL = "http://host.docker.internal:8787/openai/v1/responses"
 MODELO = "openai.gpt-6-luna"
 PASTA = Path("/a0/usr/workdir/videos")
 PERFIL = "/a0/tmp/browser/sessions/shared/Default"  # the agent's own browser, already logged in
-MAX_SEGUNDOS = 20 * 60
+MAX_SEGUNDOS = 60 * 60  # Pegasus watches up to an hour
 MAX_QUADROS = 16
 PEGASUS = "http://host.docker.internal:8787/bedrock/model/us.twelvelabs.pegasus-1-5-v1:0/invoke"
+PEGASUS_S3 = "http://host.docker.internal:8787/arquivos/pegasus"
 NOVA = "http://host.docker.internal:8787/bedrock/model/us.amazon.nova-2-lite-v1:0/converse"
 MAX_BASE64 = 20 * 1024 * 1024  # bigger videos are re-encoded smaller before sending
 YTDLP = ["/opt/venv-a0/bin/python", "-m", "yt_dlp", "--js-runtimes", "node", "--remote-components", "ejs:github"]
@@ -121,11 +122,18 @@ def _assistir_pegasus(video: Path, duracao: float, pergunta: str, legenda: str) 
               "fala e mostra. Depois responda à pergunta do usuário, se houver. Não invente o que não está no vídeo.\n\n"
               f"Pergunta do usuário: {pergunta[:500] or '(nenhuma: resuma o vídeo)'}"
               + (f"\n\nLegenda do post (contexto): {legenda[:600]}" if legenda else ""))
-    dados = base64.b64encode(_caber(video, duracao).read_bytes()).decode()
-    corpo = {"inputPrompt": prompt, "mediaSource": {"base64String": dados}, "temperature": 0}
-    req = urllib.request.Request(PEGASUS, data=json.dumps(corpo).encode(), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=600) as r:
-        texto = str(json.loads(r.read()).get("message") or "").strip()
+    try:  # through S3 (the proxy has the AWS credentials): whole video, no re-encoding, ~10-40 s
+        req = urllib.request.Request(PEGASUS_S3, data=json.dumps({"arquivo": str(video), "prompt": prompt}).encode(),
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=600) as r:
+            texto = str(json.loads(r.read()).get("message") or "").strip()
+    except Exception as exc:
+        print(f"video: Pegasus via S3 failed, sending inline: {exc}", flush=True)
+        dados = base64.b64encode(_caber(video, duracao).read_bytes()).decode()
+        corpo = {"inputPrompt": prompt, "mediaSource": {"base64String": dados}, "temperature": 0}
+        req = urllib.request.Request(PEGASUS, data=json.dumps(corpo).encode(), headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=600) as r:
+            texto = str(json.loads(r.read()).get("message") or "").strip()
     if not texto:
         raise RuntimeError("Pegasus sem resposta")
     return texto
@@ -201,13 +209,12 @@ def assistir(url: str, caminho: str, pergunta: str, modo: str = "") -> str:
     destino = PASTA / chave
     destino.mkdir(parents=True, exist_ok=True)
     falas = _legendas(url, destino) if url else ""
-    if falas and modo != "completo":  # what people say in a review is in the captions: no download needed
+    if falas and modo == "rapido":  # only what is said matters: captions, no download
         legenda = _legenda(url)
         (destino / "transcricao.txt").write_text(falas, encoding="utf-8")
         descricao = _pelas_legendas(falas, pergunta, legenda)
         (destino / "descricao.md").write_text(descricao, encoding="utf-8")
-        return (f"Vídeo lido pelas legendas (rápido, sem baixar). Se a resposta depende do que aparece na imagem, "
-                f"chame de novo com \"modo\": \"completo\" (Pegasus assiste imagem e áudio).\n\n{descricao}\n\n"
+        return (f"Vídeo lido pelas legendas (modo rápido, sem baixar).\n\n{descricao}\n\n"
                 f"--- Transcrição (início) ---\n{falas[:3000]}\n\nArquivos: {destino}")
     if url:
         video = next(iter(sorted(destino.glob("video.*"))), None) or _baixar(url, destino)
