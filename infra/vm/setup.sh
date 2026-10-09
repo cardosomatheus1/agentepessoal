@@ -229,17 +229,22 @@ EOF
 
 cat > /etc/systemd/system/agentepessoal-google-mcp.service <<'EOF'
 [Unit]
-Description=Google connector (workspace-mcp, read-only) running inside the agent container
+Description=Google connector (workspace-mcp: Gmail/Calendar read-only, Drive/Docs/Sheets write) inside the agent container
 After=docker.service
 Wants=docker.service
 [Service]
 # A long-lived HTTP server, not stdio: Agent Zero starts stdio servers per call, so the OAuth
 # callback (localhost:8765/oauth2callback, opened by the agent's browser) had nobody listening.
 ExecStartPre=/bin/sh -c 'until docker exec agent-zero test -f /a0/usr/mcp/google/client_secret.json; do sleep 10; done'
+# `docker exec` leaves the server running in the container when the unit stops: end it, or the next start finds port 8765 taken
+ExecStartPre=-/usr/bin/docker exec agent-zero pkill -f venv-google/bin/workspace-mcp
+ExecStopPost=-/usr/bin/docker exec agent-zero pkill -f venv-google/bin/workspace-mcp
 ExecStart=/usr/bin/docker exec -e GOOGLE_CLIENT_SECRET_PATH=/a0/usr/mcp/google/client_secret.json \
   -e WORKSPACE_MCP_CREDENTIALS_DIR=/a0/usr/mcp/google/credenciais -e USER_GOOGLE_EMAIL=falhanosistema1111@gmail.com \
   -e WORKSPACE_MCP_PORT=8765 -e PORT=8765 agent-zero /a0/usr/mcp/venv-google/bin/workspace-mcp \
-  --single-user --read-only --tools gmail calendar drive --transport streamable-http
+  --single-user --permissions gmail:readonly calendar:readonly drive:full docs:full sheets:full \
+  --disabled-tools set_drive_file_permissions manage_drive_access debug_docs_runtime_info debug_table_structure \
+  --transport streamable-http
 Restart=always
 RestartSec=10
 [Install]

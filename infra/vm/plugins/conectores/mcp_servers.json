@@ -1,7 +1,7 @@
 {
     "mcpServers": {
         "google": {
-            "description": "Gmail, Google Agenda e Google Drive do Matheus (só leitura)",
+            "description": "Gmail e Agenda do Matheus (só leitura); Drive, Docs e Planilhas (pode criar e editar, sempre com aprovação; sem compartilhar)",
             "type": "streamable-http",
             "url": "http://127.0.0.1:8765/mcp",
             "init_timeout": 30,

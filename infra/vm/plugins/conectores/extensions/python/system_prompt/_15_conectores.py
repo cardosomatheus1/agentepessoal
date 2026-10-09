@@ -25,8 +25,13 @@ class ConectoresPrompt(Extension):
         linhas = ["## Conectores"]
         if meus:
             linhas.append(f"Conectores desta pessoa (ferramentas `<conector>.<ação>`): {', '.join(meus)}. Para e-mail, agenda e "
-                          "arquivos do Google prefira o conector `google` ao navegador: é mais rápido e confiável. Eles começam "
-                          "só leitura; se pedir login/autorização, abra o link no navegador e siga.")
+                          "arquivos do Google prefira o conector `google` ao navegador: é mais rápido e confiável. Se pedir "
+                          "login/autorização, mande o link ao usuário pelo celular para ele autorizar.")
+            if "google" in meus:
+                linhas.append("Google: Gmail e Agenda são só leitura. Drive, Docs e Planilhas você pode criar e editar: quando a "
+                              "entrega for tabela/comparação use uma Planilha, texto/relatório use um Doc (além de PDF se pedirem), "
+                              "sempre dentro da pasta \"Agente\" do Drive (crie se não existir) e mande o link. Edite só arquivos "
+                              "que você criou ou que o usuário indicou; não compartilhe com ninguém nem apague arquivos.")
         if outros:
             linhas.append(f"Não use nesta conversa (são de outra pessoa): {', '.join(outros)}.")
         system_prompt.append("\n".join(linhas))
