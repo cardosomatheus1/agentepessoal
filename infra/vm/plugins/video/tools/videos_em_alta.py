@@ -24,7 +24,7 @@ from helpers.tool import Response, Tool
 FILTROS = {"hoje": "CAMSBAgCEAE%3D",           # today, by views
            "semana": "CAMSBAgDEAE%3D",         # this week, by views (older videos dominate)
            "recentes": "CAISBAgDEAE%3D"}       # this week, newest first: fills today and yesterday
-PARALELO = 10  # Gemini calls only: nothing runs on the VM
+PARALELO = 3  # Gemini on Vertex: 10 at once got 500s
 
 
 def _video():

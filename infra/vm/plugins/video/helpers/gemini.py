@@ -60,14 +60,20 @@ def assistir(url: str, pergunta: str, timeout: int = 300, forcar: bool = False) 
     corpo = {"contents": [{"role": "user", "parts": [{"fileData": {"fileUri": url, "mimeType": "video/mp4"}},
                                                      {"text": pergunta}]}],
              "generationConfig": {"temperature": 0, "mediaResolution": "MEDIA_RESOLUTION_LOW"}}
-    req = urllib.request.Request(API.format(projeto=PROJETO, modelo=MODELO), data=json.dumps(corpo).encode(),
-                                 headers={"Content-Type": "application/json",
-                                          "Authorization": f"Bearer {_token_acesso()}"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            dados = json.loads(r.read())
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"Vertex {e.code}: {e.read().decode(errors='ignore')[:300]}") from None
+    dados, erro = {}, ""
+    for tentativa in range(4):  # Vertex answers 500/503/429 now and then (8 of 10 parallel calls once): retry
+        req = urllib.request.Request(API.format(projeto=PROJETO, modelo=MODELO), data=json.dumps(corpo).encode(),
+                                     headers={"Content-Type": "application/json",
+                                              "Authorization": f"Bearer {_token_acesso()}"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                dados = json.loads(r.read())
+            break
+        except urllib.error.HTTPError as e:
+            erro = f"Vertex {e.code}: {e.read().decode(errors='ignore')[:300]}"
+            if e.code not in (429, 500, 503) or tentativa == 3:
+                raise RuntimeError(erro) from None
+            time.sleep(8 * (tentativa + 1))
     texto = "".join(p.get("text", "") for c in dados.get("candidates", [])
                     for p in (c.get("content") or {}).get("parts", [])).strip()
     if not texto:
