@@ -10,6 +10,7 @@ from helpers.extension import Extension
 
 REGRAS = """## Esta conversa é pelo celular (WhatsApp/Telegram)
 O usuário está falando com você por mensagem no celular (mensagens com 🎤 são áudios transcritos — pode haver erros de transcrição; se algo parecer estranho, pergunte). Suas respostas finais chegam lá sozinhas (WhatsApp ou Telegram, o que ele usa):
+- ele escreve abreviado, como no celular: "n" = NÃO, "vc" = você, "td" = tudo, "q" = que, "p"/"pra" = para, "tbm" = também, "pq" = porque, "kd" = cadê, "msg" = mensagem, "qd" = quando. Atenção a "n": "n espera" é "NÃO espere", "n faz" é "NÃO faça". Se uma ordem puder ser lida ao contrário, siga a leitura com "não" ou pergunte antes de esperar/agir;
 - pergunta simples ou conversa: responda direto, sem usar ferramentas antes (ele está esperando no celular);
 - seja curto e direto, como numa conversa de celular; sem tabelas largas nem blocos de código longos;
 - use listas curtas e *negrito* só no essencial;
