@@ -251,7 +251,7 @@ FOCOS_PRECO = [
 ]
 REGRAS_PRECO = (
     "Regras de preço: o código exato do modelo, a VOLTAGEM e a cor têm de bater com o anúncio (127 V e 220 V são "
-    "produtos diferentes; use a voltagem informada na pergunta). Para cada oferta dê: loja, preço "
+    "produtos diferentes; use a voltagem informada na pergunta; anúncio '110 V' ou '110V/127V' é a mesma versão 127 V). Para cada oferta dê: loja, preço "
     "à vista/Pix e parcelado, voltagem, vendedor (a própria loja ou terceiro no marketplace), se está em estoque e o "
     "link. Ignore produto usado, vitrine, recondicionado ou esgotado (ou marque como tal). Diga quando o preço vem só "
     "de um comparador sem confirmação na loja.")
@@ -276,6 +276,12 @@ def busca_modelo(pergunta: str, foco: str) -> dict:
     return {"texto": texto.strip(), "urls": list(dict.fromkeys(urls))}
 
 
+def _produtos(pergunta: str) -> list[str]:
+    texto = _modelo("Liste os produtos desta pergunta, um por linha, com marca, modelo, código e voltagem/cor se houver, "
+                    "sem numeração e sem mais nada (máximo 5).\n\nPergunta: " + pergunta, "low", 60)
+    return [l.strip(" -•\t") for l in texto.splitlines() if l.strip(" -•\t")][:5] or [pergunta]
+
+
 def _buscas_iniciais(pergunta: str) -> list[str]:
     texto = _modelo(
         "Gere de 5 a 8 buscas na web (em português e, se ajudar, em inglês) que juntas cobrem bem esta pergunta: "
@@ -296,9 +302,14 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
     if not buscas:
         buscas = await asyncio.to_thread(_buscas_iniciais, pergunta)
     vistos: set[str] = set()
-    focos = FOCOS_PRECO if PRECO.search(pergunta) else FOCOS
+    if PRECO.search(pergunta):  # one product per search: a single search over three products found few stores each
+        produtos = await asyncio.to_thread(_produtos, pergunta)
+        tarefas = [(f"{pergunta}\n\nNesta busca, só o produto: {prod}", foco) for prod in produtos for foco in FOCOS_PRECO]
+    else:
+        tarefas = [(pergunta, foco) for foco in FOCOS]
+    focos = [f for _, f in tarefas]
     modelo, fontes = await asyncio.gather(
-        asyncio.gather(*[asyncio.to_thread(busca_modelo, pergunta, f) for f in focos], return_exceptions=True),
+        asyncio.gather(*[asyncio.to_thread(busca_modelo, q, f) for q, f in tarefas], return_exceptions=True),
         _rodada(pergunta, buscas, videos, vistos, pasta, sem))
     for foco, m in zip(focos, modelo):
         if isinstance(m, dict) and len(m["texto"]) > 100:
@@ -321,7 +332,10 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
         return "Não achei fontes úteis com essas buscas. Tente buscas mais específicas (modelo, marca, termos em inglês)."
     notas = "\n\n".join(f"[{i}] {f['titulo'] or f['url']} ({f['tipo']}) — {f['url']}\n{f['nota']}" for i, f in enumerate(fontes, 1))
     extra = ("\nÉ uma pesquisa de preço: monte por modelo a lista de ofertas do menor para o maior preço, só com a "
-             "voltagem e o código certos. " + REGRAS_PRECO) if PRECO.search(pergunta) else ""
+             "voltagem e o código certos. " + REGRAS_PRECO + " Não esconda ofertas: o que tem preço na página da loja e "
+             "voltagem certa entra na lista; o que não deu para confirmar (estoque, voltagem, vendedor) vai numa seção "
+             "'A conferir' com o motivo. Só fique de fora usado, recondicionado, esgotado ou voltagem errada.") \
+        if PRECO.search(pergunta) else ""
     sintese = await _modelo_async(PROMPT_SINTESE.format(pergunta=pergunta, n=len(fontes), notas=notas, extra=extra), "medium")
     lista = "\n".join(f"[{i}] {f['titulo'] or ''} — {f['url']}" for i, f in enumerate(fontes, 1))
     (pasta / "notas.md").write_text(f"# {pergunta}\n\nBuscas: {todas_buscas}\n\n{notas}\n", encoding="utf-8")
