@@ -9,6 +9,7 @@ import base64
 import importlib.util
 import secrets
 import sys
+import re
 import time
 from pathlib import Path
 
@@ -103,6 +104,27 @@ def _conversa(usuario: str, nova: bool, chave: str = "whatsapp_de", nome: str = 
     if chave == "gatilhos_de":
         ctx.set_data("avisar_sempre", True)  # nobody is watching: every outcome goes to WhatsApp
     return ctx, True
+
+
+ABREVIACOES = {"n": "não", "vc": "você", "vcs": "vocês", "td": "tudo", "tds": "todos", "q": "que", "p": "para",
+               "pra": "para", "tbm": "também", "tb": "também", "pq": "porque/por que", "kd": "cadê", "qd": "quando",
+               "msg": "mensagem", "hj": "hoje", "amn": "amanhã", "blz": "beleza", "obg": "obrigado", "cmg": "comigo",
+               "ngm": "ninguém", "mt": "muito", "nd": "nada", "dps": "depois", "agr": "agora", "ss": "sim", "nn": "não"}
+
+
+def _leitura(texto: str) -> str:
+    """The person writes the way people text; spell the abbreviations out next to the message itself,
+    so a "n" (= não) can never flip an order ("n espera" was once read as "wait")."""
+    achadas = []
+    for palavra in re.findall(r"(?<![\w/@.])([A-Za-zÀ-ÿ]+)(?![\w@/º°])", texto):
+        sig = ABREVIACOES.get(palavra.lower())
+        if sig and (palavra.lower(), sig) not in achadas:
+            achadas.append((palavra.lower(), sig))
+    if not achadas:
+        return texto
+    lista = ", ".join(f'"{a}" = {s}' for a, s in achadas)
+    aviso = "ATENÇÃO: \"n\" é NÃO (negação) — leia a ordem com o não. " if any(a in ("n", "nn") for a, _ in achadas) else ""
+    return f"{texto}\n\n(leitura automática das abreviações desta mensagem: {lista}. {aviso}".rstrip() + ")"
 
 
 def _texto_gatilho(usuario: str, nome: str, conteudo: str) -> str:
@@ -244,6 +266,7 @@ class Receber(ApiHandler):
         nome = str(input.get("nome") or "")
         if nome and not ctx.get_data("usuario_nome"):
             ctx.set_data("usuario_nome", nome)
+        texto = _leitura(texto)
         mq.log_user_message(ctx, texto, anexos, str(input.get("id") or "") or None, source=" (WhatsApp)")
         ctx.communicate(UserMessage(message=texto, attachments=anexos, id=str(input.get("id") or "")))
         return {"ok": True, "context": ctx.id, "nova": criada}
