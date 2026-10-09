@@ -145,6 +145,7 @@ def pegasus(arquivo: str, prompt: str) -> dict:
 
 GCP_WIF = Path("/opt/a0/usr/segredos/vertex_matheus_wif.json")  # external_account config (no secret in it)
 _gcp = {"cred": None}
+_gcp_lock = threading.Lock()  # its own lock: a slow Google call must never hold up the Bedrock token
 
 
 def gcp_token() -> dict:
@@ -155,7 +156,7 @@ def gcp_token() -> dict:
     import google.auth
     import google.auth.transport.requests
 
-    with _lock:
+    with _gcp_lock:
         if _gcp["cred"] is None:
             _gcp["cred"], _ = google.auth.load_credentials_from_file(
                 str(GCP_WIF), scopes=["https://www.googleapis.com/auth/cloud-platform"])
