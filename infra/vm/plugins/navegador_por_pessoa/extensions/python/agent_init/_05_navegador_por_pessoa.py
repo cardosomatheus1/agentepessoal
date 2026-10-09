@@ -19,7 +19,7 @@ def perfis():
 
 
 class NavegadorPorPessoa(Extension):
-    async def execute(self, **kwargs):
+    def execute(self, **kwargs):  # agent_init runs in sync mode: no async here
         try:
             if perfis().aplicar():
                 print("navegador_por_pessoa: browser profiles are now per person", flush=True)
