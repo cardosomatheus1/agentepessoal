@@ -143,6 +143,28 @@ def pegasus(arquivo: str, prompt: str) -> dict:
         _aws["s3"].delete_object(Bucket=BUCKET, Key=chave)
 
 
+GCP_WIF = Path("/opt/a0/usr/segredos/vertex_matheus_wif.json")  # external_account config (no secret in it)
+_gcp = {"cred": None}
+
+
+def gcp_token() -> dict:
+    """Short-lived Google Cloud token for Vertex AI, from this VM's AWS role through Workload Identity
+    Federation: the organization blocks service-account keys, and no long-lived secret is kept here."""
+    if not GCP_WIF.is_file():
+        return {"error": "federação AWS→Google não configurada"}
+    import google.auth
+    import google.auth.transport.requests
+
+    with _lock:
+        if _gcp["cred"] is None:
+            _gcp["cred"], _ = google.auth.load_credentials_from_file(
+                str(GCP_WIF), scopes=["https://www.googleapis.com/auth/cloud-platform"])
+        cred = _gcp["cred"]
+        if not cred.valid:
+            cred.refresh(google.auth.transport.requests.Request())
+    return {"token": cred.token, "expira": cred.expiry.timestamp() if cred.expiry else time.time() + 1800}
+
+
 USAGE_FILE = Path(os.environ.get("USAGE_FILE", "/var/lib/agentepessoal/uso.jsonl"))
 USAGE_TAIL = 256 * 1024  # the usage block is in the last event of a response
 DUMP_DIR = USAGE_FILE.parent / "pedidos"  # exists only while debugging the prompt cache
@@ -227,6 +249,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self._reply(400 if "error" in out else 200, out)
             if self.path == "/arquivos/puxar":
                 return self._reply(200, {"done": pull(float(data.get("wait", 40)))})
+            if self.path == "/arquivos/gcp_token":
+                out = gcp_token()
+                return self._reply(400 if "error" in out else 200, out)
             if self.path == "/arquivos/pegasus":
                 mark_activity()
                 out = pegasus(data.get("arquivo", ""), data.get("prompt", ""))

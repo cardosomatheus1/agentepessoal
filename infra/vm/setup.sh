@@ -39,7 +39,7 @@ modprobe binder_linux devices="binder,hwbinder,vndbinder" || true
 # --- helper services and scripts -------------------------------------------------
 mkdir -p /opt/agentepessoal /var/lib/agentepessoal /opt/a0/usr /opt/android-data
 [ -x /opt/agentepessoal/venv/bin/python ] || python3 -m venv /opt/agentepessoal/venv
-/opt/agentepessoal/venv/bin/pip install --quiet --upgrade boto3 aws-bedrock-token-generator croniter
+/opt/agentepessoal/venv/bin/pip install --quiet --upgrade boto3 aws-bedrock-token-generator croniter google-auth requests  # google-auth: Vertex AI through AWS federation (bedrock_proxy)
 install -m 755 "$B/bedrock_proxy.py" "$B/report_url.py" "$B/watchdog.sh" "$B/backup.sh" "$B/hibernate.sh" "$B/entrada.sh" "$B/credenciais_meta.py" "$B/ponte_whatsapp.py" "$B/proximo_despertar.py" /opt/agentepessoal/
 install -m 755 "$B/phone/install_apps.sh" "$B/phone/google_id.sh" "$B/agent_tools.sh" /opt/agentepessoal/
 

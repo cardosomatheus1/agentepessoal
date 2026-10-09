@@ -1,47 +1,73 @@
 """Gemini watches a public YouTube video straight from its link: nothing is downloaded.
 
 Downloading YouTube videos for Pegasus loaded the VM (a test with parallel downloads pushed the load
-average past 130) and took most of the time. The Gemini API takes the YouTube URL itself. The key is
-the owner's GEMINI_API_KEY in the vault (/senha GEMINI_API_KEY ... on Telegram).
+average past 130) and took most of the time. Gemini takes the YouTube URL itself.
+
+It runs on Vertex AI, billed to the Google Cloud account whose free-trial credit covers Vertex AI.
+The Gemini API through AI Studio is not used: that credit does not pay for it and it would go to the
+card. Credentials: none stored. The organization blocks service-account keys, so the VM's AWS role is
+federated to the service account agente-video (role Vertex AI User only) and the proxy exchanges it
+for a short-lived Google token. Vertex is used only after VERTEX_OK exists, written once the billing report showed the
+first test paid by the credit; until then callers fall back to captions.
 """
 
 import json
 import re
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 MODELO = "gemini-2.5-flash"
-API = "https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent"
-COFRE = Path("/a0/usr/segredos/matheus.json")
+CREDENCIAL = Path("/a0/usr/segredos/vertex_matheus_wif.json")  # AWS→Google federation config (no secret)
+PROJETO = "asymmetric-rite-509018-f7"
+TOKEN_PROXY = "http://host.docker.internal:8787/arquivos/gcp_token"  # the proxy holds the AWS identity
+VERTEX_OK = Path("/a0/usr/segredos/vertex_ok")
+API = "https://aiplatform.googleapis.com/v1/projects/{projeto}/locations/global/publishers/google/models/{modelo}:generateContent"
 YOUTUBE = re.compile(r"^https?://(www\.|m\.)?(youtube\.com/(watch|shorts/|live/)|youtu\.be/)")
+_token = {"valor": "", "ate": 0.0}
 
 
 def e_youtube(url: str) -> bool:
     return bool(YOUTUBE.match(url or ""))
 
 
-def chave() -> str:
+def liberado() -> bool:
+    return CREDENCIAL.is_file() and VERTEX_OK.is_file()
+
+
+def _token_acesso() -> str:
+    """Short-lived Google token from the proxy (AWS role → Workload Identity Federation), cached."""
+    if _token["valor"] and time.time() < _token["ate"]:
+        return _token["valor"]
+    req = urllib.request.Request(TOKEN_PROXY, data=b"{}", headers={"Content-Type": "application/json"})
     try:
-        return json.loads(COFRE.read_text(encoding="utf-8")).get("GEMINI_API_KEY", "")
-    except Exception:
-        return ""
+        with urllib.request.urlopen(req, timeout=60) as r:
+            dados = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"token Google: {e.read().decode(errors='ignore')[:200]}") from None
+    _token["valor"], _token["ate"] = dados["token"], float(dados.get("expira") or time.time() + 1800) - 300
+    return _token["valor"]
 
 
-def assistir(url: str, pergunta: str, timeout: int = 300) -> str:
-    """Gemini watches the whole video (picture and sound) from the link; low media resolution keeps it cheap."""
-    k = chave()
-    if not k:
-        raise RuntimeError("sem GEMINI_API_KEY no cofre")
-    corpo = {"contents": [{"parts": [{"file_data": {"file_uri": url}}, {"text": pergunta}]}],
+def assistir(url: str, pergunta: str, timeout: int = 300, forcar: bool = False) -> str:
+    """Gemini (Vertex AI) watches the whole video, picture and sound, from the link; low media resolution
+    keeps it cheap. forcar=True skips the VERTEX_OK gate (the one billing test)."""
+    if not CREDENCIAL.is_file():
+        raise RuntimeError("Vertex AI não configurado (falta a federação AWS→Google)")
+    if not (forcar or VERTEX_OK.is_file()):
+        raise RuntimeError("Vertex AI ainda não liberado (aguardando conferir que o crédito cobre o uso)")
+    corpo = {"contents": [{"role": "user", "parts": [{"fileData": {"fileUri": url, "mimeType": "video/mp4"}},
+                                                     {"text": pergunta}]}],
              "generationConfig": {"temperature": 0, "mediaResolution": "MEDIA_RESOLUTION_LOW"}}
-    req = urllib.request.Request(API.format(modelo=MODELO), data=json.dumps(corpo).encode(),
-                                 headers={"Content-Type": "application/json", "x-goog-api-key": k})
+    req = urllib.request.Request(API.format(projeto=PROJETO, modelo=MODELO), data=json.dumps(corpo).encode(),
+                                 headers={"Content-Type": "application/json",
+                                          "Authorization": f"Bearer {_token_acesso()}"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             dados = json.loads(r.read())
     except urllib.error.HTTPError as e:
-        raise RuntimeError(f"Gemini {e.code}: {e.read().decode(errors='ignore')[:300]}") from None
+        raise RuntimeError(f"Vertex {e.code}: {e.read().decode(errors='ignore')[:300]}") from None
     texto = "".join(p.get("text", "") for c in dados.get("candidates", [])
                     for p in (c.get("content") or {}).get("parts", [])).strip()
     if not texto:
