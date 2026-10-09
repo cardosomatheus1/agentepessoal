@@ -1,0 +1,4 @@
+name: navegador_por_pessoa
+title: Navegador por pessoa
+description: Cada pessoa com login tem o seu próprio perfil de navegador (cookies, logins, abas); ninguém usa as contas de outra pessoa pelo navegador.
+version: 1.0.0
