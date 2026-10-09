@@ -48,12 +48,7 @@ class AvisarCelular(Extension):
         p = ponte()
         destino = ctx.get_data("whatsapp_de")
         if not destino:
-            try:
-                from agent import AgentContextType
-
-                tarefa = ctx.type == AgentContextType.TASK
-            except Exception:
-                tarefa = False
+            tarefa = bool(p.tarefa(ctx))
             ultima = float(ctx.get_data("_whatsapp_ultima_do_usuario") or 0)
             ausente = bool(ultima) and time.time() - ultima > AUSENTE
             if not (tarefa or ausente or ctx.get_data("avisar_sempre")):

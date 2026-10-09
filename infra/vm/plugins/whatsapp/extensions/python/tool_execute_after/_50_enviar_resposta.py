@@ -3,7 +3,8 @@
 - WhatsApp chat: every final answer goes to the person who wrote.
 - Any other chat: when the person is away (no message from them for AUSENTE seconds) or it is a
   scheduled task, they get a short notice — the agent finished, or stopped to ask something.
-Intermediate answers during a /goal (the goal plugin turns them into "keep going") are not sent.
+Intermediate answers during a /goal (the goal plugin turns them into "keep going") are not sent, nor
+a scheduled round whose answer starts with "SEM NOVIDADE".
 """
 
 import asyncio
@@ -60,14 +61,11 @@ class EnviarResposta(Extension):
         if not texto.strip():
             return
         ctx = agent.context
-        try:
-            from agent import AgentContextType
-
-            tarefa = ctx.type == AgentContextType.TASK
-        except Exception:
-            tarefa = False
-
         p = ponte()
+        tarefa = bool(p.tarefa(ctx))
+        if tarefa and texto.strip().upper().startswith(p.SILENCIO):  # a round with nothing new stays quiet
+            return
+
         de_whatsapp = ctx.get_data("whatsapp_de")
         if de_whatsapp:
             destino, mensagem = de_whatsapp, texto
@@ -79,5 +77,7 @@ class EnviarResposta(Extension):
                 return
             destino, mensagem = p.dono(ctx), _aviso(ctx, texto, tarefa)
         erro = await asyncio.to_thread(p.enviar, destino, mensagem)
-        if erro and de_whatsapp:
-            print(f"whatsapp: answer not delivered: {erro}", flush=True)
+        if erro:
+            print(f"whatsapp: answer from {ctx.id} not delivered: {erro}", flush=True)
+        elif tarefa:
+            print(f"whatsapp: scheduled task {ctx.id} result sent to {destino}", flush=True)

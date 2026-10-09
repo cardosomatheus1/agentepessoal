@@ -74,3 +74,34 @@ def dono(context) -> str:
         return (context.get_data("dono") or "").lower()
     except Exception:
         return ""
+
+
+TAREFAS = "/a0/usr/scheduler/tasks.json"
+_tarefas = {"mtime": 0.0, "ids": {}}
+SILENCIO = "SEM NOVIDADE"  # a scheduled round that answers starting with this is not sent to the phone
+
+
+def tarefa(context) -> str:
+    """Name of the scheduled task this chat runs, or "". The scheduler makes ordinary (USER) chats
+    for its tasks, so the context type alone never said it; its task list does."""
+    import json
+    import os
+
+    try:
+        from agent import AgentContextType
+
+        if context.type == AgentContextType.TASK:
+            return context.name or "tarefa"
+    except Exception:
+        pass
+    try:
+        mtime = os.path.getmtime(TAREFAS)
+        if mtime != _tarefas["mtime"]:
+            with open(TAREFAS, encoding="utf-8") as f:
+                lista = json.load(f).get("tasks", [])
+            _tarefas["ids"] = {t.get("context_id") or t.get("uuid"): t.get("name") or "tarefa" for t in lista}
+            _tarefas["mtime"] = mtime
+    except Exception:
+        return ""
+    return _tarefas["ids"].get(context.id, "")
+

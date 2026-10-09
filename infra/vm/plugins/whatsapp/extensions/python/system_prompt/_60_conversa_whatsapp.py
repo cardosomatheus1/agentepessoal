@@ -1,4 +1,9 @@
-"""In a chat that comes from WhatsApp, answer the way a phone chat reads well."""
+"""In a chat that comes from WhatsApp, answer the way a phone chat reads well; in a scheduled
+task, know that the final answer goes to the phone (and how to stay quiet)."""
+
+import importlib.util
+import sys
+from pathlib import Path
 
 from agent import LoopData
 from helpers.extension import Extension
@@ -13,7 +18,34 @@ O usuário está falando com você por mensagem no celular (mensagens com 🎤 s
 - "/nova" no WhatsApp começa outra conversa; o usuário também vê esta conversa no app."""
 
 
+TAREFA = """## Esta conversa é uma tarefa agendada
+Sua resposta final de cada rodada chega sozinha no celular do usuário (Telegram/WhatsApp), resumida: seja curto e comece pelo que importa.
+- Se a tarefa disser para ficar em silêncio quando não houver novidade e esta rodada não tiver nada novo, comece a resposta final com `SEM NOVIDADE` (ela não é enviada).
+- Termine cada rodada com a resposta final; não fique esperando a próxima rodada dentro desta."""
+
+
+def ponte():
+    nome = "whatsapp_ponte"
+    caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists()) / "helpers" / "ponte.py"
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
+        for estado in ("PENDENTES", "PEDIDOS"):
+            if antigo is not None and hasattr(antigo, estado):
+                setattr(modulo, estado, getattr(antigo, estado))
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
+
+
 class ConversaWhatsapp(Extension):
     async def execute(self, system_prompt: list[str] = [], loop_data: LoopData = LoopData(), **kwargs):
-        if self.agent and self.agent.number == 0 and self.agent.context.get_data("whatsapp_de"):
+        if not self.agent or self.agent.number != 0:
+            return
+        if self.agent.context.get_data("whatsapp_de"):
             system_prompt.append(REGRAS)
+        elif ponte().tarefa(self.agent.context):
+            system_prompt.append(TAREFA)
