@@ -129,6 +129,14 @@ def abertos(login: str, limite: int = 8) -> list:
     return lista[:limite]
 
 
+def resolvidos_recentes(login: str, dias: int = 7, limite: int = 8) -> list:
+    """Closed loose ends (resolved or ignored) of the last days, so no round alerts about them again."""
+    corte = time.time() - dias * 86400
+    lista = [f for f in carregar(login)["fios"]
+             if f.get("estado") in ("resolvido", "ignorado") and f.get("atualizado", 0) > corte]
+    return sorted(lista, key=lambda f: -f.get("atualizado", 0))[:limite]
+
+
 def linha(f: dict) -> str:
     extras = [x for x in (f.get("dono") and f"de {f['dono']}", f.get("prazo") and f"prazo {f['prazo']}",
                           f.get("prioridade") and f"prioridade {f['prioridade']}") if x]

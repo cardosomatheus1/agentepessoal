@@ -146,6 +146,8 @@ def ensure_vm_role() -> str:
                 # ExternalWebAccess: fetch reads the live page (default); without it every fetch is a 401.
                 {"Effect": "Allow", "Action": ["bedrock-websearch:InvokeSearch", "bedrock-websearch:InvokeFetch",
                                                "bedrock-websearch:ExternalWebAccess"], "Resource": "*"},
+                # voice notes (plugins/auxiliar: the morning summary as audio), through the proxy's /arquivos/voz
+                {"Effect": "Allow", "Action": "polly:SynthesizeSpeech", "Resource": "*"},
                 {   # third-party Bedrock models (TwelveLabs Pegasus for plugins/video) subscribe on first use
                     "Effect": "Allow",
                     "Action": ["aws-marketplace:ViewSubscriptions", "aws-marketplace:Subscribe"],

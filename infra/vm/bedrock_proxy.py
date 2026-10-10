@@ -143,6 +143,26 @@ def pegasus(arquivo: str, prompt: str) -> dict:
         _aws["s3"].delete_object(Bucket=BUCKET, Key=chave)
 
 
+def voz(texto: str) -> dict:
+    """Text → MP3 (Polly, Camila, pt-BR) for voice notes; the agent container has no AWS credentials."""
+    texto = str(texto or "").strip()[:2900]
+    if not texto:
+        return {"error": "texto vazio"}
+    import base64
+
+    import boto3
+
+    if "polly" not in _aws:
+        _aws["polly"] = boto3.client("polly", region_name=REGION)
+    try:
+        r = _aws["polly"].synthesize_speech(Text=texto, VoiceId="Camila", LanguageCode="pt-BR", Engine="generative",
+                                            OutputFormat="mp3")
+    except Exception:  # generative unavailable for this text/voice: the neural voice
+        r = _aws["polly"].synthesize_speech(Text=texto, VoiceId="Camila", LanguageCode="pt-BR", Engine="neural",
+                                            OutputFormat="mp3")
+    return {"mp3": base64.b64encode(r["AudioStream"].read()).decode()}
+
+
 GCP_WIF = Path("/opt/a0/usr/segredos/vertex_matheus_wif.json")  # external_account config (no secret in it)
 _gcp = {"cred": None}
 _gcp_lock = threading.Lock()  # its own lock: a slow Google call must never hold up the Bedrock token
@@ -256,6 +276,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if self.path == "/arquivos/pegasus":
                 mark_activity()
                 out = pegasus(data.get("arquivo", ""), data.get("prompt", ""))
+                return self._reply(400 if "error" in out else 200, out)
+            if self.path == "/arquivos/voz":
+                out = voz(data.get("texto", ""))
                 return self._reply(400 if "error" in out else 200, out)
             return self._reply(404, {"error": "not found"})
         except Exception as exc:

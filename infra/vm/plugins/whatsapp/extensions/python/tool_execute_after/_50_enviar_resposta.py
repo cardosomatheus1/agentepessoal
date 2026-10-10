@@ -43,7 +43,7 @@ def ponte():
 
 # Rounds written to be read on the phone (proactive ones): sent whole, under their own name, instead of
 # the cut-down "task finished" notice that points to the app.
-PARA_O_CELULAR = ("🧵", "📰", "🔎")
+PARA_O_CELULAR = ("🧵", "📰", "🔎", "📅", "📝", "🗓️")
 LIMITE_CELULAR = 3500
 
 
@@ -72,7 +72,8 @@ class EnviarResposta(Extension):
         p = ponte()
         nome_tarefa = p.tarefa(ctx) or ""
         tarefa = bool(nome_tarefa)
-        if tarefa and texto.strip().upper().startswith(p.SILENCIO):  # a round with nothing new stays quiet
+        if (tarefa or ctx.get_data("avisar_sempre")) and texto.strip().upper().startswith(p.SILENCIO):
+            # a round (or a trigger, e.g. the Google watcher) with nothing new stays quiet
             return
 
         de_whatsapp = ctx.get_data("whatsapp_de")

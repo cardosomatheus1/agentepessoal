@@ -175,9 +175,10 @@ def enviar_arquivo(numero: str, caminho: Path, legenda: str = "") -> None:
         f"Content-Type: {mime}\r\n\r\n".encode(), caminho.read_bytes(), f"\r\n--{limite}--\r\n".encode(),
     ])
     media = graph(f"{cfg()['phone_number_id']}/media", data=corpo, ctype=f"multipart/form-data; boundary={limite}")
-    tipo = "image" if mime in ("image/jpeg", "image/png") else "video" if mime.startswith("video/") else "document"
+    tipo = ("image" if mime in ("image/jpeg", "image/png") else "video" if mime.startswith("video/")
+            else "audio" if mime in ("audio/ogg", "audio/mpeg") else "document")
     item = {"id": media["id"]}
-    if legenda:
+    if legenda and tipo != "audio":  # WhatsApp audio takes no caption
         item["caption"] = legenda[:1000]
     if tipo == "document":
         item["filename"] = caminho.name
@@ -229,7 +230,11 @@ def tg_texto(chat: str, texto: str, botoes: list | None = None) -> None:
 
 
 def tg_arquivo(chat: str, caminho: Path, legenda: str = "") -> None:
-    foto = caminho.suffix.lower() in (".jpg", ".jpeg", ".png")
+    sufixo = caminho.suffix.lower()
+    if sufixo in (".ogg", ".oga", ".opus"):  # OGG/Opus plays as a voice note
+        tg("sendVoice", {"chat_id": chat, "caption": legenda[:1000]}, ("voice", caminho))
+        return
+    foto = sufixo in (".jpg", ".jpeg", ".png")
     tg("sendPhoto" if foto else "sendDocument", {"chat_id": chat, "caption": legenda[:1000]},
        ("photo" if foto else "document", caminho))
 

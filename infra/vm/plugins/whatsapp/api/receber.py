@@ -212,7 +212,8 @@ async def _botao_fio(usuario: str, botao: str) -> dict:
              f"O que está em aberto: {fio.get('detalhe', '')}\n"
              + (f"Ligação: {fio['ligacoes']}\n" if fio.get("ligacoes") else "")
              + f"Próximo passo combinado: {fio.get('proximo_passo', '')}\n"
-             "Faça esse próximo passo agora. Peça minha aprovação antes de qualquer coisa que envie, pague, apague "
+             "Faça esse próximo passo agora. Se o fio espera resposta de outra pessoa, o passo é um rascunho de cobrança "
+             "gentil com a ferramenta `rascunho` (quem envia sou eu). Peça minha aprovação antes de qualquer coisa que envie, pague, apague "
              "ou mude algo fora daqui; se depender de mim, me diga exatamente o quê. Quando terminar, marque o fio "
              "como resolvido (ferramenta fios) e me diga em poucas linhas o que fez.")
     ctx, _ = _conversa(usuario, nova=False)
@@ -269,6 +270,81 @@ async def _botao_iniciativa(usuario: str, botao: str) -> dict:
     return {"ok": True, "context": ctx.id}
 
 
+def _auxiliar():
+    """plugins/auxiliar helper, loaded by path."""
+    import importlib.util
+
+    nome = "auxiliar_helper"
+    caminho = Path("/a0/usr/plugins/auxiliar/helpers/auxiliar.py")
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
+
+
+def _para_a_conversa(usuario: str, texto: str) -> dict:
+    """Hand a button's follow-up to the agent in the person's phone chat, as if they had typed it."""
+    from agent import UserMessage
+    from helpers import message_queue as mq
+
+    ctx, _ = _conversa(usuario, nova=False)
+    ctx.set_data("whatsapp_ultima_entrada", time.time())
+    mq.log_user_message(ctx, texto, [], None, source=" (botão)")
+    ctx.communicate(UserMessage(message=texto, attachments=[], id=""))
+    return {"ok": True, "context": ctx.id}
+
+
+async def _botao_rascunho(usuario: str, botao: str) -> dict:
+    """✅ Usar (Gmail draft, or the text alone to copy), ✏️ Ajustar (the agent asks what to change), 🙈 Deixa."""
+    _, login, rid, acao = (botao.split(":") + ["", "", "", ""])[:4]
+    if login != usuario:
+        return {"ok": False}
+    a = _auxiliar()
+    r = a.obter_rascunho(login, rid)
+    if not r or r["estado"] not in ("pendente", "usado"):
+        ponte().enviar(usuario, "Esse rascunho já foi substituído ou descartado.")
+        return {"ok": True}
+    if acao == "deixa":
+        a.marcar_rascunho(login, rid, "descartado")
+        ponte().enviar(usuario, "🙈 Ok, deixei de lado.")
+        return {"ok": True}
+    if acao == "ajustar":
+        return _para_a_conversa(usuario, (
+            f"✏️ Quero ajustar o rascunho {rid} (para {r['para']}, assunto «{r['assunto']}»):\n\n{r['texto']}\n\n"
+            "Pergunte em uma linha o que eu quero mudar. Quando eu responder, reescreva no meu estilo e mande a nova "
+            "versão com a ferramenta `rascunho` (acao criar, mesmo para e assunto, nova_versao: true). Não envie o e-mail."))
+    a.marcar_rascunho(login, rid, "usado")
+    if a.gmail_rascunhos(login):
+        return _para_a_conversa(usuario, (
+            f"✅ Usar o rascunho {rid}: crie um RASCUNHO no meu Gmail (não envie) respondendo a «{r['assunto']}» para "
+            f"{r['para']}" + (f", na mesma conversa (referência {r['referencia']})" if r.get("referencia") else "")
+            + f", com este texto:\n\n{r['texto']}\n\nDepois me diga em uma linha que está nos rascunhos do Gmail."))
+    ponte().enviar(usuario, "Toque no texto abaixo para copiar e cole na resposta do e-mail:")
+    ponte().enviar(usuario, "```\n" + r["texto"].replace("```", "'''") + "\n```")
+    return {"ok": True}
+
+
+async def _botao_conta(usuario: str, botao: str) -> dict:
+    """✅ Já paguei, ⏰ Amanhã (remind again tomorrow), 🙈 Não é minha."""
+    _, login, cid, acao = (botao.split(":") + ["", "", "", ""])[:4]
+    if login != usuario:
+        return {"ok": False}
+    a = _auxiliar()
+    if acao == "amanha":
+        c = a.adiar_conta(login, cid)
+        ponte().enviar(usuario, f"⏰ Te lembro amanhã: {c['descricao']}" if c else "Essa conta já foi fechada.")
+        return {"ok": True}
+    ok = a.fechar_conta(login, cid, "paga" if acao == "paga" else "ignorada")
+    ponte().enviar(usuario, ("✅ Anotado como paga." if acao == "paga" else "🙈 Ok, tirei da lista.") if ok
+                   else "Essa conta já foi fechada.")
+    return {"ok": True}
+
+
 class Receber(ApiHandler):
     @classmethod
     def requires_auth(cls) -> bool:
@@ -315,6 +391,10 @@ class Receber(ApiHandler):
             return await _botao_fio(usuario, botao)
         if botao.startswith("ini:"):  # a button under an unprompted message of plugins/iniciativa
             return await _botao_iniciativa(usuario, botao)
+        if botao.startswith("rd:"):  # a drafted e-mail reply of plugins/auxiliar
+            return await _botao_rascunho(usuario, botao)
+        if botao.startswith("ct:"):  # a bill reminder of plugins/auxiliar
+            return await _botao_conta(usuario, botao)
 
         pedido = ponte().PEDIDOS.get(usuario)
         if pedido and not pedido.get("codigo") and texto and len(texto) <= 40 and "\n" not in texto \

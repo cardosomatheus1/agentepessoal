@@ -51,6 +51,7 @@ class FiosSoltosPrompt(Extension):
         try:
             f = _fios()
             abertos = f.abertos(login, 6)
+            fechados = f.resolvidos_recentes(login)
             indice = _indice(f, login, self.agent.context.id)
         except Exception:
             return
@@ -64,6 +65,10 @@ class FiosSoltosPrompt(Extension):
                   "você prometeu e não terminou aqui → salvar; algo que você concluiu e fecha um fio → resolver."]
         if abertos:
             partes.append("Fios em aberto (do mais importante):\n" + "\n".join("- " + f.linha(x) for x in abertos))
+        if fechados:
+            partes.append("Já resolvidos ou dispensados nos últimos 7 dias — não avise de novo sobre o mesmo assunto "
+                          "(um e-mail ou alerta repetido sobre isso não é novidade):\n"
+                          + "\n".join(f"- {x.get('titulo', '')} ({x.get('estado')})" for x in fechados))
         if indice:
             partes.append("Outras conversas recentes desta pessoa:\n" + "\n".join(indice))
         system_prompt.append("\n".join(partes))
