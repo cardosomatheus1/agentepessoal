@@ -16,6 +16,9 @@ aprova no celular.
 confeitarias, doceiras, bolos e doces por encomenda; salgados para festa; cozinhas de produção / dark kitchens;
 pequenas fábricas de alimentos; restaurantes com produção própria e delivery.
 
+**Atenção a posts fixados**: no Instagram os posts fixados (ícone de alfinete) aparecem primeiro na grade e
+podem ser antigos. "Post mais recente" é o primeiro NÃO fixado; confirme a data abrindo o post.
+
 **Perfil** (Instagram):
 - é um **negócio** (perfil comercial ou bio com cardápio, encomendas, WhatsApp, iFood, endereço);
 - **ativo**: post nos últimos 30 dias;

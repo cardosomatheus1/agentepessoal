@@ -42,7 +42,9 @@ def dono(context) -> str:
 
 COMO_EXECUTAR = {
     "aquecer": "Abra o perfil, siga (se ainda não segue), curta 1 ou 2 posts recentes e, se houver texto, comente EXATAMENTE "
-               "esse texto no post mais recente. No resultado: ok=true se SEGUIU (o aquecimento valeu), mesmo que o comentário "
+               "esse texto no post mais recente (o primeiro NÃO fixado — posts com alfinete aparecem antes e podem ser antigos; confira a data). Para comentar, abra o post pelo link dele (https://www.instagram.com/p/<código>/ — "
+               "pegue o link clicando no post do perfil): nessa página o campo \"Adicione um comentário…\" fica visível embaixo; "
+               "clique nele, digite o texto e clique em \"Publicar\"; confira que o comentário aparece na lista. No resultado: ok=true se SEGUIU (o aquecimento valeu), mesmo que o comentário "
                "não tenha saído — diga no detalhe o que saiu e o que não saiu; ok=false só se nem seguir deu certo.",
     "dm_abertura": "Abra o perfil → Mensagem e envie EXATAMENTE este texto (sem mudar nada).",
     "dm_lembrete": "Abra a conversa com esse perfil no Direct e envie EXATAMENTE este texto.",
