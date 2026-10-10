@@ -6,12 +6,14 @@ their login name, so the agent can reach no one but the registered users.
 
 import json
 import re
+import time
 import urllib.request
 from pathlib import Path
 
 URL = "http://host.docker.internal:8789/enviar"
 PEDIDOS: dict[str, dict] = {}  # login -> code the agent asked for on WhatsApp (pedir_codigo)
 CHAVE = Path("/a0/usr/whatsapp/.chave")
+CAIXA_TESTES = Path("/a0/usr/testes/celular.jsonl")  # phone messages of "teste_*" logins (tests)
 
 
 def chave() -> str:
@@ -31,6 +33,12 @@ def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", 
     "progresso" (held during their quiet hours and delivered together afterwards)."""
     if not usuario:
         return "conversa sem dono"
+    if usuario.startswith("teste_"):  # test logins: what would reach the phone is recorded, nothing is sent
+        CAIXA_TESTES.parent.mkdir(parents=True, exist_ok=True)
+        with CAIXA_TESTES.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"em": time.time(), "usuario": usuario, "texto": texto, "arquivo": arquivo,
+                                "legenda": legenda, "botoes": botoes or [], "tipo": tipo}, ensure_ascii=False) + "\n")
+        return ""
     corpo = {"usuario": usuario, "texto": formatar(texto) if texto else "", "arquivo": arquivo, "legenda": legenda,
              "botoes": botoes or [], "tipo": tipo or ("urgente" if botoes else "resposta")}
     req = urllib.request.Request(URL, data=json.dumps(corpo).encode(),

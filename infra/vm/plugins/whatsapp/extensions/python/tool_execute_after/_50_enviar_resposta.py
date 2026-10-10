@@ -49,6 +49,8 @@ LIMITE_CELULAR = 3500
 
 def _aviso(ctx, texto: str, tarefa: bool, nome_tarefa: str = "") -> str:
     nome = ctx.name or "conversa"
+    if ctx.get_data("gatilhos_de"):  # an event trigger (e.g. the Google watcher): short, read on the phone, whole
+        return f"*⚡ {nome}*\n\n{texto.strip()[:LIMITE_CELULAR]}"
     if tarefa and nome_tarefa.startswith(PARA_O_CELULAR):
         return f"*{nome_tarefa}*\n\n{texto.strip()[:LIMITE_CELULAR]}"
     resumo = " ".join(texto.split())

@@ -35,6 +35,8 @@ class Reuniao(Tool):
         if acao == "agendar":
             return Response(message=await a.agendar_reuniao(login, evento_id, titulo, inicio, fim, participantes, local),
                             break_loop=False)
+        if acao == "cancelar":
+            return Response(message=await a.cancelar_reuniao(login, evento_id), break_loop=False)
         if acao == "pos_registrado":
             ok = a.registrar_pos(login, evento_id)
             return Response(message="Pós-reunião registrado." if ok else "Reunião não encontrada.", break_loop=False)
@@ -43,4 +45,4 @@ class Reuniao(Tool):
             itens = [r for r in a.carregar(login)["reunioes"] if r["fim_ts"] > agora - 86400]
             return Response(message="\n".join(f"- [{r['evento_id']}] {r['inicio_txt']} {r['titulo']}" for r in itens)
                             or "(nenhuma)", break_loop=False)
-        return Response(message="acao: agendar | listar | pos_registrado", break_loop=False)
+        return Response(message="acao: agendar | cancelar | listar | pos_registrado", break_loop=False)

@@ -312,6 +312,43 @@ def _prompt_pos(r: dict) -> str:
             "até quando — que eu organizo os próximos passos e te lembro.\" Não faça mais nada.")
 
 
+def _contexto_da_tarefa(tarefa, login: str) -> None:
+    """Create the planned run's chat now, owned by `login`, so its answer reaches that person's phone (the scheduler
+    would create it ownerless at run time, and an ownerless chat belongs to the default user)."""
+    from agent import AgentContext
+    from helpers.persist_chat import save_tmp_chat
+    from initialize import initialize_agent
+
+    ctx = AgentContext(initialize_agent(), id=tarefa.context_id or tarefa.uuid, name=tarefa.name)
+    ctx.set_data("dono", _login(login))
+    ctx.set_data("usuario", _login(login))
+    save_tmp_chat(ctx)
+
+
+async def _remover_tarefas(r: dict) -> None:
+    from agent import AgentContext
+    from helpers.task_scheduler import TaskScheduler
+
+    agendador = TaskScheduler.get()
+    for chave in ("tarefa_briefing", "tarefa_pos"):
+        uid = r.pop(chave, None)
+        if uid and agendador.get_task_by_uuid(uid):
+            await agendador.remove_task_by_uuid(uid)
+        if uid and AgentContext.get(uid):
+            AgentContext.remove(uid)
+
+
+async def cancelar_reuniao(login: str, evento_id: str) -> str:
+    d = carregar(login)
+    r = next((x for x in d["reunioes"] if x["evento_id"] == evento_id.strip()), None)
+    if not r:
+        return "Essa reunião não estava agendada."
+    await _remover_tarefas(r)
+    d["reunioes"] = [x for x in d["reunioes"] if x is not r]
+    salvar(login, d)
+    return f"«{r['titulo']}» cancelada: briefing e pós-reunião removidos."
+
+
 async def agendar_reuniao(login: str, evento_id: str, titulo: str, inicio: str, fim: str = "", participantes: str = "",
                           local: str = "") -> str:
     from helpers.task_scheduler import PlannedTask, TaskPlan, TaskScheduler
@@ -329,9 +366,7 @@ async def agendar_reuniao(login: str, evento_id: str, titulo: str, inicio: str, 
     if r and r.get("inicio_ts") == ini.timestamp() and r.get("fim_ts") == fim_dt.timestamp():
         return f"«{titulo}» já estava agendada (briefing e pós-reunião)."
     if r:  # time changed: drop the old runs
-        for chave in ("tarefa_briefing", "tarefa_pos"):
-            if r.get(chave) and agendador.get_task_by_uuid(r[chave]):
-                await agendador.remove_task_by_uuid(r[chave])
+        await _remover_tarefas(r)
     else:
         r = {"evento_id": evento_id.strip()}
         d["reunioes"].append(r)
@@ -343,11 +378,13 @@ async def agendar_reuniao(login: str, evento_id: str, titulo: str, inicio: str, 
     if quando_briefing < ini - dt.timedelta(minutes=5):
         t = PlannedTask.create(name=f"📅 Briefing: {r['titulo']}"[:80], system_prompt=BRIEFING_SISTEMA,
                                prompt=_prompt_briefing(r), plan=TaskPlan.create(todo=[quando_briefing]))
+        _contexto_da_tarefa(t, login)
         await agendador.add_task(t)
         r["tarefa_briefing"] = t.uuid
         feito.append(f"briefing às {quando_briefing.astimezone(_tz()).strftime('%d/%m %H:%M')}")
     t = PlannedTask.create(name=f"📝 Pós-reunião: {r['titulo']}"[:80], system_prompt="Você só faz uma pergunta curta.",
                            prompt=_prompt_pos(r), plan=TaskPlan.create(todo=[fim_dt + DEPOIS_DA_REUNIAO]))
+    _contexto_da_tarefa(t, login)
     await agendador.add_task(t)
     r["tarefa_pos"] = t.uuid
     feito.append(f"pergunta do pós às {(fim_dt + DEPOIS_DA_REUNIAO).astimezone(_tz()).strftime('%H:%M')}")
@@ -400,10 +437,15 @@ def roteiro_falado(texto: str) -> str:
     """The summary rewritten to be heard (~1 min) by Luna; the cleaned text when that fails."""
     import urllib.request
 
-    pedido = ("Reescreva este resumo para ser OUVIDO como áudio de cerca de 1 minuto (no máximo 170 palavras), em "
-              "português do Brasil, falando direto com o Matheus, em tom natural de assistente. Comece com \"Bom dia, "
-              "Matheus\". Sem listas, sem símbolos, sem links; números e horários por extenso quando ajudar. Diga só o "
-              "que importa hoje. Responda só com o texto a ser falado.\n\n" + texto[:6000])
+    pedido = ("Reescreva este resumo como uma mensagem de voz de cerca de 1 minuto (130 a 170 palavras) que uma "
+              "assistente simpática gravaria para o Matheus, em português do Brasil falado — do jeito que se fala, "
+              "não do jeito que se escreve. Regras: comece com \"Bom dia, Matheus!\"; frases curtas, uma ideia por "
+              "frase; ligue os assuntos como numa conversa (\"Primeiro…\", \"Além disso…\", \"E por último…\"); "
+              "vírgulas onde se respira; nada de listas, símbolos, parênteses, links, siglas soletradas ou códigos "
+              "(troque \"ROS-F5-006\" por \"a próxima etapa do IA Business\"); datas e horas como se fala (\"amanhã às "
+              "três da tarde\", \"dia doze\"); valores como se fala (\"cento e vinte e nove reais\"). Diga só o que "
+              "importa hoje e termine com uma frase curta e calorosa. Responda só com o texto a ser falado.\n\n"
+              + texto[:6000])
     body = {"model": "openai.gpt-6-luna", "reasoning": {"effort": "low"}, "input": [{"role": "user", "content": pedido}]}
     try:
         req = urllib.request.Request("http://host.docker.internal:8787/openai/v1/responses", data=json.dumps(body).encode(),
@@ -419,19 +461,32 @@ def roteiro_falado(texto: str) -> str:
     return _falavel(texto)[:1500]
 
 
+ULTIMA_VOZ: dict = {}  # engine/voice of the last voice note (checked by the tests)
+
+# how the voice should say what it would mispronounce (checked by transcribing it back: "IA" came out as "ea")
+PRONUNCIA = [(re.compile(r"\bIA\b"), "I.A."), (re.compile(r"\bIAs\b"), "I.As."), (re.compile(r"\bPDF\b"), "pê dê éfe")]
+
+
+def pronuncia(texto: str) -> str:
+    for padrao, falado in PRONUNCIA:
+        texto = padrao.sub(falado, texto)
+    return texto
+
+
 def audio(texto: str, destino: Path) -> str:
     """Synthesize `texto` (Polly, voice Camila) into an OGG/Opus voice note at `destino`; '' or the error."""
     import base64
     import urllib.request
 
     try:  # the VM's proxy holds the AWS role (Polly); the container has no AWS credentials
-        req = urllib.request.Request("http://host.docker.internal:8787/arquivos/voz", data=json.dumps({"texto": texto}).encode(),
+        req = urllib.request.Request("http://host.docker.internal:8787/arquivos/voz", data=json.dumps({"texto": pronuncia(texto)}).encode(),
                                      headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=120) as r:
             resposta = json.loads(r.read())
         destino.parent.mkdir(parents=True, exist_ok=True)
         mp3 = destino.with_suffix(".mp3")
         mp3.write_bytes(base64.b64decode(resposta["mp3"]))
+        ULTIMA_VOZ.update({"motor": resposta.get("motor", ""), "voz": resposta.get("voz", ""), "texto": texto})
         saida = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(mp3), "-c:a", "libopus", "-b:a", "32k",
                                 str(destino.with_suffix(".ogg"))], capture_output=True, timeout=120)
         mp3.unlink(missing_ok=True)

@@ -154,13 +154,18 @@ def voz(texto: str) -> dict:
 
     if "polly" not in _aws:
         _aws["polly"] = boto3.client("polly", region_name=REGION)
-    try:
-        r = _aws["polly"].synthesize_speech(Text=texto, VoiceId="Camila", LanguageCode="pt-BR", Engine="generative",
-                                            OutputFormat="mp3")
-    except Exception:  # generative unavailable for this text/voice: the neural voice
-        r = _aws["polly"].synthesize_speech(Text=texto, VoiceId="Camila", LanguageCode="pt-BR", Engine="neural",
-                                            OutputFormat="mp3")
-    return {"mp3": base64.b64encode(r["AudioStream"].read()).decode()}
+    # only the generative engine sounds natural in pt-BR (Camila is the one generative pt-BR voice); the neural
+    # one reads like a robot, so there is no silent fallback to it: two tries, then an error (the text still goes)
+    erro = ""
+    for tentativa in range(2):
+        try:
+            r = _aws["polly"].synthesize_speech(Text=texto, VoiceId="Camila", LanguageCode="pt-BR", Engine="generative",
+                                                OutputFormat="mp3", SampleRate="24000")
+            return {"mp3": base64.b64encode(r["AudioStream"].read()).decode(), "motor": "generative", "voz": "Camila"}
+        except Exception as exc:
+            erro = str(exc)[:200]
+            time.sleep(1 + tentativa)
+    return {"error": f"voz generativa indisponível: {erro}"}
 
 
 GCP_WIF = Path("/opt/a0/usr/segredos/vertex_matheus_wif.json")  # external_account config (no secret in it)
