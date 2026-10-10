@@ -94,6 +94,8 @@ Serviços do host (`bedrock_proxy.py`, `ponte_whatsapp.py`): `install -m 755` em
   contas com lembrete, revisão semanal, resumo da manhã em áudio (Polly Camila generative, só generative).
 - **Cofre** (`cofre`): senhas com descrição de uso; o agente usa direto e só para em captcha, 2FA ou senha errada.
 - **Prospecção Raiz Connect** (`prospeccao`) — a frente mais ativa:
+  - o COMO no Instagram vive na skill `infra/vm/skills/prospeccao-instagram/SKILL.md` (instalada em
+    `/opt/a0/usr/skills/`); as rodadas só mandam carregar a skill e seguir a seção certa; pedidos avulsos usam a mesma skill;
   - conta **@raiz.connect** (nunca a pessoal @cardosomatheus1); limites do piloto 8 aquecer / 5 DMs / 5 lembretes
     por dia na 1ª semana, depois 20/12/10;
   - nota do lead 0–100 calculada pelo código a partir das evidências (corte 55);

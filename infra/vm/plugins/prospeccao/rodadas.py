@@ -9,41 +9,26 @@ SIS_BUSCA = ("Você é o prospector da Raiz Connect. Nesta rodada você só NAVE
 
 BUSCAR = """Rodada de busca da prospecção Raiz Connect.
 
-1. Chame `prospeccao` acao "playbook" e leia INTEIRO (as regras mudam; siga a versão de hoje). Depois `prospeccao` acao "contexto" (cotas que cabem hoje, leads com próximo passo devido, @ já conhecidos).
-2. Leads com próximo passo devido (seção "Devem receber"):
-   - «dm_abertura»: abra o perfil de cada um, veja os 3 posts mais recentes NÃO fixados e escreva uma DM no modelo do playbook, alternando A (pergunta sobre como precificam, sem oferta) e B (oferta direta), citando UMA coisa concreta e verdadeira que você viu agora (produto, post, novidade). Nada genérico, sem link. Em `base`, diga exatamente o que você viu e em que post (data) — o revisor confere o texto contra isso.
-   - «dm_lembrete»: escreva o lembrete curto do playbook com o link da calculadora (exatamente https://raizconnect.com.br/materiais/precificacao/calculadora?utm_source=instagram&utm_medium=dm) — ou, para quem vende principalmente no iFood, o do simulador de delivery (exatamente https://raizconnect.com.br/materiais/quanto-sobra-no-delivery?utm_source=instagram&utm_medium=dm) —, diferente para cada pessoa.
-   Siga a ordem do contexto (as maiores notas primeiro): as vagas do dia são poucas.
-3. Leads novos — META: registrar tantos quanto couber na cota de «aquecer» de hoje (até 10). Não pare antes de bater a meta ou de ter examinado pelo menos 30 perfis.
-   Método (repita até a meta):
-   a) abra uma busca: https://www.instagram.com/explore/search/keyword/?q=<termo> com um termo do playbook (ex.: marmitasalvador, marmitafitsalvador, congeladossalvador, docessalvador, bolodepotesalvador, salgadosparafestasalvador, marmitasp, marmitafitsp, confeitariasp, congeladossp, marmitascampinas, confeitariacampinas, docescampinas) — troque de termo quando uma busca secar;
-   b) leia a página (content) e anote os @ dos perfis dos posts — pule os já conhecidos e os já rejeitados (estão no "contexto");
-   c) abra cada perfil (https://www.instagram.com/<@>/) e colete a EVIDÊNCIA da avaliação (seção 1b do playbook): segmento, cidade, seguidores, data do primeiro post NÃO fixado (abra o post e leia a data → ultimo_post AAAA-MM-DD), canais de venda que aparecem (bio, destaques, links), sinais de dor que aparecem nos posts, se há cardápio com preço, se há link de pedido, exclusões que perceber, e do que trata o último post (post_recente). Só anote o que você VIU — evidência inventada é pior que evidência faltando;
-   d) a cada 5 perfis examinados, grave com `prospeccao` acao "registrar" TODOS os que parecem negócio de alimentos na região, com todos os campos de evidência: a ferramenta calcula a nota e recusa sozinha quem fica abaixo de 55 (veja "recusados" e "nota" na resposta). Perfis claramente fora (franquia, pessoal, privado, fora da região, parado) vão em `prospeccao` acao "rejeitar" com motivo curto. A META conta só os CRIADOS.
-   Para cada lead criado, proponha «aquecer» (os de nota maior primeiro). Comentário só se houver algo genuíno e específico a dizer sobre o post_recente (pergunta ou elogio concreto, sem citar a Raiz); senão, texto vazio. Em `base`, diga o post (data e assunto) em que o comentário se apoia.
-4. Mande tudo em UMA chamada `prospeccao` acao "propor" (cada item: lead_id, tipo, texto, variante, base). Aquecer, primeira mensagem e lembrete já estão pré-aprovados pelo Matheus dentro dos limites do dia: o revisor da ferramenta libera os textos bons para a rodada de execução e manda ao celular do Matheus os que ele não liberar. Se a ferramenta recusar algum item, corrija pelo motivo e proponha de novo uma vez; se não der, deixe de fora.
-5. Resposta final: exatamente SEM NOVIDADE (o resumo do dia chega à noite). Só se algo travou (Instagram pedindo login, bloqueio, verificação), escreva "PRECISA DE VOCÊ:" e o que aconteceu."""
+0. Carregue a skill `prospeccao-instagram` (skills_tool load) e siga o método dela; ela tem o COMO no Instagram.
+1. `prospeccao` acao "playbook" (leia inteiro: muda) e acao "contexto" (cotas de hoje, leads com passo devido, @ conhecidos e rejeitados).
+2. Leads com passo devido ("Devem receber"), na ordem do contexto (maiores notas e quem interagiu primeiro):
+   - «dm_abertura»: abra o perfil, veja os 3 posts mais recentes NÃO fixados e escreva no modelo do playbook, alternando A (pergunta sobre como precificam, sem oferta) e B (oferta direta), citando UMA coisa concreta que você viu agora. Sem link. Em `base`, o que viu e em que post (data).
+   - «dm_lembrete»: o lembrete do playbook com o link da calculadora (ou o do simulador de delivery para quem vende no iFood), diferente para cada pessoa.
+3. Leads novos — META: tantos CRIADOS quanto a cota de «aquecer» de hoje (até 10); não pare antes da meta ou de 30 perfis examinados. Método: skill, seções 2 e 3.
+   Para cada lead criado, proponha «aquecer» (maiores notas primeiro); comentário só se houver algo genuíno sobre o post_recente, sem citar a Raiz; em `base`, o post (data e assunto).
+4. Tudo em UMA chamada `prospeccao` acao "propor" (lead_id, tipo, texto, variante, base). Recusou? Corrija pelo motivo e proponha de novo uma vez.
+5. Resposta final: exatamente SEM NOVIDADE. Só se travou (login, bloqueio, verificação, captcha): "PRECISA DE VOCÊ:" e o que aconteceu."""
 
 SIS_EXEC = ("Você executa a prospecção da Raiz Connect pela conta de Instagram da Raiz (nunca pela pessoal do Matheus). Só executa ações que a ferramenta "
             "`prospeccao` entregar como APROVADAS, com o texto exatamente igual. Nada além disso.")
 
 EXECUTAR = """Rodada de execução da prospecção Raiz Connect.
 
-0. CONTA (sempre, antes de tudo) — a conta ativa tem que ser @raiz.connect, NUNCA a pessoal @cardosomatheus1:
-   a) abra https://www.instagram.com/accounts/edit/ — o campo de nome de usuário mostra qual conta está ATIVA;
-   b) se não for raiz.connect: abra https://www.instagram.com/, clique em "Mais" (≡, no canto) ou na foto do perfil → "Trocar de conta" e escolha raiz.connect (ela já foi adicionada neste navegador; não precisa de senha). Depois abra de novo https://www.instagram.com/accounts/edit/ e confirme;
-   c) se a página não carregar, recarregue uma vez; só se raiz.connect NÃO aparecer na lista de "Trocar de conta" (ou pedir senha/código), pare e responda "PRECISA DE VOCÊ: a conta da Raiz saiu do navegador".
-1. RESPOSTAS PRIMEIRO (na conta da Raiz): abra o Direct (https://www.instagram.com/direct/inbox/) e veja as conversas com mensagem nova. Para cada conversa com um @ que está no registro (`prospeccao` acao "contexto" mostra os conhecidos):
-   - leia a conversa; registre com `prospeccao` acao "etapa": "respondeu" (qualquer resposta), "lead" (mandou receita, pediu o cálculo ou topou conversar) ou "descartado" (disse não / pediu para parar) — com `nota` = o que a pessoa disse, em 1–2 frases;
-   - proponha a resposta com `prospeccao` acao "propor" tipo "resposta" (curta, humana, no tom do playbook). Se a conversa chegou em preço/custo/lucro (por exemplo, ela contou como precifica), ofereça as duas portas: a calculadora grátis (ou o simulador de delivery, para quem fala de iFood — links exatos da seção 3 do playbook) ou fazer a conta pra ela com a receita. Se a pessoa mandou uma receita: faça o cálculo de verdade (custo de cada ingrediente pelo preço que ela informou; se faltou preço, pergunte só o que falta) e responda com custo, margem e quanto sobra por unidade depois de embalagem e taxa do iFood (se vender no iFood). Se disse não: agradeça uma vez, sem insistir.
-   Não responda nada direto: só proponha (o Matheus aprova). Conversas com quem não está no registro: ignore.
-   Depois, NOTIFICAÇÕES: abra https://www.instagram.com/accounts/activity/ (se não carregar, clique em "Notificações", o coração no menu da esquerda) — abrir a página NÃO traz o texto: leia o conteúdo com `browser` (action "list" com include_content true, ou o conteúdo da página) — e procure respostas aos comentários da Raiz e menções ("respondeu ao seu comentário", "mencionou você", "replied to your comment", "mentioned you") de @ que estão no registro. Curtida não é resposta: ignore. Para cada resposta: abra o post, leia a resposta e registre com `prospeccao` acao "etapa" com onde: "comentario" (mesmas etapas e nota de cima) e proponha a "resposta" — uma mensagem no Direct, curta e pessoal, que retoma o que a pessoa disse no comentário (sem responder no próprio post). Se a ferramenta disser que a resposta já estava registrada, siga.
-   Por fim, registre o que viu com `prospeccao` acao "conferido": `direct` = quantas conversas têm mensagem nova e de quem; `notificacoes` = as primeiras linhas da página de notificações, copiadas como aparecem; `interagiram` = lista dos @ do registro que seguiram de volta, curtiram ou comentaram algo da Raiz (vão primeiro na fila da mensagem). Sem isso, "proxima" não libera nada.
-2. EXECUÇÃO: chame `prospeccao` acao "proxima" com conta_ativa = o @ que está ativo agora (confira de novo antes de cada ação).
-   - Se vier uma ação: faça EXATAMENTE o que ela diz no Instagram, com o texto aprovado sem mudar nada. Confira na tela que deu certo (a mensagem aparece enviada, o comentário aparece publicado, o botão virou "Seguindo"). Depois chame `prospeccao` acao "resultado" com acao_id, ok e detalhe. Se o Instagram mostrar bloqueio, limite, "tente novamente mais tarde" ou pedir verificação: PARE e mande resultado com bloqueio: true.
-   - Depois de uma ação executada, espere 3 minutos e chame "proxima" de novo. No máximo 3 ações por rodada.
-   - Se vier "NADA AGORA": termine.
-3. Resposta final: exatamente SEM NOVIDADE (respostas e leads já avisam o Matheus pela ferramenta). Só se travou (login, bloqueio, erro que impede seguir), comece com "PRECISA DE VOCÊ:" e diga o que aconteceu."""
+0. Carregue a skill `prospeccao-instagram` (skills_tool load) e siga o método dela.
+1. CONTA: skill, seção 1 — tem que ser @raiz.connect, nunca a pessoal.
+2. RESPOSTAS: skill, seção 5 — Direct e notificações; registre cada resposta com `etapa` (onde: direct|comentario), proponha a `resposta` (vai pro ✅ do Matheus) e registre `conferido` (direct, notificacoes copiadas, interagiram). Sem `conferido`, `proxima` não libera nada.
+3. EXECUÇÃO: skill, seção 4 — `proxima` com conta_ativa; faça exatamente a ação com o texto exato; confira na tela; `resultado`. Espere 3 min entre ações; no máximo 3 por rodada. "NADA AGORA": termine. Bloqueio: pare e mande bloqueio: true.
+4. Resposta final: exatamente SEM NOVIDADE. Só se travou (login, bloqueio, captcha, erro que impede seguir): "PRECISA DE VOCÊ:" e o que aconteceu."""
 
 SEMANA = """Relatório semanal da prospecção Raiz Connect (segunda de manhã). Só leitura.
 
