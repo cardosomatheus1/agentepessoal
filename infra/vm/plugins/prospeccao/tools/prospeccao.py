@@ -42,7 +42,8 @@ def dono(context) -> str:
 
 COMO_EXECUTAR = {
     "aquecer": "Abra o perfil, siga (se ainda não segue), curta 1 ou 2 posts recentes e, se houver texto, comente EXATAMENTE "
-               "esse texto no post mais recente.",
+               "esse texto no post mais recente. No resultado: ok=true se SEGUIU (o aquecimento valeu), mesmo que o comentário "
+               "não tenha saído — diga no detalhe o que saiu e o que não saiu; ok=false só se nem seguir deu certo.",
     "dm_abertura": "Abra o perfil → Mensagem e envie EXATAMENTE este texto (sem mudar nada).",
     "dm_lembrete": "Abra a conversa com esse perfil no Direct e envie EXATAMENTE este texto.",
     "resposta": "Abra a conversa com esse perfil no Direct e envie EXATAMENTE este texto.",

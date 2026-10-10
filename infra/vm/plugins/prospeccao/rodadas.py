@@ -28,7 +28,10 @@ SIS_EXEC = ("Você executa a prospecção da Raiz Connect pela conta de Instagra
 
 EXECUTAR = """Rodada de execução da prospecção Raiz Connect.
 
-0. CONTA: no Instagram, veja qual conta está ATIVA (ícone/menu do perfil). Tem que ser a da Raiz Connect, NUNCA a pessoal @cardosomatheus1 — se estiver na pessoal, troque pelo seletor de contas ("Trocar de conta") antes de qualquer coisa. Se a conta da Raiz não estiver disponível, pare e diga "PRECISA DE VOCÊ: a conta da Raiz não está logada".
+0. CONTA (sempre, antes de tudo) — a conta ativa tem que ser @raiz.connect, NUNCA a pessoal @cardosomatheus1:
+   a) abra https://www.instagram.com/accounts/edit/ — o campo de nome de usuário mostra qual conta está ATIVA;
+   b) se não for raiz.connect: abra https://www.instagram.com/, clique em "Mais" (≡, no canto) ou na foto do perfil → "Trocar de conta" e escolha raiz.connect (ela já foi adicionada neste navegador; não precisa de senha). Depois abra de novo https://www.instagram.com/accounts/edit/ e confirme;
+   c) se a página não carregar, recarregue uma vez; só se raiz.connect NÃO aparecer na lista de "Trocar de conta" (ou pedir senha/código), pare e responda "PRECISA DE VOCÊ: a conta da Raiz saiu do navegador".
 1. RESPOSTAS PRIMEIRO (na conta da Raiz): abra o Direct (https://www.instagram.com/direct/inbox/) e veja as conversas com mensagem nova. Para cada conversa com um @ que está no registro (`prospeccao` acao "contexto" mostra os conhecidos):
    - leia a conversa; registre com `prospeccao` acao "etapa": "respondeu" (qualquer resposta), "lead" (mandou receita, pediu o cálculo ou topou conversar) ou "descartado" (disse não / pediu para parar) — com `nota` = o que a pessoa disse, em 1–2 frases;
    - proponha a resposta com `prospeccao` acao "propor" tipo "resposta" (curta, humana, no tom do playbook). Se a pessoa mandou uma receita: faça o cálculo de verdade (custo de cada ingrediente pelo preço que ela informou; se faltou preço, pergunte só o que falta) e responda com custo, margem e quanto sobra por unidade depois de embalagem e taxa do iFood (se vender no iFood). Se disse não: agradeça uma vez, sem insistir.
