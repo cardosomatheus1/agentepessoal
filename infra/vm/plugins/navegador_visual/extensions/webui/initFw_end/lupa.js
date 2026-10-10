@@ -1,5 +1,6 @@
-// Magnifier for the Browser, Computer and Phone panels: pinch with two fingers (or Ctrl + mouse wheel)
-// to zoom in on the screen and move around; the "100%" chip goes back. Browser and Computer are xpra
+// Finger zoom: the phone's own pinch zoom is turned back on for the whole page, and inside the Browser,
+// Computer and Phone panels a magnifier takes two fingers (or Ctrl + mouse wheel) to zoom in on the
+// remote screen and move around; the "100%" chip goes back. Browser and Computer are xpra
 // pages on our own origin, so the gesture is read inside them and a one-finger tap still clicks. The
 // Phone screen comes from another origin: its "Zoom" button lays a layer over it that takes the
 // gestures until it is turned off.
@@ -242,7 +243,15 @@ function chip(frame) {
   frame.__nvChip = c;
 }
 
+// The UI ships with maximum-scale=1, which turns off the phone's own pinch zoom everywhere.
+function liberarZoomDaPagina() {
+  const meta = document.querySelector('meta[name="viewport"]');
+  const conteudo = "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes";
+  if (meta && meta.content !== conteudo) meta.content = conteudo;
+}
+
 export default async function lupaPaineis() {
+  liberarZoomDaPagina();
   if (!document.getElementById("a0-nv-lupa-css")) {
     const s = document.createElement("style");
     s.id = "a0-nv-lupa-css";
