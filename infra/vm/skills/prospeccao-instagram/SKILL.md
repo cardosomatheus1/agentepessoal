@@ -85,6 +85,8 @@ Antes da primeira: confira as respostas (seção 5) e registre `conferido`. Depo
 
 ## Pedidos avulsos do Matheus
 
-- "Prospecta X / acha leads de Y": seções 2 e 3 com os termos dele, registre e proponha `aquecer`.
+- "Prospecta N X / acha N leads de Y": N é o número de leads que ENCAIXAM (criados pela ferramenta), não de perfis
+  abertos. Siga as seções 2 e 3 trocando de termo até criar N leads ou examinar 30 perfis; registre os que não
+  encaixam como rejeitados; proponha `aquecer` para os criados (se a cota do dia acabou, eles ficam para amanhã).
 - "Responde fulano / o que ele disse?": seção 5 para esse @; proponha a resposta (vai pro ✅ dele).
 - "Como está a prospecção?": `prospeccao` acao "hoje" (dia) ou "metricas" (semana).
