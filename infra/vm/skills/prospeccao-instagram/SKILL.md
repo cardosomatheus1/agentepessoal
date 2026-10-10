@@ -91,7 +91,11 @@ Antes da primeira: confira as respostas (seção 5) e registre `conferido`. Depo
 
 ## 5. Ler respostas (sempre antes de executar)
 
-1. **Direct:** https://www.instagram.com/direct/inbox/ — conversas com mensagem nova (inclusive "Solicitações").
+1. **Direct — conversa por conversa (confiável):** o `contexto` lista "Conversas no Direct para conferir" (quem
+   recebeu mensagem nossa). Para cada uma: abra https://www.instagram.com/<@>/ → botão **Mensagem** → leia o
+   conteúdo da conversa. Se a ÚLTIMA mensagem for da pessoa (não nossa), é resposta. A tela da caixa de entrada
+   (/direct/inbox/) NÃO mostra a lista como texto: nunca conclua "caixa vazia" por ela. Confira também
+   https://www.instagram.com/direct/requests/ abrindo cada pedido de mensagem de @ do registro.
 2. **Notificações:** https://www.instagram.com/accounts/activity/ (ou o coração "Notificações" no menu) — procure
    "respondeu ao seu comentário", "mencionou você", "replied to your comment", "mentioned you". Curtida não é
    resposta.

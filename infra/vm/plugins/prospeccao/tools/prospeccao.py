@@ -226,6 +226,20 @@ class Prospeccao(Tool):
         if acao == "conta":
             erro = p.definir_conta(login, texto or conta_ativa)
             return r(erro or f"Prospecção configurada para @{p.conta(login)}.")
+        if acao == "direct_script":
+            return r("Rode este script com `browser` action \"evaluate\" numa aba em https://www.instagram.com/ (conta @raiz.connect) e "
+                     "passe o JSON INTEIRO para `prospeccao` acao \"ler_direct\" com `dados` = o texto.\n\n" + p.SCRIPT_DIRECT)
+        if acao == "ler_direct":
+            out = p.processar_direct(login, kwargs.get("dados") or texto)
+            for n in out["novas"]:
+                p.enviar(login, f"💬 *{n['nome']}* (@{n['handle']}) respondeu no Direct\n\n«{n['texto'][:500]}»\n\n"
+                         "A resposta que eu sugerir chega em seguida para o seu ✅.\n" + n["url"], tipo="urgente", ponte=ponte())
+            if out["erros"] and not out["conversas"]:
+                return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Leia pela tela (skill, seção 5).")
+            resumo = (f"{out['conversas']} conversas lidas pela API; respostas novas de leads: "
+                      + (", ".join("@" + n["handle"] for n in out["novas"]) or "nenhuma"))
+            return r(json.dumps(out, ensure_ascii=False) + f"\nUse em `conferido` → direct: \"{resumo}\". Para cada resposta nova, "
+                     "proponha a `resposta` (vai pro ✅ do Matheus). O Matheus JÁ foi avisado: não chame `etapa` para essas.")
         if acao == "conferido":
             inter = kwargs.get("interagiram") or []
             inter = inter if isinstance(inter, list) else [h.strip() for h in str(inter).split(",") if h.strip()]
@@ -240,4 +254,4 @@ class Prospeccao(Tool):
             return r("Aprovação automática " + ("LIGADA" if ligado else "DESLIGADA") + " (aquecer, primeira mensagem e lembrete).")
         if acao == "metricas":
             return r(json.dumps(p.metricas(login, int(dias or 7)), ensure_ascii=False))
-        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | buscar_script | avaliar_api | token_meta | perfis_script | avaliar_perfis | etapa | conferido | editar | hoje | auto | metricas")
+        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | direct_script | ler_direct | buscar_script | avaliar_api | token_meta | perfis_script | avaliar_perfis | etapa | conferido | editar | hoje | auto | metricas")

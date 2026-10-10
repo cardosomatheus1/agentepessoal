@@ -407,6 +407,56 @@ def descobrir_perfis(login: str, handles: list) -> list:
     return out
 
 
+SCRIPT_DIRECT = """(async () => {
+  const pegar = async (url) => {
+    try {
+      const r = await fetch(url, {headers: {'x-ig-app-id': '936619743392459'}, credentials: 'include'});
+      return r.ok ? await r.json() : {erro: 'http ' + r.status};
+    } catch (e) { return {erro: String(e).slice(0, 80)}; }
+  };
+  const resumir = (j) => {
+    const caixa = j.inbox || {};
+    return {erro: j.erro || '', threads: (caixa.threads || []).slice(0, 40).map(t => ({
+      usuarios: (t.users || []).map(u => u.username),
+      itens: (t.items || []).slice(0, 6).map(i => ({de_mim: String(i.user_id) === String(j.viewer ? j.viewer.pk : ''),
+        tipo: i.item_type, texto: (i.text || '').slice(0, 300), ts: Math.floor((i.timestamp || 0) / 1e6)}))}))};
+  };
+  const principal = await pegar('/api/v1/direct_v2/inbox/?persistentBadging=true&limit=40&thread_message_limit=6');
+  await new Promise(f => setTimeout(f, 1500));
+  const pedidos = await pegar('/api/v1/direct_v2/pending_inbox/?limit=40&thread_message_limit=6');
+  return JSON.stringify({principal: resumir(principal), pedidos: resumir(pedidos)});
+})()"""
+
+
+def processar_direct(login: str, dados) -> dict:
+    """Reads the Direct inbox JSON (from SCRIPT_DIRECT): every known lead whose newest message is theirs is marked
+    "respondeu" with what they wrote (recorded once per message). Returns the new answers and a count for conferido."""
+    j = json.loads(dados) if isinstance(dados, str) else (dados or {})
+    d = carregar(login)
+    por_handle = {l["handle"]: l for l in d["leads"]}
+    novas, conversas, erros = [], 0, []
+    for pasta in ("principal", "pedidos"):
+        caixa = j.get(pasta) or {}
+        if caixa.get("erro"):
+            erros.append(f"{pasta}: {caixa['erro']}")
+        for t in caixa.get("threads") or []:
+            conversas += 1
+            itens = [i for i in t.get("itens") or [] if i.get("tipo") in ("text", "link", "media_share", "voice_media", "clip", "media")]
+            if not itens or itens[0].get("de_mim"):
+                continue  # newest message is ours: nothing new from them
+            for u in t.get("usuarios") or []:
+                lead = por_handle.get(normalizar(u))
+                if not lead or lead["etapa"] in ("cliente", "descartado"):
+                    continue
+                texto = itens[0].get("texto") or f"({itens[0].get('tipo')})"
+                etapa = lead["etapa"] if lead["etapa"] in ("respondeu", "lead", "demo", "teste") else "respondeu"
+                r = mudar_etapa(login, lead["id"], etapa, texto, "direct")
+                if r and r.get("novidade"):
+                    novas.append({"lead_id": lead["id"], "handle": lead["handle"], "nome": lead["nome"], "texto": texto,
+                                  "pasta": pasta, "url": lead["url"]})
+    return {"novas": novas, "conversas": conversas, "erros": erros}
+
+
 def montar_script(handles: list) -> str:
     hs = [normalizar(str(h)) for h in handles if normalizar(str(h))][:5]  # 5 x 3 s: under the 30 s evaluate limit, gentle
     return SCRIPT_PERFIS.replace("__HANDLES__", json.dumps(hs))
@@ -1083,6 +1133,11 @@ def resumo_contexto(login: str) -> str:
             linhas.append(f"\n## Devem receber «{tipo}» agora ({len(lista)})")
             linhas += [f"- [{l['id']}] @{l['handle']} — {l['nome']} ({l['segmento']}, {l['cidade']}; nota {l.get('nota', '—')}); motivo: {l['motivo'][:120]}"
                        + (f"; já recebeu: {l['historico'][-1]['texto'][:160]}" if l["historico"] else "") for l in lista[:25]]
+    conversas = [l for l in d["leads"] if l["etapa"] in ("abordado", "lembrado", "respondeu", "lead", "demo")]
+    if conversas:
+        linhas.append(f"\n## Conversas no Direct para conferir ({len(conversas)}) — abra cada uma (perfil → Mensagem)")
+        linhas += [f"- [{l['id']}] @{l['handle']} ({l['etapa']}); última nossa: {l['historico'][-1]['texto'][:80] if l['historico'] else ''}"
+                   for l in conversas[:20]]
     conhecidos = sorted(l["handle"] for l in d["leads"])
     linhas.append(f"\n## Já conhecidos ({len(conhecidos)}) — não registre de novo\n" + (", ".join(conhecidos[-400:]) or "(nenhum)"))
     rej = d.get("rejeitados") or {}

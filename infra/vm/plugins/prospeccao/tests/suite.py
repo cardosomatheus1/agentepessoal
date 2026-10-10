@@ -458,6 +458,26 @@ class Suite:
         finally:
             p._cofre, p._graph = orig_c, orig_g
 
+    def t_ler_direct_pela_api(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("cliente.dm")
+        self._executar(lid, "dm_abertura", DM_A)
+        outro = self._lead("so.aquecido")
+        dados = {"principal": {"erro": "", "threads": [
+                    {"usuarios": ["cliente.dm"], "itens": [{"de_mim": False, "tipo": "text", "texto": "Opa! Quanto custa?", "ts": 1},
+                                                          {"de_mim": True, "tipo": "text", "texto": "Oi, Ana!", "ts": 0}]},
+                    {"usuarios": ["desconhecido"], "itens": [{"de_mim": False, "tipo": "text", "texto": "oi", "ts": 1}]}]},
+                 "pedidos": {"erro": "", "threads": [
+                    {"usuarios": ["so.aquecido"], "itens": [{"de_mim": True, "tipo": "text", "texto": "nossa msg", "ts": 1}]}]}}
+        out = p.processar_direct(LOGIN, json.dumps(dados))
+        eq([n["handle"] for n in out["novas"]], ["cliente.dm"], f"só o lead que respondeu por último: {out}")
+        eq(out["conversas"], 3, "conta todas as conversas lidas")
+        lead = p._lead(p.carregar(LOGIN), lid)
+        eq(lead["etapa"], "respondeu", "virou respondeu")
+        eq(p._lead(p.carregar(LOGIN), outro)["etapa"], "novo", "quem não respondeu não muda")
+        eq(p.processar_direct(LOGIN, json.dumps(dados))["novas"], [], "a mesma resposta não avisa duas vezes")
+
     def t_avaliacao_rapida_de_perfis(self):
         p = self.p
         self.em(self.hora(11))

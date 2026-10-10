@@ -93,6 +93,21 @@ O navegador do agente acumulava abas de todas as conversas e rodadas (75 process
   (tudo sobe sozinho; o endereço do agente muda e é atualizado em `/agentepessoal/agent-url`). Depois confira as
   rotinas: as que estavam rodando no reboot podem falhar uma vez (o proxy sobe depois).
 
+## Prospecção: velocidade e leitura de respostas (estado de 10/10, noite)
+
+- **Achar contas:** `buscar_script` (busca do Instagram por termo, numa chamada) — funciona.
+- **Avaliar:** `perfis_script` (5 perfis por chamada, 3 s entre elas) — em 10/10 o Instagram devolveu 429 depois de um
+  dia de muito uso; a ferramenta pausa 15 min e o agente cai para abrir os perfis. Conferir nas rodadas de 11/10.
+- **API oficial (business discovery):** código pronto (`avaliar_api`, `token_meta`), app **"Raiz Prospecção"** criado
+  (ID 1616408683299666) com pages_show_list, pages_read_engagement e instagram_basic. Falta: a Página Raiz Connect
+  pertence ao portfólio e só aparece com `business_management`, que esse tipo de app não oferece — precisa de um app
+  do tipo "Empresa" com Login do Facebook para Empresas, ou adicionar o Matheus como admin direto da Página.
+- **Respostas no Direct:** a tela da caixa de entrada não entrega a lista como texto e a API web do Direct deu 404.
+  Método que funciona (testado): o `contexto` lista as conversas a conferir e o agente abre cada uma (perfil →
+  Mensagem). Notificações (respostas em comentários) são lidas pela página de notificações.
+- **WhatsApp do agente:** token invalidado pelo Facebook (sessão redefinida) foi trocado em 10/10; vale até 09/12/2026.
+- **Rotinas presas após reboot:** o plugin `limpeza` volta para "idle" rotinas "running" há mais de 90 min sem trabalho vivo.
+
 ## Rotinas agendadas do agente (10/10)
 
 | Id | Nome | Quando (America/Bahia) |
