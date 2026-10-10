@@ -35,6 +35,9 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
 - O navegador do agente está logado no claude.ai como sejaorbyte; a rotina 2FQESGed (acompanhar o Claude Code)
   vigiava a conta antiga e passa a ver a conta nova.
 - IA Business: ver o branch `claude/handoff-conta-nova` do repositório `cardosomatheus1/aibusiness`.
+- Máquina de build do IA Business: `infra/operador/vmcmd.py` serve com `VM_ID=i-08adac4830ec57e5a` (ros-dev-construcao,
+  usuário `ec2-user`). A Main Opus roda no tmux `opus` (`/home/ec2-user/opus_rc.sh`, sessão única na árvore do
+  principal); se a máquina religar, subir de novo esse tmux e mandar o Prompt A (detalhes no handoff do aibusiness).
 
 ## O que a sessão nova precisa ter
 
