@@ -3,6 +3,7 @@
 // out/in (bigger remote screen drawn smaller) plus a bar that types with the device's own keyboard.
 import { store as browser } from "/plugins/_browser/webui/browser-store.js";
 import { getNamespacedClient } from "/js/websocket.js";
+import { callJsonApi } from "/js/api.js";
 
 const websocket = getNamespacedClient("/ws");
 const ZOOMS = [1, 1.25, 1.5, 2, 2.5];
@@ -80,7 +81,10 @@ function aplicarTecladoNoFrame() {
   for (const frame of document.querySelectorAll(FRAMES_XPRA)) {
     if (!frame.__nvLoad) {
       frame.__nvLoad = true;
-      frame.addEventListener("load", () => setTimeout(aplicarTecladoNoFrame, 300));
+      frame.addEventListener("load", () => setTimeout(() => {
+        aplicarTecladoNoFrame();
+        if (frame.classList.contains("browser-interactive-frame")) ouvirToques(frame);
+      }, 300));
     }
     try {
       const doc = frame.contentDocument;
@@ -131,6 +135,105 @@ async function enviar(payload) {
     text: "",
     ...payload,
   });
+}
+
+// Phone keyboard: a tap that lands on a text field of the page raises the phone's own keyboard
+// (the page itself is only a picture of the agent's browser, so nothing native would open), and what
+// is typed goes to that field; a tap elsewhere, or the phone's Back, puts it away. The hidden field
+// keeps a one-character sentinel so Backspace still fires when it is "empty", and every change is sent
+// as a diff, which also covers word prediction and autocorrect.
+const TOQUE = globalThis.matchMedia?.("(pointer: coarse)");
+const SENTINELA = "\u00a0";
+let nativo = null;
+let enviado = "";
+let compondo = false;
+let fila = Promise.resolve();
+let toques = 0;
+
+function mandar(payload) {
+  fila = fila.then(() => enviar(payload)).catch(() => {});
+}
+
+function zerarCampo() {
+  enviado = "";
+  nativo.value = SENTINELA;
+  try { nativo.setSelectionRange(1, 1); } catch {}
+}
+
+function sincronizar() {
+  const atual = nativo.value;
+  const antes = SENTINELA + enviado;
+  let p = 0;
+  while (p < antes.length && p < atual.length && antes[p] === atual[p]) p++;
+  for (let i = 0; i < antes.length - p; i++) mandar({ key: "Backspace" });
+  const novo = atual.slice(p);
+  if (novo) mandar({ text: novo });
+  if (!atual.startsWith(SENTINELA)) { if (!compondo) zerarCampo(); else enviado = atual; return; }
+  enviado = atual.slice(1);
+  if (!compondo && enviado.length > 80) zerarCampo();
+}
+
+function campoNativo() {
+  if (nativo) return nativo;
+  nativo = document.createElement("input");
+  nativo.id = "nv-teclado-nativo";
+  nativo.type = "text";
+  for (const [k, v] of Object.entries({ autocomplete: "off", autocorrect: "off", autocapitalize: "none", spellcheck: "false", "aria-hidden": "true" })) nativo.setAttribute(k, v);
+  Object.assign(nativo.style, { position: "fixed", left: "0", bottom: "0", width: "1px", height: "1px", opacity: "0",
+    border: "0", padding: "0", fontSize: "16px", zIndex: "-1", caretColor: "transparent" });
+  nativo.addEventListener("compositionstart", () => { compondo = true; });
+  nativo.addEventListener("compositionend", () => { compondo = false; sincronizar(); });
+  nativo.addEventListener("input", sincronizar);
+  nativo.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      mandar({ key: e.key });
+      zerarCampo();
+    }
+    e.stopPropagation();
+  });
+  document.body.appendChild(nativo);
+  return nativo;
+}
+
+async function depoisDoToque() {
+  const meu = ++toques;
+  await new Promise((r) => setTimeout(r, 250));
+  const contextId = browser.normalizeContextId?.(browser.activeBrowserContextId || browser.contextId);
+  if (!contextId || !browser.activeBrowserId) return;
+  let foco = {};
+  try {
+    foco = await callJsonApi("/plugins/navegador_visual/foco", { context_id: contextId, browser_id: browser.activeBrowserId });
+  } catch {}
+  if (meu !== toques) return;
+  if (foco?.editavel) {
+    const c = campoNativo();
+    const tipo = foco.tipo === "password" ? "password" : "text";
+    if (c.type !== tipo) c.type = tipo;
+    zerarCampo();
+    c.focus({ preventScroll: true });
+  } else if (nativo && document.activeElement === nativo) {
+    nativo.blur();
+  }
+}
+
+// One-finger taps inside the xpra page of the Browser panel.
+function ouvirToques(frame) {
+  if (!TOQUE?.matches) return;
+  let win;
+  try { win = frame.contentWindow; if (!win?.document) return; } catch { return; }
+  if (win.__nvToque) return;
+  win.__nvToque = true;
+  let ini = null;
+  win.addEventListener("pointerdown", (e) => {
+    ini = e.isPrimary && e.pointerType !== "mouse" ? { x: e.clientX, y: e.clientY, t: Date.now() } : null;
+  }, true);
+  win.addEventListener("pointerup", (e) => {
+    if (!ini || !e.isPrimary) return;
+    const parado = Math.hypot(e.clientX - ini.x, e.clientY - ini.y) < 12 && Date.now() - ini.t < 700;
+    ini = null;
+    if (parado) depoisDoToque();
+  }, true);
 }
 
 function botao(icone, titulo, onClick, classe = "") {
@@ -246,6 +349,7 @@ export default async function navegadorVisual() {
   const varrer = () => {
     agendado = false;
     for (const panel of document.querySelectorAll(".browser-panel")) montar(panel);
+    for (const frame of document.querySelectorAll(".browser-interactive-frame")) ouvirToques(frame);
     for (const modal of document.querySelectorAll(".modal-inner.office-modal")) montarComputador(modal);
     aplicarZoomNoPainel();
     aplicarTecladoNoFrame();

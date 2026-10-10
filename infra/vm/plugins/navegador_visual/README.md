@@ -11,6 +11,9 @@ Ajusta os painéis **Navegador**, **Computador** e **Celular** sem alterar os pl
 - **Lupa (Navegador, Computador e Celular):** dois dedos ampliam e movem a tela (no PC, Ctrl + rodinha);
   o selo `− 150% + ⟲` aparece quando ampliado e volta ao normal. No Celular a tela vem de outro endereço,
   então o botão `🔍 Zoom` liga uma camada que recebe os gestos (um dedo move); desligue para tocar no celular.
+- **Teclado do celular ao tocar num campo (Navegador):** um toque na tela pergunta ao navegador do agente
+  (`api/foco.py`) se o foco caiu num campo de texto; se sim, o teclado do próprio celular sobe e o que se digita
+  vai para esse campo (inclusive previsão de palavras e corretor); tocar fora ou em Voltar o recolhe.
 - **Digitar:** o botão de lápis abre uma barra embaixo; o texto vai para o campo focado na página com o
   teclado do próprio celular/PC, com botões de Enter, apagar e Tab.
 

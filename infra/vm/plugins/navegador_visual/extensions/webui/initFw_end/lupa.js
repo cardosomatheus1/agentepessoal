@@ -227,6 +227,8 @@ function chip(frame) {
   if (frame.__nvChip?.isConnected) return;
   const host = frame.parentElement;
   if (!host) return;
+  // a reloaded viewer is a new frame: drop the chip left behind by the old one
+  for (const velho of host.querySelectorAll(".nv-lupa-chip")) if (!velho.__frame?.isConnected) velho.remove();
   if (getComputedStyle(host).position === "static") host.style.position = "relative";
   const c = document.createElement("div");
   c.className = "nv-lupa-chip";
@@ -240,6 +242,7 @@ function chip(frame) {
   });
   for (const t of ["pointerdown", "touchstart", "wheel"]) c.addEventListener(t, (ev) => ev.stopPropagation());
   host.appendChild(c);
+  c.__frame = frame;
   frame.__nvChip = c;
 }
 
