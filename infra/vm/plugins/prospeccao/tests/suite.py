@@ -5,6 +5,7 @@ import asyncio
 import datetime as dt
 import importlib.util
 import json
+import re
 import sys
 import time
 import traceback
@@ -95,9 +96,14 @@ class Suite:
         self.limpar()
         return {"passou": sum(r["ok"] for r in self.resultados), "total": len(self.resultados), "resultados": self.resultados}
 
+    def _dia(self, dias_atras=0):
+        return (dt.datetime.fromtimestamp(self.p.agora(), self.p._tz()).date() - dt.timedelta(days=dias_atras)).isoformat()
+
     def _lead(self, handle="marmitasdaana", **extra):
         base = {"canal": "instagram", "handle": handle, "nome": "Marmitas da Ana", "segmento": "marmitaria",
-                "cidade": "Salvador", "motivo": "marmitas fit por encomenda, cardápio semanal com preços"}
+                "cidade": "Salvador", "motivo": "marmitas fit por encomenda, cardápio semanal com preços",
+                "seguidores": "3.2k", "ultimo_post": self._dia(2), "canais": ["encomenda", "whatsapp"],
+                "sinais": ["kits"], "cardapio": True, "post_recente": "marmita de frango com batata-doce"}
         r = self.p.registrar(LOGIN, [{**base, **extra}])
         return r["criados"][0]["id"] if r["criados"] else None
 
@@ -129,6 +135,213 @@ class Suite:
         ok(r["recusados"], "canal fora do playbook")
         eq(len(p.carregar(LOGIN)["leads"]), 1, "um lead só")
         eq(p.carregar(OUTRO)["leads"], [], "isolado por pessoa")
+
+    # ------------------------------------------------------------------ lead score
+    def t_nota_rubrica(self):
+        p = self.p
+        self.em(self.hora(11))
+        r = p.registrar(LOGIN, [{"canal": "instagram", "handle": "topo", "nome": "Topo", "segmento": "Marmitaria fit",
+                                 "cidade": "Salvador - BA", "motivo": "m", "seguidores": "3,2 mil", "ultimo_post": self._dia(3),
+                                 "canais": ["ifood", "encomenda", "whatsapp", "telepatia"], "sinais": ["reajuste", "kits", "inventado"],
+                                 "cardapio": True, "link_pedido": True}])
+        eq(r["criados"][0]["nota"], 95, f"25+15+15+10+10+10+10 (desconhecidos não contam): {p.carregar(LOGIN)['leads'][0]['avaliacao']}")
+        eq(r["criados"][0]["faixa"], "quente", "95 é quente")
+        lead = p.carregar(LOGIN)["leads"][0]
+        eq(lead["avaliacao"]["partes"]["canais"], 10, "3 canais = 9 +1")
+        eq(lead["evidencias"]["ultimo_post"], self._dia(3), "evidência guardada")
+        r = p.registrar(LOGIN, [{"canal": "instagram", "handle": "medio", "nome": "Médio", "segmento": "confeitaria",
+                                 "cidade": "Campinas", "motivo": "m", "seguidores": "18,9 mil", "ultimo_post": self._dia(12)}])
+        ok(r["recusados"] and "nota 54" in r["recusados"][0]["motivo"], f"54 fica abaixo de 55: {r}")
+        eq(p._numero("18,9 mil"), 18900, "18,9 mil")
+        eq(p._numero("2.194"), 2194, "2.194")
+        eq(p._numero("33.3k"), 33300, "33.3k")
+        eq(p._numero(816), 816, "número")
+
+    def t_nota_exclusoes_e_cortes(self):
+        p = self.p
+        self.em(self.hora(11))
+        boa = {"canal": "instagram", "nome": "X", "segmento": "marmitaria", "cidade": "Salvador", "motivo": "m",
+               "seguidores": "2000", "ultimo_post": self._dia(1)}
+        casos = [({"ultimo_post": self._dia(40)}, "parado"), ({"seguidores": "120"}, "pequeno"),
+                 ({"seguidores": "80 mil"}, "grande"), ({"cidade": "Recife"}, "região"), ({"exclusoes": ["franquia"]}, "franquia"),
+                 ({"exclusoes": ["curso"]}, "parceiro"), ({"segmento": "pet shop"}, "segmento"), ({"ultimo_post": ""}, "último post"),
+                 ({"ultimo_post": "ontem"}, "último post")]
+        for i, (mudar, chave) in enumerate(casos):
+            r = p.registrar(LOGIN, [{**boa, "handle": f"fora{i}", **mudar}])
+            ok(not r["criados"] and r["recusados"] and chave in r["recusados"][0]["motivo"], f"{chave}: {r}")
+        d = p.carregar(LOGIN)
+        eq(d["leads"], [], "nenhum virou lead")
+        eq(len(d["rejeitados"]), len(casos), "todos anotados como examinados (não voltam por 60 dias)")
+        ok("fora0" in p.resumo_contexto(LOGIN), "contexto mostra os recusados pela nota")
+
+    def t_ordem_por_nota(self):
+        p = self.p
+        self.em(self.hora(11))
+        fraco = self._lead("fraco", segmento="padaria", seguidores="400", sinais=["kits"], canais=["loja", "delivery", "whatsapp"],
+                           ultimo_post=self._dia(20))  # 15+8+6+10+10+5+5 = 59
+        forte = self._lead("forte", link_pedido=True, sinais=["reajuste", "insumo", "kits"])
+        notas = {l["handle"]: l["nota"] for l in p.carregar(LOGIN)["leads"]}
+        ok(notas["forte"] > notas["fraco"] >= p.NOTA_MINIMA, f"notas {notas}")
+        eq([l["id"] for l in p.devidos(LOGIN)["aquecer"]], [forte, fraco], "maior nota primeiro na fila")
+        ok("nota " in p.resumo_contexto(LOGIN), "contexto mostra a nota")
+
+    # ------------------------------------------------------------------ pre-approved (reviewer)
+    def _revisor(self, reprovar=(), erro=False, lixo=False):
+        chamadas = []
+
+        def fake(pedido):
+            ids = re.findall(r"## Item (\w+) — ", pedido)
+            chamadas.append({"ids": ids, "pedido": pedido})
+            if erro:
+                raise TimeoutError("sem rede")
+            if lixo:
+                return "não sei"
+            return json.dumps({"itens": [{"id": i, "aprovado": i not in reprovar, "motivo": "ok" if i not in reprovar else "cita post que não existe"}
+                                         for i in ids]})
+        self.p.revisor = fake
+        return chamadas
+
+    def _aquecido(self, handle):
+        lid = self._lead(handle)
+        d = self.p.carregar(LOGIN)
+        l = self.p._lead(d, lid)
+        l["etapa"], l["atualizado"] = "aquecido", l["atualizado"] - 3 * 86400
+        self.p.salvar(LOGIN, d)
+        return lid
+
+    def t_auto_aprova_com_revisor(self):
+        p = self.p
+        self.em(self.hora(10))
+        p.definir_auto(LOGIN, True)
+        chamadas = self._revisor()
+        try:
+            a1, a2, a3 = self._lead("um"), self._lead("dois"), self._aquecido("tres")
+            p.mudar_etapa(LOGIN, a2, "respondeu", "quero saber mais")
+            out = p.propor(LOGIN, [{"lead_id": a1, "tipo": "aquecer", "texto": "Que capricho nessa marmita de frango! Sai mais no almoço ou no jantar?",
+                                    "base": "post de ontem: marmita de frango"},
+                                   {"lead_id": a3, "tipo": "dm_abertura", "texto": DM_A},
+                                   {"lead_id": a2, "tipo": "resposta", "texto": "Oi! Que bom que gostou. Me manda a receita de uma marmita e o preço que eu faço a conta. — Matheus"}])
+            eq(sorted(a["tipo"] for a in out["automaticas"]), ["aquecer", "dm_abertura"], f"pré-aprovadas: {out}")
+            eq([a["tipo"] for a in out["propostas"]], ["resposta"], "resposta continua com o Matheus")
+            eq(len(chamadas), 1, "uma chamada ao revisor para o lote")
+            eq(len(chamadas[0]["ids"]), 2, "resposta não vai ao revisor automático")
+            ok("post de ontem: marmita de frango" in chamadas[0]["pedido"] and "Playbook de prospecção" in chamadas[0]["pedido"],
+               "revisor recebe o que o agente viu e o playbook")
+            d = p.carregar(LOGIN)
+            auto = [a for a in d["acoes"] if a.get("auto")]
+            ok(all(a["estado"] == "aprovada" and a.get("decidida") for a in auto), "aprovadas e com hora")
+            d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+            p.salvar(LOGIN, d)
+            a, motivo = p.proxima(LOGIN, "raizconnect")
+            ok(a and a.get("auto"), f"execução pega a pré-aprovada ({motivo})")
+
+            class Ctx:
+                dados = {}
+                def set_data(self, k, v): self.dados[k] = v
+                def get_data(self, k): return self.dados.get(k)
+            c = Ctx()
+            p.liberar(c, a)
+            ok("pré-aprovada" in c.get_data("_aprovacoes_liberadas")["motivo"], "revisor de aprovações vê que é pré-aprovada")
+            # follow/like without text: no reviewer call needed
+            chamadas.clear()
+            out = p.propor(LOGIN, [{"lead_id": self._lead("quatro"), "tipo": "aquecer", "texto": ""}])
+            eq(len(out["automaticas"]), 1, "seguir e curtir sem texto passa direto")
+            eq(chamadas, [], "sem texto, sem revisor")
+        finally:
+            p.revisor = None
+
+    def t_auto_revisor_reprova_ou_falha(self):
+        p = self.p
+        self.em(self.hora(10))
+        p.definir_auto(LOGIN, True)
+        try:
+            a, b = self._aquecido("aa1"), self._aquecido("bb1")
+            # first, a reviewer that rejects one item
+            self._revisor(reprovar=())
+            prim = p.propor(LOGIN, [{"lead_id": a, "tipo": "dm_abertura", "texto": DM_A}])
+            ok(prim["automaticas"], "a primeira passa")
+            texto_b = TEXTOS[1].format(n="Bia")
+            ids_antes = {x["id"] for x in p.carregar(LOGIN)["acoes"]}
+            self.p.revisor = lambda pedido: json.dumps({"itens": [{"id": i, "aprovado": False, "motivo": "cita escondidinho que não aparece no perfil"}
+                                                                  for i in re.findall(r"## Item (\w+) — ", pedido)]})
+            out = p.propor(LOGIN, [{"lead_id": b, "tipo": "dm_abertura", "texto": texto_b}])
+            eq(out["automaticas"], [], "reprovada não sai sozinha")
+            eq(len(out["propostas"]), 1, "vai ao Matheus")
+            nova = next(x for x in p.carregar(LOGIN)["acoes"] if x["id"] not in ids_antes)
+            eq(nova["estado"], "proposta", "fica esperando o ✅")
+            ok("escondidinho" in nova["revisao"], "com o motivo do revisor")
+            for modo in ({"erro": True}, {"lixo": True}):
+                p.decidir(LOGIN, nova["id"], "pular")
+                self._revisor(**modo)
+                out = p.propor(LOGIN, [{"lead_id": b, "tipo": "dm_abertura", "texto": texto_b + " "}])
+                eq(out["automaticas"], [], f"revisor {modo}: falha fechada")
+                ok(out["propostas"] and out["propostas"][0]["revisao"], f"motivo registrado ({modo})")
+                nova = out["propostas"][0]
+        finally:
+            p.revisor = None
+
+    def t_auto_respeita_limites_e_desligado(self):
+        p = self.p
+        self.em(self.hora(10))
+        p.definir_auto(LOGIN, True)
+        chamadas = self._revisor()
+        try:
+            lids = [self._lead(f"lim{i}") for i in range(10)]
+            out = p.propor(LOGIN, [{"lead_id": l, "tipo": "aquecer", "texto": ""} for l in lids])
+            eq(len(out["automaticas"]), p.LIMITE_PILOTO["aquecer"], "só até o limite do dia (piloto)")
+            eq(len(out["recusadas"]), 10 - p.LIMITE_PILOTO["aquecer"], "o resto é recusado pelo limite")
+            ok(all("limite" in r["motivo"] for r in out["recusadas"]), "motivo é o limite")
+            d = p.carregar(LOGIN)
+            d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+            p.salvar(LOGIN, d)
+            feitas = 0
+            for _ in range(12):
+                a, _m = p.proxima(LOGIN, "raizconnect")
+                if not a:
+                    break
+                p.resultado(LOGIN, a["id"], True, "ok")
+                feitas += 1
+                self.em(self.relogio + p.INTERVALO + 1)
+            eq(feitas, p.LIMITE_PILOTO["aquecer"], "execução também para no limite")
+            p.definir_auto(LOGIN, False)
+            chamadas.clear()
+            self.em(self.relogio + 86400)
+            out = p.propor(LOGIN, [{"lead_id": self._lead("manual1"), "tipo": "aquecer", "texto": "Esse bolo de pote ficou lindo! Qual sabor sai mais?"}])
+            ok("automaticas" not in out and out["propostas"], "desligado: tudo vai ao Matheus")
+            eq(chamadas, [], "desligado: revisor nem é chamado")
+        finally:
+            p.revisor = None
+
+    # ------------------------------------------------------------------ end-of-day summary
+    def t_resumo_hoje(self):
+        p = self.p
+        self.em(self.hora(10))
+        eq(p.resumo_hoje(LOGIN), "", "dia vazio: nada a mandar")
+        a = self._lead("resumo1")
+        self._executar(a, "aquecer", "Que capricho nessa marmita! Vocês entregam no fim de semana também?")
+        b = self._aquecido("resumo2")
+        self.em(self.relogio + p.INTERVALO + 1)
+        self._executar(b, "dm_abertura", DM_A)
+        p.mudar_etapa(LOGIN, b, "respondeu", "quanto custa?")
+        p.registrar(LOGIN, [{"canal": "instagram", "handle": "parado", "nome": "P", "segmento": "marmitaria", "cidade": "Salvador",
+                             "motivo": "m", "seguidores": "900", "ultimo_post": self._dia(90)}])
+        txt = p.resumo_hoje(LOGIN)
+        ok("Responderam" in txt and "@resumo2" in txt, f"respostas primeiro: {txt}")
+        ok(txt.index("Responderam") < txt.index("Feito hoje"), "respostas antes do resto")
+        ok("1 aquecidos" in txt and "1 primeiras mensagens" in txt, f"contagem do dia: {txt}")
+        ok("Oi, Ana!" in txt, "mostra a DM que saiu")
+        ok("leads novos" in txt and "nota " in txt and "1 perfis examinados e descartados" in txt, f"novos com nota e descartados: {txt}")
+        ok(len(txt) < 1500, "curto")
+        self.em(self.relogio + 86400)
+        eq(p.resumo_hoje(LOGIN), "", "no dia seguinte, sem novidade não manda nada")
+
+    def t_metricas_por_faixa(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("faixa1")
+        self._executar(lid, "dm_abertura", DM_A)
+        m = p.metricas(LOGIN, 7)
+        ok(m["por_faixa"] and list(m["por_faixa"].values())[0]["abordados"] == 1, f"por faixa: {m['por_faixa']}")
 
     # ------------------------------------------------------------------ texts
     def t_textos_barrados(self):

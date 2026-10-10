@@ -1,4 +1,4 @@
-"""Tool `prospeccao`: find → propose (the person approves on the phone) → execute one approved action at a time →
+"""Tool `prospeccao`: find and score → propose (pre-approved types pass a reviewer, the rest go to the phone) → execute one approved action at a time →
 report back; plus stages and numbers."""
 
 import importlib.util
@@ -69,7 +69,8 @@ class Prospeccao(Tool):
             return r(p.resumo_contexto(login))
         if acao == "registrar":
             out = p.registrar(login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
-            return r(json.dumps(out, ensure_ascii=False))
+            return r(json.dumps(out, ensure_ascii=False) + "\nA nota é calculada pela rubrica do playbook a partir das evidências; "
+                     "recusado por nota/regra não volta. Se faltou evidência (ex.: ultimo_post), confira no perfil e registre de novo.")
         if acao == "rejeitar":
             n = p.rejeitar(login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
             return r(f"{n} perfis anotados como examinados e fora do perfil (não voltam por 60 dias).")
@@ -80,12 +81,15 @@ class Prospeccao(Tool):
                 d = p.carregar(login)
                 pid = p.guardar_pacote(login, [a["id"] for a in out["propostas"]])
                 cab = (f"🎯 *Prospecção Raiz* — {len(out['propostas'])} para aprovar\n"
-                       "Cada uma vem abaixo com ✅ / ✏️ / ❌. Nada sai sem o seu ✅.")
+                       + ("O revisor não liberou estas sozinho (motivo em cada uma). " if out.get("automaticas") is not None else "")
+                       + "Cada uma vem abaixo com ✅ / ✏️ / ❌. Nada sai sem o seu ✅.")
                 p.enviar(login, cab, [{"id": f"pa:{p._login(login)}:{pid}:todas", "titulo": "✅ Aprovar todas"}], ponte=ponte())
                 for a in out["propostas"]:
                     lead = p._lead(d, a["lead_id"])
-                    p.enviar(login, p.mensagem_acao(a, lead), p.botoes_acao(login, a["id"]), ponte=ponte())
-            resumo = {"enviadas_para_aprovacao": [f"{a['id']} {a['tipo']}" for a in out["propostas"]],
+                    msg = p.mensagem_acao(a, lead) + (f"\n🔍 Revisor: {a['revisao']}" if a.get("revisao") else "")
+                    p.enviar(login, msg, p.botoes_acao(login, a["id"]), ponte=ponte())
+            resumo = {"aprovadas_automaticamente": [f"{a['id']} {a['tipo']}" for a in out.get("automaticas", [])],
+                      "enviadas_para_aprovacao": [f"{a['id']} {a['tipo']}: {a.get('revisao', '')}" for a in out["propostas"]],
                       "recusadas": out["recusadas"]}
             return r(json.dumps(resumo, ensure_ascii=False) +
                      ("\nCorrija as recusadas (motivo ao lado) e proponha de novo, ou deixe de fora." if out["recusadas"] else ""))
@@ -96,7 +100,7 @@ class Prospeccao(Tool):
                 return r(f"NADA AGORA: {motivo}. Termine a rodada.")
             p.liberar(self.agent.context, a)
             lead = a["lead"]
-            return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) APROVADA pelo Matheus para @{lead['handle']} — {lead['url']}\n"
+            return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) {'PRÉ-APROVADA (autorização do Matheus, dentro do limite do dia; texto revisado)' if a.get('auto') else 'APROVADA pelo Matheus'} para @{lead['handle']} — {lead['url']}\n"
                      f"{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
                      "Depois chame `prospeccao` acao \"resultado\" com acao_id, ok (true/false) e detalhe (o que viu na tela). "
                      "Se o Instagram mostrar bloqueio/limite/'tente mais tarde'/verificação, PARE e mande bloqueio: true.")
@@ -132,6 +136,13 @@ class Prospeccao(Tool):
         if acao == "conta":
             erro = p.definir_conta(login, texto or conta_ativa)
             return r(erro or f"Prospecção configurada para @{p.conta(login)}.")
+        if acao == "hoje":
+            texto_dia = p.resumo_hoje(login)
+            return r(texto_dia or "NADA HOJE")
+        if acao == "auto":
+            ligado = str(texto or "").lower() not in ("false", "0", "nao", "não", "off", "desligar")
+            p.definir_auto(login, ligado)
+            return r("Aprovação automática " + ("LIGADA" if ligado else "DESLIGADA") + " (aquecer, primeira mensagem e lembrete).")
         if acao == "metricas":
             return r(json.dumps(p.metricas(login, int(dias or 7)), ensure_ascii=False))
-        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | etapa | editar | metricas")
+        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | etapa | editar | hoje | auto | metricas")

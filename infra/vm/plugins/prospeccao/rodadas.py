@@ -5,23 +5,24 @@ URL = boto3.client("ssm", region_name="us-east-1").get_parameter(Name="/agentepe
 
 SIS_BUSCA = ("Você é o prospector da Raiz Connect. Nesta rodada você só NAVEGA E LÊ no Instagram (pesquisar, abrir perfis, "
              "ler bio e posts): não siga, não curta, não comente, não mande mensagem — quem executa é outra rodada, depois "
-             "da aprovação do Matheus. A única coisa que você grava é o registro da ferramenta `prospeccao`.")
+             "da aprovação (automática pelo revisor, dentro dos limites do dia, ou do Matheus). A única coisa que você grava é o registro da ferramenta `prospeccao`.")
 
 BUSCAR = """Rodada de busca da prospecção Raiz Connect.
 
 1. Chame `prospeccao` acao "playbook" e leia INTEIRO (as regras mudam; siga a versão de hoje). Depois `prospeccao` acao "contexto" (cotas que cabem hoje, leads com próximo passo devido, @ já conhecidos).
 2. Leads com próximo passo devido (seção "Devem receber"):
-   - «dm_abertura»: abra o perfil de cada um, veja os 3 posts mais recentes e escreva uma DM no modelo do playbook (variante indicada ou alternando A/B), citando UMA coisa concreta e verdadeira que você viu agora (produto, post, novidade). Nada genérico.
+   - «dm_abertura»: abra o perfil de cada um, veja os 3 posts mais recentes NÃO fixados e escreva uma DM no modelo do playbook (variante indicada ou alternando A/B), citando UMA coisa concreta e verdadeira que você viu agora (produto, post, novidade). Nada genérico. Em `base`, diga exatamente o que você viu e em que post (data) — o revisor confere o texto contra isso.
    - «dm_lembrete»: escreva o lembrete curto do playbook, diferente para cada pessoa.
+   Siga a ordem do contexto (as maiores notas primeiro): as vagas do dia são poucas.
 3. Leads novos — META: registrar tantos quanto couber na cota de «aquecer» de hoje (até 10). Não pare antes de bater a meta ou de ter examinado pelo menos 30 perfis.
    Método (repita até a meta):
    a) abra uma busca: https://www.instagram.com/explore/search/keyword/?q=<termo> com um termo do playbook (ex.: marmitasalvador, marmitafitsalvador, congeladossalvador, docessalvador, bolodepotesalvador, salgadosparafestasalvador, marmitasp, marmitafitsp, confeitariasp, congeladossp, marmitascampinas, confeitariacampinas, docescampinas) — troque de termo quando uma busca secar;
    b) leia a página (content) e anote os @ dos perfis dos posts — pule os já conhecidos e os já rejeitados (estão no "contexto");
-   c) abra cada perfil (https://www.instagram.com/<@>/), leia bio, número de seguidores e os 3 posts mais recentes, e decida pelos critérios do playbook;
-   d) a cada 5 perfis examinados, grave: os que encaixam com `prospeccao` acao "registrar" (motivo com o que você VIU) e os que não encaixam com `prospeccao` acao "rejeitar" (motivo curto: "franquia", "pessoal", "parado desde junho", "fora da região"…).
-   Para cada lead novo, proponha «aquecer». Comentário só se houver algo genuíno e específico a dizer sobre o post mais recente (pergunta ou elogio concreto, sem citar a Raiz); senão, texto vazio.
-4. Mande tudo em UMA chamada `prospeccao` acao "propor" (a ferramenta manda para o celular do Matheus aprovar). Se ela recusar algum item, corrija pelo motivo e proponha de novo uma vez; se não der, deixe de fora.
-5. Resposta final: exatamente SEM NOVIDADE (as propostas já chegaram no celular). Só se algo travou (Instagram pedindo login, bloqueio, verificação), escreva "PRECISA DE VOCÊ:" e o que aconteceu."""
+   c) abra cada perfil (https://www.instagram.com/<@>/) e colete a EVIDÊNCIA da avaliação (seção 1b do playbook): segmento, cidade, seguidores, data do primeiro post NÃO fixado (abra o post e leia a data → ultimo_post AAAA-MM-DD), canais de venda que aparecem (bio, destaques, links), sinais de dor que aparecem nos posts, se há cardápio com preço, se há link de pedido, exclusões que perceber, e do que trata o último post (post_recente). Só anote o que você VIU — evidência inventada é pior que evidência faltando;
+   d) a cada 5 perfis examinados, grave com `prospeccao` acao "registrar" TODOS os que parecem negócio de alimentos na região, com todos os campos de evidência: a ferramenta calcula a nota e recusa sozinha quem fica abaixo de 55 (veja "recusados" e "nota" na resposta). Perfis claramente fora (franquia, pessoal, privado, fora da região, parado) vão em `prospeccao` acao "rejeitar" com motivo curto. A META conta só os CRIADOS.
+   Para cada lead criado, proponha «aquecer» (os de nota maior primeiro). Comentário só se houver algo genuíno e específico a dizer sobre o post_recente (pergunta ou elogio concreto, sem citar a Raiz); senão, texto vazio. Em `base`, diga o post (data e assunto) em que o comentário se apoia.
+4. Mande tudo em UMA chamada `prospeccao` acao "propor" (cada item: lead_id, tipo, texto, variante, base). Aquecer, primeira mensagem e lembrete já estão pré-aprovados pelo Matheus dentro dos limites do dia: o revisor da ferramenta libera os textos bons para a rodada de execução e manda ao celular do Matheus os que ele não liberar. Se a ferramenta recusar algum item, corrija pelo motivo e proponha de novo uma vez; se não der, deixe de fora.
+5. Resposta final: exatamente SEM NOVIDADE (o resumo do dia chega à noite). Só se algo travou (Instagram pedindo login, bloqueio, verificação), escreva "PRECISA DE VOCÊ:" e o que aconteceu."""
 
 SIS_EXEC = ("Você executa a prospecção da Raiz Connect pela conta de Instagram da Raiz (nunca pela pessoal do Matheus). Só executa ações que a ferramenta "
             "`prospeccao` entregar como APROVADAS, com o texto exatamente igual. Nada além disso.")
@@ -52,9 +53,16 @@ SEMANA = """Relatório semanal da prospecção Raiz Connect (segunda de manhã).
 *Mudança para esta semana:* 1 a 3 ajustes concretos (ex.: "focar em confeitarias de Salvador", "usar a variante B", "comentários antes da DM"), cada um com o número que justifica.
 Se ainda houver menos de 20 abordados no total, diga que é cedo para conclusões e só mostre os números."""
 
+HOJE = """Resumo do dia da prospecção Raiz Connect. Só leitura.
+
+1. Chame `prospeccao` acao "hoje".
+2. Se a ferramenta devolver NADA HOJE, responda exatamente SEM NOVIDADE.
+3. Senão, responda com o texto que ela devolveu, exatamente como veio (já está no formato do celular). Não acrescente nada."""
+
 TAREFAS = {
-    "🎯 Prospecção — buscar": (SIS_BUSCA, BUSCAR, {"minute": "23", "hour": "9", "day": "*", "month": "*", "weekday": "1-6", "timezone": "America/Bahia"}),
-    "🎯 Prospecção — executar": (SIS_EXEC, EXECUTAR, {"minute": "50,20", "hour": "9-19", "day": "*", "month": "*", "weekday": "1-6", "timezone": "America/Bahia"}),
+    "🎯 Prospecção — buscar": (SIS_BUSCA, BUSCAR, {"minute": "23", "hour": "9", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
+    "🎯 Prospecção — executar": (SIS_EXEC, EXECUTAR, {"minute": "50,20", "hour": "9-19", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
+    "🎯 Prospecção — resumo do dia": ("Você só repassa o resumo do dia da prospecção, sem acrescentar nada.", HOJE, {"minute": "7", "hour": "20", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
     "🎯 Prospecção — semana": ("Você faz o relatório semanal da prospecção, só leitura.", SEMANA, {"minute": "41", "hour": "8", "day": "*", "month": "*", "weekday": "1", "timezone": "America/Bahia"}),
 }
 
@@ -76,7 +84,7 @@ async def main():
         por_nome = {n: u for u, n in json.loads(await a.evaluate(api, ["lista", None]))}
         for nome, (sis, prompt, sched) in TAREFAS.items():
             if nome in por_nome:
-                print(nome, "update", await a.evaluate(api, ["update", {"task_id": por_nome[nome], "prompt": prompt, "system_prompt": sis}]))
+                print(nome, "update", await a.evaluate(api, ["update", {"task_id": por_nome[nome], "prompt": prompt, "system_prompt": sis, "schedule": sched}]))
             elif criar:
                 por_nome[nome] = await a.evaluate(api, ["create", {"name": nome, "system_prompt": sis, "prompt": prompt, "schedule": sched}])
                 print(nome, "criada", por_nome[nome])

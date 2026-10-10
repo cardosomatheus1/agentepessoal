@@ -104,6 +104,94 @@ def _lead(d: dict, lid: str) -> dict | None:
     return next((l for l in d["leads"] if l["id"] == lid), None)
 
 
+# ------------------------------------------------------------------ lead score (fixed rubric, computed from evidence)
+
+NOTA_MINIMA = 55   # below: not a lead
+NOTA_QUENTE = 75   # first in line for the day's limited slots
+PONTOS_SEGMENTO = {"marmitaria": 25, "congelados": 25, "cozinha_producao": 25, "fabrica": 22, "confeitaria": 20,
+                   "salgados": 20, "doces": 18, "padaria": 15, "restaurante": 15, "outro_alimento": 5}
+CANAIS_VENDA = ("ifood", "encomenda", "delivery", "whatsapp", "loja", "catalogo")
+SINAIS = ("reajuste", "insumo", "expansao", "contratacao", "cardapio_precos", "kits", "promocao", "reclamacao_custo")
+EXCLUSOES = {"rede": "rede ou franquia", "franquia": "rede ou franquia", "pessoal": "perfil pessoal",
+             "privado": "perfil privado", "concorrente": "concorrente/sistema/consultoria",
+             "curso": "curso/influenciador (é parceiro, não cliente)", "influencer": "curso/influenciador (é parceiro, não cliente)"}
+REGIOES = ("salvador", "lauro de freitas", "camaçari", "camacari", "simões filho", "simoes filho", "candeias",
+           "dias d'ávila", "dias davila", "madre de deus", "são francisco do conde", "vera cruz", "itaparica",
+           "são paulo", "sao paulo", "campinas")
+
+
+RADICAIS_SEGMENTO = (  # free text from the search round -> rubric key (the best-scoring match wins)
+    (r"marmit|quentinha|fit ?food|refei[cç][aã]o (fit|saud)", "marmitaria"), (r"congelad", "congelados"),
+    (r"cozinha|dark ?kitchen|produ[cç][aã]o pr[oó]pria|cozinha_producao", "cozinha_producao"),
+    (r"f[aá]brica|ind[uú]stria|fabrica[cç][aã]o", "fabrica"), (r"confeit|bolo|torta", "confeitaria"),
+    (r"salgad", "salgados"), (r"doce|brigadeiro|bombom|chocolat", "doces"), (r"padari|panifica|p[aã]es", "padaria"),
+    (r"restaurante|refei[cç]|almo[cç]o|comida", "restaurante"),
+    (r"lanchonete|caf[eé]|aliment|food|gastronom|outro_alimento", "outro_alimento"))
+
+
+def segmento_rubrica(texto) -> str:
+    t = str(texto or "").lower()
+    achados = [k for rx, k in RADICAIS_SEGMENTO if re.search(rx, t)]
+    return max(achados, key=lambda k: PONTOS_SEGMENTO[k]) if achados else ""
+
+
+def _numero(seguidores) -> int:
+    """'3.2k' / '18,9 mil' / '2.194' / 2194 -> 2194."""
+    if isinstance(seguidores, (int, float)):
+        return int(seguidores)
+    s = str(seguidores or "").lower().replace(" ", "")
+    mult = 1000 if ("k" in s or "mil" in s) else 1_000_000 if ("m" in s and "mil" not in s) else 1
+    s = re.sub(r"[^0-9.,]", "", s)
+    if mult > 1:
+        s = s.replace(",", ".")
+        try:
+            return int(float(s) * mult)
+        except ValueError:
+            return 0
+    return int(re.sub(r"[^0-9]", "", s) or 0)
+
+
+def pontuar(item: dict) -> dict:
+    """Score 0-100 with the breakdown, or {"rejeitado": why}. Every point comes from a piece of evidence the search
+    round recorded (segmento, ultimo_post, seguidores, cidade, canais, sinais, cardapio, link_pedido, exclusoes)."""
+    exclusoes = [str(x).lower() for x in (item.get("exclusoes") or [])]
+    for x in exclusoes:
+        if x in EXCLUSOES:
+            return {"rejeitado": EXCLUSOES[x]}
+    seg = segmento_rubrica(item.get("segmento"))
+    if not seg:
+        return {"rejeitado": f"segmento fora do playbook ({item.get('segmento')!r}); use: {', '.join(PONTOS_SEGMENTO)}"}
+    try:
+        ultimo = dt.date.fromisoformat(str(item.get("ultimo_post") or "")[:10])
+    except ValueError:
+        return {"rejeitado": "sem a data do último post NÃO fixado (ultimo_post AAAA-MM-DD)"}
+    dias = (dt.datetime.fromtimestamp(agora(), _tz()).date() - ultimo).days
+    if dias > 30:
+        return {"rejeitado": f"parado há {dias} dias"}
+    seguidores = _numero(item.get("seguidores"))
+    if seguidores < 300:
+        return {"rejeitado": f"pequeno demais ({seguidores} seguidores)"}
+    if seguidores > 50_000:
+        return {"rejeitado": f"grande demais ({seguidores} seguidores: cara de rede)"}
+    cidade = str(item.get("cidade") or "").lower()
+    if not any(r in cidade for r in REGIOES):
+        return {"rejeitado": f"fora da região ({item.get('cidade')})"}
+    canais = {str(x).lower() for x in (item.get("canais") or [])} & set(CANAIS_VENDA)
+    sinais = {str(x).lower() for x in (item.get("sinais") or [])} & set(SINAIS)
+    partes = {
+        "segmento": PONTOS_SEGMENTO[seg],
+        "atividade": 15 if dias <= 7 else 12 if dias <= 14 else 8,
+        "porte": 15 if 500 <= seguidores <= 5000 else 12 if seguidores <= 20_000 and seguidores > 5000 else 8 if seguidores > 20_000 else 6,
+        "regiao": 10,
+        "canais": min(10, 3 * len(canais) + (1 if len(canais) >= 3 else 0)),
+        "sinais": min(15, 5 * len(sinais)),
+        "profissional": (5 if item.get("cardapio") else 0) + (5 if item.get("link_pedido") else 0),
+    }
+    nota = sum(partes.values())
+    return {"nota": nota, "partes": partes, "dias_ultimo_post": dias, "seguidores_n": seguidores, "segmento_rubrica": seg,
+            "faixa": "quente" if nota >= NOTA_QUENTE else "bom" if nota >= 65 else "ok" if nota >= NOTA_MINIMA else "fraco"}
+
+
 def registrar(login: str, novos: list) -> dict:
     """Add leads (dedupe by @handle). Returns {"criados": [...], "repetidos": [...], "recusados": [...]}."""
     d = carregar(login)
@@ -121,7 +209,17 @@ def registrar(login: str, novos: list) -> dict:
         if handle in por_handle:
             out["repetidos"].append({"handle": handle, "id": por_handle[handle]["id"], "etapa": por_handle[handle]["etapa"]})
             continue
-        lead = {"id": _id(), "canal": canal, "handle": handle,
+        avaliacao = pontuar(item) if canal == "instagram" else {"nota": None}
+        if avaliacao.get("rejeitado") or (avaliacao.get("nota") is not None and avaliacao["nota"] < NOTA_MINIMA):
+            motivo_rej = avaliacao.get("rejeitado") or f"nota {avaliacao['nota']} (mínimo {NOTA_MINIMA}): {avaliacao['partes']}"
+            d.setdefault("rejeitados", {})[handle] = {"motivo": motivo_rej[:160], "em": agora()}
+            out["recusados"].append({"handle": handle, "motivo": motivo_rej})
+            continue
+        lead = {"id": _id(), "canal": canal, "handle": handle, "nota": avaliacao.get("nota"), "faixa": avaliacao.get("faixa", "?"),
+                "avaliacao": {k: avaliacao[k] for k in ("partes", "faixa", "dias_ultimo_post", "seguidores_n", "segmento_rubrica")
+                              if k in avaliacao},
+                "evidencias": {k: item.get(k) for k in ("ultimo_post", "canais", "sinais", "cardapio", "link_pedido",
+                                                         "produto_exemplo", "post_recente") if item.get(k)},
                 "url": str(item.get("url") or f"https://www.instagram.com/{handle}/")[:200],
                 "nome": str(item["nome"])[:80], "segmento": str(item["segmento"])[:40].lower(),
                 "cidade": str(item["cidade"])[:60], "seguidores": str(item.get("seguidores") or "")[:20],
@@ -129,7 +227,8 @@ def registrar(login: str, novos: list) -> dict:
                 "etapa": "novo", "criado": agora(), "atualizado": agora(), "historico": []}
         d["leads"].append(lead)
         por_handle[handle] = lead
-        out["criados"].append({"handle": handle, "id": lead["id"]})
+        out["criados"].append({"handle": handle, "id": lead["id"], "nota": lead["nota"],
+                               "faixa": lead["avaliacao"].get("faixa")})
     salvar(login, d)
     return out
 
@@ -196,6 +295,8 @@ def devidos(login: str) -> dict:
             out["dm_abertura"].append(l)
         elif l["etapa"] == "abordado" and espera >= ESPERA_LEMBRETE:
             out["dm_lembrete"].append(l)
+    for lista in out.values():  # best fit first: the day's slots are limited
+        lista.sort(key=lambda l: -(l.get("nota") if l.get("nota") is not None else 60))
     return out
 
 
@@ -299,13 +400,106 @@ def propor(login: str, itens: list) -> dict:
         if tipo == "dm_abertura" and variante not in ("A", "B"):
             variante = "A" if sum(1 for a in d["acoes"] if a["tipo"] == "dm_abertura") % 2 == 0 else "B"
         acao = {"id": _id(), "lead_id": lid, "tipo": tipo, "texto": texto[:900], "variante": variante,
-                "alvo": str(item.get("alvo") or lead["url"])[:200], "estado": "proposta", "criada": agora()}
+                "alvo": str(item.get("alvo") or lead["url"])[:200], "base": str(item.get("base") or "")[:300],
+                "estado": "proposta", "criada": agora()}
         d["acoes"].append(acao)
         ja.add((lid, tipo))
         restantes[tipo] -= 1
         out["propostas"].append(acao)
     salvar(login, d)
+    if d["config"].get("auto"):
+        out = _auto_aprovar(login, out)
     return out
+
+
+# ------------------------------------------------------------------ pre-approved within the daily limits
+
+AUTO_TIPOS = ("aquecer", "dm_abertura", "dm_lembrete")  # replies and partner messages still go to the person
+PROXY = "http://host.docker.internal:8787"
+MODELO_REVISOR = "openai.gpt-6-luna"
+revisor = None  # tests replace it: fn(pedido: str) -> str
+
+REVISOR = """Você é o revisor independente das mensagens de prospecção da Raiz Connect. O dono autorizou que elas saiam
+SEM perguntar a ele, então você é a última barreira antes de uma pessoa real recebê-las. Reprove um item SÓ se:
+1. Afirma um fato sobre o negócio (prato, unidade, novidade, número, cidade) que NÃO está nos DADOS DO LEAD nem no que
+   o agente diz ter visto. Pergunta não é afirmação ("ele entra no kit?" é aceitável); elogio a algo que está nos
+   dados também é.
+2. Fere o playbook: comentário de aquecimento que vende, cita a Raiz, um sistema ou chama para o direct; jargão
+   (ERP, sistema de gestão, CMV, solução) na abertura; promessa de resultado ou número inventado; pressão; link;
+   primeira mensagem sem a oferta do cálculo grátis ou sem a assinatura do Matheus.
+3. Soa como spam, intimidade forçada ou constrange a pessoa.
+4. Tem erro de português ou abreviação de internet que faça a marca parecer descuidada.
+Os modelos do playbook são guia, não texto fixo: variações naturais são boas (falar de entrega, embalagem ou iFood ao
+explicar o cálculo; outra forma de pedir a receita e o preço; outro elogio verdadeiro). Não reprove por estilo.
+Na dúvida REAL sobre fato ou respeito, reprove: o item volta ao dono para ele decidir, nada se perde.
+Responda só JSON: {"itens": [{"id": "<id>", "aprovado": true|false, "motivo": "<uma frase>"}]}"""
+
+
+def _chamar_revisor(pedido: str) -> str:
+    if revisor:
+        return revisor(pedido)
+    import urllib.request
+
+    body = {"model": MODELO_REVISOR, "reasoning": {"effort": "medium"}, "input": [{"role": "user", "content": pedido}]}
+    req = urllib.request.Request(f"{PROXY}/openai/v1/responses", data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=180) as r:
+        data = json.loads(r.read())
+    return "".join(c.get("text", "") for item in data.get("output", []) if item.get("type") == "message"
+                   for c in item.get("content", []) if c.get("type") == "output_text")
+
+
+def revisar_textos(d: dict, acoes: list) -> dict:
+    """{id: {"aprovado": bool, "motivo": str}} from a fresh model against the playbook. Fails closed: when the
+    reviewer is unreachable or unclear, nothing is approved here (it goes to the person)."""
+    playbook = (Path(__file__).resolve().parents[1] / "playbook.md")
+    blocos = []
+    for a in acoes:
+        lead = _lead(d, a["lead_id"]) or {}
+        dados = {k: lead.get(k) for k in ("nome", "handle", "segmento", "cidade", "seguidores", "motivo", "sinal", "evidencias")}
+        blocos.append(f"## Item {a['id']} — {a['tipo']}\nDADOS DO LEAD: {json.dumps(dados, ensure_ascii=False)}\n"
+                      + (f"O QUE O AGENTE DIZ TER VISTO AGORA NO PERFIL: {a['base']}\n" if a.get("base") else "")
+                      + (f"JÁ RECEBEU: {lead['historico'][-1]['texto'][:300]}\n" if lead.get("historico") else "")
+                      + f"TEXTO:\n«{a['texto']}»")
+    pedido = (REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:12000] if playbook.exists() else "")
+              + "\n\n# ITENS\n" + "\n\n".join(blocos))
+    try:
+        saida = _chamar_revisor(pedido)
+        achado = re.search(r"\{.*\}", saida or "", re.S)
+        res = json.loads(achado.group(0), strict=False) if achado else {}
+    except Exception as exc:
+        return {a["id"]: {"aprovado": False, "motivo": f"revisor indisponível ({str(exc)[:80]})"} for a in acoes}
+    vistos = {str(i.get("id")): i for i in (res.get("itens") or []) if isinstance(i, dict)}
+    return {a["id"]: {"aprovado": vistos.get(a["id"], {}).get("aprovado") is True,
+                      "motivo": str(vistos.get(a["id"], {}).get("motivo") or "revisor não respondeu sobre este item")[:200]}
+            for a in acoes}
+
+
+def _auto_aprovar(login: str, out: dict) -> dict:
+    """Pre-approved types: follow/like with no text pass straight; any text passes the reviewer first. Whatever the
+    reviewer does not pass stays a proposal for the person. out gains "automaticas"; "propostas" keeps only the manual."""
+    d = carregar(login)
+    candidatas = [a for a in out["propostas"] if a["tipo"] in AUTO_TIPOS]
+    com_texto = [a for a in candidatas if a["texto"]]
+    vereditos = revisar_textos(d, com_texto) if com_texto else {}
+    automaticas, manuais = [], [a for a in out["propostas"] if a["tipo"] not in AUTO_TIPOS]
+    for a in candidatas:
+        v = vereditos.get(a["id"], {"aprovado": True, "motivo": "seguir e curtir, sem texto"})
+        guardada = next(x for x in d["acoes"] if x["id"] == a["id"])
+        guardada["revisao"] = v["motivo"]
+        if v["aprovado"]:
+            guardada.update({"estado": "aprovada", "decidida": agora(), "auto": True})
+            automaticas.append(guardada)
+        else:
+            manuais.append(guardada)
+    salvar(login, d)
+    return {**out, "propostas": manuais, "automaticas": automaticas}
+
+
+def definir_auto(login: str, ligado: bool) -> None:
+    d = carregar(login)
+    d["config"]["auto"] = bool(ligado)
+    salvar(login, d)
 
 
 def decidir(login: str, aid: str, decisao: str) -> dict | None:
@@ -435,7 +629,9 @@ def expirar(login: str) -> int:
 def liberar(contexto, acao: dict) -> None:
     """Let the approvals reviewer pass the third-party step of THIS approved action for a few minutes."""
     contexto.set_data("_aprovacoes_liberadas", {"categorias": ["mensagem_terceiros", "publicar"], "ate": agora() + LIBERACAO,
-                                                "motivo": f"prospecção: ação {acao['id']} ({acao['tipo']}) aprovada pelo usuário"})
+                                                "motivo": f"prospecção: ação {acao['id']} ({acao['tipo']}) " +
+                                                ("pré-aprovada pelo usuário (dentro dos limites do dia, texto revisado)"
+                                                 if acao.get("auto") else "aprovada pelo usuário")})
 
 
 def encerrar_liberacao(contexto) -> None:
@@ -521,7 +717,7 @@ def metricas(login: str, dias: int = 7) -> dict:
     def por(campo):
         grupos: dict = {}
         for l in abordados:
-            grupos.setdefault(l.get(campo) or "?", []).append(l)
+            grupos.setdefault(str(l.get(campo) or "?"), []).append(l)
         return {k: taxa(v) for k, v in grupos.items()}
 
     etapas: dict = {}
@@ -531,9 +727,51 @@ def metricas(login: str, dias: int = 7) -> dict:
     decididas = sum(1 for a in acoes if a["estado"] in ("aprovada", "executada", "falhou", "pulada"))
     return {"dias": dias, "acoes": por_estado, "etapas": etapas, "geral": taxa(abordados),
             "por_variante": por("variante"), "por_segmento": por("segmento"), "por_cidade": por("cidade"),
+            "por_faixa": por("faixa"),
             "taxa_aprovacao": round(100 * aprovadas / decididas, 1) if decididas else 0.0,
             "falhas": [a.get("detalhe", "") for a in acoes if a["estado"] == "falhou"][-5:],
             "pausado": agora() < d["bloqueio_ate"]}
+
+
+def resumo_hoje(login: str) -> str:
+    """End-of-day report for the phone: only what matters (answers first), short. '' when the day had nothing."""
+    d = carregar(login)
+    hoje = _hoje_local()
+    de_hoje = lambda ts: bool(ts) and _hoje_local(ts) == hoje  # noqa: E731
+    leads = {l["id"]: l for l in d["leads"]}
+    respostas = [l for l in d["leads"] if any(h["tipo"] in ("etapa:respondeu", "etapa:lead", "etapa:demo") and de_hoje(h["em"])
+                                              for h in l["historico"])]
+    feitas = [a for a in d["acoes"] if a["estado"] == "executada" and de_hoje(a.get("executada_em"))]
+    falhas = [a for a in d["acoes"] if a["estado"] == "falhou" and de_hoje(a.get("executada_em"))]
+    novos = [l for l in d["leads"] if de_hoje(l["criado"])]
+    rejeitados = sum(1 for v in (d.get("rejeitados") or {}).values() if de_hoje(v["em"]))
+    esperando = [a for a in d["acoes"] if a["estado"] == "proposta"]
+    if not (respostas or feitas or falhas or novos or esperando):
+        return ""
+    linhas = [f"🎯 *Prospecção Raiz — {dt.datetime.fromtimestamp(agora(), _tz()).strftime('%d/%m')}*"]
+    if respostas:
+        linhas.append("\n💬 *Responderam* — olhe primeiro")
+        linhas += [f"• {l['nome']} (@{l['handle']}): {l['etapa']}" for l in respostas]
+    if feitas:
+        n = {t: sum(1 for a in feitas if a["tipo"] == t) for t in TIPOS}
+        partes = [f"{n['aquecer']} aquecidos" if n["aquecer"] else "", f"{n['dm_abertura']} primeiras mensagens" if n["dm_abertura"] else "",
+                  f"{n['dm_lembrete']} lembretes" if n["dm_lembrete"] else "", f"{n['resposta']} respostas" if n["resposta"] else ""]
+        linhas.append("\n✅ *Feito hoje:* " + ", ".join(x for x in partes if x))
+        for a in [x for x in feitas if x["tipo"] in ("dm_abertura", "dm_lembrete")][:5]:
+            l = leads.get(a["lead_id"]) or {}
+            linhas.append(f"• @{l.get('handle')}: «{a['texto'][:140]}{'…' if len(a['texto']) > 140 else ''}»")
+    if novos:
+        novos.sort(key=lambda l: -(l.get("nota") or 0))
+        linhas.append(f"\n🔎 *{len(novos)} leads novos* ({rejeitados} perfis examinados e descartados)")
+        linhas += [f"• {l['nome'][:40]} — " + (f"nota {l['nota']}" if l.get("nota") is not None else "sem nota (antes da avaliação)")
+                   + f" ({l['segmento'][:30]}, {l['cidade'][:30]})" for l in novos[:5]]
+    if falhas:
+        linhas.append(f"\n⚠️ {len(falhas)} não saíram: " + "; ".join(a.get("detalhe", "")[:80] for a in falhas[:3]))
+    if esperando:
+        linhas.append(f"\n✋ {len(esperando)} esperando o seu ✅ (o revisor não liberou sozinho)")
+    if agora() < d["bloqueio_ate"]:
+        linhas.append("\n⛔ Pausado até " + dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M"))
+    return "\n".join(linhas)
 
 
 def resumo_contexto(login: str) -> str:
@@ -551,7 +789,7 @@ def resumo_contexto(login: str) -> str:
     for tipo, lista in dev.items():
         if lista:
             linhas.append(f"\n## Devem receber «{tipo}» agora ({len(lista)})")
-            linhas += [f"- [{l['id']}] @{l['handle']} — {l['nome']} ({l['segmento']}, {l['cidade']}); motivo: {l['motivo'][:120]}"
+            linhas += [f"- [{l['id']}] @{l['handle']} — {l['nome']} ({l['segmento']}, {l['cidade']}; nota {l.get('nota', '—')}); motivo: {l['motivo'][:120]}"
                        + (f"; já recebeu: {l['historico'][-1]['texto'][:160]}" if l["historico"] else "") for l in lista[:25]]
     conhecidos = sorted(l["handle"] for l in d["leads"])
     linhas.append(f"\n## Já conhecidos ({len(conhecidos)}) — não registre de novo\n" + (", ".join(conhecidos[-400:]) or "(nenhum)"))
