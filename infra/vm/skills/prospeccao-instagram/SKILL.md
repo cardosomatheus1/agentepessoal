@@ -20,7 +20,9 @@ ensina o COMO no Instagram. Leia o playbook (`prospeccao` acao "playbook") antes
 
 ## Regras que nunca mudam
 
-- Só pela conta **@raiz.connect**. Nunca pela pessoal @cardosomatheus1. Toda ação passa antes por "a conta certa".
+- Quem ENVIA (a conta ativa) é sempre **@raiz.connect**, nunca a pessoal @cardosomatheus1. O DESTINATÁRIO é o @ da
+  ação aprovada — pode ser qualquer lead do registro, inclusive o perfil pessoal do Matheus quando ele pede um teste.
+  Toda ação passa antes por "a conta certa" (seção 1).
 - Só executa o que a ferramenta entregar em `proxima`, com o texto EXATO. Nada fora dela, nada a mais.
 - Respostas a quem escreveu e mensagens a parceiros: sempre com o ✅ do Matheus (a ferramenta manda pro celular).
 - Bloqueio, limite, "tente mais tarde", verificação ou "suspeita de automação": PARE e informe com
