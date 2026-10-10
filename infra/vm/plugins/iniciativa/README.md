@@ -11,8 +11,8 @@ interrupção, manda uma mensagem — de preferência já com o trabalho adianta
   a pena, `SEM NOVIDADE`.
 - **Limites**: até 3 por dia, com 100 min entre elas; não repete assunto de 3 dias; respeita o horário de silêncio
   (vai como progresso). Nada que envie, pague, apague ou mude algo fora daqui sem aprovação.
-- **Aprendizado**: botões "✅ Bora" (o agente continua/executa na conversa do Telegram), "👍 Útil" e "👎 Não
-  precisa"; o placar por tipo e os `aprendizados` (o que a pessoa disse que quer ou não) entram na próxima rodada.
+- **Aprendizado**: botões "✅ Bora" (o agente continua/executa na conversa do Telegram), "👍 Útil" e "👎
+  Dispensa"; o placar por tipo e os `aprendizados` (o que a pessoa disse que quer ou não) entram na próxima rodada.
 
 - **Revisor** (GPT-6 Luna em contexto limpo; Haiku 5.5 é a alternativa testada): antes de sair, confere fatos contra o panorama e o arquivo, novidade, valor,
   preferências e forma; envia, ajusta o texto ou descarta (o motivo volta para a próxima rodada). Se cair, a mensagem
