@@ -74,6 +74,53 @@ def mesclar(login: str, novos: list, resolvidos: list | None = None) -> tuple[in
     return criados, atualizados, fechados
 
 
+def ignorar(login: str, fid: str) -> dict | None:
+    """The person tapped "Ignorar": close it and remember the subject as noise for later rounds."""
+    dados = carregar(login)
+    fio = next((f for f in dados["fios"] if f.get("id") == fid), None)
+    if not fio:
+        return None
+    fio.update({"estado": "ignorado", "atualizado": time.time()})
+    dados["ruido"] = (dados.get("ruido", []) + [fio.get("titulo", "")])[-50:]
+    salvar(login, dados)
+    return fio
+
+
+def adiar(login: str, fid: str, dias: int = 1) -> dict | None:
+    dados = carregar(login)
+    fio = next((f for f in dados["fios"] if f.get("id") == fid), None)
+    if not fio:
+        return None
+    fio.update({"estado": "adiado", "adiar_ate": time.strftime("%Y-%m-%d", time.localtime(time.time() + dias * 86400)),
+                "atualizado": time.time()})
+    salvar(login, dados)
+    return fio
+
+
+def obter(login: str, fid: str) -> dict | None:
+    return next((f for f in carregar(login)["fios"] if f.get("id") == fid), None)
+
+
+def mensagem(fio: dict, urgente: bool = False) -> str:
+    """One loose end as a phone message (the buttons go below it)."""
+    partes = [("⚠️ *Precisa de você*\n" if urgente else "") + f"🧵 *{fio.get('titulo', '')}*"]
+    if fio.get("detalhe"):
+        partes.append(str(fio["detalhe"]))
+    if fio.get("ligacoes"):
+        partes.append(f"🔗 *Ligação:* {fio['ligacoes']}")
+    if fio.get("proximo_passo"):
+        partes.append(f"👉 *Posso:* {fio['proximo_passo']}")
+    if fio.get("prazo"):
+        partes.append(f"📅 Prazo: {fio['prazo']}")
+    return "\n\n".join(partes)
+
+
+def botoes(login: str, fid: str) -> list:
+    base = f"fio:{_login(login)}:{fid}"
+    return [{"id": f"{base}:fazer", "titulo": "✅ Faz pra mim"}, {"id": f"{base}:amanha", "titulo": "⏰ Amanhã"},
+            {"id": f"{base}:ignorar", "titulo": "🙈 Ignorar"}]
+
+
 def abertos(login: str, limite: int = 8) -> list:
     hoje = time.strftime("%Y-%m-%d")
     lista = [f for f in carregar(login)["fios"]
@@ -151,7 +198,11 @@ def conversas(login: str, horas: int = 72, ignorar: str = "") -> list[dict]:
 
 def coletar(login: str, horas: int = 72, ignorar: str = "") -> str:
     partes = [f"# Panorama das últimas {horas} h ({time.strftime('%d/%m %H:%M')})"]
-    regs = carregar(login)["fios"]
+    dados = carregar(login)
+    regs = dados["fios"]
+    if dados.get("ruido"):
+        partes.append("## A pessoa pediu para NÃO trazer (ignorou) — não avise nada parecido\n" +
+                      "\n".join(f"- {r}" for r in dados["ruido"][-20:]))
     if regs:
         partes.append("## Registro de fios atual\n" + "\n".join(
             f"- {linha(f)} [estado: {f.get('estado', 'aberto')}, desde {time.strftime('%d/%m', time.localtime(f.get('criado', time.time())))}]"

@@ -22,6 +22,21 @@ def _fios():
     return sys.modules[nome]
 
 
+def _ponte():
+    """The phone bridge of plugins/whatsapp (Telegram/WhatsApp), loaded by path."""
+    if "whatsapp_ponte" in sys.modules:
+        return sys.modules["whatsapp_ponte"]
+    caminho = Path("/a0/usr/plugins/whatsapp/helpers/ponte.py")
+    if not caminho.exists():
+        return None
+    spec = importlib.util.spec_from_file_location("whatsapp_ponte", caminho)
+    modulo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modulo)
+    modulo._mtime = caminho.stat().st_mtime
+    sys.modules["whatsapp_ponte"] = modulo
+    return modulo
+
+
 def dono(context) -> str:
     sep = sys.modules.get("login_usuarios_separacao")
     return (sep.dono_contexto(context) if sep else (context.get_data("dono") or "matheus")) or "matheus"
@@ -52,6 +67,25 @@ class Fios(Tool):
             ids = _lista(resolvidos) or _lista(id)
             _, _, fechados = f.mesclar(login, [], ids)
             return Response(message=f"{fechados} fio(s) marcado(s) como resolvido(s).", break_loop=False)
+        if acao == "avisar":
+            ponte = _ponte()
+            if ponte is None:
+                return Response(message="Ponte do celular indisponível: escreva os itens na resposta final.", break_loop=False)
+            enviados, falhas = [], []
+            for fid in _lista(id) + _lista(fios):
+                fid = str(fid.get("id") if isinstance(fid, dict) else fid)
+                fio = f.obter(login, fid)
+                if not fio:
+                    falhas.append(f"{fid}: não existe no registro")
+                    continue
+                urgente = str(fio.get("prioridade", "")).lower() == "alta" and bool(kwargs.get("urgente") or fio.get("urgente"))
+                erro = ponte.enviar(login, f.mensagem(fio, urgente), botoes=f.botoes(login, fid),
+                                    tipo="urgente" if urgente else "progresso")
+                (falhas if erro else enviados).append(f"{fid}: {erro}" if erro else fid)
+            texto = f"Enviados ao celular com botões: {', '.join(enviados) or 'nenhum'}."
+            if falhas:
+                texto += " Falhas: " + "; ".join(falhas) + " — esses vão por escrito na resposta final."
+            return Response(message=texto, break_loop=False)
         if acao == "adiar":
             if not id or not ate:
                 return Response(message="Diga o `id` e a data `ate` (AAAA-MM-DD).", break_loop=False)
