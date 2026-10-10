@@ -242,6 +242,105 @@ def registrar(login: str, novos: list) -> dict:
     return out
 
 
+# ------------------------------------------------------------------ fast evaluation (many profiles in one browser call)
+
+SCRIPT_PERFIS = """(async () => {
+  const handles = __HANDLES__;
+  const out = [];
+  for (const h of handles) {
+    try {
+      const r = await fetch('/api/v1/users/web_profile_info/?username=' + encodeURIComponent(h),
+                            {headers: {'x-ig-app-id': '936619743392459'}, credentials: 'include'});
+      if (!r.ok) { out.push({handle: h, erro: 'http ' + r.status}); await new Promise(f => setTimeout(f, 1500)); continue; }
+      const u = ((await r.json()).data || {}).user;
+      if (!u) { out.push({handle: h, erro: 'perfil não encontrado'}); continue; }
+      const posts = ((u.edge_owner_to_timeline_media || {}).edges || []).slice(0, 8).map(e => ({
+        fixado: (e.node.pinned_for_users || []).length > 0,
+        ts: e.node.taken_at_timestamp,
+        codigo: e.node.shortcode,
+        legenda: (((e.node.edge_media_to_caption || {}).edges || [])[0] || {node: {text: ''}}).node.text.slice(0, 200)
+      }));
+      out.push({handle: u.username, nome: u.full_name, seguidores: (u.edge_followed_by || {}).count, privado: u.is_private,
+                bio: (u.biography || '').slice(0, 300), link: u.external_url || '',
+                categoria: u.category_name || u.business_category_name || '', posts: posts});
+    } catch (e) { out.push({handle: h, erro: String(e).slice(0, 80)}); }
+    await new Promise(f => setTimeout(f, 1500));
+  }
+  return JSON.stringify(out);
+})()"""
+
+RX_CANAIS = {"ifood": r"ifood", "encomenda": r"encomend|sob encomenda|pedidos? antecipad", "delivery": r"delivery|entrega",
+             "whatsapp": r"whats|wa\.me|zap", "loja": r"\bloja\b|retirada|endere[cç]o|\brua\b|\bav\.", "catalogo": r"cat[aá]logo"}
+RX_SINAIS = {"reajuste": r"reajust|novos? pre[cç]os|aumento", "insumo": r"insumo|mat[eé]ria[- ]prima|ingrediente.*(caro|sub)",
+             "expansao": r"nova unidade|segunda unidade|inaugura|nova loja", "contratacao": r"contratando|vaga|estamos contratando",
+             "cardapio_precos": r"card[aá]pio.*(r\$|pre[cç])|r\$ ?\d", "kits": r"\bkits?\b|combo", "promocao": r"promo|desconto|oferta"}
+RX_EXCLUSOES = {"franquia": r"franquia|franqueado", "curso": r"\bcurso|mentoria|aulas?\b|aprenda"}
+
+
+def montar_script(handles: list) -> str:
+    hs = [normalizar(str(h)) for h in handles if normalizar(str(h))][:15]
+    return SCRIPT_PERFIS.replace("__HANDLES__", json.dumps(hs))
+
+
+def _evidencia(perfil: dict) -> dict:
+    """Evidence for pontuar() read straight from the profile data (no model judgment)."""
+    texto_bio = f"{perfil.get('nome', '')} {perfil.get('categoria', '')} {perfil.get('bio', '')}".lower()
+    posts = [x for x in perfil.get("posts") or [] if x.get("ts")]
+    nao_fixados = sorted((x for x in posts if not x.get("fixado")), key=lambda x: -x["ts"])
+    legendas = " ".join(x.get("legenda", "") for x in posts[:6]).lower()
+    tudo = f"{texto_bio} {legendas} {perfil.get('link', '').lower()}"
+    ultimo = nao_fixados[0] if nao_fixados else None
+    cidade = next((r for r in REGIOES if r in texto_bio), "")
+    return {
+        "handle": perfil["handle"], "canal": "instagram", "nome": (perfil.get("nome") or perfil["handle"])[:80],
+        "segmento": segmento_rubrica(f"{perfil.get('categoria', '')} {perfil.get('nome', '')} {perfil.get('bio', '')}") or "",
+        "cidade": cidade.title() if cidade else "", "seguidores": perfil.get("seguidores") or 0,
+        "ultimo_post": dt.datetime.fromtimestamp(ultimo["ts"], _tz()).date().isoformat() if ultimo else "",
+        "canais": [c for c, rx in RX_CANAIS.items() if re.search(rx, tudo)],
+        "sinais": [c for c, rx in RX_SINAIS.items() if re.search(rx, legendas)],
+        "cardapio": bool(re.search(r"card[aá]pio|menu", tudo)),
+        "link_pedido": bool(re.search(r"ifood|wa\.me|whats|linktr|anota|goomer|pedido|card[aá]pio|menu", perfil.get("link", "").lower())),
+        "exclusoes": (["privado"] if perfil.get("privado") else []) + [c for c, rx in RX_EXCLUSOES.items() if re.search(rx, texto_bio)],
+        "post_recente": (ultimo.get("legenda") or "")[:150] if ultimo else "",
+        "url_post_recente": f"https://www.instagram.com/p/{ultimo['codigo']}/" if ultimo and ultimo.get("codigo") else "",
+        "motivo": (f"{perfil.get('categoria') or 'negócio'}; bio: {perfil.get('bio', '')[:140]}"
+                   + (f"; último post {dt.datetime.fromtimestamp(ultimo['ts'], _tz()).strftime('%d/%m')}: {(ultimo.get('legenda') or '')[:80]}" if ultimo else "")),
+        "sinal": "",
+    }
+
+
+def avaliar_perfis(login: str, dados) -> dict:
+    """Takes the JSON the browser script returned. Registers what fits (with its score), rejects what clearly does
+    not, and returns only what needs a human look (city or segment not in the bio)."""
+    perfis = json.loads(dados) if isinstance(dados, str) else (dados or [])
+    out = {"criados": [], "recusados": [], "conferir": [], "erros": []}
+    para_registrar = []
+    for perfil in perfis if isinstance(perfis, list) else []:
+        if not isinstance(perfil, dict) or not perfil.get("handle"):
+            continue
+        if perfil.get("erro"):
+            out["erros"].append({"handle": perfil["handle"], "erro": perfil["erro"]})
+            continue
+        ev = _evidencia(perfil)
+        if not ev["segmento"] or not ev["cidade"]:
+            # the hard filters still apply before anyone spends time opening the profile
+            teste = pontuar({**ev, "segmento": ev["segmento"] or "outro_alimento", "cidade": ev["cidade"] or "salvador"})
+            if teste.get("rejeitado") and "segmento" not in teste["rejeitado"] and "região" not in teste["rejeitado"]:
+                rejeitar(login, [{"handle": ev["handle"], "motivo": teste["rejeitado"]}])
+                out["recusados"].append({"handle": ev["handle"], "motivo": teste["rejeitado"]})
+            else:
+                falta = [c for c in ("segmento", "cidade") if not ev[c]]
+                out["conferir"].append({"falta": falta, "item": ev})
+            continue
+        para_registrar.append(ev)
+    if para_registrar:
+        r = registrar(login, para_registrar)
+        out["criados"] += r["criados"]
+        out["recusados"] += r["recusados"]
+        out["recusados"] += [{"handle": x["handle"], "motivo": "já conhecido"} for x in r["repetidos"]]
+    return out
+
+
 REJEITADO_DIAS = 60
 
 

@@ -72,6 +72,18 @@ class Prospeccao(Tool):
             out = p.registrar(login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
             return r(json.dumps(out, ensure_ascii=False) + "\nA nota é calculada pela rubrica do playbook a partir das evidências; "
                      "recusado por nota/regra não volta. Se faltou evidência (ex.: ultimo_post), confira no perfil e registre de novo.")
+        if acao == "perfis_script":
+            handles = leads if isinstance(leads, list) else [h.strip() for h in str(leads or texto or "").replace(",", " ").split() if h.strip()]
+            if not handles:
+                return r("Passe `leads` = lista de @ (até 15).")
+            return r("Rode este script com a ferramenta `browser`, action \"evaluate\", numa aba já aberta em https://www.instagram.com/ "
+                     "(logada como @raiz.connect). Ele devolve um texto JSON; passe esse texto INTEIRO, sem mudar nada, para "
+                     "`prospeccao` acao \"avaliar_perfis\" com `dados` = o texto.\n\n" + p.montar_script(handles))
+        if acao == "avaliar_perfis":
+            out = p.avaliar_perfis(login, kwargs.get("dados") or texto)
+            return r(json.dumps(out, ensure_ascii=False) + "\nCriados já estão registrados com nota; recusados já anotados. "
+                     "Só os de \"conferir\" precisam de você: abra o perfil, descubra o que falta (cidade/segmento) e registre "
+                     "com `registrar` usando o item como base (ou `rejeitar`).")
         if acao == "rejeitar":
             n = p.rejeitar(login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
             return r(f"{n} perfis anotados como examinados e fora do perfil (não voltam por 60 dias).")
@@ -159,4 +171,4 @@ class Prospeccao(Tool):
             return r("Aprovação automática " + ("LIGADA" if ligado else "DESLIGADA") + " (aquecer, primeira mensagem e lembrete).")
         if acao == "metricas":
             return r(json.dumps(p.metricas(login, int(dias or 7)), ensure_ascii=False))
-        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | etapa | conferido | editar | hoje | auto | metricas")
+        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | perfis_script | avaliar_perfis | etapa | conferido | editar | hoje | auto | metricas")

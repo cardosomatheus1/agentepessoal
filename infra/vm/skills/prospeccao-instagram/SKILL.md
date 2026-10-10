@@ -46,15 +46,23 @@ ensina o COMO no Instagram. Leia o playbook (`prospeccao` acao "playbook") antes
   quando secar.
 - Leia a página e anote os @ dos posts. Pule os já conhecidos e os rejeitados (`prospeccao` acao "contexto").
 
-## 3. Avaliar um perfil (a ferramenta dá a nota; você traz a evidência)
+## 3. Avaliar perfis (rápido: vários de uma vez)
 
-Abra `https://www.instagram.com/<@>/` e anote só o que VIU:
-- segmento, cidade, seguidores; **ultimo_post** = data (AAAA-MM-DD) do primeiro post **não fixado** — posts com
-  alfinete aparecem primeiro e podem ser antigos: abra o post e leia a data;
-- canais (ifood, encomenda, delivery, whatsapp, loja, catalogo), sinais (reajuste, insumo, expansao, contratacao,
-  cardapio_precos, kits, promocao, reclamacao_custo), cardapio (preços), link_pedido, exclusoes (rede, franquia,
-  pessoal, privado, concorrente, curso, influencer) e **post_recente** (do que trata o último post não fixado).
-- Grave de 5 em 5 com `registrar` (a ferramenta recusa abaixo de 55) e os claramente fora com `rejeitar`.
+1. Junte até 15 @ novos (pule conhecidos e rejeitados).
+2. `prospeccao` acao "perfis_script" com `leads` = esses @ → devolve um script.
+3. Numa aba aberta em https://www.instagram.com/ (conta @raiz.connect), rode o script com `browser` action
+   "evaluate" (`script` = o texto). Leva ~2 s por perfil e devolve um JSON com seguidores, bio, link, categoria e os
+   últimos posts (data e se é fixado).
+4. `prospeccao` acao "avaliar_perfis" com `dados` = esse JSON inteiro. A ferramenta registra com nota os que
+   encaixam, recusa os que não encaixam (parado, privado, grande/pequeno demais, franquia, curso…) e devolve em
+   "conferir" só os que não dizem cidade ou segmento na bio.
+5. Só para os de "conferir": abra o perfil, descubra o que falta e registre com `registrar` (usando o item como
+   base) ou `rejeitar`.
+6. Não abra um por um os perfis que a ferramenta já resolveu.
+
+Se o script der erro (ex.: "http 429" ou "401"), espere 1 minuto e tente com menos perfis; se persistir, avalie
+abrindo os perfis (método antigo): segmento, cidade, seguidores, data do primeiro post NÃO fixado, canais, sinais,
+cardápio, link de pedido, exclusões e do que trata o último post.
 
 ## 4. Executar as ações liberadas
 

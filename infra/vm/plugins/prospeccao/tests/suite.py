@@ -406,6 +406,42 @@ class Suite:
         eq(p.conferido(LOGIN, "nenhuma conversa nova", "fraco1 começou a seguir você · 1 h; outra notificação", ["@fraco1", "desconhecido"]), "", "ok")
         eq([l["id"] for l in p.devidos(LOGIN)["dm_abertura"]][0], fraco, "quem seguiu de volta passa na frente")
 
+    def t_avaliacao_rapida_de_perfis(self):
+        p = self.p
+        self.em(self.hora(11))
+        agora = int(p.agora())
+        def perfil(h, **k):
+            base = {"handle": h, "nome": "Marmitas da Bia", "seguidores": 2300, "privado": False, "categoria": "Restaurante",
+                    "bio": "Marmitas fit congeladas | Salvador-BA | Peça no iFood e pelo WhatsApp", "link": "https://wa.me/5571999999999",
+                    "posts": [{"fixado": True, "ts": agora - 300 * 86400, "codigo": "FIX", "legenda": "post antigo fixado"},
+                              {"fixado": False, "ts": agora - 2 * 86400, "codigo": "ABC", "legenda": "Kit 10 marmitas com preço novo R$ 189"}]}
+            base.update(k); return base
+        dados = [perfil("boa"),
+                 perfil("parada", posts=[{"fixado": False, "ts": agora - 60 * 86400, "codigo": "X", "legenda": "x"}]),
+                 perfil("privada", privado=True),
+                 perfil("enorme", seguidores=120000),
+                 perfil("semcidade", bio="Marmitas fit congeladas, peça pelo WhatsApp"),
+                 {"handle": "sumiu", "erro": "perfil não encontrado"}]
+        ok("\"boa\"" in p.montar_script(["@boa", "parada"]) and "web_profile_info" in p.montar_script(["boa"]), "script com os @")
+        out = p.avaliar_perfis(LOGIN, json.dumps(dados))
+        eq([c["handle"] for c in out["criados"]], ["boa"], f"só a boa entra: {out}")
+        ok(out["criados"][0]["nota"] >= p.NOTA_MINIMA, "com nota")
+        lead = p.carregar(LOGIN)["leads"][0]
+        eq(lead["evidencias"]["ultimo_post"], (dt.datetime.fromtimestamp(agora - 2 * 86400, p._tz()).date()).isoformat(),
+           "último post = o primeiro NÃO fixado")
+        ok("ifood" in lead["evidencias"]["canais"] and "whatsapp" in lead["evidencias"]["canais"], "canais lidos da bio")
+        ok("kits" in lead["evidencias"]["sinais"], "sinais lidos das legendas")
+        recusados = {r["handle"]: r["motivo"] for r in out["recusados"]}
+        ok("parado" in recusados.get("parada", ""), f"parada recusada: {recusados}")
+        ok("privado" in recusados.get("privada", ""), "privada recusada")
+        ok("grande" in recusados.get("enorme", ""), "enorme recusada")
+        eq([c["item"]["handle"] for c in out["conferir"]], ["semcidade"], "sem cidade vai para conferir")
+        eq(out["conferir"][0]["falta"], ["cidade"], "diz o que falta")
+        eq([e["handle"] for e in out["erros"]], ["sumiu"], "erro do script aparece")
+        rej = p.carregar(LOGIN)["rejeitados"]
+        ok({"parada", "privada", "enorme"} <= set(rej), "recusados anotados (não voltam por 60 dias)")
+        eq(p.avaliar_perfis(LOGIN, json.dumps([perfil("boa")]))["recusados"][0]["motivo"], "já conhecido", "repetido não duplica")
+
     def t_metricas_por_faixa(self):
         p = self.p
         self.em(self.hora(10))
