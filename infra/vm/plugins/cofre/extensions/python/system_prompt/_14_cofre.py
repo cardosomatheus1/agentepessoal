@@ -45,12 +45,15 @@ class CofrePrompt(Extension):
         itens = c.lista(c.dono(self.agent.context))
         if itens:
             linhas.append("Senhas que você TEM no cofre desta pessoa (use sem perguntar):\n" + "\n".join(
-                f"- {n}: {para or '(sem descrição — quando descobrir de qual conta é, registre com `cofre_descrever`)'}"
+                f"- {n}: {para or '(sem descrição)'}"
                 for n, para in itens))
             linhas.append("Quando um site pedir a senha de uma conta que está nessa lista — login, \"Confirmar que é você\", "
                           "reautenticação —, use o segredo dela direto: guardar no cofre já é a autorização. Pare só para captcha "
                           "ou \"não foi possível verificar seu navegador\" (nunca contorne), para código de 2FA (use `pedir_codigo`) "
                           "e se o site disser que a senha está errada (aí avise; não tente de novo).")
+            linhas.append("Sempre que o usuário disser para que serve uma senha (\"a do Instagram é INSTAGRAM\") ou você usar "
+                          "uma sem descrição num site, registre na hora com `cofre_descrever` (site e conta) — para nunca "
+                          "mais precisar perguntar.")
         else:
             linhas.append("Nenhuma senha no cofre ainda.")
         system_prompt.append("\n".join(linhas))

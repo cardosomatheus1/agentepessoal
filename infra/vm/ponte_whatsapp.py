@@ -383,9 +383,41 @@ def comando_silencio(usuario: str, texto: str) -> str | None:
             "chega na hora. Se você escrever, entende que está acordado. Mude com /silencio 23-7 ou /silencio off.")
 
 
+DESCREVER: dict[str, tuple[str, float]] = {}  # login -> (secret just saved, when): its "which account?" is pending
+DESCREVER_PRAZO = 10 * 60
+
+
+def _descricoes(usuario: str) -> tuple[Path, dict]:
+    arquivo = COFRE / f"{re.sub(r'[^a-z0-9_.-]', '', usuario.lower())}.descricoes.json"
+    try:
+        return arquivo, json.loads(arquivo.read_text(encoding="utf-8"))
+    except Exception:
+        return arquivo, {}
+
+
+def _gravar_descricoes(arquivo: Path, desc: dict) -> None:
+    COFRE.mkdir(parents=True, exist_ok=True)
+    arquivo.write_text(json.dumps(desc, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.chmod(arquivo, 0o600)
+
+
 def comando_cofre(usuario: str, texto: str) -> str | None:
-    """/senha, /senhas, /apagarsenha: handled here and never delivered to the agent.
+    """/senha, /senhas, /apagarsenha: handled here and never delivered to the agent — and the answer to
+    "which site/account is it?" right after a /senha (so the agent knows where to use it without asking).
     Returns the reply, or None when the text is not a vault command."""
+    pendente = DESCREVER.get(usuario)
+    if pendente and time.time() - pendente[1] < DESCREVER_PRAZO:
+        linha = texto.strip()
+        if linha.lower() in ("/pular", "pular"):
+            DESCREVER.pop(usuario, None)
+            return f"Ok, {pendente[0]} fica sem descrição."
+        if linha and not linha.startswith("/") and "\n" not in linha and len(linha) <= 160:
+            DESCREVER.pop(usuario, None)
+            arquivo, desc = _descricoes(usuario)
+            desc[pendente[0]] = linha
+            _gravar_descricoes(arquivo, desc)
+            log(f"vault: {usuario} described {pendente[0]}")
+            return f"📝 Anotado: {pendente[0]} = {linha}. O agente usa essa senha sozinho quando esse site pedir."
     partes = texto.strip().split(maxsplit=2)
     if not partes or partes[0].lower().split("@")[0] not in ("/senha", "/senhas", "/apagarsenha", "/cofre"):
         return None
@@ -396,17 +428,25 @@ def comando_cofre(usuario: str, texto: str) -> str | None:
     except Exception:
         dados = {}
     if comando in ("/senhas", "/cofre") or (comando == "/senha" and len(partes) < 3):
-        nomes = ", ".join(sorted(dados)) or "nenhuma ainda"
-        return f"{AJUDA_SENHA}\n\nGuardadas: {nomes}"
+        _, desc = _descricoes(usuario)
+        nomes = "\n".join(f"• {n}" + (f" — {desc[n]}" if desc.get(n) else " — (de qual conta? mande /senha de novo ou fale ao agente)")
+                          for n in sorted(dados)) or "nenhuma ainda"
+        return f"{AJUDA_SENHA}\n\nGuardadas:\n{nomes}"
     nome = re.sub(r"[^A-Z0-9_]", "_", partes[1].upper())
     if not re.fullmatch(r"[A-Z][A-Z0-9_]{1,63}", nome):
         return "Nome inválido: use letras, números e _ começando com letra (ex.: GMAIL_SENHA)."
     if comando == "/apagarsenha":
         dados.pop(nome, None)
+        arquivo_desc, desc = _descricoes(usuario)
+        if desc.pop(nome, None) is not None:
+            _gravar_descricoes(arquivo_desc, desc)
         resposta = f"🗑️ {nome} apagada do cofre."
     else:
         dados[nome] = partes[2].strip()
-        resposta = f"🔒 Guardada no cofre como {nome}. O agente usa pelo nome e nunca vê o valor."
+        DESCREVER[usuario] = (nome, time.time())
+        resposta = (f"🔒 Guardada no cofre como {nome}. O agente usa pelo nome e nunca vê o valor.\n\n"
+                    f"De qual site e conta é essa senha? Responda numa linha (ex.: Instagram @minhaconta) — "
+                    f"assim o agente sabe onde usar sem te perguntar. /pular deixa sem.")
     COFRE.mkdir(parents=True, exist_ok=True)
     os.chmod(COFRE, 0o700)
     arquivo.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
