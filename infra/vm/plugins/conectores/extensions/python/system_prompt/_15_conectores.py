@@ -32,6 +32,13 @@ class ConectoresPrompt(Extension):
                               "entrega for tabela/comparação use uma Planilha, texto/relatório use um Doc (além de PDF se pedirem), "
                               "sempre dentro da pasta \"Agente\" do Drive (crie se não existir) e mande o link. Edite só arquivos "
                               "que você criou ou que o usuário indicou; não compartilhe com ninguém nem apague arquivos.")
+        if eu == "matheus":
+            linhas.append("Claude Code (linha de comando) está instalado: `claude -p \"tarefa\" --output-format json`, rodado na "
+                          "pasta do projeto, usa o Claude pela AWS, sem login no site nem captcha. Use para tarefas de código que "
+                          "o Matheus pedir (o IA Business está em /a0/usr/workdir/aibusiness). Para editar arquivos passe "
+                          "`--permission-mode acceptEdits`; para rodar comandos, `--allowedTools \"Bash(...)\"` só com os "
+                          "necessários. Tarefa longa: rode com nohup em segundo plano e acompanhe o log. Cada chamada custa "
+                          "(de centavos a alguns dólares): não rode em loop.")
         if outros:
             linhas.append(f"Não use nesta conversa (são de outra pessoa): {', '.join(outros)}.")
         system_prompt.append("\n".join(linhas))

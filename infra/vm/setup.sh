@@ -146,6 +146,25 @@ EOF
 docker exec agent-zero /opt/venv-a0/bin/pip install --quiet faster-whisper yt-dlp || true  # yt-dlp: plugins/video
 # yt-dlp's YouTube challenge solver (ejs); it runs on the image's node (deno has no ARM build here)
 docker exec agent-zero /opt/venv-a0/bin/pip install --quiet -U "yt-dlp[default]" || true
+# Claude Code CLI for coding tasks: Claude on Bedrock through the proxy's /bedrock route (the proxy signs with
+# the VM role), so no claude.ai login, device check or captcha
+docker exec agent-zero sh -c 'command -v claude >/dev/null || npm install -g --no-fund --no-audit @anthropic-ai/claude-code' || true
+docker exec -i agent-zero sh -c 'mkdir -p /root/.claude && cat > /root/.claude/settings.json' <<'EOF'
+{
+  "env": {
+    "CLAUDE_CODE_USE_BEDROCK": "1",
+    "AWS_REGION": "us-east-1",
+    "ANTHROPIC_BEDROCK_BASE_URL": "http://host.docker.internal:8787/bedrock",
+    "CLAUDE_CODE_SKIP_BEDROCK_AUTH": "1",
+    "ANTHROPIC_MODEL": "us.anthropic.claude-opus-5-5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "us.anthropic.claude-opus-5-5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "us.anthropic.claude-sonnet-5-5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "us.anthropic.claude-haiku-5-5",
+    "DISABLE_TELEMETRY": "1",
+    "DISABLE_AUTOUPDATER": "1"
+  }
+}
+EOF
 # Web search: from an AWS address Google/Startpage/Mojeek/Qwant refuse and Brave rate-limits, so plain searches
 # came back empty. Turn on the engines that answer (Yandex, Bing) and off the ones that only time out.
 docker exec agent-zero sh -c 'grep -q "agentepessoal: motores" /etc/searxng/settings.yml || cat >> /etc/searxng/settings.yml <<EOS
