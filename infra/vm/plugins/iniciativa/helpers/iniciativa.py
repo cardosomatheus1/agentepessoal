@@ -90,8 +90,28 @@ def avaliar(login: str, candidatos: list) -> str:
             "depois chame acao \"enviar\".")
 
 
-REVISOR_URL = "http://host.docker.internal:8787/openai/v1/responses"
-REVISOR_MODELO = "openai.gpt-6.1-sol"  # stronger than the agent's model; reads the message fresh
+PROXY = "http://host.docker.internal:8787"
+MODELOS = {"luna": "openai.gpt-6-luna", "haiku": "us.anthropic.claude-haiku-5-5"}
+REVISOR_MODELO = "luna"  # Luna or Haiku 5.5 (never Sol); Luna won the 6-case battery 12/12 vs 11/12
+
+
+def _modelo(nome: str, pedido: str) -> str:
+    """One review call: Luna through the OpenAI-compatible route, Haiku through Bedrock Converse."""
+    import urllib.request
+
+    if nome == "haiku":
+        url = f"{PROXY}/bedrock/model/{MODELOS['haiku']}/converse"
+        body = {"messages": [{"role": "user", "content": [{"text": pedido}]}], "inferenceConfig": {"maxTokens": 8000}}  # it reasons first
+    else:
+        url = f"{PROXY}/openai/v1/responses"
+        body = {"model": MODELOS["luna"], "reasoning": {"effort": "medium"}, "input": [{"role": "user", "content": pedido}]}
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=180) as r:
+        data = json.loads(r.read())
+    if nome == "haiku":
+        return "".join(c.get("text", "") for c in data.get("output", {}).get("message", {}).get("content", []))
+    return "".join(c.get("text", "") for item in data.get("output", []) if item.get("type") == "message"
+                   for c in item.get("content", []) if c.get("type") == "output_text")
 
 REVISOR = """Você revisa, com olhos novos, uma mensagem que um assistente pessoal de IA quer mandar POR INICIATIVA PRÓPRIA
 (ninguém pediu) ao celular do dono. Ela só deve sair se o dono ficaria genuinamente feliz de receber. Confira:
@@ -109,29 +129,21 @@ Decida:
 Responda só JSON: {"veredito": "enviar|ajustar|descartar", "motivo": "<uma frase>", "titulo": "<se ajustar>", "texto": "<se ajustar>"}"""
 
 
-def revisar(login: str, titulo: str, texto: str, tipo: str, arquivo_texto: str = "") -> dict:
-    """Fresh review by a stronger model before an unprompted message goes out. If the reviewer is unreachable
-    the message goes as it is (it only reaches its owner) and the result says so."""
-    import urllib.request
-
+def revisar(login: str, titulo: str, texto: str, tipo: str, arquivo_texto: str = "", modelo: str = "") -> dict:
+    """Fresh-context review before an unprompted message goes out. If the reviewer is unreachable the message
+    goes as it is (it only reaches its owner) and the result says so."""
     d = carregar(login)
     f = _fios()
     panorama = f.coletar(login, 48)[:18000] if f else ""
     recentes = "\n".join(f"- {e['titulo']}: {e['texto'][:200]}" for e in d["enviadas"][-8:]) or "(nenhuma)"
     pedido = (f"{REVISOR}\n\n# MENSAGEM PROPOSTA (tipo {tipo})\nTítulo: {titulo}\n{texto}\n\n"
-              + (f"# ARQUIVO QUE VAI JUNTO\n{arquivo_texto[:8000]}\n\n" if arquivo_texto else "")
+              + (f"# ARQUIVO QUE VAI JUNTO (anexado à mensagem; .md/.txt chegam ao celular como PDF)\n{arquivo_texto[:8000]}\n\n" if arquivo_texto else "")
               + "# APRENDIZADOS SOBRE O DONO\n" + ("\n".join(f"- {a}" for a in d["aprendizados"]) or "(nenhum ainda)")
               + f"\n\n# INICIATIVAS JÁ ENVIADAS\n{recentes}\n\n# PANORAMA (o que está acontecendo)\n{panorama}")
-    body = {"model": REVISOR_MODELO, "reasoning": {"effort": "medium"},
-            "input": [{"role": "user", "content": pedido}]}
-    req = urllib.request.Request(REVISOR_URL, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=180) as r:
-            data = json.loads(r.read())
-        saida = "".join(c.get("text", "") for item in data.get("output", []) if item.get("type") == "message"
-                        for c in item.get("content", []) if c.get("type") == "output_text")
+        saida = _modelo(modelo or REVISOR_MODELO, pedido)
         achado = re.search(r"\{.*\}", saida, re.S)
-        res = json.loads(achado.group(0)) if achado else {}
+        res = json.loads(achado.group(0), strict=False) if achado else {}
     except Exception as exc:
         return {"veredito": "enviar", "motivo": f"revisor indisponível ({str(exc)[:80]})"}
     veredito = str(res.get("veredito") or "").lower()
