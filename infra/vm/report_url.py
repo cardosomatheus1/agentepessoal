@@ -4,7 +4,8 @@
 - phone: a host cloudflared quick tunnel in front of ws-scrcpy
 
 Quick-tunnel URLs change on reboot. After hibernate/resume the agent tunnel may
-keep its URL but stop answering; it is recreated after a few failed checks. The control page
+keep its URL but stop answering; it is recreated after a few failed checks. The phone quick tunnel
+can also expire ("Tunnel not found" while cloudflared keeps retrying): its unit is restarted. The control page
 writes "starting"/"stopped" into the parameters, so we compare against SSM on
 every pass and republish whenever the stored value differs from the live URL.
 """
@@ -63,10 +64,10 @@ def ui_up() -> bool:
         return False
 
 
-def reachable(url: str) -> bool:
+def reachable(url: str, path: str = "/login") -> bool:
     """The public side of the tunnel answers (any status below 500 means Cloudflare reached the UI)."""
     try:
-        with urllib.request.urlopen(url.rstrip("/") + "/login", timeout=15) as r:
+        with urllib.request.urlopen(url.rstrip("/") + path, timeout=15) as r:
             return r.status < 500
     except urllib.error.HTTPError as e:
         return e.code < 500
@@ -74,7 +75,7 @@ def reachable(url: str) -> bool:
         return False
 
 
-_dead_checks = {"n": 0}
+_dead_checks = {"n": 0, "phone": 0}
 DEAD_LIMIT = 3  # ~3 refreshes (3 min) of a dead public URL before recreating the tunnel
 
 
@@ -101,7 +102,17 @@ def phone_url() -> str | None:
         capture_output=True, text=True, timeout=30,
     ).stdout
     found = re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com", out)
-    return found[-1] if found else None
+    url = found[-1] if found else None
+    if url and not reachable(url, "/"):
+        _dead_checks["phone"] += 1
+        if _dead_checks["phone"] >= DEAD_LIMIT:
+            print(f"report_url: {url} unreachable, restarting {PHONE_UNIT}", flush=True)
+            _dead_checks["phone"] = 0
+            subprocess.run(["systemctl", "restart", PHONE_UNIT], timeout=60)
+            return None
+        return url
+    _dead_checks["phone"] = 0
+    return url
 
 
 def stored(name: str) -> str:
