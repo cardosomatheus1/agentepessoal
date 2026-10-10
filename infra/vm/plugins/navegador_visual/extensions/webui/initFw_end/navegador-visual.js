@@ -41,7 +41,7 @@ const CSS = `
     }
     .browser-annotate-toggle .surface-control-label, .browser-annotate-toggle span { display: none; }
     .browser-toolbar { flex-wrap: wrap; row-gap: 4px; }
-    .celular-panel .celular-frame { min-height: calc(100dvh - 230px); }
+    .celular-panel .celular-frame { min-height: calc(100dvh - 260px); }
   }
 `;
 
@@ -156,9 +156,9 @@ function montar(panel) {
   const pct = document.createElement("span");
   pct.className = "nv-pct";
   grupo.append(
-    botao("zoom_out", "Afastar (ver mais da página)", () => mudarZoom(+1)),
+    botao("zoom_out", "Página menor (mostra mais da página)", () => mudarZoom(+1)),
     pct,
-    botao("zoom_in", "Aproximar", () => mudarZoom(-1)),
+    botao("zoom_in", "Página maior", () => mudarZoom(-1)),
     botao("edit", "Digitar com o teclado do aparelho", () => {
       const ativo = panel.classList.toggle("nv-digitando");
       if (ativo) campo.focus();

@@ -7,8 +7,11 @@ Ajusta os painéis **Navegador**, **Computador** e **Celular** sem alterar os pl
   (na barra do Navegador e no topo do Computador) mostra ou esconde.
 - **Afastar / aproximar:** `−` e `+` mudam o tamanho da tela remota (100% a 250%; abaixo de 540 px de largura ela cresce sozinha, porque o Chromium não fica mais estreito que isso) e a imagem é reduzida
   para caber no painel, então dá para ver a página inteira. A escolha fica salva no aparelho.
+- **Lupa (Navegador, Computador e Celular):** dois dedos ampliam e movem a tela (no PC, Ctrl + rodinha);
+  o selo `− 150% + ⟲` aparece quando ampliado e volta ao normal. No Celular a tela vem de outro endereço,
+  então o botão `🔍 Zoom` liga uma camada que recebe os gestos (um dedo move); desligue para tocar no celular.
 - **Digitar:** o botão de lápis abre uma barra embaixo; o texto vai para o campo focado na página com o
   teclado do próprio celular/PC, com botões de Enter, apagar e Tab.
 
-Tudo está em `extensions/webui/initFw_end/navegador-visual.js`, que envolve três métodos do store
+A lupa está em `extensions/webui/initFw_end/lupa.js`; o resto em `extensions/webui/initFw_end/navegador-visual.js`, que envolve três métodos do store
 `browserPage` (`surfaceViewportMeasurement`, `prepareInteractiveViewFrame`, `applyViewer`).
