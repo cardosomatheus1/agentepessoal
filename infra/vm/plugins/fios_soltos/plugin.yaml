@@ -1,0 +1,4 @@
+name: fios_soltos
+title: Fios soltos e ligações
+description: Registro do que ficou em aberto (pedidos, promessas, tarefas travadas, prazos) cruzando conversas, tarefas, avisos, memória, e-mail e agenda; o agente liga os assuntos em cada conversa e uma rodada 3x ao dia avisa só o que é novo.
+version: 1.0.0
