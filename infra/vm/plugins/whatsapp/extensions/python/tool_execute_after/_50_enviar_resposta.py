@@ -41,8 +41,16 @@ def ponte():
     return carregar(nome, caminho / "helpers" / "ponte.py")
 
 
-def _aviso(ctx, texto: str, tarefa: bool) -> str:
+# Rounds written to be read on the phone (proactive ones): sent whole, under their own name, instead of
+# the cut-down "task finished" notice that points to the app.
+PARA_O_CELULAR = ("🧵", "📰", "🔎")
+LIMITE_CELULAR = 3500
+
+
+def _aviso(ctx, texto: str, tarefa: bool, nome_tarefa: str = "") -> str:
     nome = ctx.name or "conversa"
+    if tarefa and nome_tarefa.startswith(PARA_O_CELULAR):
+        return f"*{nome_tarefa}*\n\n{texto.strip()[:LIMITE_CELULAR]}"
     resumo = " ".join(texto.split())
     if len(resumo) > RESUMO:
         resumo = resumo[:RESUMO].rsplit(" ", 1)[0] + "…"
@@ -62,7 +70,8 @@ class EnviarResposta(Extension):
             return
         ctx = agent.context
         p = ponte()
-        tarefa = bool(p.tarefa(ctx))
+        nome_tarefa = p.tarefa(ctx) or ""
+        tarefa = bool(nome_tarefa)
         if tarefa and texto.strip().upper().startswith(p.SILENCIO):  # a round with nothing new stays quiet
             return
 
@@ -75,7 +84,7 @@ class EnviarResposta(Extension):
             tarefa = tarefa or bool(ctx.get_data("avisar_sempre"))  # the "Gatilhos" chat
             if not (tarefa or ausente):
                 return
-            destino, mensagem = p.dono(ctx), _aviso(ctx, texto, tarefa)
+            destino, mensagem = p.dono(ctx), _aviso(ctx, texto, tarefa, nome_tarefa)
         # a phone chat is a conversation (answer now); a task round or an away notice is progress, held during
         # the person's quiet hours unless it says it needs them
         tipo = "resposta" if de_whatsapp else ("urgente" if p.URGENTE.match(texto) else "progresso")
