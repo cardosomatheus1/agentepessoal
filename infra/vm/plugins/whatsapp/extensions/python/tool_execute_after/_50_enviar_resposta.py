@@ -50,7 +50,7 @@ LIMITE_CELULAR = 3500
 def _aviso(ctx, texto: str, tarefa: bool, nome_tarefa: str = "") -> str:
     nome = ctx.name or "conversa"
     if ctx.get_data("gatilhos_de"):  # an event trigger (e.g. the Google watcher): short, read on the phone, whole
-        return f"*⚡ {nome}*\n\n{texto.strip()[:LIMITE_CELULAR]}"
+        return f"*⚡ Aviso*\n\n{texto.strip()[:LIMITE_CELULAR]}"  # fixed title: the agent renames that chat
     if tarefa and nome_tarefa.startswith(PARA_O_CELULAR):
         return f"*{nome_tarefa}*\n\n{texto.strip()[:LIMITE_CELULAR]}"
     resumo = " ".join(texto.split())
@@ -74,6 +74,15 @@ class EnviarResposta(Extension):
         p = ponte()
         nome_tarefa = p.tarefa(ctx) or ""
         tarefa = bool(nome_tarefa)
+        avisos = ctx.get_data("_avisos_do_evento") or []  # notices held during an event (_52_avisar_celular)
+        ctx.set_data("_avisos_do_evento", [])
+        if avisos and texto.strip().upper().startswith(p.SILENCIO):  # the notices were the outcome: one message
+            tipo = "urgente" if any(t == "urgente" for _, t in avisos) else "progresso"
+            erro = await asyncio.to_thread(p.enviar, p.dono(ctx), "\n\n".join(m for m, _ in avisos), "", "", None, tipo)
+            if erro:
+                print(f"whatsapp: event notice from {ctx.id} not delivered: {erro}", flush=True)
+            return
+        # with a real outcome, the outcome alone goes (it covers what the held notices said)
         if (tarefa or ctx.get_data("avisar_sempre")) and texto.strip().upper().startswith(p.SILENCIO):
             # a round (or a trigger, e.g. the Google watcher) with nothing new stays quiet
             return
@@ -90,7 +99,8 @@ class EnviarResposta(Extension):
             destino, mensagem = p.dono(ctx), _aviso(ctx, texto, tarefa, nome_tarefa)
         # a phone chat is a conversation (answer now); a task round or an away notice is progress, held during
         # the person's quiet hours unless it says it needs them
-        tipo = "resposta" if de_whatsapp else ("urgente" if p.URGENTE.match(texto) else "progresso")
+        urgente = p.URGENTE.match(texto) or any(t == "urgente" for _, t in avisos)
+        tipo = "resposta" if de_whatsapp else ("urgente" if urgente else "progresso")
         erro = await asyncio.to_thread(p.enviar, destino, mensagem, "", "", None, tipo)
         if erro:
             print(f"whatsapp: answer from {ctx.id} not delivered: {erro}", flush=True)

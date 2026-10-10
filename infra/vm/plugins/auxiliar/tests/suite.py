@@ -344,6 +344,13 @@ class Suite:
         eq(a.pronuncia("O IA Business e as IAs"), "O I.A. Business e as I.As.", "sigla falada")
         eq(a.pronuncia("MEIA hora, IARA"), "MEIA hora, IARA", "não mexe dentro de palavras")
 
+    def t_voz_so_quando_vale(self):
+        a = self.a
+        ok(not a.vale_audio("*Bom dia!* Nada que precise de você hoje. 👍"), "nada a dizer: sem áudio")
+        ok(not a.vale_audio("*Bom dia!* Reunião às 15h."), "muito curto: sem áudio")
+        ok(a.vale_audio("*Bom dia! Sábado, 10/10*\n*Precisa de você:* aprovar o orçamento da instalação que a Carla mandou ontem; "
+                        "ela espera resposta até segunda.\n*Hoje:* 15h reunião com o João sobre o contrato do NEXOS."), "resumo real: com áudio")
+
     def t_voz_texto_falavel(self):
         a = self.a
         t = a._falavel("*Bom dia!* 📰 Resumo\n- item https://x.com/a?b=1\n\n\n- `código` [link]")
@@ -358,7 +365,7 @@ class Suite:
         falado = a.roteiro_falado(resumo)
         palavras = len(falado.split())
         ok(falado.startswith("Bom dia, Matheus"), f"abertura: {falado[:40]!r}")
-        ok(90 <= palavras <= 210, f"~1 min de fala: {palavras} palavras")
+        ok(45 <= palavras <= 125, f"curto e objetivo: {palavras} palavras")
         for proibido in ("ROS-", "R$", "*", "http", "ads_read", "15/10"):
             ok(proibido not in falado, f"{proibido!r} não pode ser lido em voz: {falado!r}")
         destino = Path("/a0/usr/testes/voz_teste.ogg")
@@ -370,7 +377,7 @@ class Suite:
                                           "-of", "json", str(destino)], capture_output=True, text=True).stdout)
         eq(info["streams"][0]["codec_name"], "opus", "nota de voz do Telegram é OGG/Opus")
         duracao = float(info["format"]["duration"])
-        ok(35 <= duracao <= 95, f"duração {duracao:.0f}s")
+        ok(15 <= duracao <= 60, f"duração {duracao:.0f}s")
         ok(1.9 <= palavras / duracao <= 3.4, f"ritmo natural: {palavras / duracao * 60:.0f} palavras/min")
         self.resultados.append({"teste": "t_voz_roteiro_e_audio·medidas", "ok": True,
                                 "info": {"palavras": palavras, "duracao_s": round(duracao, 1),

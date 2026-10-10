@@ -36,14 +36,15 @@ class AuxiliarPrompt(Extension):
         except Exception:
             return
         partes = ["## Auxiliar pessoal",
-                  "- E-mail que pede resposta dele → escreva a resposta e entregue com `rascunho` (ele envia; você nunca envia).",
+                  "- E-mail que pede resposta da pessoa → escreva a resposta e entregue com `rascunho` (quem envia é a pessoa; você nunca envia).",
                   "- Conta, boleto, fatura ou renovação com data → `contas` salvar. Reunião de verdade na agenda → `reuniao` agendar."]
         if perfil:
-            partes.append("Estilo de escrita dele (siga ao escrever qualquer coisa em nome dele):\n" + perfil[:2500])
+            partes.append("Estilo de escrita da pessoa (siga ao escrever qualquer coisa em nome dela):\n" + perfil[:2500])
         if contas:
             partes.append("Contas abertas vencendo em até 7 dias:\n" + "\n".join(f"- [{c['id']}] {a.linha_conta(c)}" for c in contas))
         for r in pos:
             partes.append(f"Você perguntou como foi a reunião «{r['titulo']}» (evento_id {r['evento_id']}, {r['inicio_txt']}). "
-                          "Se a mensagem dele for sobre isso: transforme o combinado em fios (`fios` salvar: o que, quem, "
-                          "prazo), confirme em poucas linhas o que vai lembrar e chame `reuniao` acao \"pos_registrado\".")
+                          "Se a mensagem for sobre isso: crie UM fio por combinado (`fios` salvar: titulo = o que, dono = quem, "
+                          "prazo AAAA-MM-DD quando houver data ou dia da semana), sem fios extras (nada de \"reunião realizada\"), "
+                          "e confirme em poucas linhas o que vai lembrar.")
         system_prompt.append("\n".join(partes))

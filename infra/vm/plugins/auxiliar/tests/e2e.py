@@ -253,7 +253,7 @@ def e07_alerta_de_seguranca_real():
     itens = esperar_resposta("gatilhos_de", antes)
     msgs = caixa(desde)
     ok(len(msgs) == 1, f"um aviso: {[m['texto'][:80] for m in msgs]}")
-    ok(msgs[0]["texto"].startswith("*⚡ "), f"título do aviso: {msgs[0]['texto'][:40]!r}")
+    ok(msgs[0]["texto"].startswith("*⚡ Aviso*"), f"título do aviso: {msgs[0]['texto'][:40]!r}")
     ok("PRECISA DE VOCÊ" in msgs[0]["texto"] and msgs[0]["tipo"] == "urgente", f"urgente: {msgs[0]['tipo']}")
     ok("moscou" in msgs[0]["texto"].lower(), "diz o que foi")
     return {"aviso": msgs[0]["texto"][:300]}
@@ -303,7 +303,7 @@ def e10_pos_reuniao_vira_fios():
     ok(len(f) >= 2, f"dois combinados viraram fios: {[x.get('titulo') for x in f]}")
     texto = json.dumps(f, ensure_ascii=False).lower()
     ok("proposta" in texto and "contrato" in texto, "proposta e contrato")
-    ok(all(x.get("prazo") for x in f), f"cada um com prazo: {[x.get('prazo') for x in f]}")
+    ok(all(x.get("prazo") for x in f), f"cada um com prazo: {[(x.get('titulo'), x.get('prazo'), x.get('detalhe')) for x in f]}")
     ok([r for r in estado()["reunioes"] if r["evento_id"] == "e2e-pos"][0]["pos_registrado"], "pós registrado")
     return {"fios": [f"{x.get('titulo')} | {x.get('dono')} | {x.get('prazo')}" for x in f],
             "resposta": " ".join(m["texto"] for m in caixa(desde))[:300]}
@@ -353,6 +353,8 @@ CENARIOS = [e01_email_que_pede_resposta, e02_mesmo_email_nao_duplica, e03_contas
 def main():
     so = sys.argv[1] if len(sys.argv) > 1 else ""
     limpar()
+    receber({"texto": "/nova", "id": f"e2e-nova-{time.time()}"})  # a fresh phone chat: no memory of an earlier run
+    # (the "teste_*" chats are removed afterwards through POST /plugins/auxiliar/testar {"limpar": true})
     resultados = []
     for f in CENARIOS:
         if so and so not in f.__name__:

@@ -1,4 +1,5 @@
-"""The morning summary (scheduled task named "📰…") also arrives as a ~1 min voice note, to listen on the go."""
+"""The morning summary (scheduled task named "📰…") also arrives as a short voice note, to listen on the go —
+unless it has nothing to say."""
 
 import asyncio
 import importlib.util
@@ -49,6 +50,8 @@ class AudioResumo(Extension):
             return
         raiz = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
         a = _carregar("auxiliar_helper", raiz / "helpers" / "auxiliar.py")
+        if not a.vale_audio(texto):
+            return
         login = ponte.dono(agent.context) or "matheus"
         pasta = Path("/a0/usr/auxiliar/audio")
         for velho in pasta.glob("resumo-*.ogg") if pasta.exists() else []:

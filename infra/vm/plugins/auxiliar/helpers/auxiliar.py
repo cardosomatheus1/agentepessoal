@@ -433,19 +433,23 @@ def _falavel(texto: str) -> str:
     return re.sub(r"\n{2,}", "\n", t).strip()
 
 
+def vale_audio(texto: str) -> bool:
+    """A voice note only when the summary has something to say ("nothing needs you today" is not worth one)."""
+    return len(_falavel(texto).split()) >= 25 and "nada que precise de você" not in texto.lower()
+
+
 def roteiro_falado(texto: str) -> str:
-    """The summary rewritten to be heard (~1 min) by Luna; the cleaned text when that fails."""
+    """The summary rewritten to be heard (under a minute) by Luna; the cleaned text when that fails."""
     import urllib.request
 
-    pedido = ("Reescreva este resumo como uma mensagem de voz de cerca de 1 minuto (130 a 170 palavras) que uma "
-              "assistente simpática gravaria para o Matheus, em português do Brasil falado — do jeito que se fala, "
-              "não do jeito que se escreve. Regras: comece com \"Bom dia, Matheus!\"; frases curtas, uma ideia por "
-              "frase; ligue os assuntos como numa conversa (\"Primeiro…\", \"Além disso…\", \"E por último…\"); "
-              "vírgulas onde se respira; nada de listas, símbolos, parênteses, links, siglas soletradas ou códigos "
-              "(troque \"ROS-F5-006\" por \"a próxima etapa do IA Business\"); datas e horas como se fala (\"amanhã às "
-              "três da tarde\", \"dia doze\"); valores como se fala (\"cento e vinte e nove reais\"). Diga só o que "
-              "importa hoje e termine com uma frase curta e calorosa. Responda só com o texto a ser falado.\n\n"
-              + texto[:6000])
+    pedido = ("Reescreva este resumo como uma mensagem de voz curta e objetiva que uma assistente gravaria para o "
+              "Matheus, em português do Brasil falado — do jeito que se fala, não do jeito que se escreve. Ele quer só o "
+              "que importa: diga o que precisa dele e o que é de hoje; corte o resto. Regras: 50 a 110 palavras; comece "
+              "com \"Bom dia, Matheus!\"; frases curtas, uma ideia por frase, ligadas como numa conversa (\"Primeiro…\", "
+              "\"E hoje…\"); vírgulas onde se respira; nada de listas, símbolos, parênteses, links, siglas soletradas ou "
+              "códigos (troque \"ROS-F5-006\" por \"a próxima etapa do IA Business\"); datas, horas e valores como se "
+              "fala (\"amanhã às três da tarde\", \"cento e vinte e nove reais\"); termine numa frase curta. Responda "
+              "só com o texto a ser falado.\n\n" + texto[:6000])
     body = {"model": "openai.gpt-6-luna", "reasoning": {"effort": "low"}, "input": [{"role": "user", "content": pedido}]}
     try:
         req = urllib.request.Request("http://host.docker.internal:8787/openai/v1/responses", data=json.dumps(body).encode(),
