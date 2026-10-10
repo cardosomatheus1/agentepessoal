@@ -146,7 +146,9 @@ class Prospeccao(Tool):
             erro = p.definir_conta(login, texto or conta_ativa)
             return r(erro or f"Prospecção configurada para @{p.conta(login)}.")
         if acao == "conferido":
-            erro = p.conferido(login, str(kwargs.get("direct") or ""), str(kwargs.get("notificacoes") or ""))
+            inter = kwargs.get("interagiram") or []
+            inter = inter if isinstance(inter, list) else [h.strip() for h in str(inter).split(",") if h.strip()]
+            erro = p.conferido(login, str(kwargs.get("direct") or ""), str(kwargs.get("notificacoes") or ""), inter)
             return r(erro or "Conferência registrada. Agora chame `prospeccao` acao \"proxima\".")
         if acao == "hoje":
             texto_dia = p.resumo_hoje(login)

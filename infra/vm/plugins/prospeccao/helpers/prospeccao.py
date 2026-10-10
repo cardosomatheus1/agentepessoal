@@ -36,6 +36,15 @@ CANAIS = ("instagram", "parceiro")
 PROIBIDAS = re.compile(r"\b(promo[cç][aã]o|imperd[ií]vel|oportunidade [uú]nica|[uú]ltimas vagas|gr[aá]tis por tempo|"
                        r"clique aqui|link na bio|erp|cmv)\b", re.I)
 LINK = re.compile(r"(https?://|www\.|\b[\w-]+\.(com|com\.br|app|io|net|me|link|ly)\b)", re.I)
+# The links prospecting may send — free tools that show a result before asking for any data: the pricing calculator
+# (default) and the delivery simulator (for who sells on iFood). Only in the reminder and in answers to people who
+# wrote back — never in the first message (a link from a stranger reads as spam). The Raio-X and the 15-errors quiz stay
+# out: any "more or less" answer counts as a problem there, so everyone gets "8 of 8 need attention".
+LINK_CALCULADORA = "https://raizconnect.com.br/materiais/precificacao/calculadora?utm_source=instagram&utm_medium=dm"
+LINK_DELIVERY = "https://raizconnect.com.br/materiais/quanto-sobra-no-delivery?utm_source=instagram&utm_medium=dm"
+CALCULADORA = re.compile(r"(https?://)?(www\.)?raizconnect\.com\.br/materiais/(precificacao/calculadora|quanto-sobra-no-delivery)"
+                         r"(\?[\w=&%.-]*)?(?![\w/])", re.I)
+TIPOS_COM_LINK = ("dm_lembrete", "resposta")
 
 
 # ------------------------------------------------------------------ storage
@@ -306,8 +315,8 @@ def devidos(login: str) -> dict:
             out["dm_abertura"].append(l)
         elif l["etapa"] == "abordado" and espera >= ESPERA_LEMBRETE:
             out["dm_lembrete"].append(l)
-    for lista in out.values():  # best fit first: the day's slots are limited
-        lista.sort(key=lambda l: -(l.get("nota") if l.get("nota") is not None else 60))
+    for lista in out.values():  # who engaged back first, then best fit: the day's slots are limited
+        lista.sort(key=lambda l: (not l.get("interagiu"), -(l.get("nota") if l.get("nota") is not None else 60)))
     return out
 
 
@@ -347,8 +356,11 @@ def validar_texto(tipo: str, texto: str, d: dict, lid: str) -> str:
         return "mensagem curta demais para ser específica"
     if len(t) > 900:
         return "mensagem longa demais para uma DM (até 900 caracteres)"
-    if tipo in ("dm_abertura", "dm_lembrete", "parceiro") and LINK.search(t):
-        return "sem link nas mensagens de abordagem"
+    sem_calculadora = CALCULADORA.sub("", t)
+    if LINK.search(sem_calculadora) or (tipo not in TIPOS_COM_LINK and CALCULADORA.search(t)):
+        return (f"link só o da calculadora ({LINK_CALCULADORA}) ou o do simulador de delivery ({LINK_DELIVERY}), e só no "
+                "lembrete ou na resposta a quem escreveu" if tipo in TIPOS_COM_LINK
+                else "sem link na primeira mensagem nem em mensagem a parceiro")
     if tipo != "resposta" and PROIBIDAS.search(t):
         return f"palavra fora do tom do playbook: «{PROIBIDAS.search(t).group(0)}»"
     if tipo in ("dm_abertura", "parceiro") and not re.search(r"matheus", t, re.I):
@@ -436,8 +448,11 @@ SEM perguntar a ele, então você é a última barreira antes de uma pessoa real
    o agente diz ter visto. Pergunta não é afirmação ("ele entra no kit?" é aceitável); elogio a algo que está nos
    dados também é.
 2. Fere o playbook: comentário de aquecimento que vende, cita a Raiz, um sistema ou chama para o direct; jargão
-   (ERP, sistema de gestão, CMV, solução) na abertura; promessa de resultado ou número inventado; pressão; link;
-   primeira mensagem sem a oferta do cálculo grátis ou sem a assinatura do Matheus.
+   (ERP, sistema de gestão, CMV, solução) na abertura; promessa de resultado ou número inventado; pressão; link na
+   primeira mensagem (os únicos links permitidos são a calculadora de precificação e o simulador de delivery da
+   Raiz, no lembrete e nas respostas — e são opcionais: lembrete sem link também vale); primeira mensagem
+   sem a assinatura do Matheus. A primeira mensagem pode ser só uma pergunta sobre como a pessoa precifica (variante
+   A) ou já trazer a oferta do cálculo grátis (variante B): as duas são válidas.
 3. Soa como spam, intimidade forçada ou constrange a pessoa.
 4. Tem erro de português ou abreviação de internet que faça a marca parecer descuidada.
 Os modelos do playbook são guia, não texto fixo: variações naturais são boas (falar de entrega, embalagem ou iFood ao
@@ -568,7 +583,7 @@ def definir_conta(login: str, handle: str) -> str:
 CONFERENCIA_VALE = 40 * 60  # an execution round must have read the Direct and the notifications this recently
 
 
-def conferido(login: str, direct: str, notificacoes: str) -> str:
+def conferido(login: str, direct: str, notificacoes: str, interagiram: list | None = None) -> str:
     """The round says what it read in the Direct and in the notifications (answers are looked for before acting).
     '' when recorded, else why not: the notifications text must be what is on the page, not a one-word claim."""
     direct, notificacoes = (direct or "").strip(), (notificacoes or "").strip()
@@ -577,6 +592,11 @@ def conferido(login: str, direct: str, notificacoes: str) -> str:
                 "as primeiras linhas que aparecem na página de notificações")
     d = carregar(login)
     d["conferencia"] = {"em": agora(), "direct": direct[:500], "notificacoes": notificacoes[:800]}
+    for h in interagiram or []:  # followed back / liked / commented: warmer, goes first for the next message
+        lead = next((l for l in d["leads"] if l["handle"] == normalizar(str(h))), None)
+        if lead and not lead.get("interagiu"):
+            lead["interagiu"] = agora()
+            lead["historico"].append({"em": agora(), "tipo": "interagiu", "texto": "seguiu de volta / curtiu / comentou"})
     salvar(login, d)
     return ""
 

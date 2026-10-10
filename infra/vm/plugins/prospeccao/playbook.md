@@ -68,9 +68,18 @@ perfil/bio, pelo endereço, pelas tags de local e por hashtags locais (#marmitas
 
 ## 3. A oferta (o gancho)
 
-**"Calculo de graça quanto sobra em 1 produto seu."** A pessoa manda a receita (ingredientes e quantidades) e o preço
-de venda; o agente devolve o custo, a margem e quanto sobra depois de embalagem e taxa do iFood. Sem cadastro, sem
-compromisso, sem link. Quem manda a receita vira **lead**.
+Duas portas, as duas de graça:
+- **Calculadora de precificação** (faz sozinho, sem cadastro para começar, 6 passos, mostra quanto sobra em cada
+  pedido): **https://raizconnect.com.br/materiais/precificacao/calculadora?utm_source=instagram&utm_medium=dm** — o
+  link padrão, mandado só quando a conversa chega em preço/custo/lucro: no lembrete e nas respostas a quem escreveu.
+  Nunca na primeira mensagem (link de desconhecido parece spam).
+- **"Calculo pra você quanto sobra em 1 produto"**: a pessoa manda a receita (ingredientes e quantidades) e o preço
+  de venda; o agente devolve o custo, a margem e quanto sobra depois de embalagem e taxa do iFood.
+- **Simulador "quanto sobra no delivery"** (1 minuto, resultado na hora sem cadastro) — alternativa mais leve para
+  quem vende no iFood: **https://raizconnect.com.br/materiais/quanto-sobra-no-delivery?utm_source=instagram&utm_medium=dm**.
+- Não use na prospecção o Raio-X do Lucro, os 15 Erros Silenciosos nem a página da planilha (/materiais/precificacao,
+  que pede nome, e-mail e WhatsApp antes de mostrar qualquer coisa).
+Quem usa a calculadora, manda receita ou pede o cálculo vira **lead**.
 
 ## 4. Tom de voz
 
@@ -79,7 +88,7 @@ compromisso, sem link. Quem manda a receita vira **lead**.
 - **Sempre algo específico e verdadeiro** do perfil: um produto, um post recente, o bairro, uma novidade. Se você
   não viu, não cite. Nunca invente fatos, números, clientes ou depoimentos.
 - No máximo 1 emoji. Nada de "promoção", "oportunidade", "imperdível", "parceria incrível", caixa alta.
-- **Sem link** e sem preço do plano na primeira mensagem.
+- **Sem link** e sem preço do plano na primeira mensagem; o único link permitido depois é o da calculadora.
 - Assina como "Matheus, da Raiz Connect" (é o fundador falando pela conta da empresa).
 
 ## 5. Sequência por lead (Instagram)
@@ -87,8 +96,8 @@ compromisso, sem link. Quem manda a receita vira **lead**.
 | Dia | Ação | Observação |
 |---|---|---|
 | 0 | **aquecer**: seguir + curtir 1–2 posts recentes + (opcional) 1 comentário útil no post mais recente | comentário só se houver algo genuíno a dizer; nunca cite a Raiz em comentário |
-| 2+ | **dm_abertura** (variante A ou B, alternando) | só depois do aquecimento |
-| 5+ | **dm_lembrete** — 1 só, curta, com valor | se não houve resposta |
+| 2+ | **dm_abertura** (variante A ou B, alternando) | só depois do aquecimento; quem seguiu de volta, curtiu ou respondeu o comentário vai primeiro |
+| 5+ | **dm_lembrete** — 1 só, curta, com a calculadora | se não houve resposta |
 | 10+ | marcar **sem_resposta** e parar | nunca mais de 2 mensagens sem resposta |
 
 Se a pessoa responder: registre (**respondeu**), avise o Matheus na hora e proponha uma **resposta**. Se mandar uma
@@ -102,20 +111,27 @@ e marque **descartado**.
 - "Esse {produto} ficou lindo! Vocês fazem por encomenda pra {ocasião} também?"
 - "Que capricho nesse {produto} 👏 Esse sai mais no iFood ou na encomenda?"
 
-**DM de abertura — variante A (lucro):**
+**DM de abertura — variante A (pergunta primeiro, sem oferta):** abre conversa com uma pergunta honesta e fácil sobre
+como a pessoa precifica. Nada de oferta, pedido de receita ou link — a oferta vem depois que ela responder.
+"Oi, {nome}! Vi o {produto específico} de vocês — {elogio específico e verdadeiro}. Tô conversando com donos de
+{segmento} aqui em {cidade} pra entender uma coisa: vocês definem o preço fazendo a conta de cada ingrediente ou vai
+mais pelo preço da concorrência? — Matheus, da Raiz Connect"
+
+**DM de abertura — variante B (oferta direta):**
 "Oi, {nome}! Vi o {produto específico} de vocês — {elogio específico e verdadeiro}. Uma pergunta de quem também
 mexe com isso: vocês sabem quanto sobra de verdade em cada {produto} depois de embalagem e taxa do iFood? Se quiser,
 me manda a receita de um e o preço que vocês cobram que eu faço essa conta pra você, de graça. — Matheus, da Raiz
-Connect (a gente ajuda quem produz alimento a enxergar o lucro de cada produto)"
+Connect"
 
-**DM de abertura — variante B (insumo):**
-"Oi, {nome}! Acompanhei {algo concreto do perfil}. Com {insumo do produto deles} subindo do jeito que tá, muita
-{segmento} acaba vendendo com margem menor sem perceber. Se quiser, calculo de graça o custo e o lucro de 1 produto
-de vocês — só preciso da receita e do preço. Topa? — Matheus, da Raiz Connect"
+**Lembrete (dia 5+) — com a calculadora:**
+"Oi, {nome}! Passando só pra deixar uma coisa útil: fizemos uma calculadora grátis que mostra quanto sobra em cada
+{produto} depois de insumo, embalagem e taxa do iFood — dá pra começar sem cadastro: {LINK DA CALCULADORA}. Se
+preferir, me manda a receita de um que eu faço a conta pra você 🙂"
 
-**Lembrete (dia 5+):**
-"Oi, {nome}! Só pra não deixar passar: o cálculo continua de pé. Muita gente descobre que um produto que vende bem
-dá bem menos lucro do que imaginava. Se quiser, é só mandar a receita de um deles 🙂"
+**Resposta a quem respondeu** (sempre com o ✅ do Matheus): retome o que a pessoa disse, com naturalidade. Se ela
+contou como precifica (no feeling, pela concorrência, numa planilha…), mostre que entende o problema numa frase e
+ofereça as duas portas: a calculadora (link) ou "me manda a receita de um que eu calculo". Se ela já mandou receita,
+faça o cálculo de verdade (seção 5).
 
 **Parceiro** (curso, consultor, contador, fornecedor): apresente a Raiz em 2 frases, proponha o cálculo grátis para
 os alunos/clientes dele e uma comissão recorrente por indicação ([% a definir com o Matheus]); peça 15 minutos.
@@ -133,6 +149,7 @@ tarde", "ação bloqueada", "suspeita de automação" ou pedir verificação: **
 - mensagens iguais para várias pessoas; inventar fatos, números ou depoimentos; prometer resultado;
 - contatar de novo quem disse não, quem foi descartado ou quem já recebeu 2 mensagens sem responder;
 - abordar perfil pessoal, privado ou de menor; usar WhatsApp para abordagem fria;
+- mandar link na primeira mensagem, ou qualquer link que não seja o da calculadora;
 - passar dos limites do dia; mandar texto diferente do aprovado (pelo revisor ou pelo Matheus); mandar resposta ou
   mensagem a parceiro sem o ✅ do Matheus.
 

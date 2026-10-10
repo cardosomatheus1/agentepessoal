@@ -379,6 +379,33 @@ class Suite:
         a, motivo = p.proxima(LOGIN, "raizconnect")
         ok(not a and "confira" in motivo, "conferência vencida: confere de novo na rodada seguinte")
 
+    def t_links_das_iscas(self):
+        p = self.p
+        d = p.carregar(LOGIN)
+        lembrete = ("Oi, Ana! Passando só pra deixar uma coisa útil: fizemos uma calculadora grátis que mostra quanto sobra "
+                    "em cada marmita depois de insumo, embalagem e taxa do iFood: {link} — se preferir, me manda a receita 🙂")
+        eq(p.validar_texto("dm_lembrete", lembrete.format(link=p.LINK_CALCULADORA), d, "x"), "", "calculadora no lembrete")
+        eq(p.validar_texto("resposta", lembrete.format(link="raizconnect.com.br/materiais/quanto-sobra-no-delivery"), d, "x"), "",
+           "simulador de delivery na resposta, sem https")
+        for ruim in ("https://raizconnect.com.br/materiais/raio-x-do-lucro", "https://raizconnect.com.br/#/register",
+                     "https://raizconnect.com.br/materiais/precificacao", "bit.ly/calc",
+                     p.LINK_CALCULADORA + " e www.outro.com.br"):
+            ok(p.validar_texto("dm_lembrete", lembrete.format(link=ruim), d, "x"), f"link fora da lista barrado: {ruim}")
+        ok("primeira mensagem" in p.validar_texto("dm_abertura", DM_A.replace("Me manda", p.LINK_CALCULADORA + " Me manda"), d, "x"),
+           "nem a calculadora na primeira mensagem")
+
+    def t_quem_interagiu_vai_primeiro(self):
+        p = self.p
+        self.em(self.hora(10))
+        forte = self._aquecido("forte1")
+        d = p.carregar(LOGIN)
+        p._lead(d, forte)["nota"] = 95
+        p.salvar(LOGIN, d)
+        fraco = self._aquecido("fraco1")
+        eq([l["id"] for l in p.devidos(LOGIN)["dm_abertura"]][0], forte, "sem interação: maior nota primeiro")
+        eq(p.conferido(LOGIN, "nenhuma conversa nova", "fraco1 começou a seguir você · 1 h; outra notificação", ["@fraco1", "desconhecido"]), "", "ok")
+        eq([l["id"] for l in p.devidos(LOGIN)["dm_abertura"]][0], fraco, "quem seguiu de volta passa na frente")
+
     def t_metricas_por_faixa(self):
         p = self.p
         self.em(self.hora(10))
