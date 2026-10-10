@@ -345,6 +345,55 @@ async def _botao_conta(usuario: str, botao: str) -> dict:
     return {"ok": True}
 
 
+def _prospeccao():
+    """plugins/prospeccao helper, loaded by path."""
+    import importlib.util
+
+    nome = "prospeccao_helper"
+    caminho = Path("/a0/usr/plugins/prospeccao/helpers/prospeccao.py")
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
+
+
+async def _botao_prospeccao(usuario: str, botao: str) -> dict:
+    """✅ Aprovar (the execution round sends it later, paced), ✏️ Editar (the agent asks what to change), ❌ Pular;
+    on the batch header: ✅ Aprovar todas."""
+    _, login, aid, acao = (botao.split(":") + ["", "", "", ""])[:4]
+    if login != usuario:
+        return {"ok": False}
+    p = _prospeccao()
+    if acao == "todas":
+        n = p.aprovar_todas(login, p.ids_do_pacote(login, aid))
+        p.enviar(login, f"✅ {n} aprovadas. Saem ao longo do dia, com intervalo, e eu te aviso de qualquer resposta.",
+                 ponte=ponte(), tipo="resposta")
+        return {"ok": True}
+    if acao == "editar":
+        d = p.carregar(login)
+        a = next((x for x in d["acoes"] if x["id"] == aid), None)
+        if not a or a["estado"] not in ("proposta", "aprovada"):
+            p.enviar(login, "Essa já foi decidida ou executada.", ponte=ponte(), tipo="resposta")
+            return {"ok": True}
+        lead = p._lead(d, a["lead_id"])
+        return _para_a_conversa(usuario, (
+            f"✏️ Quero editar a ação de prospecção {aid} ({a['tipo']}) para {lead['nome']} (@{lead['handle']}):\n\n"
+            f"{a['texto'] or '(aquecer sem comentário)'}\n\nPergunte em uma linha o que eu quero mudar. Quando eu responder, "
+            f"reescreva seguindo o playbook e use `prospeccao` acao \"editar\" com acao_id {aid} (ela volta para eu aprovar)."))
+    a = p.decidir(login, aid, "aprovar" if acao == "aprovar" else "pular")
+    if not a:
+        p.enviar(login, "Essa já foi decidida, executada ou expirou.", ponte=ponte(), tipo="resposta")
+    elif a["estado"] == "expirada":
+        p.enviar(login, "⌛ Essa proposta expirou (mais de 24 h). Ela volta na próxima rodada se ainda fizer sentido.",
+                 ponte=ponte(), tipo="resposta")
+    return {"ok": True}
+
+
 class Receber(ApiHandler):
     @classmethod
     def requires_auth(cls) -> bool:
@@ -395,6 +444,8 @@ class Receber(ApiHandler):
             return await _botao_rascunho(usuario, botao)
         if botao.startswith("ct:"):  # a bill reminder of plugins/auxiliar
             return await _botao_conta(usuario, botao)
+        if botao.startswith("pa:"):  # a prospecting action of plugins/prospeccao
+            return await _botao_prospeccao(usuario, botao)
 
         pedido = ponte().PEDIDOS.get(usuario)
         if pedido and not pedido.get("codigo") and texto and len(texto) <= 40 and "\n" not in texto \

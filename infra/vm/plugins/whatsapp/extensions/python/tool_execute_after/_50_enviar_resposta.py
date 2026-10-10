@@ -43,7 +43,7 @@ def ponte():
 
 # Rounds written to be read on the phone (proactive ones): sent whole, under their own name, instead of
 # the cut-down "task finished" notice that points to the app.
-PARA_O_CELULAR = ("🧵", "📰", "🔎", "📅", "📝", "🗓️")
+PARA_O_CELULAR = ("🧵", "📰", "🔎", "📅", "📝", "🗓️", "🎯")
 LIMITE_CELULAR = 3500
 
 
