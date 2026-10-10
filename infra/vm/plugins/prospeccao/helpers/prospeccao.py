@@ -30,6 +30,7 @@ LIBERACAO = 12 * 60                # approved action: window for the approvals r
 ETAPAS = ("novo", "aquecido", "abordado", "lembrado", "respondeu", "lead", "demo", "teste", "cliente",
           "sem_resposta", "descartado")
 FINAIS = ("cliente", "sem_resposta", "descartado")
+CONTAS_PROIBIDAS = ("cardosomatheus1",)  # the person's own profile: prospecting never runs from it
 CANAIS = ("instagram", "parceiro")
 
 PROIBIDAS = re.compile(r"\b(promo[cç][aã]o|imperd[ií]vel|oportunidade [uú]nica|[uú]ltimas vagas|gr[aá]tis por tempo|"
@@ -133,6 +134,25 @@ def registrar(login: str, novos: list) -> dict:
     return out
 
 
+REJEITADO_DIAS = 60
+
+
+def rejeitar(login: str, itens: list) -> int:
+    """Profiles examined that do not fit, with why: skipped by later rounds for 60 days, and auditable."""
+    d = carregar(login)
+    rej = d.setdefault("rejeitados", {})
+    n = 0
+    for item in itens if isinstance(itens, list) else []:
+        h = normalizar(str((item or {}).get("handle") or ""))
+        if h and not any(l["handle"] == h for l in d["leads"]):
+            rej[h] = {"motivo": str(item.get("motivo") or "")[:160], "em": agora()}
+            n += 1
+    corte = agora() - REJEITADO_DIAS * 86400
+    d["rejeitados"] = {h: v for h, v in rej.items() if v["em"] > corte}
+    salvar(login, d)
+    return n
+
+
 def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "") -> dict | None:
     d = carregar(login)
     lead = _lead(d, lid)
@@ -194,7 +214,7 @@ def limites(d: dict) -> dict:
 
 def _usadas_hoje(d: dict, tipo: str) -> int:
     hoje = _hoje_local()
-    return sum(1 for a in d["acoes"] if a["tipo"] == tipo and a["estado"] in ("aprovada", "executada")
+    return sum(1 for a in d["acoes"] if a["tipo"] == tipo and a["estado"] in ("proposta", "aprovada", "executada")
                and _hoje_local(a.get("executada_em") or a.get("decidida") or a["criada"]) == hoje)
 
 
@@ -326,9 +346,31 @@ def editar(login: str, aid: str, texto: str) -> tuple[dict | None, str]:
     return a, ""
 
 
-def proxima(login: str) -> tuple[dict | None, str]:
-    """Next approved action that may run now (hours, pause, spacing, daily limits). (action, '') or (None, why)."""
+def conta(login: str) -> str:
+    return normalizar(carregar(login)["config"].get("conta_instagram") or "")
+
+
+def definir_conta(login: str, handle: str) -> str:
+    h = normalizar(handle)
+    if not h or h in CONTAS_PROIBIDAS:
+        return "conta inválida para prospecção"
     d = carregar(login)
+    d["config"]["conta_instagram"] = h
+    salvar(login, d)
+    return ""
+
+
+def proxima(login: str, conta_ativa: str = "") -> tuple[dict | None, str]:
+    """Next approved action that may run now (right account, hours, pause, spacing, daily limits)."""
+    d = carregar(login)
+    esperada, ativa = conta(login), normalizar(conta_ativa)
+    if not esperada:
+        return None, "a conta de Instagram da prospecção não está configurada: nada é executado"
+    if ativa in CONTAS_PROIBIDAS:
+        return None, f"a conta ativa é @{ativa} (pessoal): troque para @{esperada} pelo seletor de contas e chame de novo"
+    if ativa != esperada:
+        return None, (f"confirme a conta ATIVA no Instagram (o @ que aparece no menu do perfil) e chame `proxima` com "
+                      f"conta_ativa; tem que ser @{esperada}")
     if modo_teste(login) and not d["config"].get("executar_em_teste"):
         return None, "modo teste: nada é executado"
     if agora() < d["bloqueio_ate"]:
@@ -424,6 +466,12 @@ def botoes_acao(login: str, aid: str) -> list:
             {"id": f"{base}:pular", "titulo": "❌ Pular"}]
 
 
+def pendentes(login: str) -> list:
+    """Proposals still waiting for the person (to resend them when test mode is turned off)."""
+    d = carregar(login)
+    return [(a, _lead(d, a["lead_id"])) for a in d["acoes"] if a["estado"] == "proposta"]
+
+
 def guardar_pacote(login: str, ids: list) -> str:
     d = carregar(login)
     pid = _id()
@@ -507,6 +555,9 @@ def resumo_contexto(login: str) -> str:
                        + (f"; já recebeu: {l['historico'][-1]['texto'][:160]}" if l["historico"] else "") for l in lista[:25]]
     conhecidos = sorted(l["handle"] for l in d["leads"])
     linhas.append(f"\n## Já conhecidos ({len(conhecidos)}) — não registre de novo\n" + (", ".join(conhecidos[-400:]) or "(nenhum)"))
+    rej = d.get("rejeitados") or {}
+    if rej:
+        linhas.append(f"\n## Já examinados e rejeitados ({len(rej)}) — não abra de novo\n" + ", ".join(sorted(rej)[-400:]))
     m = metricas(login, 14)
     linhas.append(f"\n## Como está indo (14 dias)\n{json.dumps(m['geral'], ensure_ascii=False)}; por variante: "
                   f"{json.dumps(m['por_variante'], ensure_ascii=False)}; aprovação das propostas: {m['taxa_aprovacao']}%")

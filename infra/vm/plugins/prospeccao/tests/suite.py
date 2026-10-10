@@ -49,14 +49,14 @@ def caixa(desde):
 
 
 TEXTOS = [
-    "Oi, {n}! Vi o bolo de pote de ninho com morango de vocês, que capricho na camada. Vocês sabem quanto sobra em cada pote depois da embalagem? Faço essa conta de graça se me mandar a receita. — Matheus, fundador da Raiz Connect",
-    "Oi, {n}! Acompanhei o cardápio fit da semana, gostei da opção de escondidinho de mandioca. Com a carne subindo, muita marmitaria vende com margem menor sem perceber. Calculo de graça o lucro de 1 marmita. Topa? — Matheus, fundador da Raiz Connect",
-    "Oi, {n}! Que lindo o kit de salgados para festa com coxinha de costela. Vocês já sabem quanto lucram por cento de salgado depois do óleo e das embalagens? Se quiser, faço essa conta sem custo. — Matheus, fundador da Raiz Connect",
-    "Oi, {n}! Vi que vocês abriram encomendas de congelados para o mês, a lasanha de berinjela parece ótima. Me manda a receita e o preço que eu calculo quanto sobra em cada uma, de graça. — Matheus, fundador da Raiz Connect",
+    "Oi, {n}! Vi o bolo de pote de ninho com morango de vocês, que capricho na camada. Vocês sabem quanto sobra em cada pote depois da embalagem? Faço essa conta de graça se me mandar a receita. — Matheus, da Raiz Connect",
+    "Oi, {n}! Acompanhei o cardápio fit da semana, gostei da opção de escondidinho de mandioca. Com a carne subindo, muita marmitaria vende com margem menor sem perceber. Calculo de graça o lucro de 1 marmita. Topa? — Matheus, da Raiz Connect",
+    "Oi, {n}! Que lindo o kit de salgados para festa com coxinha de costela. Vocês já sabem quanto lucram por cento de salgado depois do óleo e das embalagens? Se quiser, faço essa conta sem custo. — Matheus, da Raiz Connect",
+    "Oi, {n}! Vi que vocês abriram encomendas de congelados para o mês, a lasanha de berinjela parece ótima. Me manda a receita e o preço que eu calculo quanto sobra em cada uma, de graça. — Matheus, da Raiz Connect",
 ]
 
 DM_A = ("Oi, Ana! Vi a marmita de frango com batata-doce de vocês — capricho no tempero. Vocês sabem quanto sobra de "
-        "verdade em cada marmita depois de embalagem e taxa do iFood? Me manda a receita que eu faço a conta. — Matheus, fundador da Raiz Connect")
+        "verdade em cada marmita depois de embalagem e taxa do iFood? Me manda a receita que eu faço a conta. — Matheus, da Raiz Connect")
 
 
 class Suite:
@@ -109,8 +109,9 @@ class Suite:
         self.p.decidir(LOGIN, aid, "aprovar")
         d = self.p.carregar(LOGIN)
         d["config"]["executar_em_teste"] = True
+        d["config"]["conta_instagram"] = "raizconnect"
         self.p.salvar(LOGIN, d)
-        a, motivo = self.p.proxima(LOGIN)
+        a, motivo = self.p.proxima(LOGIN, "raizconnect")
         ok(a and a["id"] == aid, f"próxima é a aprovada ({motivo})")
         self.p.resultado(LOGIN, aid, True, "feito")
         return aid
@@ -236,6 +237,12 @@ class Suite:
         p.salvar(LOGIN, d)
         eq(p.limites(p.carregar(LOGIN))["aquecer"], p.LIMITE_DIA["aquecer"], "depois de 7 dias, limite cheio")
 
+    def t_propostas_pendentes_contam_na_cota(self):
+        p = self.p
+        r1 = p.propor(LOGIN, [{"lead_id": self._lead(f"q{i}"), "tipo": "aquecer", "texto": ""} for i in range(5)])
+        r2 = p.propor(LOGIN, [{"lead_id": self._lead(f"r{i}"), "tipo": "aquecer", "texto": ""} for i in range(5)])
+        eq(len(r1["propostas"]) + len(r2["propostas"]), p.LIMITE_PILOTO["aquecer"], "duas rodadas no mesmo dia não passam da cota")
+
     def t_execucao_horario_espacamento_bloqueio(self):
         p = self.p
         self.em(self.hora(10))
@@ -245,32 +252,42 @@ class Suite:
             aid = p.propor(LOGIN, [{"lead_id": lid, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
             p.decidir(LOGIN, aid, "aprovar")
             ids.append(aid)
-        a, motivo = p.proxima(LOGIN)
+        d = p.carregar(LOGIN)
+        d["config"]["conta_instagram"] = "raizconnect"
+        p.salvar(LOGIN, d)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
         ok(a is None and "teste" in motivo, "login de teste não executa por padrão")
         d = p.carregar(LOGIN)
         d["config"]["executar_em_teste"] = True
         p.salvar(LOGIN, d)
+        a, motivo = p.proxima(LOGIN, "cardosomatheus1")
+        ok(a is None and "pessoal" in motivo, f"conta pessoal ativa é recusada ({motivo})")
+        a, motivo = p.proxima(LOGIN, "")
+        ok(a is None and "conta_ativa" in motivo, "sem dizer a conta ativa, nada")
+        a, motivo = p.proxima(LOGIN, "outraconta")
+        ok(a is None and "@raizconnect" in motivo, "outra conta qualquer é recusada")
+        eq(p.definir_conta(LOGIN, "@cardosomatheus1"), "conta inválida para prospecção", "a pessoal nunca vira a conta da prospecção")
         self.em(self.hora(7))
-        a, motivo = p.proxima(LOGIN)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
         ok(a is None and "horário" in motivo, f"7h: fora do horário ({motivo})")
         self.em(self.hora(20, 0) + 60)
-        ok(p.proxima(LOGIN)[0] is None, "20h01: fora")
+        ok(p.proxima(LOGIN, "raizconnect")[0] is None, "20h01: fora")
         self.em(self.hora(10))
-        a, _ = p.proxima(LOGIN)
+        a, _ = p.proxima(LOGIN, "raizconnect")
         eq(a["id"], ids[0], "a mais antiga aprovada primeiro")
         p.resultado(LOGIN, a["id"], True, "ok")
-        a, motivo = p.proxima(LOGIN)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
         ok(a is None and "espaçamento" in motivo, "3 min entre ações")
         self.em(self.relogio + 181)
-        a, _ = p.proxima(LOGIN)
+        a, _ = p.proxima(LOGIN, "raizconnect")
         eq(a["id"], ids[1], "segunda depois de 3 min")
         p.resultado(LOGIN, a["id"], False, "Tente novamente mais tarde", bloqueio=True)
         self.em(self.relogio + 600)
-        a, motivo = p.proxima(LOGIN)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
         ok(a is None and "pausado" in motivo, "bloqueio pausa tudo")
         self.em(self.relogio + 48 * 3600)
         if p.HORARIO[0] <= p._hora_local() < p.HORARIO[1]:
-            ok(p.proxima(LOGIN)[0], "volta depois de 48 h")
+            ok(p.proxima(LOGIN, "raizconnect")[0], "volta depois de 48 h")
         eq(p._lead(p.carregar(LOGIN), p.carregar(LOGIN)["acoes"][1]["lead_id"])["etapa"], "novo", "falha não avança a etapa")
 
     def t_aprovacao_expira_e_nao_decide_duas_vezes(self):
@@ -338,6 +355,19 @@ class Suite:
         ok(0 < lib["ate"] - p.agora() <= p.LIBERACAO, "janela de minutos")
         p.encerrar_liberacao(c)
         eq(c.get_data("_aprovacoes_liberadas"), None, "fecha depois do resultado")
+
+    def t_rejeitados(self):
+        p = self.p
+        lid = self._lead("jaelead")
+        eq(p.rejeitar(LOGIN, [{"handle": "@RedeGrande", "motivo": "franquia"}, {"handle": "jaelead", "motivo": "x"}]), 1,
+           "rejeita só quem não é lead")
+        ctx = p.resumo_contexto(LOGIN)
+        ok("redegrande" in ctx and "rejeitados" in ctx, "contexto mostra os rejeitados")
+        d = p.carregar(LOGIN)
+        d["rejeitados"]["redegrande"]["em"] -= 61 * 86400
+        p.salvar(LOGIN, d)
+        p.rejeitar(LOGIN, [])
+        ok("redegrande" not in p.carregar(LOGIN)["rejeitados"], "depois de 60 dias pode ser reexaminado")
 
     def t_metricas(self):
         p = self.p

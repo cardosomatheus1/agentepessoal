@@ -53,6 +53,7 @@ COMO_EXECUTAR = {
 class Prospeccao(Tool):
     async def execute(self, acao: str = "contexto", leads=None, acoes=None, acao_id: str = "", ok=None, detalhe: str = "",
                       bloqueio=False, lead_id: str = "", etapa: str = "", nota: str = "", texto: str = "", dias: int = 7,
+                      conta_ativa: str = "",
                       **kwargs) -> Response:
         p = pr()
         login = dono(self.agent.context)
@@ -66,6 +67,9 @@ class Prospeccao(Tool):
         if acao == "registrar":
             out = p.registrar(login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
             return r(json.dumps(out, ensure_ascii=False))
+        if acao == "rejeitar":
+            n = p.rejeitar(login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
+            return r(f"{n} perfis anotados como examinados e fora do perfil (não voltam por 60 dias).")
         if acao == "propor":
             itens = acoes if isinstance(acoes, list) else json.loads(acoes or "[]")
             out = p.propor(login, itens)
@@ -83,13 +87,13 @@ class Prospeccao(Tool):
             return r(json.dumps(resumo, ensure_ascii=False) +
                      ("\nCorrija as recusadas (motivo ao lado) e proponha de novo, ou deixe de fora." if out["recusadas"] else ""))
         if acao == "proxima":
-            a, motivo = p.proxima(login)
+            a, motivo = p.proxima(login, conta_ativa)
             if not a:
                 p.encerrar_liberacao(self.agent.context)
                 return r(f"NADA AGORA: {motivo}. Termine a rodada.")
             p.liberar(self.agent.context, a)
             lead = a["lead"]
-            return r(f"Ação {a['id']} ({a['tipo']}) APROVADA pelo Matheus para @{lead['handle']} — {lead['url']}\n"
+            return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) APROVADA pelo Matheus para @{lead['handle']} — {lead['url']}\n"
                      f"{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
                      "Depois chame `prospeccao` acao \"resultado\" com acao_id, ok (true/false) e detalhe (o que viu na tela). "
                      "Se o Instagram mostrar bloqueio/limite/'tente mais tarde'/verificação, PARE e mande bloqueio: true.")
@@ -122,6 +126,9 @@ class Prospeccao(Tool):
             p.enviar(login, "✏️ Versão nova para aprovar:\n\n" + p.mensagem_acao(a, p._lead(d, a["lead_id"])),
                      p.botoes_acao(login, a["id"]), ponte=ponte())
             return r("Nova versão enviada para aprovação.")
+        if acao == "conta":
+            erro = p.definir_conta(login, texto or conta_ativa)
+            return r(erro or f"Prospecção configurada para @{p.conta(login)}.")
         if acao == "metricas":
             return r(json.dumps(p.metricas(login, int(dias or 7)), ensure_ascii=False))
-        return r("acao: playbook | contexto | registrar | propor | proxima | resultado | etapa | editar | metricas")
+        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | etapa | editar | metricas")
