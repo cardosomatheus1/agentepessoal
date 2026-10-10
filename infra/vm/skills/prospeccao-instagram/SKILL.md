@@ -48,7 +48,13 @@ ensina o COMO no Instagram. Leia o playbook (`prospeccao` acao "playbook") antes
 4. Não abra posts um por um para descobrir o autor. Se a busca não trouxer @ novos, troque os termos.
    Só se o script falhar (erro http), use a busca da tela: https://www.instagram.com/explore/search/keyword/?q=<termo>.
 
-## 3. Avaliar perfis (rápido: vários de uma vez)
+## 3. Avaliar perfis
+
+**Primeiro tente a API oficial:** `prospeccao` acao "avaliar_api" com `achados` = o JSON da seção 2. Ela avalia todos
+pela API da Meta (sem navegador, sem o limite 429) e já registra/recusa. Só se ela disser que a API não está
+configurada, use o script do navegador abaixo.
+
+### Pelo navegador (plano B: vários de uma vez)
 
 1. Da seção 2 você já recebeu o script de avaliação (ou chame `perfis_script` com `leads` = até 15 @).
 2. Os @ já conhecidos e rejeitados ficam de fora automaticamente.

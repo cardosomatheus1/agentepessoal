@@ -1,6 +1,7 @@
 """Tool `prospeccao`: find and score → propose (pre-approved types pass a reviewer, the rest go to the phone) → execute one approved action at a time →
 report back; plus stages and numbers."""
 
+import asyncio
 import importlib.util
 import json
 import sys
@@ -54,6 +55,31 @@ COMO_EXECUTAR = {
 }
 
 
+async def _ler_token_da_tela(context_id: str) -> str:
+    """Reads a Meta access token straight from an open tab (Graph API Explorer / Access Token Tool), so the value
+    never goes through the model. Prefers the longest one (the extended token is the longest on the debugger page)."""
+    import re as _re
+    from plugins._browser.helpers import runtime as modulo
+
+    rt = await modulo.get_runtime(context_id, create=False)
+    if rt is None:
+        return ""
+    abas = (await rt.call("list")).get("browsers") or []
+    melhores = []
+    js = ("() => { const t = []; document.querySelectorAll('input,textarea').forEach(e => t.push(e.value || '')); "
+          "t.push(document.body ? document.body.innerText : ''); return t.join(' '); }")
+    for aba in abas:
+        if "facebook.com" not in str(aba.get("currentUrl", "")):
+            continue
+        try:
+            res = await rt.call("evaluate", aba["id"], js)
+        except Exception:
+            continue
+        texto = str(res.get("result") if isinstance(res, dict) else res)
+        melhores += _re.findall(r"EAA[A-Za-z0-9]{80,}", texto)
+    return max(melhores, key=len) if melhores else ""
+
+
 class Prospeccao(Tool):
     async def execute(self, acao: str = "contexto", leads=None, acoes=None, acao_id: str = "", ok=None, detalhe: str = "",
                       bloqueio=False, lead_id: str = "", etapa: str = "", nota: str = "", texto: str = "", dias: int = 7,
@@ -80,6 +106,27 @@ class Prospeccao(Tool):
             return r("Rode este script com `browser` action \"evaluate\" numa aba do instagram.com (logada como @raiz.connect). "
                      "Ele devolve um JSON com os @ achados; passe-o INTEIRO para `prospeccao` acao \"perfis_script\" com "
                      "`achados` = o texto (a ferramenta tira os já conhecidos e rejeitados).\n\n" + p.montar_busca(termos))
+        if acao == "avaliar_api":
+            if kwargs.get("achados"):
+                handles = p.novos_handles(login, kwargs["achados"])
+            else:
+                handles = leads if isinstance(leads, list) else [h.strip() for h in str(leads or texto or "").replace(",", " ").split() if h.strip()]
+                handles = p.novos_handles(login, handles)
+            if not handles:
+                return r("Nenhum @ novo (todos já conhecidos ou rejeitados).")
+            perfis = await asyncio.to_thread(p.descobrir_perfis, login, handles)
+            if perfis and perfis[0].get("handle") == "-":
+                return r(perfis[0]["erro"] + ". Use perfis_script (navegador) por enquanto.")
+            out = p.avaliar_perfis(login, perfis)
+            return r(json.dumps(out, ensure_ascii=False) + "\nAvaliados pela API oficial. Criados já estão registrados com nota; "
+                     "recusados anotados; \"conta pessoal ou inexistente\" = perfil sem conta comercial (fora do perfil ideal).")
+        if acao == "token_meta":
+            token = await _ler_token_da_tela(self.agent.context.id)
+            if not token:
+                return r("Não achei um token (EAA…) em nenhuma aba aberta. Deixe aberta a aba do Explorador da Graph API ou da "
+                         "ferramenta de token (depois de \"Estender\") e chame de novo.")
+            out = await asyncio.to_thread(p.guardar_token_meta, login, token)
+            return r(json.dumps(out, ensure_ascii=False))
         if acao == "perfis_script":
             pausa = p.api_pausada(login)
             if pausa:
@@ -193,4 +240,4 @@ class Prospeccao(Tool):
             return r("Aprovação automática " + ("LIGADA" if ligado else "DESLIGADA") + " (aquecer, primeira mensagem e lembrete).")
         if acao == "metricas":
             return r(json.dumps(p.metricas(login, int(dias or 7)), ensure_ascii=False))
-        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | buscar_script | perfis_script | avaliar_perfis | etapa | conferido | editar | hoje | auto | metricas")
+        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | buscar_script | avaliar_api | token_meta | perfis_script | avaliar_perfis | etapa | conferido | editar | hoje | auto | metricas")

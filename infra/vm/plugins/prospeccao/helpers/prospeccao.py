@@ -325,6 +325,88 @@ def api_pausada(login: str) -> str:
     return dt.datetime.fromtimestamp(ate, _tz()).strftime("%H:%M") if agora() < ate else ""
 
 
+# ------------------------------------------------------------------ official API (Instagram Graph "business discovery")
+
+GRAPH = "https://graph.facebook.com/v21.0"
+COFRE_TOKEN, COFRE_IG = "META_IG_TOKEN", "META_IG_USER_ID"
+
+
+def _cofre():
+    import importlib.util as iu
+    spec = iu.spec_from_file_location("cofre_helper_pro", "/a0/usr/plugins/cofre/helpers/cofre.py")
+    m = iu.module_from_spec(spec); spec.loader.exec_module(m)
+    return m
+
+
+def _graph(caminho: str, params: dict) -> dict:
+    import urllib.error, urllib.parse, urllib.request
+    url = f"{GRAPH}/{caminho}?" + urllib.parse.urlencode(params)
+    try:
+        with urllib.request.urlopen(url, timeout=30) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        try:
+            return json.loads(e.read())
+        except Exception:
+            return {"error": {"message": f"http {e.code}"}}
+
+
+def guardar_token_meta(login: str, token_usuario: str) -> dict:
+    """From a (long-lived) user token: find the Page linked to the prospecting Instagram account, keep ITS token
+    (a Page token from a long-lived user token does not expire) and the IG user id in the owner's vault. Returns a
+    summary without secrets."""
+    esperado = conta(login) or "raiz.connect"
+    r = _graph("me/accounts", {"fields": "name,access_token,instagram_business_account{id,username}", "limit": 50,
+                               "access_token": token_usuario})
+    if r.get("error"):
+        return {"ok": False, "erro": r["error"].get("message", "")[:200]}
+    paginas = r.get("data") or []
+    alvo = next((pg for pg in paginas if (pg.get("instagram_business_account") or {}).get("username", "").lower() == esperado), None)
+    if not alvo:
+        ligadas = {pg.get("name"): (pg.get("instagram_business_account") or {}).get("username") for pg in paginas}
+        return {"ok": False, "erro": f"nenhuma Página ligada a @{esperado}", "paginas": ligadas}
+    c = _cofre()
+    c.salvar(login, COFRE_TOKEN, alvo["access_token"]); c.descrever(login, COFRE_TOKEN, f"Meta · token da Página {alvo['name']} (leitura do Instagram @{esperado})")
+    c.salvar(login, COFRE_IG, alvo["instagram_business_account"]["id"]); c.descrever(login, COFRE_IG, f"Meta · id da conta @{esperado}")
+    info = _graph("debug_token", {"input_token": alvo["access_token"], "access_token": alvo["access_token"]}).get("data") or {}
+    expira = info.get("expires_at", 0)
+    return {"ok": True, "pagina": alvo["name"], "instagram": esperado,
+            "expira": "nunca" if not expira else dt.datetime.fromtimestamp(expira, _tz()).strftime("%d/%m/%Y")}
+
+
+def descobrir_perfis(login: str, handles: list) -> list:
+    """Profile data through the official API, in the same shape the browser script returns (so avaliar_perfis
+    reads both). Accounts that are not business/creator come back as an error (personal profiles: out anyway)."""
+    segredos = _cofre().carregar(login)
+    token, ig = segredos.get(COFRE_TOKEN), segredos.get(COFRE_IG)
+    if not token or not ig:
+        return [{"handle": "-", "erro": "API da Meta não configurada (falta o token no cofre)"}]
+    out = []
+    for h in [normalizar(str(x)) for x in handles if normalizar(str(x))][:30]:
+        campos = (f"business_discovery.username({h}){{username,name,biography,website,followers_count,"
+                  "media.limit(8){timestamp,caption,permalink}}")
+        r = _graph(ig, {"fields": campos, "access_token": token})
+        if r.get("error"):
+            msg = r["error"].get("message", "")
+            out.append({"handle": h, "erro": "limite da API (espere)" if r["error"].get("code") in (4, 17, 32, 613)
+                        else "conta pessoal ou inexistente" if "business" in msg.lower() or "username" in msg.lower() or r["error"].get("code") == 110
+                        else msg[:120]})
+            continue
+        b = r.get("business_discovery") or {}
+        posts = []
+        for m in (b.get("media") or {}).get("data") or []:
+            try:
+                ts = int(dt.datetime.strptime(m["timestamp"][:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=dt.timezone.utc).timestamp())
+            except Exception:
+                continue
+            codigo = (m.get("permalink") or "").rstrip("/").split("/")[-1]
+            posts.append({"fixado": False, "ts": ts, "codigo": codigo, "legenda": (m.get("caption") or "")[:200]})
+        out.append({"handle": b.get("username", h), "nome": b.get("name") or h, "seguidores": b.get("followers_count") or 0,
+                    "privado": False, "bio": (b.get("biography") or "")[:300], "link": b.get("website") or "",
+                    "categoria": "", "posts": posts})
+    return out
+
+
 def montar_script(handles: list) -> str:
     hs = [normalizar(str(h)) for h in handles if normalizar(str(h))][:5]  # 5 x 3 s: under the 30 s evaluate limit, gentle
     return SCRIPT_PERFIS.replace("__HANDLES__", json.dumps(hs))

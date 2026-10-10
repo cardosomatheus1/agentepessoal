@@ -417,6 +417,47 @@ class Suite:
         eq(len(p.novos_handles(LOGIN, [{"handle": f"h{i}"} for i in range(40)])), 30, "no máximo 30 na fila")
         ok(p.montar_script([f"h{i}" for i in range(9)]).count("\"h") == 5, "5 perfis por script (limite de 30 s)")
 
+    def t_api_oficial_business_discovery(self):
+        p = self.p
+        self.em(self.hora(11))
+        cofre = {}
+        class C:
+            def carregar(self, login): return dict(cofre)
+            def salvar(self, login, n, v): cofre[n] = v
+            def descrever(self, *a): pass
+        agora = int(p.agora())
+        def iso(ts): return dt.datetime.fromtimestamp(ts, dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+0000")
+        def graph(caminho, params):
+            if caminho == "me/accounts":
+                return {"data": [{"name": "Outra", "access_token": "EAAoutra", "instagram_business_account": {"id": "9", "username": "outra"}},
+                                 {"name": "Raiz Connect", "access_token": "EAApagina", "instagram_business_account": {"id": "178", "username": "raizconnect"}}]}
+            if caminho == "debug_token":
+                return {"data": {"expires_at": 0}}
+            h = params["fields"].split("username(")[1].split(")")[0]
+            if h == "pessoal1":
+                return {"error": {"code": 110, "message": "Invalid user id"}}
+            return {"business_discovery": {"username": h, "name": "Marmitas da Bia", "followers_count": 2300,
+                    "biography": "Marmitas fit congeladas | Salvador-BA | Peça no iFood e pelo WhatsApp", "website": "https://wa.me/55719",
+                    "media": {"data": [{"timestamp": iso(agora - 3 * 86400), "caption": "Kit 10 marmitas", "permalink": "https://www.instagram.com/p/ABC/"},
+                                       {"timestamp": iso(agora - 200 * 86400), "caption": "antigo", "permalink": "https://www.instagram.com/p/OLD/"}]}}}
+        orig_c, orig_g = p._cofre, p._graph
+        p._cofre, p._graph = (lambda: C()), graph
+        try:
+            d = p.carregar(LOGIN); d["config"]["conta_instagram"] = "raizconnect"; p.salvar(LOGIN, d)
+            eq(p.descobrir_perfis(LOGIN, ["x"])[0]["erro"][:13], "API da Meta n", "sem token: avisa")
+            res = p.guardar_token_meta(LOGIN, "EAAusuario")
+            ok(res["ok"] and res["pagina"] == "Raiz Connect" and res["expira"] == "nunca", f"pega a Página da conta certa: {res}")
+            eq(cofre, {"META_IG_TOKEN": "EAApagina", "META_IG_USER_ID": "178"}, "token da Página e id no cofre")
+            ok("EAA" not in json.dumps(res), "o resumo não mostra o token")
+            perfis = p.descobrir_perfis(LOGIN, ["@boa.api", "pessoal1"])
+            eq(perfis[1]["erro"], "conta pessoal ou inexistente", "conta não comercial")
+            out = p.avaliar_perfis(LOGIN, perfis)
+            eq([c["handle"] for c in out["criados"]], ["boa.api"], f"avaliada pela API e registrada: {out}")
+            lead = next(l for l in p.carregar(LOGIN)["leads"] if l["handle"] == "boa.api")
+            eq(lead["evidencias"]["ultimo_post"], dt.datetime.fromtimestamp(agora - 3 * 86400, p._tz()).date().isoformat(), "data do post mais novo")
+        finally:
+            p._cofre, p._graph = orig_c, orig_g
+
     def t_avaliacao_rapida_de_perfis(self):
         p = self.p
         self.em(self.hora(11))
