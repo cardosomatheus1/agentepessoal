@@ -121,9 +121,12 @@ class Prospeccao(Tool):
             if not lead:
                 return r(f"Lead ou etapa inválidos (etapas: {', '.join(p.ETAPAS)}).")
             if etapa in ("respondeu", "lead", "demo"):
-                emoji = {"respondeu": "💬", "lead": "🔥", "demo": "📅"}[etapa]
-                p.enviar(login, f"{emoji} *{lead['nome']}* (@{lead['handle']}) — {etapa}\n\n{nota[:500]}\n{lead['url']}",
-                         tipo="urgente" if etapa != "respondeu" else "resposta", ponte=ponte())
+                emoji, frase = {"respondeu": ("💬", "respondeu no Instagram"),
+                                "lead": ("🔥", "virou lead (quer o cálculo / mandou receita)"),
+                                "demo": ("📅", "topou conversar")}[etapa]
+                p.enviar(login, f"{emoji} *{lead['nome']}* (@{lead['handle']}) {frase}\n\n«{nota[:500]}»\n\n"
+                         "A resposta que eu sugerir chega em seguida para o seu ✅.\n" + lead["url"],
+                         tipo="urgente", ponte=ponte())  # someone answered: tell him now (Telegram), even in quiet hours
             return r(f"@{lead['handle']} agora está em {etapa}.")
         if acao == "editar":
             a, motivo = p.editar(login, acao_id, texto)

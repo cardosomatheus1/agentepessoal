@@ -62,7 +62,7 @@ HOJE = """Resumo do dia da prospecção Raiz Connect. Só leitura.
 TAREFAS = {
     "🎯 Prospecção — buscar": (SIS_BUSCA, BUSCAR, {"minute": "23", "hour": "9", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
     "🎯 Prospecção — executar": (SIS_EXEC, EXECUTAR, {"minute": "50,20", "hour": "9-19", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
-    "🎯 Prospecção — resumo do dia": ("Você só repassa o resumo do dia da prospecção, sem acrescentar nada.", HOJE, {"minute": "7", "hour": "20", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
+    "🎯 Prospecção — resumo do dia": ("Você só repassa o resumo do dia da prospecção, sem acrescentar nada.", HOJE, {"minute": "17", "hour": "20", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
     "🎯 Prospecção — semana": ("Você faz o relatório semanal da prospecção, só leitura.", SEMANA, {"minute": "41", "hour": "8", "day": "*", "month": "*", "weekday": "1", "timezone": "America/Bahia"}),
 }
 

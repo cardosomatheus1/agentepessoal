@@ -752,14 +752,20 @@ def resumo_hoje(login: str) -> str:
     if respostas:
         linhas.append("\n💬 *Responderam* — olhe primeiro")
         linhas += [f"• {l['nome']} (@{l['handle']}): {l['etapa']}" for l in respostas]
-    if feitas:
+    if feitas:  # everything that went out today, one line per profile
         n = {t: sum(1 for a in feitas if a["tipo"] == t) for t in TIPOS}
-        partes = [f"{n['aquecer']} aquecidos" if n["aquecer"] else "", f"{n['dm_abertura']} primeiras mensagens" if n["dm_abertura"] else "",
-                  f"{n['dm_lembrete']} lembretes" if n["dm_lembrete"] else "", f"{n['resposta']} respostas" if n["resposta"] else ""]
-        linhas.append("\n✅ *Feito hoje:* " + ", ".join(x for x in partes if x))
-        for a in [x for x in feitas if x["tipo"] in ("dm_abertura", "dm_lembrete")][:5]:
+        nomes = {"aquecer": "aquecidos", "dm_abertura": "primeiras mensagens", "dm_lembrete": "lembretes",
+                 "resposta": "respostas", "parceiro": "parceiros"}
+        linhas.append("\n✅ *Feito hoje:* " + ", ".join(f"{n[t]} {nomes[t]}" for t in TIPOS if n[t]))
+        for a in sorted(feitas, key=lambda x: x["executada_em"]):
             l = leads.get(a["lead_id"]) or {}
-            linhas.append(f"• @{l.get('handle')}: «{a['texto'][:140]}{'…' if len(a['texto']) > 140 else ''}»")
+            if a["tipo"] == "aquecer":
+                comentou = a["texto"] and "não saiu" not in (a.get("detalhe") or "") and "não foi publicado" not in (a.get("detalhe") or "")
+                o_que = "seguiu e curtiu" + (f"; comentou «{a['texto'][:90]}{'…' if len(a['texto']) > 90 else ''}»" if comentou else
+                                             " (o comentário não saiu)" if a["texto"] else "")
+            else:
+                o_que = f"{nomes[a['tipo']][:-1] if a['tipo'] != 'dm_abertura' else 'primeira mensagem'}: «{a['texto'][:120]}{'…' if len(a['texto']) > 120 else ''}»"
+            linhas.append(f"• @{l.get('handle')} — {o_que}")
     if novos:
         novos.sort(key=lambda l: -(l.get("nota") or 0))
         linhas.append(f"\n🔎 *{len(novos)} leads novos* ({rejeitados} perfis examinados e descartados)")
