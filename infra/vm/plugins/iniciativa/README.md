@@ -14,4 +14,8 @@ interrupção, manda uma mensagem — de preferência já com o trabalho adianta
 - **Aprendizado**: botões "✅ Bora" (o agente continua/executa na conversa do Telegram), "👍 Útil" e "👎 Não
   precisa"; o placar por tipo e os `aprendizados` (o que a pessoa disse que quer ou não) entram na próxima rodada.
 
+- **Revisor** (GPT-6.1 Sol, olhos novos): antes de sair, confere fatos contra o panorama e o arquivo, novidade, valor,
+  preferências e forma; envia, ajusta o texto ou descarta (o motivo volta para a próxima rodada). Se cair, a mensagem
+  vai como está (só chega ao dono).
+
 Registro: `/a0/usr/iniciativa/<login>.json`. Os botões chegam por `plugins/whatsapp/api/receber.py` (`ini:`).

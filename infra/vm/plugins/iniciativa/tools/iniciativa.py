@@ -65,6 +65,19 @@ class Iniciativa(Tool):
                 if erro:
                     return Response(message=f"Não enviado: {erro}. Corrija o `arquivo` (precisa estar em /a0/usr).",
                                     break_loop=False)
+            arquivo_texto = ""
+            if arquivo and Path(arquivo).suffix.lower() in (".md", ".txt", ".markdown", ".csv"):
+                try:
+                    arquivo_texto = Path(arquivo).read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    pass
+            rev = ini.revisar(login, titulo.strip(), texto.strip(), str(tipo or "ideia"), arquivo_texto)
+            if rev["veredito"] == "descartar":
+                ini.descartada(login, titulo.strip(), rev["motivo"])
+                return Response(message=f"O revisor descartou: {rev['motivo']}. Não mande outra nesta rodada; "
+                                        "responda SEM NOVIDADE.", break_loop=False)
+            if rev["veredito"] == "ajustar":
+                titulo, texto = rev["titulo"], rev["texto"]
             iid = ini.registrar(login, titulo.strip(), texto.strip(), str(tipo or "ideia").lower())
             if anexo:  # the file first, so the message with the buttons stays last
                 erro = ponte.enviar(login, arquivo=anexo, legenda=f"💡 {titulo.strip()}", tipo="progresso")
@@ -73,5 +86,7 @@ class Iniciativa(Tool):
             erro = ponte.enviar(login, ini.mensagem(titulo, texto), botoes=ini.botoes(login, iid), tipo="progresso")
             if erro:
                 return Response(message=f"Falhou ao enviar: {erro}", break_loop=False)
-            return Response(message=f"Iniciativa {iid} enviada ao celular com botões. Responda SEM NOVIDADE.", break_loop=False)
+            nota = {"ajustar": f" (o revisor ajustou: {rev['motivo']})", "enviar": ""}[rev["veredito"]]
+            return Response(message=f"Iniciativa {iid} enviada ao celular com botões{nota}. Responda SEM NOVIDADE.",
+                            break_loop=False)
         return Response(message="acao: contexto | candidatos | enviar | aprender", break_loop=False)

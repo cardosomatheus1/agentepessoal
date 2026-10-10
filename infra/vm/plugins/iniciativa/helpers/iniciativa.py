@@ -90,6 +90,66 @@ def avaliar(login: str, candidatos: list) -> str:
             "depois chame acao \"enviar\".")
 
 
+REVISOR_URL = "http://host.docker.internal:8787/openai/v1/responses"
+REVISOR_MODELO = "openai.gpt-6.1-sol"  # stronger than the agent's model; reads the message fresh
+
+REVISOR = """Você revisa, com olhos novos, uma mensagem que um assistente pessoal de IA quer mandar POR INICIATIVA PRÓPRIA
+(ninguém pediu) ao celular do dono. Ela só deve sair se o dono ficaria genuinamente feliz de receber. Confira:
+1. Fatos: cada fato, número, data ou nome da mensagem (e do arquivo, se houver) está apoiado no PANORAMA ou no
+   ARQUIVO? Nada inventado nem exagerado ("já está aprovado" sem evidência, medida que ninguém citou).
+2. Novidade: não é algo já resolvido, já avisado (fios soltos ou iniciativas recentes) nem óbvio para ele.
+3. Valor: é concreto e acionável para algo que ele está fazendo de verdade? Uma pessoa ocupada agradeceria?
+4. Preferências: respeita os aprendizados sobre o que ele quer ou não receber.
+5. Forma: português natural de conversa, até 8 linhas em parágrafos curtos, sem jargão técnico, sem caminhos de
+   pasta (/a0/...), termina dizendo o que ele ganha ao tocar em "✅ Bora".
+Decida:
+- "enviar": está bom como está;
+- "ajustar": vale mandar, mas corrija (fato sem apoio sai, texto mais claro/curto) — devolva titulo e texto prontos;
+- "descartar": falha em fatos de forma que não dá para corrigir, ou em novidade/valor.
+Responda só JSON: {"veredito": "enviar|ajustar|descartar", "motivo": "<uma frase>", "titulo": "<se ajustar>", "texto": "<se ajustar>"}"""
+
+
+def revisar(login: str, titulo: str, texto: str, tipo: str, arquivo_texto: str = "") -> dict:
+    """Fresh review by a stronger model before an unprompted message goes out. If the reviewer is unreachable
+    the message goes as it is (it only reaches its owner) and the result says so."""
+    import urllib.request
+
+    d = carregar(login)
+    f = _fios()
+    panorama = f.coletar(login, 48)[:18000] if f else ""
+    recentes = "\n".join(f"- {e['titulo']}: {e['texto'][:200]}" for e in d["enviadas"][-8:]) or "(nenhuma)"
+    pedido = (f"{REVISOR}\n\n# MENSAGEM PROPOSTA (tipo {tipo})\nTítulo: {titulo}\n{texto}\n\n"
+              + (f"# ARQUIVO QUE VAI JUNTO\n{arquivo_texto[:8000]}\n\n" if arquivo_texto else "")
+              + "# APRENDIZADOS SOBRE O DONO\n" + ("\n".join(f"- {a}" for a in d["aprendizados"]) or "(nenhum ainda)")
+              + f"\n\n# INICIATIVAS JÁ ENVIADAS\n{recentes}\n\n# PANORAMA (o que está acontecendo)\n{panorama}")
+    body = {"model": REVISOR_MODELO, "reasoning": {"effort": "medium"},
+            "input": [{"role": "user", "content": pedido}]}
+    req = urllib.request.Request(REVISOR_URL, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=180) as r:
+            data = json.loads(r.read())
+        saida = "".join(c.get("text", "") for item in data.get("output", []) if item.get("type") == "message"
+                        for c in item.get("content", []) if c.get("type") == "output_text")
+        achado = re.search(r"\{.*\}", saida, re.S)
+        res = json.loads(achado.group(0)) if achado else {}
+    except Exception as exc:
+        return {"veredito": "enviar", "motivo": f"revisor indisponível ({str(exc)[:80]})"}
+    veredito = str(res.get("veredito") or "").lower()
+    if veredito not in ("enviar", "ajustar", "descartar"):
+        return {"veredito": "enviar", "motivo": "revisor sem resposta válida"}
+    if veredito == "ajustar" and not (str(res.get("titulo") or "").strip() and str(res.get("texto") or "").strip()):
+        veredito = "enviar"
+    return {"veredito": veredito, "motivo": str(res.get("motivo") or "")[:300],
+            "titulo": str(res.get("titulo") or "").strip()[:80], "texto": str(res.get("texto") or "").strip()[:1500]}
+
+
+def descartada(login: str, titulo: str, motivo: str) -> None:
+    d = carregar(login)
+    d.setdefault("descartadas", []).append({"quando": time.time(), "titulo": titulo[:120], "motivo": motivo[:300]})
+    d["descartadas"] = d["descartadas"][-30:]
+    salvar(login, d)
+
+
 def registrar(login: str, titulo: str, texto: str, tipo: str) -> str:
     d = carregar(login)
     iid = uuid.uuid4().hex[:6]
@@ -202,6 +262,9 @@ def contexto(login: str, ignorar: str = "") -> str:
         partes.append("## Iniciativas recentes (não repita assunto dos últimos 3 dias)\n" + "\n".join(
             f"- {time.strftime('%d/%m %H:%M', time.localtime(e['quando']))} [{e['tipo']}] {e['titulo']} → reação: {e.get('reacao') or 'nenhuma'}"
             for e in d["enviadas"][-15:]))
+    if d.get("descartadas"):
+        partes.append("## O revisor barrou estas (evite o mesmo erro)\n" + "\n".join(
+            f"- {x['titulo']}: {x['motivo']}" for x in d["descartadas"][-6:]))
     f = _fios()
     if f:
         partes.append(f.coletar(login, 48, ignorar=ignorar)[:22000])
