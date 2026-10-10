@@ -16,7 +16,8 @@ SCRIPT = """(() => {
   const t = (e.getAttribute("type") || "").toLowerCase();
   const naoTexto = ["button", "submit", "reset", "checkbox", "radio", "range", "color", "file", "image", "hidden"];
   const editavel = e.isContentEditable || e.tagName === "TEXTAREA" || (e.tagName === "INPUT" && !naoTexto.includes(t));
-  return { editavel: !!editavel && !e.disabled && !e.readOnly, tipo: editavel ? (t || e.tagName.toLowerCase()) : "" };
+  return { editavel: !!editavel && !e.disabled && !e.readOnly, tipo: editavel ? (t || e.tagName.toLowerCase()) : "",
+    tela: [innerWidth, innerHeight, devicePixelRatio, outerWidth, outerHeight, screenX, screenY] };
 })()"""
 
 
@@ -33,4 +34,4 @@ class Foco(ApiHandler):
         except Exception as exc:  # page gone, navigating, etc.
             return {"editavel": False, "tipo": "", "erro": str(exc)[:200]}
         valor = (r or {}).get("result") or {}
-        return {"editavel": bool(valor.get("editavel")), "tipo": str(valor.get("tipo") or "")}
+        return {"editavel": bool(valor.get("editavel")), "tipo": str(valor.get("tipo") or ""), "tela": valor.get("tela")}

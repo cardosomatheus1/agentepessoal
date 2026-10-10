@@ -196,15 +196,18 @@ function campoNativo() {
   return nativo;
 }
 
-async function depoisDoToque() {
+async function depoisDoToque(x, y) {
   const meu = ++toques;
-  await new Promise((r) => setTimeout(r, 250));
+  const alturaAntes = globalThis.visualViewport?.height || innerHeight;
+  await fila; // the click has reached the page
+  await new Promise((r) => setTimeout(r, 200));
   const contextId = browser.normalizeContextId?.(browser.activeBrowserContextId || browser.contextId);
   if (!contextId || !browser.activeBrowserId) return;
   let foco = {};
   try {
     foco = await callJsonApi("/plugins/navegador_visual/foco", { context_id: contextId, browser_id: browser.activeBrowserId });
   } catch {}
+  guardarGeo(foco?.tela);
   if (meu !== toques) return;
   if (foco?.editavel) {
     const c = campoNativo();
@@ -212,28 +215,131 @@ async function depoisDoToque() {
     if (c.type !== tipo) c.type = tipo;
     zerarCampo();
     c.focus({ preventScroll: true });
-  } else if (nativo && document.activeElement === nativo) {
-    nativo.blur();
+    setTimeout(() => diag("toque-campo", { x: Math.round(x), y: Math.round(y), tipo: foco.tipo, focado: document.activeElement === c,
+      ativacao: !!navigator.userActivation?.isActive, alturaAntes, alturaDepois: globalThis.visualViewport?.height || innerHeight }), 700);
+  } else {
+    if (nativo && document.activeElement === nativo) nativo.blur();
+    diag("toque", { x: Math.round(x), y: Math.round(y), editavel: !!foco?.editavel, erro: foco?.erro || "", geo: [geo.esquerda, geo.topo, geo.dpr] });
   }
 }
 
-// One-finger taps inside the xpra page of the Browser panel.
+const VERSAO = "toque-4";
+
+function diag(evento, dados = {}) {
+  callJsonApi("/plugins/navegador_visual/diag", { evento, versao: VERSAO, ...dados }).catch(() => {});
+}
+
+function alvo() {
+  const contextId = browser.normalizeContextId?.(browser.activeBrowserContextId || browser.contextId);
+  return contextId && browser.activeBrowserId ? { context_id: contextId, browser_id: browser.activeBrowserId, viewer_id: browser._viewerToken } : null;
+}
+
+// The agent's Chromium window sits partly above the screen (its tab and address bars are pushed out of
+// view), so a point on the live view is not the same point on the page: page = (screen - viewport
+// corner) / devicePixelRatio, with the corner taken from the page's own window metrics.
+const geo = { esquerda: 0, topo: 0, dpr: 1 };
+
+function guardarGeo(tela) {
+  if (!Array.isArray(tela) || tela.length < 7) return;
+  const [iw, ih, dpr, ow, oh, sx, sy] = tela.map(Number);
+  geo.dpr = dpr || 1;
+  geo.esquerda = sx + Math.max(0, ow - iw * geo.dpr);
+  geo.topo = sy + Math.max(0, oh - ih * geo.dpr);
+}
+
+async function atualizarGeo() {
+  const a = alvo();
+  if (!a) return;
+  try { guardarGeo((await callJsonApi("/plugins/navegador_visual/foco", { context_id: a.context_id, browser_id: a.browser_id }))?.tela); } catch {}
+}
+
+const naPagina = (x, y) => ({ x: (x - geo.esquerda) / geo.dpr, y: (y - geo.topo) / geo.dpr });
+
+function mouse(event_type, x, y) {
+  const a = alvo();
+  if (!a) return;
+  const p = naPagina(x, y);
+  fila = fila.then(() => websocket.emit("browser_viewer_input", { ...a, input_type: "mouse", event_type, x: p.x, y: p.y, button: "left" })).catch(() => {});
+}
+
+let rolagem = { dx: 0, dy: 0, x: 0, y: 0, timer: null };
+function rolar(x, y, dx, dy) {
+  rolagem.dx += dx; rolagem.dy += dy; rolagem.x = x; rolagem.y = y;
+  if (rolagem.timer) return;
+  rolagem.timer = setTimeout(() => {
+    const { dx: ddx, dy: ddy, x: rx, y: ry } = rolagem;
+    rolagem = { dx: 0, dy: 0, x: 0, y: 0, timer: null };
+    const a = alvo();
+    if (!a || (!ddx && !ddy)) return;
+    const p = naPagina(rx, ry);
+    fila = fila.then(() => websocket.emit("browser_viewer_input", { ...a, input_type: "wheel", x: p.x, y: p.y, delta_x: ddx, delta_y: ddy })).catch(() => {});
+  }, 40);
+}
+
+// Phone gestures in the Browser panel's live view, the way a phone page behaves: a tap clicks (and
+// raises the keyboard on a text field), a one-finger drag scrolls the page (or moves the magnified
+// view), press-and-hold then drag drags (sliders, captcha pieces), two fingers zoom (lupa.js). The
+// viewer's own touch handling is skipped, since it turned every touch into a mouse press.
 function ouvirToques(frame) {
   if (!TOQUE?.matches) return;
   let win;
   try { win = frame.contentWindow; if (!win?.document) return; } catch { return; }
   if (win.__nvToque) return;
   win.__nvToque = true;
-  let ini = null;
-  win.addEventListener("pointerdown", (e) => {
-    ini = e.isPrimary && e.pointerType !== "mouse" ? { x: e.clientX, y: e.clientY, t: Date.now() } : null;
-  }, true);
-  win.addEventListener("pointerup", (e) => {
-    if (!ini || !e.isPrimary) return;
-    const parado = Math.hypot(e.clientX - ini.x, e.clientY - ini.y) < 12 && Date.now() - ini.t < 700;
-    ini = null;
-    if (parado) depoisDoToque();
-  }, true);
+  diag("ligado", { largura: innerWidth, altura: innerHeight });
+  atualizarGeo();
+  win.addEventListener("resize", () => setTimeout(atualizarGeo, 600));
+  let g = null; // { x0, y0, x, y, t0, modo: "?" | "rolar" | "arrastar", timer }
+  const parar = (e) => { e.preventDefault(); e.stopImmediatePropagation(); };
+  const op = { capture: true, passive: false };
+  for (const tipo of ["pointerdown", "pointermove", "pointerup", "pointercancel", "mousedown", "mousemove", "mouseup", "click"]) {
+    win.addEventListener(tipo, (e) => { if (e.pointerType === "touch" || (g && !e.pointerType)) e.stopImmediatePropagation(); }, true);
+  }
+  win.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) { if (g?.timer) clearTimeout(g.timer); g = null; return; } // two fingers: lupa.js
+    parar(e);
+    const t = e.touches[0];
+    g = { x0: t.clientX, y0: t.clientY, x: t.clientX, y: t.clientY, t0: Date.now(), modo: "?" };
+    g.timer = setTimeout(() => {
+      if (g && g.modo === "?") {
+        g.modo = "arrastar";
+        navigator.vibrate?.(15);
+        mouse("move", g.x0, g.y0);
+        mouse("down", g.x0, g.y0);
+      }
+    }, 450);
+  }, op);
+  win.addEventListener("touchmove", (e) => {
+    if (!g || e.touches.length !== 1) return;
+    parar(e);
+    const t = e.touches[0];
+    const dx = t.clientX - g.x, dy = t.clientY - g.y;
+    if (g.modo === "?" && Math.hypot(t.clientX - g.x0, t.clientY - g.y0) > 8) { g.modo = "rolar"; clearTimeout(g.timer); }
+    if (g.modo === "rolar") {
+      if (globalThis.nvLupa?.ampliado(frame)) {
+        const s = globalThis.nvLupa.escala(frame);
+        globalThis.nvLupa.mover(frame, dx * s, dy * s);
+      } else {
+        rolar(g.x0, g.y0, -dx, -dy);
+      }
+    } else if (g.modo === "arrastar") {
+      mouse("move", t.clientX, t.clientY);
+    }
+    g.x = t.clientX; g.y = t.clientY;
+  }, op);
+  const fim = (e) => {
+    if (!g) return;
+    parar(e);
+    clearTimeout(g.timer);
+    const modo = g.modo, x = g.x, y = g.y;
+    g = null;
+    if (modo === "arrastar") { mouse("up", x, y); return; }
+    if (modo !== "?") return;
+    mouse("click", x, y);
+    depoisDoToque(x, y);
+  };
+  win.addEventListener("touchend", fim, op);
+  win.addEventListener("touchcancel", (e) => { if (g?.timer) clearTimeout(g.timer); if (g?.modo === "arrastar") mouse("up", g.x, g.y); g = null; }, op);
 }
 
 function botao(icone, titulo, onClick, classe = "") {

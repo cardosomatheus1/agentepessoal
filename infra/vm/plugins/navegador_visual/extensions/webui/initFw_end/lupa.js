@@ -91,6 +91,13 @@ function zoomNoCentro(frame, fator) {
   zoomEm(frame, fator, w / 2, h / 2);
 }
 
+// used by the phone gestures in navegador-visual.js: one finger pans the magnified view
+globalThis.nvLupa = {
+  ampliado: (frame) => (frame.__nvLupa?.vz || 1) > 1.001,
+  mover: (frame, dx, dy) => { const e = estado(frame); e.tx += dx; e.ty += dy; aplicar(frame); },
+  escala: (frame) => escalaBase(frame) * (frame.__nvLupa?.vz || 1),
+};
+
 function voltar(frame) {
   Object.assign(estado(frame), { vz: 1, tx: 0, ty: 0 });
   aplicar(frame);

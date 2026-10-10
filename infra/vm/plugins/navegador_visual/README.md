@@ -11,6 +11,11 @@ Ajusta os painéis **Navegador**, **Computador** e **Celular** sem alterar os pl
 - **Lupa (Navegador, Computador e Celular):** dois dedos ampliam e movem a tela (no PC, Ctrl + rodinha);
   o selo `− 150% + ⟲` aparece quando ampliado e volta ao normal. No Celular a tela vem de outro endereço,
   então o botão `🔍 Zoom` liga uma camada que recebe os gestos (um dedo move); desligue para tocar no celular.
+- **Gestos de celular no Navegador:** um toque clica; arrastar com um dedo rola a página (ou move a tela ampliada);
+  segurar ~0,5 s e arrastar arrasta de verdade (controles deslizantes, peça de captcha); dois dedos dão zoom.
+  Os toques vão pela API do navegador do agente, com a posição corrigida: a janela dele fica com as barras de
+  abas e endereço acima da tela, então ponto na tela ≠ ponto na página.
+- **Diagnóstico:** `api/diag.py` guarda em `/a0/usr/navegador_visual/diag.log` o que os toques fizeram no aparelho.
 - **Teclado do celular ao tocar num campo (Navegador):** um toque na tela pergunta ao navegador do agente
   (`api/foco.py`) se o foco caiu num campo de texto; se sim, o teclado do próprio celular sobe e o que se digita
   vai para esse campo (inclusive previsão de palavras e corretor); tocar fora ou em Voltar o recolhe.
