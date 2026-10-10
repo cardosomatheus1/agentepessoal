@@ -22,6 +22,20 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
 | Tarefas permanentes | `/opt/a0/usr/agenda/limites.json` | Senão o `agenda_confiavel` desativa após 30 dias |
 | Backups/arquivos temporários | S3 `agentepessoal-backup-964862484412` (`tmp/`) | Usado para levar arquivos para a VM |
 
+## Estado da troca (10/10, ~19h UTC)
+
+- Conta nova: **sejaorbyte@gmail.com** (plano Max). GitHub e Linear conectados.
+- Ambiente de nuvem criado: **"Agente pessoal e NEXOS"** (rede completa) com `AWS_ACCESS_KEY_ID`,
+  `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` e `A0_SENHA` — digitados pelo agente a partir do cofre dele
+  (`CLAUDE_ENV_*`), sem os valores passarem pelo chat. A primeira coisa da sessão nova é conferir que funcionam
+  (`aws sts get-caller-identity`). Depois disso, apagar os parâmetros temporários
+  `/agentepessoal/transferencia/*` do SSM.
+- **Branch**: todo o trabalho desta conversa está no branch `ccr-bcbe3101-9u4klv` (não mesclado no principal).
+  A sessão nova parte dele.
+- O navegador do agente está logado no claude.ai como sejaorbyte; a rotina 2FQESGed (acompanhar o Claude Code)
+  vigiava a conta antiga e passa a ver a conta nova.
+- IA Business: ver o branch `claude/handoff-conta-nova` do repositório `cardosomatheus1/aibusiness`.
+
 ## O que a sessão nova precisa ter
 
 1. **GitHub**: a conta nova conectada ao usuário `cardosomatheus1`, com acesso a `cardosomatheus1/agentepessoal`.
@@ -109,7 +123,7 @@ Serviços do host (`bedrock_proxy.py`, `ponte_whatsapp.py`): `install -m 755` em
 
 ```
 Você continua o projeto do agente pessoal do Matheus (repo cardosomatheus1/agentepessoal), vindo de outra conta do
-Claude. Leia docs/HANDOFF_CONTA_NOVA.md inteiro antes de qualquer coisa e siga as regras dele. Confira o acesso:
+Claude. Faça git fetch origin ccr-bcbe3101-9u4klv e trabalhe a partir dele. Leia docs/HANDOFF_CONTA_NOVA.md inteiro antes de qualquer coisa e siga as regras dele. Confira o acesso:
 aws sts get-caller-identity; python3 infra/operador/vmcmd.py 'docker ps --format "{{.Names}} {{.Status}}"'.
 Depois rode python3 infra/operador/rodar_testes_pro.py e me diga em 3 linhas o estado (VM, testes, prospecção).
 Responda sempre em português, curto.
