@@ -38,6 +38,43 @@ def apagar(usuario: str, nome: str) -> None:
     dados = carregar(usuario)
     dados.pop(nome, None)
     _gravar(usuario, dados)
+    desc = descricoes(usuario)
+    if desc.pop(nome, None) is not None:
+        _gravar_descricoes(usuario, desc)
+
+
+# What each secret is for ("Google · matheus@raizconnect.com.br"): names and descriptions only, never values,
+# so the agent knows which one to use without asking. Kept apart from the values file.
+def _arquivo_descricoes(usuario: str) -> Path:
+    return PASTA / f"{re.sub(r'[^a-z0-9_.-]', '', usuario.lower())}.descricoes.json"
+
+
+def descricoes(usuario: str) -> dict:
+    try:
+        return json.loads(_arquivo_descricoes(usuario).read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def descrever(usuario: str, nome: str, para: str) -> None:
+    if nome not in carregar(usuario):
+        raise ValueError(f"{nome} não está no cofre")
+    desc = descricoes(usuario)
+    desc[nome] = re.sub(r"\s+", " ", para).strip()[:160]
+    _gravar_descricoes(usuario, desc)
+
+
+def _gravar_descricoes(usuario: str, desc: dict) -> None:
+    PASTA.mkdir(parents=True, exist_ok=True)
+    arq = _arquivo_descricoes(usuario)
+    arq.write_text(json.dumps(desc, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.chmod(arq, 0o600)
+
+
+def lista(usuario: str) -> list[tuple[str, str]]:
+    """(name, what it is for) of every secret the person has."""
+    desc = descricoes(usuario)
+    return [(n, desc.get(n, "")) for n in sorted(carregar(usuario))]
 
 
 def _gravar(usuario: str, dados: dict) -> None:

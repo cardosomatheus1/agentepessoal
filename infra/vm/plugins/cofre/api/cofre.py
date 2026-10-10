@@ -34,9 +34,14 @@ class Cofre(ApiHandler):
         acao = str(input.get("acao") or "listar")
         try:
             if acao == "salvar":
-                c.salvar(usuario, str(input.get("nome") or "").strip().upper(), str(input.get("valor") or ""))
+                nome = str(input.get("nome") or "").strip().upper()
+                c.salvar(usuario, nome, str(input.get("valor") or ""))
+                if str(input.get("para") or "").strip():
+                    c.descrever(usuario, nome, str(input["para"]))
+            elif acao == "descrever":
+                c.descrever(usuario, str(input.get("nome") or "").strip().upper(), str(input.get("para") or ""))
             elif acao == "apagar":
                 c.apagar(usuario, str(input.get("nome") or "").strip().upper())
         except ValueError as exc:
             return {"ok": False, "erro": str(exc), "nomes": sorted(c.carregar(usuario))}
-        return {"ok": True, "nomes": sorted(c.carregar(usuario))}
+        return {"ok": True, "nomes": sorted(c.carregar(usuario)), "descricoes": c.descricoes(usuario)}
