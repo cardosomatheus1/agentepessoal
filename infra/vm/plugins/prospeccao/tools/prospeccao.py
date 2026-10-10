@@ -48,7 +48,8 @@ COMO_EXECUTAR = {
                "não tenha saído — diga no detalhe o que saiu e o que não saiu; ok=false só se nem seguir deu certo.",
     "dm_abertura": "Abra o perfil → Mensagem e envie EXATAMENTE este texto (sem mudar nada).",
     "dm_lembrete": "Abra a conversa com esse perfil no Direct e envie EXATAMENTE este texto.",
-    "resposta": "Abra a conversa com esse perfil no Direct e envie EXATAMENTE este texto.",
+    "resposta": "Abra a conversa com esse perfil no Direct (se ainda não houver conversa — a pessoa respondeu num "
+                "comentário —, abra o perfil → Mensagem) e envie EXATAMENTE este texto.",
     "parceiro": "Abra o perfil → Mensagem e envie EXATAMENTE este texto.",
 }
 
@@ -97,6 +98,8 @@ class Prospeccao(Tool):
             a, motivo = p.proxima(login, conta_ativa)
             if not a:
                 p.encerrar_liberacao(self.agent.context)
+                if "confira as respostas" in motivo:
+                    return r(f"AINDA NÃO: {motivo}.")
                 return r(f"NADA AGORA: {motivo}. Termine a rodada.")
             p.liberar(self.agent.context, a)
             lead = a["lead"]
@@ -117,14 +120,17 @@ class Prospeccao(Tool):
                 return r("Registrado. Prospecção pausada por 48 h. Termine a rodada.")
             return r(f"Registrado: {a['estado']}. Chame `prospeccao` acao \"proxima\" de novo para a seguinte.")
         if acao == "etapa":
-            lead = p.mudar_etapa(login, lead_id, etapa, nota)
+            onde = str(kwargs.get("onde") or "direct").lower()
+            lead = p.mudar_etapa(login, lead_id, etapa, nota, onde)
             if not lead:
                 return r(f"Lead ou etapa inválidos (etapas: {', '.join(p.ETAPAS)}).")
+            if not lead["novidade"]:
+                return r(f"Essa resposta de @{lead['handle']} já estava registrada (o Matheus já foi avisado). Siga.")
             if etapa in ("respondeu", "lead", "demo"):
-                emoji, frase = {"respondeu": ("💬", "respondeu no Instagram"),
-                                "lead": ("🔥", "virou lead (quer o cálculo / mandou receita)"),
+                emoji, frase = {"respondeu": ("💬", "respondeu"), "lead": ("🔥", "virou lead (quer o cálculo / mandou receita)"),
                                 "demo": ("📅", "topou conversar")}[etapa]
-                p.enviar(login, f"{emoji} *{lead['nome']}* (@{lead['handle']}) {frase}\n\n«{nota[:500]}»\n\n"
+                lugar = "num comentário" if onde == "comentario" else "no Direct"
+                p.enviar(login, f"{emoji} *{lead['nome']}* (@{lead['handle']}) {frase} {lugar}\n\n«{nota[:500]}»\n\n"
                          "A resposta que eu sugerir chega em seguida para o seu ✅.\n" + lead["url"],
                          tipo="urgente", ponte=ponte())  # someone answered: tell him now (Telegram), even in quiet hours
             return r(f"@{lead['handle']} agora está em {etapa}.")
@@ -139,6 +145,9 @@ class Prospeccao(Tool):
         if acao == "conta":
             erro = p.definir_conta(login, texto or conta_ativa)
             return r(erro or f"Prospecção configurada para @{p.conta(login)}.")
+        if acao == "conferido":
+            erro = p.conferido(login, str(kwargs.get("direct") or ""), str(kwargs.get("notificacoes") or ""))
+            return r(erro or "Conferência registrada. Agora chame `prospeccao` acao \"proxima\".")
         if acao == "hoje":
             texto_dia = p.resumo_hoje(login)
             return r(texto_dia or "NADA HOJE")
@@ -148,4 +157,4 @@ class Prospeccao(Tool):
             return r("Aprovação automática " + ("LIGADA" if ligado else "DESLIGADA") + " (aquecer, primeira mensagem e lembrete).")
         if acao == "metricas":
             return r(json.dumps(p.metricas(login, int(dias or 7)), ensure_ascii=False))
-        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | etapa | editar | hoje | auto | metricas")
+        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | etapa | conferido | editar | hoje | auto | metricas")

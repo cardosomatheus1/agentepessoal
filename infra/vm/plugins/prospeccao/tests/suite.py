@@ -338,6 +338,47 @@ class Suite:
         self.em(self.relogio + 86400)
         eq(p.resumo_hoje(LOGIN), "", "no dia seguinte, sem novidade não manda nada")
 
+    def t_resposta_em_comentario_avisa_uma_vez(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("comentou1")
+        dm = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_abertura", "texto": DM_A}])["propostas"][0]
+        r1 = p.mudar_etapa(LOGIN, lid, "respondeu", "Obrigada! O mais pedido é o frango com batata-doce", "comentario")
+        ok(r1["novidade"], "primeira vez é novidade")
+        r2 = p.mudar_etapa(LOGIN, lid, "respondeu", "Obrigada! O mais pedido é o frango com batata-doce", "comentario")
+        ok(not r2["novidade"], "a rodada seguinte relendo a mesma resposta não avisa de novo")
+        eq(sum(1 for h in p._lead(p.carregar(LOGIN), lid)["historico"] if h["tipo"] == "etapa:respondeu"), 1, "registrada uma vez")
+        eq(next(a for a in p.carregar(LOGIN)["acoes"] if a["id"] == dm["id"])["estado"], "cancelada",
+           "a DM fria cancela: quem respondeu recebe resposta pessoal")
+        ok(p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi! Vi sua resposta lá no post: frango com batata-doce é campeão mesmo. Quer que eu calcule quanto sobra em cada uma? — Matheus"}])["propostas"],
+           "resposta pessoal pode ser proposta")
+        ok(p.mudar_etapa(LOGIN, lid, "respondeu", "E vocês fazem o cálculo como?", "direct")["novidade"], "mensagem nova é novidade")
+        txt = p.resumo_hoje(LOGIN)
+        ok("no Direct: «E vocês fazem o cálculo como?»" in txt, f"relatório mostra a última resposta e onde: {txt}")
+
+    def t_execucao_exige_conferir_respostas(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._lead("conf1")
+        aid = p.propor(LOGIN, [{"lead_id": lid, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aid, "aprovar")
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect", "exigir_conferencia": True})
+        p.salvar(LOGIN, d)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(not a and "confira as respostas" in motivo, f"sem conferência não executa: {motivo}")
+        ok(p.conferido(LOGIN, "nenhuma", "ok"), "conferência vazia é recusada")
+        eq(p.conferido(LOGIN, "nenhuma conversa nova", "Notificações · Hoje · emporiodacau começou a seguir você · 2 h"), "", "conferência real")
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a and a["id"] == aid, f"com conferência executa ({motivo})")
+        p.resultado(LOGIN, aid, True, "ok")
+        self.em(self.relogio + p.CONFERENCIA_VALE + 60)
+        a2 = self._lead("conf2")
+        aid2 = p.propor(LOGIN, [{"lead_id": a2, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aid2, "aprovar")
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(not a and "confira" in motivo, "conferência vencida: confere de novo na rodada seguinte")
+
     def t_metricas_por_faixa(self):
         p = self.p
         self.em(self.hora(10))

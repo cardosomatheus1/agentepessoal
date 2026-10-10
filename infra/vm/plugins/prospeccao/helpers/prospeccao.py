@@ -252,19 +252,30 @@ def rejeitar(login: str, itens: list) -> int:
     return n
 
 
-def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "") -> dict | None:
+ONDE = ("direct", "comentario")
+
+
+def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "direct") -> dict | None:
+    """New stage. The returned lead carries "novidade": False when the same answer was already recorded (rounds
+    re-read the same Direct/notifications every half hour; the person must hear about each answer once)."""
     d = carregar(login)
     lead = _lead(d, lid)
     if not lead or etapa not in ETAPAS:
         return None
+    onde = onde if onde in ONDE else "direct"
+    nota = nota[:300]
+    repetida = any(h["tipo"] == f"etapa:{etapa}" and h.get("texto") == nota and h.get("onde", "direct") == onde
+                   for h in lead["historico"])
+    if repetida and lead["etapa"] == etapa:
+        return {**lead, "novidade": False}
     lead["etapa"], lead["atualizado"] = etapa, agora()
-    lead["historico"].append({"em": agora(), "tipo": f"etapa:{etapa}", "texto": nota[:300]})
+    lead["historico"].append({"em": agora(), "tipo": f"etapa:{etapa}", "texto": nota, "onde": onde})
     if etapa in FINAIS or etapa in ("respondeu", "lead"):  # pending outreach stops when they answer or are closed
         for a in d["acoes"]:
             if a["lead_id"] == lid and a["estado"] in ("proposta", "aprovada") and a["tipo"] != "resposta":
                 a["estado"], a["decidida"] = "cancelada", agora()
     salvar(login, d)
-    return lead
+    return {**lead, "novidade": True}
 
 
 def fechar_vencidos(login: str) -> int:
@@ -554,6 +565,22 @@ def definir_conta(login: str, handle: str) -> str:
     return ""
 
 
+CONFERENCIA_VALE = 40 * 60  # an execution round must have read the Direct and the notifications this recently
+
+
+def conferido(login: str, direct: str, notificacoes: str) -> str:
+    """The round says what it read in the Direct and in the notifications (answers are looked for before acting).
+    '' when recorded, else why not: the notifications text must be what is on the page, not a one-word claim."""
+    direct, notificacoes = (direct or "").strip(), (notificacoes or "").strip()
+    if len(direct) < 8 or len(notificacoes) < 25:
+        return ("leia de verdade: em `direct`, quantas conversas têm mensagem nova e de quem; em `notificacoes`, copie "
+                "as primeiras linhas que aparecem na página de notificações")
+    d = carregar(login)
+    d["conferencia"] = {"em": agora(), "direct": direct[:500], "notificacoes": notificacoes[:800]}
+    salvar(login, d)
+    return ""
+
+
 def proxima(login: str, conta_ativa: str = "") -> tuple[dict | None, str]:
     """Next approved action that may run now (right account, hours, pause, spacing, daily limits)."""
     d = carregar(login)
@@ -565,6 +592,9 @@ def proxima(login: str, conta_ativa: str = "") -> tuple[dict | None, str]:
     if ativa != esperada:
         return None, (f"confirme a conta ATIVA no Instagram (o @ que aparece no menu do perfil) e chame `proxima` com "
                       f"conta_ativa; tem que ser @{esperada}")
+    if d["config"].get("exigir_conferencia") and agora() - (d.get("conferencia") or {}).get("em", 0) > CONFERENCIA_VALE:
+        return None, ("antes de executar, confira as respostas: leia o Direct e a página de notificações e chame "
+                      "`prospeccao` acao \"conferido\" com o que viu em cada um")
     if modo_teste(login) and not d["config"].get("executar_em_teste"):
         return None, "modo teste: nada é executado"
     if agora() < d["bloqueio_ate"]:
@@ -751,7 +781,10 @@ def resumo_hoje(login: str) -> str:
     linhas = [f"🎯 *Prospecção Raiz — {dt.datetime.fromtimestamp(agora(), _tz()).strftime('%d/%m')}*"]
     if respostas:
         linhas.append("\n💬 *Responderam* — olhe primeiro")
-        linhas += [f"• {l['nome']} (@{l['handle']}): {l['etapa']}" for l in respostas]
+        for l in respostas:
+            h = next(x for x in reversed(l["historico"]) if x["tipo"].startswith("etapa:") and de_hoje(x["em"]))
+            onde = "no comentário" if h.get("onde") == "comentario" else "no Direct"
+            linhas.append(f"• {l['nome'][:40]} (@{l['handle']}) — {onde}: «{(h.get('texto') or '')[:160]}» ({l['etapa']})")
     if feitas:  # everything that went out today, one line per profile
         n = {t: sum(1 for a in feitas if a["tipo"] == t) for t in TIPOS}
         nomes = {"aquecer": "aquecidos", "dm_abertura": "primeiras mensagens", "dm_lembrete": "lembretes",
