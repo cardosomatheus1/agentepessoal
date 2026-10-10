@@ -1,0 +1,4 @@
+name: limpeza
+title: Limpeza automática (navegador e memória)
+description: Fecha as abas do navegador de conversas e rodadas paradas, e fica mais agressivo quando a memória da máquina está acabando — para o navegador não acumular abas até travar a VM.
+version: 1.0.0

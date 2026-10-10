@@ -40,7 +40,7 @@ modprobe binder_linux devices="binder,hwbinder,vndbinder" || true
 mkdir -p /opt/agentepessoal /var/lib/agentepessoal /opt/a0/usr /opt/android-data
 [ -x /opt/agentepessoal/venv/bin/python ] || python3 -m venv /opt/agentepessoal/venv
 /opt/agentepessoal/venv/bin/pip install --quiet --upgrade boto3 aws-bedrock-token-generator croniter google-auth requests  # google-auth: Vertex AI through AWS federation (bedrock_proxy)
-install -m 755 "$B/bedrock_proxy.py" "$B/report_url.py" "$B/watchdog.sh" "$B/backup.sh" "$B/hibernate.sh" "$B/entrada.sh" "$B/credenciais_meta.py" "$B/ponte_whatsapp.py" "$B/proximo_despertar.py" /opt/agentepessoal/
+install -m 755 "$B/bedrock_proxy.py" "$B/report_url.py" "$B/watchdog.sh" "$B/memguard.sh" "$B/backup.sh" "$B/hibernate.sh" "$B/entrada.sh" "$B/credenciais_meta.py" "$B/ponte_whatsapp.py" "$B/proximo_despertar.py" /opt/agentepessoal/
 install -m 755 "$B/phone/install_apps.sh" "$B/phone/google_id.sh" "$B/agent_tools.sh" /opt/agentepessoal/
 
 # Mark resumes from hibernation so the idle timer restarts.
@@ -330,6 +330,25 @@ OnUnitActiveSec=5min
 WantedBy=timers.target
 EOF
 
+cat > /etc/systemd/system/agentepessoal-memguard.service <<'EOF'
+[Unit]
+Description=Restart the agent container before the VM freezes for lack of memory
+[Service]
+Type=oneshot
+ExecStart=/opt/agentepessoal/memguard.sh
+EOF
+
+cat > /etc/systemd/system/agentepessoal-memguard.timer <<'EOF'
+[Unit]
+Description=Check free memory every minute
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=1min
+AccuracySec=10s
+[Install]
+WantedBy=timers.target
+EOF
+
 cat > /etc/systemd/system/agentepessoal-backup.service <<'EOF'
 [Unit]
 Description=Back up Agent Zero data to S3
@@ -390,11 +409,11 @@ EOF
 
 systemctl daemon-reload
 systemctl enable agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-agent-tools \
-  agentepessoal-watchdog.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer \
+  agentepessoal-watchdog.timer agentepessoal-memguard.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer \
   agentepessoal-credenciais-meta agentepessoal-whatsapp agentepessoal-google-mcp
 systemctl restart agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-credenciais-meta agentepessoal-whatsapp
 systemctl restart --no-block agentepessoal-google-mcp
-systemctl start agentepessoal-agent-tools agentepessoal-watchdog.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer
+systemctl start agentepessoal-agent-tools agentepessoal-watchdog.timer agentepessoal-memguard.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer
 
 # First boot only: install test apps on the phone.
 [ -f /var/lib/agentepessoal/apps-installed ] || { /opt/agentepessoal/install_apps.sh && touch /var/lib/agentepessoal/apps-installed; } || true

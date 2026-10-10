@@ -77,6 +77,22 @@ Serviços do host (`bedrock_proxy.py`, `ponte_whatsapp.py`): `install -m 755` em
 `enviar("matheus", texto, tipo="resposta"|"urgente"|"progresso")`. Logins `teste_*` só gravam em
 `/a0/usr/testes/celular.jsonl`.
 
+## Memória e limpeza (incidente de 10/10)
+
+O navegador do agente acumulava abas de todas as conversas e rodadas (75 processos, 11,8 GB): a VM congelou por
+~30 min (SSM e túnel fora do ar) e foi reiniciada com `aws ec2 reboot-instances`. Desde então:
+
+- **plugin `limpeza`** (`infra/vm/plugins/limpeza`): a cada 5 min fecha as abas de conversas paradas (20 min; 5 min
+  com < 3 GB livres; todas as não rodando com < 1,5 GB). Log: `/opt/a0/usr/limpeza/log.jsonl`.
+- **`memguard`** (`infra/vm/memguard.sh`, timer `agentepessoal-memguard.timer`, no `setup.sh`): memória < 700 MB por
+  3 min → `docker restart agent-zero`. Log: `/var/lib/agentepessoal/memguard.log`.
+- **skill `manutencao-maquina`**: instrui o agente a fechar as abas que abre e a conferir a memória antes de tarefas
+  longas.
+- **Se a VM travar mesmo assim** (comandos do `vmcmd.py` estourando o tempo, SSM "ConnectionLost", site 530): veja
+  CPU/rede no CloudWatch; se não voltar em ~10 min, `aws ec2 reboot-instances --instance-ids i-0498b4f39560b01a9`
+  (tudo sobe sozinho; o endereço do agente muda e é atualizado em `/agentepessoal/agent-url`). Depois confira as
+  rotinas: as que estavam rodando no reboot podem falhar uma vez (o proxy sobe depois).
+
 ## Rotinas agendadas do agente (10/10)
 
 | Id | Nome | Quando (America/Bahia) |
