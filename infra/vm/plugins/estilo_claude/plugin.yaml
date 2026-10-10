@@ -1,0 +1,4 @@
+name: estilo_claude
+title: Conversa no estilo Claude
+description: Linha "trabalhando" com marca girando enquanto o agente roda, blocos de etapas resumidos numa linha discreta e blocos de manutenção da memória escondidos.
+version: 1.0.0
