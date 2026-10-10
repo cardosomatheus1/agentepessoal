@@ -51,6 +51,12 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
 
 ## Como operar (scripts em `infra/operador/`)
 
+As permissões em `.claude/settings.json` liberam esses scripts sem pedir aprovação (o modo automático barrava o
+login na interface do agente com `A0_SENHA`). Rode-os sempre pelo caminho `python3 infra/operador/<script>` a
+partir da raiz do repositório, para casar com as regras. `buildcmd.py` é o `vmcmd.py` da máquina de build do IA
+Business (`ros-dev-construcao`, `i-08adac4830ec57e5a`); para mandar um script grande a ela, use base64 dentro do
+comando (a máquina não lê o bucket S3).
+
 | Script | Para quê |
 |---|---|
 | `vmcmd.py '<comando>'` | Roda um comando na VM do agente por SSM (até ~10 min) |

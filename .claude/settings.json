@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 infra/operador/vmcmd.py:*)",
+      "Bash(python3 infra/operador/buildcmd.py:*)",
+      "Bash(python3 infra/operador/mandar_msg.py:*)",
+      "Bash(python3 infra/operador/rodar_testes.py:*)",
+      "Bash(python3 infra/operador/rodar_testes_pro.py:*)",
+      "Bash(python3 infra/operador/resetar_chat.py:*)",
+      "Bash(python3 infra/operador/tarefas_auxiliar.py:*)",
+      "Bash(python3 infra/operador/resumo_novo.py:*)",
+      "Bash(python3 infra/vm/plugins/prospeccao/rodadas.py:*)",
+      "Bash(aws s3 cp:*)",
+      "Bash(aws sts get-caller-identity:*)"
+    ]
+  }
+}
