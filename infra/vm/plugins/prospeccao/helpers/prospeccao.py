@@ -251,7 +251,8 @@ SCRIPT_PERFIS = """(async () => {
     try {
       const r = await fetch('/api/v1/users/web_profile_info/?username=' + encodeURIComponent(h),
                             {headers: {'x-ig-app-id': '936619743392459'}, credentials: 'include'});
-      if (!r.ok) { out.push({handle: h, erro: 'http ' + r.status}); await new Promise(f => setTimeout(f, 1500)); continue; }
+      if (r.status === 429) { out.push({handle: h, erro: 'http 429'}); break; }
+      if (!r.ok) { out.push({handle: h, erro: 'http ' + r.status}); await new Promise(f => setTimeout(f, 3000)); continue; }
       const u = ((await r.json()).data || {}).user;
       if (!u) { out.push({handle: h, erro: 'perfil não encontrado'}); continue; }
       const posts = ((u.edge_owner_to_timeline_media || {}).edges || []).slice(0, 8).map(e => ({
@@ -264,7 +265,7 @@ SCRIPT_PERFIS = """(async () => {
                 bio: (u.biography || '').slice(0, 300), link: u.external_url || '',
                 categoria: u.category_name || u.business_category_name || '', posts: posts});
     } catch (e) { out.push({handle: h, erro: String(e).slice(0, 80)}); }
-    await new Promise(f => setTimeout(f, 1500));
+    await new Promise(f => setTimeout(f, 3000));
   }
   return JSON.stringify(out);
 })()"""
@@ -277,8 +278,55 @@ RX_SINAIS = {"reajuste": r"reajust|novos? pre[cç]os|aumento", "insumo": r"insum
 RX_EXCLUSOES = {"franquia": r"franquia|franqueado", "curso": r"\bcurso|mentoria|aulas?\b|aprenda"}
 
 
+SCRIPT_BUSCA = """(async () => {
+  const termos = __TERMOS__;
+  const achados = {};
+  const pegar = (texto, termo) => {
+    for (const m of texto.matchAll(/"username":"([A-Za-z0-9._]{2,30})"/g)) {
+      const h = m[1].toLowerCase();
+      if (!achados[h]) achados[h] = termo;
+    }
+  };
+  for (const t of termos) {
+    const q = encodeURIComponent(t);
+    try {
+      const r = await fetch('/web/search/topsearch/?context=blended&include_reel=false&query=' + q,
+                            {headers: {'x-ig-app-id': '936619743392459'}, credentials: 'include'});
+      if (r.status === 429) break;
+      if (r.ok) pegar(await r.text(), t);
+    } catch (e) {}
+    await new Promise(f => setTimeout(f, 1500));
+  }
+  return JSON.stringify(Object.keys(achados).map(h => ({handle: h, termo: achados[h]})));
+})()"""
+
+
+def montar_busca(termos: list) -> str:
+    ts = [str(t).strip()[:40] for t in termos if str(t).strip()][:3]  # evaluate times out at 30 s
+    return SCRIPT_BUSCA.replace("__TERMOS__", json.dumps(ts, ensure_ascii=False))
+
+
+def novos_handles(login: str, achados, limite: int = 30) -> list:
+    """Handles found by the search script minus the ones already known or rejected (and our own accounts)."""
+    lista = json.loads(achados) if isinstance(achados, str) else (achados or [])
+    d = carregar(login)
+    ja = {l["handle"] for l in d["leads"]} | set(d.get("rejeitados") or {}) | set(CONTAS_PROIBIDAS) | {conta(login)}
+    out = []
+    for x in lista if isinstance(lista, list) else []:
+        h = normalizar(str(x.get("handle") if isinstance(x, dict) else x))
+        if h and h not in ja and h not in out:
+            out.append(h)
+    return out[:limite]
+
+
+def api_pausada(login: str) -> str:
+    """'' or until when the profile scripts are paused after an Instagram 429."""
+    ate = carregar(login)["config"].get("api_pausa_ate") or 0
+    return dt.datetime.fromtimestamp(ate, _tz()).strftime("%H:%M") if agora() < ate else ""
+
+
 def montar_script(handles: list) -> str:
-    hs = [normalizar(str(h)) for h in handles if normalizar(str(h))][:15]
+    hs = [normalizar(str(h)) for h in handles if normalizar(str(h))][:5]  # 5 x 3 s: under the 30 s evaluate limit, gentle
     return SCRIPT_PERFIS.replace("__HANDLES__", json.dumps(hs))
 
 
@@ -333,6 +381,10 @@ def avaliar_perfis(login: str, dados) -> dict:
                 out["conferir"].append({"falta": falta, "item": ev})
             continue
         para_registrar.append(ev)
+    if any("429" in e["erro"] for e in out["erros"]):  # Instagram rate limit: profile scripts pause for 15 min
+        d = carregar(login)
+        d["config"]["api_pausa_ate"] = agora() + 15 * 60
+        salvar(login, d)
     if para_registrar:
         r = registrar(login, para_registrar)
         out["criados"] += r["criados"]

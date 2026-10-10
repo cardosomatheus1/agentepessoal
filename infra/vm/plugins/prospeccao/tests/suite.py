@@ -406,6 +406,17 @@ class Suite:
         eq(p.conferido(LOGIN, "nenhuma conversa nova", "fraco1 começou a seguir você · 1 h; outra notificação", ["@fraco1", "desconhecido"]), "", "ok")
         eq([l["id"] for l in p.devidos(LOGIN)["dm_abertura"]][0], fraco, "quem seguiu de volta passa na frente")
 
+    def t_busca_rapida_filtra_conhecidos(self):
+        p = self.p
+        self._lead("jaconhecido")
+        p.rejeitar(LOGIN, [{"handle": "jarejeitado", "motivo": "x"}])
+        ok("marmita salvador" in p.montar_busca(["marmita salvador", ""]) and "topsearch" in p.montar_busca(["x"]), "script com os termos")
+        achados = json.dumps([{"handle": "JaConhecido"}, {"handle": "jarejeitado"}, {"handle": "cardosomatheus1"},
+                              {"handle": "nova.marmita"}, {"handle": "nova.marmita"}, {"handle": "outra_fit"}])
+        eq(p.novos_handles(LOGIN, achados), ["nova.marmita", "outra_fit"], "só os novos, sem repetir, sem a conta pessoal")
+        eq(len(p.novos_handles(LOGIN, [{"handle": f"h{i}"} for i in range(40)])), 30, "no máximo 30 na fila")
+        ok(p.montar_script([f"h{i}" for i in range(9)]).count("\"h") == 5, "5 perfis por script (limite de 30 s)")
+
     def t_avaliacao_rapida_de_perfis(self):
         p = self.p
         self.em(self.hora(11))
@@ -441,6 +452,11 @@ class Suite:
         rej = p.carregar(LOGIN)["rejeitados"]
         ok({"parada", "privada", "enorme"} <= set(rej), "recusados anotados (não voltam por 60 dias)")
         eq(p.avaliar_perfis(LOGIN, json.dumps([perfil("boa")]))["recusados"][0]["motivo"], "já conhecido", "repetido não duplica")
+        eq(p.api_pausada(LOGIN), "", "sem 429, sem pausa")
+        p.avaliar_perfis(LOGIN, json.dumps([{"handle": "x1", "erro": "http 429"}]))
+        ok(p.api_pausada(LOGIN), "429 pausa os scripts de perfil")
+        self.em(self.relogio + 16 * 60)
+        eq(p.api_pausada(LOGIN), "", "a pausa acaba em 15 min")
 
     def t_metricas_por_faixa(self):
         p = self.p

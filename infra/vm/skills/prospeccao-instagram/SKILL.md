@@ -38,18 +38,20 @@ ensina o COMO no Instagram. Leia o playbook (`prospeccao` acao "playbook") antes
 3. Se `raiz.connect` não aparecer na troca, ou pedir senha/código: pare — "PRECISA DE VOCÊ: a conta da Raiz saiu
    do navegador".
 
-## 2. Achar perfis
+## 2. Achar perfis (rápido: por script)
 
-- Busca por palavra: `https://www.instagram.com/explore/search/keyword/?q=<termo>` (ex.: marmitasalvador,
-  marmitafitsalvador, congeladossalvador, docessalvador, bolodepotesalvador, salgadosparafestasalvador, marmitasp,
-  marmitafitsp, confeitariasp, congeladossp, marmitascampinas, confeitariacampinas, docescampinas). Troque de termo
-  quando secar.
-- Leia a página e anote os @ dos posts. Pule os já conhecidos e os rejeitados (`prospeccao` acao "contexto").
+1. `prospeccao` acao "buscar_script" com `termos` = até 3 buscas da região e do segmento (ex.: "marmita salvador",
+   "marmitaria salvador", "marmita fit salvador", "congelados salvador", "quentinha salvador").
+2. Rode o script com `browser` action "evaluate" numa aba em https://www.instagram.com/ → JSON com os @ achados.
+3. Passe esse JSON para `perfis_script` (`achados` = o texto): a ferramenta tira os conhecidos e rejeitados e devolve
+   o script de avaliação (seção 3).
+4. Não abra posts um por um para descobrir o autor. Se a busca não trouxer @ novos, troque os termos.
+   Só se o script falhar (erro http), use a busca da tela: https://www.instagram.com/explore/search/keyword/?q=<termo>.
 
 ## 3. Avaliar perfis (rápido: vários de uma vez)
 
-1. Junte até 15 @ novos (pule conhecidos e rejeitados).
-2. `prospeccao` acao "perfis_script" com `leads` = esses @ → devolve um script.
+1. Da seção 2 você já recebeu o script de avaliação (ou chame `perfis_script` com `leads` = até 15 @).
+2. Os @ já conhecidos e rejeitados ficam de fora automaticamente.
 3. Numa aba aberta em https://www.instagram.com/ (conta @raiz.connect), rode o script com `browser` action
    "evaluate" (`script` = o texto). Leva ~2 s por perfil e devolve um JSON com seguidores, bio, link, categoria e os
    últimos posts (data e se é fixado).
@@ -60,8 +62,9 @@ ensina o COMO no Instagram. Leia o playbook (`prospeccao` acao "playbook") antes
    base) ou `rejeitar`.
 6. Não abra um por um os perfis que a ferramenta já resolveu.
 
-Se o script der erro (ex.: "http 429" ou "401"), espere 1 minuto e tente com menos perfis; se persistir, avalie
-abrindo os perfis (método antigo): segmento, cidade, seguidores, data do primeiro post NÃO fixado, canais, sinais,
+Os scripts têm de terminar em 30 s: a busca usa até 3 termos e a avaliação 5 perfis por vez (a ferramenta já corta).
+**"http 429" = o Instagram limitou as consultas: NÃO insista.** Pare os scripts de perfil por 10 minutos; se precisar
+seguir, avalie abrindo os perfis um a um (método antigo): segmento, cidade, seguidores, data do primeiro post NÃO fixado, canais, sinais,
 cardápio, link de pedido, exclusões e do que trata o último post.
 
 ## 4. Executar as ações liberadas
