@@ -123,7 +123,7 @@ Serviços do host (`bedrock_proxy.py`, `ponte_whatsapp.py`): `install -m 755` em
 
 ```
 Você continua o projeto do agente pessoal do Matheus (repo cardosomatheus1/agentepessoal), vindo de outra conta do
-Claude. Faça git fetch origin ccr-bcbe3101-9u4klv e trabalhe a partir dele. Leia docs/HANDOFF_CONTA_NOVA.md inteiro antes de qualquer coisa e siga as regras dele. Confira o acesso:
+Claude. Faça git fetch origin ccr-bcbe3101-9u4klv e trabalhe a partir dele. Leia docs/HANDOFF_CONTA_NOVA.md e docs/CONTEXTO_COMPLETO.md inteiros antes de qualquer coisa e siga as regras deles. Confira o acesso:
 aws sts get-caller-identity; python3 infra/operador/vmcmd.py 'docker ps --format "{{.Names}} {{.Status}}"'.
 Depois rode python3 infra/operador/rodar_testes_pro.py e me diga em 3 linhas o estado (VM, testes, prospecção).
 Responda sempre em português, curto.
