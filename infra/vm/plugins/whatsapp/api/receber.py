@@ -221,6 +221,54 @@ async def _botao_fio(usuario: str, botao: str) -> dict:
     ctx.communicate(UserMessage(message=texto, attachments=[], id=""))
     return {"ok": True, "context": ctx.id}
 
+
+def _iniciativa():
+    """plugins/iniciativa helper, loaded by path."""
+    import importlib.util
+
+    nome = "iniciativa_helper"
+    caminho = Path("/a0/usr/plugins/iniciativa/helpers/iniciativa.py")
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
+
+
+async def _botao_iniciativa(usuario: str, botao: str) -> dict:
+    """✅ Bora (the agent carries the idea on in the phone chat), 👍 Útil, 👎 Não precisa — all three are learned."""
+    from agent import UserMessage
+    from helpers import message_queue as mq
+
+    _, login, iid, acao = (botao.split(":") + ["", "", "", ""])[:4]
+    if login != usuario:
+        return {"ok": False}
+    ini = _iniciativa()
+    item = ini.reagir(login, iid, acao)
+    if not item:
+        ponte().enviar(usuario, "Não achei mais essa sugestão.")
+        return {"ok": True}
+    if acao == "util":
+        ponte().enviar(usuario, "👍 Valeu! Vou trazer mais coisas nessa linha.")
+        return {"ok": True}
+    if acao == "nao":
+        ponte().enviar(usuario, "👎 Entendido, vou calibrar. Se quiser, me diz em uma frase o que não curtiu.")
+        return {"ok": True}
+    texto = (f"✅ Bora (sugestão {iid} que você mandou por iniciativa própria): {item.get('titulo', '')}\n"
+             f"O que você tinha mandado:\n{item.get('texto', '')}\n\n"
+             "Siga com isso agora. Peça minha aprovação antes de qualquer coisa que envie, pague, apague ou mude algo "
+             "fora daqui; se depender de mim, me diga exatamente o quê. Quando terminar, me diga em poucas linhas o que fez.")
+    ctx, _ = _conversa(usuario, nova=False)
+    ctx.set_data("whatsapp_ultima_entrada", time.time())
+    mq.log_user_message(ctx, texto, [], None, source=" (botão)")
+    ctx.communicate(UserMessage(message=texto, attachments=[], id=""))
+    return {"ok": True, "context": ctx.id}
+
+
 class Receber(ApiHandler):
     @classmethod
     def requires_auth(cls) -> bool:
@@ -265,6 +313,8 @@ class Receber(ApiHandler):
 
         if botao.startswith("fio:"):  # a button under a loose end of plugins/fios_soltos
             return await _botao_fio(usuario, botao)
+        if botao.startswith("ini:"):  # a button under an unprompted message of plugins/iniciativa
+            return await _botao_iniciativa(usuario, botao)
 
         pedido = ponte().PEDIDOS.get(usuario)
         if pedido and not pedido.get("codigo") and texto and len(texto) <= 40 and "\n" not in texto \

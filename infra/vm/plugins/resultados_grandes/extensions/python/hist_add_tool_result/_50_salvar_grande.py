@@ -15,7 +15,8 @@ from helpers.extension import Extension
 LIMIT = 8_000  # characters; smaller results stay as they are
 HEAD = 5_000
 TAIL = 1_500
-SKIP = {"response"}  # the final answer is never cut
+# the final answer is never cut, nor the overviews whose whole point is to be read at once (capped at ~24k)
+SKIP = {"response", "fios", "iniciativa"}
 
 
 class SalvarGrande(Extension):
