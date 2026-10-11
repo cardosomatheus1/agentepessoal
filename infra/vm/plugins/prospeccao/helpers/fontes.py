@@ -342,7 +342,8 @@ def enriquecer(login: str, p, limite: int = 20) -> dict:
     d = carregar(login)
     conhecidos = {l["handle"] for l in p.carregar(login)["leads"]} | set((p.carregar(login).get("rejeitados") or {}).keys())
     fila = [k for k, e in d["empresas"].items() if e["estado"] == "fila"]
-    fila.sort(key=lambda k: (0 if d["empresas"][k].get("instagram") else 1,
+    # @ already known first, then curated lists (higher yield than the raw directory), then by activity
+    fila.sort(key=lambda k: (0 if d["empresas"][k].get("instagram") else 1 if d["empresas"][k].get("fonte") != "GuiaPJ" else 2,
                              next((i for i, (c, _) in enumerate(CNAES) if c == d["empresas"][k].get("cnae")), 9)))
     out = {"examinadas": 0, "criados": [], "sem_instagram": 0, "recusados": [], "pulados": 0}
     segmentos = dict(CNAES)
