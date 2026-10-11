@@ -76,6 +76,10 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
     (Stop).
   - **Despertador:** o hook de Stop não deixa a Main Opus encerrar um turno sem um `send_later` de 20 min
     agendado. Ela se acorda sozinha e nunca fica parada esperando alguém.
+- **Decisões humanas (11/10 tarde):** a Main Opus parou esperando a HUM-136, porque a orquestradora não consegue
+  responder. O `~/.claude/CLAUDE.md` da máquina agora manda a **Main Opus decidir sozinha** toda HUM, pela opção
+  que ela recomendaria, registrando "decidido pela Main Opus sob delegação permanente do Matheus". Ela não pergunta
+  nem espera ninguém; a orquestradora só observa. Os limites continuam.
 - **Mandar recado às sessões da conta nova pelo navegador do agente:** um Playwright de fora cai na verificação
   do Cloudflare. Só o navegador do próprio agente passa, ou o Matheus pelo app.
 
