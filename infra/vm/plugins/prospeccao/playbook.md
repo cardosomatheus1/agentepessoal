@@ -71,11 +71,11 @@ perfil/bio, pelo endereço, pelas tags de local e por hashtags locais (#marmitas
 
 A oferta é a ferramenta grátis — **nunca peça a receita** (parece que queremos usar a receita da pessoa):
 - **Calculadora de precificação** (faz sozinho, sem cadastro para começar, 6 passos, mostra quanto sobra em cada
-  pedido): **https://raizconnect.com.br/materiais/precificacao/calculadora?utm_source=instagram&utm_medium=dm** — o
+  pedido): **raizconnect.com.br/materiais/precificacao/calculadora** (assim, curto: sem https e sem parâmetros) — o
   link padrão, mandado só quando a conversa chega em preço/custo/lucro: no lembrete e nas respostas a quem escreveu.
   Nunca na primeira mensagem (link de desconhecido parece spam).
 - **Simulador "quanto sobra no delivery"** (1 minuto, resultado na hora sem cadastro) — alternativa mais leve para
-  quem vende no iFood: **https://raizconnect.com.br/materiais/quanto-sobra-no-delivery?utm_source=instagram&utm_medium=dm**.
+  quem vende no iFood: **raizconnect.com.br/materiais/quanto-sobra-no-delivery**.
 - Não use na prospecção o Raio-X do Lucro, os 15 Erros Silenciosos nem a página da planilha (/materiais/precificacao,
   que pede nome, e-mail e WhatsApp antes de mostrar qualquer coisa).
 Quem usa a calculadora, pede o link ou pede ajuda com a conta vira **lead**.

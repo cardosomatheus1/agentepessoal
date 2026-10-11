@@ -40,8 +40,8 @@ LINK = re.compile(r"(https?://|www\.|\b[\w-]+\.(com|com\.br|app|io|net|me|link|l
 # (default) and the delivery simulator (for who sells on iFood). Only in the reminder and in answers to people who
 # wrote back — never in the first message (a link from a stranger reads as spam). The Raio-X and the 15-errors quiz stay
 # out: any "more or less" answer counts as a problem there, so everyone gets "8 of 8 need attention".
-LINK_CALCULADORA = "https://raizconnect.com.br/materiais/precificacao/calculadora?utm_source=instagram&utm_medium=dm"
-LINK_DELIVERY = "https://raizconnect.com.br/materiais/quanto-sobra-no-delivery?utm_source=instagram&utm_medium=dm"
+LINK_CALCULADORA = "raizconnect.com.br/materiais/precificacao/calculadora"  # short on purpose: the full UTM link looked huge in the DM (11/10)
+LINK_DELIVERY = "raizconnect.com.br/materiais/quanto-sobra-no-delivery"
 CALCULADORA = re.compile(r"(https?://)?(www\.)?raizconnect\.com\.br/materiais/(precificacao/calculadora|quanto-sobra-no-delivery)"
                          r"(\?[\w=&%.-]*)?(?![\w/])", re.I)
 TIPOS_COM_LINK = ("dm_lembrete", "resposta")
