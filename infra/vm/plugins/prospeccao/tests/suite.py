@@ -703,6 +703,14 @@ class Suite:
         p.mudar_etapa(LOGIN, lid, "lead", "vou testar, obrigada!", "direct")
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Imagina, pessoal da Fala! Qualquer dúvida no uso, me chama 🙂 — Matheus"}])
         ok(not r["recusadas"], f"fala nova libera nova resposta: {r}")
+        d = p.carregar(LOGIN)
+        a = [x for x in d["acoes"] if x["lead_id"] == lid and x["tipo"] == "resposta"][-1]
+        a.update({"estado": "falhou", "executada_em": p.agora()})
+        p.salvar(LOGIN, d)
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, pessoal da Fala! Tentando de novo por aqui 🙂 — Matheus"}])
+        ok(r["recusadas"] and "já falhou" in r["recusadas"][0]["motivo"], f"resposta que falhou não vira ciclo: {r}")
+        n1 = p.mudar_etapa(LOGIN, lid, "lead", "Respondeu no Direct: «vou testar, obrigada!»", "direct")
+        eq(n1["novidade"], False, "a mesma fala descrita com outras palavras não avisa de novo")
         p.revisor = None
 
     def t_resposta_e_descarte(self):

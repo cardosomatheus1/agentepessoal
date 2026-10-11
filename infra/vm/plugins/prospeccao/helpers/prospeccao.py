@@ -562,6 +562,14 @@ def rejeitar(login: str, itens: list) -> int:
 ONDE = ("direct", "comentario")
 
 
+def _citacao(nota: str) -> str:
+    """The person's own words inside the note («…», “…” or "…"), normalized; the whole note when nothing is quoted.
+    Rounds describe the same answer in different words around the same quote (11/10: Zen was announced twice)."""
+    trechos = re.findall(r"«([^»]+)»|“([^”]+)”|\"([^\"]+)\"", nota or "")
+    texto = " ".join(next(t for t in g if t) for g in trechos) if trechos else (nota or "")
+    return re.sub(r"[^\w]+", " ", texto.lower()).strip()
+
+
 def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "direct") -> dict | None:
     """New stage. The returned lead carries "novidade": False when the same answer was already recorded (rounds
     re-read the same Direct/notifications every half hour; the person must hear about each answer once)."""
@@ -571,8 +579,8 @@ def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "d
         return None
     onde = onde if onde in ONDE else "direct"
     nota = nota[:300]
-    repetida = any(h["tipo"] == f"etapa:{etapa}" and h.get("texto") == nota and h.get("onde", "direct") == onde
-                   for h in lead["historico"])
+    repetida = any(h["tipo"] == f"etapa:{etapa}" and _citacao(h.get("texto", "")) == _citacao(nota)
+                   and h.get("onde", "direct") == onde for h in lead["historico"])
     if repetida and lead["etapa"] == etapa:
         return {**lead, "novidade": False}
     lead["etapa"], lead["atualizado"] = etapa, agora()
@@ -712,6 +720,9 @@ def propor(login: str, itens: list) -> dict:
             motivo = "resposta só para quem escreveu"
         elif tipo == "resposta" and _ja_respondido(d, lead):
             motivo = "já respondemos a última fala dessa pessoa: espere ela escrever de novo (registre com `etapa`)"
+        elif tipo == "resposta" and _resposta_falhou(d, lead):
+            motivo = ("a resposta a essa fala já falhou no Instagram (Direct fechado para nós?): não proponha de novo; "
+                      "o Matheus já foi avisado e decide")
         elif tipo == "parceiro" and lead["canal"] != "parceiro":
             motivo = "ação de parceiro só para leads do canal parceiro"
         elif restantes.get(tipo, 0) <= 0:
@@ -787,6 +798,14 @@ def _ja_respondido(d: dict, lead: dict) -> bool:
     enviadas = [a.get("executada_em", 0) for a in d["acoes"]
                 if a["lead_id"] == lead["id"] and a["tipo"] == "resposta" and a["estado"] == "executada"]
     return bool(enviadas) and (not falas or max(enviadas) >= max(falas))
+
+
+def _resposta_falhou(d: dict, lead: dict) -> bool:
+    """A reply to the person's latest words already failed (e.g. Message button disabled): stop the retry loop."""
+    falas = [h["em"] for h in lead.get("historico", []) if str(h.get("tipo", "")).startswith("etapa:")]
+    ultima = max(falas) if falas else 0
+    return any(a["lead_id"] == lead["id"] and a["tipo"] == "resposta" and a["estado"] == "falhou"
+               and a.get("executada_em", 0) >= ultima for a in d["acoes"])
 
 
 def _disse(lead: dict) -> str:
