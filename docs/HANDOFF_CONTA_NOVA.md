@@ -61,6 +61,13 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
   - A orquestradora foi instruída a ligar a máquina (`aws ec2 start-instances`) se a encontrar parada e a mandar a
     Main Opus continuar.
   - Novo alarme `agentepessoal-vm-travada`: reinicia a VM do agente após 5 min de falha na checagem de status.
+  - Agendamento `ros-construcao-religar` (EventBridge Scheduler, a cada 30 min, papel `ros-construcao-religar`):
+    liga a máquina de build se estiver parada. O alarme de ociosidade continua; a máquina volta em até 30 min e
+    a Main Opus reata sozinha.
+  - O `memguard.sh` agora também reinicia só o `run_ui` quando a interface do agente fica 5 min sem responder
+    (11/10: travou na subida, depois de "Preload completed").
+- **Mandar recado às sessões da conta nova pelo navegador do agente:** um Playwright de fora cai na verificação
+  do Cloudflare. Só o navegador do próprio agente passa, ou o Matheus pelo app.
 
 ## O que a sessão nova precisa ter
 
