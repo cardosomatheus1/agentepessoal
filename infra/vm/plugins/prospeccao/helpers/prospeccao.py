@@ -737,7 +737,7 @@ def propor(login: str, itens: list) -> dict:
 
 # ------------------------------------------------------------------ pre-approved within the daily limits
 
-AUTO_TIPOS = ("aquecer", "dm_abertura", "dm_lembrete")  # replies and partner messages still go to the person
+AUTO_TIPOS = ("aquecer", "dm_abertura", "dm_lembrete", "resposta")  # partner messages still go to the person (replies auto since 11/10, Matheus)
 PROXY = "http://host.docker.internal:8787"
 MODELO_REVISOR = "openai.gpt-6-luna"
 revisor = None  # tests replace it: fn(pedido: str) -> str
@@ -756,6 +756,8 @@ SEM perguntar a ele, então você é a última barreira antes de uma pessoa real
    ("me manda a receita", ficha técnica) fere o playbook: soa invasivo.
 3. Soa como spam, intimidade forçada ou constrange a pessoa.
 4. Tem erro de português ou abreviação de internet que faça a marca parecer descuidada.
+5. Numa resposta: não combina com O QUE A PESSOA DISSE (ignora a pergunta dela, insiste depois de um não, ou finge
+   uma conversa que não houve).
 Os modelos do playbook são guia, não texto fixo: variações naturais são boas (falar de entrega, embalagem ou iFood ao
 explicar o cálculo; outra forma de oferecer a calculadora; outro elogio verdadeiro). Não reprove por estilo.
 Na dúvida REAL sobre fato ou respeito, reprove: o item volta ao dono para ele decidir, nada se perde.
@@ -776,6 +778,12 @@ def _chamar_revisor(pedido: str) -> str:
                    for c in item.get("content", []) if c.get("type") == "output_text")
 
 
+def _disse(lead: dict) -> str:
+    """What the person said last (the note of the latest etapa:respondeu/lead/descartado), for the reviewer."""
+    falas = [h for h in lead.get("historico", []) if str(h.get("tipo", "")).startswith("etapa:")]
+    return (falas[-1]["texto"][:300] + f" (em {falas[-1].get('onde', 'direct')})") if falas else "(não registrado)"
+
+
 def revisar_textos(d: dict, acoes: list) -> dict:
     """{id: {"aprovado": bool, "motivo": str}} from a fresh model against the playbook. Fails closed: when the
     reviewer is unreachable or unclear, nothing is approved here (it goes to the person)."""
@@ -786,7 +794,8 @@ def revisar_textos(d: dict, acoes: list) -> dict:
         dados = {k: lead.get(k) for k in ("nome", "handle", "segmento", "cidade", "seguidores", "motivo", "sinal", "evidencias")}
         blocos.append(f"## Item {a['id']} — {a['tipo']}\nDADOS DO LEAD: {json.dumps(dados, ensure_ascii=False)}\n"
                       + (f"O QUE O AGENTE DIZ TER VISTO AGORA NO PERFIL: {a['base']}\n" if a.get("base") else "")
-                      + (f"JÁ RECEBEU: {lead['historico'][-1]['texto'][:300]}\n" if lead.get("historico") else "")
+                      + (f"JÁ RECEBEU: {lead['historico'][-1]['texto'][:300]}\n" if lead.get("historico") and a["tipo"] != "resposta" else "")
+                      + (f"O QUE A PESSOA DISSE: {_disse(lead)}\n" if a["tipo"] == "resposta" else "")
                       + f"TEXTO:\n«{a['texto']}»")
     pedido = (REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:12000] if playbook.exists() else "")
               + "\n\n# ITENS\n" + "\n\n".join(blocos))
@@ -926,7 +935,8 @@ def proxima(login: str, conta_ativa: str = "") -> tuple[dict | None, str]:
     ultima = max([a.get("executada_em", 0) for a in d["acoes"]] + [0])
     if agora() - ultima < INTERVALO:
         return None, f"espaçamento: próxima a partir de {dt.datetime.fromtimestamp(ultima + INTERVALO, _tz()).strftime('%H:%M')}"
-    for a in sorted((x for x in d["acoes"] if x["estado"] == "aprovada"), key=lambda x: x.get("decidida", 0)):
+    # replies go first (someone is waiting), then the rest in approval order
+    for a in sorted((x for x in d["acoes"] if x["estado"] == "aprovada"), key=lambda x: (x["tipo"] != "resposta", x.get("decidida", 0))):
         lead = _lead(d, a["lead_id"])
         if not lead or (lead["etapa"] in FINAIS and not (a["tipo"] == "resposta" and lead["etapa"] == "descartado")):
             a["estado"] = "cancelada"

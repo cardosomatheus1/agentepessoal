@@ -26,8 +26,8 @@ EXECUTAR = """Rodada de execução da prospecção Raiz Connect.
 
 0. Carregue a skill `prospeccao-instagram` (skills_tool load) e siga o método dela.
 1. CONTA: skill, seção 1 — tem que ser @raiz.connect, nunca a pessoal.
-2. RESPOSTAS: skill, seção 5 — Direct e notificações; registre cada resposta com `etapa` (onde: direct|comentario), proponha a `resposta` (vai pro ✅ do Matheus) e registre `conferido` (direct, notificacoes copiadas, interagiram). Sem `conferido`, `proxima` não libera nada.
-3. EXECUÇÃO: skill, seção 4 — `proxima` com conta_ativa; faça exatamente a ação com o texto exato; confira na tela; `resultado`. Espere 3 min entre ações; no máximo 3 por rodada. "NADA AGORA": termine. Bloqueio: pare e mande bloqueio: true.
+2. RESPOSTAS: skill, seção 6 — Direct e notificações; registre cada resposta com `etapa` (onde: direct|comentario), proponha a `resposta` (skill, seção 4: «Oi, pessoal da …», a calculadora grátis, nunca pedir receita; o revisor libera e ela sai já nesta rodada) e registre `conferido` (direct, notificacoes copiadas, interagiram). Sem `conferido`, `proxima` não libera nada.
+3. EXECUÇÃO: skill, seção 5 — respostas primeiro; `proxima` com conta_ativa; faça exatamente a ação com o texto exato; confira na tela; `resultado`. Espere 3 min entre ações; no máximo 3 por rodada. "NADA AGORA": termine. Bloqueio: pare e mande bloqueio: true.
 4. Resposta final: exatamente SEM NOVIDADE. Só se travou (login, bloqueio, captcha, erro que impede seguir): "PRECISA DE VOCÊ:" e o que aconteceu."""
 
 SEMANA = """Relatório semanal da prospecção Raiz Connect (segunda de manhã). Só leitura.

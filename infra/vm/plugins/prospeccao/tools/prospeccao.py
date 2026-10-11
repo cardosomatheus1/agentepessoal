@@ -228,6 +228,10 @@ class Prospeccao(Tool):
                 p.enviar(login, "⛔ *Prospecção pausada por 48 h*\n\nO Instagram mostrou um bloqueio/limite: " + detalhe[:300] +
                          "\nNada mais sai até lá.", tipo="urgente", ponte=ponte())
                 return r("Registrado. Prospecção pausada por 48 h. Termine a rodada.")
+            if a["tipo"] == "resposta" and a.get("auto") and a["estado"] == "executada":
+                lead = p._lead(p.carregar(login), a["lead_id"]) or {}
+                p.enviar(login, f"↩️ Respondi *{lead.get('nome', '')}* (@{lead.get('handle', '')}) pela @raiz.connect\n\n«{a['texto'][:600]}»",
+                         ponte=ponte())  # replies leave without his ✅ (11/10): he hears what went out
             return r(f"Registrado: {a['estado']}. Chame `prospeccao` acao \"proxima\" de novo para a seguinte.")
         if acao == "etapa":
             onde = str(kwargs.get("onde") or "direct").lower()
@@ -241,7 +245,7 @@ class Prospeccao(Tool):
                                 "demo": ("📅", "topou conversar")}[etapa]
                 lugar = "num comentário" if onde == "comentario" else "no Direct"
                 p.enviar(login, f"{emoji} *{lead['nome']}* (@{lead['handle']}) {frase} {lugar}\n\n«{nota[:500]}»\n\n"
-                         "A resposta que eu sugerir chega em seguida para o seu ✅.\n" + lead["url"],
+                         "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu.\n" + lead["url"],
                          tipo="urgente", ponte=ponte())  # someone answered: tell him now (Telegram), even in quiet hours
             return r(f"@{lead['handle']} agora está em {etapa}.")
         if acao == "editar":
@@ -262,7 +266,7 @@ class Prospeccao(Tool):
             out = p.processar_direct(login, kwargs.get("dados") or texto)
             for n in out["novas"]:
                 p.enviar(login, f"💬 *{n['nome']}* (@{n['handle']}) respondeu no Direct\n\n«{n['texto'][:500]}»\n\n"
-                         "A resposta que eu sugerir chega em seguida para o seu ✅.\n" + n["url"], tipo="urgente", ponte=ponte())
+                         "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu.\n" + n["url"], tipo="urgente", ponte=ponte())
             if out["erros"] and not out["conversas"]:
                 return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Leia pela tela (skill, seção 5).")
             resumo = (f"{out['conversas']} conversas lidas pela API; respostas novas de leads: "

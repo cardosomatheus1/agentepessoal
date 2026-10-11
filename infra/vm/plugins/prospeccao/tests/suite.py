@@ -226,11 +226,12 @@ class Suite:
             out = p.propor(LOGIN, [{"lead_id": a1, "tipo": "aquecer", "texto": "Que capricho nessa marmita de frango! Sai mais no almoço ou no jantar?",
                                     "base": "post de ontem: marmita de frango"},
                                    {"lead_id": a3, "tipo": "dm_abertura", "texto": DM_A},
-                                   {"lead_id": a2, "tipo": "resposta", "texto": "Oi! Que bom que gostou. Me manda a receita de uma marmita e o preço que eu faço a conta. — Matheus"}])
-            eq(sorted(a["tipo"] for a in out["automaticas"]), ["aquecer", "dm_abertura"], f"pré-aprovadas: {out}")
-            eq([a["tipo"] for a in out["propostas"]], ["resposta"], "resposta continua com o Matheus")
+                                   {"lead_id": a2, "tipo": "resposta", "texto": "Oi, pessoal da Dois! Que bom que gostou. A calculadora grátis mostra quanto sobra em cada marmita: raizconnect.com.br/materiais/precificacao/calculadora — Matheus"}])
+            eq(sorted(a["tipo"] for a in out["automaticas"]), ["aquecer", "dm_abertura", "resposta"], f"pré-aprovadas: {out}")
+            eq(out["propostas"], [], "resposta também sai pelo revisor (11/10)")
             eq(len(chamadas), 1, "uma chamada ao revisor para o lote")
-            eq(len(chamadas[0]["ids"]), 2, "resposta não vai ao revisor automático")
+            eq(len(chamadas[0]["ids"]), 3, "resposta vai ao revisor com o lote")
+            ok("O QUE A PESSOA DISSE: quero saber mais" in chamadas[0]["pedido"], "revisor vê o que a pessoa disse")
             ok("post de ontem: marmita de frango" in chamadas[0]["pedido"] and "Playbook de prospecção" in chamadas[0]["pedido"],
                "revisor recebe o que o agente viu e o playbook")
             d = p.carregar(LOGIN)
@@ -240,6 +241,7 @@ class Suite:
             p.salvar(LOGIN, d)
             a, motivo = p.proxima(LOGIN, "raizconnect")
             ok(a and a.get("auto"), f"execução pega a pré-aprovada ({motivo})")
+            eq(a["tipo"], "resposta", "resposta sai antes das outras pré-aprovadas")
 
             class Ctx:
                 dados = {}

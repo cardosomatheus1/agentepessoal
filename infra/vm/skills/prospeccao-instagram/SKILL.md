@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 2.1.0
+version: 2.2.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -28,7 +28,7 @@ antes de escrever qualquer mensagem, porque ele muda.
 | aquecer: seguir, curtir 1–2 posts e, se fizer sentido, 1 comentário | revisor automático, dentro do limite do dia | o Matheus pré-aprovou |
 | primeira mensagem (variante A ou B) | revisor automático, dentro do limite do dia | sem link, sem preço |
 | lembrete (1 só, com a calculadora) | revisor automático, dentro do limite do dia | |
-| resposta a quem respondeu | **✅ do Matheus** (vai ao celular dele) | ele é avisado na hora da resposta |
+| resposta a quem respondeu | revisor automático | o Matheus é avisado da resposta da pessoa e do que saiu |
 | mensagem a parceiro (curso, consultor) | **✅ do Matheus** | |
 
 O que o revisor não liberar vai ao celular do Matheus para ✅ (a ferramenta faz isso sozinha).
@@ -133,7 +133,8 @@ ser o id ou o @. Em `base`, diga o que você viu e onde (post e data), ou "achad
 - **resposta** (quem respondeu, seção 6): comece com "Oi, pessoal da {nome}!", retome o que a pessoa disse,
   apresente-se como Matheus, da Raiz Connect, e **ofereça a ferramenta gratuita**: o link da calculadora (o do
   simulador de delivery para quem vende no iFood) dizendo o que ela mostra e que é grátis. Vale mesmo se a resposta foi num
-  comentário e ainda não falou de preço. Vai para o ✅ do Matheus.
+  comentário e ainda não falou de preço. O revisor libera e ela sai na rodada de execução (antes das
+  outras ações).
 - **Nunca peça a receita** (nem "me manda a receita que eu calculo"): soa invasivo, como se quiséssemos usar a
   receita da pessoa. A oferta é sempre a ferramenta grátis.
 - **Saudação em toda mensagem:** perfil de negócio → "Oi, pessoal da {nome}!"; "Oi, {nome}!" só para perfil de
@@ -200,8 +201,7 @@ próxima; no máximo 3 por rodada. "NADA AGORA" encerra a rodada.
 novo → (aquecer) → aquecido → (primeira mensagem, 2+ dias) → abordado → (lembrete, 3+ dias) → lembrado → (5 dias sem
 resposta) → sem_resposta, sem terceira mensagem.
 
-Respondeu em qualquer ponto: respondeu → lead → demo → teste → cliente. Disse não: descartado (agradeça uma vez,
-com o ✅ dele).
+Respondeu em qualquer ponto: respondeu → lead → demo → teste → cliente. Disse não: descartado (agradeça uma vez).
 
 ## 8. Limites
 
@@ -217,7 +217,7 @@ agora, não force.
 
 - **"Acha N leads de Y":** seções 2a e 2b até criar N leads que encaixam (ou examinar 30 perfis no Instagram).
   Depois proponha «aquecer» para eles; se a cota do dia acabou, ficam para amanhã.
-- **"Responde fulano" / "o que ele disse?":** seção 6 para esse @, depois proponha a resposta (vai para o ✅ dele).
+- **"Responde fulano" / "o que ele disse?":** seção 6 para esse @, depois proponha a resposta (o revisor libera).
 - **"Como está a prospecção?":** `prospeccao` acao "hoje" (o dia) ou "metricas" (a semana).
 - **"Importa esta lista":** salve como .json (nome, cidade, uf, segmento, telefone, instagram, site, evidencia,
   fonte) em /a0/usr/prospeccao/ e chame `importar_lista` com `arquivo`. Depois, `fontes` transforma a lista em
