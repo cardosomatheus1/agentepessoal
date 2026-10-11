@@ -179,10 +179,12 @@ def pontuar(item: dict) -> dict:
         return {"rejeitado": f"segmento fora do playbook ({item.get('segmento')!r}); use: {', '.join(PONTOS_SEGMENTO)}"}
     try:
         ultimo = dt.date.fromisoformat(str(item.get("ultimo_post") or "")[:10])
+        dias = (dt.datetime.fromtimestamp(agora(), _tz()).date() - ultimo).days
     except ValueError:
-        return {"rejeitado": "sem a data do último post NÃO fixado (ultimo_post AAAA-MM-DD)"}
-    dias = (dt.datetime.fromtimestamp(agora(), _tz()).date() - ultimo).days
-    if dias > 30:
+        if not item.get("atividade_pendente"):
+            return {"rejeitado": "sem a data do último post NÃO fixado (ultimo_post AAAA-MM-DD)"}
+        dias = None  # found outside Instagram (fontes.py): the warm-up visit checks the last post before following
+    if dias is not None and dias > 30:
         return {"rejeitado": f"parado há {dias} dias"}
     seguidores = _numero(item.get("seguidores"))
     if seguidores < 300:
@@ -196,7 +198,7 @@ def pontuar(item: dict) -> dict:
     sinais = {str(x).lower() for x in (item.get("sinais") or [])} & set(SINAIS)
     partes = {
         "segmento": PONTOS_SEGMENTO[seg],
-        "atividade": 15 if dias <= 7 else 12 if dias <= 14 else 8,
+        "atividade": 8 if dias is None else 15 if dias <= 7 else 12 if dias <= 14 else 8,
         "porte": 15 if 500 <= seguidores <= 5000 else 12 if seguidores <= 20_000 and seguidores > 5000 else 8 if seguidores > 20_000 else 6,
         "regiao": 10,
         "canais": min(10, 3 * len(canais) + (1 if len(canais) >= 3 else 0)),
@@ -241,6 +243,9 @@ def registrar(login: str, novos: list) -> dict:
                 "cidade": str(item["cidade"])[:60], "seguidores": str(item.get("seguidores") or "")[:20],
                 "motivo": str(item["motivo"])[:300], "sinal": str(item.get("sinal") or "")[:300],
                 "etapa": "novo", "criado": agora(), "atualizado": agora(), "historico": []}
+        if item.get("atividade_pendente") and not item.get("ultimo_post"):
+            lead["conferir_atividade"] = True  # found outside Instagram: last post checked on the warm-up visit
+            lead["fonte"] = str(item.get("fonte") or "")[:40]
         d["leads"].append(lead)
         por_handle[handle] = lead
         out["criados"].append({"handle": handle, "id": lead["id"], "nota": lead["nota"],

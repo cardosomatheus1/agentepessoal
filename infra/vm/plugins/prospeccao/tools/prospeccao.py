@@ -29,6 +29,10 @@ def pr():
     return _carregar("prospeccao_helper", RAIZ / "helpers" / "prospeccao.py")
 
 
+def fontes():
+    return _carregar("prospeccao_fontes", RAIZ / "helpers" / "fontes.py")
+
+
 def ponte():
     if "whatsapp_ponte" in sys.modules:
         return sys.modules["whatsapp_ponte"]
@@ -153,6 +157,24 @@ class Prospeccao(Tool):
             return r(json.dumps(out, ensure_ascii=False) + "\nCriados já estão registrados com nota; recusados já anotados. "
                      "Só os de \"conferir\" precisam de você: abra o perfil, descubra o que falta (cidade/segmento) e registre "
                      "com `registrar` usando o item como base (ou `rejeitar`).")
+        if acao == "fontes":
+            f = fontes()
+            limite = max(1, min(40, int(kwargs.get("limite") or 20)))
+            coleta = None
+            d = f.carregar(login)
+            if sum(1 for e in d["empresas"].values() if e["estado"] == "fila") < limite:
+                coleta = await asyncio.to_thread(f.coletar, login, int(kwargs.get("paginas") or 4))
+            out = await asyncio.to_thread(f.enriquecer, login, p, limite)
+            return r(json.dumps({"coleta": coleta, **out}, ensure_ascii=False) +
+                     "\nCriados já estão registrados com nota (achados fora do Instagram: a data do último post é conferida na "
+                     "visita do aquecimento). Proponha «aquecer» para eles SEM comentário (você ainda não viu os posts). "
+                     "Para mais leads, chame `fontes` de novo (a fila anda sozinha pelo catálogo).")
+        if acao == "importar_lista":
+            caminho = Path(str(kwargs.get("arquivo") or texto or ""))
+            if not caminho.is_file() or caminho.suffix != ".json":
+                return r("Passe `arquivo` = caminho de um .json com a lista de empresas (nome, cidade, uf, segmento, telefone, instagram, site, evidencia, fonte).")
+            out = fontes().importar(login, json.loads(caminho.read_text(encoding="utf-8")))
+            return r(json.dumps(out, ensure_ascii=False))
         if acao == "rejeitar":
             n = p.rejeitar(login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
             return r(f"{n} perfis anotados como examinados e fora do perfil (não voltam por 60 dias).")
@@ -184,8 +206,15 @@ class Prospeccao(Tool):
                 return r(f"NADA AGORA: {motivo}. Termine a rodada.")
             p.liberar(self.agent.context, a)
             lead = a["lead"]
+            conferir = ""
+            if a["tipo"] == "aquecer" and lead.get("conferir_atividade"):
+                conferir = (f"ANTES DE SEGUIR: este perfil foi achado fora do Instagram (catálogo de CNPJ/buscador). Confira que é "
+                            f"mesmo «{lead['nome']}» ({lead['cidade']}) e a data do primeiro post NÃO fixado. Se for outro negócio, "
+                            "ou o último post tiver mais de 30 dias, NÃO siga nem curta: chame `prospeccao` acao \"etapa\" com "
+                            "etapa \"descartado\" e nota (\"parado há N dias\" ou \"perfil de outro negócio\"), e depois \"resultado\" "
+                            "com ok=false e esse detalhe. Se estiver ativo, siga normalmente e diga no detalhe a data do último post.\n")
             return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) {'PRÉ-APROVADA (autorização do Matheus, dentro do limite do dia; texto revisado)' if a.get('auto') else 'APROVADA pelo Matheus'} para @{lead['handle']} — {lead['url']}\n"
-                     f"{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
+                     f"{conferir}{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
                      "Depois chame `prospeccao` acao \"resultado\" com acao_id, ok (true/false) e detalhe (o que viu na tela). "
                      "Se o Instagram mostrar bloqueio/limite/'tente mais tarde'/verificação, PARE e mande bloqueio: true.")
         if acao == "resultado":
