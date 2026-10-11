@@ -1100,6 +1100,17 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True) -> tuple[dict
     return None, "nenhuma ação aprovada esperando"
 
 
+def aviso_sem_acao(motivo: str) -> str:
+    """What the agent is told when `proxima` has nothing right now. Spacing is a wait, not the end of the round
+    (11/10: "NADA AGORA: espaçamento…" ended the 14h50 round after 1 of 5 free slots)."""
+    if "confira as respostas" in motivo:
+        return f"AINDA NÃO: {motivo}."
+    if motivo.startswith("espaçamento"):
+        return (f"ESPERE: {motivo}. Aguarde até esse horário (ex.: code_execution_tool com `sleep 180`) e chame "
+                "`proxima` de novo. A rodada só termina com NADA AGORA ou depois de 3 ações feitas.")
+    return f"NADA AGORA: {motivo}. Termine a rodada."
+
+
 def resultado(login: str, aid: str, ok: bool, detalhe: str = "", bloqueio: bool = False) -> dict | None:
     d = carregar(login)
     a = next((x for x in d["acoes"] if x["id"] == aid), None)

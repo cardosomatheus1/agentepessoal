@@ -222,9 +222,7 @@ class Prospeccao(Tool):
             a, motivo = p.proxima(login, conta_ativa)
             if not a:
                 p.encerrar_liberacao(self.agent.context)
-                if "confira as respostas" in motivo:
-                    return r(f"AINDA NÃO: {motivo}.")
-                return r(f"NADA AGORA: {motivo}. Termine a rodada.")
+                return r(p.aviso_sem_acao(motivo))
             p.liberar(self.agent.context, a)
             lead = a["lead"]
             conferir = ""
