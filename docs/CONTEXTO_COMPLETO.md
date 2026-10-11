@@ -80,6 +80,22 @@ o que deu errado e como foi corrigido, e como ele gosta de trabalhar. Nenhuma se
     orquestradora/vigia (libera toda aprovação humana por delegação — pedido dele: "não precisa dessa aprovação
     de humano, ele libera sempre que a sessão parar") e esta (agente pessoal).
 
+11. **11/10 — parada da noite e correções:**
+    - **O que parou:** a Main Opus esperou resposta às 00:29 UTC, o alarme de ociosidade desligou a máquina de
+      build às 01:50 e o Controle Remoto caiu ("Ambiente excluído"). A VM do agente travou ao acordar às 04:55.
+    - **Máquina de build:**
+      - a máquina religa sozinha a cada 30 min;
+      - a Main Opus reata a mesma sessão (serviço `claude-main-opus`) e roda sem pedidos de permissão;
+      - `~/.claude/CLAUDE.md` traz a delegação ao orquestrador;
+      - um hook de Stop exige um `send_later` de 20 min, para ela se acordar sozinha;
+      - há uma caixa de recados pelo SSM `/ros/recados`.
+    - **Orquestradora:** é só observadora. O modo auto dela recusa `send_message` e a caixa de recados, por
+      considerar contorno.
+    - **Agente:** pedidos em paralelo pelo celular, rotinas em erro voltam a rodar, lead pelo @ e conversa do
+      celular renovada depois de 8 h (detalhes no handoff).
+    - **Preferência do Matheus:** quer dormir e deixar tudo andando. Aprovações não devem depender dele, fora os
+      limites (deploy, pagamento, segredo, apagar).
+
 ## Pendências
 
 - Primeiras DMs da prospecção saem segunda 12/10 (variantes A/B, revisor); conferir qualidade e resultado; relatório

@@ -79,6 +79,39 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
 - **Mandar recado às sessões da conta nova pelo navegador do agente:** um Playwright de fora cai na verificação
   do Cloudflare. Só o navegador do próprio agente passa, ou o Matheus pelo app.
 
+## Agente: correções de 11/10 (manhã)
+
+- **Mais de um pedido ao mesmo tempo** (plugin `whatsapp`, `api/receber.py`).
+  - **Causa:** o Agent Zero guarda **uma** interrupção por vez (`agent.intervention`). Uma segunda mensagem com
+    o agente ocupado apagava a primeira. Em 09/10, "Ve exame de novo" sumiu debaixo de "E kd resultados".
+  - **Agora, com a conversa do celular ocupada:**
+    - um pedido novo roda numa **conversa paralela** (`whatsapp_paralela`, até 3; reaproveitada por 2 h). O
+      Matheus recebe "⚡ … começo em paralelo", e a resposta chega marcada com **↪️**;
+    - uma correção (regex `CORRECAO`: "não…", "era…", "cancela", "também…", "e o…") entra na tarefa em
+      andamento, **somada** a uma interrupção ainda não lida.
+  - **Contexto da conversa principal:**
+    - o prompt (`_60_conversa_whatsapp.py`) lista o que as paralelas fizeram (`_paralelas`);
+    - lista também os avisos que as rotinas mandaram ao celular nas últimas 24 h (`ponte.avisos_recentes`, de
+      `/a0/usr/whatsapp/avisos/<login>.jsonl`). Assim ele sabe do que se trata quando o Matheus responde a um
+      aviso.
+  - **Conversa nova:** a conversa do celular parada há 8 h, ou com mais de 1500 itens, recomeça com as últimas
+    mensagens como resumo (`_herdado`). A anterior estava enorme ("History compression stalled").
+  - **Teste real:** `whatsapp/tests/paralelo.py`, rodado no host da VM com o login `teste_par`. Passou.
+- **Rotina com erro morria para sempre:** o agendador só roda tarefas `idle`. A busca da prospecção e o Nexos
+  ficaram em `error` desde 10/10 21:49 UTC (proxy fora no reboot). O `limpeza/_41_destravar_rotinas.py` agora
+  volta para `idle` a rotina recorrente em erro há mais de 5 min. Já destravou as duas.
+- **`prospeccao`:** `etapa` e `propor` aceitam `@handle`, URL ou id. O agente passou o @ do @zen.marmitas e a
+  etapa foi recusada. O @zen.marmitas respondeu ao comentário ("oieeee….entra sim!!!") e está em `respondeu`; a
+  próxima rodada propõe a resposta para o ✅. Suíte 34/34.
+- **Como rodar a suíte da prospecção sem a interface:** a senha em `/agentepessoal/password` está velha. Rode
+  `tests/suite.py` dentro do contêiner com `/opt/venv-a0/bin/python` (`infra/operador/rodar_suite_pro.sh`).
+  `Suite().rodar("")` imprime `passou/total`.
+- **Estabilidade:**
+  - a VM travou ao acordar da hibernação (04:55 UTC, "impaired"). O alarme `agentepessoal-vm-travada` a reinicia
+    sozinho;
+  - a interface travou ao subir. O `memguard.sh` reinicia o `run_ui` depois de 5 min sem resposta;
+  - a memória continua com a limpeza de abas e o reinício do contêiner abaixo de 700 MB.
+
 ## O que a sessão nova precisa ter
 
 1. **GitHub**: a conta nova conectada ao usuário `cardosomatheus1`, com acesso a `cardosomatheus1/agentepessoal`.
@@ -207,6 +240,7 @@ O navegador do agente acumulava abas de todas as conversas e rodadas (75 process
 Você continua o projeto do agente pessoal do Matheus (repo cardosomatheus1/agentepessoal), vindo de outra conta do
 Claude. Faça git fetch origin ccr-bcbe3101-9u4klv e trabalhe a partir dele. Leia docs/HANDOFF_CONTA_NOVA.md e docs/CONTEXTO_COMPLETO.md inteiros antes de qualquer coisa e siga as regras deles. Confira o acesso:
 aws sts get-caller-identity; python3 infra/operador/vmcmd.py 'docker ps --format "{{.Names}} {{.Status}}"'.
-Depois rode python3 infra/operador/rodar_testes_pro.py e me diga em 3 linhas o estado (VM, testes, prospecção).
+Depois rode a suíte da prospecção dentro do contêiner (seção "Agente: correções de 11/10") e me diga em 3 linhas o
+estado (VM, testes, prospecção).
 Responda sempre em português, curto.
 ```
