@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 2.0.0
+version: 2.1.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -130,9 +130,13 @@ ser o id ou o @. Em `base`, diga o que você viu e onde (post e data), ou "achad
   4. **Sem link e sem preço**, assinando "— Matheus, da Raiz Connect".
 - **dm_lembrete** (3+ dias depois da primeira mensagem, sem resposta): curto, com o link da **calculadora** (ou o do
   simulador de delivery para quem vende no iFood), diferente para cada pessoa.
-- **resposta** (quem respondeu, seção 6): retome o que a pessoa disse e, se a conversa chegou em preço, custo ou
-  lucro, ofereça a calculadora ou "me manda a receita de um que eu calculo". Se ela mandou receita, faça o cálculo
-  de verdade. Vai para o ✅ do Matheus.
+- **resposta** (quem respondeu, seção 6): comece com "Oi, pessoal da {nome}!", retome o que a pessoa disse,
+  apresente-se como Matheus, da Raiz Connect, e **ofereça a ferramenta gratuita**: o link da calculadora (o do
+  simulador de delivery para quem vende no iFood) dizendo o que ela mostra, e a outra porta, "me manda a receita de
+  um que eu calculo". Vale mesmo se a resposta foi num comentário e ainda não falou de preço. Se ela mandou receita,
+  faça o cálculo de verdade. Vai para o ✅ do Matheus.
+- **Saudação em toda mensagem:** perfil de negócio → "Oi, pessoal da {nome}!"; "Oi, {nome}!" só para perfil de
+  pessoa.
 - **Nunca:** texto igual para duas pessoas, fato inventado, mais de 2 mensagens sem resposta, contatar de novo quem
   disse não ou foi descartado.
 

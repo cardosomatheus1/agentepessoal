@@ -107,31 +107,40 @@ e marque **descartado**.
 
 ## 6. Modelos (adapte; nunca copie igual para duas pessoas)
 
+**Saudação:** perfil de negócio → "Oi, pessoal da {nome}!" (ex.: "Oi, pessoal da Zen!"); só use "Oi, {nome}!" quando
+o perfil for claramente de uma pessoa (ex.: a confeiteira com o próprio nome).
+
 **Comentário de aquecimento** — útil, específico, sem venda:
 - "Esse {produto} ficou lindo! Vocês fazem por encomenda pra {ocasião} também?"
 - "Que capricho nesse {produto} 👏 Esse sai mais no iFood ou na encomenda?"
 
 **DM de abertura — variante A (pergunta primeiro, sem oferta):** abre conversa com uma pergunta honesta e fácil sobre
 como a pessoa precifica. Nada de oferta, pedido de receita ou link — a oferta vem depois que ela responder.
-"Oi, {nome}! Vi o {produto específico} de vocês — {elogio específico e verdadeiro}. Tô conversando com donos de
+"Oi, pessoal da {nome}! Vi o {produto específico} de vocês — {elogio específico e verdadeiro}. Tô conversando com donos de
 {segmento} aqui em {cidade} pra entender uma coisa: vocês definem o preço fazendo a conta de cada ingrediente ou vai
 mais pelo preço da concorrência? — Matheus, da Raiz Connect"
 
 **DM de abertura — variante B (oferta direta):**
-"Oi, {nome}! Vi o {produto específico} de vocês — {elogio específico e verdadeiro}. Uma pergunta de quem também
+"Oi, pessoal da {nome}! Vi o {produto específico} de vocês — {elogio específico e verdadeiro}. Uma pergunta de quem também
 mexe com isso: vocês sabem quanto sobra de verdade em cada {produto} depois de embalagem e taxa do iFood? Se quiser,
 me manda a receita de um e o preço que vocês cobram que eu faço essa conta pra você, de graça. — Matheus, da Raiz
 Connect"
 
 **Lembrete (dia 5+) — com a calculadora:**
-"Oi, {nome}! Passando só pra deixar uma coisa útil: fizemos uma calculadora grátis que mostra quanto sobra em cada
+"Oi, pessoal da {nome}! Passando só pra deixar uma coisa útil: fizemos uma calculadora grátis que mostra quanto sobra em cada
 {produto} depois de insumo, embalagem e taxa do iFood — dá pra começar sem cadastro: {LINK DA CALCULADORA}. Se
 preferir, me manda a receita de um que eu faço a conta pra você 🙂"
 
-**Resposta a quem respondeu** (sempre com o ✅ do Matheus): retome o que a pessoa disse, com naturalidade. Se ela
-contou como precifica (no feeling, pela concorrência, numa planilha…), mostre que entende o problema numa frase e
-ofereça as duas portas: a calculadora (link) ou "me manda a receita de um que eu calculo". Se ela já mandou receita,
-faça o cálculo de verdade (seção 5).
+**Resposta a quem respondeu** (sempre com o ✅ do Matheus): comece com "Oi, pessoal da {nome}!", retome o que a
+pessoa disse numa frase natural, apresente-se ("aqui é o Matheus, da Raiz Connect") e **ofereça a ferramenta
+gratuita**: a calculadora de precificação (link), dizendo em uma frase o que ela mostra (quanto sobra em cada
+{produto} depois de insumo, embalagem e taxa) e que é grátis e começa sem cadastro; feche com a outra porta, "ou me
+manda a receita de um que eu faço a conta pra vocês". Vale também quando a resposta foi num comentário e ainda não
+falou de preço. Se ela já mandou receita, faça o cálculo de verdade (seção 5).
+Exemplo: "Oi, pessoal da Zen! Que bom que o rondelli entra no kit 😄 Aqui é o Matheus, da Raiz Connect. A gente fez
+uma calculadora grátis que mostra quanto sobra em cada marmita depois de insumo, embalagem e taxa do iFood, dá pra
+começar sem cadastro: {LINK DA CALCULADORA}. Se preferir, me manda a receita de um prato que eu faço a conta pra
+vocês 🙂"
 
 **Parceiro** (curso, consultor, contador, fornecedor): apresente a Raiz em 2 frases, proponha o cálculo grátis para
 os alunos/clientes dele e uma comissão recorrente por indicação ([% a definir com o Matheus]); peça 15 minutos.
