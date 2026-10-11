@@ -175,6 +175,12 @@ class Prospeccao(Tool):
                 return r("Passe `arquivo` = caminho de um .json com a lista de empresas (nome, cidade, uf, segmento, telefone, instagram, site, evidencia, fonte).")
             out = fontes().importar(login, json.loads(caminho.read_text(encoding="utf-8")))
             return r(json.dumps(out, ensure_ascii=False))
+        if acao == "apagada":
+            a = p.marcar_apagada(login, acao_id, detalhe or texto)
+            if not a:
+                return r("Só uma mensagem EXECUTADA pode ser marcada como apagada (passe acao_id e detalhe).")
+            return r(f"Mensagem {acao_id} registrada como apagada: não conta mais como resposta enviada. "
+                     "Se for para mandar outra, proponha uma única mensagem nova pelo fluxo normal.")
         if acao == "rejeitar":
             n = p.rejeitar(login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
             return r(f"{n} perfis anotados como examinados e fora do perfil (não voltam por 60 dias).")

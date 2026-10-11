@@ -449,6 +449,25 @@ class Suite:
         aid = p.propor(LOGIN, [{"lead_id": lead["id"], "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
         ok(aid, "aquecer sem comentário pode ser proposto")
 
+    def t_resposta_apagada_libera_uma_nova(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("apagada1")
+        p.mudar_etapa(LOGIN, lid, "respondeu", "oieeee….entra sim!!!", "comentario")
+        d = p.carregar(LOGIN)
+        for estado, desloc in (("falhou", 60), ("falhou", 120), ("executada", 600)):
+            d["acoes"].append({"id": f"x{desloc}", "lead_id": lid, "tipo": "resposta", "texto": "Oi!", "estado": estado,
+                               "executada_em": p.agora() + desloc, "criada": p.agora()})
+        p.salvar(LOGIN, d)
+        self.em(p.agora() + 700)
+        resp = "Oi, pessoal! Que bom que o rondelli entra no kit da semana. Quer testar a calculadora grátis? — Matheus, da Raiz Connect"
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": resp}])
+        ok(not r["propostas"] and "já respondemos" in r["recusadas"][0]["motivo"], f"enviada conta como respondida: {r['recusadas']}")
+        eq(p.marcar_apagada(LOGIN, "x60", "x"), None, "só mensagem executada vira apagada")
+        ok(p.marcar_apagada(LOGIN, "x600", "apagada no Instagram por engano")["estado"] == "apagada", "marca apagada")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": resp}])
+        ok(r["propostas"], f"apagada + falhas antigas não travam uma nova: {r['recusadas']}")
+
     def t_execucao_exige_conferir_respostas(self):
         p = self.p
         self.em(self.hora(10))

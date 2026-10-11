@@ -45,6 +45,10 @@ O que o revisor não liberar vai ao celular do Matheus para ✅ (a ferramenta fa
   nem "PRECISA DE VOCÊ". Pare os scripts e use as fontes fora do Instagram (seção 2a).
 - **Leia a página:** abrir uma página não traz o texto dela. Depois de navegar, leia o conteúdo (`browser`
   content, ou `list` com include_content true) e decida só pelo que leu.
+- **Nunca apague (desfaça o envio) de mensagem** sem ordem explícita do Matheus, e só depois de VER na conversa que
+  há de fato duas iguais. Se uma mensagem nossa foi apagada, registre `prospeccao` acao "apagada" (acao_id, detalhe):
+  ela deixa de contar como resposta, e uma única mensagem nova pode ser proposta. Resposta automática de robô
+  (Manychat, "já já entraremos em contato") não é fala da pessoa.
 - **Contato só pelo Instagram.** Nunca por WhatsApp, e-mail ou telefone, mesmo que a fonte traga esses dados.
 
 ## As rodadas do dia (tarefas agendadas)

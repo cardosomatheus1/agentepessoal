@@ -804,8 +804,26 @@ def _resposta_falhou(d: dict, lead: dict) -> bool:
     """A reply to the person's latest words already failed (e.g. Message button disabled): stop the retry loop."""
     falas = [h["em"] for h in lead.get("historico", []) if str(h.get("tipo", "")).startswith("etapa:")]
     ultima = max(falas) if falas else 0
-    return any(a["lead_id"] == lead["id"] and a["tipo"] == "resposta" and a["estado"] == "falhou"
-               and a.get("executada_em", 0) >= ultima for a in d["acoes"])
+    minhas = [a for a in d["acoes"] if a["lead_id"] == lead["id"] and a["tipo"] == "resposta"
+              and a.get("executada_em", 0) >= ultima]
+    if any(a["estado"] in ("executada", "apagada") for a in minhas):
+        return False  # a later attempt went through (11/10 zen.marmitas: two early "failed" kept blocking for good)
+    return any(a["estado"] == "falhou" for a in minhas)
+
+
+def marcar_apagada(login: str, aid: str, detalhe: str = "") -> dict | None:
+    """An executed message that was deleted (unsent) in the Instagram: it no longer counts as answered, so one
+    new message can go (11/10: the only reply to @zen.marmitas was deleted as a 'duplicate' and the lock stayed)."""
+    d = carregar(login)
+    a = next((x for x in d["acoes"] if x["id"] == aid), None)
+    if not a or a["estado"] != "executada" or a["tipo"] not in ("dm_abertura", "dm_lembrete", "resposta", "parceiro"):
+        return None
+    a["estado"], a["detalhe"] = "apagada", (f"APAGADA: {detalhe} | antes: " + str(a.get("detalhe", "")))[:600]
+    lead = _lead(d, a["lead_id"])
+    if lead:
+        lead["historico"].append({"em": agora(), "tipo": "apagada", "texto": f"{a['tipo']} {aid} apagada: {detalhe}"[:300]})
+    salvar(login, d)
+    return a
 
 
 def _disse(lead: dict) -> str:
