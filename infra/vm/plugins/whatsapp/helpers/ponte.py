@@ -46,6 +46,8 @@ def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", 
     try:
         with urllib.request.urlopen(req, timeout=180) as r:
             r.read()
+        if corpo["tipo"] != "resposta" and texto:
+            _lembrar_aviso(usuario, texto)
         return ""
     except urllib.error.HTTPError as e:
         try:
@@ -54,6 +56,31 @@ def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", 
             return str(e)
     except Exception as exc:
         return str(exc)
+
+
+AVISOS = Path("/a0/usr/whatsapp/avisos")  # notices sent by rounds/tasks, one .jsonl per person (last 30)
+
+
+def _lembrar_aviso(usuario: str, texto: str) -> None:
+    """Keep what a round sent to the phone: when he answers it in the phone chat, that chat knows what he means."""
+    try:
+        AVISOS.mkdir(parents=True, exist_ok=True)
+        arq = AVISOS / f"{usuario}.jsonl"
+        linhas = arq.read_text(encoding="utf-8").splitlines()[-29:] if arq.exists() else []
+        linhas.append(json.dumps({"em": time.time(), "texto": texto[:1500]}, ensure_ascii=False))
+        arq.write_text("\n".join(linhas) + "\n", encoding="utf-8")
+    except OSError:
+        pass
+
+
+def avisos_recentes(usuario: str, horas: float = 24, maximo: int = 6) -> list[dict]:
+    try:
+        linhas = (AVISOS / f"{usuario}.jsonl").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    limite = time.time() - horas * 3600
+    itens = [json.loads(l) for l in linhas if l.strip()]
+    return [i for i in itens if i.get("em", 0) >= limite][-maximo:]
 
 
 def formatar(texto: str) -> str:

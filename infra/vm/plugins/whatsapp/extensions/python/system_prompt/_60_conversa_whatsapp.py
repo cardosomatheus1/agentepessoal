@@ -20,6 +20,10 @@ O usuário está falando com você por mensagem no celular (mensagens com 🎤 s
 - "/nova" no WhatsApp começa outra conversa; o usuário também vê esta conversa no app."""
 
 
+PARALELA = """## Esta é uma conversa paralela do celular
+Ele pediu isto enquanto a conversa principal estava ocupada com outra tarefa, que continua rodando. Faça só o pedido desta conversa e responda; não refaça nem interrompa a outra tarefa. No navegador, use a sua própria aba (os logins são os mesmos) e não feche nem navegue nas abas das outras conversas. Se ele mandar outra mensagem que continua este pedido, ela chega aqui."""
+
+
 TAREFA = """## Esta conversa é uma tarefa agendada
 Cada rodada segue LER → ENTENDER → AGIR, qualquer que seja a tarefa:
 1. LER: o que mudou desde a última rodada (seu checkpoint/contexto.md e as fontes da tarefa), lendo o conteúdo de verdade — a mensagem, o e-mail, a página —, não só status e títulos.
@@ -54,7 +58,35 @@ class ConversaWhatsapp(Extension):
     async def execute(self, system_prompt: list[str] = [], loop_data: LoopData = LoopData(), **kwargs):
         if not self.agent or self.agent.number != 0:
             return
-        if self.agent.context.get_data("whatsapp_de"):
+        ctx = self.agent.context
+        if ctx.get_data("whatsapp_de"):
             system_prompt.append(REGRAS)
+            if ctx.get_data("whatsapp_paralela"):
+                system_prompt.append(PARALELA)
+            if ctx.get_data("_herdado"):
+                system_prompt.append("## Fim da conversa anterior pelo celular (contexto)\nEsta conversa começou "
+                                     "nova porque a anterior ficou parada horas ou longa demais. Últimas mensagens "
+                                     "dela, para entender referências como \"aquilo\" ou \"lá\":\n"
+                                     + str(ctx.get_data("_herdado")))
+            try:
+                avisos = ponte().avisos_recentes(str(ctx.get_data("whatsapp_de")))
+            except Exception:
+                avisos = []
+            if avisos:
+                import time as _t
+
+                system_prompt.append(
+                    "## Últimos avisos que as rotinas mandaram ao celular dele (últimas 24 h)\nSe ele responder "
+                    "a um destes (\"faz isso\", \"e esse lead?\", \"aprova\"), é deste aviso que ele está falando — "
+                    "não confunda com o assunto anterior desta conversa:\n"
+                    + "\n".join(f"- {_t.strftime('%d/%m %H:%M', _t.localtime(a['em']))}: "
+                                f"{' '.join(str(a.get('texto', '')).split())[:500]}" for a in avisos))
+            feitos = ctx.get_data("_paralelas") or []
+            if feitos and not ctx.get_data("whatsapp_paralela"):
+                system_prompt.append("## Pedidos dele que você fez em paralelo (em outra conversa)\nEnquanto esta "
+                                     "conversa estava ocupada, estes pedidos rodaram em paralelo; as respostas já "
+                                     "chegaram ao celular dele (marcadas com ↪️). Use isto se ele se referir a eles:\n"
+                                     + "\n".join(f"- {f['quando']} — pedido: {f['pedido']} → respondido: {f['resposta']}"
+                                                 for f in feitos))
         elif ponte().tarefa(self.agent.context):
             system_prompt.append(TAREFA)

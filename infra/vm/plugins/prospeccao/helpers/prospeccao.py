@@ -110,7 +110,14 @@ def normalizar(handle: str) -> str:
 
 
 def _lead(d: dict, lid: str) -> dict | None:
-    return next((l for l in d["leads"] if l["id"] == lid), None)
+    """By internal id or by the profile: "zen.marmitas", "@zen.marmitas" or its instagram.com URL (11/10: the agent
+    passed the @ and the stage change was refused)."""
+    lid = str(lid or "").strip()
+    achado = next((l for l in d["leads"] if l["id"] == lid), None)
+    if achado or not lid:
+        return achado
+    handle = lid.rstrip("/").rsplit("/", 1)[-1].lstrip("@").lower()
+    return next((l for l in d["leads"] if str(l.get("handle", "")).lower() == handle), None)
 
 
 # ------------------------------------------------------------------ lead score (fixed rubric, computed from evidence)
@@ -564,7 +571,7 @@ def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "d
     lead["historico"].append({"em": agora(), "tipo": f"etapa:{etapa}", "texto": nota, "onde": onde})
     if etapa in FINAIS or etapa in ("respondeu", "lead"):  # pending outreach stops when they answer or are closed
         for a in d["acoes"]:
-            if a["lead_id"] == lid and a["estado"] in ("proposta", "aprovada") and a["tipo"] != "resposta":
+            if a["lead_id"] == lead["id"] and a["estado"] in ("proposta", "aprovada") and a["tipo"] != "resposta":
                 a["estado"], a["decidida"] = "cancelada", agora()
     salvar(login, d)
     return {**lead, "novidade": True}
@@ -675,6 +682,8 @@ def propor(login: str, itens: list) -> dict:
         tipo = str(item.get("tipo") or "").lower()
         lid = str(item.get("lead_id") or "")
         lead = _lead(d, lid)
+        if lead:
+            lid = lead["id"]  # the agent may have passed the @
         texto = str(item.get("texto") or "").strip()
         motivo = ""
         if tipo not in TIPOS:

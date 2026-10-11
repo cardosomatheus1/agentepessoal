@@ -60,6 +60,23 @@ def _aviso(ctx, texto: str, tarefa: bool, nome_tarefa: str = "") -> str:
     return f"*{titulo}*\n\n{resumo}\n\n_(a conversa completa está no app)_"
 
 
+def _contar_na_principal(paralela, usuario: str, texto: str) -> None:
+    """The main phone chat learns what a parallel chat did (its system prompt lists it), so "e aquilo?" works."""
+    try:
+        from agent import AgentContext
+
+        for ctx in AgentContext.all():
+            if ctx.get_data("whatsapp_de") == usuario and not ctx.get_data("whatsapp_paralela"):
+                feitos = list(ctx.get_data("_paralelas") or [])[-4:]
+                feitos.append({"quando": time.strftime("%d/%m %H:%M"),
+                               "pedido": str(paralela.get_data("whatsapp_ultimo_pedido") or "")[:300],
+                               "resposta": " ".join(texto.split())[:500]})
+                ctx.set_data("_paralelas", feitos)
+                return
+    except Exception as exc:
+        print(f"whatsapp: parallel answer not recorded in the main chat: {exc}", flush=True)
+
+
 class EnviarResposta(Extension):
     async def execute(self, response=None, tool_name: str = "", **kwargs):
         agent = self.agent
@@ -88,7 +105,10 @@ class EnviarResposta(Extension):
             return
 
         de_whatsapp = ctx.get_data("whatsapp_de")
-        if de_whatsapp:
+        if de_whatsapp and ctx.get_data("whatsapp_paralela"):
+            _contar_na_principal(ctx, de_whatsapp, texto)
+            destino, mensagem = de_whatsapp, f"↪️ {texto}"  # marks the answer of a request done in parallel
+        elif de_whatsapp:
             destino, mensagem = de_whatsapp, texto
         else:
             ultima = float(ctx.get_data("_whatsapp_ultima_do_usuario") or 0)

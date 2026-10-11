@@ -91,10 +91,10 @@ def _conversa(usuario: str, nova: bool, chave: str = "whatsapp_de", nome: str = 
 
     if not nova:
         for ctx in AgentContext.all():
-            if ctx.get_data(chave) == usuario:
+            if ctx.get_data(chave) == usuario and not ctx.get_data(PARALELA):
                 return ctx, False
     for ctx in AgentContext.all():  # "/nova": the previous one stays as an ordinary chat
-        if ctx.get_data(chave) == usuario:
+        if ctx.get_data(chave) == usuario and not ctx.get_data(PARALELA):
             ctx.set_data(chave, None)
     ctx = AgentContext(config=initialize_agent(), name=nome)
     projects.reconcile_agent_profile(ctx, projects.get_context_project_name(ctx))
@@ -104,6 +104,128 @@ def _conversa(usuario: str, nova: bool, chave: str = "whatsapp_de", nome: str = 
     if chave == "gatilhos_de":
         ctx.set_data("avisar_sempre", True)  # nobody is watching: every outcome goes to WhatsApp
     return ctx, True
+
+
+# ---- more than one request at a time (11/10: "Ve exame de novo" was lost under "E kd resultados") ----
+# Agent Zero keeps ONE intervention slot per agent: a second message sent while the agent works overwrote the
+# first. Now a new request that arrives while the person's phone chat is busy runs in a parallel chat (its own
+# browser tab, same logins); a correction to what is running ("não, era…", "cancela", "também…") still goes in
+# as an intervention, merged with any intervention not yet read, never overwriting it.
+PARALELA = "whatsapp_paralela"  # ctx data: this phone chat is a parallel one (never picked as the main chat)
+MAX_PARALELAS = 3
+PARALELA_NOVA_APOS_S = 2 * 3600  # an idle parallel chat is reused for follow-ups within 2 h, then a fresh one
+GIRAR_APOS_S = 8 * 3600  # main chat idle this long starts fresh, carrying a summary (stalled compression, 10/10)
+GIRAR_ACIMA_DE_ITENS = 1500  # ...or when its log grew this big
+CORRECAO = re.compile(
+    r"^\s*(n[aã]o\b|n\b|nn\b|era\b|cancel|para\b|pare\b|espera|esquece|errad|na verdade|corrig|ops\b|"
+    r"tamb[eé]m\b|tbm\b|tb\b|e tamb|al[eé]m disso|mais uma coisa|e (?:a|o|os|as) |e (?:se|depois)\b|ah\b|aliás)",
+    re.I)
+
+
+def _logs(ctx) -> list:
+    try:
+        return list(ctx.log.logs)
+    except Exception:
+        return []
+
+
+def _historico(ctx, n: int = 6, corte: int = 400) -> str:
+    """The last n person/agent exchanges of a chat, as plain lines (context for a parallel or rotated chat)."""
+    linhas = []
+    for item in _logs(ctx):
+        tipo = getattr(item, "type", "")
+        if tipo in ("user", "response"):
+            texto = " ".join(str(getattr(item, "content", "") or "").split())
+            if texto:
+                linhas.append(("Ele: " if tipo == "user" else "Você: ") + texto[:corte])
+    return "\n".join(linhas[-n:])
+
+
+def _intervir(ctx, msg):
+    """Hand msg to a running chat without losing an intervention the agent has not read yet."""
+    from agent import UserMessage
+
+    agente = ctx.get_agent()
+    pendente = getattr(agente, "intervention", None) if ctx.is_running() else None
+    if pendente is not None:
+        msg = UserMessage(message=f"{pendente.message}\n\n(e logo depois ele mandou:)\n{msg.message}",
+                          attachments=list(pendente.attachments or []) + list(msg.attachments or []), id=msg.id)
+    ctx.communicate(msg)
+
+
+def _paralela(usuario: str):
+    """An idle parallel phone chat of the person (recent), or a new one; None when MAX_PARALELAS are busy."""
+    from agent import AgentContext
+    from helpers import projects
+    from initialize import initialize_agent
+
+    ocupadas, livre = 0, None
+    for ctx in AgentContext.all():
+        if ctx.get_data(PARALELA) and ctx.get_data("whatsapp_de") == usuario:
+            if ctx.is_running():
+                ocupadas += 1
+            elif time.time() - float(ctx.get_data("whatsapp_ultima_entrada") or 0) < PARALELA_NOVA_APOS_S:
+                livre = livre or ctx
+            else:
+                ctx.set_data("whatsapp_de", None)  # an old parallel chat becomes an ordinary chat
+    if livre is not None:
+        return livre
+    if ocupadas >= MAX_PARALELAS:
+        return None
+    ctx = AgentContext(config=initialize_agent(), name="Celular — paralela")
+    projects.reconcile_agent_profile(ctx, projects.get_context_project_name(ctx))
+    for chave, valor in (("dono", usuario), ("usuario", usuario), ("whatsapp_de", usuario), (PARALELA, True)):
+        ctx.set_data(chave, valor)
+    return ctx
+
+
+def _girar_se_velha(usuario: str, ctx):
+    """A main phone chat idle for hours (or huge) starts fresh, carrying the last exchanges as a summary."""
+    ultima = float(ctx.get_data("whatsapp_ultima_entrada") or 0)
+    if ctx.is_running() or not ultima:
+        return ctx
+    if time.time() - ultima < GIRAR_APOS_S and len(_logs(ctx)) < GIRAR_ACIMA_DE_ITENS:
+        return ctx
+    herdado = _historico(ctx, 8, 350)
+    nova, _ = _conversa(usuario, nova=True)
+    if herdado:
+        nova.set_data("_herdado", herdado)
+    for chave in ("usuario_nome",):
+        if ctx.get_data(chave):
+            nova.set_data(chave, ctx.get_data(chave))
+    return nova
+
+
+def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str) -> dict:
+    """Deliver a phone message: to the main chat, as a merged correction, or to a parallel chat when busy."""
+    from agent import UserMessage
+    from helpers import message_queue as mq
+
+    principal, criada = _conversa(usuario, nova=False)
+    if not criada:
+        principal = _girar_se_velha(usuario, principal)
+    alvo, paralela, pedido = principal, False, " ".join((texto or "").split())[:300]
+    if principal.is_running() and not CORRECAO.match(texto or ""):
+        p = _paralela(usuario)
+        if p is not None:
+            alvo, paralela = p, True
+            ocupada_com = str(principal.get_data("whatsapp_ultimo_pedido") or "outra tarefa")[:160]
+            texto = (f"[Pedido feito pelo celular enquanto a conversa principal está ocupada com: “{ocupada_com}”. "
+                     "Faça só este pedido, em paralelo, sem mexer no que a outra conversa está fazendo; no navegador "
+                     "use a sua própria aba e não feche abas de outras conversas.]\n"
+                     + (f"Últimas mensagens da conversa principal (contexto):\n{_historico(principal)}\n\n"
+                        if _historico(principal) else "")
+                     + f"Pedido:\n{texto}")
+            ponte().enviar(usuario, "⚡ Ainda estou na tarefa anterior; este pedido já começo em paralelo.")
+    alvo.set_data("whatsapp_ultima_entrada", time.time())
+    alvo.set_data("whatsapp_ultimo_pedido", pedido)
+    mq.log_user_message(alvo, texto, anexos, mid or None, source=fonte)
+    msg = UserMessage(message=texto, attachments=anexos, id=mid)
+    if alvo.is_running():
+        _intervir(alvo, msg)
+    else:
+        alvo.communicate(msg)
+    return {"ok": True, "context": alvo.id, "nova": criada, "paralela": paralela}
 
 
 ABREVIACOES = {"n": "não", "vc": "você", "vcs": "vocês", "td": "tudo", "tds": "todos", "q": "que", "p": "para",
@@ -216,11 +338,7 @@ async def _botao_fio(usuario: str, botao: str) -> dict:
              "gentil com a ferramenta `rascunho` (quem envia sou eu). Peça minha aprovação antes de qualquer coisa que envie, pague, apague "
              "ou mude algo fora daqui; se depender de mim, me diga exatamente o quê. Quando terminar, marque o fio "
              "como resolvido (ferramenta fios) e me diga em poucas linhas o que fez.")
-    ctx, _ = _conversa(usuario, nova=False)
-    ctx.set_data("whatsapp_ultima_entrada", time.time())
-    mq.log_user_message(ctx, texto, [], None, source=" (botão)")
-    ctx.communicate(UserMessage(message=texto, attachments=[], id=""))
-    return {"ok": True, "context": ctx.id}
+    return _entregar(usuario, texto, [], "", " (botão)")
 
 
 def _iniciativa():
@@ -263,11 +381,7 @@ async def _botao_iniciativa(usuario: str, botao: str) -> dict:
              f"O que você tinha mandado:\n{item.get('texto', '')}\n\n"
              "Siga com isso agora. Peça minha aprovação antes de qualquer coisa que envie, pague, apague ou mude algo "
              "fora daqui; se depender de mim, me diga exatamente o quê. Quando terminar, me diga em poucas linhas o que fez.")
-    ctx, _ = _conversa(usuario, nova=False)
-    ctx.set_data("whatsapp_ultima_entrada", time.time())
-    mq.log_user_message(ctx, texto, [], None, source=" (botão)")
-    ctx.communicate(UserMessage(message=texto, attachments=[], id=""))
-    return {"ok": True, "context": ctx.id}
+    return _entregar(usuario, texto, [], "", " (botão)")
 
 
 def _auxiliar():
@@ -292,11 +406,7 @@ def _para_a_conversa(usuario: str, texto: str) -> dict:
     from agent import UserMessage
     from helpers import message_queue as mq
 
-    ctx, _ = _conversa(usuario, nova=False)
-    ctx.set_data("whatsapp_ultima_entrada", time.time())
-    mq.log_user_message(ctx, texto, [], None, source=" (botão)")
-    ctx.communicate(UserMessage(message=texto, attachments=[], id=""))
-    return {"ok": True, "context": ctx.id}
+    return _entregar(usuario, texto, [], "", " (botão)")
 
 
 async def _botao_rascunho(usuario: str, botao: str) -> dict:
@@ -496,15 +606,12 @@ class Receber(ApiHandler):
             ctx, criada = _conversa(usuario, nova=False, chave="gatilhos_de", nome="Gatilhos")
             texto = _texto_gatilho(usuario, str(input.get("gatilho") or ""), texto)
             mq.log_user_message(ctx, texto, [], str(input.get("id") or "") or None, source=" (gatilho)")
-            ctx.communicate(UserMessage(message=texto, attachments=[], id=str(input.get("id") or "")))
+            _intervir(ctx, UserMessage(message=texto, attachments=[], id=str(input.get("id") or "")))
             return {"ok": True, "context": ctx.id, "nova": criada}
 
-        ctx, criada = _conversa(usuario, nova=False)
-        ctx.set_data("whatsapp_ultima_entrada", time.time())
         nome = str(input.get("nome") or "")
-        if nome and not ctx.get_data("usuario_nome"):
-            ctx.set_data("usuario_nome", nome)
-        texto = _leitura(texto)
-        mq.log_user_message(ctx, texto, anexos, str(input.get("id") or "") or None, source=" (WhatsApp)")
-        ctx.communicate(UserMessage(message=texto, attachments=anexos, id=str(input.get("id") or "")))
-        return {"ok": True, "context": ctx.id, "nova": criada}
+        if nome:
+            principal, _ = _conversa(usuario, nova=False)
+            if not principal.get_data("usuario_nome"):
+                principal.set_data("usuario_nome", nome)
+        return _entregar(usuario, _leitura(texto), anexos, str(input.get("id") or ""), " (WhatsApp)")

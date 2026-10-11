@@ -356,6 +356,18 @@ class Suite:
         txt = p.resumo_hoje(LOGIN)
         ok("no Direct: «E vocês fazem o cálculo como?»" in txt, f"relatório mostra a última resposta e onde: {txt}")
 
+    def t_etapa_e_proposta_aceitam_o_arroba(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("arroba1")
+        r = p.mudar_etapa(LOGIN, "@arroba1", "respondeu", "oieeee….entra sim!!!", "comentario")
+        ok(r and r["id"] == lid and r["novidade"], f"etapa pelo @ (11/10: zen.marmitas recusado): {r and r['id']}")
+        ok(p.mudar_etapa(LOGIN, "https://www.instagram.com/arroba1/", "lead", "mandou a receita"), "etapa pela URL do perfil")
+        prop = p.propor(LOGIN, [{"lead_id": "arroba1", "tipo": "resposta",
+                                 "texto": "Oi! Que bom que o rondelli entra. Quer que eu calcule quanto sobra em cada kit? — Matheus"}])
+        ok(prop["propostas"] and prop["propostas"][0]["lead_id"] == lid, f"proposta pelo @ guarda o id interno: {prop}")
+        eq(p.mudar_etapa(LOGIN, "@naoexiste", "respondeu", "x"), None, "@ desconhecido continua recusado")
+
     def t_execucao_exige_conferir_respostas(self):
         p = self.p
         self.em(self.hora(10))
