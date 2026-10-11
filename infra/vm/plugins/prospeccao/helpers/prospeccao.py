@@ -22,8 +22,10 @@ LIMITE_DIA = {"aquecer": 20, "dm_abertura": 12, "dm_lembrete": 10, "resposta": 1
 INTERVALO = 3 * 60                 # between two executed actions
 HORARIO = (9, 20)                  # executions only within [9h, 20h) local time
 BLOQUEIO = 48 * 3600               # pause after Instagram blocks an action
-ESPERA_DM = 2 * 86400              # after warming up, before the first DM
-ESPERA_LEMBRETE = 3 * 86400        # after the first DM, before the reminder
+DIAS_DM = 2                        # calendar days after warming up, before the first DM
+DIAS_LEMBRETE = 3                  # calendar days after the first DM, before the reminder
+# Calendar days, not hours (11/10): leads warmed at 11h on day 10 were only "due" at 11h on day 12, after the
+# 9h23 round that writes the DMs, so the DMs slipped a whole day.
 ESPERA_FIM = 5 * 86400             # after the reminder, the lead is closed as no answer
 VALIDADE_PROPOSTA = 24 * 3600      # unapproved proposals expire
 LIBERACAO = 12 * 60                # approved action: window for the approvals reviewer
@@ -650,6 +652,27 @@ def fechar_vencidos(login: str) -> int:
     return n
 
 
+def _dias_desde(ts: float) -> int:
+    """Calendar days (America/Bahia) between ts and now."""
+    return (dt.datetime.fromtimestamp(agora(), _tz()).date() - dt.datetime.fromtimestamp(ts, _tz()).date()).days
+
+
+def repor_aquecer(login: str) -> int:
+    """Fill the day's free «aquecer» slots with the best new leads (follow + like, no text, so no reviewer needed).
+    11/10: the 9h23 round proposed 8, the visit discarded 5 (stale, too big, wrong business) and nobody refilled:
+    only 3 of 8 slots were used. One lead per call: the execution round asks again after each action."""
+    d = carregar(login)
+    if not d["config"].get("auto") or cotas(login)["aquecer"] <= 0:
+        return 0
+    tentados = {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")}
+    fila = [l for l in devidos(login)["aquecer"] if l["id"] not in tentados][:1]  # a failed visit is not retried
+    if not fila:
+        return 0
+    out = propor(login, [{"lead_id": fila[0]["id"], "tipo": "aquecer", "texto": "",
+                          "base": "reposição automática: vaga do dia livre depois de um descarte"}])
+    return len(out.get("automaticas", []))
+
+
 def devidos(login: str) -> dict:
     """What each lead needs next, by the playbook's timing."""
     d = carregar(login)
@@ -658,12 +681,12 @@ def devidos(login: str) -> dict:
     for l in d["leads"]:
         if l["id"] in pendentes or l["canal"] != "instagram":
             continue
-        espera = agora() - l["atualizado"]
+        dias = _dias_desde(l["atualizado"])
         if l["etapa"] == "novo":
             out["aquecer"].append(l)
-        elif l["etapa"] == "aquecido" and espera >= ESPERA_DM:
+        elif l["etapa"] == "aquecido" and dias >= DIAS_DM:
             out["dm_abertura"].append(l)
-        elif l["etapa"] == "abordado" and espera >= ESPERA_LEMBRETE:
+        elif l["etapa"] == "abordado" and dias >= DIAS_LEMBRETE:
             out["dm_lembrete"].append(l)
     for lista in out.values():  # who engaged back first, then best fit: the day's slots are limited
         lista.sort(key=lambda l: (not l.get("interagiu"), -(l.get("nota") if l.get("nota") is not None else 60)))
@@ -758,7 +781,7 @@ def propor(login: str, itens: list) -> dict:
             motivo = "DM de abertura só depois do aquecimento"
         elif tipo == "dm_lembrete" and lead["etapa"] != "abordado":
             motivo = "lembrete só para quem recebeu a abertura e não respondeu"
-        elif tipo == "dm_lembrete" and agora() - lead["atualizado"] < ESPERA_LEMBRETE:
+        elif tipo == "dm_lembrete" and _dias_desde(lead["atualizado"]) < DIAS_LEMBRETE:
             motivo = "cedo demais para o lembrete"
         elif tipo == "resposta" and lead["etapa"] not in ("respondeu", "lead", "demo", "teste", "descartado"):
             motivo = "resposta só para quem escreveu"
@@ -1034,7 +1057,7 @@ def conferido(login: str, direct: str, notificacoes: str, interagiram: list | No
     return ""
 
 
-def proxima(login: str, conta_ativa: str = "") -> tuple[dict | None, str]:
+def proxima(login: str, conta_ativa: str = "", repor: bool = True) -> tuple[dict | None, str]:
     """Next approved action that may run now (right account, hours, pause, spacing, daily limits)."""
     d = carregar(login)
     esperada, ativa = conta(login), normalizar(conta_ativa)
@@ -1072,6 +1095,8 @@ def proxima(login: str, conta_ativa: str = "") -> tuple[dict | None, str]:
         salvar(login, d)
         return {**a, "lead": lead}, ""
     salvar(login, d)
+    if repor and repor_aquecer(login):
+        return proxima(login, conta_ativa, repor=False)
     return None, "nenhuma ação aprovada esperando"
 
 

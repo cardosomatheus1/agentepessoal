@@ -754,6 +754,46 @@ class Suite:
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, Ana! Voltando aqui sobre o cálculo da marmita de vocês. — Matheus"}])
         ok(r["recusadas"], "encerrado não recebe mais nada")
 
+    def t_repor_aquecer_e_dias_de_calendario(self):
+        p = self.p
+        self.em(self.hora(10))
+        self._revisor()  # never the real model in the suite
+        p.definir_auto(LOGIN, True)
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+        p.salvar(LOGIN, d)
+        a1, a2 = self._lead("repor1", seguidores="4k"), self._lead("repor2")
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a and a["tipo"] == "aquecer" and not a["texto"], f"vaga livre é reposta com o melhor novo, sem texto ({motivo})")
+        p.resultado(LOGIN, a["id"], True, "seguiu e curtiu")
+        self.em(self.relogio + 4 * 60)
+        b, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(b and b["tipo"] == "aquecer" and b["lead_id"] != a["lead_id"], f"depois de uma ação, repõe o próximo ({motivo})")
+        p.resultado(LOGIN, b["id"], False, "parado há 90 dias")
+        self.em(self.relogio + 4 * 60)
+        c, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(not c and "nenhuma" in motivo, f"fila vazia: nada a repor ({motivo})")
+        d = p.carregar(LOGIN)
+        hoje = sum(1 for x in d["acoes"] if x["tipo"] == "aquecer" and x["estado"] in ("aprovada", "executada"))
+        d["config"]["auto"] = False
+        p.salvar(LOGIN, d)
+        self._lead("repor3")
+        c, _ = p.proxima(LOGIN, "raizconnect")
+        ok(not c, "sem pré-aprovação (auto desligado), não repõe sozinho")
+        eq(hoje, 1, "a que falhou não ocupa vaga")
+        # calendar days: warmed at 19h, the first DM is due 2 days later from the morning
+        self.em(self.hora(19))
+        lid = self._lead("calendario")
+        d = p.carregar(LOGIN)
+        lead = p._lead(d, lid)
+        lead.update({"etapa": "aquecido", "atualizado": self.hora(19)})
+        p.salvar(LOGIN, d)
+        self.em(self.hora(9, dias=1))
+        ok(lid not in [l["id"] for l in p.devidos(LOGIN)["dm_abertura"]], "dia seguinte: ainda não")
+        self.em(self.hora(9, dias=2))
+        ok(lid in [l["id"] for l in p.devidos(LOGIN)["dm_abertura"]], "2 dias de calendário depois, às 9h: devida")
+        p.revisor = None
+
     def t_resposta_uma_por_fala(self):
         p = self.p
         self.em(self.hora(10))

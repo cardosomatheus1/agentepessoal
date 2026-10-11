@@ -34,6 +34,9 @@ quê, quando, quantas vezes e em que ordem é regra do código, nunca do modelo.
 - No máximo 2 mensagens sem resposta por lead. Uma resposta por fala da pessoa; robô (Manychat) não é fala.
 - Limites por dia por tipo; só das 9h às 20h; 3 min entre ações; `conferido` (Direct e notificações lidos) antes de
   executar.
+- Vaga de «aquecer» livre (descarte na visita) é reposta pela `proxima` com o melhor lead novo, sem texto, um por vez
+  (só com a pré-aprovação ligada); visita que falhou não é tentada de novo.
+- Esperas em dias de calendário (aquecido no dia D → primeira mensagem a partir do dia D+2; lembrete D+3).
 - Bloqueio de ação do Instagram pausa 48 h. O 429 de consulta não é bloqueio: volta às fontes.
 - Texto pré-aprovado passa pelo revisor (modelo independente). Se o motivo dele contradiz o texto (regra simples
   comprova o que ele diz faltar), há uma 2ª revisão com o fato. Sem revisor, nada sai sozinho (vai ao ✅).
