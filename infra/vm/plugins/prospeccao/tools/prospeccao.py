@@ -46,7 +46,10 @@ def dono(context) -> str:
 
 
 COMO_EXECUTAR = {
-    "aquecer": "Abra o perfil, siga (se ainda não segue), curta 1 ou 2 posts recentes e, se houver texto, comente EXATAMENTE "
+    "aquecer": "Abra o perfil, siga (se ainda não segue), curta 1 ou 2 posts recentes. SEM texto aprovado: leia o primeiro post NÃO fixado e, se houver algo "
+               "genuíno a dizer sobre ele (útil, específico, sem venda, sem citar a Raiz, até 220 caracteres), chame `prospeccao` acao \"comentar\" "
+               "(acao_id, texto, base = o post e a data) ANTES do resultado: só publique se vier COMENTÁRIO APROVADO, depois \"comentado\". "
+               "COM texto aprovado: comente EXATAMENTE "
                "esse texto no post mais recente (o primeiro NÃO fixado — posts com alfinete aparecem antes e podem ser antigos; confira a data). Para comentar, abra o post pelo link dele (https://www.instagram.com/p/<código>/ — "
                "pegue o link clicando no post do perfil): nessa página o campo \"Adicione um comentário…\" fica visível embaixo; "
                "clique nele, digite o texto e clique em \"Publicar\"; confira que o comentário aparece na lista. No resultado: ok=true se SEGUIU (o aquecimento valeu), mesmo que o comentário "
@@ -236,6 +239,25 @@ class Prospeccao(Tool):
                      f"{conferir}{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
                      "Depois chame `prospeccao` acao \"resultado\" com acao_id, ok (true/false) e detalhe (o que viu na tela). "
                      "Se o Instagram mostrar bloqueio/limite/'tente mais tarde'/verificação, PARE e mande bloqueio: true.")
+        if acao == "comentar":
+            aprovado, motivo = p.comentar(login, acao_id, texto, kwargs.get("base") or detalhe)
+            if not aprovado:
+                return r(f"NÃO COMENTE: {motivo}. Siga sem comentário (se estiver na visita, mande o `resultado` normalmente).")
+            a = next(x for x in p.carregar(login)["acoes"] if x["id"] == acao_id)
+            p.liberar(self.agent.context, {**a, "auto": True})
+            return r(f"COMENTÁRIO APROVADO pelo revisor: publique EXATAMENTE «{texto.strip()}» no primeiro post NÃO fixado de "
+                     "@" + (p._lead(p.carregar(login), a["lead_id"]) or {}).get("handle", "") + " (abra o post pelo link, "
+                     "campo \"Adicione um comentário…\", Publicar, confira que aparece na lista). Depois chame `prospeccao` acao "
+                     "\"comentado\" com acao_id, ok e detalhe.")
+        if acao == "comentado":
+            ok_bool = str(ok).lower() in ("true", "1", "sim", "ok")
+            a = p.comentado(login, acao_id, ok_bool, detalhe)
+            if not a or a["estado"] != "aprovada":  # catch-up comment: close the window; on a visit it stays until resultado
+                p.encerrar_liberacao(self.agent.context)
+            return r("Registrado." if a else "Não havia comentário aprovado para essa ação.")
+        if acao == "sem_comentario":
+            itens = p.sem_comentario(login)
+            return r(json.dumps(itens, ensure_ascii=False) if itens else "Nenhum aquecimento recente sem comentário.")
         if acao == "resultado":
             ok_bool = str(ok).lower() in ("true", "1", "sim", "ok")
             bloq = str(bloqueio).lower() in ("true", "1", "sim")

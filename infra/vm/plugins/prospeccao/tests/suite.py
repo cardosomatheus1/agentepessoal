@@ -806,6 +806,57 @@ class Suite:
         ok(lid in [l["id"] for l in p.devidos(LOGIN)["dm_abertura"]], "2 dias de calendário depois, às 9h: devida")
         p.revisor = None
 
+    def t_comentario_na_visita_e_atrasado(self):
+        p = self.p
+        self.em(self.hora(10))
+        chamadas = self._revisor(reprovar=())
+        p.definir_auto(LOGIN, True)
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+        p.salvar(LOGIN, d)
+        l1, l2 = self._lead("coment1"), self._lead("coment2")
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a and a["tipo"] == "aquecer" and not a["texto"], f"aquecer sem texto ({motivo})")
+        r, m = p.comentar(LOGIN, a["id"], "Que capricho nessa marmita! www.loja.com.br", "post de ontem")
+        ok(not r and "sem link" in m, f"link barrado antes do revisor: {m}")
+        r, m = p.comentar(LOGIN, a["id"], "Que capricho nessa marmita de frango! Sai mais no almoço ou no jantar?", "post de ontem: marmita de frango")
+        ok(r, f"comentário na visita aprovado: {m}")
+        ok(len(chamadas) == 1 and "post de ontem: marmita de frango" in chamadas[0]["pedido"], "revisor recebe o post visto")
+        r, m = p.comentar(LOGIN, a["id"], "Outro comentário qualquer sobre o post de vocês?", "post")
+        ok(not r and "já tem" in m, f"nunca dois comentários no mesmo aquecimento: {m}")
+        ok(p.comentado(LOGIN, a["id"], True, "apareceu na lista"), "comentário publicado registrado")
+        p.resultado(LOGIN, a["id"], True, "seguiu, curtiu e comentou")
+        d = p.carregar(LOGIN)
+        x = next(y for y in d["acoes"] if y["id"] == a["id"])
+        eq((x["comentario"]["estado"], x["estado"]), ("publicado", "executada"), "comentário publicado e aquecimento feito")
+        # catch-up: a warm-up done earlier with no comment
+        self.em(self.relogio + 4 * 60)
+        b, _ = p.proxima(LOGIN, "raizconnect")
+        p.resultado(LOGIN, b["id"], True, "seguiu e curtiu")
+        eq([s["acao_id"] for s in p.sem_comentario(LOGIN)], [b["id"]], "lista os aquecimentos sem comentário")
+        r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Vocês fazem por encomenda pra festa?", "post de 09/10")
+        ok(not r and m.startswith("espaçamento"), f"comentário atrasado respeita os 3 minutos: {m}")
+        self.em(self.relogio + 4 * 60)
+        self._revisor(reprovar=(b["id"],))
+        r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Vocês fazem por encomenda pra festa?", "post de 09/10")
+        ok(not r, "revisor reprovou: não publica")
+        ok(not p.comentado(LOGIN, b["id"], True, "x"), "sem aprovação, 'comentado' não registra nada")
+        self._revisor()
+        r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Sai mais por encomenda ou na pronta entrega?", "post de 09/10")
+        ok(r, f"nova tentativa aprovada: {m}")
+        p.comentado(LOGIN, b["id"], True, "apareceu")
+        eq(p.sem_comentario(LOGIN), [], "nada mais sem comentário")
+        self.em(self.relogio + 30)
+        c, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(not c and motivo.startswith("espaçamento"), f"comentário atrasado conta no espaçamento ({motivo})")
+        self.em(self.hora(10, dias=5))
+        d = p.carregar(LOGIN)
+        d["acoes"] = [y for y in d["acoes"] if y["id"] != b["id"]]
+        p.salvar(LOGIN, d)
+        r, m = p.comentar(LOGIN, a["id"], "Mais um?", "x")
+        ok(not r, "fora da janela de 3 dias / já comentado: recusa")
+        p.revisor = None
+
     def t_resposta_uma_por_fala(self):
         p = self.p
         self.em(self.hora(10))

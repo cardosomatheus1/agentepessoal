@@ -1078,7 +1078,7 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True) -> tuple[dict
     h = _hora_local()
     if not HORARIO[0] <= h < HORARIO[1]:
         return None, f"fora do horário ({HORARIO[0]}h–{HORARIO[1]}h)"
-    ultima = max([a.get("executada_em", 0) for a in d["acoes"]] + [0])
+    ultima = _ultima_acao(d)  # a catch-up comment also counts for the spacing
     if agora() - ultima < INTERVALO:
         return None, f"espaçamento: próxima a partir de {dt.datetime.fromtimestamp(ultima + INTERVALO, _tz()).strftime('%H:%M')}"
     # replies go first (someone is waiting), then the rest in approval order
@@ -1098,6 +1098,82 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True) -> tuple[dict
     if repor and repor_aquecer(login):
         return proxima(login, conta_ativa, repor=False)
     return None, "nenhuma ação aprovada esperando"
+
+
+# ------------------------------------------------------------------ comment written during the visit
+# 11/10: warm-ups from the sources and the automatic refill go with no text (nobody had seen the posts), so the 8
+# warm-ups of the day had no comment. Now, on the visit, the agent reads the latest post and may write one; the
+# reviewer checks it; only an approved comment is published. Also for warm-ups done in the last days (catch-up).
+DIAS_COMENTARIO = 3
+
+
+def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, str]:
+    """(approved, why). Comment for an «aquecer» that is being executed now, or was executed in the last days
+    without one. Never two comments per warm-up; same rules as the warm-up text plus the reviewer."""
+    d = carregar(login)
+    a = next((x for x in d["acoes"] if x["id"] == aid), None)
+    if not a or a["tipo"] != "aquecer":
+        return False, "ação de aquecer não encontrada"
+    if a.get("texto") or (a.get("comentario") or {}).get("estado") in ("aprovado", "publicado"):
+        return False, "esse aquecimento já tem comentário"
+    em_visita = a["estado"] == "aprovada" and a.get("em_execucao")
+    recente = a["estado"] == "executada" and _dias_desde(a.get("executada_em") or 0) <= DIAS_COMENTARIO
+    if not (em_visita or recente):
+        return False, "só durante a visita do aquecimento ou até 3 dias depois dele"
+    lead = _lead(d, a["lead_id"])
+    if not lead or lead["etapa"] in FINAIS:
+        return False, "lead encerrado: não comente"
+    t = (texto or "").strip()
+    motivo = validar_texto("aquecer", t, d, a["lead_id"]) or ("" if len(t) >= 15 else "comentário vazio ou curto demais")
+    if not motivo and not em_visita:  # catch-up comments follow the same pace as any action
+        h = _hora_local()
+        ultima = _ultima_acao(d)
+        if not HORARIO[0] <= h < HORARIO[1]:
+            motivo = f"fora do horário ({HORARIO[0]}h–{HORARIO[1]}h)"
+        elif agora() - ultima < INTERVALO:
+            motivo = "espaçamento: próxima a partir de " + dt.datetime.fromtimestamp(ultima + INTERVALO, _tz()).strftime("%H:%M")
+    if motivo:
+        return False, motivo
+    v = revisar_textos(d, [{"id": a["id"], "lead_id": a["lead_id"], "tipo": "aquecer", "texto": t, "base": base}])[a["id"]]
+    a["comentario"] = {"texto": t, "base": str(base)[:300], "revisao": v["motivo"], "em": agora(),
+                       "estado": "aprovado" if v["aprovado"] else "recusado"}
+    _evento(d, a, a["estado"], a["estado"], f"comentário {a['comentario']['estado']}: {v['motivo']}")
+    salvar(login, d)
+    return v["aprovado"], v["motivo"]
+
+
+def comentado(login: str, aid: str, ok: bool, detalhe: str = "") -> dict | None:
+    """The approved comment was (or was not) published."""
+    d = carregar(login)
+    a = next((x for x in d["acoes"] if x["id"] == aid), None)
+    if not a or (a.get("comentario") or {}).get("estado") != "aprovado":
+        return None
+    a["comentario"].update({"estado": "publicado" if ok else "falhou", "detalhe": str(detalhe)[:300], "feito_em": agora()})
+    if ok:
+        a["comentado_em"] = agora()
+        lead = _lead(d, a["lead_id"])
+        if lead:
+            lead["historico"].append({"em": agora(), "tipo": "comentario", "texto": a["comentario"]["texto"][:300]})
+    _evento(d, a, a["estado"], a["estado"], f"comentário {'publicado' if ok else 'não saiu'}: {detalhe}")
+    salvar(login, d)
+    return a
+
+
+def sem_comentario(login: str) -> list[dict]:
+    """Warm-ups of the last days with no comment, newest first (catch-up list)."""
+    d = carregar(login)
+    out = []
+    for a in d["acoes"]:
+        lead = _lead(d, a["lead_id"]) or {}
+        if (a["tipo"] == "aquecer" and a["estado"] == "executada" and not a.get("texto")
+                and not (a.get("comentario") or {}).get("estado") in ("aprovado", "publicado")
+                and _dias_desde(a.get("executada_em") or 0) <= DIAS_COMENTARIO and lead.get("etapa") not in FINAIS):
+            out.append({"acao_id": a["id"], "handle": lead.get("handle"), "url": lead.get("url"), "executada_em": a["executada_em"]})
+    return sorted(out, key=lambda x: -x["executada_em"])
+
+
+def _ultima_acao(d: dict) -> float:
+    return max([a.get("executada_em", 0) for a in d["acoes"]] + [a.get("comentado_em", 0) for a in d["acoes"]] + [0])
 
 
 def aviso_sem_acao(motivo: str) -> str:

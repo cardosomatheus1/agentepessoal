@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 2.4.0
+version: 2.5.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -124,7 +124,7 @@ ser o id ou o @. Em `base`, diga o que você viu e onde (post e data), ou "achad
 
 - **aquecer** (leads novos, maiores notas primeiro). Comentário só se houver algo genuíno a dizer sobre o
   `post_recente`: útil, específico, sem venda, sem citar a Raiz. Leads das fontes ainda não tiveram os posts
-  vistos: aqueça **sem comentário**.
+  vistos: proponha sem texto; o comentário é escrito na visita (seção 5, passo 5).
 - **dm_abertura** (2+ dias depois do aquecimento; quem seguiu de volta, curtiu ou comentou vai primeiro).
   1. Abra o perfil e veja os 3 posts mais recentes NÃO fixados.
   2. Escreva pelo modelo do playbook, alternando:
@@ -169,11 +169,16 @@ Depois, `prospeccao` acao "proxima" com `conta_ativa` = o @ ativo agora. Para a 
    com o melhor lead novo da fila (seguir e curtir, sem comentário). Descarte não conta nas 3 ações da rodada.
 3. **Seguir:** botão "Seguir". Se já diz "Seguindo", está ok.
 4. **Curtir:** abra 1 ou 2 posts recentes e curta; o ícone vira "Descurtir"/"Unlike".
-5. **Comentar** (só se a ação trouxer texto):
+5. **Sem texto na ação? Escreva um comentário na visita:** abra o primeiro post NÃO fixado e leia do que ele trata.
+   Se houver algo genuíno a dizer (útil, específico, uma pergunta sobre o produto; sem venda, sem citar a Raiz, até
+   220 caracteres), chame `prospeccao` acao "comentar" com acao_id, texto e base (o post e a data) ANTES do
+   `resultado`. Só publique se vier **COMENTÁRIO APROVADO**; depois chame "comentado" (ok e detalhe). Se vier
+   "NÃO COMENTE", só siga e curta.
+6. **Comentar** (se a ação já trouxer texto, ou depois de "COMENTÁRIO APROVADO"):
    - pegue o link do primeiro post NÃO fixado (`https://www.instagram.com/p/<código>/`) e abra esse link;
    - clique em "Adicione um comentário…", digite o texto EXATO e clique em **Publicar**;
    - confira que o comentário aparece na lista.
-6. `resultado` com ok=true se SEGUIU, mesmo que o comentário falhe. Diga no detalhe o que saiu e o que não saiu.
+7. `resultado` com ok=true se SEGUIU, mesmo que o comentário falhe. Diga no detalhe o que saiu e o que não saiu.
 
 **Mandar no Direct (primeira mensagem, parceiro, lembrete, resposta):**
 1. Abra a conversa: se já existe, pela caixa de entrada; senão, perfil → **Mensagem**.
@@ -189,6 +194,10 @@ Depois, `prospeccao` acao "proxima" com `conta_ativa` = o @ ativo agora. Para a 
 **Depois de cada ação:** `resultado` (acao_id, ok, detalhe = o que apareceu na tela). Espere 3 minutos antes da
 próxima; no máximo 3 ações feitas por rodada (descarte não conta). Enquanto houver vaga de «aquecer» no dia, a
 `proxima` sempre traz o próximo lead novo: só "NADA AGORA" encerra a rodada.
+
+**Aquecimentos dos últimos 3 dias sem comentário** (pedido do Matheus): `prospeccao` acao "sem_comentario" lista quais
+são. Para cada um, um por vez: abra o primeiro post NÃO fixado, escreva o comentário, "comentar" (acao_id, texto,
+base); só publique se vier COMENTÁRIO APROVADO; depois "comentado". Respeite o "ESPERE" (3 minutos entre ações).
 
 ## 6. Ler respostas (sempre antes de executar)
 
