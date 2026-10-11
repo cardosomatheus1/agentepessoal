@@ -237,7 +237,7 @@ class Prospeccao(Tool):
             if not lead["novidade"]:
                 return r(f"Essa resposta de @{lead['handle']} já estava registrada (o Matheus já foi avisado). Siga.")
             if etapa in ("respondeu", "lead", "demo"):
-                emoji, frase = {"respondeu": ("💬", "respondeu"), "lead": ("🔥", "virou lead (quer o cálculo / mandou receita)"),
+                emoji, frase = {"respondeu": ("💬", "respondeu"), "lead": ("🔥", "virou lead (quer a calculadora / quer conversar)"),
                                 "demo": ("📅", "topou conversar")}[etapa]
                 lugar = "num comentário" if onde == "comentario" else "no Direct"
                 p.enviar(login, f"{emoji} *{lead['nome']}* (@{lead['handle']}) {frase} {lugar}\n\n«{nota[:500]}»\n\n"

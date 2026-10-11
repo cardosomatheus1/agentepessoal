@@ -752,11 +752,12 @@ SEM perguntar a ele, então você é a última barreira antes de uma pessoa real
    primeira mensagem (os únicos links permitidos são a calculadora de precificação e o simulador de delivery da
    Raiz, no lembrete e nas respostas — e são opcionais: lembrete sem link também vale); primeira mensagem
    sem a assinatura do Matheus. A primeira mensagem pode ser só uma pergunta sobre como a pessoa precifica (variante
-   A) ou já trazer a oferta do cálculo grátis (variante B): as duas são válidas.
+   A) ou já trazer a oferta da calculadora grátis (variante B): as duas são válidas. Pedir a receita da pessoa
+   ("me manda a receita", ficha técnica) fere o playbook: soa invasivo.
 3. Soa como spam, intimidade forçada ou constrange a pessoa.
 4. Tem erro de português ou abreviação de internet que faça a marca parecer descuidada.
 Os modelos do playbook são guia, não texto fixo: variações naturais são boas (falar de entrega, embalagem ou iFood ao
-explicar o cálculo; outra forma de pedir a receita e o preço; outro elogio verdadeiro). Não reprove por estilo.
+explicar o cálculo; outra forma de oferecer a calculadora; outro elogio verdadeiro). Não reprove por estilo.
 Na dúvida REAL sobre fato ou respeito, reprove: o item volta ao dono para ele decidir, nada se perde.
 Responda só JSON: {"itens": [{"id": "<id>", "aprovado": true|false, "motivo": "<uma frase>"}]}"""
 

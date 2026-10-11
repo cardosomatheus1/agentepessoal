@@ -125,16 +125,17 @@ ser o id ou o @. Em `base`, diga o que você viu e onde (post e data), ou "achad
   1. Abra o perfil e veja os 3 posts mais recentes NÃO fixados.
   2. Escreva pelo modelo do playbook, alternando:
      - **A:** pergunta sobre como precificam, sem oferta;
-     - **B:** oferta de fazer a conta de graça com a receita.
+     - **B:** oferta da calculadora grátis, perguntando se pode mandar o link (sem o link).
   3. Cite UMA coisa concreta e verdadeira que você viu agora.
   4. **Sem link e sem preço**, assinando "— Matheus, da Raiz Connect".
 - **dm_lembrete** (3+ dias depois da primeira mensagem, sem resposta): curto, com o link da **calculadora** (ou o do
   simulador de delivery para quem vende no iFood), diferente para cada pessoa.
 - **resposta** (quem respondeu, seção 6): comece com "Oi, pessoal da {nome}!", retome o que a pessoa disse,
   apresente-se como Matheus, da Raiz Connect, e **ofereça a ferramenta gratuita**: o link da calculadora (o do
-  simulador de delivery para quem vende no iFood) dizendo o que ela mostra, e a outra porta, "me manda a receita de
-  um que eu calculo". Vale mesmo se a resposta foi num comentário e ainda não falou de preço. Se ela mandou receita,
-  faça o cálculo de verdade. Vai para o ✅ do Matheus.
+  simulador de delivery para quem vende no iFood) dizendo o que ela mostra e que é grátis. Vale mesmo se a resposta foi num
+  comentário e ainda não falou de preço. Vai para o ✅ do Matheus.
+- **Nunca peça a receita** (nem "me manda a receita que eu calculo"): soa invasivo, como se quiséssemos usar a
+  receita da pessoa. A oferta é sempre a ferramenta grátis.
 - **Saudação em toda mensagem:** perfil de negócio → "Oi, pessoal da {nome}!"; "Oi, {nome}!" só para perfil de
   pessoa.
 - **Nunca:** texto igual para duas pessoas, fato inventado, mais de 2 mensagens sem resposta, contatar de novo quem
@@ -186,7 +187,7 @@ próxima; no máximo 3 por rodada. "NADA AGORA" encerra a rodada.
 2. **Notificações** (https://www.instagram.com/accounts/activity/): procure "respondeu ao seu comentário",
    "mencionou você", "replied to your comment" e "mentioned you". Curtida não é resposta.
 3. **Para cada @ do registro que respondeu:**
-   - `etapa` com "respondeu", "lead" (mandou receita ou pediu o cálculo) ou "descartado" (disse não), `nota` = o
+   - `etapa` com "respondeu", "lead" (pediu o link, usou a calculadora ou quer conversar) ou "descartado" (disse não), `nota` = o
      que a pessoa disse e `onde` = "direct" ou "comentario". O Matheus é avisado na hora, uma vez por resposta;
    - proponha a `resposta` (seção 4).
 4. **`conferido`** com:

@@ -68,18 +68,16 @@ perfil/bio, pelo endereço, pelas tags de local e por hashtags locais (#marmitas
 
 ## 3. A oferta (o gancho)
 
-Duas portas, as duas de graça:
+A oferta é a ferramenta grátis — **nunca peça a receita** (parece que queremos usar a receita da pessoa):
 - **Calculadora de precificação** (faz sozinho, sem cadastro para começar, 6 passos, mostra quanto sobra em cada
   pedido): **https://raizconnect.com.br/materiais/precificacao/calculadora?utm_source=instagram&utm_medium=dm** — o
   link padrão, mandado só quando a conversa chega em preço/custo/lucro: no lembrete e nas respostas a quem escreveu.
   Nunca na primeira mensagem (link de desconhecido parece spam).
-- **"Calculo pra você quanto sobra em 1 produto"**: a pessoa manda a receita (ingredientes e quantidades) e o preço
-  de venda; o agente devolve o custo, a margem e quanto sobra depois de embalagem e taxa do iFood.
 - **Simulador "quanto sobra no delivery"** (1 minuto, resultado na hora sem cadastro) — alternativa mais leve para
   quem vende no iFood: **https://raizconnect.com.br/materiais/quanto-sobra-no-delivery?utm_source=instagram&utm_medium=dm**.
 - Não use na prospecção o Raio-X do Lucro, os 15 Erros Silenciosos nem a página da planilha (/materiais/precificacao,
   que pede nome, e-mail e WhatsApp antes de mostrar qualquer coisa).
-Quem usa a calculadora, manda receita ou pede o cálculo vira **lead**.
+Quem usa a calculadora, pede o link ou pede ajuda com a conta vira **lead**.
 
 ## 4. Tom de voz
 
@@ -100,9 +98,9 @@ Quem usa a calculadora, manda receita ou pede o cálculo vira **lead**.
 | 5+ | **dm_lembrete** — 1 só, curta, com a calculadora | se não houve resposta |
 | 10+ | marcar **sem_resposta** e parar | nunca mais de 2 mensagens sem resposta |
 
-Se a pessoa responder: registre (**respondeu**), avise o Matheus na hora e proponha uma **resposta**. Se mandar uma
-receita: faça o cálculo de verdade (custo de cada ingrediente pelo preço de mercado que ela informar ou, se não
-informar, pergunte), e proponha a resposta com o resultado; registre como **lead**. Se disser não, agradeça uma vez
+Se a pessoa responder: registre (**respondeu**), avise o Matheus na hora e proponha uma **resposta**. Se ela mesma mandar
+números por conta própria (custos, preço), ajude com a conta de verdade e registre como **lead** — mas nunca peça a
+receita. Se disser não, agradeça uma vez
 e marque **descartado**.
 
 ## 6. Modelos (adapte; nunca copie igual para duas pessoas)
@@ -122,25 +120,23 @@ mais pelo preço da concorrência? — Matheus, da Raiz Connect"
 
 **DM de abertura — variante B (oferta direta):**
 "Oi, pessoal da {nome}! Vi o {produto específico} de vocês — {elogio específico e verdadeiro}. Uma pergunta de quem também
-mexe com isso: vocês sabem quanto sobra de verdade em cada {produto} depois de embalagem e taxa do iFood? Se quiser,
-me manda a receita de um e o preço que vocês cobram que eu faço essa conta pra você, de graça. — Matheus, da Raiz
+mexe com isso: vocês sabem quanto sobra de verdade em cada {produto} depois de embalagem e taxa do iFood? A gente
+fez uma calculadora grátis que mostra isso em poucos minutos — quer que eu mande o link? — Matheus, da Raiz
 Connect"
 
 **Lembrete (dia 5+) — com a calculadora:**
 "Oi, pessoal da {nome}! Passando só pra deixar uma coisa útil: fizemos uma calculadora grátis que mostra quanto sobra em cada
-{produto} depois de insumo, embalagem e taxa do iFood — dá pra começar sem cadastro: {LINK DA CALCULADORA}. Se
-preferir, me manda a receita de um que eu faço a conta pra você 🙂"
+{produto} depois de insumo, embalagem e taxa do iFood — dá pra começar sem cadastro: {LINK DA CALCULADORA} 🙂"
 
 **Resposta a quem respondeu** (sempre com o ✅ do Matheus): comece com "Oi, pessoal da {nome}!", retome o que a
 pessoa disse numa frase natural, apresente-se ("aqui é o Matheus, da Raiz Connect") e **ofereça a ferramenta
 gratuita**: a calculadora de precificação (link), dizendo em uma frase o que ela mostra (quanto sobra em cada
-{produto} depois de insumo, embalagem e taxa) e que é grátis e começa sem cadastro; feche com a outra porta, "ou me
-manda a receita de um que eu faço a conta pra vocês". Vale também quando a resposta foi num comentário e ainda não
-falou de preço. Se ela já mandou receita, faça o cálculo de verdade (seção 5).
+{produto} depois de insumo, embalagem e taxa) e que é grátis e começa sem cadastro; se quiser, ofereça ajuda caso
+surja dúvida no uso. **Nunca peça a receita.** Vale também quando a resposta foi num comentário e ainda não falou de
+preço.
 Exemplo: "Oi, pessoal da Zen! Que bom que o rondelli entra no kit 😄 Aqui é o Matheus, da Raiz Connect. A gente fez
 uma calculadora grátis que mostra quanto sobra em cada marmita depois de insumo, embalagem e taxa do iFood, dá pra
-começar sem cadastro: {LINK DA CALCULADORA}. Se preferir, me manda a receita de um prato que eu faço a conta pra
-vocês 🙂"
+começar sem cadastro: {LINK DA CALCULADORA}. Qualquer dúvida no uso, é só me chamar 🙂"
 
 **Parceiro** (curso, consultor, contador, fornecedor): apresente a Raiz em 2 frases, proponha o cálculo grátis para
 os alunos/clientes dele e uma comissão recorrente por indicação ([% a definir com o Matheus]); peça 15 minutos.
@@ -164,6 +160,6 @@ tarde", "ação bloqueada", "suspeita de automação" ou pedir verificação: **
 
 ## 9. O que conta como resultado
 
-respondeu (qualquer resposta) → **lead** (mandou receita, pediu o cálculo ou aceitou conversar) → **demo** marcada →
+respondeu (qualquer resposta) → **lead** (usou a calculadora, pediu o link ou aceitou conversar) → **demo** marcada →
 **teste** aberto → **cliente**. Toda noite sai um resumo curto do dia no celular; toda semana o relatório compara
 variantes (A × B), segmentos, cidades, canais e **faixas de nota** (se nota alta não responde mais, a rubrica muda).
