@@ -242,6 +242,8 @@ class Prospeccao(Tool):
         if acao == "comentar":
             aprovado, motivo = p.comentar(login, acao_id, texto, kwargs.get("base") or detalhe)
             if not aprovado:
+                if motivo.startswith("REESCREVA"):
+                    return r(f"{motivo} Não publique nada até vir COMENTÁRIO APROVADO.")
                 return r(f"NÃO COMENTE: {motivo}. Siga sem comentário (se estiver na visita, mande o `resultado` normalmente).")
             a = next(x for x in p.carregar(login)["acoes"] if x["id"] == acao_id)
             p.liberar(self.agent.context, {**a, "auto": True})

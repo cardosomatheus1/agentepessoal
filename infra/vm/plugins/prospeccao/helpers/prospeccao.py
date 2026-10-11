@@ -1105,6 +1105,7 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True) -> tuple[dict
 # warm-ups of the day had no comment. Now, on the visit, the agent reads the latest post and may write one; the
 # reviewer checks it; only an approved comment is published. Also for warm-ups done in the last days (catch-up).
 DIAS_COMENTARIO = 3
+TENTATIVAS_COMENTARIO = 4  # the reviewer said no: rewrite with its reason and try again, up to this many (Matheus, 11/10)
 
 
 def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, str]:
@@ -1134,9 +1135,17 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
             motivo = "espaçamento: próxima a partir de " + dt.datetime.fromtimestamp(ultima + INTERVALO, _tz()).strftime("%H:%M")
     if motivo:
         return False, motivo
+    tentativas = (a.get("comentario") or {}).get("tentativas", 0)
+    if tentativas >= TENTATIVAS_COMENTARIO:
+        return False, f"{TENTATIVAS_COMENTARIO} versões reprovadas pelo revisor: siga sem comentário neste perfil"
     v = revisar_textos(d, [{"id": a["id"], "lead_id": a["lead_id"], "tipo": "aquecer", "texto": t, "base": base}])[a["id"]]
     a["comentario"] = {"texto": t, "base": str(base)[:300], "revisao": v["motivo"], "em": agora(),
-                       "estado": "aprovado" if v["aprovado"] else "recusado"}
+                       "estado": "aprovado" if v["aprovado"] else "recusado", "tentativas": tentativas + 1}
+    if not v["aprovado"]:
+        restam = TENTATIVAS_COMENTARIO - tentativas - 1
+        v = {**v, "motivo": (f"REESCREVA — o revisor reprovou: {v['motivo']}. Escreva outra versão que resolva isso e chame "
+                             f"\"comentar\" de novo ({restam} tentativa(s) restante(s))." if restam else
+                             f"o revisor reprovou a última versão permitida ({v['motivo']}): siga sem comentário")}
     _evento(d, a, a["estado"], a["estado"], f"comentário {a['comentario']['estado']}: {v['motivo']}")
     salvar(login, d)
     return v["aprovado"], v["motivo"]

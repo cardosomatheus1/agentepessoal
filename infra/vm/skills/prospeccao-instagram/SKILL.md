@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 2.5.0
+version: 2.6.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -146,7 +146,8 @@ ser o id ou o @. Em `base`, diga o que você viu e onde (post e data), ou "achad
 - **Nunca:** texto igual para duas pessoas, fato inventado, mais de 2 mensagens sem resposta, contatar de novo quem
   disse não ou foi descartado.
 
-O revisor confere cada texto contra o playbook. Proposta recusada traz o motivo: corrija e proponha de novo uma vez.
+O revisor confere cada texto contra o playbook. Proposta recusada traz o motivo: corrija exatamente o que ele apontou e
+proponha de novo, até passar (no máximo 3 versões por texto).
 
 ## 5. Executar (uma ação por vez)
 
@@ -172,8 +173,9 @@ Depois, `prospeccao` acao "proxima" com `conta_ativa` = o @ ativo agora. Para a 
 5. **Sem texto na ação? Escreva um comentário na visita:** abra o primeiro post NÃO fixado e leia do que ele trata.
    Se houver algo genuíno a dizer (útil, específico, uma pergunta sobre o produto; sem venda, sem citar a Raiz, até
    220 caracteres), chame `prospeccao` acao "comentar" com acao_id, texto e base (o post e a data) ANTES do
-   `resultado`. Só publique se vier **COMENTÁRIO APROVADO**; depois chame "comentado" (ok e detalhe). Se vier
-   "NÃO COMENTE", só siga e curta.
+   `resultado`. Só publique se vier **COMENTÁRIO APROVADO**; depois chame "comentado" (ok e detalhe).
+   **"REESCREVA"** (o revisor reprovou): leia o motivo, escreva outra versão que resolva exatamente isso e chame
+   "comentar" de novo, até aprovar (a ferramenta dá até 4 versões). Se vier "NÃO COMENTE", só siga e curta.
 6. **Comentar** (se a ação já trouxer texto, ou depois de "COMENTÁRIO APROVADO"):
    - pegue o link do primeiro post NÃO fixado (`https://www.instagram.com/p/<código>/`) e abra esse link;
    - clique em "Adicione um comentário…", digite o texto EXATO e clique em **Publicar**;
@@ -197,7 +199,8 @@ próxima; no máximo 3 ações feitas por rodada (descarte não conta). Enquanto
 
 **Aquecimentos dos últimos 3 dias sem comentário** (pedido do Matheus): `prospeccao` acao "sem_comentario" lista quais
 são. Para cada um, um por vez: abra o primeiro post NÃO fixado, escreva o comentário, "comentar" (acao_id, texto,
-base); só publique se vier COMENTÁRIO APROVADO; depois "comentado". Respeite o "ESPERE" (3 minutos entre ações).
+base); "REESCREVA" = corrija pelo motivo do revisor e tente de novo até aprovar; só publique com COMENTÁRIO
+APROVADO; depois "comentado". Respeite o "ESPERE" (3 minutos entre ações).
 
 ## 6. Ler respostas (sempre antes de executar)
 
