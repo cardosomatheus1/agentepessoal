@@ -202,14 +202,25 @@ def importar(login: str, linhas: list) -> dict:
 # ------------------------------------------------------------------ search engine: the company's Instagram
 
 CHAVE_TAVILY = Path("/a0/usr/prospeccao/.tavily_key")  # optional: a search API that is not degraded for AWS IPs
+# (also read from the person's vault, TAVILY_API_KEY)
+
+
+COFRE = Path("/a0/usr/segredos")  # the person's vault (/senha TAVILY_API_KEY <chave> in the phone chat)
+_QUEM = {"login": ""}
 
 
 def _tavily_key() -> str:
     import os
 
+    if os.environ.get("TAVILY_API_KEY"):
+        return os.environ["TAVILY_API_KEY"]
     try:
-        return os.environ.get("TAVILY_API_KEY") or CHAVE_TAVILY.read_text().strip()
+        return CHAVE_TAVILY.read_text().strip()
     except OSError:
+        pass
+    try:
+        return str(json.loads((COFRE / f"{_QUEM['login']}.json").read_text(encoding="utf-8")).get("TAVILY_API_KEY") or "")
+    except (OSError, ValueError):
         return ""
 
 
@@ -327,6 +338,7 @@ def _item_lead(e: dict, ig: dict, segmento_cnae: str, rx_canais: dict, rx_exclus
 
 def enriquecer(login: str, p, limite: int = 20) -> dict:
     """Search the Instagram of the next queued companies and register the ones that fit (p = prospeccao helper)."""
+    _QUEM["login"] = re.sub(r"[^a-z0-9_.-]", "", login.lower())
     d = carregar(login)
     conhecidos = {l["handle"] for l in p.carregar(login)["leads"]} | set((p.carregar(login).get("rejeitados") or {}).keys())
     fila = [k for k, e in d["empresas"].items() if e["estado"] == "fila"]

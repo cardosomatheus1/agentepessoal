@@ -112,6 +112,23 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
   - a interface travou ao subir. O `memguard.sh` reinicia o `run_ui` depois de 5 min sem resposta;
   - a memória continua com a limpeza de abas e o reinício do contêiner abaixo de 700 MB.
 
+## Prospecção: fontes de leads fora do Instagram (11/10)
+
+- **Por quê:** a busca no Instagram leva 429. O SDR que o Grok fez (planilha de 4.342 empresas, 01/10) usou
+  catálogos públicos (Solutudo 72%, GuiaPJ, sites), sem Apify. O agente do repositório `erp-saas` usa só Apify
+  (Instagram/Google Maps), nunca rodou sozinho, e o token do Apify consta como exposto e não rotacionado.
+- **O que existe agora (`prospeccao/helpers/fontes.py`, ação `fontes`):**
+  1. catálogo GuiaPJ por CNAE e município (Salvador 3849, Lauro 3685, Camaçari 3413), lido por HTTP da VM;
+  2. busca do Instagram de cada empresa (Tavily se `TAVILY_API_KEY` estiver no cofre do Matheus; senão
+     SearXNG, que da AWS acerta pouco);
+  3. só aceita perfil que bate (telefone, @ da fonte ou nome e cidade);
+  4. nota pela régua, com atividade e tamanho medianos até a visita do aquecimento conferir (`conferir_atividade`).
+  - **Contato:** continua só pelo Instagram. O Matheus não quer abordagem por WhatsApp.
+- **Planilha do Grok:** 256 empresas da região importadas (`importar_lista`). Os 47 que já tinham @ viraram 42
+  leads; 209 esperam a busca. Backup do registro antes: `/opt/a0/usr/prospeccao/matheus.antes_grok.json`.
+- **Falta:** a chave da Tavily. O Matheus manda no Telegram `/senha TAVILY_API_KEY <chave>`. Sem ela, o catálogo
+  quase não vira lead.
+
 ## O que a sessão nova precisa ter
 
 1. **GitHub**: a conta nova conectada ao usuário `cardosomatheus1`, com acesso a `cardosomatheus1/agentepessoal`.
