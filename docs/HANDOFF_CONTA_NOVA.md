@@ -39,6 +39,14 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
   usuário `ec2-user`). A Main Opus roda no tmux `opus` (`/home/ec2-user/opus_rc.sh`, sessão única na árvore do
   principal), que o serviço `claude-main-opus` sobe sozinho quando a máquina liga (ver "Parada de 11/10").
 
+## Quem cuida de quê (decisão do Matheus, 11/10 tarde)
+
+- **A sessão da conta nova (agente pessoal) é a única que cuida do agente e da prospecção.** A sessão da conta antiga
+  não mexe mais neles.
+- Regras do repositório em `CLAUDE.md`. Arquitetura da prospecção em `docs/ARQUITETURA_PROSPECCAO.md`.
+- Implantar só com `infra/operador/implantar.py`. A prospecção está na VM em `a13c7112` (ver
+  `/opt/a0/usr/plugins/prospeccao/.versao`).
+
 ## Parada de 11/10 e o que mudou
 
 - **O que houve:** a Main Opus terminou o turno às 00:29 UTC perguntando se seguia numa sessão nova. A
