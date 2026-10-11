@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 2.3.0
+version: 2.4.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -165,6 +165,8 @@ Depois, `prospeccao` acao "proxima" com `conta_ativa` = o @ ativo agora. Para a 
    Se falhar: NÃO siga nem curta. Chame `etapa` com etapa "descartado" e a nota ("parado há N dias", "perfil de
    outro negócio" ou "N seguidores"), e depois `resultado` com ok=false. Se passar, siga em frente e diga no
    detalhe a data do último post.
+   **Descartou? Vem o próximo:** chame `proxima` de novo na hora. A vaga do dia não se perde: a ferramenta repõe
+   com o melhor lead novo da fila (seguir e curtir, sem comentário). Descarte não conta nas 3 ações da rodada.
 3. **Seguir:** botão "Seguir". Se já diz "Seguindo", está ok.
 4. **Curtir:** abra 1 ou 2 posts recentes e curta; o ícone vira "Descurtir"/"Unlike".
 5. **Comentar** (só se a ação trouxer texto):
@@ -185,7 +187,8 @@ Depois, `prospeccao` acao "proxima" com `conta_ativa` = o @ ativo agora. Para a 
    como falha nunca é enviada depois; se a tela mudar, proponha de novo na próxima rodada.
 
 **Depois de cada ação:** `resultado` (acao_id, ok, detalhe = o que apareceu na tela). Espere 3 minutos antes da
-próxima; no máximo 3 por rodada. "NADA AGORA" encerra a rodada.
+próxima; no máximo 3 ações feitas por rodada (descarte não conta). Enquanto houver vaga de «aquecer» no dia, a
+`proxima` sempre traz o próximo lead novo: só "NADA AGORA" encerra a rodada.
 
 ## 6. Ler respostas (sempre antes de executar)
 
