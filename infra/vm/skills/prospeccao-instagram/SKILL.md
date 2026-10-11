@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 2.2.0
+version: 2.3.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -169,10 +169,16 @@ Depois, `prospeccao` acao "proxima" com `conta_ativa` = o @ ativo agora. Para a 
    - confira que o comentário aparece na lista.
 6. `resultado` com ok=true se SEGUIU, mesmo que o comentário falhe. Diga no detalhe o que saiu e o que não saiu.
 
-**Primeira mensagem / parceiro:** perfil → **Mensagem** → texto EXATO → enviar → confira que aparece enviada.
-
-**Lembrete / resposta:** abra a conversa com a pessoa. Se não houver conversa (ela respondeu num comentário), use
-perfil → **Mensagem**. Texto EXATO → enviar → conferir.
+**Mandar no Direct (primeira mensagem, parceiro, lembrete, resposta):**
+1. Abra a conversa: se já existe, pela caixa de entrada; senão, perfil → **Mensagem**.
+2. **Botão "Mensagem" desativado ou sem campo de texto:** a página costuma ainda estar carregando. Espere 5 s,
+   leia a página de novo e, se preciso, recarregue UMA vez. Só depois disso conte como falha.
+3. **Limpe o campo antes de digitar:** clique no campo, Ctrl+A e Delete. O Instagram guarda o rascunho de uma
+   tentativa anterior e o texto sai duplicado (11/10, Zen).
+4. Digite o texto EXATO, uma vez só, e envie.
+5. **Confira:** leia a conversa e veja a sua última mensagem: o texto tem de aparecer UMA vez, igual ao aprovado.
+6. `resultado` só DEPOIS de conferir. **Depois de mandar `resultado`, não toque mais nessa conversa**: ação dada
+   como falha nunca é enviada depois; se a tela mudar, proponha de novo na próxima rodada.
 
 **Depois de cada ação:** `resultado` (acao_id, ok, detalhe = o que apareceu na tela). Espere 3 minutos antes da
 próxima; no máximo 3 por rodada. "NADA AGORA" encerra a rodada.
@@ -185,13 +191,16 @@ próxima; no máximo 3 por rodada. "NADA AGORA" encerra a rodada.
    - se a ÚLTIMA mensagem é da pessoa, é resposta;
    - a caixa de entrada (/direct/inbox/) NÃO mostra a lista como texto: nunca conclua "caixa vazia" por ela;
    - veja também https://www.instagram.com/direct/requests/, abrindo cada pedido de mensagem de @ do registro.
-2. **Notificações** (https://www.instagram.com/accounts/activity/): procure "respondeu ao seu comentário",
+2. **Resposta automática não é resposta:** "Automation powered by Manychat", "já já entraremos em contato",
+   "recebemos sua mensagem" e similares, que chegam segundos depois da nossa, são robôs. Não registre `etapa`, não
+   proponha resposta e não avise o Matheus; anote só no `conferido` e espere a pessoa escrever de verdade.
+3. **Notificações** (https://www.instagram.com/accounts/activity/): procure "respondeu ao seu comentário",
    "mencionou você", "replied to your comment" e "mentioned you". Curtida não é resposta.
-3. **Para cada @ do registro que respondeu:**
+4. **Para cada @ do registro que respondeu (pessoa, não robô):**
    - `etapa` com "respondeu", "lead" (pediu o link, usou a calculadora ou quer conversar) ou "descartado" (disse não), `nota` = o
      que a pessoa disse e `onde` = "direct" ou "comentario". O Matheus é avisado na hora, uma vez por resposta;
    - proponha a `resposta` (seção 4).
-4. **`conferido`** com:
+5. **`conferido`** com:
    - `direct`: quantas conversas novas e de quem;
    - `notificacoes`: as primeiras linhas copiadas da página;
    - `interagiram`: os @ do registro que seguiram de volta, curtiram ou comentaram.
