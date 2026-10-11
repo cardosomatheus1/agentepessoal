@@ -627,6 +627,13 @@ def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "d
     nota = nota[:300]
     repetida = any(h["tipo"] == f"etapa:{etapa}" and _citacao(h.get("texto", "")) == _citacao(nota)
                    and h.get("onde", "direct") == onde for h in lead["historico"])
+    falas = [h for h in lead["historico"] if str(h.get("tipo", "")).startswith("etapa:")]
+    if not repetida and falas and lead["etapa"] == etapa and falas[-1].get("onde", "direct") == onde == "comentario":
+        # the same comment reply described in other words, with no quote (11/10: Anna announced twice): while we
+        # have not answered it yet, a reply in the comments re-read by the next round is not news
+        respondemos = any(a["lead_id"] == lead["id"] and a["tipo"] == "resposta" and a["estado"] == "executada"
+                          and a.get("executada_em", 0) > falas[-1]["em"] for a in d["acoes"])
+        repetida = not respondemos
     if repetida and lead["etapa"] == etapa:
         return {**lead, "novidade": False}
     lead["etapa"], lead["atualizado"] = etapa, agora()
@@ -1191,6 +1198,23 @@ def sem_comentario(login: str) -> list[dict]:
 
 def _ultima_acao(d: dict) -> float:
     return max([a.get("executada_em", 0) for a in d["acoes"]] + [a.get("comentado_em", 0) for a in d["acoes"]] + [0])
+
+
+TIPOS_DIRECT = ("dm_abertura", "dm_lembrete", "resposta", "parceiro")
+
+
+def script_digitar(texto: str) -> str:
+    """Script for `browser` evaluate on the open Direct conversation: empties the message box (Instagram keeps the
+    draft of an earlier attempt — 11/10 Zen and Anna got the text twice in one bubble), inserts the text once and
+    returns OK only when the box holds exactly that text. The agent presses Enter only after OK."""
+    return ("(() => { const t = " + json.dumps(texto, ensure_ascii=False) + "; "
+            "const caixas = [...document.querySelectorAll('div[role=\"textbox\"][contenteditable=\"true\"]')]; "
+            "const box = caixas[caixas.length - 1]; if (!box) return 'SEM CAMPO DE MENSAGEM'; box.focus(); "
+            "document.execCommand('selectAll', false, null); document.execCommand('delete', false, null); "
+            "if ((box.innerText || '').trim()) return 'CAMPO NÃO ESVAZIOU: ' + box.innerText.slice(0, 200); "
+            "document.execCommand('insertText', false, t); "
+            "const norm = s => (s || '').replace(/\\s+/g, ' ').trim(); "
+            "return norm(box.innerText) === norm(t) ? 'OK' : 'DIFERENTE: ' + norm(box.innerText).slice(0, 300); })()")
 
 
 def aviso_sem_acao(motivo: str) -> str:

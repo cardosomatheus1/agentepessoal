@@ -878,6 +878,27 @@ class Suite:
         ok(not r, "fora da janela de 3 dias / já comentado: recusa")
         p.revisor = None
 
+    def t_direct_script_e_comentario_relido(self):
+        p = self.p
+        self.em(self.hora(10))
+        s = p.script_digitar('Oi, pessoal da "Ana"! 😊 raizconnect.com.br/materiais/precificacao/calculadora')
+        ok('selectAll' in s and "delete" in s and "insertText" in s, "script esvazia o campo antes de digitar")
+        ok(json.dumps('Oi, pessoal da "Ana"! 😊 raizconnect.com.br/materiais/precificacao/calculadora', ensure_ascii=False) in s,
+           "texto exato, com aspas escapadas")
+        ok(set(p.TIPOS_DIRECT) == {"dm_abertura", "dm_lembrete", "resposta", "parceiro"}, "todo envio no Direct usa o script")
+        lid = self._lead("relida")
+        n1 = p.mudar_etapa(LOGIN, lid, "respondeu", "Respondeu ao comentário da Raiz com orientação sobre aquecer marmitas: pode ir ao micro-ondas.", "comentario")
+        ok(n1["novidade"], "primeira leitura avisa")
+        n2 = p.mudar_etapa(LOGIN, lid, "respondeu", "Respondeu ao comentário: pode aquecer direto no micro-ondas; ou descongelar na geladeira.", "comentario")
+        ok(not n2["novidade"], "a mesma resposta no comentário, descrita de outro jeito e sem citação, não avisa de novo")
+        d = p.carregar(LOGIN)
+        d["acoes"].append({"id": "r1", "lead_id": lid, "tipo": "resposta", "texto": "x", "estado": "executada",
+                           "criada": p.agora(), "executada_em": p.agora() + 1})
+        p.salvar(LOGIN, d)
+        self.em(self.relogio + 3600)
+        n3 = p.mudar_etapa(LOGIN, lid, "respondeu", "Respondeu de novo no comentário: obrigada, vou olhar a calculadora!", "comentario")
+        ok(n3["novidade"], "depois da nossa resposta, uma fala nova avisa")
+
     def t_resposta_uma_por_fala(self):
         p = self.p
         self.em(self.hora(10))

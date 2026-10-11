@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 2.6.0
+version: 2.7.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -184,11 +184,13 @@ Depois, `prospeccao` acao "proxima" com `conta_ativa` = o @ ativo agora. Para a 
 
 **Mandar no Direct (primeira mensagem, parceiro, lembrete, resposta):**
 1. Abra a conversa: se já existe, pela caixa de entrada; senão, perfil → **Mensagem**.
-2. **Botão "Mensagem" desativado ou sem campo de texto:** a página costuma ainda estar carregando. Espere 5 s,
-   leia a página de novo e, se preciso, recarregue UMA vez. Só depois disso conte como falha.
-3. **Limpe o campo antes de digitar:** clique no campo, Ctrl+A e Delete. O Instagram guarda o rascunho de uma
-   tentativa anterior e o texto sai duplicado (11/10, Zen).
-4. Digite o texto EXATO, uma vez só, e envie.
+2. **Botão "Mensagem" parece desativado ou sem campo de texto:** a página costuma ainda estar carregando. Espere
+   5 s, leia de novo e **clique nele mesmo assim** (em 11/10, Zen e Anna: o botão "desativado" abriu a conversa).
+   Se não abrir, recarregue UMA vez. Só depois disso conte como falha.
+3. **Não digite à mão.** A `proxima` traz um script "PARA DIGITAR NO DIRECT": rode-o com `browser` "evaluate" com a
+   conversa aberta. Ele esvazia o campo (o Instagram guarda o rascunho de tentativas anteriores e o texto saía
+   duplicado: Zen e Anna, 11/10) e coloca o texto uma vez.
+4. Só aperte Enter/Enviar se o script devolver **OK**. Qualquer outra resposta: não envie; rode de novo.
 5. **Confira:** leia a conversa e veja a sua última mensagem: o texto tem de aparecer UMA vez, igual ao aprovado.
 6. `resultado` só DEPOIS de conferir. **Depois de mandar `resultado`, não toque mais nessa conversa**: ação dada
    como falha nunca é enviada depois; se a tela mudar, proponha de novo na próxima rodada.
