@@ -14,8 +14,8 @@ BUSCAR = """Rodada de busca da prospecção Raiz Connect.
 2. Leads com passo devido ("Devem receber"), na ordem do contexto (maiores notas e quem interagiu primeiro):
    - «dm_abertura»: abra o perfil, veja os 3 posts mais recentes NÃO fixados e escreva no modelo do playbook, alternando A (pergunta sobre como precificam, sem oferta) e B (oferta direta), citando UMA coisa concreta que você viu agora. Sem link. Em `base`, o que viu e em que post (data).
    - «dm_lembrete»: o lembrete do playbook com o link da calculadora (ou o do simulador de delivery para quem vende no iFood), diferente para cada pessoa.
-3. Leads novos — META: tantos CRIADOS quanto a cota de «aquecer» de hoje (até 10); não pare antes da meta ou de 30 perfis examinados. Método: skill, seções 2 e 3.
-   Para cada lead criado, proponha «aquecer» (maiores notas primeiro); comentário só se houver algo genuíno sobre o post_recente, sem citar a Raiz; em `base`, o post (data e assunto).
+3. Leads novos — META: tantos CRIADOS quanto a cota de «aquecer» de hoje (até 10). PRIMEIRO `prospeccao` acao "fontes" (catálogo de CNPJ + buscador, sem Instagram; chame de novo até a meta ou a fila acabar); só se faltar, a busca no Instagram (skill, seções 2b e 3) até 30 perfis examinados. "http 429" no Instagram não é problema seu: volte para "fontes".
+   Para cada lead criado, proponha «aquecer» (maiores notas primeiro); comentário só se houver algo genuíno sobre o post_recente (leads de "fontes" não têm: aquecer sem comentário), sem citar a Raiz; em `base`, o post (data e assunto) ou "achado em fontes".
 4. Tudo em UMA chamada `prospeccao` acao "propor" (lead_id, tipo, texto, variante, base). Recusou? Corrija pelo motivo e proponha de novo uma vez.
 5. Resposta final: exatamente SEM NOVIDADE. Só se travou (login, bloqueio, verificação, captcha): "PRECISA DE VOCÊ:" e o que aconteceu."""
 

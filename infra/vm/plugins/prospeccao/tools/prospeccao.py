@@ -209,9 +209,9 @@ class Prospeccao(Tool):
             conferir = ""
             if a["tipo"] == "aquecer" and lead.get("conferir_atividade"):
                 conferir = (f"ANTES DE SEGUIR: este perfil foi achado fora do Instagram (catálogo de CNPJ/buscador). Confira que é "
-                            f"mesmo «{lead['nome']}» ({lead['cidade']}) e a data do primeiro post NÃO fixado. Se for outro negócio, "
-                            "ou o último post tiver mais de 30 dias, NÃO siga nem curta: chame `prospeccao` acao \"etapa\" com "
-                            "etapa \"descartado\" e nota (\"parado há N dias\" ou \"perfil de outro negócio\"), e depois \"resultado\" "
+                            f"mesmo «{lead['nome']}» ({lead['cidade']}), a data do primeiro post NÃO fixado e o número de seguidores. Se for "
+                            "outro negócio, o último post tiver mais de 30 dias, ou tiver menos de 300 ou mais de 50 mil seguidores, NÃO siga nem curta: chame `prospeccao` acao \"etapa\" com "
+                            "etapa \"descartado\" e nota (\"parado há N dias\", \"perfil de outro negócio\" ou \"N seguidores\"), e depois \"resultado\" "
                             "com ok=false e esse detalhe. Se estiver ativo, siga normalmente e diga no detalhe a data do último post.\n")
             return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) {'PRÉ-APROVADA (autorização do Matheus, dentro do limite do dia; texto revisado)' if a.get('auto') else 'APROVADA pelo Matheus'} para @{lead['handle']} — {lead['url']}\n"
                      f"{conferir}{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"

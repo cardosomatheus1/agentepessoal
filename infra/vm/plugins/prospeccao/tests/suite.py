@@ -69,6 +69,12 @@ class Suite:
     def limpar(self):
         for l in (LOGIN, OUTRO):
             (self.p.PASTA / f"{l}.json").unlink(missing_ok=True)
+            (self.p.PASTA / f"{l}_fontes.json").unlink(missing_ok=True)
+
+    def _fontes(self):
+        f = _carregar("prospeccao_fontes_teste", RAIZ / "helpers" / "fontes.py")
+        f.PAUSA_BUSCA = f.PAUSA_GUIAPJ = 0
+        return f
 
     def em(self, ts):  # simulated clock
         self.relogio = ts
@@ -367,6 +373,79 @@ class Suite:
                                  "texto": "Oi! Que bom que o rondelli entra. Quer que eu calcule quanto sobra em cada kit? — Matheus"}])
         ok(prop["propostas"] and prop["propostas"][0]["lead_id"] == lid, f"proposta pelo @ guarda o id interno: {prop}")
         eq(p.mudar_etapa(LOGIN, "@naoexiste", "respondeu", "x"), None, "@ desconhecido continua recusado")
+
+    def t_fontes_leem_o_catalogo_de_cnpj(self):
+        f = self._fontes()
+        card = """<article class=\"panel result-card advanced-result-row\"><div class=\"advanced-result-summary\"><div class=\"advanced-result-content\"><div class=\"advanced-result-line advanced-result-line-top\"><h3 class=\"result-card-title\">COZINHA DE CHEF</h3><span class=\"advanced-result-legal-name\" title=\"CCLAY COMERCIO DE REFEICAO LTDA\">CCLAY COMERCIO DE REFEICAO LTDA</span><span class=\"pill neutral\">09.205.662/0001-72</span><span class=\"pill light\">SALVADOR/BA</span><span class=\"pill\">Ativa</span><span class=\"pill\">Matriz</span></div><div class=\"advanced-result-line advanced-result-line-middle\"><span class=\"advanced-line-item\"><strong>Tel:</strong> <!-- -->(71) 99922-3577</span><span class=\"advanced-line-item\" title=\"x@gmail.com\"><strong>E-mail:</strong> <!-- -->cozinhadechef@gmail.com</span></div><div class=\"advanced-result-line advanced-result-line-bottom\"><span class=\"advanced-line-item\"><strong>Bairro:</strong> <!-- -->PITUBA</span><span class=\"advanced-line-item\"><strong>Abertura:</strong> <!-- -->12/11/2007</span><span class=\"advanced-line-item\"><strong>CNAE:</strong> <!-- -->5620104</span></div></div></div></article>"""
+        e = f.ler_listagem(card + card.replace("COZINHA DE CHEF", "BAR DO ZE").replace("09.205.662", "09.205.663"))
+        eq(len(e), 2, "dois cartões")
+        eq((e[0]["nome"], e[0]["cnpj"], e[0]["cidade"], e[0]["telefone"], e[0]["cnae"], e[0]["situacao"]),
+           ("COZINHA DE CHEF", "09.205.662/0001-72", "Salvador", "(71) 99922-3577", "5620104", "Ativa"), f"campos: {e[0]}")
+        eq(f._nome_busca("COZINHA DE CHEF"), "Cozinha de Chef", "nome sem caixa alta para a busca")
+
+    def t_fontes_so_aceitam_instagram_que_bate(self):
+        f = self._fontes()
+        empresa = {"nome": "COZINHA DE CHEF", "cidade": "Salvador", "telefone": "(71) 99922-3577"}
+        bom = {"url": "https://www.instagram.com/cozinhadechef", "title": "Cozinha de Chef (@cozinhadechef) · Salvador, BA",
+               "content": "11K seguidores - Seu almoço delivery. Quentinhas frescas ou Congelados 71 99922.3577. Follow."}
+        outro = {"url": "https://www.instagram.com/peumesquita", "title": "Peu Mesquita (@peumesquita)",
+                 "content": "Compartilho o meu mundo da cozinha. Salvador, Bahia Chef Executivo"}
+        post = {"url": "https://www.instagram.com/p/C2lU3e2r1og/", "title": "Cozinha de Chef", "content": "71 99922-3577"}
+        f._buscar = lambda q: [post, outro, bom]
+        ig = f.achar_instagram(empresa)
+        eq((ig["handle"], ig["confianca"], ig["seguidores"]), ("cozinhadechef", "telefone", "11K"), f"perfil certo pelo telefone: {ig}")
+        ok("Quentinhas" in ig["bio"] and "Follow" not in ig["bio"], f"bio do resultado: {ig['bio']}")
+        f._buscar = lambda q: [post, outro]
+        eq(f.achar_instagram(empresa), None, "perfil de outra pessoa ou post solto não vale")
+        f._buscar = lambda q: [{**bom, "content": "Seu almoço delivery em Salvador"}]
+        eq(f.achar_instagram({**empresa, "telefone": ""})["confianca"], "nome", "sem telefone, vale nome + cidade")
+        def falha(q):
+            raise OSError("fora do ar")
+        f._buscar = falha
+        try:
+            f.achar_instagram(empresa)
+            ok(False, "buscador fora do ar tinha de avisar")
+        except RuntimeError:
+            pass
+
+    def t_fontes_viram_lead_com_conferencia_na_visita(self):
+        p, f = self.p, self._fontes()
+        self.em(self.hora(10))
+        cozinha = {"nome": "COZINHA DE CHEF", "razao": "CCLAY", "cnpj": "09.205.662/0001-72", "cidade": "Salvador", "uf": "BA",
+                   "situacao": "Ativa", "telefone": "(71) 99922-3577", "abertura": "12/11/2007", "cnae": "5620104", "fonte": "GuiaPJ"}
+        d = f.carregar(LOGIN)
+        for e in (cozinha, {**cozinha, "nome": "BAR DO TONHAO", "cnpj": "1"}, {**cozinha, "nome": "11.568.582 SONIA MARIA", "cnpj": "2"},
+                  {**cozinha, "nome": "PADARIA DO JOAO", "cnpj": "3", "telefone": "(71) 91111-2222"}):
+            d["empresas"][f._chave(e)] = {**e, "estado": "fila"}
+        f.salvar(LOGIN, d)
+        f.importar(LOGIN, [{"nome": "Doce Lar", "cidade": "Salvador", "uf": "BA", "segmento": "Confeitaria",
+                            "instagram": "@docelar.ssa", "evidencia": "Grok: bolos sob encomenda", "fonte": "Planilha SDR Grok"},
+                           {"nome": "Doce Lar", "cidade": "Salvador"}])
+        consultas = []
+        def buscar(q):
+            consultas.append(q)
+            if "Cozinha de Chef" in q:
+                return [{"url": "https://www.instagram.com/cozinhadechef/", "title": "Cozinha de Chef (@cozinhadechef)",
+                         "content": "2.194 seguidores - Quentinhas e congelados por encomenda 71 99922-3577"}]
+            return []
+        f._buscar = buscar
+        out = f.enriquecer(LOGIN, p, 10)
+        handles = {c["handle"] for c in out["criados"]}
+        eq(handles, {"cozinhadechef", "docelar.ssa"}, f"leads criados: {out}")
+        eq(out["pulados"], 2, "bar e MEI com nome de pessoa pulados sem gastar busca")
+        eq(out["sem_instagram"], 1, "padaria sem perfil achado")
+        ok(not any("docelar" in q for q in consultas), f"quem já veio com @ não gasta busca: {consultas}")
+        d = p.carregar(LOGIN)
+        lead = next(l for l in d["leads"] if l["handle"] == "cozinhadechef")
+        ok(lead["conferir_atividade"] and lead["nota"] >= p.NOTA_MINIMA, f"lead com nota e conferência pendente: {lead['nota']}")
+        ok("CNPJ 09.205.662/0001-72" in lead["motivo"] and "aberta em 2007" in lead["motivo"], f"motivo com a origem: {lead['motivo']}")
+        doce = next(l for l in d["leads"] if l["handle"] == "docelar.ssa")
+        eq(doce["avaliacao"]["partes"]["porte"], 12, "tamanho desconhecido conta como mediano até a visita")
+        eq(f.importar(LOGIN, [{"nome": "Doce Lar", "cidade": "Salvador"}])["importadas"], 0, "lista importada sem repetir")
+        out2 = f.enriquecer(LOGIN, p, 10)
+        eq(out2["criados"], [], "segunda passada não cria de novo")
+        aid = p.propor(LOGIN, [{"lead_id": lead["id"], "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        ok(aid, "aquecer sem comentário pode ser proposto")
 
     def t_execucao_exige_conferir_respostas(self):
         p = self.p

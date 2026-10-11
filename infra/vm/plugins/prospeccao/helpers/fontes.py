@@ -201,7 +201,28 @@ def importar(login: str, linhas: list) -> dict:
 
 # ------------------------------------------------------------------ search engine: the company's Instagram
 
+CHAVE_TAVILY = Path("/a0/usr/prospeccao/.tavily_key")  # optional: a search API that is not degraded for AWS IPs
+
+
+def _tavily_key() -> str:
+    import os
+
+    try:
+        return os.environ.get("TAVILY_API_KEY") or CHAVE_TAVILY.read_text().strip()
+    except OSError:
+        return ""
+
+
 def _buscar(consulta: str) -> list[dict]:
+    """Results as [{url, title, content}]: Tavily (Instagram only) when a key is set, else the local SearXNG (free, but
+    Bing/DuckDuckGo degrade results for AWS addresses: 11/10 most queries came back without the profile)."""
+    chave = _tavily_key()
+    if chave:
+        corpo = json.dumps({"query": consulta, "max_results": 8, "include_domains": ["instagram.com"]}).encode()
+        req = urllib.request.Request("https://api.tavily.com/search", data=corpo,
+                                     headers={"Content-Type": "application/json", "Authorization": f"Bearer {chave}"})
+        with urllib.request.urlopen(req, timeout=40) as r:
+            return json.loads(r.read() or b"{}").get("results") or []
     url = SEARX + "?" + urllib.parse.urlencode({"q": consulta, "format": "json", "language": "pt-BR"})
     with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=30) as r:
         return (json.loads(r.read() or b"{}").get("results") or [])[:15]
@@ -218,11 +239,12 @@ def _palavras(t: str) -> set:
 
 
 def _seguidores(texto: str) -> str:
-    m = re.search(r"([\d.,]+\s*(?:mil|k|m)?)\s*(?:seguidores|followers)", texto, re.I)
+    m = re.search(r"([\d.,]+\s*(?:mil|k|m)?\+?)\s*(?:seguidores|followers)", texto, re.I)
     return m.group(1).strip() if m else ""
 
 
 def _bio(texto: str) -> str:
+    texto = re.sub(r"\s*Follow\.?\s*$", "", texto)
     m = re.search(r"no Instagram:\s*[\"“](.*?)[\"”]?\s*$", texto, re.S) or re.search(r"on Instagram:\s*[\"“](.*?)[\"”]?\s*$", texto, re.S)
     return " ".join((m.group(1) if m else texto).split())[:300]
 
@@ -231,15 +253,18 @@ def achar_instagram(e: dict) -> dict | None:
     """The company's Instagram from search results, only when it matches: same phone, the handle the source already
     gave, or the same name (and city). Returns {handle, seguidores, bio, titulo, confianca} or None."""
     dado = str(e.get("instagram") or "").strip().lstrip("@").rstrip("/").rsplit("/", 1)[-1]
-    nome = e.get("nome") or e.get("razao") or ""
-    consultas = [f"instagram.com/{dado}"] if dado else []
-    consultas.append(f'"{nome}" {e.get("cidade", "")} instagram')
+    nome = _nome_busca(e.get("nome") or e.get("razao") or "")
+    cidade = str(e.get("cidade") or "").title()
+    consultas = [f"instagram.com/{dado}", f"@{dado} instagram"] if dado else []
+    consultas += [f'"{nome}" {cidade} instagram', f"{nome} {cidade} instagram"]  # engines vary run to run
     fone = _digitos(e.get("telefone"))[-8:]
+    falhas = 0
     for consulta in consultas:
         try:
             resultados = _buscar(consulta)
         except Exception:
-            return None
+            falhas += 1
+            continue
         time.sleep(PAUSA_BUSCA)
         for r in resultados:
             m = RX_PERFIL.search(str(r.get("url") or ""))
@@ -262,7 +287,15 @@ def achar_instagram(e: dict) -> dict | None:
                 confianca = "nome"
             return {"handle": handle, "seguidores": _seguidores(texto), "bio": _bio(str(r.get("content") or "")),
                     "titulo": str(r.get("title") or "")[:120], "confianca": confianca}
+    if falhas == len(consultas):
+        raise RuntimeError("buscador indisponível")
     return None
+
+
+def _nome_busca(nome: str) -> str:
+    """"COZINHA DE CHEF" -> "Cozinha de Chef" (all-caps queries bring noise); drops the CNPJ/CPF prefix of MEIs."""
+    nome = re.sub(r"^[\d.\s/-]+", "", str(nome or "")).strip()
+    return " ".join(w.lower() if w.lower() in ("de", "da", "do", "das", "dos", "e") else w.capitalize() for w in nome.split())
 
 
 # ------------------------------------------------------------------ queue -> leads
@@ -270,6 +303,9 @@ def achar_instagram(e: dict) -> dict | None:
 def _item_lead(e: dict, ig: dict, segmento_cnae: str, rx_canais: dict, rx_exclusoes: dict, segmento_rubrica) -> dict:
     bio = ig.get("bio") or ""
     texto = f"{e.get('nome', '')} {ig.get('titulo', '')} {bio} {e.get('segmento_fonte', '')}"
+    # unknown activity/size count as the median (12 + 12) until the warm-up visit checks them; what the bio or the
+    # source's evidence says about sales channels still counts
+    sinais_texto = f"{bio} {e.get('evidencia', '')}".lower()
     segmento = segmento_rubrica(texto) or segmento_cnae or "outro_alimento"
     anos = ""
     m = re.search(r"(\d{4})$", e.get("abertura", ""))
@@ -279,8 +315,8 @@ def _item_lead(e: dict, ig: dict, segmento_cnae: str, rx_canais: dict, rx_exclus
     return {
         "handle": ig["handle"], "canal": "instagram", "nome": (e.get("nome") or ig["handle"])[:80], "segmento": segmento,
         "cidade": e.get("cidade") or "", "seguidores": ig.get("seguidores") or "",
-        "canais": [c for c, rx in rx_canais.items() if re.search(rx, bio.lower())],
-        "cardapio": bool(re.search(r"card[aá]pio|menu", bio.lower())),
+        "canais": [c for c, rx in rx_canais.items() if re.search(rx, sinais_texto)],
+        "cardapio": bool(re.search(r"card[aá]pio|menu", sinais_texto)),
         "exclusoes": [c for c, rx in rx_exclusoes.items() if re.search(rx, bio.lower())],
         "atividade_pendente": True, "fonte": e.get("fonte", ""),
         "motivo": (f"{origem} ({e.get('fonte', '')}); Instagram achado pela busca ({ig['confianca']}): "
@@ -306,7 +342,17 @@ def enriquecer(login: str, p, limite: int = 20) -> dict:
             e["estado"], e["motivo"] = "pulada", "inativa ou fora do segmento pelo nome"
             out["pulados"] += 1
             continue
-        ig = achar_instagram(e)
+        if re.match(r"^\s*\d", e.get("nome", "")) and not e.get("instagram"):
+            e["estado"], e["motivo"] = "pulada", "MEI com nome de pessoa (sem marca para buscar)"
+            out["pulados"] += 1
+            continue
+        dado = str(e.get("instagram") or "").strip().lstrip("@").rstrip("/").rsplit("/", 1)[-1].lower()
+        try:
+            ig = ({"handle": dado, "seguidores": "", "bio": "", "titulo": "", "confianca": "fonte"} if dado
+                  else achar_instagram(e))
+        except RuntimeError:
+            out["erro_busca"] = "buscador indisponível agora; a empresa continua na fila"
+            break
         if not ig:
             e["estado"] = "sem_instagram"
             out["sem_instagram"] += 1

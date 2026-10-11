@@ -38,7 +38,21 @@ ensina o COMO no Instagram. Leia o playbook (`prospeccao` acao "playbook") antes
 3. Se `raiz.connect` não aparecer na troca, ou pedir senha/código: pare — "PRECISA DE VOCÊ: a conta da Raiz saiu
    do navegador".
 
-## 2. Achar perfis (rápido: por script)
+## 2. Achar perfis
+
+### 2a. Primeiro: fontes fora do Instagram (não gasta consulta no Instagram, não leva 429)
+
+`prospeccao` acao "fontes" (`limite` 20). A ferramenta:
+- anda sozinha pelo catálogo de CNPJ (GuiaPJ: marmitas, pratos prontos, confeitaria, padaria em Salvador, Lauro e
+  Camaçari) e pelas listas importadas (ex.: a planilha do SDR);
+- acha o Instagram de cada empresa pelo buscador, só quando bate (telefone, @ da fonte ou nome e cidade);
+- registra com nota os que encaixam.
+
+Chame de novo até bater a meta de leads criados ou a fila acabar. Esses leads vêm com `conferir_atividade`: a
+data do último post é conferida na visita do aquecimento (a ferramenta avisa em `proxima`). Proponha «aquecer»
+para eles **sem comentário**.
+
+### 2b. Depois, se faltar: busca no Instagram (por script)
 
 1. `prospeccao` acao "buscar_script" com `termos` = até 3 buscas da região e do segmento (ex.: "marmita salvador",
    "marmitaria salvador", "marmita fit salvador", "congelados salvador", "quentinha salvador").
@@ -69,8 +83,9 @@ configurada, use o script do navegador abaixo.
 6. Não abra um por um os perfis que a ferramenta já resolveu.
 
 Os scripts têm de terminar em 30 s: a busca usa até 3 termos e a avaliação 5 perfis por vez (a ferramenta já corta).
-**"http 429" = o Instagram limitou as consultas: NÃO insista.** Pare os scripts de perfil por 10 minutos; se precisar
-seguir, avalie abrindo os perfis um a um (método antigo): segmento, cidade, seguidores, data do primeiro post NÃO fixado, canais, sinais,
+**"http 429" = o Instagram limitou as consultas: NÃO insista.** Pare os scripts de perfil e volte para a seção 2a
+(fontes fora do Instagram). Isso não é bloqueio de ação nem motivo para "PRECISA DE VOCÊ" e não vai em `resultado`.
+Se ainda precisar, avalie abrindo os perfis um a um (método antigo): segmento, cidade, seguidores, data do primeiro post NÃO fixado, canais, sinais,
 cardápio, link de pedido, exclusões e do que trata o último post.
 
 ## 4. Executar as ações liberadas

@@ -187,7 +187,10 @@ def pontuar(item: dict) -> dict:
     if dias is not None and dias > 30:
         return {"rejeitado": f"parado há {dias} dias"}
     seguidores = _numero(item.get("seguidores"))
-    if seguidores < 300:
+    tamanho_pendente = bool(item.get("atividade_pendente")) and not seguidores  # checked on the warm-up visit
+    if tamanho_pendente:
+        pass
+    elif seguidores < 300:
         return {"rejeitado": f"pequeno demais ({seguidores} seguidores)"}
     if seguidores > 50_000:
         return {"rejeitado": f"grande demais ({seguidores} seguidores: cara de rede)"}
@@ -198,8 +201,8 @@ def pontuar(item: dict) -> dict:
     sinais = {str(x).lower() for x in (item.get("sinais") or [])} & set(SINAIS)
     partes = {
         "segmento": PONTOS_SEGMENTO[seg],
-        "atividade": 8 if dias is None else 15 if dias <= 7 else 12 if dias <= 14 else 8,
-        "porte": 15 if 500 <= seguidores <= 5000 else 12 if seguidores <= 20_000 and seguidores > 5000 else 8 if seguidores > 20_000 else 6,
+        "atividade": 12 if dias is None else 15 if dias <= 7 else 12 if dias <= 14 else 8,
+        "porte": 12 if tamanho_pendente else 15 if 500 <= seguidores <= 5000 else 12 if seguidores <= 20_000 and seguidores > 5000 else 8 if seguidores > 20_000 else 6,
         "regiao": 10,
         "canais": min(10, 3 * len(canais) + (1 if len(canais) >= 3 else 0)),
         "sinais": min(15, 5 * len(sinais)),
