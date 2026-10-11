@@ -79,8 +79,52 @@ def carregar(login: str) -> dict:
     return d
 
 
+# ------------------------------------------------------------------ action states: one rule, one journal
+# Every change of an action's state goes through _mudar() and lands in <login>_eventos.jsonl (append-only), so a
+# state can never jump (11/10: "executada" was edited by hand to "duplicada" and a lock stayed on for good).
+TRANSICOES = {
+    "proposta": {"aprovada", "pulada", "expirada", "cancelada", "proposta"},
+    "aprovada": {"executada", "falhou", "cancelada", "proposta"},  # "proposta" again = new text (editar)
+    "executada": {"apagada"},  # the message was deleted (unsent) in the Instagram
+    "falhou": set(), "pulada": set(), "expirada": set(), "cancelada": set(), "apagada": set(),
+}
+AUTOR = {"quem": "agente"}  # operator scripts set "operador: <why>"
+
+
+class TransicaoInvalida(ValueError):
+    pass
+
+
+def _evento(d: dict, a: dict, de: str, para: str, motivo: str = "") -> None:
+    d.setdefault("_eventos", []).append({"em": agora(), "acao": a["id"], "lead": a["lead_id"], "tipo": a["tipo"],
+                                         "de": de, "para": para, "motivo": str(motivo)[:200], "por": AUTOR["quem"]})
+
+
+def _mudar(d: dict, a: dict, novo: str, motivo: str = "", **campos) -> dict:
+    atual = a["estado"]
+    if novo not in TRANSICOES.get(atual, set()):
+        raise TransicaoInvalida(f"ação {a['id']} ({a['tipo']}): {atual} → {novo} não é permitido")
+    a["estado"] = novo
+    a.update(campos)
+    _evento(d, a, atual, novo, motivo)
+    return a
+
+
+def eventos(login: str, ultimos: int = 50) -> list[dict]:
+    try:
+        linhas = (PASTA / f"{_login(login)}_eventos.jsonl").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    return [json.loads(l) for l in linhas[-ultimos:] if l.strip()]
+
+
 def salvar(login: str, d: dict) -> None:
     PASTA.mkdir(parents=True, exist_ok=True)
+    novos = d.pop("_eventos", [])
+    if novos:
+        with (PASTA / f"{_login(login)}_eventos.jsonl").open("a", encoding="utf-8") as f:
+            for e in novos:
+                f.write(json.dumps(e, ensure_ascii=False) + "\n")
     alvo = PASTA / f"{_login(login)}.json"
     tmp = alvo.with_suffix(".tmp")
     tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -588,7 +632,7 @@ def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "d
     if etapa in FINAIS or etapa in ("respondeu", "lead"):  # pending outreach stops when they answer or are closed
         for a in d["acoes"]:
             if a["lead_id"] == lead["id"] and a["estado"] in ("proposta", "aprovada") and a["tipo"] != "resposta":
-                a["estado"], a["decidida"] = "cancelada", agora()
+                _mudar(d, a, "cancelada", f"lead foi para {etapa}", decidida=agora())
     salvar(login, d)
     return {**lead, "novidade": True}
 
@@ -739,6 +783,7 @@ def propor(login: str, itens: list) -> dict:
                 "alvo": str(item.get("alvo") or lead["url"])[:200], "base": str(item.get("base") or "")[:300],
                 "estado": "proposta", "criada": agora()}
         d["acoes"].append(acao)
+        _evento(d, acao, "-", "proposta", "proposta criada")
         ja.add((lid, tipo))
         restantes[tipo] -= 1
         out["propostas"].append(acao)
@@ -818,7 +863,7 @@ def marcar_apagada(login: str, aid: str, detalhe: str = "") -> dict | None:
     a = next((x for x in d["acoes"] if x["id"] == aid), None)
     if not a or a["estado"] != "executada" or a["tipo"] not in ("dm_abertura", "dm_lembrete", "resposta", "parceiro"):
         return None
-    a["estado"], a["detalhe"] = "apagada", (f"APAGADA: {detalhe} | antes: " + str(a.get("detalhe", "")))[:600]
+    _mudar(d, a, "apagada", detalhe, detalhe=(f"APAGADA: {detalhe} | antes: " + str(a.get("detalhe", "")))[:600])
     lead = _lead(d, a["lead_id"])
     if lead:
         lead["historico"].append({"em": agora(), "tipo": "apagada", "texto": f"{a['tipo']} {aid} apagada: {detalhe}"[:300]})
@@ -866,18 +911,49 @@ def _auto_aprovar(login: str, out: dict) -> dict:
     candidatas = [a for a in out["propostas"] if a["tipo"] in AUTO_TIPOS]
     com_texto = [a for a in candidatas if a["texto"]]
     vereditos = revisar_textos(d, com_texto) if com_texto else {}
+    # the reviewer claimed something is missing that a plain rule shows is there (11/10: it held a reply "for not
+    # introducing Matheus nor linking the calculator" — the text did both): ask once more, pointing at the fact
+    contraditos = [a for a in com_texto if not vereditos.get(a["id"], {}).get("aprovado") and _contradiz(a, vereditos[a["id"]]["motivo"])]
+    if contraditos:
+        for a in contraditos:
+            a = {**a, "base": (a.get("base") or "") + f" | CONFERIDO POR REGRA, NÃO PELO MODELO: {_fatos(a)}. "
+                 f"Uma revisão anterior disse: «{vereditos[a['id']]['motivo']}» — isso contradiz o texto; reveja só pelo resto."}
+            segunda = revisar_textos(d, [a]).get(a["id"], {})
+            vereditos[a["id"]] = {"aprovado": segunda.get("aprovado") is True,
+                                  "motivo": f"2ª revisão: {segunda.get('motivo', '')} (a 1ª errou: {vereditos[a['id']]['motivo'][:80]})"[:200]}
     automaticas, manuais = [], [a for a in out["propostas"] if a["tipo"] not in AUTO_TIPOS]
     for a in candidatas:
         v = vereditos.get(a["id"], {"aprovado": True, "motivo": "seguir e curtir, sem texto"})
         guardada = next(x for x in d["acoes"] if x["id"] == a["id"])
         guardada["revisao"] = v["motivo"]
         if v["aprovado"]:
-            guardada.update({"estado": "aprovada", "decidida": agora(), "auto": True})
+            _mudar(d, guardada, "aprovada", f"revisor: {v['motivo']}", decidida=agora(), auto=True)
             automaticas.append(guardada)
         else:
             manuais.append(guardada)
     salvar(login, d)
     return {**out, "propostas": manuais, "automaticas": automaticas}
+
+
+def _fatos(a: dict) -> str:
+    t = a.get("texto") or ""
+    fatos = []
+    if re.search(r"matheus", t, re.I):
+        fatos.append("o texto apresenta/assina o Matheus")
+    if CALCULADORA.search(t):
+        fatos.append("o texto tem o link da calculadora/simulador")
+    if re.search(r"sem cadastro|sem precisar (se )?cadastrar", t, re.I):
+        fatos.append("o texto diz que dá para usar sem cadastro")
+    return "; ".join(fatos) or "nada"
+
+
+def _contradiz(a: dict, motivo: str) -> bool:
+    """The reviewer's reason says something is missing that the text plainly has."""
+    m, t = (motivo or "").lower(), a.get("texto") or ""
+    falta = re.search(r"\b(n[aã]o|sem|falta|faltou|aus[eê]ncia)\b", m)
+    return bool(falta and (("matheus" in m or "assinatura" in m or "apresent" in m) and re.search(r"matheus", t, re.I)
+                           or ("link" in m or "calculadora" in m) and CALCULADORA.search(t)
+                           or "cadastro" in m and re.search(r"sem cadastro", t, re.I)))
 
 
 def definir_auto(login: str, ligado: bool) -> None:
@@ -893,10 +969,9 @@ def decidir(login: str, aid: str, decisao: str) -> dict | None:
     if not a or a["estado"] != "proposta":
         return None
     if agora() - a["criada"] > VALIDADE_PROPOSTA:
-        a["estado"] = "expirada"
+        _mudar(d, a, "expirada", "aprovação depois do prazo", decidida=agora())
     else:
-        a["estado"] = "aprovada" if decisao == "aprovar" else "pulada"
-    a["decidida"] = agora()
+        _mudar(d, a, "aprovada" if decisao == "aprovar" else "pulada", f"decisão: {decisao}", decidida=agora())
     salvar(login, d)
     return a
 
@@ -918,7 +993,7 @@ def editar(login: str, aid: str, texto: str) -> tuple[dict | None, str]:
     motivo = validar_texto(a["tipo"], texto, d, a["lead_id"])
     if motivo:
         return None, motivo
-    a.update({"texto": texto.strip()[:900], "estado": "proposta", "criada": agora()})
+    _mudar(d, a, "proposta", "texto editado", texto=texto.strip()[:900], criada=agora())
     a.pop("decidida", None)
     salvar(login, d)
     return a, ""
@@ -987,7 +1062,7 @@ def proxima(login: str, conta_ativa: str = "") -> tuple[dict | None, str]:
     for a in sorted((x for x in d["acoes"] if x["estado"] == "aprovada"), key=lambda x: (x["tipo"] != "resposta", x.get("decidida", 0))):
         lead = _lead(d, a["lead_id"])
         if not lead or (lead["etapa"] in FINAIS and not (a["tipo"] == "resposta" and lead["etapa"] == "descartado")):
-            a["estado"] = "cancelada"
+            _mudar(d, a, "cancelada", "lead encerrado antes da execução")
             continue
         executadas_hoje = sum(1 for x in d["acoes"] if x["tipo"] == a["tipo"] and x["estado"] == "executada"
                               and _hoje_local(x.get("executada_em")) == _hoje_local())
@@ -1005,8 +1080,7 @@ def resultado(login: str, aid: str, ok: bool, detalhe: str = "", bloqueio: bool 
     a = next((x for x in d["acoes"] if x["id"] == aid), None)
     if not a or a["estado"] != "aprovada":
         return None
-    a["estado"] = "executada" if ok else "falhou"
-    a["executada_em"], a["detalhe"] = agora(), detalhe[:300]
+    _mudar(d, a, "executada" if ok else "falhou", detalhe, executada_em=agora(), detalhe=detalhe[:300])
     lead = _lead(d, a["lead_id"])
     if ok and lead:
         proxima_etapa = {"aquecer": "aquecido", "dm_abertura": "abordado", "dm_lembrete": "lembrado"}.get(a["tipo"])
@@ -1027,7 +1101,8 @@ def expirar(login: str) -> int:
     n = 0
     for a in d["acoes"]:
         if a["estado"] == "proposta" and agora() - a["criada"] > VALIDADE_PROPOSTA:
-            a["estado"], n = "expirada", n + 1
+            _mudar(d, a, "expirada", "proposta sem decisão no prazo")
+            n += 1
     if n:
         salvar(login, d)
     return n

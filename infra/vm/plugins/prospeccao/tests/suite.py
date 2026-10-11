@@ -468,6 +468,57 @@ class Suite:
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": resp}])
         ok(r["propostas"], f"apagada + falhas antigas não travam uma nova: {r['recusadas']}")
 
+    def t_estados_so_mudam_pela_regra_e_ficam_no_diario(self):
+        p = self.p
+        self.em(self.hora(10))
+        (p.PASTA / f"{LOGIN}_eventos.jsonl").unlink(missing_ok=True)
+        lid = self._lead("diario1")
+        aid = p.propor(LOGIN, [{"lead_id": lid, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aid, "aprovar")
+        d = p.carregar(LOGIN)
+        a = next(x for x in d["acoes"] if x["id"] == aid)
+        try:
+            p._mudar(d, a, "apagada")
+            ok(False, "aprovada → apagada tinha de ser recusado")
+        except p.TransicaoInvalida:
+            pass
+        p._mudar(d, a, "executada", "teste", executada_em=p.agora())
+        try:
+            p._mudar(d, a, "proposta")
+            ok(False, "executada não volta a proposta")
+        except p.TransicaoInvalida:
+            pass
+        p.salvar(LOGIN, d)
+        evs = [(e["de"], e["para"]) for e in p.eventos(LOGIN) if e["acao"] == aid]
+        eq(evs[:3], [("-", "proposta"), ("proposta", "aprovada"), ("aprovada", "executada")], f"diário: {evs}")
+        ok("_eventos" not in p.carregar(LOGIN), "o diário não fica dentro do registro")
+        (p.PASTA / f"{LOGIN}_eventos.jsonl").unlink(missing_ok=True)
+
+    def t_revisor_que_contradiz_o_texto_revisa_de_novo(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("revisor1")
+        p.mudar_etapa(LOGIN, lid, "respondeu", "oieeee entra sim", "comentario")
+        chamadas = []
+        def revisor(pedido):
+            chamadas.append(pedido)
+            ids = re.findall(r"## Item (\w+)", pedido)
+            if len(chamadas) == 1:
+                return json.dumps({"itens": [{"id": i, "aprovado": False, "motivo": "A resposta não se apresenta como Matheus e não inclui o link da calculadora."} for i in ids]})
+            ok("CONFERIDO POR REGRA" in pedido, "a 2ª revisão recebe o fato conferido")
+            return json.dumps({"itens": [{"id": i, "aprovado": True, "motivo": "ok"} for i in ids]})
+        antigo = p.revisor
+        p.revisor = revisor
+        try:
+            d = p.carregar(LOGIN); d["config"]["auto"] = True; p.salvar(LOGIN, d)
+            texto = ("Oi, pessoal! Que bom que entra. Aqui é o Matheus, da Raiz Connect. A calculadora grátis mostra quanto sobra: "
+                     "raizconnect.com.br/materiais/precificacao/calculadora, e dá pra começar sem cadastro.")
+            out = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": texto}])  # auto on: reviewer runs
+        finally:
+            p.revisor = antigo
+        eq(len(chamadas), 2, "revisou duas vezes")
+        ok(out["automaticas"] and not out["propostas"], f"aprovada na 2ª revisão: {out}")
+
     def t_execucao_exige_conferir_respostas(self):
         p = self.p
         self.em(self.hora(10))

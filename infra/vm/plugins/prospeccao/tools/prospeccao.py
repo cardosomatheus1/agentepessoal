@@ -85,10 +85,18 @@ async def _ler_token_da_tela(context_id: str) -> str:
 
 
 class Prospeccao(Tool):
-    async def execute(self, acao: str = "contexto", leads=None, acoes=None, acao_id: str = "", ok=None, detalhe: str = "",
-                      bloqueio=False, lead_id: str = "", etapa: str = "", nota: str = "", texto: str = "", dias: int = 7,
-                      conta_ativa: str = "",
-                      **kwargs) -> Response:
+    async def execute(self, **kwargs) -> Response:
+        """A state change the rules forbid comes back as a plain refusal (the journal keeps the state honest)."""
+        try:
+            return await self._executar(**kwargs)
+        except pr().TransicaoInvalida as exc:
+            return Response(message=f"RECUSADO pela regra de estados: {exc}. Não force: confira com `contexto` ou "
+                                    "`eventos` o estado real e siga o fluxo.", break_loop=False)
+
+    async def _executar(self, acao: str = "contexto", leads=None, acoes=None, acao_id: str = "", ok=None, detalhe: str = "",
+                        bloqueio=False, lead_id: str = "", etapa: str = "", nota: str = "", texto: str = "", dias: int = 7,
+                        conta_ativa: str = "",
+                        **kwargs) -> Response:
         p = pr()
         login = dono(self.agent.context)
         acao = str(acao or "contexto").lower()
@@ -175,6 +183,13 @@ class Prospeccao(Tool):
                 return r("Passe `arquivo` = caminho de um .json com a lista de empresas (nome, cidade, uf, segmento, telefone, instagram, site, evidencia, fonte).")
             out = fontes().importar(login, json.loads(caminho.read_text(encoding="utf-8")))
             return r(json.dumps(out, ensure_ascii=False))
+        if acao == "eventos":
+            evs = p.eventos(login, int(kwargs.get("ultimos") or 30))
+            if lead_id:
+                lead = p._lead(p.carregar(login), lead_id)
+                evs = [e for e in evs if lead and e["lead"] == lead["id"]]
+            return r("\n".join(f"{e['em']:.0f} {e['acao']} {e['tipo']}: {e['de']} → {e['para']} ({e['por']}) {e['motivo']}" for e in evs)
+                     or "Sem eventos.")
         if acao == "apagada":
             a = p.marcar_apagada(login, acao_id, detalhe or texto)
             if not a:
