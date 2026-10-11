@@ -773,6 +773,13 @@ class Suite:
         self.em(self.relogio + 4 * 60)
         c, motivo = p.proxima(LOGIN, "raizconnect")
         ok(not c and "nenhuma" in motivo, f"fila vazia: nada a repor ({motivo})")
+        d = p.carregar(LOGIN)
+        x = next(y for y in d["acoes"] if y["id"] == a["id"])
+        x["executada_em"] = p.agora()  # as if an action had just happened
+        p.salvar(LOGIN, d)
+        c, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(not c and "nenhuma" in motivo, f"sem nada a fazer, encerra mesmo logo depois de uma ação, não manda esperar ({motivo})")
+        self.em(self.relogio + 4 * 60)
         ok(p.aviso_sem_acao(motivo).startswith("NADA AGORA"), "fila vazia encerra a rodada")
         self._lead("repor_espera1"), self._lead("repor_espera2")
         c, motivo = p.proxima(LOGIN, "raizconnect")
@@ -859,6 +866,7 @@ class Suite:
         ok(not r and "versões reprovadas" in m, f"depois do limite, não tenta mais: {m}")
         p.resultado(LOGIN, c["id"], True, "seguiu e curtiu, sem comentário")
         self._revisor()
+        self._lead("coment4")  # something to do, so the spacing is what holds it
         self.em(self.relogio + 30)
         c, motivo = p.proxima(LOGIN, "raizconnect")
         ok(not c and motivo.startswith("espaçamento"), f"comentário atrasado conta no espaçamento ({motivo})")

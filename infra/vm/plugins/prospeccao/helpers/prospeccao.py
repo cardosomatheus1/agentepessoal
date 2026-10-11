@@ -657,15 +657,20 @@ def _dias_desde(ts: float) -> int:
     return (dt.datetime.fromtimestamp(agora(), _tz()).date() - dt.datetime.fromtimestamp(ts, _tz()).date()).days
 
 
+def _fila_repor(login: str) -> list:
+    """Best new lead that may take a free «aquecer» slot today ([] when none or no pre-approval)."""
+    d = carregar(login)
+    if not d["config"].get("auto") or cotas(login)["aquecer"] <= 0:
+        return []
+    tentados = {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")}
+    return [l for l in devidos(login)["aquecer"] if l["id"] not in tentados][:1]  # a failed visit is not retried
+
+
 def repor_aquecer(login: str) -> int:
     """Fill the day's free «aquecer» slots with the best new leads (follow + like, no text, so no reviewer needed).
     11/10: the 9h23 round proposed 8, the visit discarded 5 (stale, too big, wrong business) and nobody refilled:
     only 3 of 8 slots were used. One lead per call: the execution round asks again after each action."""
-    d = carregar(login)
-    if not d["config"].get("auto") or cotas(login)["aquecer"] <= 0:
-        return 0
-    tentados = {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")}
-    fila = [l for l in devidos(login)["aquecer"] if l["id"] not in tentados][:1]  # a failed visit is not retried
+    fila = _fila_repor(login)
     if not fila:
         return 0
     out = propor(login, [{"lead_id": fila[0]["id"], "tipo": "aquecer", "texto": "",
@@ -1078,6 +1083,9 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True) -> tuple[dict
     h = _hora_local()
     if not HORARIO[0] <= h < HORARIO[1]:
         return None, f"fora do horário ({HORARIO[0]}h–{HORARIO[1]}h)"
+    if repor and not any(x["estado"] == "aprovada" for x in d["acoes"]) and not _fila_repor(login):
+        # nothing to do at all: say so now, not "wait for the spacing" (11/10 17h20: the round waited on nothing)
+        return None, "nenhuma ação aprovada esperando"
     ultima = _ultima_acao(d)  # a catch-up comment also counts for the spacing
     if agora() - ultima < INTERVALO:
         return None, f"espaçamento: próxima a partir de {dt.datetime.fromtimestamp(ultima + INTERVALO, _tz()).strftime('%H:%M')}"
