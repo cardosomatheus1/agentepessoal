@@ -710,6 +710,8 @@ def propor(login: str, itens: list) -> dict:
             motivo = "cedo demais para o lembrete"
         elif tipo == "resposta" and lead["etapa"] not in ("respondeu", "lead", "demo", "teste", "descartado"):
             motivo = "resposta só para quem escreveu"
+        elif tipo == "resposta" and _ja_respondido(d, lead):
+            motivo = "já respondemos a última fala dessa pessoa: espere ela escrever de novo (registre com `etapa`)"
         elif tipo == "parceiro" and lead["canal"] != "parceiro":
             motivo = "ação de parceiro só para leads do canal parceiro"
         elif restantes.get(tipo, 0) <= 0:
@@ -776,6 +778,15 @@ def _chamar_revisor(pedido: str) -> str:
         data = json.loads(r.read())
     return "".join(c.get("text", "") for item in data.get("output", []) if item.get("type") == "message"
                    for c in item.get("content", []) if c.get("type") == "output_text")
+
+
+def _ja_respondido(d: dict, lead: dict) -> bool:
+    """True when our last sent reply is newer than the person's last recorded words: no second reply to the same line
+    (replies leave without the person's ✅ since 11/10)."""
+    falas = [h["em"] for h in lead.get("historico", []) if str(h.get("tipo", "")).startswith("etapa:")]
+    enviadas = [a.get("executada_em", 0) for a in d["acoes"]
+                if a["lead_id"] == lead["id"] and a["tipo"] == "resposta" and a["estado"] == "executada"]
+    return bool(enviadas) and (not falas or max(enviadas) >= max(falas))
 
 
 def _disse(lead: dict) -> str:

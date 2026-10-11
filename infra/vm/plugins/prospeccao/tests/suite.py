@@ -684,6 +684,27 @@ class Suite:
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, Ana! Voltando aqui sobre o cálculo da marmita de vocês. — Matheus"}])
         ok(r["recusadas"], "encerrado não recebe mais nada")
 
+    def t_resposta_uma_por_fala(self):
+        p = self.p
+        self.em(self.hora(10))
+        self._revisor()  # never the real model in the suite
+        lid = self._lead("fala1")
+        p.mudar_etapa(LOGIN, lid, "respondeu", "entra sim!", "comentario")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, pessoal da Fala! Que bom. A calculadora grátis: raizconnect.com.br/materiais/precificacao/calculadora — Matheus"}])
+        ok(r["propostas"] or r.get("automaticas"), f"primeira resposta passa: {r}")
+        d = p.carregar(LOGIN)
+        a = next(x for x in d["acoes"] if x["lead_id"] == lid and x["tipo"] == "resposta")
+        a.update({"estado": "executada", "executada_em": p.agora()})
+        p.salvar(LOGIN, d)
+        self.em(self.hora(11))
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi de novo, pessoal da Fala! Conseguiram ver a calculadora? — Matheus"}])
+        ok(r["recusadas"] and "já respondemos" in r["recusadas"][0]["motivo"], f"segunda resposta à mesma fala é barrada: {r}")
+        self.em(self.hora(12))
+        p.mudar_etapa(LOGIN, lid, "lead", "vou testar, obrigada!", "direct")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Imagina, pessoal da Fala! Qualquer dúvida no uso, me chama 🙂 — Matheus"}])
+        ok(not r["recusadas"], f"fala nova libera nova resposta: {r}")
+        p.revisor = None
+
     def t_resposta_e_descarte(self):
         p = self.p
         lid = self._lead()
