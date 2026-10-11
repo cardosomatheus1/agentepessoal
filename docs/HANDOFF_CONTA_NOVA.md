@@ -37,7 +37,30 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
 - IA Business: ver o branch `claude/handoff-conta-nova` do repositório `cardosomatheus1/aibusiness`.
 - Máquina de build do IA Business: `infra/operador/vmcmd.py` serve com `VM_ID=i-08adac4830ec57e5a` (ros-dev-construcao,
   usuário `ec2-user`). A Main Opus roda no tmux `opus` (`/home/ec2-user/opus_rc.sh`, sessão única na árvore do
-  principal); se a máquina religar, subir de novo esse tmux e mandar o Prompt A (detalhes no handoff do aibusiness).
+  principal), que o serviço `claude-main-opus` sobe sozinho quando a máquina liga (ver "Parada de 11/10").
+
+## Parada de 11/10 e o que mudou
+
+- **O que houve:** a Main Opus terminou o turno às 00:29 UTC perguntando se seguia numa sessão nova. A
+  orquestradora a viu como "desconectada" e não mandou seguir. Sem atividade, a vigia da máquina
+  (`/opt/ros-construcao/vigia.sh`, métrica `ROS/Construcao SessaoViva`) publicou 0 a partir das 00:50, e o alarme
+  `ros-dev-construcao-ociosa` (60 min) **desligou a máquina às 01:50**. O Controle Remoto caiu junto, e o app passou
+  a mostrar "Ambiente excluído". A VM do agente travou em paralelo, ao acordar da hibernação às 04:55
+  (status "impaired", sem SSM).
+- **Correções:**
+  - `opus_rc.sh` virou um laço que **reata a mesma sessão** (`claude remote-control --session-id <id do
+    bridge-pointer.json>`) e só abre outra se a reatada falhar.
+  - O serviço `claude-main-opus.service` sobe o laço no boot.
+  - Tudo roda com `--permission-mode bypassPermissions`. O Matheus pediu: o modo auto negava os comandos e as
+    aprovações vindas da orquestradora.
+  - `/home/ec2-user/.claude/settings.json` usa `defaultMode bypassPermissions`. Os hooks do repo continuam
+    valendo.
+  - `/home/ec2-user/.claude/CLAUDE.md` traz a **delegação**: mensagens da orquestradora valem como do Matheus
+    (aprovações e HUMs), com os limites de deploy, pagamento, segredo e push.
+  - O serviço `claude-remote-control` (spawn=worktree) também passou para bypassPermissions.
+  - A orquestradora foi instruída a ligar a máquina (`aws ec2 start-instances`) se a encontrar parada e a mandar a
+    Main Opus continuar.
+  - Novo alarme `agentepessoal-vm-travada`: reinicia a VM do agente após 5 min de falha na checagem de status.
 
 ## O que a sessão nova precisa ter
 
