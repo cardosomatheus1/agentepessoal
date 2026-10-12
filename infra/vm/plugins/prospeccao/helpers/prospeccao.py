@@ -415,7 +415,7 @@ def api_pausada(login: str) -> str:
 # ------------------------------------------------------------------ official API (Instagram Graph "business discovery")
 
 GRAPH = "https://graph.facebook.com/v25.0"
-COFRE_TOKEN, COFRE_IG = "META_IG_TOKEN", "META_IG_USER_ID"
+COFRE_TOKEN, COFRE_IG, COFRE_PAGINA = "META_IG_TOKEN", "META_IG_USER_ID", "META_PAGE_ID"
 
 
 def _cofre():
@@ -447,7 +447,7 @@ def guardar_token_meta(login: str, token_usuario: str) -> dict:
     esperado = conta(login) or "raiz.connect"
     info = _graph("debug_token", {"input_token": token_usuario, "access_token": token_usuario}).get("data") or {}
     if info.get("type") == "PAGE":
-        pg = _graph("me", {"fields": "name,instagram_business_account{id,username}", "access_token": token_usuario})
+        pg = _graph("me", {"fields": "id,name,instagram_business_account{id,username}", "access_token": token_usuario})
         conta_ig = pg.get("instagram_business_account") or {}
         if str(conta_ig.get("username", "")).lower() != esperado:
             return {"ok": False, "erro": f"o token é de uma Página que não está ligada a @{esperado}"}
@@ -459,12 +459,21 @@ def guardar_token_meta(login: str, token_usuario: str) -> dict:
             return {"ok": False, "erro": r["error"].get("message", "")[:200]}
         paginas = r.get("data") or []
         alvo = next((pg for pg in paginas if (pg.get("instagram_business_account") or {}).get("username", "").lower() == esperado), None)
+        pid = str(_cofre().carregar(login).get(COFRE_PAGINA) or "")
+        if not alvo and pid:
+            # a Page inside a business portfolio is not listed by me/accounts without business_management (12/10):
+            # ask the known Page for its token directly
+            pg = _graph(pid, {"fields": "name,access_token,instagram_business_account{id,username}", "access_token": token_usuario})
+            if pg.get("access_token") and (pg.get("instagram_business_account") or {}).get("username", "").lower() == esperado:
+                alvo = pg
         if not alvo:
             ligadas = {pg.get("name"): (pg.get("instagram_business_account") or {}).get("username") for pg in paginas}
             return {"ok": False, "erro": f"nenhuma Página ligada a @{esperado}", "paginas": ligadas}
     c = _cofre()
     c.salvar(login, COFRE_TOKEN, alvo["access_token"]); c.descrever(login, COFRE_TOKEN, f"Meta · token da Página {alvo['name']} (leitura do Instagram @{esperado})")
     c.salvar(login, COFRE_IG, alvo["instagram_business_account"]["id"]); c.descrever(login, COFRE_IG, f"Meta · id da conta @{esperado}")
+    if alvo.get("id"):
+        c.salvar(login, COFRE_PAGINA, str(alvo["id"])); c.descrever(login, COFRE_PAGINA, f"Meta · id da Página {alvo['name']}")
     info = _graph("debug_token", {"input_token": alvo["access_token"], "access_token": alvo["access_token"]}).get("data") or {}
     expira = info.get("expires_at", 0)
     out = {"ok": True, "pagina": alvo["name"], "instagram": esperado,

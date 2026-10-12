@@ -64,6 +64,8 @@ class Suite:
                  "dialog de permissão em facebook.com/v26.0/dialog/oauth com instagram_basic"), "autorizar a leitura passa")
         ok(livre("chaves_acesso", "Gerar token de acesso no Explorador da Graph API com instagram_basic e pages_read_engagement"),
            "gerar o token no Explorador passa")
+        ok(livre("chaves_acesso", "No site aberto no navegador, gerar um token de usuário de longa duração."),
+           "estender pelo nome que o classificador deu em 12/10 também passa")
         ok(not livre("chaves_acesso", "Gerar token no app Barber Dock (2229462691177967)"), "Barber Dock nunca por aqui")
         ok(not livre("contas_reais", "Alterar a conta de anúncios act_1384895845137880 no Gerenciador da Meta"), "conta de anúncio, não")
         ok(not livre("contas_reais", "Autorizar business_management no app da Meta"), "gerenciar o portfólio da empresa, não")

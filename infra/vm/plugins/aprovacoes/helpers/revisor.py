@@ -169,7 +169,8 @@ def livre_instagram(analise: dict, tool: str, args: dict, intencao: str, cfg: di
 
 
 META = re.compile(r"developers\.facebook\.com|graph\.facebook\.com|facebook\.com/(v\d+\.\d+/)?dialog/oauth|graph api|"
-                  r"explorador|access token|token de acesso|token de longa|business discovery|meta for developers|"
+                  r"explorador|access token|token de acesso|token (de usu[aá]rio |de p[aá]gina )?de longa|longa dura[cç][aã]o|"
+                  r"business discovery|meta for developers|"
                   r"\bapp\b.{0,40}(meta|facebook)|(meta|facebook).{0,40}\bapp\b|aplicativo da meta", re.I)
 FORA_META = re.compile(r"barber|an[uú]nci|\bads?\b|ads_|campanha|act_\d|pagament|cobran|cart[aã]o|boleto|whatsapp business|"
                        r"\bwaba\b|business_management|portf[oó]lio|parceir|terceiros|revog|apag|exclu|delet|remov|senha|"

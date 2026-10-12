@@ -985,6 +985,21 @@ class Suite:
             ok("EAA" not in json.dumps(res), "o resumo não mostra o token")
             res = p.guardar_token_meta(LOGIN, "EAAusuario")
             ok(res["ok"] and res["pagina"] == "Raiz Connect", "token de usuário continua funcionando")
+            # a Page inside a business portfolio: me/accounts comes back empty without business_management
+            def graph_portfolio(caminho, params):
+                if caminho == "me/accounts":
+                    return {"data": []}
+                if caminho == "555":
+                    return {"id": "555", "name": "Raiz Connect", "access_token": "EAApaginalonga",
+                            "instagram_business_account": {"id": "178", "username": "raizconnect"}}
+                if caminho == "debug_token":
+                    return {"data": {"type": "USER", "expires_at": 0}}
+                return {}
+            p._graph = graph_portfolio
+            cofre["META_PAGE_ID"] = "555"
+            res = p.guardar_token_meta(LOGIN, "EAAusuariolongo")
+            ok(res["ok"] and res["expira"] == "nunca" and cofre["META_IG_TOKEN"] == "EAApaginalonga",
+               f"Página de portfólio pega pelo id conhecido: {res}")
         finally:
             p._cofre, p._graph = orig_c, orig_g
 
