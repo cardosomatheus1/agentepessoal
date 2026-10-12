@@ -93,6 +93,7 @@ class Suite:
             self._espera_real, self._pico_real = p._espera, p.PICO_DM
         p._espera = lambda ultima: p.INTERVALO
         p.PICO_DM = ()
+        p.FOLGA = 9  # no rest day (the suite runs on any weekday); t_folga_e_noite tests it
 
     def em(self, ts):  # simulated clock
         self.relogio = ts
@@ -1272,15 +1273,16 @@ class Suite:
         b, _ = p.proxima(LOGIN, "raizconnect")
         p.resultado(LOGIN, b["id"], True, "seguiu e curtiu")
         eq([s["acao_id"] for s in p.sem_comentario(LOGIN)], [b["id"]], "lista os aquecimentos sem comentário")
-        r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Vocês fazem por encomenda pra festa?", "post de 09/10")
+        data = dt.datetime.fromtimestamp(self.relogio - 2 * 86400, p._tz()).strftime("%d/%m")
+        r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Vocês fazem por encomenda pra festa?", f"post de {data}")
         ok(not r and m.startswith("espaçamento"), f"comentário atrasado respeita os 3 minutos: {m}")
         self.em(self.relogio + 4 * 60)
         self._revisor(reprovar=(b["id"],))
-        r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Vocês fazem por encomenda pra festa?", "post de 09/10")
+        r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Vocês fazem por encomenda pra festa?", f"post de {data}")
         ok(not r and m.startswith("REESCREVA") and "1 tentativa" in m, f"revisor reprovou: manda reescrever com o motivo: {m}")
         ok(not p.comentado(LOGIN, b["id"], True, "x"), "sem aprovação, 'comentado' não registra nada")
         self._revisor()
-        r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Sai mais por encomenda ou na pronta entrega?", "post de 09/10")
+        r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Sai mais por encomenda ou na pronta entrega?", f"post de {data}")
         ok(r, f"nova tentativa aprovada: {m}")
         p.comentado(LOGIN, b["id"], True, "apareceu")
         eq(p.sem_comentario(LOGIN), [], "nada mais sem comentário")
@@ -1290,10 +1292,10 @@ class Suite:
         c, _ = p.proxima(LOGIN, "raizconnect")
         self._revisor(reprovar=(c["id"],))
         for n in range(p.TENTATIVAS_COMENTARIO):
-            r, m = p.comentar(LOGIN, c["id"], f"Versão {n} de um comentário sobre o kit de marmitas da semana?", "post")
+            r, m = p.comentar(LOGIN, c["id"], f"Versão {n} de um comentário sobre o kit de marmitas da semana?", "post de ontem")
             ok(not r, f"tentativa {n} reprovada")
         ok("última versão" in m, f"a última tentativa avisa que acabou: {m}")
-        r, m = p.comentar(LOGIN, c["id"], "Mais uma versão de um comentário sobre o kit de marmitas?", "post")
+        r, m = p.comentar(LOGIN, c["id"], "Mais uma versão de um comentário sobre o kit de marmitas?", "post de ontem")
         ok(not r and "versões reprovadas" in m, f"depois do limite, não tenta mais: {m}")
         p.resultado(LOGIN, c["id"], True, "seguiu e curtiu, sem comentário")
         self._revisor()
@@ -1504,16 +1506,19 @@ class Suite:
         eq(next(a for a in p.carregar(LOGIN)["acoes"] if a["id"] == aid)["estado"], "cancelada", "abordagem pendente cancelada")
 
     def t_variantes_alternam(self):
+        # since the second blind review: the variant is the one the tool says for each lead (stable, half and half),
+        # never the agent's choice — so the A/B comparison is not biased by which profiles get B
         p = self.p
-        vs = []
+        vs, esperado = [], []
         for i in range(4):
             lid = self._lead(f"lead{i}")
             d = p.carregar(LOGIN)
             l = p._lead(d, lid)
             l["etapa"], l["atualizado"] = "aquecido", l["atualizado"] - 3 * 86400
             p.salvar(LOGIN, d)
+            esperado.append(p.variante_sugerida(d, l))
             vs.append(p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_abertura", "texto": TEXTOS[i].format(n=f"Pessoa {i}")}])["propostas"][0]["variante"])
-        eq(vs, ["A", "B", "A", "B"], "A/B alternando")
+        eq(vs, esperado, "cada lead com a variante dita pela ferramenta")
 
     # ------------------------------------------------------------------ limits, hours, pause
     def t_cotas_do_piloto(self):
@@ -2185,9 +2190,184 @@ class Suite:
         ok("VARREDURA COMPLETA" in p.resumo_contexto(LOGIN), "sem varredura recente: abrir todas")
         p.conferido(LOGIN, "1 conversa conferida: sem resposta", "Notificações: nada novo do registro hoje à tarde.", [], True)
         ctx = p.resumo_contexto(LOGIN)
-        ok("só o que é novo" in ctx and "VARREDURA COMPLETA" not in ctx, "logo depois: só o que é novo")
+        ok("contador de não lidas" in ctx and "VARREDURA COMPLETA" not in ctx and "@var1" in ctx
+           and "direct_script" not in ctx, f"logo depois: o contador e só as conversas recentes: {ctx[-400:]}")
         self.em(self.relogio + p.VARREDURA_H * 3600 + 60)
         ok("VARREDURA COMPLETA" in p.resumo_contexto(LOGIN), "4 h depois: de novo")
+
+    # ------------------------------------------------------------------ blind review, second pass
+    def t_comentario_so_em_post_recente(self):
+        """Blind review 2, item 5: comments only on posts up to 7 days old, with the post's date in `base`."""
+        p = self.p
+        self.em(self.hora(10))
+        hoje = dt.datetime.fromtimestamp(self.relogio, p._tz()).date()
+        for base, dias in ((f"\"Kit fit da semana\", {(hoje - dt.timedelta(days=3)).isoformat()}", 3),
+                           (f"post de {(hoje - dt.timedelta(days=2)).strftime('%d/%m')}", 2), ("post de ontem", 1),
+                           ("post de hoje", 0), ("há 2 semanas", 14), ("4 d", 4), ("postado há 3 h", 0),
+                           ("legenda: kit de 10 marmitas", None), ("", None)):
+            eq(p.idade_post(base), dias, f"idade de {base!r}")
+        self._revisor(reprovar=())
+        p.definir_auto(LOGIN, True)
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+        p.salvar(LOGIN, d)
+        self._lead("recente1")
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a and a["tipo"] == "aquecer", f"visita em andamento ({motivo})")
+        texto = "Kit de 10 com duas proteínas resolve a semana de quem congela. Vocês montam tudo no mesmo dia?"
+        r, m = p.comentar(LOGIN, a["id"], texto, "\"Kit fit da semana\"")
+        ok(not r and m.startswith("REESCREVA") and "data" in m, f"sem a data do post: pede a base de novo: {m}")
+        velho = (hoje - dt.timedelta(days=20)).isoformat()
+        r, m = p.comentar(LOGIN, a["id"], texto, f"\"Kit fit da semana\", {velho}")
+        ok(not r and "até 7 dias" in m and not m.startswith("REESCREVA"), f"post de 20 dias: não comente: {m}")
+        x = next(y for y in p.carregar(LOGIN)["acoes"] if y["id"] == a["id"])
+        ok(not (x.get("comentario") or {}).get("tentativas"), "nenhuma das duas gasta versão do revisor")
+        r, m = p.comentar(LOGIN, a["id"], texto, f"\"Kit fit da semana\", {(hoje - dt.timedelta(days=2)).isoformat()}")
+        ok(r, f"post de 2 dias com o trecho: vai ao revisor e passa: {m}")
+        p.revisor = None
+
+    def t_acoes_documentadas_existem(self):
+        """What the agent reads (tool prompt) and what the tool handles stay in step; every action type has its how-to."""
+        import ast
+        p = self.p
+        fonte = (RAIZ / "tools" / "prospeccao.py").read_text(encoding="utf-8")
+        tratadas = set(re.findall(r'acao == "([a-z_]+)"', fonte))
+        for grupo in re.findall(r"acao in \(([^)]*)\)", fonte):
+            tratadas |= set(re.findall(r'"([a-z_]+)"', grupo))
+        prompt = (RAIZ / "prompts" / "agent.system.tool.prospeccao.md").read_text(encoding="utf-8")
+        documentadas = set()
+        for cabeca in re.findall(r'^- ((?:"[a-z_]+"(?: / )?)+):', prompt, re.M):
+            documentadas |= set(re.findall(r'"([a-z_]+)"', cabeca))
+        ok(len(documentadas) >= 25, f"o prompt lista as ações: {sorted(documentadas)}")
+        eq(sorted(documentadas - tratadas), [], "toda ação do prompt existe na ferramenta")
+        for nova, velha in (("caixa_lida", "conferido"), ("estoque_conferido", "conferidos")):
+            ok(nova in tratadas and f'"{velha}": "{nova}"' in fonte, f"{nova} existe e {velha} continua valendo")
+            ok(f'"{velha}"' not in prompt, f"o prompt só ensina o nome novo ({nova})")
+        arvore = ast.parse(fonte)
+        como = next(n.value for n in ast.walk(arvore) if isinstance(n, ast.Assign)
+                    and any(getattr(x, "id", "") == "COMO_EXECUTAR" for x in n.targets))
+        chaves = {k.value for k in como.keys}
+        eq(sorted(set(p.TIPOS) - chaves), [], "toda ação que a proxima entrega tem o como fazer (seguimento quebrava)")
+
+    def t_marca_429_nao_e_perfil(self):
+        p = self.p
+        achados = json.dumps([{"handle": "doces_da_lu", "termo": "doces bh"}, {"handle": "__429__", "termo": "http 429"}])
+        eq(p.novos_handles(LOGIN, achados), ["doces_da_lu"], "a marca de 429 da busca não vira perfil a avaliar")
+
+    def t_espera_com_comando_que_funciona(self):
+        p = self.p
+        aviso = p.aviso_sem_acao("espaçamento: próxima a partir de 10:05")
+        ok(aviso.startswith("ESPERE") and p.COMANDO_ESPERA in aviso and "echo" in p.COMANDO_ESPERA,
+           f"diz como esperar sem o terminal desistir (15 s sem saída): {aviso}")
+        n = int(re.search(r"seq (\d+)", p.COMANDO_ESPERA).group(1))
+        ok(n * 10 < 240, "cabe no tempo máximo de uma chamada do terminal (240 s)")
+
+    def t_folga_e_noite(self):
+        """Replies until 22h; after 20h and on the rest day, only replies."""
+        p = self.p
+        self.em(self.hora(10))
+        q, r_ = self._lead("noite1"), self._aquecido("noite2")
+        self._executar(r_, "dm_abertura", DM_A)
+        p.mudar_etapa(LOGIN, r_, "respondeu", "Oi! A gente calcula pelo concorrente", "direct")
+        aq = p.propor(LOGIN, [{"lead_id": q, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aq, "aprovar")
+        resp = p.propor(LOGIN, [{"lead_id": r_, "tipo": "resposta",
+                                 "texto": "Faz sentido, muita gente começa assim. Fizemos uma calculadora grátis: " + p.LINK_CALCULADORA}])
+        rid = resp["propostas"][0]["id"]
+        p.decidir(LOGIN, rid, "aprovar")
+        self.em(self.hora(21))
+        a, _ = p.proxima(LOGIN, "raizconnect")
+        ok(a and a["id"] == rid, "21h: a resposta sai")
+        p.resultado(LOGIN, rid, True, "enviada")
+        self.em(self.relogio + 400)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a is None and "só respostas" in motivo, f"21h: seguir e curtir não: {motivo}")
+        self.em(self.hora(22) + 60)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a is None and "fora do horário" in motivo, "depois das 22h, nada")
+        amanha = dt.datetime.fromtimestamp(self.hora(10, dias=1), p._tz())
+        p.FOLGA = amanha.weekday()
+        self.em(self.hora(10, dias=1))
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a is None and "folga" in motivo, f"dia de folga: só respostas: {motivo}")
+
+    def t_rampa_das_primeiras_mensagens(self):
+        p = self.p
+        d = p.carregar(LOGIN)
+        d["config"]["inicio"] = p.agora() - 3 * 86400
+        eq(p.limites(d)["dm_abertura"], 5, "semana 1: piloto")
+        for semana, esperado in ((1, 8), (2, 10), (3, 12), (9, 12)):
+            d["config"]["inicio"] = p.agora() - semana * 7 * 86400 - 3600
+            eq(p.limites(d)["dm_abertura"], esperado, f"semana {semana + 1}")
+        d["bloqueios"] = [{"em": p.agora() - 2 * 86400}]
+        eq(p.limites(d)["dm_abertura"], 10, "bloqueio nos últimos 7 dias: um degrau abaixo")
+
+    def t_descarte_na_visita_volta_em_60_dias(self):
+        p = self.p
+        self.em(self.hora(10))
+        parado, outro, nao = self._lead("vis1"), self._lead("vis2"), self._aquecido("vis3")
+        pequeno, rede = self._lead("vis4"), self._lead("vis5")
+        p.mudar_etapa(LOGIN, parado, "descartado", "parado há 45 dias")
+        p.mudar_etapa(LOGIN, outro, "descartado", "perfil de outro negócio")
+        p.mudar_etapa(LOGIN, pequeno, "descartado", "280 seguidores")
+        p.mudar_etapa(LOGIN, rede, "descartado", "é rede/franquia")
+        self._executar(nao, "dm_abertura", DM_A)
+        p.mudar_etapa(LOGIN, nao, "descartado", "Não tenho interesse")
+        self.em(self.relogio + (p.REAVALIAR_DIAS + 1) * 86400)
+        p.fechar_vencidos(LOGIN)
+        d = p.carregar(LOGIN)
+        eq([p._lead(d, x)["etapa"] for x in (parado, outro, nao, pequeno, rede)],
+           ["novo", "descartado", "descartado", "novo", "descartado"],
+           "só o parado ou pequeno volta; outro negócio, rede e quem disse não, nunca")
+        ok(p._lead(d, parado).get("conferir_atividade"), "volta para ser conferido na visita")
+        ok(parado in {l["id"] for l in p.devidos(LOGIN)["aquecer"]}, "e entra de novo no estoque")
+
+    def t_robo_no_direct_nao_e_resposta(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("robo1")
+        self._executar(lid, "dm_abertura", DM_A)
+        caixa = {"principal": {"threads": [{"usuarios": ["robo1"], "itens": [
+            {"de_mim": False, "tipo": "text", "texto": "Olá! Recebemos sua mensagem e em breve retornaremos 😊", "ts": 1}]}]},
+                 "pedidos": {"threads": []}}
+        out = p.processar_direct(LOGIN, json.dumps(caixa))
+        eq(out["novas"], [], "resposta automática não é resposta")
+        eq(p._lead(p.carregar(LOGIN), lid)["etapa"], "abordado", "continua abordado")
+
+    def t_agora_nao_sem_seguimento(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("agora1")
+        self._executar(lid, "dm_abertura", DM_A)
+        p.mudar_etapa(LOGIN, lid, "respondeu", "Agora não dá, tô sem tempo essa semana", "direct")
+        self.em(self.relogio + 400)
+        self._executar(lid, "resposta", "Tranquilo! Deixo o link e você abre quando der: " + p.LINK_CALCULADORA)
+        self.em(self.relogio + 3 * 86400)
+        eq(p.devidos(LOGIN)["seguimento"], [], "\"agora não\" não recebe seguimento")
+
+    def t_variante_dita_pela_ferramenta(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("var9")
+        self.em(self.relogio + 2 * 86400 + 60)
+        d = p.carregar(LOGIN)
+        v = p.variante_sugerida(d, p._lead(d, lid))
+        ok(f"ESCREVA A VARIANTE {v}" in p.resumo_contexto(LOGIN), "o contexto diz qual variante escrever")
+        a = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_abertura", "texto": DM_A}])["propostas"][0]
+        eq(a["variante"], v, "sem variante na proposta, vale a dita pela ferramenta")
+        variantes = {p.variante_sugerida(d, {"id": f"x{i}"}) for i in range(20)}
+        eq(variantes, {"A", "B"}, "metade e metade")
+
+    def t_interagiu_recebe_no_dia_seguinte(self):
+        p = self.p
+        self.em(self.hora(10))
+        a, b = self._lead("dia1"), self._lead("dia2")
+        self._executar(a, "aquecer", "")
+        self.em(self.relogio + 400)
+        self._executar(b, "aquecer", "")
+        p.interacao_comentario(LOGIN, a, "Obrigada! Montamos no mesmo dia")
+        self.em(self.hora(10, dias=1))
+        eq([l["handle"] for l in p.devidos(LOGIN)["dm_abertura"]], ["dia1"], "quem interagiu: no dia seguinte; o outro, em 2 dias")
 
     def t_painel(self):
         """/painel (12/10 review §7 item 11): funnel by who reached each stage, stock, the week and today."""

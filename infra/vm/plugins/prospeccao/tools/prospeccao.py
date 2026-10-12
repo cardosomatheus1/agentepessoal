@@ -79,18 +79,19 @@ def dono(context) -> str:
 
 
 COMO_EXECUTAR = {
-    "aquecer": "Abra o perfil, siga (se ainda não segue), curta 1 ou 2 posts recentes. SEM texto aprovado: leia o primeiro post NÃO fixado e, se houver algo "
-               "genuíno a dizer sobre ele (útil, específico, sem venda, sem citar a Raiz, até 220 caracteres), chame `prospeccao` acao \"comentar\" "
-               "(acao_id, texto, base = o post e a data) ANTES do resultado: só publique se vier COMENTÁRIO APROVADO, depois \"comentado\". "
-               "COM texto aprovado: comente EXATAMENTE "
-               "esse texto no post mais recente (o primeiro NÃO fixado — posts com alfinete aparecem antes e podem ser antigos; confira a data). Para comentar, abra o post pelo link dele (https://www.instagram.com/p/<código>/ — "
-               "pegue o link clicando no post do perfil): nessa página o campo \"Adicione um comentário…\" fica visível embaixo; "
-               "clique nele, digite o texto e clique em \"Publicar\"; confira que o comentário aparece na lista. No resultado: ok=true se SEGUIU (o aquecimento valeu), mesmo que o comentário "
-               "não tenha saído — diga no detalhe o que saiu e o que não saiu; ok=false só se nem seguir deu certo.",
+    "aquecer": "Abra o perfil, siga (se ainda não segue), curta 1 ou 2 posts recentes e veja os stories, se houver. Comentário: só num "
+               "post de até 7 dias com algo ESCRITO para comentar (legenda, texto na arte, preço; a descrição automática do Instagram não "
+               "conta). SEM texto aprovado: chame `prospeccao` acao \"comentar\" (acao_id, texto, base = o trecho copiado entre aspas e a "
+               "data do post) ANTES do resultado e só publique se vier COMENTÁRIO APROVADO; depois, \"comentado\". COM texto aprovado: "
+               "comente EXATAMENTE esse texto no post mais recente. Para comentar, abra o post pelo link dele "
+               "(https://www.instagram.com/p/<código>/), clique em \"Adicione um comentário…\", digite, clique em \"Publicar\" e confira "
+               "que o comentário aparece na lista. No resultado: ok=true se SEGUIU, mesmo que o comentário não tenha saído (diga no "
+               "detalhe o que saiu e o que não saiu); ok=false só se nem seguir deu certo.",
     "dm_abertura": "Abra o perfil → Mensagem e envie EXATAMENTE este texto (sem mudar nada).",
-    "dm_lembrete": "Abra a conversa com esse perfil no Direct e envie EXATAMENTE este texto.",
-    "resposta": "Abra a conversa com esse perfil no Direct (se ainda não houver conversa — a pessoa respondeu num "
-                "comentário —, abra o perfil → Mensagem) e envie EXATAMENTE este texto.",
+    "dm_lembrete": "Abra o perfil → Mensagem (abre a conversa que já existe) e envie EXATAMENTE este texto.",
+    "seguimento": "Abra o perfil → Mensagem (abre a conversa que já existe) e envie EXATAMENTE este texto.",
+    "resposta": "Abra o perfil → Mensagem (abre a conversa; se a pessoa só falou num comentário, abre uma nova) e envie "
+                "EXATAMENTE este texto.",
     "parceiro": "Abra o perfil → Mensagem e envie EXATAMENTE este texto.",
 }
 
@@ -137,6 +138,7 @@ class Prospeccao(Tool):
         p = pr()
         login = dono(self.agent.context)
         acao = str(acao or "contexto").lower()
+        acao = {"conferido": "caixa_lida", "conferidos": "estoque_conferido"}.get(acao, acao)  # old names (one letter apart)
         r = lambda m: Response(message=m, break_loop=False)  # noqa: E731
 
         if acao == "playbook":
@@ -164,19 +166,25 @@ class Prospeccao(Tool):
                      "Ele devolve um JSON com os @ achados; passe-o INTEIRO para `prospeccao` acao \"perfis_script\" com "
                      "`achados` = o texto (a ferramenta tira os já conhecidos e rejeitados).\n\n" + p.montar_busca(termos))
         if acao == "avaliar_api":
+            aviso_429 = ""
+            if "__429__" in str(kwargs.get("achados") or ""):  # the search hit the limit: no more Instagram scripts today
+                ate = await asyncio.to_thread(p.limite_consulta, login, "a busca devolveu http 429")
+                aviso_429 = (f"\nA busca pelo Instagram devolveu 429: nenhum script pelo Instagram até {ate} (a API oficial "
+                             "continua valendo). Responda no fim CONSULTA LIMITADA (429).")
             if kwargs.get("achados"):
                 handles = p.novos_handles(login, kwargs["achados"])
             else:
                 handles = leads if isinstance(leads, list) else [h.strip() for h in str(leads or texto or "").replace(",", " ").split() if h.strip()]
                 handles = p.novos_handles(login, handles)
             if not handles:
-                return r("Nenhum @ novo (todos já conhecidos ou rejeitados).")
+                return r("Nenhum @ novo (todos já conhecidos ou rejeitados)." + aviso_429)
             perfis = await asyncio.to_thread(p.descobrir_perfis, login, handles)
             if perfis and perfis[0].get("handle") == "-":
-                return r(perfis[0]["erro"] + ". Use perfis_script (navegador) por enquanto.")
+                return r(perfis[0]["erro"] + (". Use perfis_script (navegador) por enquanto." if not aviso_429 else ".") + aviso_429)
             out = p.avaliar_perfis(login, perfis)
             return r(json.dumps(out, ensure_ascii=False) + "\nAvaliados pela API oficial. Criados já estão registrados com nota; "
-                     "recusados anotados; \"conta pessoal ou inexistente\" = perfil sem conta comercial (fora do perfil ideal).")
+                     "recusados anotados; \"conta pessoal ou inexistente\" = perfil sem conta comercial (fora do perfil ideal)."
+                     + aviso_429)
         if acao == "token_meta":
             tokens = await _ler_tokens_da_tela(self.agent.context.id)
             token = await asyncio.to_thread(p.escolher_token_meta, tokens) if tokens else ""
@@ -236,8 +244,8 @@ class Prospeccao(Tool):
             handles = handles[:cabem]
             return r("Rode este script com a ferramenta `browser`, action \"evaluate\", numa aba já aberta em https://www.instagram.com/ "
                      "(logada como @raiz.connect). Ele devolve um texto JSON; passe esse texto INTEIRO, sem mudar nada, para "
-                     "`prospeccao` acao \"conferidos\" com `dados` = o texto.\n\n" + p.montar_script(handles))
-        if acao == "conferidos":
+                     "`prospeccao` acao \"estoque_conferido\" com `dados` = o texto.\n\n" + p.montar_script(handles))
+        if acao == "estoque_conferido":
             out = p.conferir_perfis(login, kwargs.get("dados") or texto)
             if any("429" in e.get("erro", "") for e in out["erros"]):
                 return r(json.dumps(out, ensure_ascii=False) + "\nO Instagram limitou as consultas da nossa conta (429): nenhuma "
@@ -287,7 +295,8 @@ class Prospeccao(Tool):
                 return r("A parte do Instagram no estoque está cheia: não chame de novo agora.")
             if not f.apify_pronto(login):
                 return r("Sem Apify configurado: encha a parte do Instagram com a busca no Instagram (skill, 2b e 3).")
-            out = await asyncio.to_thread(f.buscar_instagram, login, p, _numero(kwargs.get("termos"), 3), _numero(kwargs.get("por_termo"), 20))
+            out = await asyncio.to_thread(f.buscar_instagram, login, p, _numero(kwargs.get("buscas") or kwargs.get("termos"), 3),
+                                          _numero(kwargs.get("por_termo"), 20))
             pf = p.estoque(login)["por_fonte"]["instagram"]
             if out.get("erro"):
                 return r(f"{out['erro']}. Se precisar, use a busca no Instagram (skill, 2b e 3) para a parte que falta ({pf['faltam']}).")
@@ -355,10 +364,12 @@ class Prospeccao(Tool):
             conferir = ""
             if a["tipo"] == "aquecer" and lead.get("conferir_atividade"):
                 conferir = (f"ANTES DE SEGUIR: este perfil foi achado fora do Instagram (catálogo de CNPJ/buscador). Confira que é "
-                            f"mesmo «{lead['nome']}» ({lead['cidade']}), a data do primeiro post NÃO fixado e o número de seguidores. Se for "
-                            "outro negócio, o último post tiver mais de 30 dias, ou tiver menos de 300 ou mais de 50 mil seguidores, NÃO siga nem curta: chame `prospeccao` acao \"etapa\" com "
+                            f"mesmo «{lead['nome']}» ({lead['cidade']}), a data do último post (o mais recente entre os 4 primeiros da grade) e o "
+                            "número de seguidores. Se for outro negócio, o último post tiver mais de 30 dias, ou tiver menos de 300 ou mais de 50 mil "
+                            "seguidores, NÃO siga nem curta: chame `prospeccao` acao \"etapa\" com "
                             f"lead_id \"{lead['id']}\", etapa \"descartado\" e nota (\"parado há N dias\", \"perfil de outro negócio\" ou \"N seguidores\") — isso já encerra "
-                            "esta visita (não precisa de \"resultado\") — e chame \"proxima\" de novo: vem o próximo da fila. Se estiver ativo, siga normalmente e diga no detalhe a data do último post.\n")
+                            "esta visita (não precisa de \"resultado\"; parado ou fora da faixa volta ao estoque em 60 dias) — e chame \"proxima\" "
+                            "de novo: vem o próximo da fila. Se estiver ativo, siga normalmente e diga no detalhe a data do último post.\n")
             elif a["tipo"] == "aquecer" and lead.get("conferir_negocio"):
                 conferir = (f"ANTES DE SEGUIR: este perfil veio de fora do Instagram e já foi conferido (ativo, tamanho certo). Só confira "
                             f"que é mesmo «{lead['nome']}» ({lead['cidade']}). Se for outro negócio, NÃO siga: chame `prospeccao` acao "
@@ -382,7 +393,7 @@ class Prospeccao(Tool):
                 return r(f"NÃO COMENTE: {motivo}. Siga sem comentário (se estiver na visita, mande o `resultado` normalmente).")
             a = next(x for x in p.carregar(login)["acoes"] if x["id"] == acao_id)
             p.liberar(self.agent.context, {**a, "auto": True})
-            return r(f"COMENTÁRIO APROVADO pelo revisor: publique EXATAMENTE «{texto.strip()}» no primeiro post NÃO fixado de "
+            return r(f"COMENTÁRIO APROVADO pelo revisor: publique EXATAMENTE «{texto.strip()}» no post que você leu (o da `base`) de "
                      "@" + (p._lead(p.carregar(login), a["lead_id"]) or {}).get("handle", "") + " (abra o post pelo link, "
                      "campo \"Adicione um comentário…\", Publicar, confira que aparece na lista). Depois chame `prospeccao` acao "
                      "\"comentado\" com acao_id, ok e detalhe.")
@@ -426,7 +437,7 @@ class Prospeccao(Tool):
         if acao == "etapa":
             onde = str(kwargs.get("onde") or "direct").lower()
             negocio = str(kwargs.get("negocio") or "").lower() in ("true", "1", "sim")
-            if etapa == "respondeu" and onde == "comentario" and not negocio:
+            if etapa == "interagiu" or (etapa == "respondeu" and onde == "comentario" and not negocio):
                 lead = await asyncio.to_thread(p.interacao_comentario, login, lead_id, nota)
                 if not lead:
                     return r("Lead não encontrado (use o @, a URL ou o id).")
@@ -493,18 +504,19 @@ class Prospeccao(Tool):
                          "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu. Se preferir "
                          "conversar você mesmo, toque em 🙋 Deixa comigo.\n" + n["url"], p.botao_assumir(login, n["lead_id"]), tipo="urgente", ponte=ponte())
             if out["erros"] and not out["conversas"]:
-                return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Leia pela tela (skill, seção 5).")
+                return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Leia pela tela (skill, seção 6).")
             resumo = (f"{out['conversas']} conversas lidas pela API; respostas novas de leads: "
                       + (", ".join("@" + n["handle"] for n in out["novas"]) or "nenhuma"))
-            return r(json.dumps(out, ensure_ascii=False) + f"\nUse em `conferido` → direct: \"{resumo}\". Para cada resposta nova, "
-                     "proponha a `resposta` (vai pro ✅ do Matheus). O Matheus JÁ foi avisado: não chame `etapa` para essas.")
-        if acao == "conferido":
+            return r(json.dumps(out, ensure_ascii=False) + f"\nUse em `caixa_lida` → direct: \"{resumo}\". Para cada resposta nova, "
+                     "proponha a `resposta` pelo playbook (o revisor confere). O Matheus JÁ foi avisado; chame `etapa` só se a "
+                     "fala pede outra etapa (lead, demo, descartado).")
+        if acao == "caixa_lida":
             inter = kwargs.get("interagiram") or []
             inter = inter if isinstance(inter, list) else [h.strip() for h in str(inter).split(",") if h.strip()]
             varredura = str(kwargs.get("varredura") or "").lower() in ("true", "1", "sim")
             erro = await asyncio.to_thread(p.conferido, login, str(kwargs.get("direct") or ""), str(kwargs.get("notificacoes") or ""),
                                            inter, varredura)
-            return r(erro or "Conferência registrada. Agora chame `prospeccao` acao \"proxima\".")
+            return r(erro or "Leitura registrada. Agora chame `prospeccao` acao \"proxima\".")
         if acao == "hoje":
             texto_dia = p.resumo_hoje(login)
             return r(texto_dia or "NADA HOJE")
@@ -514,4 +526,7 @@ class Prospeccao(Tool):
             return r("Aprovação automática " + ("LIGADA" if ligado else "DESLIGADA") + " (aquecer, primeira mensagem e lembrete).")
         if acao == "metricas":
             return r(json.dumps(p.metricas(login, _numero(dias, 7)), ensure_ascii=False))
-        return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | direct_script | ler_direct | buscar_script | avaliar_api | token_meta | perfis_script | avaliar_perfis | etapa | conferido | editar | hoje | auto | metricas")
+        return r("acao: playbook | contexto | registrar | rejeitar | propor | comentar | comentado | proxima | resultado | etapa | "
+                 "caixa_lida | fontes | fontes_instagram | conferir_estoque | estoque_conferido | buscar_script | avaliar_api | "
+                 "perfis_script | avaliar_perfis | limite_consulta | liberar_consultas | cartao | assumir | devolver | editar | "
+                 "apagada | importar_lista | variante | token_meta | hoje | metricas")

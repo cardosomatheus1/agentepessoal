@@ -10,15 +10,13 @@ SIS_BUSCA = ("Você é o prospector da Raiz Connect. Nesta rodada você só NAVE
 BUSCAR = """Rodada de busca da prospecção Raiz Connect.
 
 0. Carregue a skill `prospeccao-instagram` (skills_tool load) e siga o método dela; ela tem o COMO no Instagram.
-1. `prospeccao` acao "playbook" (leia inteiro: muda) e acao "contexto" (cotas de hoje, leads com passo devido, @ conhecidos e rejeitados).
-2. Leads com passo devido ("Devem receber"), na ordem do contexto (skill, seção 4; textos pelos modelos do playbook, seção 7):
-   - «dm_abertura»: abra o perfil, veja os 3 posts mais recentes NÃO fixados e escreva pela variante A ou B, citando UMA coisa concreta que você viu agora. Sem link. Em `base`, o que viu e em que post (data).
-   - «dm_lembrete» (só aparece para quem interagiu com a Raiz): o lembrete do playbook, SEM link (ofereça mandar).
-   - «seguimento» (2 dias depois do link, sem resposta): o seguimento do playbook, sem link.
-3. ESTOQUE DE LEADS (skill, seção 2; o contexto mostra cada parte e quanto falta): planilha e catálogo com `prospeccao` acao "fontes" (limite 20), de novo até encher ou a fila acabar; Instagram com acao "fontes_instagram" (Apify, sem usar a nossa conta), de novo até encher ou acabar a verba do mês. Script no Instagram só sem Apify e só enquanto a ferramenta deixar (teto do dia). "http 429": chame acao "limite_consulta", pare tudo que consulta o Instagram (não abra perfis um a um) e siga com `fontes`. NÃO proponha «aquecer»: a rodada de execução consome o estoque sozinha.
-3b. CONFERIR O ESTOQUE: `prospeccao` acao "conferir_estoque" (skill, seção 2, item 4). No máximo 3 vezes por rodada; "Nada a conferir", pausa ou teto: pare esta parte.
-4. As mensagens do passo 2 em UMA chamada `prospeccao` acao "propor" (lead_id, tipo, texto, variante, base). "REESCREVA"? Corrija pelo motivo do revisor e proponha de novo (até 3 versões).
-5. Resposta final: exatamente SEM NOVIDADE. Depois de um 429: "CONSULTA LIMITADA (429)". Só se travou (login, bloqueio, verificação, captcha): "PRECISA DE VOCÊ:" e o que aconteceu."""
+1. CONTA: skill, seção 1 (tem de ser @raiz.connect, nunca a pessoal). Depois `prospeccao` acao "playbook" (leia inteiro: muda) e acao "contexto".
+2. QUEM DEVE RECEBER (skill, seção 4; textos pelo playbook, seção 5), na ordem do contexto:
+   - «dm_abertura»: abra o perfil, leia a bio e os posts recentes e escreva na variante que o contexto indica, citando UMA coisa que está escrita no perfil ou no post (a descrição automática do Instagram não conta). Sem link. Em `base`, o trecho copiado entre aspas e a data do post.
+   - «dm_lembrete» (só para quem interagiu) e «seguimento» (2 dias depois do link): pelo playbook, SEM link.
+3. ESTOQUE DE LEADS (skill, seções 2 e 3; o contexto mostra cada parte e quanto falta): `fontes` (limite 20) e `fontes_instagram` (Apify), de novo até encher. Script no Instagram só sem Apify e enquanto a ferramenta deixar. Depois `conferir_estoque` (no máximo 3 vezes). Não proponha «aquecer»: a execução tira do estoque sozinha.
+4. As mensagens do passo 2 em UMA chamada `prospeccao` acao "propor" (lead_id, tipo, texto, base; variante em branco). "REESCREVA": corrija pelo motivo e mande de novo só esse item (até 3 versões).
+5. Resposta final, uma linha: SEM NOVIDADE; ou CONSULTA LIMITADA (429); ou "PRECISA DE VOCÊ:" e o que travou (conta, bloqueio, verificação, captcha)."""
 
 SIS_EXEC = ("Você executa a prospecção da Raiz Connect pela conta de Instagram da Raiz (nunca pela pessoal do Matheus). Só executa ações que a ferramenta "
             "`prospeccao` entregar como APROVADAS, com o texto exatamente igual. Nada além disso.")
@@ -26,10 +24,10 @@ SIS_EXEC = ("Você executa a prospecção da Raiz Connect pela conta de Instagra
 EXECUTAR = """Rodada de execução da prospecção Raiz Connect.
 
 0. Carregue a skill `prospeccao-instagram` (skills_tool load) e siga o método dela.
-1. CONTA: skill, seção 1 — tem que ser @raiz.connect, nunca a pessoal.
-2. RESPOSTAS: skill, seção 6 — Direct (só o que é novo; a varredura completa quando o contexto pedir) e notificações. Registre cada fala com `etapa`: resposta ao nosso comentário vai com onde "comentario" (a ferramenta registra como interação; negocio: true só se a pessoa falou de preço, custo, lucro ou do sistema); fala no Direct, pela etapa que o playbook manda, e então proponha a `resposta` pelo playbook (seção 7; áudio não se responde). Depois registre `conferido` (direct, notificacoes, interagiram, varredura). Sem `conferido`, `proxima` não libera nada.
-3. EXECUÇÃO: skill, seção 5 — `proxima` com conta_ativa; leia a conversa antes de digitar; faça exatamente a ação com o texto exato; confira na tela; `resultado`. "ESPERE": aguarde até o horário e chame de novo. No máximo 3 ações feitas por rodada. "NADA AGORA": termine. Bloqueio ou verificação: pare e mande `resultado` com bloqueio: true.
-4. Resposta final: exatamente SEM NOVIDADE. Só se travou (login, bloqueio, verificação, captcha, erro que impede seguir): "PRECISA DE VOCÊ:" e o que aconteceu."""
+1. CONTA: skill, seção 1 (tem de ser @raiz.connect, nunca a pessoal).
+2. RESPOSTAS: skill, seção 6. `prospeccao` acao "contexto" diz quais conversas do Direct abrir nesta rodada (ou a VARREDURA COMPLETA); veja também o contador de não lidas, as solicitações e as notificações. Registre cada fala com `etapa`: resposta ao nosso comentário vai como etapa "interagiu" (ou "respondeu" com onde "comentario" e negocio: true, se a pessoa falou de preço, custo, lucro ou do sistema); fala no Direct, pela etapa que o playbook manda (seção 6), e então proponha a `resposta` pelo playbook. Resposta automática não conta. Depois `caixa_lida` (direct, notificacoes, interagiram, varredura). Sem ela, a `proxima` não libera nada.
+3. EXECUÇÃO: skill, seção 5. `proxima` com conta_ativa; leia a conversa antes de digitar; faça exatamente a ação com o texto exato; confira na tela; `resultado`. "ESPERE": espere com o comando que a ferramenta mostra e chame de novo. No máximo 3 ações feitas por rodada. "NADA AGORA": termine. Bloqueio ou verificação: pare e mande `resultado` com bloqueio: true.
+4. Resposta final, uma linha: SEM NOVIDADE; ou "PRECISA DE VOCÊ:" e o que travou (conta, bloqueio, verificação, captcha, erro que impede seguir)."""
 
 # The weekly prospecting report ("🎯 Prospecção — semana", Monday 8:41, gOqdMBE3) became a section of the weekly
 # review ("🗓️ Revisão da semana", Sunday 19:47, infra/vm/rotinas/bMU33E1T.json): one message instead of two
@@ -43,7 +41,7 @@ HOJE = """Resumo do dia da prospecção Raiz Connect. Só leitura.
 
 TAREFAS = {
     "🎯 Prospecção — buscar": (SIS_BUSCA, BUSCAR, {"minute": "23", "hour": "9,14", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
-    "🎯 Prospecção — executar": (SIS_EXEC, EXECUTAR, {"minute": "8,38", "hour": "9-19", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
+    "🎯 Prospecção — executar": (SIS_EXEC, EXECUTAR, {"minute": "8,38", "hour": "9-21", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
     "🎯 Prospecção — resumo do dia": ("Você só repassa o resumo do dia da prospecção, sem acrescentar nada.", HOJE, {"minute": "17", "hour": "20", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
 }
 

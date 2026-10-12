@@ -34,6 +34,15 @@ INTERVALO = 3 * 60                 # typical spacing between two executed action
 ESPACO = (2 * 60, 6 * 60)          # 12/10 blind review: the real spacing varies 2-6 min (a fixed 3 min looked like a robot)
 HORARIO = (9, 20)                  # executions only within [9h, 20h) local time
 PICO_DM = ("10:30", "14:00")       # no first message, reminder or follow-up while food producers are busiest
+RESPOSTA_ATE = "22:00"             # replies to who wrote go until then (owners read after closing); the rest until 20h
+FOLGA = 6                          # weekday (Monday=0) with only replies: no follow, like, comment or new message
+RAMPA_DM = (5, 8, 10, 12)          # first messages a day in weeks 1, 2, 3 and after; a block in the last 7 days steps back
+REAVALIAR_DIAS = 60                # a profile discarded on the visit (stale, size) comes back to the stock after this
+AGORA_NAO = re.compile(r"agora n[aã]o|sem tempo|depois (eu )?vejo|outra hora|mais pra frente|no momento n[aã]o|"
+                       r"m[eê]s que vem|semana que vem|ocupad", re.I)
+ROBO = re.compile(r"manychat|automation powered|mensagem autom[aá]tica|resposta autom[aá]tica|j[aá] j[aá] (te )?respond|"
+                  r"entraremos em contato|recebemos sua mensagem|em breve (te )?(retornaremos|responderemos)|"
+                  r"obrigad[oa] pelo contato|hor[aá]rio de atendimento", re.I)
 CONSULTAS_DIA = 30                 # profiles/searches read by script with our account, per day (blind review, item 1)
 BLOQUEIO = 48 * 3600               # pause after Instagram blocks an action
 DIAS_DM = 2                        # calendar days after warming up, before the first DM
@@ -496,7 +505,7 @@ def novos_handles(login: str, achados, limite: int = 30) -> list:
     out = []
     for x in lista if isinstance(lista, list) else []:
         h = normalizar(str(x.get("handle") if isinstance(x, dict) else x))
-        if h and h not in ja and h not in out:
+        if h and h not in ja and h not in out and h != "__429__":  # the search script's 429 marker is not a profile
             out.append(h)
     return out[:limite]
 
@@ -726,6 +735,8 @@ def processar_direct(login: str, dados) -> dict:
                 if not lead or lead["etapa"] in ("cliente", "descartado"):
                     continue
                 texto = itens[0].get("texto") or f"({itens[0].get('tipo')})"
+                if ROBO.search(texto):
+                    continue  # an automatic reply (Manychat, "recebemos sua mensagem"): the person did not write yet
                 etapa = lead["etapa"] if lead["etapa"] in ("respondeu", "lead", "demo", "teste") else "respondeu"
                 r = mudar_etapa(login, lead["id"], etapa, texto, "direct")
                 if r and r.get("novidade"):
@@ -1052,6 +1063,9 @@ def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "d
             return {**lead, "novidade": False}
         lead["etapa"], lead["atualizado"] = etapa, agora()
     lead["historico"].append({"em": agora(), "tipo": f"etapa:{etapa}", "texto": nota, "onde": onde})
+    if (etapa == "descartado" and not any(h["tipo"] in TIPOS_DIRECT for h in lead["historico"])
+            and _motivo_descarte(nota) in ("parado", "tamanho") and not re.search(r"rede|franquia", nota, re.I)):
+        lead["reavaliar_em"] = agora() + REAVALIAR_DIAS * 86400  # never contacted: a stale or small profile may change
     if etapa in FINAIS or etapa in ("respondeu", "lead"):  # pending outreach stops when they answer or are closed
         for a in d["acoes"]:
             if a["lead_id"] == lead["id"] and a["estado"] in ("proposta", "aprovada") and a["tipo"] != "resposta":
@@ -1072,6 +1086,11 @@ def fechar_vencidos(login: str) -> int:
         elif (l["etapa"] == "abordado" and not l.get("interagiu")
               and agora() - l["atualizado"] > DIAS_LEMBRETE * 86400 + ESPERA_FIM):
             l["etapa"], l["atualizado"] = "sem_resposta", agora()  # no reminder for them: closes after the same wait
+            n += 1
+        elif l["etapa"] == "descartado" and l.get("reavaliar_em") and agora() >= l["reavaliar_em"]:
+            l.pop("reavaliar_em")  # back to the stock; the visit checks it again before following
+            l["etapa"], l["atualizado"], l["conferir_atividade"], l["reaberto_em"] = "novo", agora(), True, agora()
+            l["historico"].append({"em": agora(), "tipo": "etapa:novo", "texto": "volta ao estoque para nova avaliação"})
             n += 1
     if n:
         salvar(login, d)
@@ -1116,11 +1135,19 @@ def _alvos_fontes(d: dict, alvo: int) -> dict:
     return {o: round(alvo * pesos[o] / total) for o in ORIGENS}
 
 
+def _tentados(d: dict) -> set:
+    """Leads whose warm-up failed or was cancelled (a failed visit is not retried) — since they came back to the stock,
+    when they did (REAVALIAR_DIAS)."""
+    reaberto = {l["id"]: float(l.get("reaberto_em") or 0) for l in d["leads"]}
+    return {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")
+            and float(a.get("criada") or 0) >= reaberto.get(a["lead_id"], 0)}
+
+
 def estoque(login: str) -> dict:
     """New leads ready to be warmed (Instagram, never tried) vs the target, in total and per source:
     {"prontos", "alvo", "faltam", "por_fonte": {origem: {"prontos", "alvo", "faltam", "a_conferir"}}}."""
     d = carregar(login)
-    tentados = {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")}
+    tentados = _tentados(d)
     novos = [l for l in d["leads"] if l["etapa"] == "novo" and l["canal"] == "instagram" and l["id"] not in tentados]
     alvo = int(d["config"].get("estoque_alvo") or ESTOQUE_ALVO)
     alvos = _alvos_fontes(d, alvo)
@@ -1139,7 +1166,7 @@ def _fila_repor(login: str) -> list:
     d = carregar(login)
     if not d["config"].get("auto") or cotas(login)["aquecer"] <= 0:
         return []
-    tentados = {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")}
+    tentados = _tentados(d)
     candidatos = [l for l in devidos(login)["aquecer"] if l["id"] not in tentados]
     if not candidatos or candidatos[0].get("interagiu"):
         return candidatos[:1]
@@ -1244,10 +1271,22 @@ def _seguimento_devido(d: dict, lead: dict) -> bool:
              and CALCULADORA.search(a.get("texto") or "")]
     if not links:
         return False
-    falas = [h["em"] for h in lead["historico"] if h["tipo"] in {f"etapa:{e}" for e in RESPOSTAS_ETAPAS}]
+    falas = [h for h in lead["historico"] if h["tipo"] in {f"etapa:{e}" for e in RESPOSTAS_ETAPAS}]
+    if falas and AGORA_NAO.search(str(falas[-1].get("texto") or "")):
+        return False  # "agora não": the link went with the reply; no follow-up (blind review 2, item 6)
+    falas = [h["em"] for h in falas]
     if falas and max(falas) > max(links):
         return False  # the person wrote after the link: that is a reply, not a follow-up
     return _dias_desde(max(links)) >= DIAS_SEGUIMENTO
+
+
+def variante_sugerida(d: dict, lead: dict) -> str:
+    """The first message's variant for this lead: the fixed one, else A or B by the lead's id (half and half, and the
+    agent never picks — it would put B on the "best" profiles and bias the comparison)."""
+    fixa = d["config"].get("variante_fixa")
+    if fixa in ("A", "B"):
+        return fixa
+    return "A" if int(hashlib.sha256(str(lead.get("id")).encode()).hexdigest(), 16) % 2 == 0 else "B"
 
 
 def devidos(login: str) -> dict:
@@ -1261,8 +1300,8 @@ def devidos(login: str) -> dict:
         dias = _dias_desde(l["atualizado"])
         if l["etapa"] == "novo":
             out["aquecer"].append(l)
-        elif l["etapa"] == "aquecido" and dias >= DIAS_DM:
-            out["dm_abertura"].append(l)
+        elif l["etapa"] == "aquecido" and dias >= (1 if l.get("interagiu") else DIAS_DM):
+            out["dm_abertura"].append(l)  # who answered our comment or followed back: next day, the exchange still fresh
         elif l["etapa"] == "abordado" and dias >= DIAS_LEMBRETE and l.get("interagiu"):
             out["dm_lembrete"].append(l)  # the others' first message sits in "requests": no second one (blind review)
         elif _seguimento_devido(d, l):
@@ -1279,11 +1318,19 @@ LIMITE_PILOTO = {"aquecer": 15, "dm_abertura": 5, "dm_lembrete": 5, "resposta": 
 
 
 def limites(d: dict) -> dict:
-    """Daily limits: the config's, else the pilot's for the first 7 days, else the playbook's."""
+    """Daily limits: the config's, else the pilot's for the first 7 days, else the playbook's — with the first messages
+    going up a step a week (RAMPA_DM; 12/10 blind review: 5 to 12 overnight on day 8), one step back after a block in
+    the last 7 days."""
     if d["config"].get("limites"):
         return {**LIMITE_DIA, **d["config"]["limites"]}
     inicio = d["config"].get("inicio") or (min([l["criado"] for l in d["leads"]] or [agora()]))
-    return LIMITE_PILOTO if agora() - inicio < 7 * 86400 else LIMITE_DIA
+    semana = int(max(0, agora() - inicio) // (7 * 86400))
+    if semana == 0:
+        return dict(LIMITE_PILOTO)
+    degrau = min(semana, len(RAMPA_DM) - 1)
+    if any(agora() - float(b.get("em") or 0) < 7 * 86400 for b in d.get("bloqueios") or []):
+        degrau = max(0, degrau - 1)
+    return {**LIMITE_DIA, "dm_abertura": RAMPA_DM[degrau]}
 
 
 def _usadas_hoje(d: dict, tipo: str) -> int:
@@ -1426,7 +1473,7 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
         if tipo == "dm_abertura" and fixa in ("A", "B"):
             variante = fixa
         elif tipo == "dm_abertura" and variante not in ("A", "B"):
-            variante = "A" if sum(1 for a in d["acoes"] if a["tipo"] == "dm_abertura") % 2 == 0 else "B"
+            variante = variante_sugerida(d, lead)
         acao = {"id": _id(), "lead_id": lid, "tipo": tipo, "texto": texto[:900], "variante": variante,
                 "alvo": str(item.get("alvo") or lead["url"])[:200], "base": str(item.get("base") or "")[:300],
                 "estado": "proposta", "criada": agora()}
@@ -1455,13 +1502,16 @@ SEM perguntar a ele, então você é a última barreira antes de uma pessoa real
 1. Afirma um fato sobre o negócio (prato, unidade, novidade, número, cidade) que NÃO está nos DADOS DO LEAD nem no que
    o agente diz ter visto. Pergunta não é afirmação ("ele entra no kit?" é aceitável); elogio a algo que está nos
    dados também é. Dizer que o Matheus está na cidade do lead ("aqui em {cidade}") quando ela não é Salvador, ou que
-   ele também produz comida, é fato inventado.
+   ele também produz comida, é fato inventado. O detalhe do post ou do perfil citado na mensagem ou no comentário tem
+   de aparecer no trecho que o agente copiou (legenda, texto na arte, preço, bio, cardápio); a descrição automática do
+   Instagram ("Pode ser uma imagem de…") não é fato: reprove o que só se apoia nela.
 2. Fere o playbook: comentário de aquecimento que vende, cita a Raiz, um sistema, chama para o direct ou faz pergunta
    de compra ("vocês fazem…?", "entregam em…?", "quanto custa?"); jargão (ERP, sistema de gestão, CMV, solução) na
    abertura; promessa de resultado ou número inventado; pressão; link fora do lugar (os únicos links permitidos são a
    calculadora de precificação e o simulador de delivery da Raiz, e só na resposta a quem escreveu: primeira
    mensagem, lembrete e seguimento vão sem link); repetir o link a quem já recebeu; oferta ou link para quem disse
-   não; primeira mensagem sem a assinatura do Matheus. A primeira mensagem pode ser só uma pergunta sobre como a
+   não ("agora não", "sem tempo" e "depois vejo" não são não: o playbook manda deixar o link); primeira mensagem sem
+   a assinatura do Matheus. A primeira mensagem pode ser só uma pergunta sobre como a
    pessoa precifica (variante A) ou já trazer a oferta da calculadora grátis pedindo licença para mandar o link
    (variante B): as duas são válidas. Pedir a receita da pessoa ("me manda a receita", ficha técnica) fere o
    playbook: soa invasivo.
@@ -1633,7 +1683,7 @@ def revisar_textos(d: dict, acoes: list, login: str = "") -> dict:
                       + (f"JÁ RECEBEU: {lead['historico'][-1]['texto'][:300]}\n" if lead.get("historico") and a["tipo"] != "resposta" else "")
                       + (f"O QUE A PESSOA DISSE: {_disse(lead)}\n" if a["tipo"] == "resposta" else "")
                       + f"TEXTO:\n«{a['texto']}»")
-    regras = REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:12000] if playbook.exists() else "")
+    regras = REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:16000] if playbook.exists() else "")
     guardados = _ler_vereditos(login) if login else {}
     chaves = {a["id"]: hashlib.sha256(f"{regras}\n{a['tipo']}\n{b.split(chr(10), 1)[1]}".encode()).hexdigest()[:32]
               for a, b in zip(acoes, blocos)}  # the item's id stays out: the same text for the same lead is the same item
@@ -1839,7 +1889,13 @@ def definir_conta(login: str, handle: str) -> str:
 
 
 CONFERENCIA_VALE = 40 * 60  # an execution round must have read the Direct and the notifications this recently
+COMANDO_ESPERA = "for i in $(seq 18); do sleep 10; echo $i; done"  # prints every 10 s: the terminal tool gives up after 15 s of silence (max 240 s)
 VARREDURA_H = 4  # 12/10 blind review, item 2: every conversation opened one by one ~3x a day (9h-19h), not every round
+
+
+def _interagiu_hoje(lead: dict) -> bool:
+    quando = float(lead.get("interagiu") or 0)
+    return quando > 86400 and _hoje_local(quando) == _hoje_local()
 
 
 def varredura_devida(d: dict) -> bool:
@@ -1887,20 +1943,26 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
     if not esperada:
         return None, "a conta de Instagram da prospecção não está configurada: nada é executado"
     if ativa in CONTAS_PROIBIDAS:
-        return None, f"a conta ativa é @{ativa} (pessoal): troque para @{esperada} pelo seletor de contas e chame de novo"
+        return None, f"a conta ativa é @{ativa} (pessoal): troque para @{esperada} (skill, seção 1) e chame de novo"
     if ativa != esperada:
-        return None, (f"confirme a conta ATIVA no Instagram (o @ que aparece no menu do perfil) e chame `proxima` com "
-                      f"conta_ativa; tem que ser @{esperada}")
+        return None, (f"confirme a conta ATIVA no Instagram (skill, seção 1) e chame `proxima` com conta_ativa; tem que "
+                      f"ser @{esperada}")
     if d["config"].get("exigir_conferencia") and agora() - (d.get("conferencia") or {}).get("em", 0) > CONFERENCIA_VALE:
         return None, ("antes de executar, confira as respostas: leia o Direct e a página de notificações e chame "
-                      "`prospeccao` acao \"conferido\" com o que viu em cada um")
+                      "`prospeccao` acao \"caixa_lida\" com o que viu em cada um")
     if modo_teste(login) and not d["config"].get("executar_em_teste"):
         return None, "modo teste: nada é executado"
     if agora() < d["bloqueio_ate"]:
         return None, "pausado após bloqueio do Instagram até " + dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M")
     h = _hora_local()
+    hm = dt.datetime.fromtimestamp(agora(), _tz()).strftime("%H:%M")
+    so_respostas = ""
     if not HORARIO[0] <= h < HORARIO[1]:
-        return None, f"fora do horário ({HORARIO[0]}h–{HORARIO[1]}h)"
+        if not (HORARIO[1] <= h and hm < RESPOSTA_ATE):
+            return None, f"fora do horário ({HORARIO[0]}h–{HORARIO[1]}h; respostas até {RESPOSTA_ATE})"
+        so_respostas = f"depois das {HORARIO[1]}h só respostas a quem escreveu"
+    elif dt.datetime.fromtimestamp(agora(), _tz()).weekday() == int(d["config"].get("folga", FOLGA)):
+        so_respostas = "dia de folga da conta: só respostas a quem escreveu"
     for x in d["acoes"]:
         if x["estado"] == "aprovada" and x.get("em_execucao") and agora() - x["em_execucao"] > RESERVA:
             _mudar(d, x, "incerta", "entregue a uma rodada e sem resultado: conferir na tela antes de qualquer reenvio")
@@ -1909,6 +1971,8 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
         incerta["em_execucao"], incerta["reservada_por"] = agora(), quem
         salvar(login, d)
         return {**incerta, "lead": _lead(d, incerta["lead_id"]) or {}, "conferir": True}, ""
+    if so_respostas or agora() < float(d["config"].get("api_pausa_ate") or 0):
+        repor = False  # no new warm-up now (rest day, evening, or the account's queries are limited)
     if repor and not any(x["estado"] == "aprovada" for x in d["acoes"]) and not _fila_repor(login):
         # nothing to do at all: say so now, not "wait for the spacing" (11/10 17h20: the round waited on nothing)
         return None, "nenhuma ação aprovada esperando"
@@ -1930,6 +1994,10 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
         if a["tipo"] in FORA_DO_PICO and _no_pico():
             pico = True
             continue  # stays approved for after the peak
+        if so_respostas and a["tipo"] != "resposta":
+            continue  # stays approved for the next working hours
+        if a["tipo"] == "aquecer" and agora() < float(d["config"].get("api_pausa_ate") or 0):
+            continue  # 429 on our account: no follow/like until the next day (blind review 2, item 3)
         executadas_hoje = sum(1 for x in d["acoes"] if x["tipo"] == a["tipo"] and x["estado"] == "executada"
                               and _hoje_local(x.get("executada_em")) == _hoje_local())
         if executadas_hoje >= limites(d)[a["tipo"]]:
@@ -1943,6 +2011,8 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
     if pico:
         return None, (f"primeiras mensagens, lembretes e seguimentos esperam o fim do pico de produção ({PICO_DM[1]}); "
                       "nada mais agora")
+    if so_respostas:
+        return None, f"{so_respostas}; nada mais agora"
     return None, "nenhuma ação aprovada esperando"
 
 
@@ -1952,6 +2022,46 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
 # reviewer checks it; only an approved comment is published. Also for warm-ups done in the last days (catch-up).
 DIAS_COMENTARIO = 3
 TENTATIVAS_COMENTARIO = 2  # the reviewer said no twice: no comment, just follow and like (12/10 blind review, item 3)
+
+
+POST_COMENTARIO_DIAS = 7  # blind review 2, item 5: a comment on a post weeks old looks like digging and is rarely answered
+_MESES = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6, "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12}
+
+
+def idade_post(base: str) -> int | None:
+    """Days since the post the agent cites in `base`: AAAA-MM-DD, DD/MM[/AAAA], "N de outubro", "ontem", "hoje",
+    "há N dias/semanas", "N d", "N sem", "N h". None when it names no date."""
+    t = str(base or "").lower()
+    hoje = dt.datetime.fromtimestamp(agora(), _tz()).date()
+
+    def antes_de_hoje(data: dt.date) -> int:
+        return (hoje - (data.replace(year=data.year - 1) if data > hoje else data)).days
+
+    try:
+        m = re.search(r"\b(\d{4})-(\d{1,2})-(\d{1,2})\b", t)
+        if m:
+            return (hoje - dt.date(int(m[1]), int(m[2]), int(m[3]))).days
+        m = re.search(r"\b(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?\b", t)
+        if m:
+            if m[3]:
+                ano = int(m[3]) + (2000 if int(m[3]) < 100 else 0)
+                return (hoje - dt.date(ano, int(m[2]), int(m[1]))).days
+            return antes_de_hoje(dt.date(hoje.year, int(m[2]), int(m[1])))
+        m = re.search(r"\b(\d{1,2}) de (jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)", t)
+        if m:
+            return antes_de_hoje(dt.date(hoje.year, _MESES[m[2]], int(m[1])))
+    except ValueError:
+        return None
+    if re.search(r"\bontem\b", t):
+        return 1
+    if re.search(r"\bhoje\b", t):
+        return 0
+    m = re.search(r"\b(?:h[aá] )?(\d{1,3}) ?(d|dias?|sem|semanas?)\b", t)
+    if m:
+        return int(m[1]) * (7 if m[2].startswith("sem") else 1)
+    if re.search(r"\bh[aá] \d{1,2} ?(h|horas?|min|minutos?)\b", t):
+        return 0
+    return None
 
 
 def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, str]:
@@ -1981,6 +2091,12 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
             motivo = "espaçamento: próxima a partir de " + dt.datetime.fromtimestamp(ultima + _espera(ultima), _tz()).strftime("%H:%M")
     if motivo:
         return False, motivo
+    idade = idade_post(base)
+    if idade is None:  # not a reviewer attempt: the text may be fine, the evidence is missing
+        return False, ("REESCREVA a base: copie entre aspas o trecho escrito do post que você comenta e ponha a data dele "
+                       "(AAAA-MM-DD)")
+    if idade > POST_COMENTARIO_DIAS:
+        return False, f"o post é de {idade} dias atrás: só comente em post de até {POST_COMENTARIO_DIAS} dias"
     tentativas = (a.get("comentario") or {}).get("tentativas", 0)
     if tentativas >= TENTATIVAS_COMENTARIO:
         return False, f"{TENTATIVAS_COMENTARIO} versões reprovadas pelo revisor: siga sem comentário neste perfil"
@@ -2088,8 +2204,10 @@ def aviso_sem_acao(motivo: str) -> str:
     if "confira as respostas" in motivo:
         return f"AINDA NÃO: {motivo}."
     if motivo.startswith("espaçamento"):
-        return (f"ESPERE: {motivo}. Aguarde até esse horário (ex.: code_execution_tool com `sleep 180`) e chame "
-                "`proxima` de novo. A rodada só termina com NADA AGORA ou depois de 3 ações feitas.")
+        return (f"ESPERE: {motivo}. Aguarde até esse horário com code_execution_tool (terminal): "
+                f"`{COMANDO_ESPERA}` espera cerca de 3 min; repita até dar o horário e chame `proxima` de "
+                "novo. Se o horário passar do início da próxima rodada (minutos 8 e 38), termine. A rodada só termina com "
+                "NADA AGORA ou depois de 3 ações feitas.")
     return f"NADA AGORA: {motivo}. Termine a rodada."
 
 
@@ -2124,6 +2242,7 @@ def resultado(login: str, aid: str, ok: bool, detalhe: str = "", bloqueio: bool 
         lead["historico"].append({"em": agora(), "tipo": a["tipo"], "texto": a["texto"][:300]})
     if bloqueio:
         d["bloqueio_ate"] = agora() + BLOQUEIO
+        d.setdefault("bloqueios", []).append({"em": agora(), "detalhe": str(detalhe or "")[:300]})
     salvar(login, d)
     _anotar(login, a, lead, "executada" if ok else "falhou",
             ("conferida na tela depois de incerta: " if era_incerta else "") + detalhe, ctx_id=quem)
@@ -2582,18 +2701,23 @@ def resumo_contexto(login: str) -> str:
         if lista:
             linhas.append(f"\n## Devem receber «{tipo}» agora ({len(lista)})")
             linhas += [f"- [{l['id']}] @{l['handle']} — {l['nome']} ({l['segmento']}, {l['cidade']}; nota {l.get('nota', '—')}); motivo: {l['motivo'][:120]}"
+                       + (f"; ESCREVA A VARIANTE {variante_sugerida(d, l)}" if tipo == "dm_abertura" else "")
                        + (f"; já recebeu: {l['historico'][-1]['texto'][:160]}" if l["historico"] else "") for l in lista[:25]]
     conversas = [l for l in d["leads"] if l["etapa"] in ("abordado", "lembrado", "respondeu", "lead", "demo")]
     if conversas and varredura_devida(d):
         linhas.append(f"\n## VARREDURA COMPLETA do Direct agora ({len(conversas)}) — abra cada uma (perfil → Mensagem), "
-                      "depois `conferido` com varredura: true")
+                      "depois `caixa_lida` com varredura: true")
         linhas += [f"- [{l['id']}] @{l['handle']} ({l['etapa']}); última nossa: {l['historico'][-1]['texto'][:80] if l['historico'] else ''}"
                    for l in conversas[:20]]
     elif conversas:
         proxima_v = dt.datetime.fromtimestamp((d.get("varredura_em") or 0) + VARREDURA_H * 3600, _tz()).strftime("%H:%M")
-        linhas.append(f"\n## Direct nesta rodada: só o que é novo ({len(conversas)} conversas em andamento; varredura "
-                      f"completa a partir das {proxima_v}). Veja o número de não lidas no ícone de Mensagens, as "
-                      "solicitações e as notificações; abra só as conversas com mensagem nova.")
+        recentes = [l for l in conversas if _interagiu_hoje(l)
+                    or any(h["tipo"] in TIPOS_DIRECT and agora() - h["em"] < 72 * 3600 for h in l["historico"])]
+        linhas.append(f"\n## Direct nesta rodada (varredura completa a partir das {proxima_v}): veja o contador de não lidas "
+                      "e as solicitações"
+                      + (f"; abra (perfil → Mensagem) estas {len(recentes)}, as mais recentes:" if recentes else ".")
+                      + " Contador acima de zero sem você achar de quem é: faça a varredura completa agora.")
+        linhas += [f"- [{l['id']}] @{l['handle']} ({l['etapa']})" for l in recentes[:15]]
     conhecidos = sorted(l["handle"] for l in d["leads"])
     linhas.append(f"\n## Já conhecidos ({len(conhecidos)}) — não registre de novo\n" + (", ".join(conhecidos[-400:]) or "(nenhum)"))
     rej = d.get("rejeitados") or {}

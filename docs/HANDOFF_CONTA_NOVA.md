@@ -271,6 +271,7 @@ scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fic
   link, `_espera` 2–6 min, `PICO_DM` 10h30–14h, `limite_consulta`/`liberar_consultas`/`reservar_consultas` (429 até o
   dia seguinte; 2 dias seguidos até liberar; 30 consultas/dia), `varredura_devida` (Direct completo a cada 4 h),
   `pausar_por_bloqueio` (bloqueio sem acao_id), nota "lê o Direct", AB_MINIMO 100. Execução às :08 e :38.
+- **2ª avaliação cega (12/10, noite)**: skill 5.0.0. No código: `RESPOSTA_ATE` 22h e `FOLGA` (domingo) só com respostas, `RAMPA_DM` (5/8/10/12 por semana, um degrau abaixo depois de bloqueio), `api_pausa_ate` também segura o «aquecer», `AGORA_NAO` (sem seguimento), `ROBO` (resposta automática não é fala), `variante_sugerida` (o contexto diz a variante; o agente não escolhe), `reavaliar_em` (descarte na visita por parado/pequeno volta em 60 dias), `idade_post` (comentário só em post de até 7 dias, com a data na `base`), `COMANDO_ESPERA` (o terminal desiste com 15 s sem saída), ações `caixa_lida`/`estoque_conferido` (os nomes antigos continuam valendo). Execução das 9h às 21h. O script da caixa de entrada do Direct (`direct_script`) segue sem uso: a API web deu 404 em 10/10.
 - **Skill nova não pega sozinho nas rodadas**: a conversa que já carregou a skill guarda o texto antigo ("already
   loaded in visible chat history"). Depois de `implantar.py <plugin> --skill <skill>`, o próprio implantar lista as
   conversas a reiniciar; reinicie com `resetar_chat.py` só quando a rodada estiver parada (12/10: busca laMIuaPt e

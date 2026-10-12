@@ -32,8 +32,9 @@ quê, quando, quantas vezes e em que ordem é regra do código, nunca do modelo.
 ## Travas (invariantes que o código garante)
 - Remetente sempre a conta da Raiz; a pessoal é recusada.
 - No máximo 2 mensagens sem resposta por lead. Uma resposta por fala da pessoa; robô (Manychat) não é fala.
-- Limites por dia por tipo; só das 9h às 20h; 3 min entre ações; `conferido` (Direct e notificações lidos) antes de
-  executar.
+- Limites por dia por tipo, com as primeiras mensagens subindo por semana (5 → 8 → 10 → 12; um degrau abaixo depois
+  de bloqueio); das 9h às 20h, e depois só respostas até 22h; domingo só respostas; de 2 a 6 min entre ações, variando;
+  `caixa_lida` (Direct e notificações lidos; antigo `conferido`) antes de executar.
 - Vaga de «aquecer» livre (descarte na visita) é reposta pela `proxima` com o melhor lead novo, sem texto, um por vez
   (só com a pré-aprovação ligada); visita que falhou não é tentada de novo.
 - Esperas em dias de calendário (aquecido no dia D → primeira mensagem a partir do dia D+2; lembrete D+3).
@@ -42,7 +43,10 @@ quê, quando, quantas vezes e em que ordem é regra do código, nunca do modelo.
   cada uma (quem interagiu com a Raiz passa na frente) e `metricas_fontes` mede o funil de cada fonte.
 - Achar o Instagram de uma empresa: o @ da fonte, depois o site da empresa (grátis), por último a busca paga (teto
   por dia). Empresa já contatada pelo WhatsApp não entra.
-- Bloqueio de ação do Instagram pausa 48 h. O 429 de consulta não é bloqueio: volta às fontes.
+- Bloqueio de ação do Instagram pausa 48 h. O 429 de consulta não é bloqueio: volta às fontes, e nenhum «aquecer»
+  sai até o dia seguinte.
+- Descarte na visita por perfil parado ou pequeno/grande volta ao estoque em 60 dias (outro negócio, rede e quem disse
+  não, nunca). Comentário só em post de até 7 dias, com a data na `base`.
 - Texto pré-aprovado passa pelo revisor (modelo independente). Se o motivo dele contradiz o texto (regra simples
   comprova o que ele diz faltar), há uma 2ª revisão com o fato. Sem revisor, nada sai sozinho (vai ao ✅).
 
