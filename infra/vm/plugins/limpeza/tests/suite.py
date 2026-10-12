@@ -34,6 +34,11 @@ def _carregar(nome: str, arquivo: Path):
     return m
 
 
+def eq(a, b, msg):
+    if a != b:
+        raise Falha(f"{msg}: esperado {b!r}, veio {a!r}")
+
+
 class Vivo:
     def __init__(self, vivo=True, erro=False):
         self.vivo, self.erro = vivo, erro
@@ -96,6 +101,23 @@ class Suite:
         ociosa = self._tarefa("ociosa", "idle", atualizada_min=600, ultima_min=600)
         ok(self._soltas([erro, recente, avulsa, ociosa]) == ["erro"],
            "só a recorrente em erro há mais de 5 min volta; tarefa avulsa e ociosa ficam como estão")
+
+    def t_erro_de_conexao_roda_de_novo_na_hora(self):
+        # 12/10 review: a round lost because the proxy was not up yet waited for its next time (hours)
+        def com_erro(uuid, texto, minutos):
+            t = self._tarefa(uuid, "error", atualizada_min=minutos, ultima_min=minutos)
+            t.last_result = texto
+            return t
+
+        conexao = com_erro("conexao", "ERROR: litellm.APIConnectionError: Connection error.", 12)
+        outro = com_erro("outro", "ERROR: KeyError: 'acao'", 12)
+        velha = com_erro("velha", "ERROR: Connection refused", 200)
+        repetidas = {}
+        agir = lambda: {s["tarefa"]: s.get("acao") for s in self.dr.destravar(  # noqa: E731
+            [conexao, outro, velha], {}, lambda cid: None, time.time(), "running", "error", None, {}, 0.0, repetidas)}
+        eq(agir(), {"conexao": "repetir", "outro": None, "velha": None},
+           "queda de conexão recente roda de novo já; outro erro e falha antiga só voltam a ociosa")
+        eq(agir(), {"conexao": None, "outro": None, "velha": None}, "a mesma falha não é repetida duas vezes")
 
     def t_rodada_pausada_e_retomada_ou_cancelada(self):
         # 12/10: the loop detector paused the search round's chat; nobody resumes a scheduled round, so it stayed stuck

@@ -4,7 +4,9 @@ task that has been "running" for more than 90 minutes with no live run goes back
 
 A recurring task that ended in "error" is never run again either (the scheduler only runs idle tasks; 11/10: the
 prospecting search and the NEXOS watch died for good when the model proxy was down during a reboot). A recurring
-task in error for more than ERRO_MIN minutes goes back to idle, so it runs again at its next scheduled time.
+task in error for more than ERRO_MIN minutes goes back to idle, so it runs again at its next scheduled time; when the
+error was a dropped connection (proxy or model not reachable for a moment) less than REPETIR_ERRO_MIN minutes ago, it
+is run again right away, once per failed run (12/10 review: the round lost to a boot waited for its next time).
 
 12/10: the check looked for the run only in the chat (ctx.task), but the scheduler keeps its own run (a DeferredTask
 in TaskScheduler._running_deferred_tasks), so every scheduled run looked dead; and it counted the minutes from
@@ -19,6 +21,7 @@ stuck behind it. A scheduled round paused for more than PAUSADA_MIN minutes is r
 hours, the run is cancelled (the round runs again at its next time) and the chat unpaused."""
 
 import json
+import re
 import time
 from pathlib import Path
 
@@ -29,6 +32,10 @@ PRESA_MIN = 90
 ERRO_MIN = 5
 PAUSADA_MIN = 10
 REPETIR_H = 2
+REPETIR_ERRO_MIN = 60
+CONEXAO = re.compile(r"connect|conex|timed? ?out|unreachable|refused|reset by peer|\b50[234]\b|bad gateway|"
+                     r"service unavailable|name or service not known|temporary failure", re.I)
+REPETIDAS = Path("/a0/usr/limpeza/repetidas.json")  # task -> the failed run already re-run (one re-run per failure)
 LOG = Path("/a0/usr/limpeza/log.jsonl")
 PAUSAS = Path("/a0/usr/limpeza/pausadas.json")  # module state does not survive the job loop: kept in a file
 MARCA = Path("/a0/usr/marcas/limpeza_rotinas")
@@ -78,7 +85,7 @@ def _inicio_processo() -> float:
 
 
 def destravar(tarefas, rodando: dict, tarefa_do_chat, agora: float, running, error, pausada=None,
-              pausas: dict | None = None, inicio: float = 0.0) -> list[dict]:
+              pausas: dict | None = None, inicio: float = 0.0, repetidas: dict | None = None) -> list[dict]:
     """Which tasks go back to idle (or get resumed / cancelled). `rodando`: the scheduler's live runs by task uuid;
     `tarefa_do_chat(id)`: the run of the task's chat, or None; `pausada(id)`: the chat is paused; `pausas`: per task,
     when it was first seen paused and when it was last resumed (updated in place)."""
@@ -86,9 +93,16 @@ def destravar(tarefas, rodando: dict, tarefa_do_chat, agora: float, running, err
     soltas = []
     for t in tarefas:
         if t.state == error and getattr(t, "schedule", None) is not None:
-            m = _minutos(getattr(t, "last_run", None) or getattr(t, "updated_at", None), agora)
+            quando = getattr(t, "last_run", None) or getattr(t, "updated_at", None)
+            m = _minutos(quando, agora)
             if m > ERRO_MIN:
-                soltas.append({"tarefa": t.uuid, "nome": t.name, "erro_min": int(m)})
+                item = {"tarefa": t.uuid, "nome": t.name, "erro_min": int(m)}
+                marca = quando.isoformat() if quando else ""
+                if (repetidas is not None and m <= REPETIR_ERRO_MIN and marca and repetidas.get(t.uuid) != marca
+                        and CONEXAO.search(str(getattr(t, "last_result", "") or ""))):
+                    item["acao"] = "repetir"
+                    repetidas[t.uuid] = marca
+                soltas.append(item)
             continue
         if t.state != running:
             if t.uuid in pausas:
@@ -143,11 +157,16 @@ class DestravarRotinas(Extension):
                 pausas = json.loads(PAUSAS.read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 pausas = {}
+            try:
+                repetidas = json.loads(REPETIDAS.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                repetidas = {}
             tarefas = {t.uuid: t for t in sched.get_tasks()}
             soltas = destravar(tarefas.values(), rodando, tarefa_do_chat, time.time(), TaskState.RUNNING, TaskState.ERROR,
-                               pausada, pausas, _inicio_processo())
+                               pausada, pausas, _inicio_processo(), repetidas)
             PAUSAS.parent.mkdir(parents=True, exist_ok=True)
             PAUSAS.write_text(json.dumps(pausas), encoding="utf-8")
+            REPETIDAS.write_text(json.dumps(repetidas), encoding="utf-8")
             for s in soltas:
                 ctx = AgentContext.get(tarefas[s["tarefa"]].context_id) if tarefas[s["tarefa"]].context_id else None
                 if s.get("acao") == "retomar":
@@ -159,6 +178,11 @@ class DestravarRotinas(Extension):
                     if ctx:
                         ctx.paused = False
                 await sched.update_task(s["tarefa"], state=TaskState.IDLE)
+                if s.get("acao") == "repetir":  # dropped connection: run it now instead of at its next time
+                    try:
+                        await sched.run_task_by_uuid(s["tarefa"])
+                    except Exception as exc:
+                        print(f"limpeza: could not re-run {s['nome']}: {exc}", flush=True)
             if soltas:
                 LOG.parent.mkdir(parents=True, exist_ok=True)
                 with LOG.open("a", encoding="utf-8") as f:
