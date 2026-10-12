@@ -88,8 +88,16 @@ class RevisarAcao(Extension):
             decisao = "permitir"
             analise["resumo"] = f"{analise['resumo']} — pré-aprovado: {liberadas.get('motivo', '')}"[:300]
         if decisao == "perguntar" and rv.livre_instagram(analise, tool_name, args, intencao, cfg):
-            decisao = "permitir"  # the person said Instagram actions need no approval; they get told what was done
+            decisao = "permitir"  # the person said Instagram messages need no approval; he gets told what was done
             analise["resumo"] = f"{analise['resumo']} — Instagram: liberado pelo Matheus"[:300]
+            try:  # "pode me avisar que foi feito": every message let through this way is announced on the phone
+                wa = whatsapp()
+                if wa:
+                    await asyncio.to_thread(wa.enviar, wa.dono(agent.context),
+                                            f"📣 *Instagram (sem pedir ok)* — {agent.context.name or 'tarefa'}\n\n{analise['resumo']}",
+                                            "", "", None, "progresso")
+            except Exception as exc:
+                print(f"aprovacoes: Instagram notice failed: {exc}", flush=True)
         if analise["categoria"] != "nenhuma" and agent.context.id in rv.somente_leitura():
             decisao = "nunca"  # read-only chats (daily brief, proactive research) never change anything
         print(f"aprovacoes: {tool_name} -> {analise['categoria']}/{decisao}: {analise['resumo']}", flush=True)

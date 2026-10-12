@@ -986,6 +986,11 @@ def _auto_aprovar(login: str, out: dict) -> dict:
         if v["aprovado"]:
             _mudar(d, guardada, "aprovada", f"revisor: {v['motivo']}", decidida=agora(), auto=True)
             automaticas.append(guardada)
+        elif sem_aprovacao and _revisor_fora(v["motivo"]):
+            # the reviewer was down or gave no verdict: not a rejection of the text, so it does not use up a version
+            _mudar(d, guardada, "pulada", f"revisor fora do ar: {v['motivo']}", decidida=agora())
+            recusadas.append({"lead_id": guardada["lead_id"], "tipo": guardada["tipo"],
+                              "motivo": f"o revisor está fora do ar agora ({v['motivo'][:80]}): proponha de novo na próxima rodada, sem mudar o texto"})
         elif sem_aprovacao:
             _mudar(d, guardada, "pulada", f"revisor reprovou: {v['motivo']}", decidida=agora(), reprovada_revisor=True)
             versoes = _versoes_reprovadas(d, guardada["lead_id"], guardada["tipo"])
@@ -998,6 +1003,10 @@ def _auto_aprovar(login: str, out: dict) -> dict:
             manuais.append(guardada)
     salvar(login, d)
     return {**out, "propostas": manuais, "automaticas": automaticas, "recusadas": recusadas}
+
+
+def _revisor_fora(motivo: str) -> bool:
+    return bool(re.match(r"(revisor indispon[ií]vel|revisor n[aã]o respondeu)", motivo or "", re.I))
 
 
 def _versoes_reprovadas(d: dict, lid: str, tipo: str) -> int:

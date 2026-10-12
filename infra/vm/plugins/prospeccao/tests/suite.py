@@ -283,10 +283,12 @@ class Suite:
                f"depois de {p.VERSOES_REVISOR} versões, nem vai ao revisor: {out['recusadas']}")
             ok(all(x["estado"] == "pulada" for x in p.carregar(LOGIN)["acoes"] if x["lead_id"] == b), "reprovadas ficam como puladas")
             # revisor fora do ar: nada sai sozinho e nada vai ao celular
-            for modo in ({"erro": True}, {"lixo": True}):
+            for n, modo in enumerate(({"erro": True}, {"lixo": True}, {"erro": True}, {"lixo": True})):
                 self._revisor(**modo)
-                out = p.propor(LOGIN, [{"lead_id": c, "tipo": "dm_abertura", "texto": TEXTOS[3].format(n="Cida") + (" " if modo.get("lixo") else "")}])
+                out = p.propor(LOGIN, [{"lead_id": c, "tipo": "dm_abertura", "texto": TEXTOS[3].format(n="Cida") + " " * n}])
                 eq((out["automaticas"], out["propostas"]), ([], []), f"revisor {modo}: falha fechada, sem celular")
+                ok(out["recusadas"] and "fora do ar" in out["recusadas"][0]["motivo"], f"diz que o revisor está fora, não que reprovou: {out['recusadas']}")
+            eq(p._versoes_reprovadas(p.carregar(LOGIN), c, "dm_abertura"), 0, "revisor fora do ar não gasta as versões do dia")
             # quem desligar o "sem aprovação" volta ao fluxo antigo (vai ao ✅)
             d = p.carregar(LOGIN)
             d["config"]["sem_aprovacao"] = False

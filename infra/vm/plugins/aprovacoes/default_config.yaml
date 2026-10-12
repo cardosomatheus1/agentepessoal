@@ -11,7 +11,7 @@ regras:
   senha_seguranca: nunca      # trocar senha, 2FA, e-mail de recuperação
   chaves_acesso: perguntar    # gerar/revogar tokens e chaves de API
   producao: perguntar         # mexer em sistemas em produção, deploy, banco de dados
-# Instagram (messages, comments, likes, unsending a message): no approval, the person is told (Matheus, 12/10)
+# Instagram messages: no approval, each one is announced on the phone (Matheus, 12/10). Publish and unsend still ask.
 instagram_sem_perguntar: true
 # Actions you chose "Sempre permitir" for (one per line, filled by the buttons)
 sempre_permitir: ""

@@ -47,6 +47,8 @@ DESTRUTIVO = re.compile(
     re.I,
 )
 
+TECLAS_DE_EDICAO = {"backspace", "delete", "control+a", "ctrl+a", "meta+a", "control+backspace", "tab", "escape",
+                    "arrowleft", "arrowright", "arrowup", "arrowdown", "home", "end"}
 PENDENTES: dict[str, dict] = {}  # context id -> approval waiting for the user
 LEITURA = "/a0/usr/aprovacoes/somente_leitura.json"  # chat ids where nothing may change
 ATIVIDADE = "/a0/usr/aprovacoes/atividade"  # <login>.jsonl: every reviewed action and its outcome
@@ -102,6 +104,9 @@ def precisa_revisao(tool: str, args: dict, intencao: str) -> bool:
         acao = str(args.get("action") or "").lower()
         if acao not in ACOES_BROWSER:
             return False
+        tecla = str(args.get("key") or args.get("keys") or args.get("text") or "").strip().lower()
+        if acao in ("press", "press_key", "key") and tecla in TECLAS_DE_EDICAO:
+            return False  # emptying a text box before typing (Control+A, Backspace) changes nothing outside
         return bool(PALAVRAS.search(intencao + " " + _texto(args)))
     if nome in ("code_execution_tool", "code_execution", "terminal"):
         return bool(DESTRUTIVO.search(_texto(args)))
@@ -147,23 +152,20 @@ Responda só JSON: {{"categoria": "<uma das categorias ou nenhuma>", "sempre_per
     }
 
 
-INSTAGRAM = re.compile(r"instagram|@raiz\.connect|\bdirect\b|\breels?\b|coment[aá]rio|\bcurt(ir|ida)\b|\bseguir\b", re.I)
-APAGAR_MENSAGEM = re.compile(r"mensage|coment|envio|unsend|direct", re.I)
+INSTAGRAM = re.compile(r"instagram|@raiz\.connect", re.I)
 
 
 def livre_instagram(analise: dict, tool: str, args: dict, intencao: str, cfg: dict) -> bool:
-    """Matheus (12/10): "não preciso aprovar as coisas do Instagram, pode me avisar que foi feito". Messages,
-    comments, likes/follows and unsending a message on the Instagram go without asking. Payments, passwords, keys
-    and everything outside the Instagram keep their rules."""
+    """Matheus (12/10): "não preciso aprovar as coisas do Instagram, pode me avisar que foi feito". Only a message
+    or comment on the Instagram goes without asking (and he is told). Never: unsend/delete (CLAUDE.md: destructive
+    only with his explicit order), publishing (could be an ad or boost), payments, passwords, keys, other sites.
+    Tightened the same day after the review: the first version also matched everyday words ("seguir", "curtir",
+    "comentário") on any site and let unsend and publish through."""
     if not cfg.get("instagram_sem_perguntar", True) or (tool or "").lower() != "browser":
         return False
-    categoria = analise.get("categoria")
-    texto = f"{intencao} {_texto(args)} {analise.get('resumo', '')}"
-    if not INSTAGRAM.search(texto):
+    if analise.get("categoria") != "mensagem_terceiros":
         return False
-    if categoria in ("mensagem_terceiros", "publicar"):
-        return True
-    return categoria == "apagar" and bool(APAGAR_MENSAGEM.search(texto))
+    return bool(INSTAGRAM.search(f"{intencao} {_texto(args)} {analise.get('resumo', '')}"))
 
 
 def veredito(regras: dict, analise: dict) -> str:

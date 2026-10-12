@@ -12,8 +12,9 @@ Padrão: pagamento, compra e trocar senha/2FA = **nunca**; termos, enviar para a
 terceiros, publicar, apagar, contas reais e produção = **perguntar**. Edite em **Configurações → Plugins →
 Aprovações e regras**.
 
-Instagram: mensagens, comentários, curtidas e cancelar o envio de uma mensagem no Instagram **não pedem
-aprovação** (Matheus, 12/10: "pode me avisar que foi feito"). Desliga com `instagram_sem_perguntar: false`.
+Instagram: **mensagens** no Instagram não pedem aprovação e cada uma é avisada no celular (Matheus, 12/10: "pode
+me avisar que foi feito"). Publicar (pode ser anúncio) e cancelar envio/apagar continuam pedindo. Desliga com
+`instagram_sem_perguntar: false`.
 
 Como decide:
 - Só passam pelo revisor ações que podem mudar algo fora do agente: cliques/teclas no navegador cuja

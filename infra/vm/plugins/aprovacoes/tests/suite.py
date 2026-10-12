@@ -25,18 +25,18 @@ class Suite:
     def t_instagram_sem_perguntar(self):
         rv, cfg = self.rv, {}
         msg = {"categoria": "mensagem_terceiros", "resumo": "Enviar no Instagram para @annasaude.marmitas: «Oi, pessoal»"}
-        ok(rv.livre_instagram(msg, "browser", {"action": "press", "key": "Enter"}, "enviar a resposta aprovada no Direct", cfg),
-           "mensagem no Direct do Instagram passa sem perguntar")
-        com = {"categoria": "publicar", "resumo": "Publicar comentário no post"}
-        ok(rv.livre_instagram(com, "browser", {"action": "click"}, "publicar o comentário aprovado no Instagram", cfg),
-           "comentário no Instagram passa")
-        unsend = {"categoria": "apagar", "resumo": "Cancelar o envio da mensagem duplicada"}
-        ok(rv.livre_instagram(unsend, "browser", {"action": "click"}, "Unsend na conversa do Direct do Instagram", cfg),
-           "cancelar envio de mensagem no Instagram passa")
-        ok(not rv.livre_instagram({"categoria": "apagar", "resumo": "Apagar a conta"}, "browser", {"action": "click"},
-                                  "apagar a conta do instagram", cfg), "apagar conta do Instagram continua perguntando")
+        ok(rv.livre_instagram(msg, "browser", {"action": "press", "key": "Enter"}, "enviar a resposta no Direct do Instagram", cfg),
+           "mensagem no Instagram passa sem perguntar")
+        ok(not rv.livre_instagram({"categoria": "publicar", "resumo": "Publicar no Instagram"}, "browser", {"action": "click"},
+                                  "publicar no Instagram", cfg), "publicar (pode ser anúncio/impulsionar) continua perguntando")
+        ok(not rv.livre_instagram({"categoria": "apagar", "resumo": "Cancelar o envio da mensagem no Instagram"}, "browser",
+                                  {"action": "click"}, "Unsend no Direct do Instagram", cfg),
+           "cancelar envio/apagar continua perguntando (CLAUDE.md: destrutivo só com ordem dele)")
         ok(not rv.livre_instagram({"categoria": "mensagem_terceiros", "resumo": "Enviar e-mail ao cliente"}, "browser",
-                                  {"action": "click"}, "enviar o e-mail no Gmail", cfg), "e-mail fora do Instagram continua perguntando")
+                                  {"action": "click"}, "vou seguir e enviar o e-mail no Gmail", cfg),
+           "palavra comum ('seguir') fora do Instagram não libera")
+        ok(not rv.livre_instagram({"categoria": "mensagem_terceiros", "resumo": "Responder comentário no YouTube"}, "browser",
+                                  {"action": "click"}, "curtir e comentar no YouTube", cfg), "curtir/comentar em outro site não libera")
         ok(not rv.livre_instagram({"categoria": "pagamento", "resumo": "Pagar anúncio no Instagram"}, "browser",
                                   {"action": "click"}, "pagar impulsionamento no Instagram", cfg), "pagamento nunca passa por aqui")
         ok(not rv.livre_instagram(msg, "code_execution_tool", {}, "instagram", cfg), "só ações de navegador")
@@ -44,6 +44,15 @@ class Suite:
            "desligável na configuração")
         ok(rv.veredito({"pagamento": "nunca"}, {"categoria": "pagamento", "sempre_permitida": True}) == "nunca",
            "regra nunca continua acima de tudo")
+
+    def t_teclas_de_edicao_nao_param_a_rodada(self):
+        rv = self.rv
+        for tecla in ("Control+A", "Backspace", "Delete"):
+            ok(not rv.precisa_revisao("browser", {"action": "press", "key": tecla}, "apagar o rascunho do campo antes de digitar"),
+               f"{tecla} para esvaziar o campo não passa pelo revisor")
+        ok(rv.precisa_revisao("browser", {"action": "press", "key": "Enter"}, "enviar a mensagem no Direct"),
+           "Enter (envia) continua passando pelo revisor")
+        ok(rv.precisa_revisao("browser", {"action": "click", "ref": 3}, "apagar a conversa"), "clique de apagar continua revisado")
 
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
