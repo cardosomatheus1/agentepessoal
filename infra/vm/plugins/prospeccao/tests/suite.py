@@ -2116,9 +2116,15 @@ class Suite:
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "seguimento", "texto": texto.replace("E aí", "Oi de novo")}])
         ok(r["recusadas"], "nunca um segundo seguimento")
         self.em(self.relogio + 3600)
-        p.mudar_etapa(LOGIN, lid, "lead", "Ainda não consegui abrir, onde fica mesmo?", "direct")
+        p.mudar_etapa(LOGIN, lid, "lead", "Gostei, mas onde vejo o custo da embalagem?", "direct")
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi! Aqui de novo o link: " + p.LINK_CALCULADORA}])
         ok(r["recusadas"] and "já recebeu o link" in r["recusadas"][0]["motivo"], f"o link não se repete: {r['recusadas']}")
+        self.em(self.relogio + 400)
+        self._executar(lid, "resposta", "Na calculadora tem um campo só pra embalagem, logo depois dos ingredientes.")
+        self.em(self.relogio + 3600)
+        p.mudar_etapa(LOGIN, lid, "lead", "Ainda não consegui abrir, manda de novo?", "direct")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Claro! Aqui de novo: " + p.LINK_CALCULADORA}])
+        ok(r["propostas"] or r.get("automaticas"), f"pediu de novo ou não conseguiu abrir: vai uma segunda vez ({r['recusadas']})")
         outro = self._aquecido("seg2")
         self._executar(outro, "dm_abertura", TEXTOS[1].format(n="Bia"))
         p.mudar_etapa(LOGIN, outro, "respondeu", "pode mandar!", "direct")
@@ -2126,8 +2132,18 @@ class Suite:
         self._executar(outro, "resposta", "Oi, pessoal da Bia! Aqui está a calculadora grátis: " + p.LINK_CALCULADORA)
         self.em(self.relogio + 3600)
         p.mudar_etapa(LOGIN, outro, "lead", "Vou testar hoje à noite, obrigada!", "direct")
+        terceiro = self._aquecido("seg3")
+        self._executar(terceiro, "dm_abertura", TEXTOS[2].format(n="Cris") if len(TEXTOS) > 2 else DM_A)
+        p.mudar_etapa(LOGIN, terceiro, "respondeu", "pode mandar!", "direct")
+        self.em(self.relogio + 400)
+        self._executar(terceiro, "resposta", "Cris, essa conta de quanto sobra em cada encomenda fica fácil com a nossa ferramenta: "
+                       + p.LINK_CALCULADORA)
+        self.em(self.relogio + 3600)
+        p.mudar_etapa(LOGIN, terceiro, "lead", "E se eu vender por quilo, como faço a conta da embalagem?", "direct")
         self.em(self.relogio + 3 * 86400)
-        ok(all(l["handle"] != "seg2" for l in p.devidos(LOGIN)["seguimento"]), "escreveu depois do link: é resposta, não seguimento")
+        devidos = {l["handle"] for l in p.devidos(LOGIN)["seguimento"]}
+        ok("seg2" in devidos, "só agradeceu o link: o seguimento continua valendo")
+        ok("seg3" not in devidos, "escreveu de verdade depois do link: é resposta, não seguimento")
 
     def t_resposta_a_quem_disse_nao(self):
         p = self.p
@@ -2303,6 +2319,60 @@ class Suite:
         eq((r1["novidade"], r2["novidade"], r3["novidade"]), (True, False, True), "a mesma fala relida não é nova; outra fala é")
         eq(sum(1 for h in p._lead(p.carregar(LOGIN), lid)["historico"] if h["tipo"] == "interagiu"), 2, "duas entradas, não três")
 
+    def t_vai_passar_pro_dono(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("dono1")
+        self._executar(lid, "dm_abertura", DM_A)
+        p.mudar_etapa(LOGIN, lid, "respondeu", "Oi! Vou passar pro dono, ele que vê isso", "direct")
+        self.em(self.relogio + 400)
+        self._executar(lid, "resposta", "Obrigado! Fico no aguardo por aqui.")
+        self.em(self.relogio + 86400)
+        eq(p.devidos(LOGIN)["seguimento"], [], "no dia seguinte, ainda não")
+        self.em(self.relogio + p.DIAS_VAI_PASSAR * 86400)
+        d = p.carregar(LOGIN)
+        eq(p.motivo_seguimento(d, p._lead(d, lid)), "vai_passar", "2 dias depois: pergunte se conseguiu falar")
+
+    def t_entrada_de_quem_escreveu_sozinho(self):
+        """Blind review 4, item 3: someone outside the registry writes to @raiz.connect."""
+        p = self.p
+        self.em(self.hora(10))
+        ok(p.entrou_aviso(LOGIN, "@fornecedor_x", "Oi, vendemos embalagens, posso mandar o catálogo?"), "primeira vez: avisa")
+        ok(not p.entrou_aviso(LOGIN, "fornecedor_x", "Vendemos embalagens, posso mandar o catálogo??"), "relido: não avisa de novo")
+        out = p.registrar_entrada(LOGIN, "@doceria_nova", "Vi o comentário de vocês, quanto custa o sistema?")
+        ok(out.get("lead_id") and not out.get("existia"), f"quem falou da Raiz entra no registro: {out}")
+        r = p.mudar_etapa(LOGIN, out["lead_id"], "respondeu", "Vi o comentário de vocês, quanto custa o sistema?", "direct")
+        ok(r and r["novidade"], "a fala dela é uma resposta como outra qualquer")
+        d = p.carregar(LOGIN)
+        ok(all(l["id"] != out["lead_id"] for l in p.devidos(LOGIN)["aquecer"]), "não vai para o aquecimento")
+        eq(p.registrar_entrada(LOGIN, "doceria_nova", "de novo")["existia"], True, "não duplica")
+        self._revisor(reprovar=())
+        r = p.propor(LOGIN, [{"lead_id": out["lead_id"], "tipo": "resposta",
+                              "texto": "Oi! Aqui é o Matheus, da Raiz Connect. O básico é R$ 97 por mês, com 15 dias grátis sem cartão."}])
+        ok(r["propostas"] or r.get("automaticas"), f"e a resposta pode ser proposta: {r['recusadas']}")
+        p.revisor = None
+
+    def t_stories_contam_como_ativo(self):
+        p = self.p
+        self.em(self.hora(10))
+        base = {"segmento": "marmitaria", "cidade": "Salvador", "seguidores": "2k", "canais": ["whatsapp"], "sinais": [],
+                "ultimo_post": dt.datetime.fromtimestamp(self.relogio - 45 * 86400, p._tz()).date().isoformat()}
+        ok(p.pontuar(base).get("rejeitado"), "feed parado há 45 dias e sem stories: fora")
+        r = p.pontuar({**base, "stories": True})
+        ok(not r.get("rejeitado") and r["partes"]["atividade"] == 15, f"com stories no ar, está ativo: {r}")
+
+    def t_resumo_lista_o_que_espera_o_matheus(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("pend1")
+        self._executar(lid, "dm_abertura", DM_A)
+        p.mudar_etapa(LOGIN, lid, "respondeu", "pendente: perguntou se funciona no celular", "direct")
+        self.em(self.relogio + 86400)
+        texto = p.resumo_hoje(LOGIN)
+        ok("Esperando você" in texto and "funciona no celular" in texto, f"a promessa feita em nome dele aparece à noite: {texto}")
+        self.em(self.relogio + 2 * 86400)
+        ok("Esperando você" not in (p.resumo_hoje(LOGIN) or ""), "depois de 2 dias sai da lista")
+
     def t_marca_429_nao_e_perfil(self):
         p = self.p
         achados = json.dumps([{"handle": "doces_da_lu", "termo": "doces bh"}, {"handle": "__429__", "termo": "http 429"}])
@@ -2402,7 +2472,13 @@ class Suite:
         self.em(self.relogio + 400)
         self._executar(lid, "resposta", "Tranquilo! Deixo o link e você abre quando der: " + p.LINK_CALCULADORA)
         self.em(self.relogio + 3 * 86400)
-        eq(p.devidos(LOGIN)["seguimento"], [], "\"agora não\" não recebe seguimento")
+        eq(p.devidos(LOGIN)["seguimento"], [], "\"agora não\" não recebe seguimento logo")
+        self.em(self.relogio + p.RETORNO_AGORA_NAO * 86400)
+        d = p.carregar(LOGIN)
+        eq(p.motivo_seguimento(d, p._lead(d, lid)), "agora_nao", "30 dias depois: um retorno")
+        ok("30 dias depois do «agora não»" in p.resumo_contexto(LOGIN), "o contexto diz por que o seguimento é devido")
+        self._executar(lid, "seguimento", "Oi de novo! Passando só pra saber se a correria deu uma trégua e se a calculadora ajudou.")
+        eq(p.devidos(LOGIN)["seguimento"], [], "uma vez só")
 
     def t_variante_dita_pela_ferramenta(self):
         p = self.p

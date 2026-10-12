@@ -473,6 +473,30 @@ class Prospeccao(Tool):
                 if erro:
                     print(f"prospeccao: cartão de @{lead['handle']} não saiu: {erro}", flush=True)
             return r(f"@{lead['handle']} agora está em {etapa}.")
+        if acao == "entrou":  # someone outside the registry wrote to @raiz.connect (blind review 4, item 3)
+            handle, fala = str(kwargs.get("handle") or lead_id or ""), str(nota or texto or "")
+            negocio = str(kwargs.get("negocio") or "").lower() in ("true", "1", "sim")
+            if not handle or not fala:
+                return r("Passe `handle` (o @) e `nota` (o que a pessoa escreveu).")
+            if not negocio:
+                novo = await asyncio.to_thread(p.entrou_aviso, login, handle, fala)
+                if novo:
+                    await asyncio.to_thread(p.enviar, login, f"📩 @{p.normalizar(handle)} (fora da lista da prospecção) escreveu para a "
+                                            f"@raiz.connect:\n\n«{fala[:500]}»\n\nNão respondi: é com você.", tipo="urgente", ponte=ponte())
+                return r("Matheus avisado. Não responda." if novo else "Já avisado antes. Não responda.")
+            out = await asyncio.to_thread(p.registrar_entrada, login, handle, fala)
+            if out.get("erro"):
+                return r(out["erro"])
+            if out.get("existia"):
+                return r("Esse @ já está no registro: use `etapa` com o lead_id " + out["lead_id"] + ".")
+            lead = await asyncio.to_thread(p.mudar_etapa, login, out["lead_id"], "respondeu", fala, "direct")
+            if lead and lead.get("novidade"):
+                await asyncio.to_thread(p.enviar, login, f"💬 @{lead['handle']} escreveu para a @raiz.connect (chegou sozinho)\n\n"
+                                        f"«{fala[:500]}»\n\nVou responder pela @raiz.connect (o revisor confere o texto antes) e te "
+                                        "aviso do que saiu. Se preferir conversar você mesmo, toque em 🙋 Deixa comigo.\n" + lead["url"],
+                                        p.botao_assumir(login, lead["id"]), tipo="urgente", ponte=ponte())
+            return r(f"Registrado como lead de entrada ({out['lead_id']}), etapa respondeu. Proponha a `resposta` pelo playbook "
+                     "(Respostas; pode dizer quem fala). Se a fala pede outra etapa (lead, demo), chame `etapa` em seguida.")
         if acao == "cartao":  # "me manda o cartão do @x"
             erro = await mandar_cartao(login, lead_id)
             return r(f"Não consegui mandar o cartão: {erro}" if erro else "Cartão enviado ao celular do Matheus.")

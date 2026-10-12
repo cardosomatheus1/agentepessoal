@@ -38,6 +38,12 @@ RESPOSTA_ATE = "22:00"             # replies to who wrote go until then (owners 
 FOLGA = 6                          # weekday (Monday=0) with only replies: no follow, like, comment or new message
 RAMPA_DM = (5, 8, 10, 12)          # first messages a day in weeks 1, 2, 3 and after; a block in the last 7 days steps back
 REAVALIAR_DIAS = 60                # a profile discarded on the visit (stale, size) comes back to the stock after this
+RETORNO_AGORA_NAO = 30             # days after "agora não" before the one follow-up (blind review 4)
+DIAS_VAI_PASSAR = 2                # days after "vou passar pro dono" before asking whether they talked (blind review 4)
+VAI_PASSAR = re.compile(r"(vou|vai|vamos) (passar|repassar|mostrar)|passo (pra|para)|falar com (o|a) (dono|dona|respons|chefe)|"
+                        r"pro dono|pra dona|pro respons|pra respons", re.I)
+PEDIU_LINK = re.compile(r"n[aã]o (consegui|abriu|abre|achei|carrega)|(manda|mande|envia|envie)( o link)? (de novo|novamente)|"
+                        r"(link|calculadora).{0,30}(de novo|novamente|outra vez|n[aã]o (abre|abriu|funciona))|reenvi|perdi o link", re.I)
 AGORA_NAO = re.compile(r"agora n[aã]o|sem tempo|depois (eu )?vejo|outra hora|mais pra frente|no momento n[aã]o|"
                        r"m[eê]s que vem|semana que vem|ocupad", re.I)
 ROBO = re.compile(r"manychat|automation powered|mensagem autom[aá]tica|resposta autom[aá]tica|j[aá] j[aá] (te )?respond|"
@@ -353,7 +359,8 @@ def pontuar(item: dict) -> dict:
         if not item.get("atividade_pendente"):
             return {"rejeitado": "sem a data do último post NÃO fixado (ultimo_post AAAA-MM-DD)"}
         dias = None  # found outside Instagram (fontes.py): the warm-up visit checks the last post before following
-    if dias is not None and dias > 30:
+    stories = str(item.get("stories") or "").lower() in ("true", "1", "sim")  # blind review 4: menus live in the stories
+    if dias is not None and dias > 30 and not stories:
         return {"rejeitado": f"parado há {dias} dias"}
     seguidores = _numero(item.get("seguidores"))
     tamanho_pendente = bool(item.get("atividade_pendente")) and not seguidores  # checked on the warm-up visit
@@ -372,7 +379,7 @@ def pontuar(item: dict) -> dict:
     sinais = {str(x).lower() for x in (item.get("sinais") or [])} & set(SINAIS)
     partes = {
         "segmento": PONTOS_SEGMENTO[seg],
-        "atividade": 12 if dias is None else 15 if dias <= 7 else 12 if dias <= 14 else 8,
+        "atividade": 15 if stories else 12 if dias is None else 15 if dias <= 7 else 12 if dias <= 14 else 8,
         "porte": 12 if tamanho_pendente else 15 if 500 <= seguidores <= 5000 else 12 if seguidores <= 20_000 and seguidores > 5000 else 8 if seguidores > 20_000 else 6,
         "regiao": 10,
         "canais": min(10, 3 * len(canais) + (1 if len(canais) >= 3 else 0)),
@@ -414,7 +421,7 @@ def registrar(login: str, novos: list) -> dict:
                 "avaliacao": {k: avaliacao[k] for k in ("partes", "faixa", "dias_ultimo_post", "seguidores_n", "segmento_rubrica")
                               if k in avaliacao},
                 "evidencias": {k: item.get(k) for k in ("ultimo_post", "canais", "sinais", "cardapio", "link_pedido",
-                                                         "produto_exemplo", "post_recente") if item.get(k)},
+                                                         "produto_exemplo", "post_recente", "stories") if item.get(k)},
                 "url": str(item.get("url") or f"https://www.instagram.com/{handle}/")[:200],
                 "nome": str(item["nome"])[:80], "segmento": str(item["segmento"])[:40].lower(),
                 "cidade": str(item["cidade"])[:60], "seguidores": str(item.get("seguidores") or "")[:20],
@@ -1023,6 +1030,40 @@ RESPOSTAS_ETAPAS = ("respondeu", "lead", "demo", "teste", "cliente")  # the answ
 
 
 @_transacao
+def entrou_aviso(login: str, handle: str, fala: str) -> bool:
+    """Someone outside the registry wrote to @raiz.connect about something else: True only the first time this text
+    is seen, so the person is told once and not by every round (blind review 4, item 3)."""
+    d = carregar(login)
+    vistos = d.setdefault("fora_do_registro", {}).setdefault(normalizar(handle), [])
+    if any(_mesma_citacao(v.get("texto", ""), fala) for v in vistos):
+        return False
+    vistos.append({"em": agora(), "texto": " ".join(str(fala or "").split())[:300]})
+    salvar(login, d)
+    return True
+
+
+@_transacao
+def registrar_entrada(login: str, handle: str, fala: str) -> dict:
+    """Someone outside the registry wrote about the Raiz, the calculator, a price or our comment: the hottest lead
+    there is. Registered without a score (they came to us); their words then go through mudar_etapa like any answer."""
+    d = carregar(login)
+    h = normalizar(handle)
+    if not h:
+        return {"erro": "sem o @"}
+    existente = next((l for l in d["leads"] if l["handle"] == h), None)
+    if existente:
+        return {"lead_id": existente["id"], "existia": True}
+    lead = {"id": _id(), "canal": "instagram", "handle": h, "nota": None, "faixa": "entrada", "avaliacao": {},
+            "evidencias": {}, "url": f"https://www.instagram.com/{h}/", "nome": h, "segmento": "", "cidade": "",
+            "seguidores": "", "motivo": "escreveu para a Raiz: " + " ".join(str(fala or "").split())[:200], "sinal": "",
+            "etapa": "novo", "criado": agora(), "atualizado": agora(), "historico": [], "origem": "instagram",
+            "entrada": True}
+    d["leads"].append(lead)
+    salvar(login, d)
+    return {"lead_id": lead["id"], "existia": False}
+
+
+@_transacao
 def interacao_comentario(login: str, lid: str, nota: str = "") -> dict | None:
     """12/10 blind review, item 3: someone who answers our comment ("obrigada! fazemos sim") did not answer an offer.
     It is an interaction: the person goes first in the queue of the first message (which may mention the exchange),
@@ -1279,25 +1320,48 @@ def repor_aquecer(login: str) -> int:
     return len(out.get("automaticas", []))
 
 
-def _seguimento_devido(d: dict, lead: dict) -> bool:
-    """One follow-up, DIAS_SEGUIMENTO days after we sent the calculator link, when the person wrote nothing since
-    (12/10 blind review, item 7: the conversation died at the link)."""
+def _agradeceu(texto: str) -> bool:
+    """A short thanks after the link ("obrigada!", "valeu, vou testar") is not a reply that ends the follow-up."""
+    t = str(texto or "")
+    citado = _citacao(t)
+    return (len(citado) <= 60 and bool(re.search(r"\b(obrigad|brigad|valeu|vou (testar|ver|olhar|dar uma olhada)|show|top|"
+                                                  r"massa|beleza|blz)", citado))) or t.lower().startswith("agradeceu")
+
+
+def motivo_seguimento(d: dict, lead: dict) -> str:
+    """'' or why one follow-up is due now (blind reviews 2-4): "link" — DIAS_SEGUIMENTO days after the calculator link,
+    with no word since but thanks; "agora_nao" — RETORNO_AGORA_NAO days after "agora não", once; "vai_passar" —
+    DIAS_VAI_PASSAR days after "vou passar pro dono", once."""
     if lead["etapa"] not in ("respondeu", "lead") or lead.get("humano") or lead["canal"] != "instagram":
-        return False
+        return ""
     acoes = [a for a in d["acoes"] if a["lead_id"] == lead["id"]]
-    if any(a["tipo"] == "seguimento" and a["estado"] in ("proposta", "aprovada", "incerta", "executada") for a in acoes):
-        return False
+    seguimentos = [float(a.get("criada") or 0) for a in acoes if a["tipo"] == "seguimento"
+                   and a["estado"] in ("proposta", "aprovada", "incerta", "executada")]
+    falas = [h for h in lead["historico"] if h["tipo"] in {f"etapa:{e}" for e in RESPOSTAS_ETAPAS}]
+    ultima = falas[-1] if falas else None
+    for rx, prazo, motivo in ((AGORA_NAO, RETORNO_AGORA_NAO, "agora_nao"), (VAI_PASSAR, DIAS_VAI_PASSAR, "vai_passar")):
+        if ultima and rx.search(str(ultima.get("texto") or "")):
+            if any(c >= ultima["em"] for c in seguimentos):
+                return ""
+            return motivo if _dias_desde(ultima["em"]) >= prazo else ""
+    if seguimentos:
+        return ""
     links = [a.get("executada_em") or 0 for a in acoes if a["estado"] == "executada" and a["tipo"] in ("resposta", "dm_lembrete")
              and CALCULADORA.search(a.get("texto") or "")]
     if not links:
-        return False
-    falas = [h for h in lead["historico"] if h["tipo"] in {f"etapa:{e}" for e in RESPOSTAS_ETAPAS}]
-    if falas and AGORA_NAO.search(str(falas[-1].get("texto") or "")):
-        return False  # "agora não": the link went with the reply; no follow-up (blind review 2, item 6)
-    falas = [h["em"] for h in falas]
-    if falas and max(falas) > max(links):
-        return False  # the person wrote after the link: that is a reply, not a follow-up
-    return _dias_desde(max(links)) >= DIAS_SEGUIMENTO
+        return ""
+    if any(h["em"] > max(links) and not _agradeceu(h.get("texto")) for h in falas):
+        return ""  # the person wrote after the link: that is a reply, not a follow-up
+    return "link" if _dias_desde(max(links)) >= DIAS_SEGUIMENTO else ""
+
+
+MOTIVOS_SEGUIMENTO = {"link": "2 dias depois do link, sem resposta (playbook › Modelos › Seguimento)",
+                      "agora_nao": "30 dias depois do «agora não»: um retorno leve, sem link",
+                      "vai_passar": "2 dias depois de «vou passar pro dono»: pergunte se conseguiu falar"}
+
+
+def _seguimento_devido(d: dict, lead: dict) -> bool:
+    return bool(motivo_seguimento(d, lead))
 
 
 def variante_sugerida(d: dict, lead: dict) -> str:
@@ -1383,7 +1447,7 @@ def validar_texto(tipo: str, texto: str, d: dict, lid: str) -> str:
         if t and (len(t) > 220 or LINK.search(t) or re.search(r"raiz", t, re.I)):
             return "comentário de aquecimento: até 220 caracteres, sem link e sem citar a Raiz"
         return ""
-    if len(t) < 40:
+    if len(t) < (15 if tipo == "resposta" else 40):  # a reply may be short ("Obrigado! Fico no aguardo por aqui.")
         return "mensagem curta demais para ser específica"
     if len(t) > 900:
         return "mensagem longa demais para uma DM (até 900 caracteres)"
@@ -1399,8 +1463,11 @@ def validar_texto(tipo: str, texto: str, d: dict, lid: str) -> str:
     if tipo == "resposta" and CALCULADORA.search(t):
         if lead.get("etapa") == "descartado":
             return "quem disse não recebe só um obrigado curto: sem link e sem pergunta"
-        if any(a["lead_id"] == lead.get("id") and a["estado"] == "executada" and CALCULADORA.search(a.get("texto") or "")
-               for a in d["acoes"]):
+        enviados = sum(1 for a in d["acoes"] if a["lead_id"] == lead.get("id") and a["estado"] == "executada"
+                       and CALCULADORA.search(a.get("texto") or ""))
+        falas = [h for h in lead.get("historico", []) if str(h.get("tipo", "")).startswith("etapa:")]
+        pediu = bool(falas) and bool(PEDIU_LINK.search(str(falas[-1].get("texto") or "")))
+        if enviados and not (enviados == 1 and pediu):
             return "a pessoa já recebeu o link: não repita; pergunte se conseguiu abrir ou se ficou alguma dúvida"
     if tipo != "resposta" and PROIBIDAS.search(t):
         return f"palavra fora do tom do playbook: «{PROIBIDAS.search(t).group(0)}»"
@@ -1527,7 +1594,8 @@ SEM perguntar a ele, então você é a última barreira antes de uma pessoa real
    o agente diz ter visto. Pergunta não é afirmação ("ele entra no kit?" é aceitável); elogio a algo que está nos
    dados também é. Dizer que o Matheus está na cidade do lead ("aqui em {cidade}") quando ela não é Salvador, ou que
    ele também produz comida, é fato inventado (para lead de Salvador, "também sou de Salvador" é verdade). Sobre a
-   Raiz (função, integração, plano, preço, prazo), só vale o que está no playbook: o resto é fato inventado. O detalhe do post ou do perfil citado na mensagem ou no comentário tem
+   Raiz (função, integração, plano, preço, prazo), só vale o que está no playbook ou o que o agente diz que o Matheus
+   ditou para aquela conversa ("o Matheus disse: …"): o resto é fato inventado. O detalhe do post ou do perfil citado na mensagem ou no comentário tem
    de aparecer no trecho que o agente copiou (legenda, texto na arte, preço, bio, cardápio); a descrição automática do
    Instagram ("Pode ser uma imagem de…") não é fato: reprove o que só se apoia nela.
 2. Fere o playbook: comentário de aquecimento que vende, cita a Raiz, um sistema, chama para o direct ou faz pergunta
@@ -2436,7 +2504,10 @@ def resumo_hoje(login: str) -> str:
     novos = [l for l in d["leads"] if de_hoje(l["criado"])]
     rejeitados = sum(1 for v in (d.get("rejeitados") or {}).values() if de_hoje(v["em"]))
     esperando = [a for a in d["acoes"] if a["estado"] == "proposta"]
-    if not (respostas or feitas or falhas or novos or esperando or any(
+    pendentes = [(l, h) for l in d["leads"] for h in l["historico"][-3:]
+                 if str(h.get("tipo", "")).startswith("etapa:") and str(h.get("texto") or "").lower().startswith("pendente:")
+                 and agora() - float(h.get("em") or 0) < 2 * 86400 and not l.get("humano")]
+    if not (respostas or feitas or falhas or novos or esperando or pendentes or any(
             h["tipo"] == "interagiu" and h.get("onde") == "comentario" and de_hoje(h["em"])
             for l in d["leads"] for h in l["historico"])):
         return ""
@@ -2447,6 +2518,9 @@ def resumo_hoje(login: str) -> str:
             h = next(x for x in reversed(l["historico"]) if x["tipo"].startswith("etapa:") and de_hoje(x["em"]))
             onde = "no comentário" if h.get("onde") == "comentario" else "no Direct"
             linhas.append(f"• {l['nome'][:40]} (@{l['handle']}) — {onde}: «{(h.get('texto') or '')[:160]}» ({l['etapa']})")
+    if pendentes:  # blind review 4, item 4: a promise made in his name has an owner and shows up every evening
+        linhas.append("\n⏳ *Esperando você* (o agente prometeu voltar)")
+        linhas += [f"• @{l['handle']}: {(h.get('texto') or '')[9:].strip()[:140]}" for l, h in pendentes[:8]]
     interacoes = [(l, h) for l in d["leads"] for h in l["historico"]
                   if h["tipo"] == "interagiu" and h.get("onde") == "comentario" and de_hoje(h["em"])]
     if interacoes:  # answers to our comments are no longer notified one by one (12/10 blind review): they show here
@@ -2733,6 +2807,7 @@ def resumo_contexto(login: str) -> str:
             linhas.append(f"\n## Devem receber «{tipo}» agora ({len(lista)})")
             linhas += [f"- [{l['id']}] @{l['handle']} — {l['nome']} ({l['segmento']}, {l['cidade']}; nota {l.get('nota', '—')}); motivo: {l['motivo'][:120]}"
                        + (f"; ESCREVA A VARIANTE {variante_sugerida(d, l)}" if tipo == "dm_abertura" else "")
+                       + (f"; seguimento: {MOTIVOS_SEGUIMENTO.get(motivo_seguimento(d, l), '')}" if tipo == "seguimento" else "")
                        + (f"; já recebeu: {l['historico'][-1]['texto'][:160]}" if l["historico"] else "") for l in lista[:25]]
     conversas = [l for l in d["leads"] if l["etapa"] in ("abordado", "lembrado", "respondeu", "lead", "demo")]
     if conversas and varredura_devida(d):
