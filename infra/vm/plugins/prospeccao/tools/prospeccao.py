@@ -78,6 +78,9 @@ def dono(context) -> str:
     return (sep.dono_contexto(context) if sep else (context.get_data("dono") or "matheus")) or "matheus"
 
 
+SEM_SCRIPTS = ("Busca e avaliação por script com a nossa conta estão desligadas (protegem a @raiz.connect; só o Matheus "
+               "liga, com acao \"scripts_conta\"). ")
+
 COMO_EXECUTAR = {
     "aquecer": "Abra o perfil, siga (se ainda não segue), curta 1 ou 2 posts recentes e veja os stories, se houver. Comentário: só num "
                "post de até 7 dias com algo ESCRITO para comentar (legenda, texto na arte, preço; a descrição automática do Instagram não "
@@ -150,6 +153,8 @@ class Prospeccao(Tool):
             return r(json.dumps(out, ensure_ascii=False) + "\nA nota é calculada pela rubrica do playbook a partir das evidências; "
                      "recusado por nota/regra não volta. Se faltou evidência (ex.: ultimo_post), confira no perfil e registre de novo.")
         if acao == "buscar_script":
+            if not p.scripts_conta(login):
+                return r(SEM_SCRIPTS + "Encha o estoque com `fontes_instagram` (Apify) e `fontes`; se não der, siga com o que há.")
             termos = kwargs.get("termos") or texto
             termos = termos if isinstance(termos, list) else [t.strip() for t in str(termos or "").split(",") if t.strip()]
             if not termos:
@@ -198,6 +203,8 @@ class Prospeccao(Tool):
                 ate = await asyncio.to_thread(p.limite_consulta, login, "a busca devolveu http 429")
                 return r(f"O Instagram limitou as consultas da nossa conta (429): nenhuma busca ou avaliação pelo Instagram até {ate}. "
                          "Complete o estoque com `fontes`; não abra perfis um a um.")
+            if not p.scripts_conta(login):
+                return r(SEM_SCRIPTS + "Avalie com `avaliar_api` (API oficial); o que ela não avaliar fica de fora.")
             pausa = p.api_pausada(login)
             if pausa:
                 return r(f"Scripts de perfil parados até {pausa} (o Instagram limitou as consultas). Complete o estoque com "
@@ -235,6 +242,8 @@ class Prospeccao(Tool):
                 out = await asyncio.to_thread(f.conferir_apify, login, p, p.a_conferir(login, 25))
                 if not out.get("erro"):
                     return r(json.dumps(out, ensure_ascii=False) + "\nConferidos pelo Apify. Chame `conferir_estoque` de novo se ainda houver.")
+            if not p.scripts_conta(login):
+                return r("Sem Apify ou API para esses perfis agora: a conferência fica para a visita (ANTES DE SEGUIR). Pare esta parte.")
             pausa = p.api_pausada(login)
             if pausa:
                 return r(f"Scripts de perfil parados até {pausa} (o Instagram limitou as consultas): pule a conferência.")
@@ -258,8 +267,8 @@ class Prospeccao(Tool):
                 return r(json.dumps(out, ensure_ascii=False) + "\nO Instagram limitou as consultas da nossa conta (429): nenhuma "
                          "busca ou avaliação pelo Instagram até amanhã. Não abra perfis um a um; complete o estoque com `fontes`.")
             return r(json.dumps(out, ensure_ascii=False) + "\nCriados já estão registrados com nota; recusados já anotados. "
-                     "Só os de \"conferir\" precisam de você: abra o perfil, descubra o que falta (cidade/segmento) e registre "
-                     "com `registrar` usando o item como base (ou `rejeitar`).")
+                     "Só os de \"conferir\" precisam de você: abra o perfil, descubra o que falta (cidade/segmento) e use "
+                     "`registrar` (copie os dados do item e complete o que faltava) ou `rejeitar`.")
         if acao == "fontes":
             # the stock is split among the sources (12/10): this action refills only the share of the sheet and of the
             # CNPJ catalog that is missing; the Instagram share is the search round's own search on Instagram
@@ -294,7 +303,8 @@ class Prospeccao(Tool):
             if not pf["faltam"]:
                 return r("A parte do Instagram no estoque está cheia: não chame de novo agora.")
             if not f.apify_pronto(login):
-                return r("Sem Apify configurado: encha a parte do Instagram com a busca no Instagram (skill, 2b e 3).")
+                return r("Sem Apify configurado: " + ("encha a parte do Instagram com a busca no Instagram (skill, seção 2)."
+                                                      if p.scripts_conta(login) else "siga com `fontes` e o estoque que há."))
             out = await asyncio.to_thread(f.buscar_instagram, login, p, _numero(kwargs.get("buscas") or kwargs.get("termos"), 3),
                                           _numero(kwargs.get("por_termo"), 20))
             pf = p.estoque(login)["por_fonte"]["instagram"]
@@ -491,6 +501,11 @@ class Prospeccao(Tool):
             await asyncio.to_thread(p.enviar, login, "✏️ Versão nova para aprovar:\n\n" + p.mensagem_acao(a, p._lead(d, a["lead_id"])),
                      p.botoes_acao(login, a["id"]), ponte=ponte())
             return r("Nova versão enviada para aprovação.")
+        if acao == "scripts_conta":  # only on the person's order
+            ligado = str(texto or "").lower() in ("ligar", "ligado", "true", "1", "sim", "on")
+            await asyncio.to_thread(p.definir_scripts_conta, login, ligado)
+            return r("Busca e avaliação por script com a @raiz.connect " + ("LIGADAS (teto diário e 429 continuam valendo)." if ligado
+                     else "DESLIGADAS: o estoque vem do Apify, da API oficial e das fontes."))
         if acao == "conta":
             erro = p.definir_conta(login, texto or conta_ativa)
             return r(erro or f"Prospecção configurada para @{p.conta(login)}.")

@@ -2192,6 +2192,8 @@ class Suite:
         ctx = p.resumo_contexto(LOGIN)
         ok("contador de não lidas" in ctx and "VARREDURA COMPLETA" not in ctx and "@var1" in ctx
            and "direct_script" not in ctx, f"logo depois: o contador e só as conversas recentes: {ctx[-400:]}")
+        ok("Todas as conversas em andamento (1), para a varredura completa: @var1" in ctx,
+           "e a lista inteira, para quando o contador mostrar algo que não está entre as recentes")
         self.em(self.relogio + p.VARREDURA_H * 3600 + 60)
         ok("VARREDURA COMPLETA" in p.resumo_contexto(LOGIN), "4 h depois: de novo")
 
@@ -2249,6 +2251,47 @@ class Suite:
         chaves = {k.value for k in como.keys}
         eq(sorted(set(p.TIPOS) - chaves), [], "toda ação que a proxima entrega tem o como fazer (seguimento quebrava)")
 
+    def t_teto_de_comentarios(self):
+        """Blind review 3, item 7: comments are public and among what Instagram blocks most: a daily ceiling."""
+        p = self.p
+        self.em(self.hora(10))
+        self._revisor(reprovar=())
+        p.definir_auto(LOGIN, True)
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+        for i in range(p.LIMITE_COMENTARIOS):  # comments already approved today
+            d["acoes"].append({"id": f"c{i}", "lead_id": "x", "tipo": "aquecer", "texto": "", "estado": "executada",
+                               "criada": p.agora(), "comentario": {"estado": "publicado", "em": p.agora() - 60, "texto": "x"}})
+        p.salvar(LOGIN, d)
+        self._lead("teto1")
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a and a["tipo"] == "aquecer", f"visita em andamento ({motivo})")
+        ontem = dt.datetime.fromtimestamp(self.relogio - 86400, p._tz()).date().isoformat()
+        texto = "Kit de 10 com duas proteínas resolve a semana de quem congela, capricho na montagem!"
+        r, m = p.comentar(LOGIN, a["id"], texto, f"\"Kit fit da semana\", {ontem}")
+        ok(not r and "teto" in m and not m.startswith("REESCREVA"), f"o 11º comentário do dia não sai: {m}")
+        d = p.carregar(LOGIN)
+        d["acoes"] = [x for x in d["acoes"] if not x["id"].startswith("c") or int(x["id"][1:]) < p.LIMITE_COMENTARIOS // 2]
+        d["bloqueios"] = [{"em": p.agora() - 86400}]
+        p.salvar(LOGIN, d)
+        r, m = p.comentar(LOGIN, a["id"], texto, f"\"Kit fit da semana\", {ontem}")
+        ok(not r and "teto 5" in m, f"depois de um bloqueio, metade: {m}")
+        p.revisor = None
+
+    def t_scripts_com_a_conta_desligados(self):
+        """Blind reviews 2 and 3: searches and profile reads by script use the brand's own logged-in account — off unless
+        the person turns them on."""
+        p = self.p
+        ok(not p.scripts_conta(LOGIN), "desligados por padrão")
+        p.definir_scripts_conta(LOGIN, True)
+        ok(p.scripts_conta(LOGIN), "o Matheus pode ligar")
+        p.definir_scripts_conta(LOGIN, False)
+        fonte = (RAIZ / "tools" / "prospeccao.py").read_text(encoding="utf-8")
+        for acao in ("buscar_script", "perfis_script", "conferir_estoque"):
+            trecho = fonte[fonte.index(f'if acao == "{acao}"'):]
+            trecho = trecho[:trecho.index("p.montar_")]
+            ok("p.scripts_conta(login)" in trecho, f"{acao} confere a chave antes de entregar um script")
+
     def t_marca_429_nao_e_perfil(self):
         p = self.p
         achados = json.dumps([{"handle": "doces_da_lu", "termo": "doces bh"}, {"handle": "__429__", "termo": "http 429"}])
@@ -2299,8 +2342,13 @@ class Suite:
         for semana, esperado in ((1, 8), (2, 10), (3, 12), (9, 12)):
             d["config"]["inicio"] = p.agora() - semana * 7 * 86400 - 3600
             eq(p.limites(d)["dm_abertura"], esperado, f"semana {semana + 1}")
+        d["config"]["inicio"] = p.agora() - 2 * 7 * 86400 - 3600
         d["bloqueios"] = [{"em": p.agora() - 2 * 86400}]
-        eq(p.limites(d)["dm_abertura"], 10, "bloqueio nos últimos 7 dias: um degrau abaixo")
+        lim = p.limites(d)
+        eq((lim["dm_abertura"], lim["aquecer"], lim["resposta"]), (5, 10, 15),
+           "bloqueio nos últimos 7 dias: metade de tudo, menos as respostas a quem escreveu")
+        d["bloqueios"] = [{"em": p.agora() - 8 * 86400}]
+        eq(p.limites(d)["dm_abertura"], 10, "uma semana depois do bloqueio, o ritmo volta")
 
     def t_descarte_na_visita_volta_em_60_dias(self):
         p = self.p

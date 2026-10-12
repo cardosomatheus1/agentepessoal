@@ -510,6 +510,19 @@ def novos_handles(login: str, achados, limite: int = 30) -> list:
     return out[:limite]
 
 
+def scripts_conta(login: str) -> bool:
+    """Search/profile scripts run with the brand's logged-in account (blind reviews 2 and 3: the riskiest thing the
+    account does). Off unless the person turns them on; Apify and the official API cover the stock."""
+    return bool(carregar(login)["config"].get("scripts_conta"))
+
+
+@_transacao
+def definir_scripts_conta(login: str, ligado: bool) -> None:
+    d = carregar(login)
+    d["config"]["scripts_conta"] = bool(ligado)
+    salvar(login, d)
+
+
 def api_pausada(login: str) -> str:
     """'' or until when the profile scripts are paused after an Instagram 429 (or the day's query ceiling)."""
     c = carregar(login)["config"]
@@ -1317,20 +1330,24 @@ LIMITE_PILOTO = {"aquecer": 15, "dm_abertura": 5, "dm_lembrete": 5, "resposta": 
                  "seguimento": 5}
 
 
+def bloqueio_recente(d: dict) -> bool:
+    """A block or verification in the last 7 days (the account comes back at half pace, not at 100%)."""
+    return any(agora() - float(b.get("em") or 0) < 7 * 86400 for b in d.get("bloqueios") or [])
+
+
 def limites(d: dict) -> dict:
     """Daily limits: the config's, else the pilot's for the first 7 days, else the playbook's — with the first messages
-    going up a step a week (RAMPA_DM; 12/10 blind review: 5 to 12 overnight on day 8), one step back after a block in
-    the last 7 days."""
+    going up a step a week (RAMPA_DM; 12/10 blind review: 5 to 12 overnight on day 8). For 7 days after a block,
+    everything but the replies runs at half (blind review 3: back to 100% right after the 48 h pause is a robot sign)."""
     if d["config"].get("limites"):
-        return {**LIMITE_DIA, **d["config"]["limites"]}
-    inicio = d["config"].get("inicio") or (min([l["criado"] for l in d["leads"]] or [agora()]))
-    semana = int(max(0, agora() - inicio) // (7 * 86400))
-    if semana == 0:
-        return dict(LIMITE_PILOTO)
-    degrau = min(semana, len(RAMPA_DM) - 1)
-    if any(agora() - float(b.get("em") or 0) < 7 * 86400 for b in d.get("bloqueios") or []):
-        degrau = max(0, degrau - 1)
-    return {**LIMITE_DIA, "dm_abertura": RAMPA_DM[degrau]}
+        base = {**LIMITE_DIA, **d["config"]["limites"]}
+    else:
+        inicio = d["config"].get("inicio") or (min([l["criado"] for l in d["leads"]] or [agora()]))
+        semana = int(max(0, agora() - inicio) // (7 * 86400))
+        base = dict(LIMITE_PILOTO) if semana == 0 else {**LIMITE_DIA, "dm_abertura": RAMPA_DM[min(semana, len(RAMPA_DM) - 1)]}
+    if bloqueio_recente(d):
+        base = {k: (v if k == "resposta" else max(1, v // 2)) for k, v in base.items()}
+    return base
 
 
 def _usadas_hoje(d: dict, tipo: str) -> int:
@@ -1502,11 +1519,12 @@ SEM perguntar a ele, então você é a última barreira antes de uma pessoa real
 1. Afirma um fato sobre o negócio (prato, unidade, novidade, número, cidade) que NÃO está nos DADOS DO LEAD nem no que
    o agente diz ter visto. Pergunta não é afirmação ("ele entra no kit?" é aceitável); elogio a algo que está nos
    dados também é. Dizer que o Matheus está na cidade do lead ("aqui em {cidade}") quando ela não é Salvador, ou que
-   ele também produz comida, é fato inventado. O detalhe do post ou do perfil citado na mensagem ou no comentário tem
+   ele também produz comida, é fato inventado (para lead de Salvador, "também sou de Salvador" é verdade). Sobre a
+   Raiz (função, integração, plano, preço, prazo), só vale o que está no playbook: o resto é fato inventado. O detalhe do post ou do perfil citado na mensagem ou no comentário tem
    de aparecer no trecho que o agente copiou (legenda, texto na arte, preço, bio, cardápio); a descrição automática do
    Instagram ("Pode ser uma imagem de…") não é fato: reprove o que só se apoia nela.
 2. Fere o playbook: comentário de aquecimento que vende, cita a Raiz, um sistema, chama para o direct ou faz pergunta
-   de compra ("vocês fazem…?", "entregam em…?", "quanto custa?"); jargão (ERP, sistema de gestão, CMV, solução) na
+   (o comentário é uma observação, sem pergunta: a conta não volta ao comentário para continuar a conversa); jargão (ERP, sistema de gestão, CMV, solução) na
    abertura; promessa de resultado ou número inventado; pressão; link fora do lugar (os únicos links permitidos são a
    calculadora de precificação e o simulador de delivery da Raiz, e só na resposta a quem escreveu: primeira
    mensagem, lembrete e seguimento vão sem link); repetir o link a quem já recebeu; oferta ou link para quem disse
@@ -1683,7 +1701,7 @@ def revisar_textos(d: dict, acoes: list, login: str = "") -> dict:
                       + (f"JÁ RECEBEU: {lead['historico'][-1]['texto'][:300]}\n" if lead.get("historico") and a["tipo"] != "resposta" else "")
                       + (f"O QUE A PESSOA DISSE: {_disse(lead)}\n" if a["tipo"] == "resposta" else "")
                       + f"TEXTO:\n«{a['texto']}»")
-    regras = REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:16000] if playbook.exists() else "")
+    regras = REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:20000] if playbook.exists() else "")
     guardados = _ler_vereditos(login) if login else {}
     chaves = {a["id"]: hashlib.sha256(f"{regras}\n{a['tipo']}\n{b.split(chr(10), 1)[1]}".encode()).hexdigest()[:32]
               for a, b in zip(acoes, blocos)}  # the item's id stays out: the same text for the same lead is the same item
@@ -2024,6 +2042,7 @@ DIAS_COMENTARIO = 3
 TENTATIVAS_COMENTARIO = 2  # the reviewer said no twice: no comment, just follow and like (12/10 blind review, item 3)
 
 
+LIMITE_COMENTARIOS = 10  # a day (blind review 3: public, and among the actions Instagram blocks most); half after a block
 POST_COMENTARIO_DIAS = 7  # blind review 2, item 5: a comment on a post weeks old looks like digging and is rarely answered
 _MESES = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6, "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12}
 
@@ -2091,6 +2110,11 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
             motivo = "espaçamento: próxima a partir de " + dt.datetime.fromtimestamp(ultima + _espera(ultima), _tz()).strftime("%H:%M")
     if motivo:
         return False, motivo
+    teto = LIMITE_COMENTARIOS // 2 if bloqueio_recente(d) else LIMITE_COMENTARIOS
+    feitos = sum(1 for x in d["acoes"] if (x.get("comentario") or {}).get("estado") in ("aprovado", "publicado")
+                 and float(x["comentario"].get("em") or 0) > 0 and _hoje_local(x["comentario"]["em"]) == _hoje_local())
+    if feitos >= teto:
+        return False, f"já saíram {feitos} comentários hoje (teto {teto}): siga sem comentário"
     idade = idade_post(base)
     if idade is None:  # not a reviewer attempt: the text may be fine, the evidence is missing
         return False, ("REESCREVA a base: copie entre aspas o trecho escrito do post que você comenta e ponha a data dele "
@@ -2718,6 +2742,8 @@ def resumo_contexto(login: str) -> str:
                       + (f"; abra (perfil → Mensagem) estas {len(recentes)}, as mais recentes:" if recentes else ".")
                       + " Contador acima de zero sem você achar de quem é: faça a varredura completa agora.")
         linhas += [f"- [{l['id']}] @{l['handle']} ({l['etapa']})" for l in recentes[:15]]
+        linhas.append(f"Todas as conversas em andamento ({len(conversas)}), para a varredura completa: "
+                      + ", ".join("@" + l["handle"] for l in conversas[:40]))
     conhecidos = sorted(l["handle"] for l in d["leads"])
     linhas.append(f"\n## Já conhecidos ({len(conhecidos)}) — não registre de novo\n" + (", ".join(conhecidos[-400:]) or "(nenhum)"))
     rej = d.get("rejeitados") or {}
