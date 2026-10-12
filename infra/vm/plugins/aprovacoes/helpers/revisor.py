@@ -210,8 +210,11 @@ def abrir(ctx_id: str, analise: dict, tool: str) -> dict:
 
 
 def decidir(ctx_id: str, decisao: str, pid: str = "") -> bool:
+    """A decision counts only for the exact request it names (12/10 review: one without id was accepted, so an old
+    button, or anything that could reach this API, approved whatever happened to be waiting). Every real caller (phone
+    button, approval card, operator script) sends the id."""
     pendente = PENDENTES.get(ctx_id)
-    if not pendente or pendente["decisao"] or (pid and pid != pendente["id"]):
+    if not pendente or pendente["decisao"] or not pid or pid != pendente["id"]:
         return False
     if decisao not in ("aprovar", "sempre", "recusar"):
         return False

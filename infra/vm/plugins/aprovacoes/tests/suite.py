@@ -22,6 +22,18 @@ class Suite:
         spec.loader.exec_module(self.rv)
         self.resultados = []
 
+    def t_decisao_so_com_o_id_certo(self):
+        # 12/10 review: a decision without id was accepted (an old button, or anything reaching the API, approved
+        # whatever was waiting)
+        rv = self.rv
+        p = rv.abrir("ctx-teste", {"categoria": "mensagem_terceiros", "resumo": "Enviar e-mail"}, "browser")
+        ok(not rv.decidir("ctx-teste", "aprovar"), "sem id não vale")
+        ok(not rv.decidir("ctx-teste", "aprovar", "outro-id"), "id de outro pedido não vale")
+        ok(not rv.decidir("ctx-teste", "talvez", p["id"]), "decisão desconhecida não vale")
+        ok(rv.decidir("ctx-teste", "aprovar", p["id"]), "com o id certo vale")
+        ok(not rv.decidir("ctx-teste", "recusar", p["id"]), "decidido uma vez, não muda")
+        rv.PENDENTES.pop("ctx-teste", None)
+
     def t_instagram_sem_perguntar(self):
         rv, cfg = self.rv, {}
         msg = {"categoria": "mensagem_terceiros", "resumo": "Enviar no Instagram para @annasaude.marmitas: «Oi, pessoal»"}
