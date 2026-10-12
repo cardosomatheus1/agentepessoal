@@ -11,11 +11,13 @@ Both directions carry a shared key (/opt/a0/usr/whatsapp/.chave, created here). 
 phone number id, numbers) come from the SSM SecureString /agentepessoal/whatsapp/config.
 """
 
+import fcntl
 import http.server
 import json
 import mimetypes
 import os
 import secrets
+import tempfile
 import threading
 import time
 import re
@@ -23,6 +25,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 import boto3
@@ -387,18 +390,66 @@ DESCREVER: dict[str, tuple[str, float]] = {}  # login -> (secret just saved, whe
 DESCREVER_PRAZO = 10 * 60
 
 
-def _descricoes(usuario: str) -> tuple[Path, dict]:
-    arquivo = COFRE / f"{re.sub(r'[^a-z0-9_.-]', '', usuario.lower())}.descricoes.json"
-    try:
-        return arquivo, json.loads(arquivo.read_text(encoding="utf-8"))
-    except Exception:
-        return arquivo, {}
+class CofreIlegivel(RuntimeError):
+    pass
 
 
-def _gravar_descricoes(arquivo: Path, desc: dict) -> None:
+def _cofre_ler(arquivo: Path) -> dict:
+    """{} only when the file does not exist; unreadable after 3 tries = CofreIlegivel (never "no secrets")."""
+    if not arquivo.exists():
+        return {}
+    for tentativa in range(3):
+        try:
+            dados = json.loads(arquivo.read_text(encoding="utf-8"))
+            if isinstance(dados, dict):
+                return dados
+            raise ValueError("não é um objeto JSON")
+        except (OSError, ValueError) as exc:
+            if tentativa == 2:
+                raise CofreIlegivel(str(exc)[:60]) from None
+            time.sleep(0.1)
+    return {}
+
+
+@contextmanager
+def _cofre_transacao(arquivo: Path):
+    """Read → change → write as one step, under the same lock as plugins/cofre (flock on <file>.lock, the same file
+    seen from the container): 12/10 review, the agent and this bridge could overwrite each other, and a read in the
+    middle of a write took the vault as empty. The file is replaced whole (temp file, mode 600, fsync, rename)."""
     COFRE.mkdir(parents=True, exist_ok=True)
-    arquivo.write_text(json.dumps(desc, ensure_ascii=False, indent=1), encoding="utf-8")
-    os.chmod(arquivo, 0o600)
+    os.chmod(COFRE, 0o700)
+    with open(arquivo.with_name(arquivo.name + ".lock"), "a") as trava:
+        limite = time.time() + 30
+        while True:
+            try:
+                fcntl.flock(trava, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.time() > limite:
+                    raise CofreIlegivel("ocupado há mais de 30 s") from None
+                time.sleep(0.05)
+        try:
+            dados = _cofre_ler(arquivo)
+            yield dados
+            fd, tmp = tempfile.mkstemp(dir=arquivo.parent, prefix=f".{arquivo.name}.", suffix=".tmp")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(dados, f, ensure_ascii=False, indent=1 if arquivo.name.endswith(".descricoes.json") else None)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp, arquivo)
+            except BaseException:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+                raise
+        finally:
+            fcntl.flock(trava, fcntl.LOCK_UN)
+
+
+def _arquivo_descricoes(usuario: str) -> Path:
+    return COFRE / f"{re.sub(r'[^a-z0-9_.-]', '', usuario.lower())}.descricoes.json"
 
 
 def comando_cofre(usuario: str, texto: str) -> str | None:
@@ -412,10 +463,12 @@ def comando_cofre(usuario: str, texto: str) -> str | None:
             DESCREVER.pop(usuario, None)
             return f"Ok, {pendente[0]} fica sem descrição."
         if linha and not linha.startswith("/") and "\n" not in linha and len(linha) <= 160:
+            try:
+                with _cofre_transacao(_arquivo_descricoes(usuario)) as desc:
+                    desc[pendente[0]] = linha
+            except CofreIlegivel:
+                return "Não consegui ler o cofre agora (nada foi mudado). Mande a descrição de novo em 1 minuto."
             DESCREVER.pop(usuario, None)
-            arquivo, desc = _descricoes(usuario)
-            desc[pendente[0]] = linha
-            _gravar_descricoes(arquivo, desc)
             log(f"vault: {usuario} described {pendente[0]}")
             return f"📝 Anotado: {pendente[0]} = {linha}. O agente usa essa senha sozinho quando esse site pedir."
     partes = texto.strip().split(maxsplit=2)
@@ -423,34 +476,42 @@ def comando_cofre(usuario: str, texto: str) -> str | None:
         return None
     comando = partes[0].lower().split("@")[0]
     arquivo = COFRE / f"{re.sub(r'[^a-z0-9_.-]', '', usuario.lower())}.json"
-    try:
-        dados = json.loads(arquivo.read_text(encoding="utf-8"))
-    except Exception:
-        dados = {}
+    ilegivel = "Não consegui ler o cofre agora (nada foi mudado). Tente de novo em 1 minuto."
     if comando in ("/senhas", "/cofre") or (comando == "/senha" and len(partes) < 3):
-        _, desc = _descricoes(usuario)
+        try:
+            dados = _cofre_ler(arquivo)
+        except CofreIlegivel:
+            return ilegivel
+        try:
+            desc = _cofre_ler(_arquivo_descricoes(usuario))
+        except CofreIlegivel:
+            desc = {}
         nomes = "\n".join(f"• {n}" + (f" — {desc[n]}" if desc.get(n) else " — (de qual conta? mande /senha de novo ou fale ao agente)")
                           for n in sorted(dados)) or "nenhuma ainda"
         return f"{AJUDA_SENHA}\n\nGuardadas:\n{nomes}"
     nome = re.sub(r"[^A-Z0-9_]", "_", partes[1].upper())
     if not re.fullmatch(r"[A-Z][A-Z0-9_]{1,63}", nome):
         return "Nome inválido: use letras, números e _ começando com letra (ex.: GMAIL_SENHA)."
+    try:
+        with _cofre_transacao(arquivo) as dados:
+            if comando == "/apagarsenha":
+                dados.pop(nome, None)
+            else:
+                dados[nome] = partes[2].strip()
+    except CofreIlegivel:
+        return ilegivel
     if comando == "/apagarsenha":
-        dados.pop(nome, None)
-        arquivo_desc, desc = _descricoes(usuario)
-        if desc.pop(nome, None) is not None:
-            _gravar_descricoes(arquivo_desc, desc)
+        try:
+            with _cofre_transacao(_arquivo_descricoes(usuario)) as desc:
+                desc.pop(nome, None)
+        except CofreIlegivel:
+            pass  # the secret is gone; a leftover description is harmless
         resposta = f"🗑️ {nome} apagada do cofre."
     else:
-        dados[nome] = partes[2].strip()
         DESCREVER[usuario] = (nome, time.time())
         resposta = (f"🔒 Guardada no cofre como {nome}. O agente usa pelo nome e nunca vê o valor.\n\n"
                     f"De qual site e conta é essa senha? Responda numa linha (ex.: Instagram @minhaconta) — "
                     f"assim o agente sabe onde usar sem te perguntar. /pular deixa sem.")
-    COFRE.mkdir(parents=True, exist_ok=True)
-    os.chmod(COFRE, 0o700)
-    arquivo.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
-    os.chmod(arquivo, 0o600)
     log(f"vault: {usuario} {comando} {nome}")
     return resposta
 
