@@ -392,6 +392,10 @@ class Prospeccao(Tool):
                              else "SEM COMENTÁRIO nesta visita (só lead quente): siga, veja os stories e curta 1 post.\n")
             return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) {'PRÉ-APROVADA (autorização do Matheus, dentro do limite do dia; texto revisado)' if a.get('auto') else 'APROVADA pelo Matheus'} para @{lead['handle']} — {lead['url']}\n"
                      f"{conferir}{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
+                     + (("PARA ABRIR A CONVERSA: no perfil, rode com `browser` action \"evaluate\" o script abaixo; ele acha o botão "
+                         "Mensagem/Message pelo texto (não clique por referência: a página se redesenha). \"ABRIU\": siga; \"SEM BOTÃO "
+                         "MENSAGEM\": recarregue o perfil UMA vez e rode de novo; se repetir, `resultado` ok=false.\n"
+                         + p.SCRIPT_ABRIR_CONVERSA + "\n\n") if a["tipo"] in p.TIPOS_DIRECT else "")
                      + (("PARA DIGITAR NO DIRECT (obrigatório, NÃO digite à mão): com a conversa aberta, 1) clique no campo de mensagem, "
                          "2) aperte Control+A e depois Backspace (ações press do browser) para apagar rascunho de tentativa anterior, "
                          "3) rode este script com `browser` action \"evaluate\" — ele confere que o campo está vazio, coloca o texto uma vez "

@@ -2488,6 +2488,13 @@ class Suite:
                                                ("lead", "quero o link"), ("demo", "me liga"))],
            [False, True, True, True], "oi vai no resumo; lead, demo e pendência tocam na hora")
 
+    def t_script_abre_conversa_pelo_texto(self):
+        p = self.p
+        ok("Mensagem|Message" in p.SCRIPT_ABRIR_CONVERSA and "[role=\"button\"]" in p.SCRIPT_ABRIR_CONVERSA,
+           "acha o botão pelo texto, em qualquer elemento clicável (12/10: a referência sumia e não era <button>)")
+        fonte = (RAIZ / "tools" / "prospeccao.py").read_text(encoding="utf-8")
+        ok("p.SCRIPT_ABRIR_CONVERSA" in fonte, "a proxima entrega o script para toda ação no Direct")
+
     def t_marca_429_nao_e_perfil(self):
         p = self.p
         achados = json.dumps([{"handle": "doces_da_lu", "termo": "doces bh"}, {"handle": "__429__", "termo": "http 429"}])

@@ -2362,6 +2362,18 @@ def script_digitar(texto: str) -> str:
             "return 'DIFERENTE: ' + norm(box.innerText).slice(0, 300); })()")
 
 
+SCRIPT_ABRIR_CONVERSA = """(async () => {
+  const espera = ms => new Promise(r => setTimeout(r, ms));
+  for (let i = 0; i < 20; i++) {
+    const alvo = [...document.querySelectorAll('[role="button"], button, a')]
+      .find(e => /^(Mensagem|Message|Enviar mensagem|Send message)$/i.test((e.innerText || '').trim()));
+    if (alvo) { alvo.click(); await espera(2500); return 'ABRIU: ' + location.pathname; }
+    await espera(500);
+  }
+  return 'SEM BOTÃO MENSAGEM: ' + location.pathname;
+})()"""  # 12/10 20h08: the profile re-renders after loading, the clicked ref vanished and the button is a div, not <button>
+
+
 def aviso_sem_acao(motivo: str) -> str:
     """What the agent is told when `proxima` has nothing right now. Spacing is a wait, not the end of the round
     (11/10: "NADA AGORA: espaçamento…" ended the 14h50 round after 1 of 5 free slots)."""

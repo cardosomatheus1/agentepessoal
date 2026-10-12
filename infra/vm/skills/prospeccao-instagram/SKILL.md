@@ -86,7 +86,9 @@ precisa dele (bloqueio, verificação, conta, erro), em até 3 linhas.
      lida; abra também essas. Solicitações (https://www.instagram.com/direct/requests/) e notificações: na primeira
      rodada de cada turno (9h08 e 14h08), na última (21h38), na VARREDURA COMPLETA e quando o contador do Direct ou do
      coração estiver acima de zero;
-   - abra (perfil → Mensagem) as conversas que o `contexto` lista em "Direct nesta rodada";
+   - abra as conversas que o `contexto` lista em "Direct nesta rodada" **pela caixa de entrada**: em
+     https://www.instagram.com/direct/inbox/, clique no nome da pessoa na lista (pelo print, se a referência falhar).
+     Para ler, não precisa passar pelo perfil;
    - contador acima de zero que você não explicou, ou o `contexto` pedindo **VARREDURA COMPLETA**: abra uma a uma as
      conversas da lista do `contexto`. Depois, `caixa_lida` com varredura: true.
 2. **É fala da pessoa** quando a ÚLTIMA coisa na conversa é dela: mensagem, áudio, figurinha, ou reação (❤️, 👍) à 1ª
@@ -141,9 +143,9 @@ saído. Só olhe a tela (a conversa ou o botão «Seguindo») e chame `resultado
 5. `resultado` ok=true se SEGUIU, mesmo que o comentário falhe; no detalhe, o que saiu e o que não saiu.
 
 **Mandar no Direct** (primeira mensagem, lembrete, seguimento, resposta, parceiro)
-1. Abra sempre pelo perfil: https://www.instagram.com/<@>/ → **Mensagem** (abre a conversa que existe ou uma nova).
-   Botão "Mensagem" parecendo desativado: espere 5 s, leia de novo e clique mesmo assim; se não abrir, recarregue UMA
-   vez. Conversa em Solicitações ("Aceitar", "Excluir", "Bloquear"): se a ação é resposta, clique em **Aceitar** e siga.
+1. Abra sempre pelo perfil: https://www.instagram.com/<@>/ e rode o script "PARA ABRIR A CONVERSA" que a `proxima`
+   traz (ele acha o botão Mensagem/Message pelo texto; não clique por referência, a página se redesenha depois de
+   carregar). "SEM BOTÃO MENSAGEM": recarregue UMA vez e rode de novo. Conversa em Solicitações ("Aceitar", "Excluir", "Bloquear"): se a ação é resposta, clique em **Aceitar** e siga.
 2. **Leia a conversa antes de digitar.** Resposta automática (seção 2) não conta como fala. Não envie, chame
    `resultado` ok=false com o que viu e siga, se:
    - é primeira mensagem, lembrete, seguimento ou parceiro e a última coisa na conversa é da pessoa: trate pela seção 2;
