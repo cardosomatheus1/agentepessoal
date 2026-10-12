@@ -1585,7 +1585,7 @@ class Suite:
         ok("já foi decidida" in caixa(desde)[-1]["texto"], "segundo toque")
         for b in p.botoes_acao(LOGIN, a1) + [{"id": f"pa:{LOGIN}:{pid}:todas"}]:
             ok(len(b["id"].encode()) <= 64, "callback cabe em 64 bytes")
-        if hasattr(rc, "_botao_lead"):  # 🙋 Quero falar eu (whatsapp plugin installed first)
+        if hasattr(rc, "_botao_lead") and hasattr(rc._prospeccao(), "assumir_lead"):  # 🙋 (both sides installed)
             lid = self._lead("b4")
             eq((await rc._botao_lead(OUTRO, f"pl:{LOGIN}:{lid}:eu"))["ok"], False, "botão de outra pessoa")
             await rc._botao_lead(LOGIN, f"pl:{LOGIN}:{lid}:eu")
