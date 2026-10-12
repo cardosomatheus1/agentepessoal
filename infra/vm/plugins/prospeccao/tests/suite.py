@@ -1336,6 +1336,77 @@ class Suite:
         eq(p.mudar_etapa(LOGIN, lid, "respondeu", "comentou no post: adorei", "comentario")["novidade"], True,
            "outro lugar (comentário) é outra fala")
 
+    def t_gravacao_segura(self):
+        # 12/10 review: the pre-approval waited minutes for the reviewer and saved over what the execution round had
+        # recorded (a sent DM could come back as approved); two writers shared one temporary name; an unreadable file
+        # became an empty state that the next save wrote over everything
+        import threading
+        p = self.p
+        self.em(self.hora(10))
+        p.definir_auto(LOGIN, True)
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+        p.salvar(LOGIN, d)
+        x = self._lead("visita1")
+        aid = p.propor(LOGIN, [{"lead_id": x, "tipo": "aquecer", "texto": ""}])["automaticas"][0]["id"]
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a and a["id"] == aid, f"visita em andamento ({motivo})")
+        y = self._aquecido("dm_rev")
+        original = p.revisor
+
+        def revisor_lento(pedido):  # while the reviewer "thinks", the execution round records the visit
+            p.resultado(LOGIN, aid, True, "seguiu e curtiu")
+            m = re.search(r"## Item (\w+)", pedido)
+            return json.dumps({"itens": [{"id": m.group(1), "aprovado": True, "motivo": "ok"}]})
+        p.revisor = revisor_lento
+        try:
+            out = p.propor(LOGIN, [{"lead_id": y, "tipo": "dm_abertura", "texto": DM_A, "variante": "A"}])
+        finally:
+            p.revisor = original
+        acoes = {z["id"]: z for z in p.carregar(LOGIN)["acoes"]}
+        eq(acoes[aid]["estado"], "executada", "o que outra rodada gravou enquanto o revisor pensava não se perde")
+        ok(out.get("automaticas") and acoes[out["automaticas"][0]["id"]]["estado"] == "aprovada", f"e a DM revisada foi aprovada: {out}")
+
+        def registra(prefixo):
+            for i in range(15):
+                self._lead(f"{prefixo}{i}")
+        ts = [threading.Thread(target=registra, args=(f"t{k}_",)) for k in range(3)]
+        [t.start() for t in ts]
+        [t.join() for t in ts]
+        nomes = {l["handle"] for l in p.carregar(LOGIN)["leads"]}
+        ok(all(f"t{k}_{i}" in nomes for k in range(3) for i in range(15)), "três escritores ao mesmo tempo: nenhum lead perdido")
+        arq = p.PASTA / f"{LOGIN}.json"
+        bom = arq.read_text(encoding="utf-8")
+        arq.write_text(bom[: len(bom) // 2], encoding="utf-8")
+        try:
+            p.definir_auto(LOGIN, False)
+            ok(False, "arquivo ilegível deveria parar o trabalho")
+        except p.EstadoIlegivel:
+            pass
+        eq(arq.read_text(encoding="utf-8"), bom[: len(bom) // 2], "o arquivo ilegível não vira estado vazio gravado por cima")
+        arq.write_text(bom, encoding="utf-8")
+        segurando, soltar = threading.Event(), threading.Event()
+
+        def segura():
+            with p._exclusivo(LOGIN):
+                segurando.set()
+                soltar.wait(5)
+        t = threading.Thread(target=segura)
+        t.start()
+        segurando.wait(5)
+        espera, p.ESPERA_TRAVA = p.ESPERA_TRAVA, 0.3
+        try:
+            p.definir_auto(LOGIN, True)
+            ok(False, "deveria desistir de esperar a trava")
+        except RuntimeError as exc:
+            ok("ocupada" in str(exc), str(exc))
+        finally:
+            p.ESPERA_TRAVA = espera
+            soltar.set()
+            t.join()
+        p.definir_auto(LOGIN, True)
+        ok(not list(p.PASTA.glob(f".{LOGIN}.*.tmp")), "nenhum arquivo temporário largado")
+
     def t_resposta_e_descarte(self):
         p = self.p
         lid = self._lead()

@@ -7,12 +7,18 @@ takes one approved action at a time (`proxima`), within daily limits, hours and 
 again after a "no") are enforced here, not left to the prompt."""
 
 import datetime as dt
+import fcntl
+import functools
 import json
+import os
 import re
+import tempfile
+import threading
 import time
 import unicodedata
 import uuid
 from collections import Counter
+from contextlib import contextmanager
 from pathlib import Path
 
 PASTA = Path("/a0/usr/prospeccao")
@@ -71,11 +77,77 @@ def agora() -> float:
     return time.time()
 
 
+# ------------------------------------------------------------------ safe state file
+# 12/10 review: two rounds at once could erase each other's work (the pre-approval loaded the state, waited minutes
+# for the reviewer and saved over what the execution round had recorded, so a DM marked as sent could come back as
+# approved), two writers shared one temporary name, and an unreadable file became an empty state that the next save
+# wrote over everything. Now: one writer at a time per person (a short file lock, never held while waiting for a model
+# or the network), a unique temporary file flushed to disk, and an unreadable file stops the work instead.
+ESPERA_TRAVA = 60  # seconds; the critical sections take milliseconds
+_DONO = threading.local()
+
+
+class EstadoIlegivel(RuntimeError):
+    pass
+
+
+@contextmanager
+def _exclusivo(login: str):
+    """One writer at a time per person, across threads and processes; re-entrant in the same thread."""
+    chave = _login(login)
+    travas = getattr(_DONO, "travas", None)
+    if travas is None:
+        travas = _DONO.travas = {}
+    if travas.get(chave):
+        travas[chave] += 1
+        try:
+            yield
+        finally:
+            travas[chave] -= 1
+        return
+    PASTA.mkdir(parents=True, exist_ok=True)
+    with open(PASTA / f"{chave}.lock", "a") as fh:
+        limite = time.time() + ESPERA_TRAVA
+        while True:
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.time() > limite:
+                    raise RuntimeError("a prospecção está ocupada gravando há mais de 1 min; tente de novo") from None
+                time.sleep(0.05)
+        travas[chave] = 1
+        try:
+            yield
+        finally:
+            travas[chave] = 0
+            fcntl.flock(fh, fcntl.LOCK_UN)
+
+
+def _transacao(fn):
+    """Load → change → save as one step for the person in the first argument."""
+    @functools.wraps(fn)
+    def envolta(login, *args, **kwargs):
+        with _exclusivo(login):
+            return fn(login, *args, **kwargs)
+    return envolta
+
+
 def carregar(login: str) -> dict:
-    try:
-        d = json.loads((PASTA / f"{_login(login)}.json").read_text(encoding="utf-8"))
-    except Exception:
-        d = {}
+    arq = PASTA / f"{_login(login)}.json"
+    d = {}
+    if arq.exists():
+        for tentativa in range(3):
+            try:
+                d = json.loads(arq.read_text(encoding="utf-8"))
+                if not isinstance(d, dict):
+                    raise ValueError("não é um objeto JSON")
+                break
+            except (OSError, ValueError) as exc:
+                if tentativa == 2:
+                    raise EstadoIlegivel(f"o arquivo da prospecção ({arq.name}) não pôde ser lido ({str(exc)[:80]}); "
+                                         "nada foi gravado. Avise o Matheus.") from None
+                time.sleep(0.2)
     d.setdefault("leads", [])
     d.setdefault("acoes", [])
     d.setdefault("config", {})
@@ -123,16 +195,27 @@ def eventos(login: str, ultimos: int = 50) -> list[dict]:
 
 
 def salvar(login: str, d: dict) -> None:
-    PASTA.mkdir(parents=True, exist_ok=True)
-    novos = d.pop("_eventos", [])
-    if novos:
-        with (PASTA / f"{_login(login)}_eventos.jsonl").open("a", encoding="utf-8") as f:
-            for e in novos:
-                f.write(json.dumps(e, ensure_ascii=False) + "\n")
-    alvo = PASTA / f"{_login(login)}.json"
-    tmp = alvo.with_suffix(".tmp")
-    tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
-    tmp.replace(alvo)
+    with _exclusivo(login):
+        PASTA.mkdir(parents=True, exist_ok=True)
+        novos = d.pop("_eventos", [])
+        if novos:
+            with (PASTA / f"{_login(login)}_eventos.jsonl").open("a", encoding="utf-8") as f:
+                for e in novos:
+                    f.write(json.dumps(e, ensure_ascii=False) + "\n")
+        alvo = PASTA / f"{_login(login)}.json"
+        fd, tmp = tempfile.mkstemp(dir=PASTA, prefix=f".{_login(login)}.", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(d, f, ensure_ascii=False, indent=1)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, alvo)
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
 
 
 def modo_teste(login: str) -> bool:
@@ -284,6 +367,7 @@ def pontuar(item: dict) -> dict:
             "faixa": "quente" if nota >= NOTA_QUENTE else "bom" if nota >= 65 else "ok" if nota >= NOTA_MINIMA else "fraco"}
 
 
+@_transacao
 def registrar(login: str, novos: list) -> dict:
     """Add leads (dedupe by @handle). Returns {"criados": [...], "repetidos": [...], "recusados": [...]}."""
     d = carregar(login)
@@ -599,6 +683,7 @@ def _evidencia(perfil: dict) -> dict:
     }
 
 
+@_transacao
 def avaliar_perfis(login: str, dados) -> dict:
     """Takes the JSON the browser script returned. Registers what fits (with its score), rejects what clearly does
     not, and returns only what needs a human look (city or segment not in the bio)."""
@@ -673,6 +758,7 @@ def _perfil_padrao(p: dict) -> dict:
             "categoria": p.get("businessCategoryName") or "", "posts": posts}
 
 
+@_transacao
 def conferir_perfis(login: str, dados, fonte: str = "script") -> dict:
     """Profile data for stock leads still to be checked. Returns {"conferidos": [...], "descartados": [...], "erros": [...]}."""
     perfis = json.loads(dados) if isinstance(dados, str) else (dados or [])
@@ -746,6 +832,7 @@ def api_meta_pronta(login: str) -> bool:
 REJEITADO_DIAS = 60
 
 
+@_transacao
 def rejeitar(login: str, itens: list) -> int:
     """Profiles examined that do not fit, with why: skipped by later rounds for 60 days, and auditable."""
     d = carregar(login)
@@ -776,6 +863,7 @@ def _citacao(nota: str) -> str:
 RESPOSTAS_ETAPAS = ("respondeu", "lead", "demo", "teste", "cliente")  # the answer funnel, in order
 
 
+@_transacao
 def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "direct") -> dict | None:
     """New stage. The returned lead carries "novidade": False when it is not a new answer: the rounds re-read the same
     Direct and comments every half hour and describe the same message in other words (11–12/10: "respondeu" reached
@@ -823,6 +911,7 @@ def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "d
     return {**lead, "novidade": True}
 
 
+@_transacao
 def fechar_vencidos(login: str) -> int:
     """Leads that got the reminder and stayed silent become sem_resposta (no third message, ever)."""
     d = carregar(login)
@@ -1071,7 +1160,16 @@ def _parecido(a: str, b: str) -> float:
 
 
 def propor(login: str, itens: list) -> dict:
-    """Validate and store proposed actions. Returns {"propostas": [...acoes], "recusadas": [{...,"motivo"}]}."""
+    """Validate and store proposed actions. Returns {"propostas": [...acoes], "recusadas": [{...,"motivo"}]}. The
+    pre-approval's reviewer runs after the proposals are saved and outside the lock."""
+    d, out = _propor_gravar(login, itens)
+    if d["config"].get("auto"):
+        out = _auto_aprovar(login, out)
+    return out
+
+
+@_transacao
+def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
     d = carregar(login)
     out = {"propostas": [], "recusadas": []}
     restantes = cotas(login)
@@ -1130,9 +1228,7 @@ def propor(login: str, itens: list) -> dict:
         restantes[tipo] -= 1
         out["propostas"].append(acao)
     salvar(login, d)
-    if d["config"].get("auto"):
-        out = _auto_aprovar(login, out)
-    return out
+    return d, out
 
 
 # ------------------------------------------------------------------ pre-approved within the daily limits
@@ -1202,6 +1298,7 @@ def _resposta_falhou(d: dict, lead: dict) -> bool:
     return any(a["estado"] == "falhou" for a in minhas)
 
 
+@_transacao
 def marcar_apagada(login: str, aid: str, detalhe: str = "") -> dict | None:
     """An executed message that was deleted (unsent) in the Instagram: it no longer counts as answered, so one
     new message can go (11/10: the only reply to @zen.marmitas was deleted as a 'duplicate' and the lock stayed)."""
@@ -1253,7 +1350,7 @@ def revisar_textos(d: dict, acoes: list) -> dict:
 def _auto_aprovar(login: str, out: dict) -> dict:
     """Pre-approved types: follow/like with no text pass straight; any text passes the reviewer first. Whatever the
     reviewer does not pass stays a proposal for the person. out gains "automaticas"; "propostas" keeps only the manual."""
-    d = carregar(login)
+    d = carregar(login)  # a snapshot for the reviewer, who may take minutes: nothing is saved from it
     candidatas = [a for a in out["propostas"] if a["tipo"] in AUTO_TIPOS]
     com_texto = [a for a in candidatas if a["texto"]]
     vereditos = revisar_textos(d, com_texto) if com_texto else {}
@@ -1267,12 +1364,20 @@ def _auto_aprovar(login: str, out: dict) -> dict:
             segunda = revisar_textos(d, [a]).get(a["id"], {})
             vereditos[a["id"]] = {"aprovado": segunda.get("aprovado") is True,
                                   "motivo": f"2ª revisão: {segunda.get('motivo', '')} (a 1ª errou: {vereditos[a['id']]['motivo'][:80]})"[:200]}
+    with _exclusivo(login):
+        return _aplicar_vereditos(login, out, candidatas, vereditos)
+
+
+def _aplicar_vereditos(login: str, out: dict, candidatas: list, vereditos: dict) -> dict:
+    d = carregar(login)  # the current state, under the lock: what other rounds saved meanwhile is kept
     automaticas, manuais = [], [a for a in out["propostas"] if a["tipo"] not in AUTO_TIPOS]
     recusadas = list(out.get("recusadas", []))
     sem_aprovacao = d["config"].get("sem_aprovacao", True)
     for a in candidatas:
         v = vereditos.get(a["id"], {"aprovado": True, "motivo": "seguir e curtir, sem texto"})
-        guardada = next(x for x in d["acoes"] if x["id"] == a["id"])
+        guardada = next((x for x in d["acoes"] if x["id"] == a["id"]), None)
+        if not guardada or guardada["estado"] != "proposta":
+            continue  # decided or cancelled meanwhile: leave it as it is
         guardada["revisao"] = v["motivo"]
         if v["aprovado"]:
             _mudar(d, guardada, "aprovada", f"revisor: {v['motivo']}", decidida=agora(), auto=True)
@@ -1327,12 +1432,14 @@ def _contradiz(a: dict, motivo: str) -> bool:
                            or "cadastro" in m and re.search(r"sem cadastro", t, re.I)))
 
 
+@_transacao
 def definir_auto(login: str, ligado: bool) -> None:
     d = carregar(login)
     d["config"]["auto"] = bool(ligado)
     salvar(login, d)
 
 
+@_transacao
 def decidir(login: str, aid: str, decisao: str) -> dict | None:
     """The person's tap: aprovar | pular. Only pending proposals change."""
     d = carregar(login)
@@ -1355,6 +1462,7 @@ def aprovar_todas(login: str, ids: list) -> int:
     return n
 
 
+@_transacao
 def editar(login: str, aid: str, texto: str) -> tuple[dict | None, str]:
     """New text for a proposal or approved action: it goes back to the person for approval."""
     d = carregar(login)
@@ -1374,6 +1482,7 @@ def conta(login: str) -> str:
     return normalizar(carregar(login)["config"].get("conta_instagram") or "")
 
 
+@_transacao
 def definir_conta(login: str, handle: str) -> str:
     h = normalizar(handle)
     if not h or h in CONTAS_PROIBIDAS:
@@ -1387,6 +1496,7 @@ def definir_conta(login: str, handle: str) -> str:
 CONFERENCIA_VALE = 40 * 60  # an execution round must have read the Direct and the notifications this recently
 
 
+@_transacao
 def conferido(login: str, direct: str, notificacoes: str, interagiram: list | None = None) -> str:
     """The round says what it read in the Direct and in the notifications (answers are looked for before acting).
     '' when recorded, else why not: the notifications text must be what is on the page, not a one-word claim."""
@@ -1405,6 +1515,7 @@ def conferido(login: str, direct: str, notificacoes: str, interagiram: list | No
     return ""
 
 
+@_transacao
 def proxima(login: str, conta_ativa: str = "", repor: bool = True) -> tuple[dict | None, str]:
     """Next approved action that may run now (right account, hours, pause, spacing, daily limits)."""
     d = carregar(login)
@@ -1490,6 +1601,18 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
     if tentativas >= TENTATIVAS_COMENTARIO:
         return False, f"{TENTATIVAS_COMENTARIO} versões reprovadas pelo revisor: siga sem comentário neste perfil"
     v = revisar_textos(d, [{"id": a["id"], "lead_id": a["lead_id"], "tipo": "aquecer", "texto": t, "base": base}])[a["id"]]
+    with _exclusivo(login):  # the reviewer ran on a snapshot; the verdict goes into the current state
+        return _gravar_comentario(login, aid, t, base, v)
+
+
+def _gravar_comentario(login: str, aid: str, t: str, base: str, v: dict) -> tuple[bool, str]:
+    d = carregar(login)
+    a = next((x for x in d["acoes"] if x["id"] == aid), None)
+    if not a:
+        return False, "ação de aquecer não encontrada"
+    if a.get("texto") or (a.get("comentario") or {}).get("estado") in ("aprovado", "publicado"):
+        return False, "esse aquecimento já tem comentário"
+    tentativas = (a.get("comentario") or {}).get("tentativas", 0)
     a["comentario"] = {"texto": t, "base": str(base)[:300], "revisao": v["motivo"], "em": agora(),
                        "estado": "aprovado" if v["aprovado"] else "recusado", "tentativas": tentativas + 1}
     if not v["aprovado"]:
@@ -1502,6 +1625,7 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
     return v["aprovado"], v["motivo"]
 
 
+@_transacao
 def comentado(login: str, aid: str, ok: bool, detalhe: str = "") -> dict | None:
     """The approved comment was (or was not) published."""
     d = carregar(login)
@@ -1570,6 +1694,7 @@ def aviso_sem_acao(motivo: str) -> str:
     return f"NADA AGORA: {motivo}. Termine a rodada."
 
 
+@_transacao
 def resultado(login: str, aid: str, ok: bool, detalhe: str = "", bloqueio: bool = False) -> dict | None:
     d = carregar(login)
     a = next((x for x in d["acoes"] if x["id"] == aid), None)
@@ -1591,6 +1716,7 @@ def resultado(login: str, aid: str, ok: bool, detalhe: str = "", bloqueio: bool 
     return a
 
 
+@_transacao
 def expirar(login: str) -> int:
     d = carregar(login)
     n = 0
@@ -1647,6 +1773,7 @@ def pendentes(login: str) -> list:
     return [(a, _lead(d, a["lead_id"])) for a in d["acoes"] if a["estado"] == "proposta"]
 
 
+@_transacao
 def guardar_pacote(login: str, ids: list) -> str:
     d = carregar(login)
     pid = _id()
