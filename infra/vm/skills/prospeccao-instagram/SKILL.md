@@ -55,8 +55,8 @@ dia; comentário: `comentar`, até 2). `editar` troca o texto de uma ação apro
 ## As rodadas (uma por vez)
 
 **Execução** (minutos 8 e 38, das 9h08 às 12h38 e das 14h08 às 21h38): 1. a espera sorteada do prompt; 2. conta
-certa (seção 1); 3. `contexto`; 4. ler respostas e `caixa_lida` (seção 2); 5. `playbook`, antes do primeiro texto da
-rodada (resposta ou comentário); 6. `proxima` até 3 ações feitas ou "NADA AGORA" (seção 3); 7. resposta final.
+certa (seção 1); 3. `contexto`; 4. `playbook` (inteiro, sempre: a etapa e a resposta de cada fala dependem dele);
+5. ler respostas e `caixa_lida` (seção 2); 6. `proxima` até 3 ações feitas ou "NADA AGORA" (seção 3); 7. resposta final.
 Depois das 20h e no domingo, a `proxima` só entrega respostas a quem escreveu, até 22h.
 
 **Busca** (8h07 e 13h07): 1. a espera sorteada; 2. conta certa; 3. `playbook` e `contexto`; 4. propor o que é devido
@@ -81,8 +81,10 @@ precisa dele (bloqueio, verificação, conta, erro), em até 3 linhas.
 ## 2. Ler respostas (toda rodada de execução, antes de agir)
 
 1. **Direct:** o contador de não lidas diz SE há algo novo, não DE QUEM, e zera quando alguém lê pelo celular. Por isso:
-   - tire print de https://www.instagram.com/direct/inbox/ e de https://www.instagram.com/direct/requests/: conversa em
-     negrito ou com ponto azul é não lida; abra também essas;
+   - toda rodada, tire print de https://www.instagram.com/direct/inbox/: conversa em negrito ou com ponto azul é não
+     lida; abra também essas. Solicitações (https://www.instagram.com/direct/requests/) e notificações: na primeira
+     rodada de cada turno (9h08 e 14h08), na última (21h38), na VARREDURA COMPLETA e quando o contador do Direct ou do
+     coração estiver acima de zero;
    - abra (perfil → Mensagem) as conversas que o `contexto` lista em "Direct nesta rodada";
    - contador acima de zero que você não explicou, ou o `contexto` pedindo **VARREDURA COMPLETA**: abra uma a uma as
      conversas da lista do `contexto`. Depois, `caixa_lida` com varredura: true.
@@ -92,8 +94,10 @@ precisa dele (bloqueio, verificação, conta, erro), em até 3 linhas.
    não perguntava nada (link enviado, agradecimento, despedida): não é fala; não registre.
 3. **Resposta automática não é fala** ("Automation powered by Manychat", "já já entraremos em contato", "recebemos sua
    mensagem" segundos depois da nossa): não registre nem responda; anote só na `caixa_lida`. Se ela disser que só
-   atendem pelo WhatsApp, anote o número na `caixa_lida`.
-4. **Notificações** (https://www.instagram.com/accounts/activity/): "respondeu ao seu comentário", "mencionou você",
+   atendem pelo WhatsApp: não responda; `etapa` "respondeu", nota "pendente: só atende no WhatsApp (<número>)" (quem
+   decide se chama é o Matheus).
+4. **Notificações** (https://www.instagram.com/accounts/activity/; se a página não mostrar a lista, clique em
+   "Notificações", o coração do menu lateral, e leia o painel): "respondeu ao seu comentário", "mencionou você",
    "começou a seguir você", curtidas.
 5. **Para cada @ do registro que falou:**
    - **respondeu ao nosso comentário:** `etapa` com etapa "interagiu" e a `nota` (o que disse). Só se falou de preço,
@@ -183,16 +187,12 @@ Não navegue em hashtag ou Explorar para achar leads.
    mês. Sem Apify: siga com o estoque que há.
 3. **Conferir o estoque** (leads achados fora do Instagram): `conferir_estoque` (Apify ou API oficial), no máximo 3
    vezes por rodada. "Nada a conferir" ou "a conferência fica para a visita": pare esta parte.
-4. **Só se o Matheus ligou os scripts:** `buscar_script` → rode com `browser` action "evaluate" numa aba em
-   https://www.instagram.com/ → leve o JSON inteiro para a seção 6; `conferir_estoque` pode devolver um script: rode e
-   passe o texto para `estoque_conferido`.
+4. **Scripts com a conta:** só se a ferramenta disser que estão ligados; ela traz o passo a passo.
 
 ## 6. Avaliar (você coleta evidência; a nota é da ferramenta)
 
-1. Para @ que o Matheus mandar (ou, com os scripts ligados, os `achados` do `buscar_script`): `avaliar_api` (API
-   oficial). Com os scripts ligados, o que ela não avaliar vai por `perfis_script` → "evaluate" → `avaliar_perfis`. A
-   ferramenta registra os que encaixam, recusa os que não encaixam e devolve em "conferir" só os que não dizem cidade
-   ou segmento.
+1. Para @ que o Matheus mandar: `avaliar_api` (API oficial). A ferramenta registra os que encaixam, recusa os que não
+   encaixam e devolve em "conferir" só os que não dizem cidade ou segmento.
 2. Para cada um de "conferir": abra o perfil, descubra o que falta e use `registrar` (copie os dados do item e complete
    o que faltava) ou `rejeitar`.
 3. Curso, professor, influenciador, consultor, contador ou fornecedor: `registrar` com canal "parceiro", sem
