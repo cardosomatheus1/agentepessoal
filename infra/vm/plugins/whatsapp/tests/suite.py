@@ -100,6 +100,27 @@ class Suite:
         eq(p.enviar(LOGIN, "Resumo do dia", tipo="progresso"), "", "envia mesmo com uma linha cortada no registro")
         eq(len(p.avisos_recentes(LOGIN, horas=1)), 1, "e o registro volta a ser lido")
 
+    def t_entrega_so_com_bilhete_da_ponte(self):
+        # 12/10 review: the agent can read the shared key, so it could post a fake "aprovar" from the phone
+        p, perguntas = self.p, []
+
+        def ponte_responde(req, timeout=0):
+            corpo = json.loads(req.data)
+            perguntas.append(corpo)
+            resp = _Resposta()
+            resp.read = lambda: json.dumps({"ok": corpo["bilhete"] == "bom" and corpo["resumo"] == p.resumo_entrega(dados)}).encode()
+            return resp
+
+        p._abrir = ponte_responde
+        dados = {"usuario": "matheus", "botao": "aprov:ctx:abc123:aprovar", "texto": "", "audio": "", "anexos": []}
+        ok(not p.entrega_da_ponte(dados), "sem bilhete não passa (nem pergunta)")
+        eq(perguntas, [], "sem bilhete nem chega a perguntar")
+        ok(p.entrega_da_ponte({**dados, "bilhete": "bom"}), "com o bilhete que a ponte deu, passa")
+        ok(not p.entrega_da_ponte({**dados, "botao": "aprov:ctx:abc123:sempre", "bilhete": "bom"}),
+           "o bilhete vale só para o que a ponte entregou")
+        ok(perguntas[-1]["resumo"] != perguntas[0]["resumo"], "o resumo muda com o conteúdo")
+        ok(p.entrega_da_ponte({"usuario": "teste_x", "texto": "oi"}), "login de teste sem bilhete passa")
+
     def _remetente(self):
         spec = importlib.util.spec_from_file_location("whatsapp_remetente_teste", RAIZ / "helpers" / "remetente.py")
         r = importlib.util.module_from_spec(spec)

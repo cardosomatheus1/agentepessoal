@@ -164,12 +164,12 @@ comando (a máquina não lê o bucket S3).
 | `vmcmd.py '<comando>'` | Roda um comando na VM do agente por SSM (até ~10 min) |
 | `mandar_msg.py <arquivo> [chat]` | Manda uma mensagem ao agente como `matheus` (chat novo se não passar o id) |
 | `rodar_testes.py [so\|LIMPAR]` | Suíte do plugin `auxiliar` |
-| `rodar_testes_pro.py` | Suíte do plugin `prospeccao` (29 testes) |
+| `rodar_testes_pro.py` | Suíte do plugin `prospeccao` (59 testes; roda em outro processo, nunca dentro do agente) |
 | `infra/vm/plugins/prospeccao/rodadas.py [--criar] [buscar\|executar\|semana\|resumo]` | Cria/atualiza/dispara as rodadas da prospecção |
 | `tarefas_auxiliar.py`, `resumo_novo.py` | Tarefas do auxiliar e do resumo diário |
 | `resetar_chat.py <ctx>`, `apagar_chat.py` | Limpar conversas de teste |
 | `ver_chat.sh <ctx>` (rodar na VM) | Últimas mensagens de uma conversa do agente |
-| `implantar.py <plugin> [--skill s]` / `implantar.py --host <script> [--reiniciar unit]` | **O único jeito** de levar plugin, skill ou script do host à VM (só o commitado e no GitHub; testa numa cópia de estágio com `ESTAGIO=1` antes) |
+| `implantar.py <plugin> [--skill s]` / `implantar.py --host <script> [--reiniciar unit]` / `implantar.py --controle` | **O único jeito** de levar plugin, skill ou script do host à VM, e a função de controle (página + webhooks) à AWS (só o commitado e no GitHub; plugin testado numa cópia de estágio com `ESTAGIO=1` antes) |
 | `decisoes.py listar\|registrar\|revogar\|semear` | Registro de decisões do Matheus pelo helper (`--motivo` obrigatório para mudar) |
 | `retomar_chat.py <ctx> [--pausar]`, `aprovar_pendente.py <ctx> [--so-ver]` | Despausar/pausar uma conversa; ver/aprovar o pedido de ok que está esperando |
 | `mover_perfis_navegador.py` | (feito em 12/10) levou os perfis do navegador para fora do contêiner |

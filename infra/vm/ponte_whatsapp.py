@@ -12,6 +12,7 @@ phone number id, numbers) come from the SSM SecureString /agentepessoal/whatsapp
 """
 
 import fcntl
+import hashlib
 import http.server
 import json
 import mimetypes
@@ -741,9 +742,40 @@ def preparar(item: dict) -> dict:
             "anexos": anexos, "id": msg.get("id", ""), "responde_a": contexto.get("id", ""), "botao": botao}
 
 
+# 12/10 review: the shared key (.chave) sits in the agent's own volume, so the agent could post a fake "phone message"
+# or button press (an "aprovar") to the plugin. Every delivery now carries a one-time ticket that lives only here, in
+# this process on the host; the plugin asks back (POST /conferir) before acting, and the ticket is spent on the spot.
+BILHETES: dict[str, tuple[float, str]] = {}  # ticket -> (valid until, digest of what was delivered)
+_TRAVA_BILHETES = threading.Lock()
+CAMPOS_BILHETE = ("usuario", "conversa", "gatilho", "botao", "texto", "audio", "anexos")  # same in plugin ponte.py
+VALIDADE_BILHETE = 300
+
+
+def resumo_entrega(dados: dict) -> str:
+    return hashlib.sha256(json.dumps({k: dados.get(k) for k in CAMPOS_BILHETE}, sort_keys=True,
+                                     ensure_ascii=False).encode()).hexdigest()
+
+
+def novo_bilhete(dados: dict, agora: float | None = None) -> str:
+    agora = agora or time.time()
+    bilhete = secrets.token_urlsafe(24)
+    with _TRAVA_BILHETES:
+        for velho in [b for b, (ate, _) in BILHETES.items() if ate < agora]:
+            BILHETES.pop(velho, None)
+        BILHETES[bilhete] = (agora + VALIDADE_BILHETE, resumo_entrega(dados))
+    return bilhete
+
+
+def conferir_bilhete(bilhete: str, resumo: str, agora: float | None = None) -> bool:
+    """True once: the ticket was made here for exactly this delivery and has not expired."""
+    with _TRAVA_BILHETES:
+        dado = BILHETES.pop(bilhete or "", None)
+    return bool(dado) and dado[0] >= (agora or time.time()) and secrets.compare_digest(dado[1], resumo or "")
+
+
 def entregar(dados: dict) -> None:
     req = urllib.request.Request(
-        f"{A0}/api/plugins/whatsapp/receber", data=json.dumps(dados).encode(),
+        f"{A0}/api/plugins/whatsapp/receber", data=json.dumps({**dados, "bilhete": novo_bilhete(dados)}).encode(),
         headers={"Content-Type": "application/json", "X-Chave": chave()},
     )
     with urllib.request.urlopen(req, timeout=600) as r:  # audio transcription can take a while
@@ -888,8 +920,12 @@ class Saida(http.server.BaseHTTPRequestHandler):
         self.wfile.write(dados)
 
     def do_POST(self):
-        if self.path not in ("/enviar", "/gatilho_url", "/configurar") or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
+        if self.path not in ("/enviar", "/gatilho_url", "/configurar", "/conferir") or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
             return self._responder(403, {"erro": "sem acesso"})
+        if self.path == "/conferir":  # the plugin asks whether a delivery really came from here (ticket spent now)
+            pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+            return self._responder(200, {"ok": conferir_bilhete(str(pedido.get("bilhete") or ""),
+                                                                 str(pedido.get("resumo") or ""))})
         if self.path == "/configurar":  # the token, read from the Meta page by a tool (never by the model)
             global _cfg
             pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")

@@ -526,6 +526,11 @@ class Receber(ApiHandler):
     async def process(self, input: dict, request: Request) -> dict | Response:
         if not _chave_ok(request):
             return Response('{"erro": "sem acesso"}', status=403, mimetype="application/json")
+        import asyncio
+
+        if not await asyncio.to_thread(ponte().entrega_da_ponte, input):  # see helpers/ponte.py
+            print(f"whatsapp: delivery for {input.get('usuario')!r} without a valid bridge ticket refused", flush=True)
+            return Response('{"erro": "entrega sem bilhete da ponte"}', status=403, mimetype="application/json")
         from agent import UserMessage
         from helpers import message_queue as mq
 

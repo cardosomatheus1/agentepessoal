@@ -27,6 +27,32 @@ def chave() -> str:
         return ""
 
 
+CAMPOS_BILHETE = ("usuario", "conversa", "gatilho", "botao", "texto", "audio", "anexos")  # same as the bridge's
+
+
+def resumo_entrega(dados: dict) -> str:
+    return hashlib.sha256(json.dumps({k: dados.get(k) for k in CAMPOS_BILHETE}, sort_keys=True,
+                                     ensure_ascii=False).encode()).hexdigest()
+
+
+def entrega_da_ponte(dados: dict) -> bool:
+    """The delivery really came from the bridge: it carries a one-time ticket that only the bridge (on the host, outside
+    this container) keeps, and the bridge spends it now. The agent can read the shared key, so without this it could
+    fake a phone message or a button press — an "aprovar" for its own action (12/10 review). Test logins (teste_*)
+    reach no one and own nothing, so their tools may still post without a ticket (one that comes is checked)."""
+    if not dados.get("bilhete"):
+        return str(dados.get("usuario") or "").startswith("teste_")
+    req = urllib.request.Request(URL.rsplit("/", 1)[0] + "/conferir",
+                                 data=json.dumps({"bilhete": dados["bilhete"], "resumo": resumo_entrega(dados)}).encode(),
+                                 headers={"Content-Type": "application/json", "X-Chave": chave()})
+    try:
+        with _abrir(req, timeout=10) as r:
+            return bool(json.loads(r.read() or b"{}").get("ok"))
+    except Exception as exc:
+        print(f"whatsapp: bridge ticket check failed: {exc}", flush=True)
+        return False
+
+
 URGENTE = re.compile(r"^\W*(precisa de voc[eê]|urgente|decis[aã]o|aten[cç][aã]o|bloquead|falh|erro|⚠️|❗|🚨)", re.I)
 
 

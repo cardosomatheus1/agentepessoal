@@ -88,8 +88,10 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | Celular virtual sem acesso ao proxy de modelos, às credenciais da Meta e à ponte (o agente continua acessando) | ✅ | `firewall.sh` + aplicado ao vivo |
 | Login: só o IP que errou fica travado (ninguém tranca você para fora); muitas falhas no total só deixam cada erro mais lento | ✅ | `22c1eb6` (login_usuarios, com testes) |
 | E-mail para o agente: só vira pedido seu se for comprovado — enviado logado na sua conta da Locaweb, ou com assinatura DKIM válida do domínio (Gmail); o resto chega como "foi você?" e o agente não faz nada do que ele pede. Conferido em 60 e-mails reais | ✅ | `helpers/remetente.py` (whatsapp) |
+| Testes da prospecção nunca mexem nas rodadas de verdade (a API de testes trocava, dentro do agente, o revisor por um que aprova tudo e o relógio por um simulado) | ✅ | `5eb4471` |
+| Telegram: o link de vínculo vale 15 minutos e uma vez só (antes não vencia: quem visse o link virava "matheus" no bot); os chats já ligados são avisados; botão "Desconectar" na página de controle | ✅ | função de controle (`implantar.py --controle`) |
+| Mensagem e botão do celular só valem com o bilhete de uso único da ponte, que fica fora do contêiner: o agente não consegue aprovar a própria ação nem escrever como você | ✅ | ponte + whatsapp |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
-| Botões assinados (o agente não consegue aprovar a si mesmo) | depois: precisa de assinatura que o contêiner não forja; hoje o id já fecha o caso do botão velho | §3.1 |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |
 
@@ -626,7 +628,7 @@ Se tudo estiver bem, não manda nada.
 | Fase | Quando | O quê | Esforço |
 |---|---|---|---|
 | **0 — Hoje** | já | **Você:** repositório privado (1 clique). **Eu:** bucket e repositório conferidos ✓; `set +x` no setup ✓; pausar "Acompanhar Claude Code" ✓; corrigir a deduplicação do "respondeu" ✓ | 1–2 h |
-| **1 — Base à prova de erro** | semana 1 | `transacao()` em todos os JSON ✓; reserva de ação + "incerta" ✓; limites de memória (generosos) ✓ + vigia que avisa ✓; perfil do navegador fora do contêiner ✓ + snapshot diário ✓; backup que diz a verdade ✓; bilhete de envio no lugar da janela de 12 min (adiado, ver "Andamento"); aprovação sempre com id ✓ e botões assinados (depois) | 3–4 dias |
+| **1 — Base à prova de erro** | semana 1 | `transacao()` em todos os JSON ✓; reserva de ação + "incerta" ✓; limites de memória (generosos) ✓ + vigia que avisa ✓; perfil do navegador fora do contêiner ✓ + snapshot diário ✓; backup que diz a verdade ✓; bilhete de envio no lugar da janela de 12 min (adiado, ver "Andamento"); aprovação sempre com id ✓ e botões com bilhete da ponte ✓ | 3–4 dias |
 | **2 — Livro, decisões e portão** | semana 2 | Plugin `central` ✓ (livro de ações só acrescenta + Conferência sem modelo); prospecção gravando no livro ✓; `/livro` ✓ e `/decisoes` ✓; registro de decisões ✓ (em `memoria_pessoal`); aviso repetido segurado ✓. **Falta:** itens/fatos por `tema`, fios e avisos migrados, `/pendentes`, conferência na tela, "Feito hoje" e revisão gerados do banco, teto de avisos por dia | 4–5 dias |
 | **3 — Confiabilidade contínua** | semana 3 | Saúde diária ✓ (falta o canário do Instagram); implantador único ✓ (host incluído; rotinas no git ✓); CI ✓; testes em ponte ✓, cofre ✓, agenda ✓, login ✓; logs do Docker com limite ✓; backup que não apaga sem restauração confirmada ✓. **Falta:** teste de restauração, AWS Budgets | 3 dias |
 | **4 — Crescimento** | semana 3–4 | Planilha inteira do Grok ✓; métricas por origem ✓; Apify ✓; API da Meta para conferir perfis ✓. **Falta:** link curto + cadastros ligados aos leads; API oficial para responder; demo com agenda; cartão do lead quente; enxugar funções (YouTube, iniciativa, radar+fios) | 4–5 dias |
