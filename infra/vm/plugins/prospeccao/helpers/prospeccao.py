@@ -10,7 +10,9 @@ import datetime as dt
 import json
 import re
 import time
+import unicodedata
 import uuid
+from collections import Counter
 from pathlib import Path
 
 PASTA = Path("/a0/usr/prospeccao")
@@ -318,6 +320,7 @@ def registrar(login: str, novos: list) -> dict:
         if item.get("atividade_pendente") and not item.get("ultimo_post"):
             lead["conferir_atividade"] = True  # found outside Instagram: last post checked on the warm-up visit
             lead["fonte"] = str(item.get("fonte") or "")[:40]
+        lead["origem"] = origem({**lead, "origem": item.get("origem"), "fonte": item.get("fonte") or lead.get("fonte", "")})
         d["leads"].append(lead)
         por_handle[handle] = lead
         out["criados"].append({"handle": handle, "id": lead["id"], "nota": lead["nota"],
@@ -690,24 +693,135 @@ def _dias_desde(ts: float) -> int:
 # Lead stock (Matheus, 12/10: "manter um estoque de 100 — o que consumir, buscar"): the search rounds refill the
 # queue of new leads up to this target; the execution rounds consume it (refill of «aquecer» slots).
 ESTOQUE_ALVO = 100
+# The stock is split among the sources (Matheus, 12/10: "acho que temos que dividir as fontes") so each one keeps
+# flowing and its yield can be compared: by 12/10, 11 of the 15 sheet profiles visited were discarded (stale, too big,
+# private) while the 14 found on Instagram itself had no discard and gave both replies. Config "estoque_fontes".
+ORIGENS = ("planilha", "instagram", "catalogo")
+ESTOQUE_FONTES = {"planilha": 60, "instagram": 30, "catalogo": 10}
+
+
+def origem(lead: dict) -> str:
+    """Where a lead came from: the Grok SDR sheet, Instagram itself (the agent's search) or the CNPJ catalog."""
+    o = str(lead.get("origem") or "")
+    if o in ORIGENS:
+        return o
+    t = f"{lead.get('fonte', '')} {lead.get('motivo', '')}"
+    if re.search(r"grok|planilha|sdr", t, re.I):
+        return "planilha"
+    if re.search(r"guiapj|\bCNPJ \d", t, re.I) or lead.get("conferir_atividade"):
+        return "catalogo"
+    return "instagram"
+
+
+def _alvos_fontes(d: dict, alvo: int) -> dict:
+    cfg = d["config"].get("estoque_fontes") or ESTOQUE_FONTES
+    pesos = {o: max(0, int(cfg.get(o) or 0)) for o in ORIGENS}
+    total = sum(pesos.values()) or 1
+    return {o: round(alvo * pesos[o] / total) for o in ORIGENS}
 
 
 def estoque(login: str) -> dict:
-    """New leads ready to be warmed (Instagram, never tried) vs the target: {"prontos", "alvo", "faltam"}."""
+    """New leads ready to be warmed (Instagram, never tried) vs the target, in total and per source:
+    {"prontos", "alvo", "faltam", "por_fonte": {origem: {"prontos", "alvo", "faltam", "a_conferir"}}}."""
     d = carregar(login)
     tentados = {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")}
-    prontos = sum(1 for l in d["leads"] if l["etapa"] == "novo" and l["canal"] == "instagram" and l["id"] not in tentados)
+    novos = [l for l in d["leads"] if l["etapa"] == "novo" and l["canal"] == "instagram" and l["id"] not in tentados]
     alvo = int(d["config"].get("estoque_alvo") or ESTOQUE_ALVO)
-    return {"prontos": prontos, "alvo": alvo, "faltam": max(0, alvo - prontos)}
+    alvos = _alvos_fontes(d, alvo)
+    por_fonte = {}
+    for o in ORIGENS:
+        meus = [l for l in novos if origem(l) == o]
+        por_fonte[o] = {"prontos": len(meus), "alvo": alvos[o], "faltam": max(0, alvos[o] - len(meus)),
+                        "a_conferir": sum(1 for l in meus if l.get("conferir_atividade"))}
+    return {"prontos": len(novos), "alvo": alvo, "faltam": max(0, alvo - len(novos)), "por_fonte": por_fonte}
 
 
 def _fila_repor(login: str) -> list:
-    """Best new lead that may take a free «aquecer» slot today ([] when none or no pre-approval)."""
+    """Best new lead that may take a free «aquecer» slot today ([] when none or no pre-approval). Someone who
+    interacted with the Raiz goes first; otherwise the sources take turns by their share of the stock, so each one is
+    tried and measured every day. A failed visit is not retried."""
     d = carregar(login)
     if not d["config"].get("auto") or cotas(login)["aquecer"] <= 0:
         return []
     tentados = {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")}
-    return [l for l in devidos(login)["aquecer"] if l["id"] not in tentados][:1]  # a failed visit is not retried
+    candidatos = [l for l in devidos(login)["aquecer"] if l["id"] not in tentados]
+    if not candidatos or candidatos[0].get("interagiu"):
+        return candidatos[:1]
+    alvos = _alvos_fontes(d, 100)
+    hoje = _hoje_local()
+    vez = Counter(origem(_lead(d, a["lead_id"]) or {}) for a in d["acoes"]
+                  if a["tipo"] == "aquecer" and _hoje_local(a.get("criada", 0)) == hoje)
+    por_origem: dict = {}
+    for l in candidatos:
+        por_origem.setdefault(origem(l), []).append(l)
+    com_peso = [o for o in por_origem if alvos.get(o)]
+    escolhida = min(com_peso, key=lambda o: (vez[o] / alvos[o], -alvos[o])) if com_peso else next(iter(por_origem))
+    # within the source: profiles already checked (last post known) before the ones still to be checked on the visit
+    return sorted(por_origem[escolhida], key=lambda l: bool(l.get("conferir_atividade")))[:1]
+
+
+def _motivo_descarte(texto: str) -> str:
+    t = "".join(c for c in unicodedata.normalize("NFD", str(texto or "")) if unicodedata.category(c) != "Mn").lower()
+    if re.search(r"privad|indispon|confirm|outro neg|nao corresponde|inexist", t):
+        return "não confere / privado"
+    if re.search(r"seguidor|grande|pequeno|rede|franquia", t):
+        return "tamanho"
+    if re.search(r"parad|dias|post|inativ", t):
+        return "parado"
+    return "outro"
+
+
+def metricas_fontes(login: str, dias: int = 28) -> dict:
+    """Funnel per source over the last days: leads in, profiles visited, discarded on the visit (and why), warmed,
+    first messages, answers. Splitting the sources is only worth it if we know which one pays off."""
+    d = carregar(login)
+    corte = agora() - dias * 86400
+    out = {o: {"leads": 0, "visitados": 0, "descartados_visita": 0, "motivos": {}, "aquecidos": 0, "abordados": 0,
+               "responderam": 0} for o in ORIGENS}
+    visitas: dict = {}
+    for a in d["acoes"]:
+        if a["tipo"] == "aquecer" and a["estado"] in ("executada", "falhou", "cancelada"):
+            visitas.setdefault(a["lead_id"], []).append(a)
+    for l in d["leads"]:
+        if l["criado"] < corte:
+            continue
+        m = out[origem(l)]
+        m["leads"] += 1
+        hist, minhas = l["historico"], visitas.get(l["id"], [])
+        aquecido = any(a["estado"] == "executada" for a in minhas)
+        descarte = next((h for h in hist if h["tipo"] == "etapa:descartado"), None)
+        if aquecido:
+            m["aquecidos"] += 1
+        elif descarte and minhas:
+            m["descartados_visita"] += 1
+            motivo = _motivo_descarte(descarte.get("texto", ""))
+            m["motivos"][motivo] = m["motivos"].get(motivo, 0) + 1
+        if aquecido or (descarte and minhas):
+            m["visitados"] += 1
+        if any(h["tipo"] == "dm_abertura" for h in hist):
+            m["abordados"] += 1
+        if l["etapa"] in ("respondeu", "lead", "demo", "teste", "cliente") or any(h["tipo"] == "etapa:respondeu" for h in hist):
+            m["responderam"] += 1
+    for m in out.values():
+        m["descarte_pct"] = round(100 * m["descartados_visita"] / m["visitados"]) if m["visitados"] else None
+    return out
+
+
+def linha_fontes(login: str, dias: int = 28) -> str:
+    """One line per source for people: «planilha: 77 leads, 15 visitados (73% descartados: parado 6…), 0 respostas»."""
+    linhas = []
+    for o, m in metricas_fontes(login, dias).items():
+        if not m["leads"]:
+            continue
+        desc = ""
+        if m["descartados_visita"]:
+            desc = (f" ({m['descarte_pct']}% descartados na visita: "
+                    + ", ".join(f"{k} {v}" for k, v in sorted(m["motivos"].items(), key=lambda x: -x[1])) + ")")
+        elif m["visitados"]:
+            desc = " (nenhum descartado na visita)"
+        linhas.append(f"{o}: {m['leads']} leads, {m['visitados']} visitados{desc}, {m['aquecidos']} aquecidos, "
+                      f"{m['abordados']} abordados, {m['responderam']} responderam")
+    return "\n".join(linhas)
 
 
 def repor_aquecer(login: str) -> int:
@@ -1438,7 +1552,7 @@ def metricas(login: str, dias: int = 7) -> dict:
     decididas = sum(1 for a in acoes if a["estado"] in ("aprovada", "executada", "falhou", "pulada"))
     return {"dias": dias, "acoes": por_estado, "etapas": etapas, "geral": taxa(abordados),
             "por_variante": por("variante"), "por_segmento": por("segmento"), "por_cidade": por("cidade"),
-            "por_faixa": por("faixa"),
+            "por_faixa": por("faixa"), "por_fonte": metricas_fontes(login, dias),
             "taxa_aprovacao": round(100 * aprovadas / decididas, 1) if decididas else 0.0,
             "falhas": [a.get("detalhe", "") for a in acoes if a["estado"] == "falhou"][-5:],
             "pausado": agora() < d["bloqueio_ate"]}
@@ -1489,7 +1603,9 @@ def resumo_hoje(login: str) -> str:
         linhas += [f"• @{(leads.get(a['lead_id']) or {}).get('handle')} — «{a['comentario']['texto'][:90]}»" for a in comentados]
     e = estoque(login)
     if novos or rejeitados or e["faltam"]:
-        linhas.append(f"\n🔎 *Leads:* {len(novos)} entraram hoje · estoque {e['prontos']}/{e['alvo']} prontos para aquecer"
+        por_o = Counter(origem(l) for l in novos)
+        de_onde = f" ({', '.join(f'{o} {n}' for o, n in por_o.most_common())})" if novos else ""
+        linhas.append(f"\n🔎 *Leads:* {len(novos)} entraram hoje{de_onde} · estoque {e['prontos']}/{e['alvo']} prontos para aquecer"
                       f" · {rejeitados} descartados hoje")
         novos.sort(key=lambda l: -(l.get("nota") or 0))
         if novos:
@@ -1518,10 +1634,15 @@ def resumo_contexto(login: str) -> str:
     c = cotas(login)
     dev = devidos(login)
     e = estoque(login)
+    pf = e["por_fonte"]
+    partes = "; ".join(f"{o} {pf[o]['prontos']}/{pf[o]['alvo']}" + (f" (FALTAM {pf[o]['faltam']})" if pf[o]["faltam"] else "")
+                       for o in ORIGENS)
     linhas = [f"# Prospecção — {dt.datetime.now(_tz()).strftime('%a %d/%m %H:%M')} ({FUSO})",
               "Cotas que ainda cabem hoje (propostas aprovadas contam): " + ", ".join(f"{k} {v}" for k, v in c.items()),
               f"Estoque de leads prontos para aquecer: {e['prontos']} de {e['alvo']}" +
-              (f" — FALTAM {e['faltam']}: reponha com `fontes` (e a busca no Instagram se as fontes secarem)." if e["faltam"] else " (cheio).")]
+              (f" — FALTAM {e['faltam']}." if e["faltam"] else " (cheio).") + f" Por fonte: {partes}." +
+              (" Planilha/catálogo: reponha com `fontes`." if pf["planilha"]["faltam"] or pf["catalogo"]["faltam"] else "") +
+              (f" Instagram: busque no Instagram (skill, 2b e 3) até {pf['instagram']['faltam']} novos." if pf["instagram"]["faltam"] else "")]
     if agora() < d["bloqueio_ate"]:
         linhas.append("⛔ PAUSADO após bloqueio do Instagram — não proponha nada até " +
                       dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M"))
@@ -1543,4 +1664,7 @@ def resumo_contexto(login: str) -> str:
     m = metricas(login, 14)
     linhas.append(f"\n## Como está indo (14 dias)\n{json.dumps(m['geral'], ensure_ascii=False)}; por variante: "
                   f"{json.dumps(m['por_variante'], ensure_ascii=False)}; aprovação das propostas: {m['taxa_aprovacao']}%")
+    rend = linha_fontes(login, 28)
+    if rend:
+        linhas.append("\n## Rendimento por fonte (28 dias)\n" + rend)
     return "\n".join(linhas)

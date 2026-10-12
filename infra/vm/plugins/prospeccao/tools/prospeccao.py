@@ -169,19 +169,32 @@ class Prospeccao(Tool):
                      "Só os de \"conferir\" precisam de você: abra o perfil, descubra o que falta (cidade/segmento) e registre "
                      "com `registrar` usando o item como base (ou `rejeitar`).")
         if acao == "fontes":
+            # the stock is split among the sources (12/10): this action refills only the share of the sheet and of the
+            # CNPJ catalog that is missing; the Instagram share is the search round's own search on Instagram
             f = fontes()
             limite = max(1, min(40, int(kwargs.get("limite") or 20)))
+            pf = p.estoque(login)["por_fonte"]
+            origens = [o for o in ("planilha", "catalogo") if pf[o]["faltam"]]
+            if not origens:
+                ig = pf["instagram"]["faltam"]
+                return r("A parte da planilha e a do catálogo no estoque estão cheias: não chame `fontes` de novo agora."
+                         + (f" Falta a parte do Instagram ({ig}): busque no Instagram (skill, 2b e 3)." if ig else " Estoque cheio."))
             coleta = None
             d = f.carregar(login)
-            if sum(1 for e in d["empresas"].values() if e["estado"] == "fila") < limite:
+            if "catalogo" in origens and sum(1 for e in d["empresas"].values()
+                                             if e["estado"] == "fila" and f.origem_empresa(e) == "catalogo") < limite:
                 coleta = await asyncio.to_thread(f.coletar, login, int(kwargs.get("paginas") or 4))
-            out = await asyncio.to_thread(f.enriquecer, login, p, limite)
+            out = await asyncio.to_thread(f.enriquecer, login, p, limite, origens)
             e = p.estoque(login)
+            pf = e["por_fonte"]
+            falta_fontes = pf["planilha"]["faltam"] or pf["catalogo"]["faltam"]
             return r(json.dumps({"coleta": coleta, **out, "estoque": e}, ensure_ascii=False) +
                      "\nCriados já estão registrados com nota (achados fora do Instagram: a data do último post é conferida na "
                      "visita do aquecimento, quando o comentário também é escrito). Não precisa propor «aquecer»: a execução "
-                     "consome o estoque sozinha. " + (f"Estoque {e['prontos']}/{e['alvo']}: chame `fontes` de novo para repor."
-                                                      if e["faltam"] and not out.get("erro_busca") else "Estoque cheio ou buscas do dia esgotadas: pare."))
+                     "consome o estoque sozinha. "
+                     + ("Chame `fontes` de novo para repor a planilha/catálogo." if falta_fontes and not out.get("erro_busca")
+                        else "Planilha/catálogo: pare (parte cheia ou buscas do dia esgotadas).")
+                     + (f" Instagram: faltam {pf['instagram']['faltam']} — busque no Instagram (skill, 2b e 3)." if pf["instagram"]["faltam"] else ""))
         if acao == "importar_lista":
             caminho = Path(str(kwargs.get("arquivo") or texto or ""))
             if not caminho.is_file() or caminho.suffix != ".json":

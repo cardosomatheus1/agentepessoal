@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 3.1.1
+version: 3.2.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -57,7 +57,7 @@ resumo das 20h17.
 
 | Rodada | Quando (Bahia) | O que faz |
 |---|---|---|
-| 🎯 Prospecção — buscar | 9h23 e 14h23 | seção 4 (mensagens e lembretes devidos) e seções 2 e 3 (repor o estoque de 100 leads) |
+| 🎯 Prospecção — buscar | 9h23 e 14h23 | seção 4 (mensagens e lembretes devidos) e seções 2 e 3 (repor o estoque de 100 leads, cada parte pela sua fonte) |
 | 🎯 Prospecção — executar | :20 e :50, das 9h às 19h | seção 6 (lê respostas) e seção 5 (executa até 3 ações) |
 | 🎯 Prospecção — resumo do dia | 20h17 | `prospeccao` acao "hoje": relatório ao celular |
 | 🎯 Prospecção — semana | segunda, 8h41 | `metricas` de 7 e 28 dias: o que funcionou e o que muda |
@@ -74,24 +74,28 @@ Rodada sem novidade termina com a resposta exata **SEM NOVIDADE** (não vai ao c
 
 ## 2. Achar leads
 
-**Estoque:** manter **100 leads prontos para aquecer** (o `contexto` mostra quanto falta). A busca (9h23 e 14h23)
-repõe; a execução consome (a vaga de aquecer é preenchida sozinha com o melhor lead do estoque). Contam os que
-encaixam, não os perfis abertos. As buscas na internet têm teto por dia: quando a ferramenta avisar, pare.
+**Estoque:** manter **100 leads prontos para aquecer**, **divididos por fonte** (padrão: planilha 60, Instagram 30,
+catálogo 10; o `contexto` mostra cada parte e quanto falta). A busca (9h23 e 14h23) repõe cada parte pela sua fonte;
+a execução consome alternando as fontes (assim dá para comparar qual rende) e o "Rendimento por fonte" do `contexto`
+mostra quantos de cada uma foram descartados na visita e quantos responderam. Contam os que encaixam, não os perfis
+abertos. As buscas na internet têm teto por dia: quando a ferramenta avisar, pare.
 
-### 2a. Primeiro: fontes fora do Instagram (não gastam consulta no Instagram e não levam 429)
+### 2a. Planilha e catálogo: fontes fora do Instagram (não gastam consulta no Instagram e não levam 429)
 
-`prospeccao` acao "fontes" (`limite` 20). A ferramenta, sozinha:
-1. pega empresas das **listas importadas** (planilha do SDR) e do **catálogo de CNPJ** (GuiaPJ: marmitas, pratos
-   prontos, confeitaria e padaria: Bahia primeiro, depois as capitais e grandes cidades do Brasil), avançando página por página;
-2. acha o Instagram de cada empresa pelo buscador (Tavily) e só aceita quando o perfil bate com a empresa: mesmo
-   telefone, @ dado pela fonte, ou mesmo nome e cidade;
-3. pula bar, lanchonete, pizzaria e MEI com nome de pessoa sem gastar busca;
+`prospeccao` acao "fontes" (`limite` 20). Ela só repõe a parte que falta (planilha e/ou catálogo) e, sozinha:
+1. pega empresas da **planilha do SDR** (4.342 empresas do Brasil todo, por prioridade A+, A, B, C) e do **catálogo
+   de CNPJ** (GuiaPJ: marmitas, pratos prontos, confeitaria e padaria), avançando página por página;
+2. acha o Instagram de cada empresa: o @ que a fonte já deu; senão o **site da empresa** (de graça); senão o
+   buscador (Tavily, com teto por dia). Só aceita quando o perfil bate com a empresa: mesmo telefone, @ dado pela
+   fonte, link no site dela, ou mesmo nome e cidade;
+3. pula bar, lanchonete, pizzaria, MEI com nome de pessoa e quem já foi contatado pelo WhatsApp, sem gastar busca;
 4. registra com nota os que encaixam e anota os recusados.
 
-Chame de novo até bater a meta ou a fila acabar. Esses leads vêm com `conferir_atividade`, porque a data do último
-post e às vezes os seguidores não aparecem na busca. A conferência acontece na visita do aquecimento (seção 5).
+Chame de novo até ela dizer que a parte encheu ou a fila acabou. Esses leads vêm com `conferir_atividade`, porque a
+data do último post e às vezes os seguidores não aparecem na busca. A conferência acontece na visita do aquecimento
+(seção 5).
 
-### 2b. Se faltar: busca no Instagram (por script)
+### 2b. Parte do Instagram: busca no Instagram (por script)
 
 1. `prospeccao` acao "buscar_script" com `termos` = até 3 buscas de cidade e segmento, em qualquer lugar do Brasil (ex.:
    "marmita fit bh", "congelados curitiba", "confeitaria recife").

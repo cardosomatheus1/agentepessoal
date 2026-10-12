@@ -37,6 +37,11 @@ quê, quando, quantas vezes e em que ordem é regra do código, nunca do modelo.
 - Vaga de «aquecer» livre (descarte na visita) é reposta pela `proxima` com o melhor lead novo, sem texto, um por vez
   (só com a pré-aprovação ligada); visita que falhou não é tentada de novo.
 - Esperas em dias de calendário (aquecido no dia D → primeira mensagem a partir do dia D+2; lembrete D+3).
+- Estoque de 100 leads prontos **dividido por fonte** (`ESTOQUE_FONTES`: planilha 60, Instagram 30, catálogo 10;
+  config `estoque_fontes`). Cada lead guarda a `origem`; a reposição de «aquecer» alterna as fontes pela parte de
+  cada uma (quem interagiu com a Raiz passa na frente) e `metricas_fontes` mede o funil de cada fonte.
+- Achar o Instagram de uma empresa: o @ da fonte, depois o site da empresa (grátis), por último a busca paga (teto
+  por dia). Empresa já contatada pelo WhatsApp não entra.
 - Bloqueio de ação do Instagram pausa 48 h. O 429 de consulta não é bloqueio: volta às fontes.
 - Texto pré-aprovado passa pelo revisor (modelo independente). Se o motivo dele contradiz o texto (regra simples
   comprova o que ele diz faltar), há uma 2ª revisão com o fato. Sem revisor, nada sai sozinho (vai ao ✅).

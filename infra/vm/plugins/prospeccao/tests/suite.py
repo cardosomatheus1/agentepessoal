@@ -492,7 +492,8 @@ class Suite:
     def t_estoque_de_leads_e_teto_de_buscas(self):
         p, f = self.p, self._fontes()
         self.em(self.hora(10))
-        eq(p.estoque(LOGIN), {"prontos": 0, "alvo": 100, "faltam": 100}, "estoque vazio: faltam 100")
+        tot = lambda e: {k: e[k] for k in ("prontos", "alvo", "faltam")}  # noqa: E731
+        eq(tot(p.estoque(LOGIN)), {"prontos": 0, "alvo": 100, "faltam": 100}, "estoque vazio: faltam 100")
         a, b = self._lead("est1"), self._lead("est2")
         self._aquecido("est3")
         e = p.estoque(LOGIN)
@@ -504,7 +505,7 @@ class Suite:
         p.salvar(LOGIN, d)
         x, _ = p.proxima(LOGIN, "raizconnect")
         p.resultado(LOGIN, x["id"], False, "perfil parado")
-        eq(p.estoque(LOGIN), {"prontos": 1, "alvo": 3, "faltam": 2}, "visita que falhou sai do estoque; alvo configurável")
+        eq(tot(p.estoque(LOGIN)), {"prontos": 1, "alvo": 3, "faltam": 2}, "visita que falhou sai do estoque; alvo configurável")
         ok("Estoque de leads prontos para aquecer: 1 de 3 — FALTAM 2" in p.resumo_contexto(LOGIN), "contexto mostra o estoque e quanto falta")
         ok("estoque 1/3" in p.resumo_hoje(LOGIN), "resumo do dia mostra o estoque")
         # daily cap of paid search calls
@@ -527,6 +528,126 @@ class Suite:
         f.salvar(LOGIN, d)
         out = f.enriquecer(LOGIN, p, 10)
         ok(len(chamadas) > n, "no dia seguinte o teto zera")
+
+    def t_fontes_divididas_no_estoque_e_na_vez(self):
+        # Matheus, 12/10: "acho que temos que dividir as fontes"
+        p = self.p
+        self.em(self.hora(10))
+        self._revisor()
+        p.definir_auto(LOGIN, True)
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+        p.salvar(LOGIN, d)
+        planilha = dict(fonte="Planilha SDR Grok", atividade_pendente=True, ultimo_post="",
+                        motivo="Planilha SDR Grok (Solutudo); Instagram achado pela busca (nome)")
+        for i in range(3):
+            self._lead(f"plan{i}", **planilha)
+        # already checked (last post known) but with a lower score than the ones still to be checked
+        self._lead("planok", fonte="Planilha SDR Grok", motivo="Planilha SDR Grok (site); perfil conferido", seguidores="40k",
+                   ultimo_post=self._dia(10), canais=["encomenda"], sinais=[], cardapio=False)
+        for i in range(2):
+            self._lead(f"insta{i}")
+        self._lead("cat0", fonte="GuiaPJ", atividade_pendente=True, ultimo_post="", motivo="CNPJ 09.205.662/0001-72 (GuiaPJ)")
+        d = p.carregar(LOGIN)
+        eq({l["handle"]: l["origem"] for l in d["leads"]},
+           {"plan0": "planilha", "plan1": "planilha", "plan2": "planilha", "planok": "planilha", "insta0": "instagram",
+            "insta1": "instagram", "cat0": "catalogo"}, "cada lead guarda de onde veio")
+        e = p.estoque(LOGIN)
+        eq({o: (v["prontos"], v["alvo"]) for o, v in e["por_fonte"].items()},
+           {"planilha": (4, 60), "instagram": (2, 30), "catalogo": (1, 10)}, "estoque dividido 60/30/10")
+        eq(e["por_fonte"]["planilha"]["a_conferir"], 3, "achados fora do Instagram ainda a conferir na visita")
+        ctx = p.resumo_contexto(LOGIN)
+        ok("Por fonte: planilha 4/60 (FALTAM 56); instagram 2/30 (FALTAM 28); catalogo 1/10 (FALTAM 9)" in ctx, ctx[:600])
+        ok("busque no Instagram (skill, 2b e 3) até 28 novos" in ctx, "a parte do Instagram é a busca no Instagram")
+        vez = []
+        for _ in range(4):
+            a, motivo = p.proxima(LOGIN, "raizconnect")
+            ok(a and a["tipo"] == "aquecer", f"repõe ({motivo})")
+            vez.append((p.origem(a["lead"]), a["lead"]["handle"]))
+            p.resultado(LOGIN, a["id"], True, "seguiu e curtiu")
+            self.em(self.relogio + 4 * 60)
+        eq([o for o, _ in vez], ["planilha", "instagram", "catalogo", "planilha"],
+           f"as fontes se alternam pela parte de cada uma, todas testadas no dia: {vez}")
+        eq(vez[0][1], "planok", "dentro da fonte, perfil já conferido vem antes do que falta conferir")
+        d = p.carregar(LOGIN)
+        next(l for l in d["leads"] if l["handle"] == "insta1")["interagiu"] = True
+        p.salvar(LOGIN, d)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        eq(a["lead"]["handle"], "insta1", f"quem interagiu com a Raiz passa na frente da vez das fontes ({motivo})")
+        d = p.carregar(LOGIN)
+        d["config"]["estoque_fontes"] = {"planilha": 1, "instagram": 1, "catalogo": 0}
+        p.salvar(LOGIN, d)
+        eq({o: v["alvo"] for o, v in p.estoque(LOGIN)["por_fonte"].items()}, {"planilha": 50, "instagram": 50, "catalogo": 0},
+           "divisão configurável")
+
+    def t_rendimento_por_fonte(self):
+        p = self.p
+        self.em(self.hora(10))
+        pl = dict(fonte="Planilha SDR Grok", atividade_pendente=True, ultimo_post="", motivo="Planilha SDR Grok (Solutudo)")
+        a, b, c = self._lead("pl_parado", **pl), self._lead("pl_grande", **pl), self._lead("pl_bom", **pl)
+        i = self._lead("ig_bom")
+        for lid, nota in ((a, "Parado há 178 dias; o primeiro post não fixado é de 17 de abril"),
+                          (b, "72,5 mil seguidores, acima do limite de 50 mil")):
+            aid = p.propor(LOGIN, [{"lead_id": lid, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+            p.decidir(LOGIN, aid, "aprovar")
+            p.mudar_etapa(LOGIN, lid, "descartado", nota)  # discarded on the visit: the warm-up is cancelled
+        self._executar(c, "aquecer")
+        self.em(self.relogio + 4 * 60)
+        self._executar(i, "aquecer")
+        p.mudar_etapa(LOGIN, i, "respondeu", "oi, quero sim", "comentario")
+        m = p.metricas_fontes(LOGIN)
+        eq((m["planilha"]["leads"], m["planilha"]["visitados"], m["planilha"]["descartados_visita"], m["planilha"]["descarte_pct"]),
+           (3, 3, 2, 67), f"planilha: {m['planilha']}")
+        eq(m["planilha"]["motivos"], {"parado": 1, "tamanho": 1}, "por que foram descartados")
+        eq((m["instagram"]["aquecidos"], m["instagram"]["responderam"], m["instagram"]["descarte_pct"]), (1, 1, 0), f"instagram: {m['instagram']}")
+        linha = p.linha_fontes(LOGIN)
+        ok("planilha: 3 leads, 3 visitados (67% descartados na visita: " in linha and "instagram: 1 leads" in linha, linha)
+        ok("Rendimento por fonte (28 dias)" in p.resumo_contexto(LOGIN), "a busca vê qual fonte rende")
+        ok(p.metricas(LOGIN, 7)["por_fonte"]["planilha"]["leads"] == 3, "o relatório da semana tem a fonte")
+        ok("(instagram 1, planilha 3)" in p.resumo_hoje(LOGIN) or "(planilha 3, instagram 1)" in p.resumo_hoje(LOGIN),
+           "o resumo do dia diz de onde vieram os leads novos")
+
+    def t_planilha_completa_site_e_partes(self):
+        p, f = self.p, self._fontes()
+        self.em(self.hora(10))
+        f.importar(LOGIN, [{"nome": "Doce Lar", "cidade": "Salvador", "uf": "BA", "segmento": "Marmitas / alimentação",
+                            "fonte": "Planilha SDR Grok"}])
+        base = {"segmento": "Marmitas / alimentação", "evidencia": "marmitas por encomenda com entrega", "fonte": "Planilha SDR Grok"}
+        out = f.importar(LOGIN, [
+            {**base, "nome": "Doce Lar", "cidade": "Salvador", "uf": "BA", "tier": "A", "score": 88, "site": "docelar.com.br"},
+            {**base, "nome": "Marmita Boa", "cidade": "Recife", "uf": "PE", "tier": "C", "score": 74, "telefone": "(81) 99999-1111"},
+            {**base, "nome": "Sabor de Casa", "cidade": "Natal", "uf": "RN", "tier": "A+", "score": 95, "site": "https://sabordecasa.com",
+             "fonte_original": "Site oficial — WhatsApp no rodapé"},
+            {**base, "nome": "Ja Falei", "cidade": "Natal", "uf": "RN", "tier": "A+", "score": 97, "ja_contatado": True},
+            {**base, "nome": "Com Arroba", "cidade": "Natal", "uf": "RN", "tier": "C", "score": 70, "instagram": "@comarroba"}])
+        eq((out["importadas"], out["atualizadas"]), (4, 1), f"novas, e a já na fila ganha tier e site: {out}")
+        d = f.carregar(LOGIN)
+        eq(next(e for e in d["empresas"].values() if e["nome"] == "Ja Falei")["estado"], "pulada",
+           "quem já foi contatado pelo WhatsApp fica de fora")
+        fila = sorted((k for k, e in d["empresas"].items() if e["estado"] == "fila"), key=lambda k: f._ordem(d["empresas"][k]))
+        eq([d["empresas"][k]["nome"] for k in fila], ["Com Arroba", "Sabor de Casa", "Doce Lar", "Marmita Boa"],
+           "@ conhecido, depois quem tem site (A+ antes de A), depois o resto por prioridade")
+        paginas = {"https://sabordecasa.com": '<a href="https://www.instagram.com/ueni/">Ueni</a> '
+                                              '<a href="https://instagram.com/sabordecasa.natal/">IG</a>',
+                   "https://docelar.com.br": '<a href="https://www.instagram.com/wix">site feito no wix</a>'}
+        f._baixar = lambda url, *a: paginas.get(url, "")
+        consultas = []
+        f._buscar = lambda q: consultas.append(q) or []
+        d = f.carregar(LOGIN)
+        d["buscas_dia"] = 1
+        f.salvar(LOGIN, d)
+        out = f.enriquecer(LOGIN, p, 10, ["catalogo"])
+        eq(out["examinadas"], 0, "só a fonte pedida: o catálogo está vazio, a planilha não é tocada")
+        out = f.enriquecer(LOGIN, p, 10, ["planilha"])
+        handles = {c["handle"] for c in out["criados"]}
+        ok({"comarroba", "sabordecasa.natal"} <= handles, f"@ da planilha e @ do site viram leads sem busca paga: {out}")
+        ok(not any("Sabor" in q for q in consultas), f"o site achou: não gastou busca ({consultas})")
+        ok(any("Doce Lar" in q for q in consultas), f"site só com link de plataforma cai na busca ({consultas})")
+        ok("limite diário" in out.get("erro_busca", ""), f"a busca paga para no teto do dia: {out}")
+        lead = next(l for l in p.carregar(LOGIN)["leads"] if l["handle"] == "sabordecasa.natal")
+        eq((lead["origem"], lead.get("conferir_atividade")), ("planilha", True), "origem guardada; atividade conferida na visita")
+        ok("no site da empresa" in lead["motivo"] and "Site oficial" in lead["motivo"], f"motivo diz de onde veio: {lead['motivo']}")
+        ok("planilha" in f.resumo(LOGIN), f.resumo(LOGIN))
 
     def t_descarte_na_visita_pelo_id_da_acao(self):
         # 12/10: the visit found an inactive profile; the agent passed the warm-up's id to discard the lead, was

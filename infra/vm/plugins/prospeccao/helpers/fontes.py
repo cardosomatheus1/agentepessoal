@@ -88,9 +88,9 @@ def _chave(e: dict) -> str:
 
 # ------------------------------------------------------------------ GuiaPJ
 
-def _baixar(url: str) -> str:
+def _baixar(url: str, timeout: int = 30) -> str:
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Language": "pt-BR,pt;q=0.9"})
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read().decode("utf-8", "ignore")
 
 
@@ -188,10 +188,21 @@ def coletar(login: str, paginas: int = 4) -> dict:
 
 # ------------------------------------------------------------------ imported list (Grok SDR spreadsheet)
 
+TIERS = {"A+": 0, "A": 1, "B": 2, "C": 3}  # the Grok SDR sheet's priority (score of the evidence it found)
+
+
+def origem_empresa(e: dict) -> str:
+    """Which source a queued company came from: the Grok SDR sheet or the CNPJ catalog (prospeccao.ORIGENS)."""
+    return "planilha" if re.search(r"grok|planilha|sdr", str(e.get("fonte") or ""), re.I) else "catalogo"
+
+
 def importar(login: str, linhas: list) -> dict:
-    """Rows {nome, cidade, uf, segmento, telefone, instagram, site, evidencia, fonte} into the queue (dedupe by key)."""
+    """Rows {nome, cidade, uf, segmento, telefone, instagram, site, evidencia, fonte, tier, score, fonte_original,
+    ja_contatado} into the queue (dedupe by key). A company already queued gets the fields it lacked (12/10: the first
+    import of the sheet had no tier). Companies already contacted by WhatsApp (the sheet's own test, 17/09) are kept
+    out: no second approach by another channel."""
     d = carregar(login)
-    novas = 0
+    novas = atualizadas = 0
     for r in linhas if isinstance(linhas, list) else []:
         if not isinstance(r, dict) or not r.get("nome"):
             continue
@@ -199,13 +210,25 @@ def importar(login: str, linhas: list) -> dict:
              "uf": str(r.get("uf") or "").upper(), "situacao": "", "telefone": str(r.get("telefone") or ""),
              "instagram": str(r.get("instagram") or "").strip(), "site": str(r.get("site") or ""),
              "segmento_fonte": str(r.get("segmento") or ""), "evidencia": str(r.get("evidencia") or "")[:400],
-             "fonte": str(r.get("fonte") or "lista importada")[:60]}
+             "fonte": str(r.get("fonte") or "lista importada")[:60], "tier": str(r.get("tier") or "")[:3],
+             "score": int(r.get("score") or 0) if str(r.get("score") or "").isdigit() else 0,
+             "fonte_original": str(r.get("fonte_original") or "")[:120]}
         k = _chave(e)
-        if k not in d["empresas"]:
-            d["empresas"][k] = {**e, "estado": "fila", "em": time.time()}
-            novas += 1
+        if k in d["empresas"]:
+            atual = d["empresas"][k]
+            faltavam = {c: v for c, v in e.items() if v and not atual.get(c)}
+            if faltavam:
+                atual.update(faltavam)
+                atualizadas += 1
+            continue
+        estado = {"estado": "fila"}
+        if r.get("ja_contatado"):
+            estado = {"estado": "pulada", "motivo": "já contatada pelo WhatsApp (teste da planilha em 17/09)"}
+        d["empresas"][k] = {**e, **estado, "em": time.time()}
+        novas += 1
     salvar(login, d)
-    return {"importadas": novas, "na_fila": sum(1 for e in d["empresas"].values() if e["estado"] == "fila")}
+    return {"importadas": novas, "atualizadas": atualizadas,
+            "na_fila": sum(1 for e in d["empresas"].values() if e["estado"] == "fila")}
 
 
 # ------------------------------------------------------------------ search engine: the company's Instagram
@@ -314,6 +337,41 @@ def achar_instagram(e: dict, conta: dict | None = None) -> dict | None:
     return None
 
 
+# Platforms that link their own Instagram from the pages they host (site builders, ordering systems, marketplaces):
+# a handle like these on a company's site is not the company's profile.
+PLATAFORMAS = re.compile(r"^(ueni|ueniweb|ifood|ifoodbrasil|wix|wordpress|goomer|goomerapp|anotaai|anota\.ai|cardapioweb|"
+                         r"linktree|linktr\.ee|instagram|meta|facebook|whatsapp|lojaintegrada|nuvemshop|shopify|hotmart|"
+                         r"solutudo|guiapj|google|youtube|tiktok|rappi|aiqfome|99food|deliverymuch|saipos|consumer|menudino)$", re.I)
+RX_LINK_IG = re.compile(r"instagram\.com/([A-Za-z0-9_.]{2,30})", re.I)
+
+
+def instagram_do_site(e: dict) -> dict | None:
+    """The company's own site usually links its Instagram: read the home page (no paid search). 12/10: 531 rows of
+    the sheet have a site. Only a handle that is not a platform's; with several, the one that shares a word with the
+    company name. Returns {handle, seguidores, bio, titulo, confianca: "site"} or None."""
+    site = str(e.get("site") or "").strip()
+    if not site:
+        return None
+    url = site if re.match(r"https?://", site, re.I) else "https://" + site
+    try:
+        pagina = _baixar(url, 12)
+    except Exception:
+        return None
+    vistos = []
+    for m in RX_LINK_IG.finditer(pagina):
+        h = m.group(1).strip(".").lower()
+        if h in NAO_PERFIL or PLATAFORMAS.match(h) or h in vistos:
+            continue
+        vistos.append(h)
+    if not vistos:
+        return None
+    nome = _palavras(e.get("nome") or "")
+    melhor = next((h for h in vistos if any(w in h for w in nome)), None)
+    if not melhor and len(vistos) > 1:
+        return None
+    return {"handle": melhor or vistos[0], "seguidores": "", "bio": "", "titulo": "", "confianca": "site"}
+
+
 def _nome_busca(nome: str) -> str:
     """"COZINHA DE CHEF" -> "Cozinha de Chef" (all-caps queries bring noise); drops the CNPJ/CPF prefix of MEIs."""
     nome = re.sub(r"^[\d.\s/-]+", "", str(nome or "")).strip()
@@ -333,29 +391,38 @@ def _item_lead(e: dict, ig: dict, segmento_cnae: str, rx_canais: dict, rx_exclus
     m = re.search(r"(\d{4})$", e.get("abertura", ""))
     if m:
         anos = f", aberta em {m.group(1)}"
-    origem = f"CNPJ {e['cnpj']}{anos}" if e.get("cnpj") else e.get("fonte", "lista")
+    rotulo = f"CNPJ {e['cnpj']}{anos}" if e.get("cnpj") else e.get("fonte", "lista")
+    detalhe = e.get("fonte_original") or (e.get("fonte", "") if e.get("cnpj") else "")
+    como = {"site": "no site da empresa", "fonte": "pela fonte"}.get(ig["confianca"], f"pela busca ({ig['confianca']})")
     return {
         "handle": ig["handle"], "canal": "instagram", "nome": (e.get("nome") or ig["handle"])[:80], "segmento": segmento,
         "cidade": e.get("cidade") or "", "seguidores": ig.get("seguidores") or "",
         "canais": [c for c, rx in rx_canais.items() if re.search(rx, sinais_texto)],
         "cardapio": bool(re.search(r"card[aá]pio|menu", sinais_texto)),
         "exclusoes": [c for c, rx in rx_exclusoes.items() if re.search(rx, bio.lower())],
-        "atividade_pendente": True, "fonte": e.get("fonte", ""),
-        "motivo": (f"{origem} ({e.get('fonte', '')}); Instagram achado pela busca ({ig['confianca']}): "
+        "atividade_pendente": True, "fonte": e.get("fonte", ""), "origem": origem_empresa(e),
+        "motivo": (f"{rotulo}" + (f" ({detalhe[:60]})" if detalhe else "") + f"; Instagram achado {como}: "
                    f"{ig.get('seguidores') or '?'} seguidores; bio: {bio[:140]}")[:300],
         "sinal": (e.get("evidencia") or "")[:300],
     }
 
 
-def enriquecer(login: str, p, limite: int = 20) -> dict:
-    """Search the Instagram of the next queued companies and register the ones that fit (p = prospeccao helper)."""
+def _ordem(e: dict) -> tuple:
+    """@ already known first (no search), then a site to read (no search), then the sheet by tier and score, then
+    the raw directory by activity."""
+    return (0 if e.get("instagram") else 1 if e.get("site") and not e.get("site_sem_ig") else 2, TIERS.get(e.get("tier") or "", 4),
+            -(e.get("score") or 0), 0 if origem_empresa(e) == "planilha" else 1,
+            next((i for i, (c, _) in enumerate(CNAES) if c == e.get("cnae")), 9))
+
+
+def enriquecer(login: str, p, limite: int = 20, origens: list | None = None) -> dict:
+    """Find the Instagram of the next queued companies and register the ones that fit (p = prospeccao helper).
+    `origens`: only these sources (the ones whose share of the stock is missing)."""
     _QUEM["login"] = re.sub(r"[^a-z0-9_.-]", "", login.lower())
     d = carregar(login)
     conhecidos = {l["handle"] for l in p.carregar(login)["leads"]} | set((p.carregar(login).get("rejeitados") or {}).keys())
-    fila = [k for k, e in d["empresas"].items() if e["estado"] == "fila"]
-    # @ already known first, then curated lists (higher yield than the raw directory), then by activity
-    fila.sort(key=lambda k: (0 if d["empresas"][k].get("instagram") else 1 if d["empresas"][k].get("fonte") != "GuiaPJ" else 2,
-                             next((i for i, (c, _) in enumerate(CNAES) if c == d["empresas"][k].get("cnae")), 9)))
+    fila = [k for k, e in d["empresas"].items() if e["estado"] == "fila" and (not origens or origem_empresa(e) in origens)]
+    fila.sort(key=lambda k: _ordem(d["empresas"][k]))
     out = {"examinadas": 0, "criados": [], "sem_instagram": 0, "recusados": [], "pulados": 0}
     segmentos = dict(CNAES)
     itens = []
@@ -365,26 +432,33 @@ def enriquecer(login: str, p, limite: int = 20) -> dict:
         conta.update({"dia": hoje, "n": 0})
     teto = int(d.get("buscas_dia") or BUSCAS_DIA)
     for k in fila[:limite]:
-        if conta["n"] >= teto:
-            out["erro_busca"] = f"limite diário de {teto} buscas atingido; a fila continua amanhã"
-            break
         e = d["empresas"][k]
-        out["examinadas"] += 1
         if (e.get("situacao") and e["situacao"] != "Ativa") or FORA.search(f"{e.get('nome', '')} {e.get('razao', '')}"):
             e["estado"], e["motivo"] = "pulada", "inativa ou fora do segmento pelo nome"
             out["pulados"] += 1
+            out["examinadas"] += 1
             continue
         if re.match(r"^\s*\d", e.get("nome", "")) and not e.get("instagram"):
             e["estado"], e["motivo"] = "pulada", "MEI com nome de pessoa (sem marca para buscar)"
             out["pulados"] += 1
+            out["examinadas"] += 1
             continue
         dado = str(e.get("instagram") or "").strip().lstrip("@").rstrip("/").rsplit("/", 1)[-1].lower()
-        try:
-            ig = ({"handle": dado, "seguidores": "", "bio": "", "titulo": "", "confianca": "fonte"} if dado
-                  else achar_instagram(e, conta))
-        except RuntimeError:
-            out["erro_busca"] = "buscador indisponível agora; a empresa continua na fila"
-            break
+        ig = {"handle": dado, "seguidores": "", "bio": "", "titulo": "", "confianca": "fonte"} if dado else None
+        if not ig and e.get("site") and not e.get("site_sem_ig"):
+            ig = instagram_do_site(e)  # free: no paid search
+            if not ig:
+                e["site_sem_ig"] = True
+        if not ig:
+            if conta["n"] >= teto:  # only a paid search stops at the daily cap; @ and sites above go on
+                out["erro_busca"] = f"limite diário de {teto} buscas atingido; a fila continua amanhã"
+                break
+            try:
+                ig = achar_instagram(e, conta)
+            except RuntimeError:
+                out["erro_busca"] = "buscador indisponível agora; a empresa continua na fila"
+                break
+        out["examinadas"] += 1
         if not ig:
             e["estado"] = "sem_instagram"
             out["sem_instagram"] += 1
@@ -415,6 +489,9 @@ def resumo(login: str) -> str:
     d = carregar(login)
     from collections import Counter
 
-    c = Counter(e["estado"] for e in d["empresas"].values())
-    return (f"Fontes sem Instagram (GuiaPJ + buscador + listas): {len(d['empresas'])} empresas — "
-            + ", ".join(f"{k}: {v}" for k, v in c.most_common()))
+    partes = []
+    for o in ("planilha", "catalogo"):
+        c = Counter(e["estado"] for e in d["empresas"].values() if origem_empresa(e) == o)
+        if c:
+            partes.append(f"{o} {sum(c.values())} ({', '.join(f'{k} {v}' for k, v in c.most_common())})")
+    return "Fila das fontes fora do Instagram: " + ("; ".join(partes) or "vazia")
