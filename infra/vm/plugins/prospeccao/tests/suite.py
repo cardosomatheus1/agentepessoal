@@ -689,10 +689,10 @@ class Suite:
                         {"username": "plan_parado", "followersCount": 1500, "private": False, "biography": "bolos", "latestPosts": [post(60)]}]
             f._apify = apify
             out = f.buscar_instagram(LOGIN, p, termos=2, por_termo=10)
-            eq(out["termos"], ["marmita fit salvador", "marmitaria salvador"], "termos em rodízio: palavra + cidade")
+            eq(out["termos"], ["marmita fit salvador", "marmita fit lauro de freitas"], "termos em rodízio: palavra + cidade, cidade a cidade")
             eq([c["handle"] for c in out["criados"]], ["boamarmita"], f"só o que encaixa vira lead: {out}")
             eq((out["recusados"], out["ja_conhecidos"]), (1, 1), "o parado é anotado; o conhecido, pulado")
-            ok(chamadas[0][1] == {"search": "marmita fit salvador,marmitaria salvador", "searchType": "user", "searchLimit": 10}
+            ok(chamadas[0][1] == {"search": "marmita fit salvador,marmita fit lauro de freitas", "searchType": "user", "searchLimit": 10}
                and chamadas[0][2] < 0.2, f"busca de perfis, com teto de custo por chamada: {chamadas[0]}")
             lead = next(l for l in p.carregar(LOGIN)["leads"] if l["handle"] == "boamarmita")
             eq((lead["origem"], lead.get("conferir_atividade"), lead["cidade"]), ("instagram", None, "Salvador"),
@@ -700,7 +700,7 @@ class Suite:
             ok("marmita fit salvador" in lead["motivo"] and lead["evidencias"]["ultimo_post"] == self._dia(2),
                f"motivo diz de que busca veio; último post é o não fixado: {lead['motivo']} {lead['evidencias']}")
             ok("parada" in (p.carregar(LOGIN).get("rejeitados") or {}), "o parado não volta por 60 dias")
-            eq(f.buscar_instagram(LOGIN, p, termos=2, por_termo=10)["termos"], ["marmitas congeladas salvador", "confeitaria salvador"],
+            eq(f.buscar_instagram(LOGIN, p, termos=2, por_termo=10)["termos"], ["marmita fit camacari", "marmita fit simoes filho"],
                "o rodízio continua de onde parou")
             d = f.carregar(LOGIN)
             d["apify_usd_mes"] = d["apify"]["usd"] + 0.01

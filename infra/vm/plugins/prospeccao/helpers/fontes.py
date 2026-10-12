@@ -549,9 +549,9 @@ def _gastar(d: dict, ator: str, n: int) -> float:
 
 
 def _termos(d: dict, n: int) -> list:
-    """Next search terms (word + city), in rotation over every city of the catalog list: Brazil-wide, no repeats
-    until the list wraps."""
-    todos = [(f"{palavra} {nome}", nome) for _, nome in CIDADES for palavra in PALAVRAS_INSTAGRAM]
+    """Next search terms (word + city), in rotation: each word goes through every city of the list before the next
+    word, so consecutive searches spread over Brazil (12/10: city by city, the first day stayed in Salvador)."""
+    todos = [(f"{palavra} {nome}", nome) for palavra in PALAVRAS_INSTAGRAM for _, nome in CIDADES]
     i = d["apify"]["cursor"] % len(todos)
     escolhidos = (todos[i:] + todos[:i])[:n]
     d["apify"]["cursor"] = i + n
