@@ -86,6 +86,33 @@ class Suite:
         ok(self._soltas([erro, recente, avulsa, ociosa]) == ["erro"],
            "só a recorrente em erro há mais de 5 min volta; tarefa avulsa e ociosa ficam como estão")
 
+    def t_rodada_pausada_e_retomada_ou_cancelada(self):
+        # 12/10: the loop detector paused the search round's chat; nobody resumes a scheduled round, so it stayed stuck
+        dr, agora = self.dr, time.time()
+        buscar = self._tarefa("buscar", "running", atualizada_min=30)
+        viva = {"buscar": Vivo()}
+        pausas = {}
+        def rodar(minutos):
+            return self.dr.destravar([buscar], viva, lambda cid: None, agora + minutos * 60, "running", "error",
+                                     lambda cid: True, pausas)
+        eq = lambda a, b, m: ok(a == b, f"{m}: {a!r}")  # noqa: E731
+        eq(rodar(0), [], "acabou de pausar: espera")
+        eq(rodar(5), [], "5 min pausada: ainda espera (alguém pode estar olhando)")
+        r = rodar(11)
+        eq([x["acao"] for x in r], ["retomar"], "pausada há mais de 10 min: retoma uma vez (a execução viva não impede)")
+        eq(rodar(12), [], "depois de retomar, conta de novo")
+        r = rodar(23)
+        eq([x["acao"] for x in r], ["cancelar"], "pausou de novo em menos de 2 h: cancela a execução (volta no próximo horário)")
+        ok(dr.destravar([buscar], viva, lambda cid: None, agora + 30 * 60, "running", "error", lambda cid: False, pausas) == [],
+           "sem pausa, execução viva: nada a fazer")
+        ociosa = self._tarefa("buscar", "idle", atualizada_min=1)
+        pausas2 = {"buscar": {"desde": agora - 3600}}
+        dr.destravar([ociosa], {}, lambda cid: None, agora, "running", "error", lambda cid: True, pausas2)
+        ok("desde" not in pausas2.get("buscar", {}), "a pausa é da execução: a próxima começa a contar do zero")
+        pausas3 = {"velha": {"retomada": agora - 3 * 3600}}
+        dr.destravar([], {}, lambda cid: None, agora, "running", "error", lambda cid: True, pausas3)
+        ok(pausas3 == {}, "registro velho some")
+
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:
