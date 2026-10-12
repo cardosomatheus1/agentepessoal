@@ -702,6 +702,15 @@ def conferir_perfis(login: str, dados, fonte: str = "script") -> dict:
     return out
 
 
+def apify_pronto(login: str) -> bool:
+    """Apify's token is in the person's vault (APIFY_API)."""
+    try:
+        s = _cofre().carregar(login)
+    except Exception:
+        return False
+    return bool(s.get("APIFY_API") or s.get("APIFY_TOKEN") or s.get("APIFY_API_TOKEN"))
+
+
 def api_meta_pronta(login: str) -> bool:
     """The official API (business discovery) is configured in the person's vault."""
     try:
@@ -1744,7 +1753,8 @@ def resumo_contexto(login: str) -> str:
               f"Estoque de leads prontos para aquecer: {e['prontos']} de {e['alvo']}" +
               (f" — FALTAM {e['faltam']}." if e["faltam"] else " (cheio).") + f" Por fonte: {partes}." +
               (" Planilha/catálogo: reponha com `fontes`." if pf["planilha"]["faltam"] or pf["catalogo"]["faltam"] else "") +
-              (f" Instagram: busque no Instagram (skill, 2b e 3) até {pf['instagram']['faltam']} novos." if pf["instagram"]["faltam"] else "")]
+              ((f" Instagram: chame `fontes_instagram` (Apify, não usa a nossa conta) até {pf['instagram']['faltam']} novos." if apify_pronto(login)
+                else f" Instagram: busque no Instagram (skill, 2b e 3) até {pf['instagram']['faltam']} novos.") if pf["instagram"]["faltam"] else "")]
     if agora() < d["bloqueio_ate"]:
         linhas.append("⛔ PAUSADO após bloqueio do Instagram — não proponha nada até " +
                       dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M"))

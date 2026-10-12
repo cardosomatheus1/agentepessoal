@@ -171,6 +171,11 @@ class Prospeccao(Tool):
             handles = p.a_conferir(login, 5)
             if not handles:
                 return r("Nada a conferir no estoque agora.")
+            f = fontes()
+            if f.apify_pronto(login):  # Apify reads any public profile, without our account
+                out = await asyncio.to_thread(f.conferir_apify, login, p, p.a_conferir(login, 25))
+                if not out.get("erro"):
+                    return r(json.dumps(out, ensure_ascii=False) + "\nConferidos pelo Apify. Chame `conferir_estoque` de novo se ainda houver.")
             pausa = p.api_pausada(login)
             if pausa:
                 return r(f"Scripts de perfil pausados até {pausa} (o Instagram limitou as consultas): pule a conferência nesta rodada.")
@@ -218,6 +223,21 @@ class Prospeccao(Tool):
                      + ("Chame `fontes` de novo para repor a planilha/catálogo." if falta_fontes and not out.get("erro_busca")
                         else "Planilha/catálogo: pare (parte cheia ou buscas do dia esgotadas).")
                      + (f" Instagram: faltam {pf['instagram']['faltam']} — busque no Instagram (skill, 2b e 3)." if pf["instagram"]["faltam"] else ""))
+        if acao == "fontes_instagram":
+            # the Instagram share of the stock through Apify (12/10 pilot: 20 of 38 profiles fit, ~US$ 0.10)
+            f = fontes()
+            pf = p.estoque(login)["por_fonte"]["instagram"]
+            if not pf["faltam"]:
+                return r("A parte do Instagram no estoque está cheia: não chame de novo agora.")
+            if not f.apify_pronto(login):
+                return r("Sem Apify configurado: encha a parte do Instagram com a busca no Instagram (skill, 2b e 3).")
+            out = await asyncio.to_thread(f.buscar_instagram, login, p, int(kwargs.get("termos") or 3), int(kwargs.get("por_termo") or 20))
+            pf = p.estoque(login)["por_fonte"]["instagram"]
+            if out.get("erro"):
+                return r(f"{out['erro']}. Se precisar, use a busca no Instagram (skill, 2b e 3) para a parte que falta ({pf['faltam']}).")
+            return r(json.dumps({**out, "parte_instagram": pf}, ensure_ascii=False) + "\nCriados já estão registrados e conferidos "
+                     "(último post, seguidores, privado). " + (f"Faltam {pf['faltam']}: chame `fontes_instagram` de novo." if pf["faltam"]
+                                                               else "Parte do Instagram cheia: pare."))
         if acao == "importar_lista":
             caminho = Path(str(kwargs.get("arquivo") or texto or ""))
             if not caminho.is_file() or caminho.suffix != ".json":

@@ -661,6 +661,67 @@ class Suite:
         p.conferir_perfis(LOGIN, [{"handle": "lento1", "erro": "http 429"}])
         ok(p.api_pausada(LOGIN), "429 pausa os scripts de perfil")
 
+    def t_apify_instagram_e_conferencia(self):
+        # 12/10 pilot: 6 searches, 38 profiles, 20 fit, ~US$ 0.10; Apify never uses @raiz.connect
+        p, f = self.p, self._fontes()
+        self.em(self.hora(10))
+        originais = (f._apify_token, f._apify)
+        try:
+            ok(f.buscar_instagram(LOGIN, p)["erro"].startswith("sem Apify"), "sem token: avisa, não quebra")
+            f._apify_token = lambda: "tok"
+            chamadas = []
+            ts = lambda dias: dt.datetime.fromtimestamp(p.agora() - dias * 86400, dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")  # noqa: E731
+            post = lambda dias, fixado=False: {"timestamp": ts(dias), "isPinned": fixado, "shortCode": "x", "caption": "marmita de frango"}  # noqa: E731
+            self._lead("jaconhecido")
+
+            def apify(ator, entrada, max_usd):
+                chamadas.append((ator, entrada, max_usd))
+                if ator.endswith("search-scraper"):
+                    t1, t2 = entrada["search"].split(",")[:2]
+                    return [{"username": "boamarmita", "fullName": "Boa Marmita", "biography": "marmitas fit por encomenda",
+                             "followersCount": 2400, "private": False, "businessCategoryName": "Restaurante",
+                             "latestPosts": [post(200, True), post(2)], "searchTerm": t1},
+                            {"username": "parada", "fullName": "Parada", "biography": "marmitas", "followersCount": 900,
+                             "private": False, "latestPosts": [post(90)], "searchTerm": t1},
+                            {"username": "jaconhecido", "fullName": "x", "followersCount": 900, "private": False,
+                             "latestPosts": [post(1)], "searchTerm": t2}]
+                return [{"username": "plan_ok", "followersCount": 1500, "private": False, "biography": "bolos", "latestPosts": [post(5)]},
+                        {"username": "plan_parado", "followersCount": 1500, "private": False, "biography": "bolos", "latestPosts": [post(60)]}]
+            f._apify = apify
+            out = f.buscar_instagram(LOGIN, p, termos=2, por_termo=10)
+            eq(out["termos"], ["marmita fit salvador", "marmitaria salvador"], "termos em rodízio: palavra + cidade")
+            eq([c["handle"] for c in out["criados"]], ["boamarmita"], f"só o que encaixa vira lead: {out}")
+            eq((out["recusados"], out["ja_conhecidos"]), (1, 1), "o parado é anotado; o conhecido, pulado")
+            ok(chamadas[0][1] == {"search": "marmita fit salvador,marmitaria salvador", "searchType": "user", "searchLimit": 10}
+               and chamadas[0][2] < 0.2, f"busca de perfis, com teto de custo por chamada: {chamadas[0]}")
+            lead = next(l for l in p.carregar(LOGIN)["leads"] if l["handle"] == "boamarmita")
+            eq((lead["origem"], lead.get("conferir_atividade"), lead["cidade"]), ("instagram", None, "Salvador"),
+               "lead do Instagram já conferido, com a cidade da busca quando a bio não diz")
+            ok("marmita fit salvador" in lead["motivo"] and lead["evidencias"]["ultimo_post"] == self._dia(2),
+               f"motivo diz de que busca veio; último post é o não fixado: {lead['motivo']} {lead['evidencias']}")
+            ok("parada" in (p.carregar(LOGIN).get("rejeitados") or {}), "o parado não volta por 60 dias")
+            eq(f.buscar_instagram(LOGIN, p, termos=2, por_termo=10)["termos"], ["marmitas congeladas salvador", "confeitaria salvador"],
+               "o rodízio continua de onde parou")
+            d = f.carregar(LOGIN)
+            d["apify_usd_mes"] = d["apify"]["usd"] + 0.01
+            f.salvar(LOGIN, d)
+            n = len(chamadas)
+            ok("verba do Apify" in f.buscar_instagram(LOGIN, p, termos=2, por_termo=10)["erro"] and len(chamadas) == n,
+               "verba do mês acabou: não chama o Apify")
+            d = f.carregar(LOGIN)
+            d["apify_usd_mes"] = 5
+            f.salvar(LOGIN, d)
+            pl = dict(fonte="Planilha SDR Grok", atividade_pendente=True, ultimo_post="", motivo="Planilha SDR Grok (Solutudo)")
+            for h in ("plan_ok", "plan_parado", "plan_sumido"):
+                self._lead(h, **pl)
+            out3 = f.conferir_apify(LOGIN, p, p.a_conferir(LOGIN, 25))
+            eq([c["handle"] for c in out3["conferidos"]], ["plan_ok"], f"conferido pelo Apify: {out3}")
+            eq([x["handle"] for x in out3["descartados"]], ["plan_parado"], "parado sai do estoque antes da visita")
+            eq(p.a_conferir(LOGIN, 25), ["plan_sumido"], "quem o Apify não devolveu fica para a próxima (nunca descartado por falta de resposta)")
+            ok(f.carregar(LOGIN)["apify"]["usd"] > 0, "o gasto do mês é contado")
+        finally:
+            f._apify_token, f._apify = originais
+
     def t_planilha_completa_site_e_partes(self):
         p, f = self.p, self._fontes()
         self.em(self.hora(10))

@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 3.3.1
+version: 3.4.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -102,7 +102,14 @@ https://www.instagram.com/ → passe o texto inteiro para "conferidos". A ferram
 (mais de 30 dias), grande ou pequeno demais, privado ou não existe mais, e guarda os números reais dos que passam. No
 máximo 3 vezes por rodada (15 perfis). "Nada a conferir", pausa ou "http 429": pare esta parte.
 
-### 2b. Parte do Instagram: busca no Instagram (por script)
+### 2b. Parte do Instagram
+
+**Primeiro, o Apify:** `prospeccao` acao "fontes_instagram". Ele busca perfis no Instagram por palavra + cidade (em
+rodízio pelo Brasil), sem usar a nossa conta, e registra já conferidos os que encaixam (último post, seguidores,
+privado). Chame de novo até a parte do Instagram encher. Se ele avisar "sem Apify" ou "verba do mês", use a busca
+por script abaixo.
+
+**Sem o Apify: busca no Instagram (por script)**
 
 1. `prospeccao` acao "buscar_script" com `termos` = até 3 buscas de cidade e segmento, em qualquer lugar do Brasil (ex.:
    "marmita fit bh", "congelados curitiba", "confeitaria recife").

@@ -485,6 +485,151 @@ def enriquecer(login: str, p, limite: int = 20, origens: list | None = None) -> 
     return out
 
 
+# ------------------------------------------------------------------ Apify: Instagram without our account
+# 12/10 pilot: 6 searches (word + city) brought 38 profiles in 2 min for ~US$ 0.10; 20 fit the rubric (active, the
+# right size, in the city), 14 were stale or tiny, 3 already known. The leads found on Instagram itself are the ones
+# that answer; Apify finds them without touching @raiz.connect (no 429, no block). The same data also checks the
+# sheet's profiles before their turn (instagram-profile-scraper). Every call has a cost cap and counts toward a
+# monthly budget (config "apify_usd_mes" in the fontes file, default the free plan's US$ 5).
+
+APIFY = "https://api.apify.com/v2/acts"
+APIFY_USD_MES = 5.0
+PRECO_APIFY = {"apify~instagram-search-scraper": 0.0027, "apify~instagram-profile-scraper": 0.0026}  # per item, free plan
+PALAVRAS_INSTAGRAM = ("marmita fit", "marmitaria", "marmitas congeladas", "confeitaria", "bolo caseiro", "salgados",
+                      "doces gourmet", "comida congelada")
+
+
+def _apify_token() -> str:
+    try:
+        s = json.loads((COFRE / f"{_QUEM['login']}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    return str(s.get("APIFY_API") or s.get("APIFY_TOKEN") or s.get("APIFY_API_TOKEN") or "")
+
+
+def _apify(ator: str, entrada: dict, max_usd: float) -> list:
+    """Runs an actor and returns its items (synchronous call: Apify waits up to 300 s)."""
+    url = f"{APIFY}/{ator}/run-sync-get-dataset-items?timeout=280&format=json&clean=true&maxTotalChargeUsd={max_usd:.2f}"
+    req = urllib.request.Request(url, data=json.dumps(entrada).encode(),
+                                 headers={"Content-Type": "application/json", "Authorization": f"Bearer {_apify_token()}"})
+    with urllib.request.urlopen(req, timeout=300) as r:
+        itens = json.loads(r.read() or b"[]")
+    return itens if isinstance(itens, list) else []
+
+
+def apify_pronto(login: str) -> bool:
+    _QUEM["login"] = re.sub(r"[^a-z0-9_.-]", "", login.lower())
+    return bool(_apify_token())
+
+
+def _verba(d: dict) -> dict:
+    """This month's Apify spending (estimated from items x price) and the cap."""
+    mes = time.strftime("%Y-%m")
+    v = d.setdefault("apify", {})
+    if v.get("mes") != mes:
+        v.update({"mes": mes, "usd": 0.0})
+    v.setdefault("cursor", 0)
+    return {"gasto": v["usd"], "teto": float(d.get("apify_usd_mes") or APIFY_USD_MES)}
+
+
+def _gastar(d: dict, ator: str, n: int) -> float:
+    custo = round(n * PRECO_APIFY.get(ator, 0.003), 4)
+    d["apify"]["usd"] = round(d["apify"]["usd"] + custo, 4)
+    return custo
+
+
+def _termos(d: dict, n: int) -> list:
+    """Next search terms (word + city), in rotation over every city of the catalog list: Brazil-wide, no repeats
+    until the list wraps."""
+    todos = [(f"{palavra} {nome}", nome) for _, nome in CIDADES for palavra in PALAVRAS_INSTAGRAM]
+    i = d["apify"]["cursor"] % len(todos)
+    escolhidos = (todos[i:] + todos[:i])[:n]
+    d["apify"]["cursor"] = i + n
+    return escolhidos
+
+
+def buscar_instagram(login: str, p, termos: int = 3, por_termo: int = 20) -> dict:
+    """The Instagram share of the stock through Apify: search profiles by word + city, keep what fits the rubric
+    (registered already checked: last post, followers, private), note what does not (60 days), skip what is known."""
+    _QUEM["login"] = re.sub(r"[^a-z0-9_.-]", "", login.lower())
+    if not _apify_token():
+        return {"erro": "sem Apify (APIFY_API no cofre)"}
+    d = carregar(login)
+    v = _verba(d)
+    custo_max = termos * por_termo * PRECO_APIFY["apify~instagram-search-scraper"]
+    if v["gasto"] + custo_max > v["teto"]:
+        salvar(login, d)
+        return {"erro": f"verba do Apify do mês atingida (US$ {v['gasto']:.2f} de {v['teto']:.2f}); volta no mês que vem"}
+    escolhidos = _termos(d, termos)
+    salvar(login, d)  # the cursor moves even if the call fails: a bad term is not retried forever
+    try:
+        itens = _apify("apify~instagram-search-scraper",
+                       {"search": ",".join(t for t, _ in escolhidos), "searchType": "user", "searchLimit": por_termo},
+                       custo_max + 0.05)
+    except Exception as exc:
+        return {"erro": f"Apify não respondeu ({str(exc)[:80]}); tente na próxima rodada", "termos": [t for t, _ in escolhidos]}
+    d = carregar(login)
+    _verba(d)
+    custo = _gastar(d, "apify~instagram-search-scraper", len(itens))
+    salvar(login, d)
+    cidade_do_termo = {t: _nome_busca(c) for t, c in escolhidos}
+    dados = p.carregar(login)
+    conhecidos = {l["handle"] for l in dados["leads"]} | set((dados.get("rejeitados") or {}).keys())
+    out = {"termos": [t for t, _ in escolhidos], "perfis": len(itens), "criados": [], "recusados": 0, "ja_conhecidos": 0,
+           "custo_usd": custo, "mes_usd": d["apify"]["usd"]}
+    novos, rejeitar = [], []
+    for it in itens:
+        perfil = p._perfil_padrao(it) if isinstance(it, dict) else {}
+        h = p.normalizar(str(perfil.get("handle") or ""))
+        if not h or perfil.get("erro"):
+            continue
+        if h in conhecidos:
+            out["ja_conhecidos"] += 1
+            continue
+        conhecidos.add(h)
+        ev = p._evidencia(perfil)
+        termo = str(it.get("searchTerm") or "")
+        item = {**ev, "segmento": ev["segmento"] or p.segmento_rubrica(termo),
+                "cidade": ev["cidade"] or cidade_do_termo.get(termo, ""), "origem": "instagram", "fonte": "Apify",
+                "motivo": (f"Apify, busca no Instagram «{termo}»" + ("" if ev["cidade"] else " (cidade da busca)") + f"; {ev['motivo']}")[:300]}
+        r = p.pontuar(item)
+        if r.get("rejeitado") or r.get("nota", 0) < p.NOTA_MINIMA:
+            rejeitar.append({"handle": h, "motivo": r.get("rejeitado") or f"nota {r.get('nota')}"})
+            continue
+        novos.append(item)
+    if rejeitar:
+        p.rejeitar(login, rejeitar)
+    out["recusados"] = len(rejeitar)
+    if novos:
+        r = p.registrar(login, novos)
+        out["criados"] = r["criados"]
+        out["recusados"] += len(r["recusados"])
+    return out
+
+
+def conferir_apify(login: str, p, handles: list) -> dict:
+    """The sheet's profiles checked in one go by Apify's profile scraper (then the same rules as the browser script)."""
+    _QUEM["login"] = re.sub(r"[^a-z0-9_.-]", "", login.lower())
+    handles = [h for h in handles if h][:25]
+    if not handles or not _apify_token():
+        return {"erro": "nada a conferir ou sem Apify"}
+    d = carregar(login)
+    v = _verba(d)
+    custo_max = len(handles) * PRECO_APIFY["apify~instagram-profile-scraper"]
+    if v["gasto"] + custo_max > v["teto"]:
+        salvar(login, d)
+        return {"erro": f"verba do Apify do mês atingida (US$ {v['gasto']:.2f} de {v['teto']:.2f})"}
+    try:
+        itens = _apify("apify~instagram-profile-scraper", {"usernames": handles}, custo_max + 0.05)
+    except Exception as exc:
+        salvar(login, d)
+        return {"erro": f"Apify não respondeu ({str(exc)[:80]})"}
+    _gastar(d, "apify~instagram-profile-scraper", len(itens))
+    salvar(login, d)
+    # a profile Apify did not return is left for the next check (never discarded for a missing answer)
+    return p.conferir_perfis(login, itens, "apify")
+
+
 def resumo(login: str) -> str:
     d = carregar(login)
     from collections import Counter
