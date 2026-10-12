@@ -53,7 +53,18 @@ def entrega_da_ponte(dados: dict) -> bool:
         return False
 
 
-URGENTE = re.compile(r"^\W*(precisa de voc[eê]|urgente|decis[aã]o|aten[cç][aã]o|bloquead|falh|erro|⚠️|❗|🚨)", re.I)
+# 12/10 review (§4.3, item 5): "starts with falha/erro/atenção/⚠️" made every routine hiccup urgent, ringing in his
+# quiet hours. Urgent now = the routine says it needs him ("PRECISA DE VOCÊ", the convention of every routine prompt)
+# or a real block only he can clear: login or code asked, captcha, account blocked/limited.
+URGENTE = re.compile(r"^\W*(precisa de voc[eê]|🚨)", re.I)
+BLOQUEIO = re.compile(r"(pediu|pede|precisa de|fazer|refazer|entrar com) (o |um |de novo o )?(login|c[oó]digo)|"
+                      r"login (expirou|caiu)|sess[aã]o expirou|\b2fa\b|captcha|verifica[cç][aã]o em (duas|2) etapas|"
+                      r"conta (foi )?(bloqueada|suspensa|restrita|limitada|desativada)", re.I)
+
+
+def urgente(texto: str) -> bool:
+    texto = str(texto or "")
+    return bool(URGENTE.match(texto) or BLOQUEIO.search(texto[:600]))
 
 
 def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", botoes: list | None = None,

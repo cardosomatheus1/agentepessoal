@@ -165,6 +165,22 @@ def estilo(login: str) -> str:
         return ""
 
 
+# 12/10 review: the 2,500-character style went into every prompt (routines, summaries, checks) and cost more than it
+# gave. It now goes only into conversations where something will be written in the person's name.
+ESCRITA = re.compile(r"e-?mails?\b|respond|respost|mensage|escrev|rascunh|redig|\btexto|\bpost\b|legenda|\bcarta\b|"
+                     r"proposta|\bdirect\b|\bdms?\b|coment[aá]r|whats|\bresponda", re.I)
+
+
+def quer_estilo(pedido) -> bool:
+    """The person's own message asks for something written in their name. A routine's prompt (long, full of "responda"
+    and "escreva" meant for the agent) never counts: routines read the style with `rascunho` acao "estilo" when they
+    write in the person's name."""
+    if isinstance(pedido, dict):  # the chat history keeps {"user_message": …, "attachments": …}
+        pedido = pedido.get("user_message") or ""
+    texto = str(pedido or "")
+    return len(texto) <= 600 and bool(ESCRITA.search(texto))
+
+
 def mensagens_dele(login: str, limite: int = 80) -> list[str]:
     """What the person really typed on the phone (Telegram/WhatsApp chats), newest last — not task prompts, test
     messages or button texts, which are not their voice."""

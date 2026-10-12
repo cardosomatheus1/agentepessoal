@@ -29,6 +29,74 @@ def _hora(dt) -> str:
         return "?"
 
 
+def _helper(nome: str, caminho: str):
+    """A plugin helper already loaded by the agent, or loaded here by path (None when the plugin is not installed)."""
+    if nome in sys.modules:
+        return sys.modules[nome]
+    import importlib.util
+
+    arquivo = Path(caminho)
+    if not arquivo.exists():
+        return None
+    spec = importlib.util.spec_from_file_location(nome, arquivo)
+    modulo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modulo)
+    modulo._mtime = arquivo.stat().st_mtime
+    sys.modules[nome] = modulo
+    return modulo
+
+
+def lista_esperando(aprovacoes: list, pedido: dict | None, propostas: int, contas: list, rascunhos: int,
+                    fios: list) -> list[str]:
+    """/pendentes and the panel (12/10 review §7 item 2): the one list of what waits on the person."""
+    linhas = [f"• Aprovar: {a['resumo']} ({a['conversa']})" for a in aprovacoes]
+    if pedido and not pedido.get("codigo"):
+        linhas.append(f"• Código pedido: {pedido.get('motivo') or pedido.get('servico') or 'verificação'}")
+    if propostas:
+        linhas.append(f"• Prospecção: {propostas} proposta(s) esperando o seu ✅ (os botões estão na mensagem de cada uma)")
+    linhas += [f"• Conta: {c}" for c in contas]
+    if rascunhos:
+        linhas.append(f"• {rascunhos} resposta(s) de e-mail pronta(s) esperando você usar ou descartar")
+    linhas += [f"• Fio solto: {f}" for f in fios]
+    return linhas
+
+
+def esperando(usuario: str) -> tuple[list[str], list]:
+    """What waits on the person right now, plus the buttons of the first approval (to answer from /pendentes)."""
+    from agent import AgentContext
+
+    aprovacoes, botoes = [], []
+    rev = sys.modules.get("aprovacoes_revisor")
+    for cid, p in list((getattr(rev, "PENDENTES", {}) or {}).items()):
+        ctx = AgentContext.get(cid)
+        if p.get("decisao") is None and ctx is not None and _dono(ctx) == usuario:
+            aprovacoes.append({"resumo": p.get("resumo"), "conversa": ctx.name or cid})
+            if not botoes:
+                botoes = [{"id": f"aprov:{cid}:{p['id']}:{d}", "titulo": t}
+                          for d, t in (("aprovar", "Aprovar"), ("sempre", "Sempre permitir"), ("recusar", "Recusar"))]
+    pedido = (getattr(sys.modules.get("whatsapp_ponte"), "PEDIDOS", {}) or {}).get(usuario)
+    propostas, contas, rascunhos, fios = 0, [], 0, []
+    try:
+        pr = _helper("prospeccao_helper", "/a0/usr/plugins/prospeccao/helpers/prospeccao.py")
+        propostas = sum(1 for a in pr.carregar(usuario)["acoes"] if a["estado"] == "proposta") if pr else 0
+    except Exception:
+        pass
+    try:
+        aux = _helper("auxiliar_helper", "/a0/usr/plugins/auxiliar/helpers/auxiliar.py")
+        if aux:
+            contas = [aux.linha_conta(c) for c in aux.contas_abertas(usuario, 7)[:5]]
+            rascunhos = sum(1 for r in aux.carregar(usuario)["rascunhos"] if r.get("estado") == "pendente")
+    except Exception:
+        pass
+    try:
+        fi = _helper("fios_soltos_helper", "/a0/usr/plugins/fios_soltos/helpers/fios.py")
+        fios = [str(f.get("titulo", ""))[:120] + (f" (prazo {f['prazo']})" if f.get("prazo") else "")
+                for f in (fi.abertos(usuario, 3) if fi else [])]
+    except Exception:
+        pass
+    return lista_esperando(aprovacoes, pedido, propostas, contas, rascunhos, fios), botoes
+
+
 def painel(usuario: str) -> str:
     from agent import AgentContext
 
@@ -46,17 +114,8 @@ def painel(usuario: str) -> str:
             agora.append(f"• {ctx.name or ctx.id}" + (f" — {prog}" if prog else ""))
     saida.append("⚙️ *Fazendo agora*\n" + ("\n".join(agora) if agora else "Nada rodando."))
 
-    esperando = []
-    rev = sys.modules.get("aprovacoes_revisor")
-    for cid, p in (getattr(rev, "PENDENTES", {}) or {}).items():
-        ctx = AgentContext.get(cid)
-        if p.get("decisao") is None and ctx is not None and _dono(ctx) == usuario:
-            esperando.append(f"• Aprovar: {p.get('resumo')} ({ctx.name or cid})")
-    pon = sys.modules.get("whatsapp_ponte")
-    pedido = (getattr(pon, "PEDIDOS", {}) or {}).get(usuario)
-    if pedido and not pedido.get("codigo"):
-        esperando.append(f"• Código pedido: {pedido.get('motivo') or pedido.get('servico') or 'verificação'}")
-    saida.append("⏳ *Esperando você*\n" + ("\n".join(esperando) if esperando else "Nada."))
+    linhas, _ = esperando(usuario)
+    saida.append("⏳ *Esperando você*\n" + ("\n".join(linhas) if linhas else "Nada."))
 
     tarefas = []
     try:

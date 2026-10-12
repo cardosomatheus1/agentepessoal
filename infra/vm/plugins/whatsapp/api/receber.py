@@ -268,6 +268,7 @@ AJUDA = """*Comandos*
 /atividade — últimas ações importantes (aprovadas, bloqueadas, recusadas)
 /gasto — quanto o agente gastou hoje e no mês
 /painel — tudo numa tela: o que está fazendo, o que espera de você, tarefas agendadas e gasto
+/pendentes — só o que espera você (aprovações, propostas, contas, rascunhos, fios)
 /livro — o que o agente fez hoje (DMs, comentários, seguir e curtir), do registro que não se altera
 /decisoes — as suas decisões em vigor (o agente segue sem perguntar de novo)
 /senha NOME valor — guarda uma senha no seu cofre (o agente nunca vê; a mensagem é apagada)
@@ -586,6 +587,12 @@ class Receber(ApiHandler):
             return {"ok": True}
         if comando == "/atividade":
             await asyncio.to_thread(ponte().enviar, usuario, _atividade(usuario))
+            return {"ok": True}
+        if comando in ("/pendentes", "/pendencias", "/pendências"):  # 12/10 review §7 item 2: what waits on the person
+            pn = carregar("whatsapp_painel_api", Path(__file__).resolve().parent / "painel.py")
+            linhas, botoes = pn.esperando(usuario)
+            texto_p = ("⏳ *Esperando você*\n" + "\n".join(linhas)) if linhas else "✅ Nada esperando você agora."
+            await asyncio.to_thread(ponte().enviar, usuario, texto_p, "", "", botoes or None, "resposta", True)
             return {"ok": True}
         if comando in ("/ajuda", "/comandos", "/help"):
             await asyncio.to_thread(ponte().enviar, usuario, AJUDA)

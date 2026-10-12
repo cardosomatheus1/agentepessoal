@@ -98,6 +98,11 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | Despertar da VM: tarefas ilegíveis não apagam mais o despertar marcado; partida recusada (VM ainda desligando) é tentada de novo pela AWS; despertar diário de segurança às 8h45; hibernação que vira desligamento fica registrada e a saúde diária avisa | ✅ | `proximo_despertar.py`, `hibernate.sh`, `deploy.py --despertar`, função de controle |
 | Celular virtual sobrevive a kernel novo: módulo do binder acompanha toda atualização (`linux-modules-extra-aws`); se faltar, o boot registra e a saúde diária avisa | ✅ | `setup.sh` + instalado ao vivo, `saude.py` |
 | Rotina que caiu por queda de conexão (proxy ou modelo fora por um instante) roda de novo na hora, uma vez por falha; outro tipo de erro volta para o próximo horário, como antes | ✅ | limpeza |
+| Menos avisos: iniciativa só com trabalho pronto ("adiantei"), no máximo 2/dia, 2 rodadas (antes 6); radar de IA do YouTube semanal (segunda, 5h) | ✅ | iniciativa + rotinas (git = VM) |
+| Urgente (toca no silêncio) só quando precisa de você: "PRECISA DE VOCÊ" ou bloqueio real (login, código, captcha, conta bloqueada). "Falha/erro/atenção/⚠️" no começo não toca mais de madrugada | ✅ | whatsapp |
+| `/pendentes`: uma lista só do que espera você (aprovações com botões, código pedido, propostas da prospecção, contas em 7 dias, respostas de e-mail prontas, fios abertos); o `/painel` usa a mesma lista | ✅ | whatsapp |
+| Estilo de escrita (2.500 caracteres) só entra na conversa em que você pede algo escrito em seu nome; nas rotinas, só a dica de buscar o estilo quando forem escrever | ✅ | auxiliar |
+| Acompanhamento do Nexos saiu da lista "nunca expira": termina em 30 dias (ou antes, sozinho, quando a Meta decidir) | ✅ | agenda_confiavel |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |

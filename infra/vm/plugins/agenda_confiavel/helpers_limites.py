@@ -15,7 +15,9 @@ HISTORICO = PASTA / "historico"      # <uuid>.jsonl, last 20 runs
 INTERVALO_MINIMO = 10 * 60
 VALIDADE_PADRAO = 30 * 24 * 3600
 # tasks that existed before limits: no expiry (resumo do dia, radar, nexos, vigia)
-EXISTENTES = {"nW924Nkj", "HL76nfIg", "H8kWmYP1", "qAvKcIyw"}
+# routines that predate the 30-day rule and never expire. 12/10 review: the Nexos watch (H8kWmYP1) left this list;
+# it switches itself off when Meta decides and, failing that, ends on the date set in limites.json
+EXISTENTES = {"nW924Nkj", "HL76nfIg", "qAvKcIyw"}
 
 
 class LimitesIlegiveis(RuntimeError):

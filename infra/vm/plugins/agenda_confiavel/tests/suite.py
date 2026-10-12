@@ -92,6 +92,21 @@ class Suite:
             pass
         ok(L.LIMITES.read_text(encoding="utf-8") == '{"F9Ku9frw": {"ate": nu', "o arquivo ilegível ficou como estava")
 
+    def t_nexos_tem_data_de_fim(self):
+        # 12/10 review: the Nexos watch was on the "never expires" list; now it ends on its date (or earlier, by itself,
+        # when Meta decides)
+        import datetime as dt
+        import time
+
+        L = self._limites()
+        nexos = types.SimpleNamespace(uuid="H8kWmYP1", state="idle",
+                                      created_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=4))
+        ok("H8kWmYP1" not in L.EXISTENTES, "Nexos fora da lista que nunca expira")
+        L.definir("H8kWmYP1", {"ate": time.time() + 86400, "permanente": False})
+        ok(L.a_desligar([nexos], L.carregar(), time.time(), "disabled", "running") == [], "antes da data, segue")
+        ok(L.a_desligar([nexos], L.carregar(), time.time() + 2 * 86400, "disabled", "running") == [nexos],
+           "passada a data, é desligada")
+
     def t_historico_sobrevive_a_linha_cortada(self):
         L = self._limites()
         L.HISTORICO.mkdir(parents=True)

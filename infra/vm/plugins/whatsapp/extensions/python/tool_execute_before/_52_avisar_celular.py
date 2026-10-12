@@ -55,8 +55,8 @@ class AvisarCelular(Extension):
                 return
             destino = p.dono(ctx)
         mensagem = (f"🔔 *{titulo}*\n" if titulo else "🔔 ") + texto[:LIMITE]
-        nivel = str(args.get("type") or "").lower()
-        tipo = "urgente" if nivel in ("error", "warning") or p.URGENTE.match(titulo or texto) else "progresso"
+        # an "error"/"warning" notice is not urgent by itself anymore (12/10 review): only a real need of the person
+        tipo = "urgente" if p.urgente(f"{titulo}\n{texto}" if titulo else texto) else "progresso"
         if ctx.get_data("gatilhos_de"):  # an event: one message per event — held and sent with (or as) the outcome
             ctx.set_data("_avisos_do_evento", (ctx.get_data("_avisos_do_evento") or []) + [[mensagem, tipo]])
             return

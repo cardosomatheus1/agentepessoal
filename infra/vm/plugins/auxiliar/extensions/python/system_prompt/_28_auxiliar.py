@@ -38,8 +38,16 @@ class AuxiliarPrompt(Extension):
         partes = ["## Auxiliar pessoal",
                   "- E-mail que pede resposta da pessoa → escreva a resposta e entregue com `rascunho` (quem envia é a pessoa; você nunca envia).",
                   "- Conta, boleto, fatura ou renovação com data → `contas` salvar. Reunião de verdade na agenda → `reuniao` agendar."]
-        if perfil:
+        ctx = self.agent.context
+        if perfil and not ctx.get_data("_estilo_escrita"):
+            pedido = getattr(getattr(loop_data, "user_message", None), "content", "")
+            if a.quer_estilo(pedido):
+                ctx.set_data("_estilo_escrita", True)  # sticky for the chat: the prompt prefix stays stable (cache)
+        if perfil and ctx.get_data("_estilo_escrita"):
             partes.append("Estilo de escrita da pessoa (siga ao escrever qualquer coisa em nome dela):\n" + perfil[:2500])
+        elif perfil:
+            partes.append("- Antes de escrever algo em nome da pessoa (e-mail, mensagem, post), leia o estilo dela com "
+                          "`rascunho` acao \"estilo\".")
         if contas:
             partes.append("Contas abertas vencendo em até 7 dias:\n" + "\n".join(f"- [{c['id']}] {a.linha_conta(c)}" for c in contas))
         for r in pos:

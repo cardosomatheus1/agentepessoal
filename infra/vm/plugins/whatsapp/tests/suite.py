@@ -93,6 +93,49 @@ class Suite:
         p.enviar(LOGIN, "Posso enviar o e-mail?", botoes=b1)
         eq(len(self.enviados), 8, "o mesmo pedido de novo não")
 
+    def t_urgente_so_quando_precisa_dele(self):
+        # 12/10 review: "começou com falha/erro/atenção/⚠️" rang in his quiet hours for every routine hiccup
+        p = self.p
+        for texto in ("PRECISA DE VOCÊ: aprovar a resposta para a Ana", "🚨 Cobrança indevida no cartão",
+                      "O Instagram pediu login de novo na @raiz.connect", "A Meta pede o código de verificação",
+                      "A conta foi bloqueada temporariamente pelo Instagram", "Apareceu um captcha na busca"):
+            ok(p.urgente(texto), f"urgente: {texto}")
+        for texto in ("⚠️ Falha ao abrir o Radar; tento de novo às 14h", "Erro na rodada: tempo esgotado",
+                      "Atenção: 3 leads novos na fila", "Decisão da semana: manter o plano", "Login no Google ok, 2 e-mails",
+                      "❗ Resumo do dia"):
+            ok(not p.urgente(texto), f"não urgente (fica para fora do silêncio): {texto}")
+
+    def t_pendentes_junta_o_que_espera_ele(self):
+        # 12/10 review §7 item 2: one list of what waits on the person (the panel showed only approvals and codes)
+        import types
+
+        stubs = {"helpers": types.ModuleType("helpers"), "helpers.api": types.ModuleType("helpers.api")}
+        stubs["helpers.api"].ApiHandler = type("ApiHandler", (), {})
+        stubs["helpers.api"].Request = stubs["helpers.api"].Response = object
+        antes = {k: sys.modules.get(k) for k in stubs}
+        try:
+            import helpers.api  # noqa: F401  (inside the container)
+        except Exception:
+            sys.modules.update(stubs)
+        try:
+            spec = importlib.util.spec_from_file_location("painel_teste", RAIZ / "api" / "painel.py")
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+        finally:
+            for k, v in antes.items():
+                if v is None:
+                    sys.modules.pop(k, None)
+                else:
+                    sys.modules[k] = v
+        linhas = m.lista_esperando([{"resumo": "enviar e-mail ao contador", "conversa": "Radar"}],
+                                   {"motivo": "Google", "codigo": ""}, 3, ["IPTU — R$ 120,00 (vence amanhã, 13/10)"], 2,
+                                   ["Mandar a proposta ao Pedro (prazo 2026-10-15)"])
+        texto = "\n".join(linhas)
+        for trecho in ("Aprovar: enviar e-mail ao contador", "Código pedido: Google", "3 proposta(s)", "IPTU", "2 resposta(s)",
+                       "Mandar a proposta ao Pedro"):
+            ok(trecho in texto, f"/pendentes mostra {trecho!r}: {texto}")
+        eq(m.lista_esperando([], {"codigo": "123"}, 0, [], 0, []), [], "nada esperando (código já entregue)")
+
     def t_registro_quebrado_nao_quebra_o_envio(self):
         p = self.p
         p.AVISOS.mkdir(parents=True, exist_ok=True)

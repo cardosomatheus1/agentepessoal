@@ -301,6 +301,19 @@ class Suite:
         eq(pos.plan.todo[0], ini + dt.timedelta(minutes=70), "fim inválido vira 1 h")
         await self._limpar_tarefas()
 
+    def t_estilo_so_quando_vai_escrever(self):
+        # 12/10 review: the style (2,500 characters) went into every prompt; now only where something is written
+        a = self.a
+        for pedido in ("responde esse e-mail do contador", "Escreva a DM de abertura", "faz um rascunho pro João",
+                       "manda uma mensagem pro Pedro"):
+            ok(a.quer_estilo(pedido), f"escrita: {pedido}")
+        for pedido in ("quanto gastei hoje?", "Resumo do dia: agenda e contas", "liga o Instagram", "qual o status do Nexos?"):
+            ok(not a.quer_estilo(pedido), f"sem escrita: {pedido}")
+        ok(a.quer_estilo({"user_message": "Responda a Ana no Direct", "attachments": ["/a0/usr/x.pdf"] * 40}),
+           "conteúdo do histórico (dicionário): vale o texto da pessoa, não os anexos")
+        rotina = "Rodada do Radar. 1. Leia os e-mails... 5. Resposta final: escreva SEM NOVIDADE se nada mudou. " * 10
+        ok(not a.quer_estilo(rotina), "prompt de rotina (longo, cheio de 'responda') não carrega o estilo inteiro")
+
     def t_estado_ilegivel_nao_vira_vazio(self):
         # 12/10 review: an unreadable file was read as empty and the next save wiped bills, drafts and meetings
         a = self.a

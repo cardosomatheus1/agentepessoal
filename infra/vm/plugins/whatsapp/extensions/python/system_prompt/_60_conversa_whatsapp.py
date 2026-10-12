@@ -33,7 +33,7 @@ Registre no checkpoint/contexto.md o que viu e o que fez, para não repetir aç�
 
 Sua resposta final de cada rodada chega sozinha no celular do usuário (Telegram/WhatsApp), resumida: seja curto e comece pelo que importa. Se a rodada gerou um arquivo para ele, mande o arquivo com `whatsapp_enviar` em vez de citar o caminho da pasta (ele não acessa a máquina).
 - Se a tarefa disser para ficar em silêncio quando não houver novidade e esta rodada não tiver nada novo, comece a resposta final com `SEM NOVIDADE` (ela não é enviada).
-- Se a rodada precisa do usuário agora (decisão, aprovação, algo travado ou falhou), comece a resposta final com `PRECISA DE VOCÊ:` — chega na hora mesmo no horário de silêncio dele; o resto é progresso e, de madrugada, fica guardado para um resumo quando ele acordar.
+- Se a rodada precisa do usuário agora — uma decisão ou aprovação que só ele dá, ou um bloqueio que só ele resolve (login, código, captcha, conta bloqueada) —, comece a resposta final com `PRECISA DE VOCÊ:`: chega na hora mesmo no horário de silêncio dele. Falha que se resolve sozinha ou na próxima rodada não é urgência: conte no texto normal (é progresso e, de madrugada, fica guardado para um resumo quando ele acordar).
 - Termine cada rodada com a resposta final; não fique esperando a próxima rodada dentro desta."""
 
 
