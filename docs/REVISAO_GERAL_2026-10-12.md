@@ -111,6 +111,16 @@ Próximos passos de maior impacto:
   - reposição de vagas, espera em dias de calendário, resumo do dia mais claro.
 - **Nexos:** o lançador responde "SEM NOVIDADE" (silêncio) quando nada mudou.
 - **Fios soltos:** fechadas as perguntas já resolvidas; a Tavily ganhou descrição no cofre.
+- **Rodadas em dobro (achado às 9h40 de 12/10):**
+  - a **limpeza** dava rodadas *ainda rodando* como presas: procurava a execução no lugar errado e contava o tempo
+    desde a rodada *anterior*;
+  - a **agenda confiável** via a rodada "ociosa", achava que tinha perdido o horário e iniciava **outra cópia no
+    mesmo chat**;
+  - resultado: 3 buscas e 3 execuções ao mesmo tempo, 4 "PRECISA DE VOCÊ" no celular e a busca de 12/10 morreu sem
+    propor as DMs;
+  - corrigido nos dois plugins, com testes; a busca foi relançada.
+- **Descarte na visita:** o perfil parado não era descartado porque o agente passava o id da ação. O id da ação agora
+  vale, e a instrução já traz o id do lead.
 
 ---
 
@@ -151,6 +161,7 @@ Próximos passos de maior impacto:
 |---|---|---|
 | 🔴 | Sem limite de memória por contêiner e sem swap; o vigia só age com 700 MB livres, sempre reinicia o agente (mesmo se o culpado for o Android), entra em loop e **não avisa** (o cabeçalho promete aviso, o código não manda) | `--memory` por contêiner, swap pequeno, `earlyoom`; vigia acha o maior consumidor, máx. 2 reinícios/hora, avisa no Telegram |
 | 🟠 | Proxy sem `/health`, sem nova tentativa, sem reserva Luna → Haiku; Luna é o único modelo padrão | Saúde + `WatchdogSec`; 1 nova tentativa em erro/429; reserva automática |
+| ✅ | Limpeza + agenda confiável iniciavam **cópias de rodadas ainda vivas** no mesmo chat (12/10: 3 de cada, 4 avisos) | Corrigido hoje (§2). Falta: estado de módulo some a cada volta do laço (o "a cada 10 min" da limpeza roda a cada minuto) — guardar em arquivo |
 | 🟠 | Rotinas disparam antes do proxy subir e ficam em erro; a limpeza volta para "ociosa", mas a rodada perdida não é repetida | `Before=docker.service` no proxy; repetir rodada que falhou por conexão |
 | 🟠 | Despertar frágil: erro ao ler as tarefas **apaga** o agendamento; "ligar em 2 min" pode falhar sem ninguém ver; hibernar pode virar desligar sem aviso | Manter o agendamento antigo se a leitura falhar; despertar diário de segurança; repetir a partida; avisar |
 | 🟠 | Mensagem do celular **apagada** depois de ~150 s se o agente não responder; Telegram **sem deduplicação** | Devolver à fila, fila de mortas, deduplicar por `update_id` |
