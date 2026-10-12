@@ -764,27 +764,47 @@ def _citacao(nota: str) -> str:
     return re.sub(r"[^\w]+", " ", texto.lower()).strip()
 
 
+RESPOSTAS_ETAPAS = ("respondeu", "lead", "demo", "teste", "cliente")  # the answer funnel, in order
+
+
 def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "direct") -> dict | None:
-    """New stage. The returned lead carries "novidade": False when the same answer was already recorded (rounds
-    re-read the same Direct/notifications every half hour; the person must hear about each answer once)."""
+    """New stage. The returned lead carries "novidade": False when it is not a new answer: the rounds re-read the same
+    Direct and comments every half hour and describe the same message in other words (11–12/10: "respondeu" reached
+    the phone 3–4 times). One answer is news once:
+    - the same quote at the same place is the same answer;
+    - re-read before we answered it, an answer at the same place is the same answer (comments since 11/10, the Direct
+      too since 12/10);
+    - the same answer understood better (respondeu → lead) moves the stage up without a new notice;
+    - the stage never goes back: a new message from someone already a lead keeps "lead"."""
     d = carregar(login)
     lead = _lead(d, lid)
     if not lead or etapa not in ETAPAS:
         return None
     onde = onde if onde in ONDE else "direct"
     nota = nota[:300]
-    repetida = any(h["tipo"] == f"etapa:{etapa}" and _citacao(h.get("texto", "")) == _citacao(nota)
-                   and h.get("onde", "direct") == onde for h in lead["historico"])
-    falas = [h for h in lead["historico"] if str(h.get("tipo", "")).startswith("etapa:")]
-    if not repetida and falas and lead["etapa"] == etapa and falas[-1].get("onde", "direct") == onde == "comentario":
-        # the same comment reply described in other words, with no quote (11/10: Anna announced twice): while we
-        # have not answered it yet, a reply in the comments re-read by the next round is not news
-        respondemos = any(a["lead_id"] == lead["id"] and a["tipo"] == "resposta" and a["estado"] == "executada"
-                          and a.get("executada_em", 0) > falas[-1]["em"] for a in d["acoes"])
-        repetida = not respondemos
-    if repetida and lead["etapa"] == etapa:
-        return {**lead, "novidade": False}
-    lead["etapa"], lead["atualizado"] = etapa, agora()
+    if etapa in RESPOSTAS_ETAPAS:
+        tipos = {f"etapa:{e}" for e in RESPOSTAS_ETAPAS}
+        falas = [h for h in lead["historico"] if h["tipo"] in tipos and not h.get("mesma_fala")]
+        mesma = any(_citacao(h.get("texto", "")) == _citacao(nota) and h.get("onde", "direct") == onde for h in falas)
+        if not mesma and falas and falas[-1].get("onde", "direct") == onde:
+            respondemos = any(a["lead_id"] == lead["id"] and a["tipo"] == "resposta" and a["estado"] == "executada"
+                              and a.get("executada_em", 0) > falas[-1]["em"] for a in d["acoes"])
+            mesma = not respondemos
+        nivel = lambda e: RESPOSTAS_ETAPAS.index(e) if e in RESPOSTAS_ETAPAS else -1  # noqa: E731
+        sobe = nivel(etapa) > nivel(lead["etapa"])
+        if mesma:
+            if sobe:
+                lead["etapa"], lead["atualizado"] = etapa, agora()
+                lead["historico"].append({"em": agora(), "tipo": f"etapa:{etapa}", "texto": nota, "onde": onde, "mesma_fala": True})
+                salvar(login, d)
+            return {**lead, "novidade": False}
+        lead["etapa"], lead["atualizado"] = (etapa if sobe or nivel(lead["etapa"]) < 0 else lead["etapa"]), agora()
+    else:
+        repetida = any(h["tipo"] == f"etapa:{etapa}" and _citacao(h.get("texto", "")) == _citacao(nota)
+                       and h.get("onde", "direct") == onde for h in lead["historico"])
+        if repetida and lead["etapa"] == etapa:
+            return {**lead, "novidade": False}
+        lead["etapa"], lead["atualizado"] = etapa, agora()
     lead["historico"].append({"em": agora(), "tipo": f"etapa:{etapa}", "texto": nota, "onde": onde})
     if etapa in FINAIS or etapa in ("respondeu", "lead"):  # pending outreach stops when they answer or are closed
         for a in d["acoes"]:

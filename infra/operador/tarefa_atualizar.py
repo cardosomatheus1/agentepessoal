@@ -17,9 +17,14 @@ URL = boto3.client("ssm", region_name="us-east-1").get_parameter(Name="/agentepe
 
 async def main():
     uuid, campo, arquivo = sys.argv[1:4]
-    if campo not in ("prompt", "system_prompt"):
-        raise SystemExit("campo: prompt ou system_prompt")
-    texto = open(arquivo, encoding="utf-8").read().strip()
+    if campo not in ("prompt", "system_prompt", "estado"):
+        raise SystemExit("campo: prompt, system_prompt ou estado (idle | disabled)")
+    if campo == "estado":  # e.g. pause a routine that only gets stuck (12/10: "Acompanhar Claude Code")
+        if arquivo not in ("idle", "disabled"):
+            raise SystemExit("estado: idle ou disabled")
+        texto = arquivo
+    else:
+        texto = open(arquivo, encoding="utf-8").read().strip()
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path=os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"), headless=True)
         a = await (await b.new_context()).new_page()
@@ -35,10 +40,11 @@ async def main():
         tarefas = {t["uuid"]: t for t in json.loads(await a.evaluate(api, ["lista", None]))}
         if uuid not in tarefas:
             raise SystemExit(f"tarefa {uuid} não encontrada")
-        print("ANTES:", (tarefas[uuid].get(campo) or "")[:400])
-        print("update:", await a.evaluate(api, ["update", {"task_id": uuid, campo: texto}]))
+        chave = "state" if campo == "estado" else campo
+        print("ANTES:", (str(tarefas[uuid].get(chave) or ""))[:400])
+        print("update:", await a.evaluate(api, ["update", {"task_id": uuid, chave: texto}]))
         tarefas = {t["uuid"]: t for t in json.loads(await a.evaluate(api, ["lista", None]))}
-        print("DEPOIS:", (tarefas[uuid].get(campo) or "")[:600])
+        print("DEPOIS:", (str(tarefas[uuid].get(chave) or ""))[:600])
         await b.close()
 
 

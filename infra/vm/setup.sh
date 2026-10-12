@@ -78,6 +78,7 @@ fi
 [ -s /opt/agentepessoal/flask-secret ] || { umask 077; head -c 48 /dev/urandom | base64 | tr -dc A-Za-z0-9 > /opt/agentepessoal/flask-secret; }
 touch /opt/a0/usr/.env
 sed -i -E '/^(AUTH_LOGIN|AUTH_PASSWORD|API_KEY_OTHER|ALLOWED_ORIGINS|FLASK_SECRET_KEY)=/d' /opt/a0/usr/.env
+{ set +x; } 2>/dev/null  # the lines below carry the login password and the session key: never in the log (12/10)
 {
   echo "API_KEY_OTHER=local-proxy"
   echo "ALLOWED_ORIGINS=*://localhost,*://localhost:*,*://127.0.0.1,*://127.0.0.1:*"
@@ -87,6 +88,7 @@ sed -i -E '/^(AUTH_LOGIN|AUTH_PASSWORD|API_KEY_OTHER|ALLOWED_ORIGINS|FLASK_SECRE
   fi
   echo "FLASK_SECRET_KEY=$(cat /opt/agentepessoal/flask-secret)"
 } >> /opt/a0/usr/.env
+set -x
 chmod 600 /opt/a0/usr/.env
 
 # --- containers -------------------------------------------------------------------

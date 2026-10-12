@@ -1296,6 +1296,31 @@ class Suite:
         eq(n1["novidade"], False, "a mesma fala descrita com outras palavras não avisa de novo")
         p.revisor = None
 
+    def t_respondeu_avisa_uma_vez(self):
+        # 11–12/10: every round re-read the same Direct and described the same message in other words: 3–4 notices
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("dm1")
+        eq(p.mudar_etapa(LOGIN, lid, "respondeu", "Respondeu no Direct: «oi, como funciona?»", "direct")["novidade"], True,
+           "primeira resposta avisa")
+        self.em(self.hora(10) + 1800)
+        eq(p.mudar_etapa(LOGIN, lid, "respondeu", "perguntou como funciona a calculadora", "direct")["novidade"], False,
+           "relida antes de respondermos, com outras palavras: não avisa de novo")
+        n = p.mudar_etapa(LOGIN, lid, "lead", "pediu o link da calculadora", "direct")
+        eq((n["novidade"], p._lead(p.carregar(LOGIN), lid)["etapa"]), (False, "lead"),
+           "a mesma fala entendida melhor sobe a etapa sem novo aviso")
+        d = p.carregar(LOGIN)  # we answer
+        d["acoes"].append({"id": "r1", "lead_id": lid, "tipo": "resposta", "texto": "Oi!", "estado": "executada",
+                           "criada": p.agora(), "executada_em": p.agora() + 60})
+        p.salvar(LOGIN, d)
+        self.em(self.hora(12))
+        n = p.mudar_etapa(LOGIN, lid, "respondeu", "Respondeu no Direct: «testei, gostei!»", "direct")
+        eq((n["novidade"], p._lead(p.carregar(LOGIN), lid)["etapa"]), (True, "lead"),
+           "mensagem nova depois da nossa resposta avisa; a etapa não volta de lead para respondeu")
+        eq(p.mudar_etapa(LOGIN, lid, "respondeu", "disse que testou e gostou", "direct")["novidade"], False, "e não avisa duas vezes")
+        eq(p.mudar_etapa(LOGIN, lid, "respondeu", "comentou no post: adorei", "comentario")["novidade"], True,
+           "outro lugar (comentário) é outra fala")
+
     def t_resposta_e_descarte(self):
         p = self.p
         lid = self._lead()
