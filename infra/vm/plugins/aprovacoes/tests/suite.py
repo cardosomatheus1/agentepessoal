@@ -54,6 +54,26 @@ class Suite:
            "Enter (envia) continua passando pelo revisor")
         ok(rv.precisa_revisao("browser", {"action": "click", "ref": 3}, "apagar a conversa"), "clique de apagar continua revisado")
 
+    def t_meta_da_raiz_sem_perguntar(self):
+        rv, cfg = self.rv, {}
+        livre = lambda cat, resumo, intencao="": rv.livre_meta_raiz({"categoria": cat, "resumo": resumo}, "browser",  # noqa: E731
+                                                                    {"action": "click", "ref": 4}, intencao, cfg)
+        ok(livre("chaves_acesso", "No Meta Graph API, trocar o token de acesso por um token de longa duração e conferir sua expiração."),
+           "estender o token de leitura passa (12/10: perguntou duas vezes)")
+        ok(livre("contas_reais", "No Facebook, autorizar o app Raiz Prospecção a ler a Página e a @raiz.connect",
+                 "dialog de permissão em facebook.com/v26.0/dialog/oauth com instagram_basic"), "autorizar a leitura passa")
+        ok(livre("chaves_acesso", "Gerar token de acesso no Explorador da Graph API com instagram_basic e pages_read_engagement"),
+           "gerar o token no Explorador passa")
+        ok(not livre("chaves_acesso", "Gerar token no app Barber Dock (2229462691177967)"), "Barber Dock nunca por aqui")
+        ok(not livre("contas_reais", "Alterar a conta de anúncios act_1384895845137880 no Gerenciador da Meta"), "conta de anúncio, não")
+        ok(not livre("contas_reais", "Autorizar business_management no app da Meta"), "gerenciar o portfólio da empresa, não")
+        ok(not livre("chaves_acesso", "Revogar o token de acesso do app da Meta"), "revogar, não")
+        ok(not livre("chaves_acesso", "Gerar token do WhatsApp Business no app da Meta"), "WhatsApp Business, não")
+        ok(not livre("pagamento", "Adicionar cartão no Meta for Developers"), "pagamento nunca")
+        ok(not livre("chaves_acesso", "Gerar chave de API no Google Cloud"), "fora da Meta, não")
+        ok(not rv.livre_meta_raiz({"categoria": "chaves_acesso", "resumo": "token de acesso no Graph API"}, "browser", {},
+                                  "", {"instagram_sem_perguntar": False}), "desligável na configuração")
+
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:

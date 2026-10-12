@@ -168,6 +168,27 @@ def livre_instagram(analise: dict, tool: str, args: dict, intencao: str, cfg: di
     return bool(INSTAGRAM.search(f"{intencao} {_texto(args)} {analise.get('resumo', '')}"))
 
 
+META = re.compile(r"developers\.facebook\.com|graph\.facebook\.com|facebook\.com/(v\d+\.\d+/)?dialog/oauth|graph api|"
+                  r"explorador|access token|token de acesso|token de longa|business discovery|meta for developers|"
+                  r"\bapp\b.{0,40}(meta|facebook)|(meta|facebook).{0,40}\bapp\b|aplicativo da meta", re.I)
+FORA_META = re.compile(r"barber|an[uú]nci|\bads?\b|ads_|campanha|act_\d|pagament|cobran|cart[aã]o|boleto|whatsapp business|"
+                       r"\bwaba\b|business_management|portf[oó]lio|parceir|terceiros|revog|apag|exclu|delet|remov|senha|"
+                       r"2fa|dois fatores|e-?mail de recupera", re.I)
+
+
+def livre_meta_raiz(analise: dict, tool: str, args: dict, intencao: str, cfg: dict) -> bool:
+    """Matheus (12/10): "aprovo tudo lá do Instagram" — the steps on Meta's developer platform to read the Raiz's
+    Instagram (create the reading app, generate and extend the token, authorize the Page and @raiz.connect) go without
+    asking, and he is told. Never this way: ads, ad accounts, payments, the Barber Dock app, WhatsApp Business,
+    business-wide management or access for third parties, revoking or deleting, passwords."""
+    if not cfg.get("instagram_sem_perguntar", True) or (tool or "").lower() != "browser":
+        return False
+    if analise.get("categoria") not in ("chaves_acesso", "contas_reais", "termos"):
+        return False
+    texto = f"{intencao} {_texto(args)} {analise.get('resumo', '')}"
+    return bool(META.search(texto)) and not FORA_META.search(texto)
+
+
 def veredito(regras: dict, analise: dict) -> str:
     categoria = analise["categoria"]
     if categoria == "nenhuma":

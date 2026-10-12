@@ -98,6 +98,17 @@ class RevisarAcao(Extension):
                                             "", "", None, "progresso")
             except Exception as exc:
                 print(f"aprovacoes: Instagram notice failed: {exc}", flush=True)
+        if decisao == "perguntar" and rv.livre_meta_raiz(analise, tool_name, args, intencao, cfg):
+            decisao = "permitir"  # "aprovo tudo lá do Instagram" (12/10): the Meta steps to read the Raiz's Instagram
+            analise["resumo"] = f"{analise['resumo']} — Meta/Instagram da Raiz: liberado pelo Matheus"[:300]
+            try:
+                wa = whatsapp()
+                if wa:
+                    await asyncio.to_thread(wa.enviar, wa.dono(agent.context),
+                                            f"📣 *Meta, Instagram da Raiz (sem pedir ok)* — {agent.context.name or 'tarefa'}\n\n{analise['resumo']}",
+                                            "", "", None, "progresso")
+            except Exception as exc:
+                print(f"aprovacoes: Meta notice failed: {exc}", flush=True)
         if analise["categoria"] != "nenhuma" and agent.context.id in rv.somente_leitura():
             decisao = "nunca"  # read-only chats (daily brief, proactive research) never change anything
         print(f"aprovacoes: {tool_name} -> {analise['categoria']}/{decisao}: {analise['resumo']}", flush=True)

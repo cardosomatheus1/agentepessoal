@@ -15,7 +15,8 @@
       "Bash(python3 infra/operador/tarefa_atualizar.py:*)",
       "Bash(python3 infra/operador/implantar.py:*)",
       "Bash(python3 infra/operador/apagar_chat.py:*)",
-      "Bash(python3 infra/operador/retomar_chat.py:*)"
+      "Bash(python3 infra/operador/retomar_chat.py:*)",
+      "Bash(python3 infra/operador/aprovar_pendente.py:*)"
     ]
   }
 }
