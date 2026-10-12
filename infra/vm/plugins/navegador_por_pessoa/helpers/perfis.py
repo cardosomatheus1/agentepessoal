@@ -1,11 +1,54 @@
-"""Pick the browser runtime (Chromium + profile) by the owner of the chat, not one for everybody."""
+"""Pick the browser runtime (Chromium + profile) by the owner of the chat, not one for everybody; keep the profiles
+(the logins of Instagram, Google, Meta) outside the container's own layer."""
 
+import os
 import sys
 import threading
+import time
+from pathlib import Path
 
 DONO_DO_PERFIL_COMPARTILHADO = "matheus"
 _runtimes: dict[str, object] = {}
 _lock = threading.RLock()
+
+# 12/10 review: the profiles lived in /a0/tmp/browser/sessions, inside the container's own layer, outside the volume:
+# recreating the container (new image, setup.sh) would log the agent out of everything. They now live in /a0/usr
+# (the host disk, in the daily snapshot; left out of the hourly S3 sync, which they would flood) behind a symlink.
+SESSOES = Path("/a0/tmp/browser/sessions")
+FORA = Path("/a0/usr/navegador/sessions")
+
+
+def _cmdline(pid: int) -> bytes:
+    return Path(f"/proc/{pid}/cmdline").read_bytes()
+
+
+def perfil_em_uso(sessoes: Path, cmdline=_cmdline) -> bool:
+    """Chromium keeps SingletonLock -> '<host>-<pid>' in a profile it has open; a stale one (process gone, or the pid
+    now belongs to something else after a restart) does not count."""
+    for lock in sessoes.glob("*/SingletonLock"):
+        try:
+            pid = int(os.readlink(lock).rsplit("-", 1)[1])
+            if b"chrom" in cmdline(pid).lower():
+                return True
+        except (OSError, ValueError, IndexError):
+            continue
+    return False
+
+
+def guardar_perfis_fora(sessoes: Path = SESSOES, fora: Path = FORA, cmdline=_cmdline) -> str:
+    """Point the profiles folder at the copy outside the container. Only when no browser has a profile open; the
+    folder found in the way is kept aside (renamed), never deleted."""
+    if sessoes.is_symlink():
+        return "ok"
+    if not fora.is_dir():
+        return "sem cópia fora do contêiner"  # the move was not done yet: leave everything as it is
+    if sessoes.exists():
+        if perfil_em_uso(sessoes, cmdline):
+            return "navegador aberto: fica para o próximo início"
+        sessoes.rename(sessoes.with_name(f"sessions.antes-{time.strftime('%Y%m%d-%H%M%S')}"))
+    sessoes.parent.mkdir(parents=True, exist_ok=True)
+    sessoes.symlink_to(fora, target_is_directory=True)
+    return "ligado"
 
 
 def dono(context_id: str) -> str:
