@@ -2269,6 +2269,8 @@ def painel(login: str) -> str:
               f"Semana: {g['abordados']} abordados, {g['responderam']} responderam ({g['taxa_resposta']:.0f}%)"
               + (f"; comentários: {c['responderam']} de {c['comentados']} responderam" if c["comentados"] else ""),
               "Hoje: " + (", ".join(f"{n} {nomes.get(t, t)}" for t, n in feitas.most_common()) if feitas else "nada saiu ainda")]
+    if d["config"].get("crm_planilha"):
+        linhas.append(f"Planilha CRM Raiz (todo dia às 20h30): https://docs.google.com/spreadsheets/d/{d['config']['crm_planilha']}")
     comigo = [l["handle"] for l in d["leads"] if l.get("humano")]
     if comigo:
         linhas.append("Com você (a automação não fala): " + ", ".join(f"@{h}" for h in comigo[:5]))
@@ -2276,6 +2278,60 @@ def painel(login: str) -> str:
         linhas.append("⛔ Pausada por bloqueio do Instagram até "
                       + dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M"))
     return "\n".join(linhas)
+
+
+# 12/10 review §5.2 item 10: the "CRM Raiz" sheet, a daily VIEW of the register for the person (the register stays the
+# source; nothing is read back from the sheet). Written by extensions/python/job_loop/_46_crm_raiz.py.
+CRM_TITULO = "CRM Raiz"
+CRM_COLUNAS = ["@", "Nome", "Etapa", "Segmento", "Cidade", "Fonte", "Nota", "Entrou", "Último contato", "O que aconteceu",
+               "Próximo passo"]
+CRM_ETAPA = {"novo": "novo", "aquecido": "aquecido", "abordado": "abordado (DM)", "lembrado": "lembrete enviado",
+             "respondeu": "respondeu", "lead": "lead", "demo": "demo", "teste": "teste grátis", "cliente": "cliente",
+             "sem_resposta": "sem resposta"}
+CRM_ORDEM = ("cliente", "teste", "demo", "lead", "respondeu", "lembrado", "abordado", "aquecido", "novo", "sem_resposta")
+
+
+def _proximo_passo(lead: dict, pendente: dict | None) -> str:
+    if lead.get("humano"):
+        return "com você (a automação não fala com esse @)"
+    if pendente:
+        return f"{ROTULO.get(pendente['tipo'], pendente['tipo'])}: " + (
+            "esperando aprovação" if pendente["estado"] == "proposta" else
+            "aprovada, sai na próxima rodada" if pendente["estado"] == "aprovada" else "conferir se saiu")
+    dia = lambda dias: (dt.datetime.fromtimestamp(lead["atualizado"], _tz()).date()  # noqa: E731
+                        + dt.timedelta(days=dias)).strftime("%d/%m")
+    return {"novo": "aquecer (seguir, curtir, comentar)", "aquecido": f"primeira mensagem a partir de {dia(DIAS_DM)}",
+            "abordado": f"lembrete a partir de {dia(DIAS_LEMBRETE)}",
+            "lembrado": f"encerra sem resposta em {dia(ESPERA_FIM // 86400)}",
+            "respondeu": "responder (a rodada propõe)", "lead": "oferecer a conversa de 15 min",
+            "demo": "fazer a demo", "teste": "acompanhar o teste", "cliente": "—", "sem_resposta": "—"}.get(lead["etapa"], "—")
+
+
+def linhas_crm(login: str) -> list:
+    """The sheet's rows: the header, then one row per lead (discarded ones out), hottest stage first, then the most
+    recent contact."""
+    d = carregar(login)
+    pendentes = {a["lead_id"]: a for a in d["acoes"] if a["estado"] in ("proposta", "aprovada", "incerta")}
+    data = lambda ts: dt.datetime.fromtimestamp(ts, _tz()).strftime("%d/%m/%Y") if ts else ""  # noqa: E731
+    leads = [l for l in d["leads"] if l["etapa"] in CRM_ETAPA]
+    leads.sort(key=lambda l: (CRM_ORDEM.index(l["etapa"]), -(l.get("atualizado") or 0)))
+    linhas = [CRM_COLUNAS]
+    for l in leads:
+        ultimo = l["historico"][-1] if l["historico"] else None
+        linhas.append([f"@{l['handle']}" if l.get("handle") else "", str(l.get("nome") or "")[:60], CRM_ETAPA[l["etapa"]],
+                       str(l.get("segmento") or ""), str(l.get("cidade") or ""), origem(l),
+                       "" if l.get("nota") is None else str(l["nota"]), data(l.get("criado")),
+                       data(ultimo["em"]) if ultimo else "", " ".join(str((ultimo or {}).get("texto") or "").split())[:140],
+                       _proximo_passo(l, pendentes.get(l["id"]))])
+    return linhas
+
+
+@_transacao
+def definir_crm(login: str, planilha: str) -> None:
+    """Where the CRM sheet lives (its id), so every day the same sheet is rewritten."""
+    d = carregar(login)
+    d["config"]["crm_planilha"] = str(planilha or "")
+    salvar(login, d)
 
 
 def resumo_contexto(login: str) -> str:

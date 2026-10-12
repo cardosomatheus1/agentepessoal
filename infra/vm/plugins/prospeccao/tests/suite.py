@@ -1883,6 +1883,69 @@ class Suite:
         eq(m["por_variante"]["A"]["taxa_resposta"], 50.0, "A: 50%")
         eq(m["por_variante"]["B"]["taxa_resposta"], 100.0, "B: 100%")
 
+    async def t_crm_planilha(self):
+        """12/10 review §5.2 item 10: the "CRM Raiz" sheet, a daily view of the register."""
+        p = self.p
+        spec = importlib.util.spec_from_file_location("prospeccao_crm_teste", RAIZ / "helpers" / "crm.py")
+        crm = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(crm)
+        self.em(self.hora(10))
+        quente = self._aquecido("crmquente")
+        self._lead("crmnovo")
+        p.mudar_etapa(LOGIN, quente, "respondeu", "quero saber mais")
+        p.assumir_lead(LOGIN, quente)
+        apagadas, chamadas, fora = set(), [], {"no_ar": True}
+        novo_id = iter(["1AbCdEfGhIjKlMnOpQrStUvWx0001", "1AbCdEfGhIjKlMnOpQrStUvWx0002"])
+
+        async def chamar(ferramenta, args):
+            chamadas.append((ferramenta, args))
+            if not fora["no_ar"]:
+                return False, "connection refused"
+            if args.get("spreadsheet_id") in apagadas:
+                return False, "HttpError 404: Requested entity was not found."
+            if ferramenta == "create_spreadsheet":
+                return True, f"Successfully created spreadsheet 'CRM Raiz' for x. ID: {next(novo_id)} | URL: https://x | Locale: pt_BR"
+            return True, "Successfully updated"
+
+        sid, criada = await crm.sincronizar(p, LOGIN, chamar, "conta@x")
+        eq((sid, criada), ("1AbCdEfGhIjKlMnOpQrStUvWx0001", True), "cria na primeira vez")
+        eq(p.carregar(LOGIN)["config"]["crm_planilha"], sid, "guarda o id no registro")
+        escrita = next(a for f, a in chamadas if f == "modify_sheet_values" and a.get("values"))
+        eq(escrita["values"][0], p.CRM_COLUNAS, "cabeçalho")
+        eq([r[0] for r in escrita["values"][1:]], ["@crmquente", "@crmnovo"], "o mais quente primeiro")
+        eq(escrita["values"][1][2], "respondeu", "etapa legível")
+        ok("com você" in escrita["values"][1][-1] and escrita["values"][2][-1].startswith("aquecer"), f"próximo passo: {escrita['values']}")
+        eq(escrita["values"][1][9], "o Matheus assumiu a conversa", "o que aconteceu por último")
+        import datetime as _dt
+
+        fuso = p._tz()
+        as_ = lambda h, m=0, d=13: _dt.datetime(2026, 10, d, h, m, tzinfo=fuso)  # noqa: E731
+        ok(not crm.na_vez({}, as_(20, 29)) and crm.na_vez({}, as_(20, 30)), "a partir das 20h30")
+        feito = {"dia": "2026-10-13", "ok": True, "tentativas": 1, "em": as_(20, 31).timestamp()}
+        ok(not crm.na_vez(feito, as_(23)) and crm.na_vez(feito, as_(20, 31, 14)), "uma vez por dia")
+        falhou = {**feito, "ok": False}
+        ok(not crm.na_vez(falhou, as_(21, 0)) and crm.na_vez(falhou, as_(21, 32)), "falhou: de novo 1 h depois")
+        ok(not crm.na_vez({**falhou, "tentativas": crm.TENTATIVAS}, as_(23)), f"no máximo {crm.TENTATIVAS} vezes no dia")
+        ok("docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWx0001" in p.painel(LOGIN), "o painel mostra o link")
+
+        chamadas.clear()
+        eq(await crm.sincronizar(p, LOGIN, chamar, "conta@x"), (sid, False), "no dia seguinte reescreve a mesma")
+        ok(chamadas[0][1].get("clear_values") and not any(f == "create_spreadsheet" for f, _ in chamadas), "limpa e escreve, sem criar")
+
+        fora["no_ar"] = False
+        try:
+            await crm.sincronizar(p, LOGIN, chamar, "conta@x")
+            ok(False, "conector fora deveria falhar")
+        except crm.CrmFalhou:
+            pass
+        eq(p.carregar(LOGIN)["config"]["crm_planilha"], sid, "conector fora: não cria outra (tenta de novo depois)")
+        fora["no_ar"] = True
+
+        apagadas.add(sid)
+        sid2, criada2 = await crm.sincronizar(p, LOGIN, chamar, "conta@x")
+        ok(criada2 and sid2 == "1AbCdEfGhIjKlMnOpQrStUvWx0002" and p.carregar(LOGIN)["config"]["crm_planilha"] == sid2,
+           "apagada: cria outra e guarda o id novo")
+
     def t_painel(self):
         """/painel (12/10 review §7 item 11): funnel by who reached each stage, stock, the week and today."""
         p = self.p
