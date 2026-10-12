@@ -1,8 +1,11 @@
-"""While the agent works on a phone request, tell the person on the phone it is still going.
+"""While the agent works on phone requests, the person sees ONE progress message that updates itself.
 
-Two research requests by voice note ran 8–12 minutes with nothing on the phone ("tem alguma coisa
-errada"). Now, 90 s after a phone message with no answer yet, a "working on it" notice goes out,
-then a short progress line every 4 minutes until the answer is sent.
+Two research requests by voice note ran 8–12 minutes with nothing on the phone ("tem alguma coisa errada"): a
+"working on it" notice went out 90 s after a phone message with no answer yet, then a new line every 4 minutes —
+per request, so 2–3 requests in parallel sent 4–8 messages (12/10 review §6). Now each person has one progress
+message listing every request still running (the bridge edits it in place on Telegram; WhatsApp gets at most one
+every 4 min) and, when all are answered, it turns into "✅ Terminei". The rules are in helpers/ponte.py
+(proximos_andamentos), tested there.
 """
 
 import asyncio
@@ -12,9 +15,6 @@ import time
 from pathlib import Path
 
 from helpers.extension import Extension
-
-PRIMEIRO = 90
-INTERVALO = 4 * 60
 
 
 def ponte():
@@ -44,23 +44,16 @@ class AndamentoCelular(Extension):
     async def execute(self, **kwargs):
         from agent import AgentContext
 
+        p = ponte()
         agora = time.time()
+        por_pessoa: dict[str, list] = {}
         for ctx in AgentContext.all():
             destino = ctx.get_data("whatsapp_de")
             entrada = ctx.get_data("whatsapp_ultima_entrada") or 0
             if not destino or not entrada or not ctx.is_running():
                 continue
-            ultimo = max(entrada, ctx.get_data("whatsapp_ultimo_andamento") or 0)
-            primeiro = ultimo == entrada
-            if agora - ultimo < (PRIMEIRO if primeiro else INTERVALO):
-                continue
-            ctx.set_data("whatsapp_ultimo_andamento", agora)
-            minutos = max(1, round((agora - entrada) / 60))
-            if primeiro:
-                texto = ("⏳ Recebi e estou trabalhando nisso. Te mando o resultado aqui assim que terminar "
-                         "(/parar cancela).")
-            else:
-                fazendo = _fazendo(ctx)
-                texto = f"⏳ Ainda trabalhando no seu pedido ({minutos} min" + (f" · {fazendo}" if fazendo else "") + ")."
-            erro = await asyncio.to_thread(ponte().enviar, destino, texto)
-            print(f"whatsapp: progress notice to {destino} ({minutos} min): {erro or 'sent'}", flush=True)
+            por_pessoa.setdefault(destino, []).append({"pedido": str(ctx.get_data("whatsapp_ultimo_pedido") or ""),
+                                                       "desde": float(entrada), "fazendo": _fazendo(ctx)})
+        for destino, texto, fim, n in p.proximos_andamentos(por_pessoa, p.andamento_aberto(), agora):
+            erro = await asyncio.to_thread(p.andamento, destino, texto, fim, n)
+            print(f"whatsapp: progress to {destino} ({'done' if fim else f'{n} request(s)'}): {erro or 'ok'}", flush=True)

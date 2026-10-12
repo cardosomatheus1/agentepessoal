@@ -241,6 +241,56 @@ def tg_texto(chat: str, texto: str, botoes: list | None = None) -> None:
             tg("sendMessage", dados)
 
 
+# 12/10 review §6 (requests in parallel): one progress message per person, edited in place on Telegram, instead of
+# a new "still working" message per request every 4 minutes (4-8 per request). WhatsApp cannot edit a message: there
+# the combined progress goes at most once every ANDAMENTO_WA seconds. Edits do not buzz the phone.
+ANDAMENTO: dict[str, dict] = {}  # login -> {"chat", "id", "texto", "em"}
+ANDAMENTO_TRAVA = threading.Lock()
+ANDAMENTO_WA = 4 * 60
+ANDAMENTO_VIDA = 2 * 3600  # an older progress message is left alone: a new one goes
+
+
+def andamento(usuario: str, texto: str, fim: bool = False, agora: float | None = None) -> str:
+    """Show `texto` as the person's progress message: edit the open one (Telegram) or send a new one; `fim` is the last
+    edit (everything finished) and closes it. Returns "editada", "enviada", "fechada" or "nada"."""
+    agora = agora or time.time()
+    with ANDAMENTO_TRAVA:
+        atual = ANDAMENTO.get(usuario)
+        chat = tg_chat(usuario)
+        if chat:
+            if atual and atual.get("chat") == chat and agora - atual["em"] < ANDAMENTO_VIDA:
+                if texto != atual["texto"]:
+                    try:
+                        tg("editMessageText", {"chat_id": chat, "message_id": atual["id"], "text": texto,
+                                               "disable_web_page_preview": True})
+                        atual["texto"] = texto
+                    except RuntimeError as exc:  # deleted, too old: a new message (or nothing, at the end)
+                        log(f"progress edit failed: {str(exc)[:120]}")
+                        atual = None
+                if atual:
+                    if fim:
+                        ANDAMENTO.pop(usuario, None)
+                        return "fechada"
+                    return "editada"
+            if fim:  # nothing open to close: no "done" message of its own (the answers are there)
+                ANDAMENTO.pop(usuario, None)
+                return "nada"
+            r = tg("sendMessage", {"chat_id": chat, "text": texto, "disable_web_page_preview": True})
+            ANDAMENTO[usuario] = {"chat": chat, "id": (r.get("result") or {}).get("message_id"), "texto": texto, "em": agora}
+            return "enviada"
+        if fim:
+            ANDAMENTO.pop(usuario, None)
+            return "nada"
+        if atual and agora - atual["em"] < ANDAMENTO_WA:
+            return "nada"
+        numero = next((n for n, u in (cfg().get("numeros") or {}).items() if u == usuario), "")
+        if not numero:
+            return "nada"
+        enviar_texto(numero, texto)
+        ANDAMENTO[usuario] = {"chat": "", "id": "", "texto": texto, "em": agora}
+        return "enviada"
+
+
 def tg_arquivo(chat: str, caminho: Path, legenda: str = "") -> None:
     sufixo = caminho.suffix.lower()
     if sufixo in (".ogg", ".oga", ".opus"):  # OGG/Opus plays as a voice note
@@ -1308,12 +1358,21 @@ class Saida(http.server.BaseHTTPRequestHandler):
         self.wfile.write(dados)
 
     def do_POST(self):
-        if self.path not in ("/enviar", "/gatilho_url", "/configurar", "/conferir") or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
+        if self.path not in ("/enviar", "/gatilho_url", "/configurar", "/conferir", "/andamento") or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
             return self._responder(403, {"erro": "sem acesso"})
         if self.path == "/conferir":  # the plugin asks whether a delivery really came from here (ticket spent now)
             pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
             return self._responder(200, {"ok": conferir_bilhete(str(pedido.get("bilhete") or ""),
                                                                  str(pedido.get("resumo") or ""))})
+        if self.path == "/andamento":  # the person's single progress message (edited in place on Telegram)
+            pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+            usuario = str(pedido.get("usuario", "")).lower()
+            try:
+                return self._responder(200, {"ok": True, "como": andamento(usuario, str(pedido.get("texto") or "")[:3500],
+                                                                           bool(pedido.get("fim")))})
+            except Exception as exc:
+                log(f"progress failed: {exc}")
+                return self._responder(502, {"erro": str(exc)[:300]})
         if self.path == "/configurar":  # the token, read from the Meta page by a tool (never by the model)
             global _cfg
             pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")

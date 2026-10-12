@@ -107,6 +107,101 @@ def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", 
         return str(exc)
 
 
+# 12/10 review §6 (requests in parallel): one progress message per person that the bridge edits in place (Telegram),
+# instead of one "still working" per request every 4 minutes. ANDAMENTO keeps which people have one open (job-loop
+# modules reload on every pass: the state lives in a file).
+ANDAMENTO = Path("/a0/usr/whatsapp/andamento.json")  # {login: {"em": last update, "n": requests shown, "maximo": most}}
+
+
+def andamento_aberto() -> dict:
+    try:
+        return json.loads(ANDAMENTO.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _guardar_andamento(dados: dict) -> None:
+    ANDAMENTO.parent.mkdir(parents=True, exist_ok=True)
+    tmp = ANDAMENTO.with_suffix(".tmp")
+    tmp.write_text(json.dumps(dados), encoding="utf-8")
+    os.replace(tmp, ANDAMENTO)
+
+
+def andamento(usuario: str, texto: str, fim: bool = False, n: int = 1) -> str:
+    """Show `texto` as the person's single progress message (the bridge edits the open one); `fim` closes it. ''
+    when done, else the reason it was not."""
+    if not usuario:
+        return "conversa sem dono"
+    if usuario.startswith("teste_"):
+        CAIXA_TESTES.parent.mkdir(parents=True, exist_ok=True)
+        with CAIXA_TESTES.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"em": time.time(), "usuario": usuario, "texto": texto, "tipo": "andamento", "fim": fim},
+                               ensure_ascii=False) + "\n")
+        erro = ""
+    else:
+        req = urllib.request.Request(URL.rsplit("/", 1)[0] + "/andamento",
+                                     data=json.dumps({"usuario": usuario, "texto": texto, "fim": fim}).encode(),
+                                     headers={"Content-Type": "application/json", "X-Chave": chave()})
+        try:
+            with _abrir(req, timeout=60) as r:
+                r.read()
+            erro = ""
+        except Exception as exc:
+            erro = str(exc)[:200]
+    if not erro:
+        dados = andamento_aberto()
+        if fim:
+            dados.pop(usuario, None)
+        else:
+            antes = dados.get(usuario) or {}
+            dados[usuario] = {"em": time.time(), "n": n, "maximo": max(n, int(antes.get("maximo") or 0))}
+        try:
+            _guardar_andamento(dados)
+        except OSError as exc:
+            print(f"whatsapp: progress state not saved: {exc}", flush=True)
+    return erro
+
+
+def texto_andamento(pedidos: list, agora: float | None = None) -> str:
+    """The progress message: `pedidos` = [{"pedido": what was asked, "desde": when, "fazendo": current step}]."""
+    agora = agora or time.time()
+    minutos = lambda p: max(1, round((agora - float(p.get("desde") or agora)) / 60))  # noqa: E731
+    resumo = lambda t: (lambda x: x if len(x) <= 70 else x[:69].rsplit(" ", 1)[0] + "…")(" ".join(str(t or "").split()))  # noqa: E731
+    if len(pedidos) == 1:
+        p = pedidos[0]
+        return (f"⏳ Trabalhando no seu pedido ({minutos(p)} min" + (f" · {p['fazendo']}" if p.get("fazendo") else "") +
+                "). Te mando o resultado aqui; esta mensagem se atualiza sozinha (/parar cancela).")
+    linhas = [f"⏳ Trabalhando em {len(pedidos)} pedidos (esta mensagem se atualiza sozinha; /parar cancela):"]
+    for p in sorted(pedidos, key=lambda x: float(x.get("desde") or 0)):
+        linhas.append(f"• «{resumo(p.get('pedido')) or 'pedido'}» — {minutos(p)} min" + (f" · {p['fazendo']}" if p.get("fazendo") else ""))
+    return "\n".join(linhas)
+
+
+ANDAMENTO_PRIMEIRO = 90       # a request answered faster than this gets no progress message at all
+ANDAMENTO_ATUALIZA = 2 * 60   # then the message updates every 2 min (edits do not buzz) or when requests come/go
+
+
+def proximos_andamentos(por_pessoa: dict, abertos: dict, agora: float) -> list:
+    """What the progress loop sends now: [(login, texto, fim, n)]. `por_pessoa`: {login: running requests}
+    (see texto_andamento); `abertos`: andamento_aberto()."""
+    saida = []
+    for destino, pedidos in por_pessoa.items():
+        reg = abertos.get(destino)
+        if not reg and all(agora - float(x.get("desde") or agora) < ANDAMENTO_PRIMEIRO for x in pedidos):
+            continue
+        if reg and agora - float(reg.get("em") or 0) < ANDAMENTO_ATUALIZA and int(reg.get("n") or 0) == len(pedidos):
+            continue
+        saida.append((destino, texto_andamento(pedidos, agora), False, len(pedidos)))
+    for destino, reg in abertos.items():
+        if destino not in por_pessoa:  # everything answered: the message turns into "done"
+            saida.append((destino, texto_andamento_fim(int(reg.get("maximo") or 1)), True, 0))
+    return saida
+
+
+def texto_andamento_fim(n: int) -> str:
+    return ("✅ Terminei os " + str(n) + " pedidos" if n > 1 else "✅ Terminei") + " — as respostas estão aqui na conversa."
+
+
 AVISOS = Path("/a0/usr/whatsapp/avisos")  # notices sent by rounds/tasks, one .jsonl per person (last 60)
 # 12/10 review (first piece of the notices gate, §4.3): the same notice could reach the phone 3-4 times (duplicate
 # rounds, a round re-reporting what it already reported). An identical notice (same text, file and buttons) inside

@@ -78,6 +78,44 @@ class Suite:
         p.enviar(LOGIN, "resposta comum")
         eq(self.enviados[-1].get("rotina"), "", "conversa não tem rotina")
 
+    def t_andamento_uma_mensagem_so(self):
+        # 12/10 review §6: requests in parallel — one progress message per person instead of one per request
+        p = self.p
+        p.ANDAMENTO = self._tmp / "andamento.json"
+        agora = 100_000.0
+        pedido = lambda texto, segundos: {"pedido": texto, "desde": agora - segundos, "fazendo": ""}  # noqa: E731
+        eq(p.proximos_andamentos({"m": [pedido("oi", 60)]}, {}, agora), [], "respondeu em menos de 90 s: nada")
+        saida = p.proximos_andamentos({"m": [pedido("pesquisa lava e seca", 100)]}, {}, agora)
+        ok(len(saida) == 1 and saida[0][0] == "m" and not saida[0][2] and "Trabalhando no seu pedido (2 min)" in saida[0][1],
+           f"depois de 90 s, abre: {saida}")
+        aberto = {"m": {"em": agora - 60, "n": 1, "maximo": 1}}
+        eq(p.proximos_andamentos({"m": [pedido("a", 300)]}, aberto, agora), [], "atualiza no máximo a cada 2 min")
+        saida = p.proximos_andamentos({"m": [pedido("pesquisa lava e seca", 300), pedido("e o lead da Zen?", 30)]}, aberto, agora)
+        ok(len(saida) == 1 and saida[0][3] == 2 and "Trabalhando em 2 pedidos" in saida[0][1]
+           and saida[0][1].index("lava e seca") < saida[0][1].index("lead da Zen"), f"chegou outro: atualiza na hora: {saida}")
+        aberto = {"m": {"em": agora - 130, "n": 2, "maximo": 2}}
+        eq(len(p.proximos_andamentos({"m": [pedido("a", 400), pedido("b", 200)]}, aberto, agora)), 1, "2 min depois: atualiza")
+        saida = p.proximos_andamentos({}, aberto, agora)
+        eq(saida, [("m", "✅ Terminei os 2 pedidos — as respostas estão aqui na conversa.", True, 0)], "tudo respondido: vira pronto")
+        # the client: the bridge's /andamento, and who has a message open
+        chamadas = []
+
+        def falso(req, timeout=0):
+            chamadas.append((req.full_url, json.loads(req.data)))
+            return _Resposta()
+
+        p._abrir = falso
+        eq(p.andamento(LOGIN, "⏳ 1", n=1), "", "abre")
+        eq(p.andamento(LOGIN, "⏳ 2", n=3), "", "atualiza")
+        ok(chamadas[-1][0].endswith(":8789/andamento") and chamadas[-1][1] == {"usuario": LOGIN, "texto": "⏳ 2", "fim": False},
+           f"vai para /andamento da ponte: {chamadas[-1]}")
+        reg = p.andamento_aberto()[LOGIN]
+        eq((reg["n"], reg["maximo"]), (3, 3), "guarda quantos e o máximo")
+        p.andamento(LOGIN, "⏳ 3", n=1)
+        eq(p.andamento_aberto()[LOGIN]["maximo"], 3, "o máximo fica para o \"Terminei os 3\"")
+        p.andamento(LOGIN, "✅", fim=True)
+        ok(LOGIN not in p.andamento_aberto() and chamadas[-1][1]["fim"] is True, "fim fecha")
+
     def t_janela_e_excecoes(self):
         p = self.p
         p.enviar(LOGIN, "⚠️ Instagram pediu login de novo", tipo="urgente")

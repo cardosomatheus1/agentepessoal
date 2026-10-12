@@ -216,6 +216,45 @@ def main() -> int:
         restam = [json.loads(l)["texto"] for l in (p.FILA / "matheus.jsonl").read_text().splitlines()]
         ok(restam == ["B (chegou durante o envio)"], f"só sai o que foi junto: {restam}")
         ok(p.resumo_com_a_noite("ninguem", "Resumo") == ("Resumo", []), "sem fila, o resumo vai como está")
+
+        # 12/10 review §6: requests in parallel — one progress message per person, edited in place on Telegram
+        chamadas = []
+
+        def tg_falso(metodo, dados=None, arquivo=None):
+            chamadas.append((metodo, dict(dados or {})))
+            if metodo == "editMessageText" and dados.get("message_id") == 999:
+                raise RuntimeError("Bad Request: message to edit not found")
+            return {"ok": True, "result": {"message_id": 500 + len(chamadas)}}
+
+        p.tg = tg_falso
+        p.tg_chat = lambda u: "42" if u == "matheus" else ""
+        p.ANDAMENTO.clear()
+        t0 = 10_000.0
+        ok(p.andamento("matheus", "⏳ 1 pedido (2 min)", agora=t0) == "enviada", "a primeira vai como mensagem nova")
+        mid = chamadas[-1][0] == "sendMessage" and p.ANDAMENTO["matheus"]["id"]
+        ok(p.andamento("matheus", "⏳ 2 pedidos (4 min)", agora=t0 + 120) == "editada"
+           and chamadas[-1] == ("editMessageText", {"chat_id": "42", "message_id": mid, "text": "⏳ 2 pedidos (4 min)",
+                                                    "disable_web_page_preview": True}), f"as seguintes editam a mesma: {chamadas[-1]}")
+        n = len(chamadas)
+        ok(p.andamento("matheus", "⏳ 2 pedidos (4 min)", agora=t0 + 130) == "editada" and len(chamadas) == n,
+           "texto igual: nem chama o Telegram")
+        ok(p.andamento("matheus", "✅ Terminei", fim=True, agora=t0 + 300) == "fechada" and chamadas[-1][0] == "editMessageText",
+           "no fim, edita para pronto e fecha")
+        ok(p.andamento("matheus", "⏳ outro pedido", agora=t0 + 400) == "enviada", "depois de fechada, o próximo pedido abre outra")
+        p.ANDAMENTO["matheus"]["id"] = 999  # the person deleted it
+        ok(p.andamento("matheus", "⏳ outro pedido (3 min)", agora=t0 + 500) == "enviada" and chamadas[-1][0] == "sendMessage",
+           "não deu para editar: manda uma nova")
+        ok(p.andamento("matheus", "⏳ velha", agora=t0 + 500 + p.ANDAMENTO_VIDA + 1) == "enviada", "mensagem velha: uma nova")
+        p.ANDAMENTO.clear()
+        ok(p.andamento("matheus", "✅ Terminei", fim=True, agora=t0) == "nada" and chamadas[-1][1].get("text") != "✅ Terminei",
+           "sem mensagem aberta, o fim não manda nada")
+        # WhatsApp (cannot edit): the combined line at most every 4 min
+        whats = []
+        p.enviar_texto = lambda numero, texto: whats.append(texto)
+        p.cfg = lambda: {"tg_chats": {}, "numeros": {"5571": "fernanda"}}
+        ok(p.andamento("fernanda", "⏳ a", agora=t0) == "enviada" and p.andamento("fernanda", "⏳ b", agora=t0 + 60) == "nada"
+           and p.andamento("fernanda", "⏳ c", agora=t0 + p.ANDAMENTO_WA) == "enviada" and whats == ["⏳ a", "⏳ c"],
+           f"WhatsApp: no máximo 1 a cada 4 min: {whats}")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:
