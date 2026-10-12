@@ -1,13 +1,25 @@
 #!/bin/bash
 # Last line of defense against the VM freezing for lack of memory (10/10: the agent's browser reached 11.8 GB, the
 # VM thrashed for 30 min with SSM and the tunnel down, and had to be rebooted). Runs every minute: when free memory
-# stays below LIMITE_MB for 3 checks in a row, restarts only the Agent Zero container (data and logins are on disk),
-# logs it and tells the owner on Telegram once the bridge answers. The in-agent cleanup (plugin "limpeza") should
-# normally keep memory far from this line.
+# stays below LIMITE_MB for 3 checks in a row, restarts the container using the most memory (the agent or the virtual
+# phone; data and logins are on disk), at most MAX_REINICIOS_HORA times an hour, and tells the owner on Telegram.
+# 12/10 review: it always restarted the agent (even when the phone was the culprit), could loop, and its header
+# promised a Telegram notice the code never sent. The in-agent cleanup (plugin "limpeza") should normally keep memory
+# far from this line.
 set -u
 LIMITE_MB="${LIMITE_MB:-700}"
+MAX_REINICIOS_HORA="${MAX_REINICIOS_HORA:-2}"
 ESTADO=/var/lib/agentepessoal/memguard-baixas
+REINICIOS=/var/lib/agentepessoal/memguard-reinicios  # one epoch per line
 mkdir -p /var/lib/agentepessoal
+
+avisar() {  # Telegram through the host bridge (urgent: also in quiet hours); never stops the guard
+  local chave
+  chave=$(cat /opt/a0/usr/whatsapp/.chave 2>/dev/null) || return 0
+  python3 -c 'import json, sys; print(json.dumps({"usuario": "matheus", "texto": sys.argv[1], "tipo": "urgente"}))' "$1" |
+    curl -s -m 15 -X POST http://127.0.0.1:8789/enviar -H "X-Chave: $chave" -H "Content-Type: application/json" \
+      --data-binary @- >/dev/null 2>&1 || true
+}
 
 # The web UI can hang during startup after "Preload completed" (11/10: container up, port 80 never opened, phone
 # and tunnel dead). When the container has been up 10+ min and the UI fails 5 checks in a row, restart only run_ui.
@@ -36,6 +48,28 @@ echo "$n" > "$ESTADO"
 logger -t agentepessoal "memguard: ${livre} MB free (check $n/3)"
 [ "$n" -lt 3 ] && exit 0
 echo 0 > "$ESTADO"
-logger -t agentepessoal "memguard: ${livre} MB free for 3 min; restarting the agent-zero container"
-docker restart -t 20 agent-zero
-echo "$(date -u +%FT%TZ) reiniciou agent-zero com ${livre} MB livres" >> /var/lib/agentepessoal/memguard.log
+# the container using the most memory is the one restarted (only the agent or the phone)
+culpado=$(docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' 2>/dev/null | python3 -c '
+import re, sys
+unid = {"B": 1, "KiB": 2**10, "MiB": 2**20, "GiB": 2**30, "kB": 1e3, "MB": 1e6, "GB": 1e9}
+melhor, uso = "agent-zero", -1.0
+for linha in sys.stdin:
+    nome, _, resto = linha.strip().partition(" ")
+    m = re.match(r"([\d.]+)\s*([A-Za-z]+)", resto)
+    if nome in ("agent-zero", "android") and m and float(m.group(1)) * unid.get(m.group(2), 1) > uso:
+        melhor, uso = nome, float(m.group(1)) * unid.get(m.group(2), 1)
+print(melhor)')
+culpado=${culpado:-agent-zero}
+agora=$(date +%s)
+recentes=$(awk -v c=$((agora - 3600)) '$1 > c' "$REINICIOS" 2>/dev/null | wc -l)
+if [ "$recentes" -ge "$MAX_REINICIOS_HORA" ]; then
+  logger -t agentepessoal "memguard: ${livre} MB free again after ${recentes} restarts this hour; not restarting (no loop)"
+  echo "$(date -u +%FT%TZ) memória baixa (${livre} MB) de novo; sem reiniciar (${recentes} na última hora)" >> /var/lib/agentepessoal/memguard.log
+  avisar "⚠️ Servidor do agente com pouca memória de novo (${livre} MB livres). Já reiniciei ${recentes}× na última hora; não reinicio mais agora para não entrar em ciclo. Quem mais usa memória: ${culpado}."
+  exit 0
+fi
+echo "$agora" >> "$REINICIOS"
+logger -t agentepessoal "memguard: ${livre} MB free for 3 min; restarting ${culpado}"
+docker restart -t 20 "$culpado"
+echo "$(date -u +%FT%TZ) reiniciou ${culpado} com ${livre} MB livres" >> /var/lib/agentepessoal/memguard.log
+avisar "🔁 Servidor do agente quase sem memória (${livre} MB livres por 3 min): reiniciei ${culpado}, o que mais usava memória. Os dados ficam no disco e as rodadas voltam sozinhas."

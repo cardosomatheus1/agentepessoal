@@ -1,6 +1,7 @@
-"""The only way to put a plugin (or skill) on the agent VM. Usage, from the repository root:
+"""The only way to put a plugin (or skill), or a host script, on the agent VM. Usage, from the repository root:
 
     python3 infra/operador/implantar.py prospeccao [--skill prospeccao-instagram] [--forcar]
+    python3 infra/operador/implantar.py --host memguard.sh [--reiniciar agentepessoal-ponte.service] [--forcar]
 
 Why (11/10): two Claude sessions deployed the same plugin over each other and one edited the live data by hand; a
 reply lock stayed on and the only message to a lead was deleted. Rules enforced here:
@@ -44,8 +45,57 @@ def vm(comando: str, timeout: int = 600) -> str:
     raise SystemExit("a VM não respondeu a tempo")
 
 
+# host scripts installed by setup.sh in /opt/agentepessoal (12/10 review: they were copied to the VM by hand)
+HOST_ARQUIVOS = ("bedrock_proxy.py", "report_url.py", "watchdog.sh", "memguard.sh", "backup.sh", "hibernate.sh",
+                 "entrada.sh", "credenciais_meta.py", "ponte_whatsapp.py", "proximo_despertar.py", "agent_tools.sh")
+
+
+def _conferir_git(caminhos: list) -> str:
+    sujo = sh("git", "status", "--porcelain", *caminhos)
+    if sujo:
+        raise SystemExit(f"há mudanças não commitadas:\n{sujo}\nCommite e faça push antes de implantar.")
+    ramo = sh("git", "rev-parse", "--abbrev-ref", "HEAD")
+    sh("git", "fetch", "-q", "origin", ramo)
+    head, remoto = sh("git", "rev-parse", "HEAD"), sh("git", "rev-parse", f"origin/{ramo}")
+    if head != remoto:
+        raise SystemExit(f"HEAD ({head[:8]}) difere de origin/{ramo} ({remoto[:8]}): faça pull/push antes.")
+    return head
+
+
+def host(args: list) -> None:
+    """A host script: committed and pushed, syntax-checked on the VM before it replaces the live one, version kept."""
+    arquivo = args[args.index("--host") + 1] if len(args) > args.index("--host") + 1 else ""
+    if arquivo not in HOST_ARQUIVOS:
+        raise SystemExit(f"script de host desconhecido: {arquivo!r} (conhecidos: {', '.join(HOST_ARQUIVOS)})")
+    caminho = f"infra/vm/{arquivo}"
+    head = _conferir_git([caminho])
+    versao = f"/opt/agentepessoal/.versao-{arquivo}"
+    no_ar = vm(f"cat {versao} 2>/dev/null | head -1").split(" ")[0]
+    if no_ar and "--forcar" not in args and subprocess.run(["git", "merge-base", "--is-ancestor", no_ar, head], cwd=RAIZ).returncode:
+        raise SystemExit(f"a VM roda {arquivo} de {no_ar[:8]}, que não está no seu histórico: faça git pull (ou --forcar).")
+    pacote = subprocess.run(["git", "archive", "--format=tar.gz", "HEAD", caminho], cwd=RAIZ, check=True, capture_output=True).stdout
+    chave = f"tmp/implantar-host-{arquivo}-{head[:8]}.tgz"
+    boto3.client("s3", region_name="us-east-1").put_object(Bucket=BUCKET, Key=chave, Body=pacote)
+    checar = f"bash -n {{f}}" if arquivo.endswith(".sh") else "python3 -m py_compile {f}"
+    unidade = args[args.index("--reiniciar") + 1] if "--reiniciar" in args else ""
+    estagio = "/tmp/implantar-host"
+    saida = vm(f"rm -rf {estagio} && mkdir -p {estagio} && aws s3 cp --quiet s3://{BUCKET}/{chave} - | tar xz -C {estagio} && "
+               f"{checar.format(f=f'{estagio}/{caminho}')} && echo SINTAXE_OK && "
+               f"install -m 755 {estagio}/{caminho} /opt/agentepessoal/{arquivo} && "
+               f"echo '{head} {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}' > {versao} && cat {versao}"
+               + (f" && systemctl restart {unidade} && systemctl is-active {unidade}" if unidade else ""))
+    print(saida[-800:])
+    if "SINTAXE_OK" not in saida:
+        raise SystemExit("o script não passou na conferência de sintaxe: nada foi trocado.")
+    if head not in saida:
+        raise SystemExit("a troca falhou depois da conferência: veja a saída acima.")
+    print(f"implantado no host: {arquivo} @ {head[:8]}")
+
+
 def main() -> None:
     args = sys.argv[1:]
+    if "--host" in args:
+        return host(args)
     if not args or args[0].startswith("-"):
         raise SystemExit(__doc__)
     plugin, forcar = args[0], "--forcar" in args
