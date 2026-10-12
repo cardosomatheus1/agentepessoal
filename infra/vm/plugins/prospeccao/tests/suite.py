@@ -1,5 +1,9 @@
-"""In-process tests of plugins/prospeccao (POST /plugins/prospeccao/testar). Only "teste_*" logins; their phone
-messages are recorded to /a0/usr/testes/celular.jsonl. The clock is simulated by replacing the helper's agora()."""
+"""Tests of plugins/prospeccao. Only "teste_*" logins; their phone messages are recorded to
+/a0/usr/testes/celular.jsonl. The clock is simulated by replacing the helper's agora().
+
+12/10 review: the suite loads its OWN copy of the helper (never the "prospeccao_helper" the live rounds use) and always
+runs in a separate process (implantar.py, rodar_suites_locais.py, or POST /plugins/prospeccao/testar, which starts one):
+it used to swap the reviewer for an approve-all stand-in and the clock inside the agent itself."""
 
 import asyncio
 import datetime as dt
@@ -64,7 +68,7 @@ DM_A = ("Oi, Ana! Vi a marmita de frango com batata-doce de vocês — capricho 
 
 class Suite:
     def __init__(self):
-        self.p = _carregar("prospeccao_helper", RAIZ / "helpers" / "prospeccao.py")
+        self.p = _carregar("prospeccao_helper_teste", RAIZ / "helpers" / "prospeccao.py")  # never the live one
         self.resultados = []
         self.relogio = None
 
@@ -1659,6 +1663,13 @@ class Suite:
                              "executada", comentario=True)
         eq((c["verbo"], c["conteudo"], c["chave"]), ("comentario", "Que capricho!", "prosp:a2:comentario"), "comentário")
 
+    def t_suite_nao_mexe_no_modulo_das_rodadas(self):
+        # 12/10 review: the stand-in reviewer (approves everything) and the simulated clock went into the live module
+        vivo = sys.modules.get("prospeccao_helper")
+        ok(self.p.__name__ == "prospeccao_helper_teste" and self.p is not vivo, "a suíte usa a própria cópia do helper")
+        api = (RAIZ / "api" / "testar.py").read_text(encoding="utf-8")
+        ok("create_subprocess_exec" in api and "exec_module" not in api, "a API de testes roda a suíte em outro processo")
+
     def t_rejeitados(self):
         p = self.p
         lid = self._lead("jaelead")
@@ -1691,3 +1702,14 @@ class Suite:
         eq(m["geral"]["leads"], 1, "1 lead")
         eq(m["por_variante"]["A"]["taxa_resposta"], 50.0, "A: 50%")
         eq(m["por_variante"]["B"]["taxa_resposta"], 100.0, "B: 100%")
+
+
+if __name__ == "__main__":
+    args = [a for a in sys.argv[1:] if a != "--json"]
+    r = asyncio.run(Suite().rodar(args[0] if args else ""))
+    if "--json" in sys.argv:
+        print(json.dumps(r, ensure_ascii=False, default=str))
+    else:
+        for x in r["resultados"]:
+            print("ok   " if x["ok"] else "FALHA", x["teste"], x.get("erro", ""), *(x.get("onde") or []) if not x["ok"] else "")
+        print("TESTES", r["passou"], r["total"])
