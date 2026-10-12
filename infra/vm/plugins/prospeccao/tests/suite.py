@@ -2292,6 +2292,17 @@ class Suite:
             trecho = trecho[:trecho.index("p.montar_")]
             ok("p.scripts_conta(login)" in trecho, f"{acao} confere a chave antes de entregar um script")
 
+    def t_interacao_relida_nao_duplica(self):
+        """12/10 18h: each round re-read the same answer to our comment in other words and added it again."""
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("zen2")
+        r1 = p.interacao_comentario(LOGIN, lid, "Respondeu ao comentário: “@raiz.connect oieeee….entra sim!!!!”")
+        r2 = p.interacao_comentario(LOGIN, lid, "Respondeu ao nosso comentário: “oieeee….entra sim!!!”; também curtiu o nosso comentário")
+        r3 = p.interacao_comentario(LOGIN, lid, "Respondeu ao comentário: “obrigada, vou dar uma olhada!”")
+        eq((r1["novidade"], r2["novidade"], r3["novidade"]), (True, False, True), "a mesma fala relida não é nova; outra fala é")
+        eq(sum(1 for h in p._lead(p.carregar(LOGIN), lid)["historico"] if h["tipo"] == "interagiu"), 2, "duas entradas, não três")
+
     def t_marca_429_nao_e_perfil(self):
         p = self.p
         achados = json.dumps([{"handle": "doces_da_lu", "termo": "doces bh"}, {"handle": "__429__", "termo": "http 429"}])

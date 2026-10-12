@@ -1012,6 +1012,13 @@ def _citacao(nota: str) -> str:
     return re.sub(r"[^\w]+", " ", texto.lower()).strip()
 
 
+def _mesma_citacao(a: str, b: str) -> bool:
+    """The same words of the person read twice by different rounds: @mentions and punctuation aside, equal or one
+    inside the other (12/10 18h: "@raiz.connect oieeee….entra sim!!!!" and "oieeee….entra sim!!!" were two entries)."""
+    na, nb = (" ".join(_citacao(re.sub(r"@[\w.]+", " ", x or "")).split()) for x in (a, b))
+    return na == nb or (min(len(na), len(nb)) >= 8 and (na in nb or nb in na))
+
+
 RESPOSTAS_ETAPAS = ("respondeu", "lead", "demo", "teste", "cliente")  # the answer funnel, in order
 
 
@@ -1026,8 +1033,8 @@ def interacao_comentario(login: str, lid: str, nota: str = "") -> dict | None:
     if not lead:
         return None
     nota = " ".join(str(nota or "").split())[:300]
-    if any(h["tipo"] == "interagiu" and h.get("onde") == "comentario" and _citacao(h.get("texto", "")) == _citacao(nota)
-           for h in lead["historico"]):
+    if any((h["tipo"] == "interagiu" or str(h["tipo"]).startswith("etapa:")) and h.get("onde") == "comentario"
+           and _mesma_citacao(h.get("texto", ""), nota) for h in lead["historico"]):
         return {**lead, "novidade": False}
     lead["interagiu"] = lead.get("interagiu") or agora()
     lead["historico"].append({"em": agora(), "tipo": "interagiu", "texto": nota or "respondeu ao nosso comentário",
