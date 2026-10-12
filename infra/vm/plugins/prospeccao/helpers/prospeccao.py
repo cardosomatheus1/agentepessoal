@@ -439,26 +439,40 @@ def _graph(caminho: str, params: dict) -> dict:
 
 
 def guardar_token_meta(login: str, token_usuario: str) -> dict:
-    """From a (long-lived) user token: find the Page linked to the prospecting Instagram account, keep ITS token
-    (a Page token from a long-lived user token does not expire) and the IG user id in the owner's vault. Returns a
-    summary without secrets."""
+    """From a token read on the screen: the Page token linked to the prospecting Instagram account and the IG user id,
+    kept in the owner's vault. A Page token taken from a LONG-lived user token never expires; from a short one it lasts
+    about an hour (12/10: the first one stored expired the same afternoon, and the second try read a Page token, for
+    which me/accounts is empty). A Page token is now recognized as such, and when the stored token expires the answer
+    says exactly what to extend. Returns a summary without secrets."""
     esperado = conta(login) or "raiz.connect"
-    r = _graph("me/accounts", {"fields": "name,access_token,instagram_business_account{id,username}", "limit": 50,
-                               "access_token": token_usuario})
-    if r.get("error"):
-        return {"ok": False, "erro": r["error"].get("message", "")[:200]}
-    paginas = r.get("data") or []
-    alvo = next((pg for pg in paginas if (pg.get("instagram_business_account") or {}).get("username", "").lower() == esperado), None)
-    if not alvo:
-        ligadas = {pg.get("name"): (pg.get("instagram_business_account") or {}).get("username") for pg in paginas}
-        return {"ok": False, "erro": f"nenhuma Página ligada a @{esperado}", "paginas": ligadas}
+    info = _graph("debug_token", {"input_token": token_usuario, "access_token": token_usuario}).get("data") or {}
+    if info.get("type") == "PAGE":
+        pg = _graph("me", {"fields": "name,instagram_business_account{id,username}", "access_token": token_usuario})
+        conta_ig = pg.get("instagram_business_account") or {}
+        if str(conta_ig.get("username", "")).lower() != esperado:
+            return {"ok": False, "erro": f"o token é de uma Página que não está ligada a @{esperado}"}
+        alvo = {"name": pg.get("name", ""), "access_token": token_usuario, "instagram_business_account": conta_ig}
+    else:
+        r = _graph("me/accounts", {"fields": "name,access_token,instagram_business_account{id,username}", "limit": 50,
+                                   "access_token": token_usuario})
+        if r.get("error"):
+            return {"ok": False, "erro": r["error"].get("message", "")[:200]}
+        paginas = r.get("data") or []
+        alvo = next((pg for pg in paginas if (pg.get("instagram_business_account") or {}).get("username", "").lower() == esperado), None)
+        if not alvo:
+            ligadas = {pg.get("name"): (pg.get("instagram_business_account") or {}).get("username") for pg in paginas}
+            return {"ok": False, "erro": f"nenhuma Página ligada a @{esperado}", "paginas": ligadas}
     c = _cofre()
     c.salvar(login, COFRE_TOKEN, alvo["access_token"]); c.descrever(login, COFRE_TOKEN, f"Meta · token da Página {alvo['name']} (leitura do Instagram @{esperado})")
     c.salvar(login, COFRE_IG, alvo["instagram_business_account"]["id"]); c.descrever(login, COFRE_IG, f"Meta · id da conta @{esperado}")
     info = _graph("debug_token", {"input_token": alvo["access_token"], "access_token": alvo["access_token"]}).get("data") or {}
     expira = info.get("expires_at", 0)
-    return {"ok": True, "pagina": alvo["name"], "instagram": esperado,
-            "expira": "nunca" if not expira else dt.datetime.fromtimestamp(expira, _tz()).strftime("%d/%m/%Y")}
+    out = {"ok": True, "pagina": alvo["name"], "instagram": esperado,
+           "expira": "nunca" if not expira else dt.datetime.fromtimestamp(expira, _tz()).strftime("%d/%m/%Y %H:%M")}
+    if expira:
+        out["aviso"] = ("este token vence: no Explorador da Graph API escolha «Token do usuário» (não Página), gere, abra na "
+                        "ferramenta de token, clique em «Estender token de acesso» e chame token_meta de novo com essa aba aberta")
+    return out
 
 
 def descobrir_perfis(login: str, handles: list) -> list:

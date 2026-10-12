@@ -955,6 +955,39 @@ class Suite:
         finally:
             p._cofre, p._graph = orig_c, orig_g
 
+    def t_token_meta_de_pagina_e_que_vence(self):
+        # 12/10: the first token stored expired the same afternoon (Page token from a short user token); the second
+        # try read a Page token, for which me/accounts is empty ("nenhuma Página ligada")
+        p = self.p
+        self.em(self.hora(11))
+        cofre = {}
+        class C:
+            def carregar(self, login): return dict(cofre)
+            def salvar(self, login, n, v): cofre[n] = v
+            def descrever(self, *a): pass
+        vence = int(p.agora()) + 3600
+        def graph(caminho, params):
+            tok = params.get("access_token") or params.get("input_token")
+            if caminho == "debug_token":
+                return {"data": {"type": "PAGE" if tok == "EAApagina" else "USER", "expires_at": vence}}
+            if caminho == "me":
+                return {"name": "Raiz Connect", "instagram_business_account": {"id": "178", "username": "raizconnect"}}
+            if caminho == "me/accounts":
+                return {"data": [{"name": "Raiz Connect", "access_token": "EAApagina", "instagram_business_account": {"id": "178", "username": "raizconnect"}}]}
+            return {}
+        orig_c, orig_g = p._cofre, p._graph
+        p._cofre, p._graph = (lambda: C()), graph
+        try:
+            d = p.carregar(LOGIN); d["config"]["conta_instagram"] = "raizconnect"; p.salvar(LOGIN, d)
+            res = p.guardar_token_meta(LOGIN, "EAApagina")
+            ok(res["ok"] and cofre == {"META_IG_TOKEN": "EAApagina", "META_IG_USER_ID": "178"}, f"token de Página reconhecido e guardado: {res}")
+            ok(res["expira"] != "nunca" and "Estender token de acesso" in res["aviso"], f"vence: diz exatamente o que estender: {res}")
+            ok("EAA" not in json.dumps(res), "o resumo não mostra o token")
+            res = p.guardar_token_meta(LOGIN, "EAAusuario")
+            ok(res["ok"] and res["pagina"] == "Raiz Connect", "token de usuário continua funcionando")
+        finally:
+            p._cofre, p._graph = orig_c, orig_g
+
     def t_ler_direct_pela_api(self):
         p = self.p
         self.em(self.hora(10))
