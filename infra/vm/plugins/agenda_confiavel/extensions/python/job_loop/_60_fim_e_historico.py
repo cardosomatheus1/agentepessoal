@@ -1,5 +1,6 @@
 """Scheduled tasks: keep the last 20 runs of each, and switch off a task past its end date."""
 
+import asyncio
 import importlib.util
 import sys
 import time
@@ -51,7 +52,7 @@ class FimEHistorico(Extension):
                 await agendador.update_task(task.uuid, state=TaskState.DISABLED)
                 print(f"agenda_confiavel: '{task.name}' reached its end date; disabled", flush=True)
                 ponte = carregar("whatsapp_ponte", Path("/a0/usr/plugins/whatsapp/helpers/ponte.py"))
-                ponte.enviar("matheus", f"📅 A tarefa agendada «{task.name}» chegou na data de fim e foi desativada. "
+                await asyncio.to_thread(ponte.enviar, "matheus", f"📅 A tarefa agendada «{task.name}» chegou na data de fim e foi desativada. "
                              "Se quiser que continue, peça para reativar (ou deixar permanente).", tipo="progresso")
             except Exception as exc:
                 print(f"agenda_confiavel: could not end '{task.name}': {exc}", flush=True)

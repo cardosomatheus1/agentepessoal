@@ -784,6 +784,70 @@ def entregar(dados: dict) -> None:
         raise RuntimeError(resposta.get("erro") or "agente recusou")
 
 
+class AgenteFora(Exception):
+    """Agent Zero did not answer (off, starting, restarting): the message goes back to the queue, never away."""
+
+
+# 12/10 review: a message was deleted after ~150 s of retries if the agent was still starting. Now it stays in the queue
+# (back in 2 min) for about 25 minutes, the person is told once that it is queued, and only then is it given up: kept in
+# NAO_ENTREGUES (host) and the person is told to send it again.
+TENTATIVAS_FILA = 8
+VOLTA_FILA = 120
+NAO_ENTREGUES = Path("/var/lib/agentepessoal/mensagens_nao_entregues.jsonl")
+TENTATIVAS_ENTREGA, PAUSA_ENTREGA = 12, 5.0  # about a minute per turn in the queue
+
+
+def entregar_esperando(dados: dict) -> None:
+    """entregar(), waiting up to a minute for an agent that is starting. A 4xx answer or a refusal is final."""
+    tentativas, erro = TENTATIVAS_ENTREGA, None
+    for tentativa in range(tentativas):
+        try:
+            return entregar(dados)
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500:
+                raise
+            erro = exc
+        except (urllib.error.URLError, ConnectionError) as exc:  # not a read timeout: the agent may have it already
+            erro = exc
+        if tentativa < tentativas - 1:
+            time.sleep(PAUSA_ENTREGA)
+    raise AgenteFora(str(erro))
+
+
+def recebida_vezes(m: dict) -> int:
+    try:
+        return int((m.get("Attributes") or {}).get("ApproximateReceiveCount") or 1)
+    except ValueError:
+        return 1
+
+
+def segurar_na_fila(url: str, m: dict, item: dict, avisar, erro: Exception) -> None:
+    """The agent is not answering: back to the queue (said once), or, after TENTATIVAS_FILA, kept aside and said so."""
+    vezes = recebida_vezes(m)
+    if vezes < TENTATIVAS_FILA:
+        log(f"agent not answering ({erro}); message back to the queue ({vezes}/{TENTATIVAS_FILA})")
+        if vezes == 1:
+            try:
+                avisar("⏳ O agente está acordando. Sua mensagem ficou na fila e chega sozinha assim que ele subir "
+                       "(não precisa mandar de novo).")
+            except Exception:
+                pass
+        sqs.change_message_visibility(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"], VisibilityTimeout=VOLTA_FILA)
+        return
+    log(f"message given up after {vezes} tries: {erro}")
+    try:
+        NAO_ENTREGUES.parent.mkdir(parents=True, exist_ok=True)
+        with NAO_ENTREGUES.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"em": time.time(), "erro": str(erro)[:300], "item": item}, ensure_ascii=False) + "\n")
+    except OSError as exc:
+        log(f"could not keep the undelivered message: {exc}")
+    try:
+        avisar("⚠️ Sua mensagem não chegou ao agente: ele não respondeu por uns 25 minutos. Mande de novo quando quiser.")
+    except Exception:
+        pass
+    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+
+
 def ciclo_entrada() -> None:
     while True:  # keep going even before the queue/settings exist (set up later by deploy)
         try:
@@ -794,115 +858,121 @@ def ciclo_entrada() -> None:
             time.sleep(60)
     while True:
         try:
-            r = sqs.receive_message(QueueUrl=url, MaxNumberOfMessages=5, WaitTimeSeconds=20, VisibilityTimeout=300)
+            r = sqs.receive_message(QueueUrl=url, MaxNumberOfMessages=5, WaitTimeSeconds=20, VisibilityTimeout=300,
+                                    AttributeNames=["ApproximateReceiveCount"])
         except Exception as exc:
             log(f"queue read failed: {exc}")
             time.sleep(5)
             continue
         for m in r.get("Messages", []):
-            item = json.loads(m["Body"])
-            ativo()
-            if item.get("canal") == "telegram":
-                try:
-                    msg = (item["update"].get("message") or {})
-                    ULTIMA_ENTRADA[item["usuario"]] = time.time()
-                    resposta_cofre = comando_cofre(item["usuario"], msg.get("text") or "")
-                    if resposta_cofre is None:
-                        resposta_cofre = comando_silencio(item["usuario"], msg.get("text") or "")
-                    if resposta_cofre is not None:  # passwords never reach the agent
-                        if (msg.get("text") or "").split()[0].lower().startswith("/senha") and len((msg.get("text") or "").split()) > 2:
-                            try:
-                                tg("deleteMessage", {"chat_id": item["chat"], "message_id": msg.get("message_id")})
-                            except Exception:
-                                resposta_cofre += "\n(Não consegui apagar sua mensagem: apague você no chat.)"
-                        tg_texto(item["chat"], resposta_cofre)
-                    elif (msg.get("text") or "").strip().lower() == "/gasto":
-                        tg_texto(item["chat"], texto_gasto())
-                    elif (msg.get("text") or "").strip().lower().split("@")[0] in ("/decisoes", "/decisões"):
-                        tg_texto(item["chat"], texto_decisoes(item["usuario"]))
-                    elif (msg.get("text") or "").strip().lower().split("@")[0] == "/livro":
-                        tg_texto(item["chat"], texto_livro(item["usuario"]))
-                    elif (msg.get("text") or "").strip().lower().split("@")[0] in ("/painel", "/status"):
-                        tg_texto(item["chat"], texto_painel(item["usuario"]))
-                    else:
-                        DIGITANDO[item["chat"]] = time.time() + 120
-                        dados = preparar_tg(item)
-                        for tentativa in range(30):  # right after waking, Agent Zero may still be starting
-                            try:
-                                entregar(dados)
-                                break
-                            except (urllib.error.URLError, ConnectionError) as exc:
-                                if tentativa == 29:
-                                    raise
-                                time.sleep(5)
-                except Exception as exc:
-                    log(f"telegram message failed: {exc}")
-                    try:
-                        tg_texto(item["chat"], "⚠️ Não consegui entregar sua mensagem ao agente. Tente de novo em instantes.")
-                    except Exception:
-                        pass
-                sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
-                continue
-            if "gatilho" in item:  # an event trigger fired from outside (control function /gatilho)
-                try:
-                    entregar({"usuario": item["usuario"], "conversa": "gatilhos", "gatilho": item["gatilho"],
-                              "texto": item.get("conteudo", ""), "id": f"gatilho-{m['MessageId']}"})
-                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
-                except Exception as exc:  # stays in the queue and is retried after the visibility timeout
-                    log(f"trigger {item.get('gatilho')} not delivered: {exc}")
-                continue
-            mid = item["mensagem"].get("id", "")
             try:
-                if mid and mid in _vistos():
-                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
-                    continue
-                lido_e_digitando(mid)
-                ULTIMA_ENTRADA[item["usuario"]] = time.time()
-                resposta_cofre = comando_cofre(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
-                if resposta_cofre is None:
-                    resposta_cofre = comando_silencio(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
-                if resposta_cofre is not None:  # passwords never reach the agent (WhatsApp cannot delete it)
-                    enviar_texto(item["numero"], resposta_cofre + "\nApague sua mensagem com a senha deste chat.")
-                    _lembrar(mid)
-                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
-                    continue
-                if (item["mensagem"].get("text") or {}).get("body", "").strip().lower() in ("/painel", "/status"):
-                    enviar_texto(item["numero"], texto_painel(item["usuario"]))
-                    _lembrar(mid)
-                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
-                    continue
-                if (item["mensagem"].get("text") or {}).get("body", "").strip().lower() == "/gasto":
-                    enviar_texto(item["numero"], texto_gasto())  # answered here: the usage log is on the host
-                    _lembrar(mid)
-                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
-                    continue
-                comando = (item["mensagem"].get("text") or {}).get("body", "").strip().lower()
-                if comando in ("/decisoes", "/decisões", "/livro"):  # answered here, from the files (no model)
-                    enviar_texto(item["numero"], texto_livro(item["usuario"]) if comando == "/livro"
-                                 else texto_decisoes(item["usuario"]))
-                    _lembrar(mid)
-                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
-                    continue
-                dados = preparar(item)
-                if dados:
-                    for tentativa in range(30):  # right after waking, Agent Zero may still be starting
-                        try:
-                            entregar(dados)
-                            break
-                        except (urllib.error.URLError, ConnectionError) as exc:
-                            if tentativa == 29:
-                                raise
-                            log(f"agent not ready ({exc}); retrying")
-                            time.sleep(5)
-                _lembrar(mid)
-                sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
-            except Exception as exc:
-                log(f"message {mid[-8:]} failed: {exc}")
-                try:
-                    enviar_texto(item["numero"], "⚠️ Não consegui entregar sua mensagem ao agente. Tente de novo em instantes.")
-                except Exception:
-                    pass
-                sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+                tratar(url, m)
+            except Exception as exc:  # one bad message never stops the loop (it comes back after the timeout)
+                log(f"queued message {m.get('MessageId', '')[:8]} failed: {exc}")
+
+
+def tratar(url: str, m: dict) -> None:
+    """One queued message: phone (WhatsApp/Telegram) or trigger; deleted only when done or given up."""
+    item = json.loads(m["Body"])
+    ativo()
+    if item.get("canal") == "telegram":
+        tid = f"tg-{item['update'].get('update_id')}" if item["update"].get("update_id") is not None else ""
+        if tid and tid in _vistos():  # Telegram re-sends an update when the webhook was slow: once only
+            sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+            return
+        try:
+            msg = (item["update"].get("message") or {})
+            ULTIMA_ENTRADA[item["usuario"]] = time.time()
+            resposta_cofre = comando_cofre(item["usuario"], msg.get("text") or "")
+            if resposta_cofre is None:
+                resposta_cofre = comando_silencio(item["usuario"], msg.get("text") or "")
+            if resposta_cofre is not None:  # passwords never reach the agent
+                if (msg.get("text") or "").split()[0].lower().startswith("/senha") and len((msg.get("text") or "").split()) > 2:
+                    try:
+                        tg("deleteMessage", {"chat_id": item["chat"], "message_id": msg.get("message_id")})
+                    except Exception:
+                        resposta_cofre += "\n(Não consegui apagar sua mensagem: apague você no chat.)"
+                tg_texto(item["chat"], resposta_cofre)
+            elif (msg.get("text") or "").strip().lower() == "/gasto":
+                tg_texto(item["chat"], texto_gasto())
+            elif (msg.get("text") or "").strip().lower().split("@")[0] in ("/decisoes", "/decisões"):
+                tg_texto(item["chat"], texto_decisoes(item["usuario"]))
+            elif (msg.get("text") or "").strip().lower().split("@")[0] == "/livro":
+                tg_texto(item["chat"], texto_livro(item["usuario"]))
+            elif (msg.get("text") or "").strip().lower().split("@")[0] in ("/painel", "/status"):
+                tg_texto(item["chat"], texto_painel(item["usuario"]))
+            else:
+                DIGITANDO[item["chat"]] = time.time() + 120
+                entregar_esperando(preparar_tg(item))  # right after waking, Agent Zero may still be starting
+        except AgenteFora as exc:
+            segurar_na_fila(url, m, item, lambda t: tg_texto(item["chat"], t), exc)
+            return
+        except Exception as exc:
+            log(f"telegram message failed: {exc}")
+            try:
+                tg_texto(item["chat"], "⚠️ Não consegui entregar sua mensagem ao agente. Tente de novo em instantes.")
+            except Exception:
+                pass
+        if tid:
+            _lembrar(tid)
+        sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+        return
+    if "gatilho" in item:  # an event trigger fired from outside (control function /gatilho)
+        try:
+            entregar({"usuario": item["usuario"], "conversa": "gatilhos", "gatilho": item["gatilho"],
+                      "texto": item.get("conteudo", ""), "id": f"gatilho-{m['MessageId']}"})
+            sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+        except Exception as exc:  # stays in the queue and is retried after the visibility timeout
+            log(f"trigger {item.get('gatilho')} not delivered: {exc}")
+            if recebida_vezes(m) >= 3 * TENTATIVAS_FILA:
+                segurar_na_fila(url, m, item, lambda t: None, exc)
+        return
+    mid = item["mensagem"].get("id", "")
+    try:
+        if mid and mid in _vistos():
+            sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+            return
+        lido_e_digitando(mid)
+        ULTIMA_ENTRADA[item["usuario"]] = time.time()
+        resposta_cofre = comando_cofre(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
+        if resposta_cofre is None:
+            resposta_cofre = comando_silencio(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
+        if resposta_cofre is not None:  # passwords never reach the agent (WhatsApp cannot delete it)
+            enviar_texto(item["numero"], resposta_cofre + "\nApague sua mensagem com a senha deste chat.")
+            _lembrar(mid)
+            sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+            return
+        if (item["mensagem"].get("text") or {}).get("body", "").strip().lower() in ("/painel", "/status"):
+            enviar_texto(item["numero"], texto_painel(item["usuario"]))
+            _lembrar(mid)
+            sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+            return
+        if (item["mensagem"].get("text") or {}).get("body", "").strip().lower() == "/gasto":
+            enviar_texto(item["numero"], texto_gasto())  # answered here: the usage log is on the host
+            _lembrar(mid)
+            sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+            return
+        comando = (item["mensagem"].get("text") or {}).get("body", "").strip().lower()
+        if comando in ("/decisoes", "/decisões", "/livro"):  # answered here, from the files (no model)
+            enviar_texto(item["numero"], texto_livro(item["usuario"]) if comando == "/livro"
+                         else texto_decisoes(item["usuario"]))
+            _lembrar(mid)
+            sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+            return
+        dados = preparar(item)
+        if dados:
+            entregar_esperando(dados)  # right after waking, Agent Zero may still be starting
+        _lembrar(mid)
+        sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+    except AgenteFora as exc:
+        segurar_na_fila(url, m, item, lambda t: enviar_texto(item["numero"], t), exc)
+    except Exception as exc:
+        log(f"message {mid[-8:]} failed: {exc}")
+        try:
+            enviar_texto(item["numero"], "⚠️ Não consegui entregar sua mensagem ao agente. Tente de novo em instantes.")
+        except Exception:
+            pass
+        sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
 
 
 # ------------------------------------------------------------------ out: agent -> WhatsApp

@@ -5,6 +5,7 @@ one. Audio is transcribed with the Whisper that ships with Agent Zero (Portugues
 shows the transcription. Authenticated by the bridge's shared key, not by login.
 """
 
+import asyncio
 import base64
 import importlib.util
 import secrets
@@ -322,15 +323,15 @@ async def _botao_fio(usuario: str, botao: str) -> dict:
     f = _fios()
     fio = f.obter(login, fid)
     if not fio or fio.get("estado") in ("resolvido", "ignorado"):
-        ponte().enviar(usuario, "Esse fio já foi fechado.")
+        await asyncio.to_thread(ponte().enviar, usuario, "Esse fio já foi fechado.")
         return {"ok": True}
     if acao == "amanha":
         f.adiar(login, fid, 1)
-        ponte().enviar(usuario, f"⏰ Combinado, te lembro amanhã: {fio.get('titulo', '')}")
+        await asyncio.to_thread(ponte().enviar, usuario, f"⏰ Combinado, te lembro amanhã: {fio.get('titulo', '')}")
         return {"ok": True}
     if acao == "ignorar":
         f.ignorar(login, fid)
-        ponte().enviar(usuario, "🙈 Ok, não trago mais isso (nem coisas parecidas).")
+        await asyncio.to_thread(ponte().enviar, usuario, "🙈 Ok, não trago mais isso (nem coisas parecidas).")
         return {"ok": True}
     texto = (f"✅ Faz pra mim (fio solto {fid}): {fio.get('titulo', '')}.\n"
              f"O que está em aberto: {fio.get('detalhe', '')}\n"
@@ -371,13 +372,13 @@ async def _botao_iniciativa(usuario: str, botao: str) -> dict:
     ini = _iniciativa()
     item = ini.reagir(login, iid, acao)
     if not item:
-        ponte().enviar(usuario, "Não achei mais essa sugestão.")
+        await asyncio.to_thread(ponte().enviar, usuario, "Não achei mais essa sugestão.")
         return {"ok": True}
     if acao == "util":
-        ponte().enviar(usuario, "👍 Valeu! Vou trazer mais coisas nessa linha.")
+        await asyncio.to_thread(ponte().enviar, usuario, "👍 Valeu! Vou trazer mais coisas nessa linha.")
         return {"ok": True}
     if acao == "nao":
-        ponte().enviar(usuario, "👎 Entendido, vou calibrar. Se quiser, me diz em uma frase o que não curtiu.")
+        await asyncio.to_thread(ponte().enviar, usuario, "👎 Entendido, vou calibrar. Se quiser, me diz em uma frase o que não curtiu.")
         return {"ok": True}
     texto = (f"✅ Bora (sugestão {iid} que você mandou por iniciativa própria): {item.get('titulo', '')}\n"
              f"O que você tinha mandado:\n{item.get('texto', '')}\n\n"
@@ -419,11 +420,11 @@ async def _botao_rascunho(usuario: str, botao: str) -> dict:
     a = _auxiliar()
     r = a.obter_rascunho(login, rid)
     if not r or r["estado"] not in ("pendente", "usado"):
-        ponte().enviar(usuario, "Esse rascunho já foi substituído ou descartado.")
+        await asyncio.to_thread(ponte().enviar, usuario, "Esse rascunho já foi substituído ou descartado.")
         return {"ok": True}
     if acao == "deixa":
         a.marcar_rascunho(login, rid, "descartado")
-        ponte().enviar(usuario, "🙈 Ok, deixei de lado.")
+        await asyncio.to_thread(ponte().enviar, usuario, "🙈 Ok, deixei de lado.")
         return {"ok": True}
     if acao == "ajustar":
         return _para_a_conversa(usuario, (
@@ -436,8 +437,8 @@ async def _botao_rascunho(usuario: str, botao: str) -> dict:
             f"✅ Usar o rascunho {rid}: crie um RASCUNHO no meu Gmail (não envie) respondendo a «{r['assunto']}» para "
             f"{r['para']}" + (f", na mesma conversa (referência {r['referencia']})" if r.get("referencia") else "")
             + f", com este texto:\n\n{r['texto']}\n\nDepois me diga em uma linha que está nos rascunhos do Gmail."))
-    ponte().enviar(usuario, "Toque no texto abaixo para copiar e cole na resposta do e-mail:")
-    ponte().enviar(usuario, "```\n" + r["texto"].replace("```", "'''") + "\n```")
+    await asyncio.to_thread(ponte().enviar, usuario, "Toque no texto abaixo para copiar e cole na resposta do e-mail:")
+    await asyncio.to_thread(ponte().enviar, usuario, "```\n" + r["texto"].replace("```", "'''") + "\n```")
     return {"ok": True}
 
 
@@ -449,10 +450,10 @@ async def _botao_conta(usuario: str, botao: str) -> dict:
     a = _auxiliar()
     if acao == "amanha":
         c = a.adiar_conta(login, cid)
-        ponte().enviar(usuario, f"⏰ Te lembro amanhã: {c['descricao']}" if c else "Essa conta já foi fechada.")
+        await asyncio.to_thread(ponte().enviar, usuario, f"⏰ Te lembro amanhã: {c['descricao']}" if c else "Essa conta já foi fechada.")
         return {"ok": True}
     ok = a.fechar_conta(login, cid, "paga" if acao == "paga" else "ignorada")
-    ponte().enviar(usuario, ("✅ Anotado como paga." if acao == "paga" else "🙈 Ok, tirei da lista.") if ok
+    await asyncio.to_thread(ponte().enviar, usuario, ("✅ Anotado como paga." if acao == "paga" else "🙈 Ok, tirei da lista.") if ok
                    else "Essa conta já foi fechada.")
     return {"ok": True}
 
@@ -483,14 +484,14 @@ async def _botao_prospeccao(usuario: str, botao: str) -> dict:
     p = _prospeccao()
     if acao == "todas":
         n = p.aprovar_todas(login, p.ids_do_pacote(login, aid))
-        p.enviar(login, f"✅ {n} aprovadas. Saem ao longo do dia, com intervalo, e eu te aviso de qualquer resposta.",
+        await asyncio.to_thread(p.enviar, login, f"✅ {n} aprovadas. Saem ao longo do dia, com intervalo, e eu te aviso de qualquer resposta.",
                  ponte=ponte(), tipo="resposta")
         return {"ok": True}
     if acao == "editar":
         d = p.carregar(login)
         a = next((x for x in d["acoes"] if x["id"] == aid), None)
         if not a or a["estado"] not in ("proposta", "aprovada"):
-            p.enviar(login, "Essa já foi decidida ou executada.", ponte=ponte(), tipo="resposta")
+            await asyncio.to_thread(p.enviar, login, "Essa já foi decidida ou executada.", ponte=ponte(), tipo="resposta")
             return {"ok": True}
         lead = p._lead(d, a["lead_id"])
         return _para_a_conversa(usuario, (
@@ -499,9 +500,9 @@ async def _botao_prospeccao(usuario: str, botao: str) -> dict:
             f"reescreva seguindo o playbook e use `prospeccao` acao \"editar\" com acao_id {aid} (ela volta para eu aprovar)."))
     a = p.decidir(login, aid, "aprovar" if acao == "aprovar" else "pular")
     if not a:
-        p.enviar(login, "Essa já foi decidida, executada ou expirou.", ponte=ponte(), tipo="resposta")
+        await asyncio.to_thread(p.enviar, login, "Essa já foi decidida, executada ou expirou.", ponte=ponte(), tipo="resposta")
     elif a["estado"] == "expirada":
-        p.enviar(login, "⌛ Essa proposta expirou (mais de 24 h). Ela volta na próxima rodada se ainda fizer sentido.",
+        await asyncio.to_thread(p.enviar, login, "⌛ Essa proposta expirou (mais de 24 h). Ela volta na próxima rodada se ainda fizer sentido.",
                  ponte=ponte(), tipo="resposta")
     return {"ok": True}
 
@@ -526,8 +527,6 @@ class Receber(ApiHandler):
     async def process(self, input: dict, request: Request) -> dict | Response:
         if not _chave_ok(request):
             return Response('{"erro": "sem acesso"}', status=403, mimetype="application/json")
-        import asyncio
-
         if not await asyncio.to_thread(ponte().entrega_da_ponte, input):  # see helpers/ponte.py
             print(f"whatsapp: delivery for {input.get('usuario')!r} without a valid bridge ticket refused", flush=True)
             return Response('{"erro": "entrega sem bilhete da ponte"}', status=403, mimetype="application/json")
@@ -547,9 +546,9 @@ class Receber(ApiHandler):
             alvo = AgentContext.get(ctx_id)
             rv = sys.modules.get("aprovacoes_revisor")
             if alvo is None or rv is None or ponte().dono(alvo) != usuario or not rv.decidir(ctx_id, decisao, pid):
-                ponte().enviar(usuario, "Essa aprovação já não está mais pendente.")
+                await asyncio.to_thread(ponte().enviar, usuario, "Essa aprovação já não está mais pendente.")
             else:
-                ponte().enviar(usuario, {"aprovar": "✅ Aprovado.", "sempre": "✅ Aprovado (e vou permitir sempre).",
+                await asyncio.to_thread(ponte().enviar, usuario, {"aprovar": "✅ Aprovado.", "sempre": "✅ Aprovado (e vou permitir sempre).",
                                          "recusar": "❌ Recusado. Não vou fazer."}[decisao])
             return {"ok": True}
 
@@ -568,7 +567,7 @@ class Receber(ApiHandler):
         if pedido and not pedido.get("codigo") and texto and len(texto) <= 40 and "\n" not in texto \
                 and any(ch.isdigit() for ch in texto):
             pedido["codigo"] = texto.strip()  # a 2FA code the agent is waiting for (pedir_codigo)
-            ponte().enviar(usuario, "🔑 Código entregue ao agente.")
+            await asyncio.to_thread(ponte().enviar, usuario, "🔑 Código entregue ao agente.")
             return {"ok": True}
 
         comando = texto.strip().lower()
@@ -583,18 +582,18 @@ class Receber(ApiHandler):
                     ctx.log.set_progress("", active=False)
                     ctx.log.log(type="info", content="Parado pelo usuário (/parar no WhatsApp).", finished=True)
                     parados.append(ctx.name or ctx.id)
-            ponte().enviar(usuario, ("⏹️ Parei: " + ", ".join(parados)) if parados else "Nada estava rodando.")
+            await asyncio.to_thread(ponte().enviar, usuario, ("⏹️ Parei: " + ", ".join(parados)) if parados else "Nada estava rodando.")
             return {"ok": True}
         if comando == "/atividade":
-            ponte().enviar(usuario, _atividade(usuario))
+            await asyncio.to_thread(ponte().enviar, usuario, _atividade(usuario))
             return {"ok": True}
         if comando in ("/ajuda", "/comandos", "/help"):
-            ponte().enviar(usuario, AJUDA)
+            await asyncio.to_thread(ponte().enviar, usuario, AJUDA)
             return {"ok": True}
 
         if texto.lower() in ("/nova", "/novo", "nova conversa"):
             ctx, _ = _conversa(usuario, nova=True)
-            ponte().enviar(usuario, "🆕 Conversa nova começada. Pode mandar.")
+            await asyncio.to_thread(ponte().enviar, usuario, "🆕 Conversa nova começada. Pode mandar.")
             return {"ok": True, "context": ctx.id}
 
         if audio:

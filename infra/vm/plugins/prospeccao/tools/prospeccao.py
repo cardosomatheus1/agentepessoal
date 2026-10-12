@@ -254,35 +254,35 @@ class Prospeccao(Tool):
             return r("\n".join(f"{e['em']:.0f} {e['acao']} {e['tipo']}: {e['de']} → {e['para']} ({e['por']}) {e['motivo']}" for e in evs)
                      or "Sem eventos.")
         if acao == "apagada":
-            a = p.marcar_apagada(login, acao_id, detalhe or texto)
+            a = await asyncio.to_thread(p.marcar_apagada, login, acao_id, detalhe or texto)
             if not a:
                 return r("Só uma mensagem EXECUTADA pode ser marcada como apagada (passe acao_id e detalhe).")
             return r(f"Mensagem {acao_id} registrada como apagada: não conta mais como resposta enviada. "
                      "Se for para mandar outra, proponha uma única mensagem nova pelo fluxo normal.")
         if acao == "rejeitar":
-            n = p.rejeitar(login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
+            n = await asyncio.to_thread(p.rejeitar, login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
             return r(f"{n} perfis anotados como examinados e fora do perfil (não voltam por 60 dias).")
         if acao == "propor":
             itens = acoes if isinstance(acoes, list) else json.loads(acoes or "[]")
-            out = p.propor(login, itens)
+            out = await asyncio.to_thread(p.propor, login, itens)
             if out["propostas"]:
                 d = p.carregar(login)
                 pid = p.guardar_pacote(login, [a["id"] for a in out["propostas"]])
                 cab = (f"🎯 *Prospecção Raiz* — {len(out['propostas'])} para aprovar\n"
                        + ("O revisor não liberou estas sozinho (motivo em cada uma). " if out.get("automaticas") is not None else "")
                        + "Cada uma vem abaixo com ✅ / ✏️ / ❌. Nada sai sem o seu ✅.")
-                p.enviar(login, cab, [{"id": f"pa:{p._login(login)}:{pid}:todas", "titulo": "✅ Aprovar todas"}], ponte=ponte())
+                await asyncio.to_thread(p.enviar, login, cab, [{"id": f"pa:{p._login(login)}:{pid}:todas", "titulo": "✅ Aprovar todas"}], ponte=ponte())
                 for a in out["propostas"]:
                     lead = p._lead(d, a["lead_id"])
                     msg = p.mensagem_acao(a, lead) + (f"\n🔍 Revisor: {a['revisao']}" if a.get("revisao") else "")
-                    p.enviar(login, msg, p.botoes_acao(login, a["id"]), ponte=ponte())
+                    await asyncio.to_thread(p.enviar, login, msg, p.botoes_acao(login, a["id"]), ponte=ponte())
             resumo = {"aprovadas_automaticamente": [f"{a['id']} {a['tipo']}" for a in out.get("automaticas", [])],
                       "enviadas_para_aprovacao": [f"{a['id']} {a['tipo']}: {a.get('revisao', '')}" for a in out["propostas"]],
                       "recusadas": out["recusadas"]}
             return r(json.dumps(resumo, ensure_ascii=False) +
                      ("\nCorrija as recusadas (motivo ao lado) e proponha de novo, ou deixe de fora." if out["recusadas"] else ""))
         if acao == "proxima":
-            a, motivo = p.proxima(login, conta_ativa, quem=self.agent.context.id)
+            a, motivo = await asyncio.to_thread(p.proxima, login, conta_ativa, quem=self.agent.context.id)
             if not a:
                 p.encerrar_liberacao(self.agent.context)
                 return r(p.aviso_sem_acao(motivo))
@@ -321,7 +321,7 @@ class Prospeccao(Tool):
                      + "Depois chame `prospeccao` acao \"resultado\" com acao_id, ok (true/false) e detalhe (o que viu na tela). "
                      "Se o Instagram mostrar bloqueio/limite/'tente mais tarde'/verificação, PARE e mande bloqueio: true.")
         if acao == "comentar":
-            aprovado, motivo = p.comentar(login, acao_id, texto, kwargs.get("base") or detalhe)
+            aprovado, motivo = await asyncio.to_thread(p.comentar, login, acao_id, texto, kwargs.get("base") or detalhe)
             if not aprovado:
                 if motivo.startswith("REESCREVA"):
                     return r(f"{motivo} Não publique nada até vir COMENTÁRIO APROVADO.")
@@ -334,7 +334,7 @@ class Prospeccao(Tool):
                      "\"comentado\" com acao_id, ok e detalhe.")
         if acao == "comentado":
             ok_bool = str(ok).lower() in ("true", "1", "sim", "ok")
-            a = p.comentado(login, acao_id, ok_bool, detalhe)
+            a = await asyncio.to_thread(p.comentado, login, acao_id, ok_bool, detalhe)
             if not a or a["estado"] != "aprovada":  # catch-up comment: close the window; on a visit it stays until resultado
                 p.encerrar_liberacao(self.agent.context)
             return r("Registrado." if a else "Não havia comentário aprovado para essa ação.")
@@ -344,7 +344,7 @@ class Prospeccao(Tool):
         if acao == "resultado":
             ok_bool = str(ok).lower() in ("true", "1", "sim", "ok")
             bloq = str(bloqueio).lower() in ("true", "1", "sim")
-            a = p.resultado(login, acao_id, ok_bool, detalhe, bloq, quem=self.agent.context.id)
+            a = await asyncio.to_thread(p.resultado, login, acao_id, ok_bool, detalhe, bloq, quem=self.agent.context.id)
             p.encerrar_liberacao(self.agent.context)
             if not a:
                 x = next((y for y in p.carregar(login)["acoes"] if y["id"] == acao_id), None)
@@ -355,17 +355,17 @@ class Prospeccao(Tool):
                              "Nada a fazer: chame `prospeccao` acao \"proxima\" para a seguinte.")
                 return r("Ação não encontrada ou não estava aprovada.")
             if bloq:
-                p.enviar(login, "⛔ *Prospecção pausada por 48 h*\n\nO Instagram mostrou um bloqueio/limite: " + detalhe[:300] +
+                await asyncio.to_thread(p.enviar, login, "⛔ *Prospecção pausada por 48 h*\n\nO Instagram mostrou um bloqueio/limite: " + detalhe[:300] +
                          "\nNada mais sai até lá.", tipo="urgente", ponte=ponte())
                 return r("Registrado. Prospecção pausada por 48 h. Termine a rodada.")
             if a["tipo"] == "resposta" and a.get("auto") and a["estado"] == "executada":
                 lead = p._lead(p.carregar(login), a["lead_id"]) or {}
-                p.enviar(login, f"↩️ Respondi *{lead.get('nome', '')}* (@{lead.get('handle', '')}) pela @raiz.connect\n\n«{a['texto'][:600]}»",
+                await asyncio.to_thread(p.enviar, login, f"↩️ Respondi *{lead.get('nome', '')}* (@{lead.get('handle', '')}) pela @raiz.connect\n\n«{a['texto'][:600]}»",
                          ponte=ponte())  # replies leave without his ✅ (11/10): he hears what went out
             return r(f"Registrado: {a['estado']}. Chame `prospeccao` acao \"proxima\" de novo para a seguinte.")
         if acao == "etapa":
             onde = str(kwargs.get("onde") or "direct").lower()
-            lead = p.mudar_etapa(login, lead_id, etapa, nota, onde)
+            lead = await asyncio.to_thread(p.mudar_etapa, login, lead_id, etapa, nota, onde)
             if not lead:
                 return r(f"Lead ou etapa inválidos (etapas: {', '.join(p.ETAPAS)}).")
             if not lead["novidade"]:
@@ -374,16 +374,16 @@ class Prospeccao(Tool):
                 emoji, frase = {"respondeu": ("💬", "respondeu"), "lead": ("🔥", "virou lead (quer a calculadora / quer conversar)"),
                                 "demo": ("📅", "topou conversar")}[etapa]
                 lugar = "num comentário" if onde == "comentario" else "no Direct"
-                p.enviar(login, f"{emoji} *{lead['nome']}* (@{lead['handle']}) {frase} {lugar}\n\n«{nota[:500]}»\n\n"
+                await asyncio.to_thread(p.enviar, login, f"{emoji} *{lead['nome']}* (@{lead['handle']}) {frase} {lugar}\n\n«{nota[:500]}»\n\n"
                          "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu.\n" + lead["url"],
                          tipo="urgente", ponte=ponte())  # someone answered: tell him now (Telegram), even in quiet hours
             return r(f"@{lead['handle']} agora está em {etapa}.")
         if acao == "editar":
-            a, motivo = p.editar(login, acao_id, texto)
+            a, motivo = await asyncio.to_thread(p.editar, login, acao_id, texto)
             if not a:
                 return r(f"Não editado: {motivo}")
             d = p.carregar(login)
-            p.enviar(login, "✏️ Versão nova para aprovar:\n\n" + p.mensagem_acao(a, p._lead(d, a["lead_id"])),
+            await asyncio.to_thread(p.enviar, login, "✏️ Versão nova para aprovar:\n\n" + p.mensagem_acao(a, p._lead(d, a["lead_id"])),
                      p.botoes_acao(login, a["id"]), ponte=ponte())
             return r("Nova versão enviada para aprovação.")
         if acao == "conta":
@@ -393,9 +393,9 @@ class Prospeccao(Tool):
             return r("Rode este script com `browser` action \"evaluate\" numa aba em https://www.instagram.com/ (conta @raiz.connect) e "
                      "passe o JSON INTEIRO para `prospeccao` acao \"ler_direct\" com `dados` = o texto.\n\n" + p.SCRIPT_DIRECT)
         if acao == "ler_direct":
-            out = p.processar_direct(login, kwargs.get("dados") or texto)
+            out = await asyncio.to_thread(p.processar_direct, login, kwargs.get("dados") or texto)
             for n in out["novas"]:
-                p.enviar(login, f"💬 *{n['nome']}* (@{n['handle']}) respondeu no Direct\n\n«{n['texto'][:500]}»\n\n"
+                await asyncio.to_thread(p.enviar, login, f"💬 *{n['nome']}* (@{n['handle']}) respondeu no Direct\n\n«{n['texto'][:500]}»\n\n"
                          "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu.\n" + n["url"], tipo="urgente", ponte=ponte())
             if out["erros"] and not out["conversas"]:
                 return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Leia pela tela (skill, seção 5).")
@@ -406,7 +406,7 @@ class Prospeccao(Tool):
         if acao == "conferido":
             inter = kwargs.get("interagiram") or []
             inter = inter if isinstance(inter, list) else [h.strip() for h in str(inter).split(",") if h.strip()]
-            erro = p.conferido(login, str(kwargs.get("direct") or ""), str(kwargs.get("notificacoes") or ""), inter)
+            erro = await asyncio.to_thread(p.conferido, login, str(kwargs.get("direct") or ""), str(kwargs.get("notificacoes") or ""), inter)
             return r(erro or "Conferência registrada. Agora chame `prospeccao` acao \"proxima\".")
         if acao == "hoje":
             texto_dia = p.resumo_hoje(login)

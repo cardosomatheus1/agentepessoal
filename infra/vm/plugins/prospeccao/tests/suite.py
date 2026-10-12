@@ -1670,6 +1670,15 @@ class Suite:
         api = (RAIZ / "api" / "testar.py").read_text(encoding="utf-8")
         ok("create_subprocess_exec" in api and "exec_module" not in api, "a API de testes roda a suíte em outro processo")
 
+    def t_ferramenta_nao_trava_as_outras_conversas(self):
+        # 12/10 review: the tool called the reviewer (up to 3 min) and the phone bridge right on the event loop, freezing
+        # every other chat meanwhile; those calls now go through asyncio.to_thread
+        fonte = (RAIZ / "tools" / "prospeccao.py").read_text(encoding="utf-8")
+        lentas = "propor|enviar|proxima|comentar|comentado|resultado|mudar_etapa|editar|processar_direct|marcar_apagada"
+        diretas = re.findall(r"^\s+(?:[\w, ]+ = )?p\.(" + lentas + r")\(", fonte, re.M)
+        eq(diretas, [], "chamadas lentas direto no laço da conversa")
+        ok(fonte.count("asyncio.to_thread(p.") >= 15, "as chamadas lentas rodam em outra thread")
+
     def t_rejeitados(self):
         p = self.p
         lid = self._lead("jaelead")

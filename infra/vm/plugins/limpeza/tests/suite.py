@@ -1,6 +1,7 @@
 """Tests of the cleanup rules (no model calls). Run with implantar.py (staging copy) or inside the container."""
 import datetime as dt
 import importlib.util
+import os
 import sys
 import time
 import traceback
@@ -122,6 +123,28 @@ class Suite:
         pausas3 = {"velha": {"retomada": agora - 3 * 3600}}
         dr.destravar([], {}, lambda cid: None, agora, "running", "error", lambda cid: True, pausas3)
         ok(pausas3 == {}, "registro velho some")
+
+    def t_intervalo_vale_mesmo_recarregando_o_modulo(self):
+        # 12/10 review: job-loop extensions are loaded again on every pass, so the "every 10 minutes" kept in a module
+        # variable ran every minute; the time now lives in a marker file
+        import shutil
+        import tempfile
+
+        tmp = Path(tempfile.mkdtemp(prefix="limpeza-marca-"))
+        try:
+            for arquivo in ("_40_limpar_navegador.py", "_41_destravar_rotinas.py"):
+                caminho = RAIZ / "extensions" / "python" / "job_loop" / arquivo
+                m1 = _carregar("limpeza_marca_1", caminho)
+                marca = tmp / arquivo
+                ok(m1._na_hora(marca, m1.INTERVALO), f"{arquivo}: a primeira volta roda")
+                m2 = _carregar("limpeza_marca_2", caminho)  # the next pass: a fresh module
+                ok(not m2._na_hora(marca, m2.INTERVALO), f"{arquivo}: a volta seguinte, com o módulo recarregado, não roda")
+                antes = time.time() - m2.INTERVALO - 1
+                os.utime(marca, (antes, antes))
+                ok(m2._na_hora(marca, m2.INTERVALO), f"{arquivo}: passado o intervalo, roda de novo")
+                ok(not hasattr(m2, "_ultima"), f"{arquivo}: nada de relógio em variável do módulo")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):

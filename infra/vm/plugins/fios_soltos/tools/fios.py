@@ -1,5 +1,6 @@
 """Tool `fios`: read the panorama and keep the person's register of loose ends."""
 
+import asyncio
 import importlib.util
 import json
 import sys
@@ -79,7 +80,7 @@ class Fios(Tool):
                     falhas.append(f"{fid}: não existe no registro")
                     continue
                 urgente = str(fio.get("prioridade", "")).lower() == "alta" and bool(kwargs.get("urgente") or fio.get("urgente"))
-                erro = ponte.enviar(login, f.mensagem(fio, urgente), botoes=f.botoes(login, fid),
+                erro = await asyncio.to_thread(ponte.enviar, login, f.mensagem(fio, urgente), botoes=f.botoes(login, fid),
                                     tipo="urgente" if urgente else "progresso")
                 (falhas if erro else enviados).append(f"{fid}: {erro}" if erro else fid)
             texto = f"Enviados ao celular com botões: {', '.join(enviados) or 'nenhum'}."

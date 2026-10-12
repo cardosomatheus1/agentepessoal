@@ -91,6 +91,9 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | Testes da prospecção nunca mexem nas rodadas de verdade (a API de testes trocava, dentro do agente, o revisor por um que aprova tudo e o relógio por um simulado) | ✅ | `5eb4471` |
 | Telegram: o link de vínculo vale 15 minutos e uma vez só (antes não vencia: quem visse o link virava "matheus" no bot); os chats já ligados são avisados; botão "Desconectar" na página de controle | ✅ | função de controle (`implantar.py --controle`) |
 | Mensagem e botão do celular só valem com o bilhete de uso único da ponte, que fica fora do contêiner: o agente não consegue aprovar a própria ação nem escrever como você | ✅ | ponte + whatsapp |
+| Mensagem do celular nunca some com o agente subindo: volta para a fila (você é avisado 1×) por até ~25 min e só então fica guardada, com aviso para mandar de novo (antes era apagada em ~150 s). Telegram que reenvia o mesmo update chega 1× só | ✅ | ponte |
+| Revisor da prospecção (até 3 min) e avisos ao celular não congelam mais as outras conversas; um teste no CI vigia o repositório inteiro | ✅ | prospecção, whatsapp, auxiliar, fios, iniciativa, agenda |
+| "A cada N minutos" das rotinas internas (limpeza, contas, e-mail) vale de verdade: antes rodava a cada minuto | ✅ | limpeza, auxiliar, whatsapp |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |

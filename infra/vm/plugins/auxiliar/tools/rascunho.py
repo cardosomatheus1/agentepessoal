@@ -1,5 +1,6 @@
 """Tool `rascunho`: a reply drafted in the person's style, delivered to the phone with buttons (never sent by the agent)."""
 
+import asyncio
 import importlib.util
 import sys
 from pathlib import Path
@@ -70,7 +71,7 @@ class Rascunho(Tool):
             return Response(message=f"Esse e-mail já tem rascunho [{anterior['id']}] ({situacao.get(anterior['estado'], anterior['estado'])}); "
                                     "não mande de novo. Use nova_versao: true só quando ele pedir ajuste.", break_loop=False)
         r = a.novo_rascunho(login, para, assunto, texto, pedido, referencia)
-        erro = ponte().enviar(login, a.mensagem_rascunho(r), botoes=a.botoes_rascunho(login, r["id"]), tipo="progresso")
+        erro = await asyncio.to_thread(ponte().enviar, login, a.mensagem_rascunho(r), botoes=a.botoes_rascunho(login, r["id"]), tipo="progresso")
         if erro:
             return Response(message=f"Rascunho {r['id']} salvo, mas não chegou ao celular: {erro}", break_loop=False)
         return Response(message=f"Rascunho {r['id']} enviado ao celular com os botões Usar / Ajustar / Deixa. "

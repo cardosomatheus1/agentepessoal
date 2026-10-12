@@ -29,6 +29,8 @@ jobs:
           python3 infra/vm/tests/test_saude.py
           python3 infra/vm/tests/test_comandos_ponte.py
           python3 infra/vm/tests/test_bilhete_ponte.py
+          python3 infra/vm/tests/test_fila_ponte.py
+          python3 infra/vm/tests/test_sem_bloqueio.py
           python3 infra/control/tests/test_telegram.py
       - name: Sintaxe
         run: |

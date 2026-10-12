@@ -31,7 +31,23 @@ PAUSADA_MIN = 10
 REPETIR_H = 2
 LOG = Path("/a0/usr/limpeza/log.jsonl")
 PAUSAS = Path("/a0/usr/limpeza/pausadas.json")  # module state does not survive the job loop: kept in a file
-_ultima = {"t": 0.0}
+MARCA = Path("/a0/usr/marcas/limpeza_rotinas")
+
+
+def _na_hora(marca: Path, intervalo: float) -> bool:
+    """True at most once per intervalo. Job-loop extensions are loaded again on every pass, so a module variable
+    never kept the time (12/10 review: "every 10 minutes" ran every minute): the time lives in the marker's mtime."""
+    try:
+        if time.time() - marca.stat().st_mtime < intervalo:
+            return False
+    except OSError:
+        pass
+    try:
+        marca.parent.mkdir(parents=True, exist_ok=True)
+        marca.touch()
+    except OSError:
+        pass
+    return True
 
 
 def _vivo(tarefa) -> bool:
@@ -105,9 +121,8 @@ def destravar(tarefas, rodando: dict, tarefa_do_chat, agora: float, running, err
 
 class DestravarRotinas(Extension):
     async def execute(self, **kwargs):
-        if time.time() - _ultima["t"] < INTERVALO:
+        if not _na_hora(MARCA, INTERVALO):
             return
-        _ultima["t"] = time.time()
         try:
             from agent import AgentContext
             from helpers.task_scheduler import TaskScheduler, TaskState

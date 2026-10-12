@@ -1,5 +1,6 @@
 """Tool `iniciativa`: the context for deciding on an unprompted message, sending it, and learning."""
 
+import asyncio
 import importlib.util
 import sys
 from pathlib import Path
@@ -80,10 +81,10 @@ class Iniciativa(Tool):
                 titulo, texto = rev["titulo"], rev["texto"]
             iid = ini.registrar(login, titulo.strip(), texto.strip(), str(tipo or "ideia").lower())
             if anexo:  # the file first, so the message with the buttons stays last
-                erro = ponte.enviar(login, arquivo=anexo, legenda=f"💡 {titulo.strip()}", tipo="progresso")
+                erro = await asyncio.to_thread(ponte.enviar, login, arquivo=anexo, legenda=f"💡 {titulo.strip()}", tipo="progresso")
                 if erro:
                     return Response(message=f"Falhou ao enviar o arquivo: {erro}", break_loop=False)
-            erro = ponte.enviar(login, ini.mensagem(titulo, texto), botoes=ini.botoes(login, iid), tipo="progresso")
+            erro = await asyncio.to_thread(ponte.enviar, login, ini.mensagem(titulo, texto), botoes=ini.botoes(login, iid), tipo="progresso")
             if erro:
                 return Response(message=f"Falhou ao enviar: {erro}", break_loop=False)
             nota = {"ajustar": f" (o revisor ajustou: {rev['motivo']})", "enviar": ""}[rev["veredito"]]

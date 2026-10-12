@@ -17,7 +17,23 @@ APERTO_MB = 3000
 CRITICO_MB = 1500        # below this: every chat that is not running right now
 LOG = Path("/a0/usr/limpeza/log.jsonl")
 PULSO = Path("/a0/usr/limpeza/ultima_verificacao.json")  # proof the check runs (diagnosis)
-_ultima = {"t": 0.0}
+MARCA = Path("/a0/usr/marcas/limpeza_navegador")
+
+
+def _na_hora(marca: Path, intervalo: float) -> bool:
+    """True at most once per intervalo. Job-loop extensions are loaded again on every pass, so a module variable
+    never kept the time (12/10 review: "every 10 minutes" ran every minute): the time lives in the marker's mtime."""
+    try:
+        if time.time() - marca.stat().st_mtime < intervalo:
+            return False
+    except OSError:
+        pass
+    try:
+        marca.parent.mkdir(parents=True, exist_ok=True)
+        marca.touch()
+    except OSError:
+        pass
+    return True
 
 
 def memoria_livre_mb() -> int:
@@ -60,9 +76,8 @@ def escolher(contextos: dict, livre_mb: int) -> list[tuple[str, str]]:
 
 class LimparNavegador(Extension):
     async def execute(self, **kwargs):
-        if time.time() - _ultima["t"] < INTERVALO:
+        if not _na_hora(MARCA, INTERVALO):
             return
-        _ultima["t"] = time.time()
         try:
             from agent import AgentContext
             from plugins._browser.helpers import runtime as modulo

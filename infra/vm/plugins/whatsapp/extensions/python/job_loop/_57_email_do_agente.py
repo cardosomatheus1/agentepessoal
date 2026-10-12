@@ -38,7 +38,23 @@ REMETENTES = {"matheus@raizconnect.com.br", "falhanosistema1111@gmail.com"}
 ALIAS = "agente@raizconnect.com.br"
 ASSUNTO = re.compile(r"^\s*((re|res|fw|fwd|enc|tr)\s*:\s*)*(\[\s*agente\s*\]|agente\s*[:\-–])", re.I)
 INTERVALO = 120
-_ultima = {"em": 0.0}
+MARCA = Path("/a0/usr/marcas/whatsapp_email")
+
+
+def _na_hora(marca: Path, intervalo: float) -> bool:
+    """True at most once per intervalo. Job-loop extensions are loaded again on every pass, so a module variable
+    never kept the time (12/10 review: "every 10 minutes" ran every minute): the time lives in the marker's mtime."""
+    try:
+        if time.time() - marca.stat().st_mtime < intervalo:
+            return False
+    except OSError:
+        pass
+    try:
+        marca.parent.mkdir(parents=True, exist_ok=True)
+        marca.touch()
+    except OSError:
+        pass
+    return True
 
 
 def _ponte():
@@ -194,9 +210,8 @@ def _pedido(item: dict) -> str:
 
 class EmailDoAgente(Extension):
     async def execute(self, **kwargs):
-        if time.time() - _ultima["em"] < INTERVALO:
+        if not _na_hora(MARCA, INTERVALO):
             return
-        _ultima["em"] = time.time()
         try:
             novos = await asyncio.to_thread(_novos)
         except Exception as exc:

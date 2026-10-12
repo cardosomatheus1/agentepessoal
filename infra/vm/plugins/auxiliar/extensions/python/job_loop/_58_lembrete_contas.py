@@ -8,7 +8,23 @@ from pathlib import Path
 
 from helpers.extension import Extension
 
-_ultima = {"t": 0.0}
+MARCA = Path("/a0/usr/marcas/auxiliar_contas")
+
+
+def _na_hora(marca: Path, intervalo: float) -> bool:
+    """True at most once per intervalo. Job-loop extensions are loaded again on every pass, so a module variable
+    never kept the time (12/10 review: "every 10 minutes" ran every minute): the time lives in the marker's mtime."""
+    try:
+        if time.time() - marca.stat().st_mtime < intervalo:
+            return False
+    except OSError:
+        pass
+    try:
+        marca.parent.mkdir(parents=True, exist_ok=True)
+        marca.touch()
+    except OSError:
+        pass
+    return True
 
 
 def _carregar(nome: str, caminho: Path):
@@ -25,9 +41,8 @@ def _carregar(nome: str, caminho: Path):
 
 class LembreteContas(Extension):
     async def execute(self, **kwargs):
-        if time.time() - _ultima["t"] < 120:
+        if not _na_hora(MARCA, 120):
             return
-        _ultima["t"] = time.time()
         raiz = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
         try:
             a = _carregar("auxiliar_helper", raiz / "helpers" / "auxiliar.py")

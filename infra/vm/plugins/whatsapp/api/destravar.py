@@ -7,6 +7,7 @@ told. At most MAX_NUDGES per 30 minutes per chat; after that the owner is asked 
 Authenticated by the bridge's shared key.
 """
 
+import asyncio
 import importlib.util
 import secrets
 import sys
@@ -83,14 +84,14 @@ class Destravar(ApiHandler):
             if len(recentes) >= MAX_NUDGES:
                 if not ctx.get_data("_destravar_avisado"):
                     ctx.set_data("_destravar_avisado", True)
-                    p.enviar(p.dono(ctx), f"⚠️ «{nome}» travou de novo esperando o modelo. Mande /parar e repita o pedido.", tipo="urgente")
+                    await asyncio.to_thread(p.enviar, p.dono(ctx), f"⚠️ «{nome}» travou de novo esperando o modelo. Mande /parar e repita o pedido.", tipo="urgente")
                 continue
             ctx.set_data("_destravado_em", recentes + [agora])
             ctx.set_data("_destravar_avisado", False)
             ctx.log.log(type="info", content=f"Passo parado há {int(parado // 60)} min esperando o modelo: refeito sozinho.")
             ctx.nudge()
             print(f"whatsapp: nudged stuck chat {ctx.id} after {int(parado)} s", flush=True)
-            p.enviar(p.dono(ctx), f"⚙️ «{nome}» ficou parado {int(parado // 60)} min esperando o modelo; refiz o passo sozinho.",
+            await asyncio.to_thread(p.enviar, p.dono(ctx), f"⚙️ «{nome}» ficou parado {int(parado // 60)} min esperando o modelo; refiz o passo sozinho.",
                     tipo="progresso")
             feitos.append(ctx.id)
         return {"ok": True, "destravados": feitos}
