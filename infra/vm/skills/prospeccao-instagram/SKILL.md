@@ -74,7 +74,7 @@ Rodada sem novidade termina com a resposta exata **SEM NOVIDADE** (não vai ao c
 
 ## 2. Achar leads
 
-**Meta da rodada:** tantos leads CRIADOS quanto a cota de «aquecer» de hoje, até 10. Contam os que encaixam, não os
+**Meta da rodada:** tantos leads CRIADOS quanto a cota de «aquecer» de hoje, até 15. Contam os que encaixam, não os
 perfis abertos.
 
 ### 2a. Primeiro: fontes fora do Instagram (não gastam consulta no Instagram e não levam 429)
@@ -241,7 +241,7 @@ Respondeu em qualquer ponto: respondeu → lead → demo → teste → cliente. 
 
 | Período | aquecer | primeira mensagem | lembrete | resposta | parceiro |
 |---|---|---|---|---|---|
-| Primeira semana (piloto) | 8 | 5 | 5 | 15 | 3 |
+| Primeira semana (piloto) | 15 | 5 | 5 | 15 | 3 |
 | Depois | 20 | 12 | 10 | 15 | 5 |
 
 Só das 9h às 20h (Bahia), com 3 minutos entre ações. A ferramenta aplica tudo isso: se ela disser que não dá

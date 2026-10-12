@@ -707,7 +707,7 @@ def devidos(login: str) -> dict:
 
 # ------------------------------------------------------------------ actions
 
-LIMITE_PILOTO = {"aquecer": 8, "dm_abertura": 5, "dm_lembrete": 5, "resposta": 15, "parceiro": 3}
+LIMITE_PILOTO = {"aquecer": 15, "dm_abertura": 5, "dm_lembrete": 5, "resposta": 15, "parceiro": 3}  # aquecer 8 → 15: Matheus, 12/10
 
 
 def limites(d: dict) -> dict:

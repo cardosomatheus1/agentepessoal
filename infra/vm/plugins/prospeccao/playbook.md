@@ -144,7 +144,7 @@ os alunos/clientes dele e uma comissão recorrente por indicação ([% a definir
 ## 7. Limites (proteger a conta do Instagram)
 
 Por dia, no máximo: **20 aquecer**, **12 dm_abertura**, **10 dm_lembrete**, **15 resposta**, **5 parceiro** (na
-primeira semana, piloto: **8 aquecer**, **5 dm_abertura**, **5 dm_lembrete** — a ferramenta já aplica).
+primeira semana, piloto: **15 aquecer**, **5 dm_abertura**, **5 dm_lembrete** — a ferramenta já aplica).
 Mínimo de 3 minutos entre ações; só das 9h às 20h (America/Bahia). Se o Instagram mostrar "Tente novamente mais
 tarde", "ação bloqueada", "suspeita de automação" ou pedir verificação: **pare tudo**, informe com
 `prospeccao resultado` (bloqueio: true) — a prospecção para por 48 h e o Matheus é avisado.

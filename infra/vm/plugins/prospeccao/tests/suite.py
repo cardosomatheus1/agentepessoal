@@ -305,16 +305,17 @@ class Suite:
         p.definir_auto(LOGIN, True)
         chamadas = self._revisor()
         try:
-            lids = [self._lead(f"lim{i}") for i in range(10)]
+            n = p.LIMITE_PILOTO["aquecer"] + 2
+            lids = [self._lead(f"lim{i}") for i in range(n)]
             out = p.propor(LOGIN, [{"lead_id": l, "tipo": "aquecer", "texto": ""} for l in lids])
             eq(len(out["automaticas"]), p.LIMITE_PILOTO["aquecer"], "só até o limite do dia (piloto)")
-            eq(len(out["recusadas"]), 10 - p.LIMITE_PILOTO["aquecer"], "o resto é recusado pelo limite")
+            eq(len(out["recusadas"]), n - p.LIMITE_PILOTO["aquecer"], "o resto é recusado pelo limite")
             ok(all("limite" in r["motivo"] for r in out["recusadas"]), "motivo é o limite")
             d = p.carregar(LOGIN)
             d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
             p.salvar(LOGIN, d)
             feitas = 0
-            for _ in range(12):
+            for _ in range(n + 2):
                 a, _m = p.proxima(LOGIN, "raizconnect")
                 if not a:
                     break
@@ -985,9 +986,10 @@ class Suite:
     # ------------------------------------------------------------------ limits, hours, pause
     def t_cotas_do_piloto(self):
         p = self.p
-        ids = [self._lead(f"c{i}") for i in range(10)]
+        ids = [self._lead(f"c{i}") for i in range(p.LIMITE_PILOTO["aquecer"] + 2)]
         r = p.propor(LOGIN, [{"lead_id": i, "tipo": "aquecer", "texto": ""} for i in ids])
-        eq(len(r["propostas"]), p.LIMITE_PILOTO["aquecer"], "piloto: 8 aquecer por dia")
+        eq(p.LIMITE_PILOTO["aquecer"], 15, "piloto: 15 aquecer por dia (Matheus, 12/10)")
+        eq(len(r["propostas"]), p.LIMITE_PILOTO["aquecer"], "piloto: só até o limite")
         ok(all("limite" in x["motivo"] for x in r["recusadas"]), "o resto por limite")
         d = p.carregar(LOGIN)
         d["config"]["inicio"] = p.agora() - 8 * 86400
@@ -996,8 +998,9 @@ class Suite:
 
     def t_propostas_pendentes_contam_na_cota(self):
         p = self.p
-        r1 = p.propor(LOGIN, [{"lead_id": self._lead(f"q{i}"), "tipo": "aquecer", "texto": ""} for i in range(5)])
-        r2 = p.propor(LOGIN, [{"lead_id": self._lead(f"r{i}"), "tipo": "aquecer", "texto": ""} for i in range(5)])
+        m = p.LIMITE_PILOTO["aquecer"] // 2 + 2
+        r1 = p.propor(LOGIN, [{"lead_id": self._lead(f"q{i}"), "tipo": "aquecer", "texto": ""} for i in range(m)])
+        r2 = p.propor(LOGIN, [{"lead_id": self._lead(f"r{i}"), "tipo": "aquecer", "texto": ""} for i in range(m)])
         eq(len(r1["propostas"]) + len(r2["propostas"]), p.LIMITE_PILOTO["aquecer"], "duas rodadas no mesmo dia não passam da cota")
 
     def t_execucao_horario_espacamento_bloqueio(self):
