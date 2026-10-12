@@ -214,6 +214,32 @@ scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fic
 - **Limpeza/agenda**: rodada viva nunca é destravada nem duplicada; rodada pausada é retomada (ou cancelada se pausar
   de novo); limites ilegíveis nunca desligam rotina.
 
+### Revisão de 12/10, noite (segurança, confiabilidade, menos avisos)
+
+- **Entrada do celular só com bilhete da ponte**: cada mensagem/botão entregue pela ponte leva um bilhete de uso único
+  que só a ponte (host) conhece; o plugin pergunta à ponte (`POST :8789/conferir`) antes de agir. Quem posta direto em
+  `/api/plugins/whatsapp/receber` com a chave (o agente, um teste) é recusado, salvo logins `teste_*` sem bilhete.
+- **Telegram**: link de vínculo de 15 min e uso único ("Conectar <login>" na página de controle gera um novo);
+  "Desconectar" tira todos os chats de um login. A função de controle (Lambda) se implanta com
+  `implantar.py --controle`.
+- **E-mail para o agente** (`helpers/remetente.py`): vale como do Matheus só se enviado logado na conta dele da Locaweb
+  (3º Received) ou com DKIM válido do domínio (Gmail); senão vira pergunta "foi você?".
+- **Ponte**: mensagem que não chega porque o agente está subindo volta para a fila por ~25 min (mensagens desistidas
+  ficam em `/var/lib/agentepessoal/mensagens_nao_entregues.jsonl`); update repetido do Telegram chega 1×; `/foco 15h`;
+  `/gasto` com preço por modelo.
+- **Proxy de modelos**: `GET :8787/health`; uma nova tentativa em 429/5xx/conexão; sobe antes do Docker.
+- **Despertar**: tarefas ilegíveis não apagam o despertar; partidas com nova tentativa; despertar diário de segurança
+  às 8h45 (`deploy.py --despertar` cria/atualiza só isso).
+- **Saúde diária** também confere: backup restaurável (4 arquivos voltam do S3 e abrem), binder carregado, hibernação
+  que virou desligamento.
+- **Rotinas**: `rotinas.py aplicar` leva nome e horário além dos prompts; iniciativa 2×/dia só "adiantei"; radar de IA
+  semanal; urgente só com "PRECISA DE VOCÊ" ou bloqueio real; `/pendentes` no celular.
+- **Prospecção**: testes em outro processo (API `testar` também); veredito do revisor guardado por hash; "nunca pedir
+  receita" no código; métrica com respostas a comentários; A/B pelos números (`acao variante`); "🙋 Quero falar eu"
+  (`acao assumir`/`devolver`); resumo do dia conferido no livro.
+- **Testes do host** (todos no CI): `infra/vm/tests/test_{cofre_ponte,saude,comandos_ponte,bilhete_ponte,fila_ponte,
+  sem_bloqueio,proxy,despertar,gasto}.py` e `infra/control/tests/test_telegram.py`.
+
 ## Memória e limpeza (incidente de 10/10)
 
 O navegador do agente acumulava abas de todas as conversas e rodadas (75 processos, 11,8 GB): a VM congelou por
