@@ -4,13 +4,17 @@ The bridge holds the Meta token and the phone numbers; here people are addressed
 their login name, so the agent can reach no one but the registered users.
 """
 
+import hashlib
 import json
+import os
 import re
+import tempfile
 import time
 import urllib.request
 from pathlib import Path
 
 URL = "http://host.docker.internal:8789/enviar"
+_abrir = urllib.request.urlopen  # the bridge call (tests replace it in their own copy)
 PEDIDOS: dict[str, dict] = {}  # login -> code the agent asked for on WhatsApp (pedir_codigo)
 CHAVE = Path("/a0/usr/whatsapp/.chave")
 CAIXA_TESTES = Path("/a0/usr/testes/celular.jsonl")  # phone messages of "teste_*" logins (tests)
@@ -27,10 +31,11 @@ URGENTE = re.compile(r"^\W*(precisa de voc[eê]|urgente|decis[aã]o|aten[cç][a�
 
 
 def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", botoes: list | None = None,
-           tipo: str = "") -> str:
+           tipo: str = "", sempre: bool = False) -> str:
     """'' when sent, else the reason it was not. botoes: up to 3 [{"id", "titulo"}] reply buttons.
     tipo: "resposta" (default: answer to the person), "urgente" (needs them now: goes even in quiet hours) or
-    "progresso" (held during their quiet hours and delivered together afterwards)."""
+    "progresso" (held during their quiet hours and delivered together afterwards).
+    sempre: send even when identical to a recent notice (a new request that happens to read the same, e.g. a code)."""
     if not usuario:
         return "conversa sem dono"
     if usuario.startswith("teste_"):  # test logins: what would reach the phone is recorded, nothing is sent
@@ -41,13 +46,18 @@ def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", 
         return ""
     corpo = {"usuario": usuario, "texto": formatar(texto) if texto else "", "arquivo": arquivo, "legenda": legenda,
              "botoes": botoes or [], "tipo": tipo or ("urgente" if botoes else "resposta")}
+    marca = _chave_aviso(texto, arquivo, botoes)
+    janela = REPETIDO_H.get(corpo["tipo"])
+    if janela and texto and not sempre and _ja_avisado(usuario, marca, janela):
+        _segurar(usuario, texto, corpo["tipo"], f"igual a um aviso das últimas {janela} h")
+        return ""  # it reached the phone already: for the caller this one is delivered
     req = urllib.request.Request(URL, data=json.dumps(corpo).encode(),
                                  headers={"Content-Type": "application/json", "X-Chave": chave()})
     try:
-        with urllib.request.urlopen(req, timeout=180) as r:
+        with _abrir(req, timeout=180) as r:
             r.read()
         if corpo["tipo"] != "resposta" and texto:
-            _lembrar_aviso(usuario, texto)
+            _lembrar_aviso(usuario, texto, marca)
         return ""
     except urllib.error.HTTPError as e:
         try:
@@ -58,29 +68,77 @@ def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", 
         return str(exc)
 
 
-AVISOS = Path("/a0/usr/whatsapp/avisos")  # notices sent by rounds/tasks, one .jsonl per person (last 30)
+AVISOS = Path("/a0/usr/whatsapp/avisos")  # notices sent by rounds/tasks, one .jsonl per person (last 60)
+# 12/10 review (first piece of the notices gate, §4.3): the same notice could reach the phone 3-4 times (duplicate
+# rounds, a round re-reporting what it already reported). An identical notice (same text, file and buttons) inside
+# the window is held, not sent, and logged in <login>.segurados.jsonl. Answers to the person are never held.
+REPETIDO_H = {"urgente": 6, "progresso": 12}
 
 
-def _lembrar_aviso(usuario: str, texto: str) -> None:
-    """Keep what a round sent to the phone: when he answers it in the phone chat, that chat knows what he means."""
+def _chave_aviso(texto: str, arquivo: str = "", botoes: list | None = None) -> str:
+    base = "|".join([re.sub(r"\s+", " ", (texto or "").strip().lower()), arquivo or "",
+                     ",".join(str((b or {}).get("id", "")) for b in botoes or [])])
+    return hashlib.sha256(base.encode("utf-8")).hexdigest()[:16]
+
+
+def _ler_jsonl(arq: Path) -> list[dict]:
     try:
-        AVISOS.mkdir(parents=True, exist_ok=True)
+        linhas = arq.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    itens = []
+    for linha in linhas:
+        try:
+            itens.append(json.loads(linha))
+        except ValueError:
+            continue
+    return itens
+
+
+def _gravar_jsonl(arq: Path, itens: list[dict]) -> None:
+    AVISOS.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=AVISOS, prefix=f".{arq.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write("".join(json.dumps(i, ensure_ascii=False) + "\n" for i in itens))
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, arq)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def _ja_avisado(usuario: str, marca: str, horas: float) -> bool:
+    limite = time.time() - horas * 3600
+    return any(i.get("chave") == marca and i.get("em", 0) >= limite for i in _ler_jsonl(AVISOS / f"{usuario}.jsonl"))
+
+
+def _lembrar_aviso(usuario: str, texto: str, marca: str = "") -> None:
+    """Keep what a round sent to the phone: when he answers it in the phone chat, that chat knows what he means
+    (and the same notice is not sent twice)."""
+    try:
         arq = AVISOS / f"{usuario}.jsonl"
-        linhas = arq.read_text(encoding="utf-8").splitlines()[-29:] if arq.exists() else []
-        linhas.append(json.dumps({"em": time.time(), "texto": texto[:1500]}, ensure_ascii=False))
-        arq.write_text("\n".join(linhas) + "\n", encoding="utf-8")
+        itens = _ler_jsonl(arq)[-59:] + [{"em": time.time(), "texto": texto[:1500], "chave": marca}]
+        _gravar_jsonl(arq, itens)
+    except OSError:
+        pass
+
+
+def _segurar(usuario: str, texto: str, tipo: str, motivo: str) -> None:
+    try:
+        arq = AVISOS / f"{usuario}.segurados.jsonl"
+        _gravar_jsonl(arq, _ler_jsonl(arq)[-199:] + [{"em": time.time(), "tipo": tipo, "motivo": motivo,
+                                                       "texto": texto[:500]}])
     except OSError:
         pass
 
 
 def avisos_recentes(usuario: str, horas: float = 24, maximo: int = 6) -> list[dict]:
-    try:
-        linhas = (AVISOS / f"{usuario}.jsonl").read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return []
     limite = time.time() - horas * 3600
-    itens = [json.loads(l) for l in linhas if l.strip()]
-    return [i for i in itens if i.get("em", 0) >= limite][-maximo:]
+    return [i for i in _ler_jsonl(AVISOS / f"{usuario}.jsonl") if i.get("em", 0) >= limite][-maximo:]
 
 
 def formatar(texto: str) -> str:
