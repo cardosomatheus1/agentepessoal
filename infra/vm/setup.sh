@@ -228,11 +228,13 @@ docker exec agent-zero sh -c '[ -x /a0/usr/mcp/venv-google/bin/workspace-mcp ] |
   uv venv -q -p 3.12 /a0/usr/mcp/venv-google && VIRTUAL_ENV=/a0/usr/mcp/venv-google uv pip install -q workspace-mcp==2.0.1)' || true
 
 # --- systemd units ---------------------------------------------------------------
+# Before=docker.service (12/10 review): routines fired at boot before the proxy was up and ended in error.
 cat > /etc/systemd/system/agentepessoal-proxy.service <<'EOF'
 [Unit]
 Description=Bedrock bearer-token proxy for Agent Zero
 After=network-online.target
 Wants=network-online.target
+Before=docker.service
 [Service]
 Environment=AWS_REGION=us-east-1
 EnvironmentFile=/etc/agentepessoal.env

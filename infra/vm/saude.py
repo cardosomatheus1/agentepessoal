@@ -97,8 +97,11 @@ def checar() -> list[str]:
             problemas.append(f"contêiner {nome} parado")
     if _http("http://127.0.0.1:50080/login") != 200:
         problemas.append("a interface do agente não responde")
-    if not _http("http://127.0.0.1:8787/"):
+    proxy = _http("http://127.0.0.1:8787/health")
+    if not proxy:
         problemas.append("o proxy de modelos não responde")
+    elif proxy != 200:
+        problemas.append("o proxy de modelos não consegue gerar a chave da AWS (Bedrock)")
     if not _http("http://127.0.0.1:8789/"):
         problemas.append("a ponte do celular não responde")
     feitos = _cmd("journalctl", "-t", "agentepessoal", "--since", f"-{BACKUP_MAX_H}h", "-o", "cat")

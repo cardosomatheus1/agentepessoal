@@ -11,6 +11,11 @@ expire. This proxy injects a fresh bearer token (generated from the VM's IAM
 role) into every request and streams the response back unchanged. It also
 records the time of the last model call, which the idle watchdog reads, and appends each
 call's token usage (input, cached, output) to /var/lib/agentepessoal/uso.jsonl.
+
+12/10 review: GET /health answers here (no upstream call, no "activity"), with whether a Bedrock token can be made;
+and a call refused for a moment (connection refused/reset, 429 or 5xx before any byte went to the agent) is tried once
+more after a short wait, instead of failing the agent's turn. A hung call (no byte for 240 s) is not repeated here: the
+agent retries it itself.
 """
 
 import http.client
@@ -255,6 +260,44 @@ def mark_activity() -> None:
         pass
 
 
+PASSAGEIRO = (429, 500, 502, 503, 504)
+TENTATIVAS, ESPERA_MAX, ESPERA_CONEXAO = 2, 10.0, 2.0
+_conexao = http.client.HTTPSConnection  # tests put a fake upstream here
+
+
+def abrir_upstream(upstream: str, metodo: str, path: str, body: bytes | None, headers: dict):
+    """(connection, response) of the upstream call, tried once more when it was refused for a moment; on a final
+    connection failure, (the error, None). The response is returned before any byte is read, so nothing went out yet."""
+    for tentativa in range(TENTATIVAS):
+        ultima = tentativa + 1 == TENTATIVAS
+        conn = _conexao(upstream, timeout=240, context=_ssl)
+        try:
+            conn.request(metodo, path, body=body, headers=headers)
+            resp = conn.getresponse()
+        except TimeoutError:
+            conn.close()
+            raise  # hung: the agent retries it, not us (another 240 s here would only double the wait)
+        except (OSError, http.client.HTTPException) as exc:
+            conn.close()
+            if ultima:
+                return exc, None
+            print(f"bedrock_proxy: {upstream} unreachable ({exc}); trying once more", flush=True)
+            time.sleep(ESPERA_CONEXAO)
+            continue
+        if resp.status in PASSAGEIRO and not ultima:
+            try:
+                espera = min(float(resp.getheader("Retry-After") or 0) or 2.0, ESPERA_MAX)
+            except ValueError:
+                espera = 2.0
+            resp.read()
+            conn.close()
+            print(f"bedrock_proxy: {upstream} answered {resp.status}; trying once more in {espera:.0f} s", flush=True)
+            time.sleep(espera)
+            continue
+        return conn, resp
+    return RuntimeError("no attempt left"), None
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
@@ -292,6 +335,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _proxy(self) -> None:
         if self.path.startswith("/arquivos/"):
             return self._arquivos()
+        if self.path == "/health":  # for saude.py: no upstream call, and not an "activity" for the idle watchdog
+            try:
+                token = bool(bearer_token())
+            except Exception:
+                token = False
+            return self._reply(200 if token else 503, {"ok": token, "token": token})
         mark_activity()
         length = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(length) if length else None
@@ -319,11 +368,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         # 240 s without a byte from upstream = hung call: fail it so Agent Zero retries (with 900 s a
         # stuck model call left a Telegram request "Calling LLM…" for 15 minutes).
-        conn = http.client.HTTPSConnection(upstream, timeout=240, context=_ssl)
         started = time.time()
+        conn, resp = abrir_upstream(upstream, self.command, path, body, headers)
+        if resp is None:
+            return self._reply(502, {"error": f"model upstream unreachable: {conn}"})
         try:
-            conn.request(self.command, path, body=body, headers=headers)
-            resp = conn.getresponse()
             self.send_response(resp.status)
             for key, value in resp.getheaders():
                 if key.lower() not in SKIP_RESPONSE_HEADERS:
