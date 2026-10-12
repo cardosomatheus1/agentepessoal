@@ -2,6 +2,7 @@
 Run from the repository root: python3 infra/vm/tests/test_comandos_ponte.py (boto3 needed for the import)."""
 
 import importlib.util
+import json
 import shutil
 import sys
 import tempfile
@@ -15,6 +16,21 @@ def _carregar(nome: str, arquivo: Path):
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     return m
+
+
+class _Resposta:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def read(self):
+        return json.dumps({"texto": "⚙️ *Fazendo agora*\nNada rodando."}).encode()
+
+
+def _resposta_painel(req, timeout=0):
+    return _Resposta()
 
 
 def main() -> int:
@@ -42,11 +58,41 @@ def main() -> int:
         r = p.texto_livro("matheus")
         if not ("@zen.marmitas" in r and "falhou: script falhou" in r and "@x" not in r):
             falhas.append(f"livro do dia só da pessoa: {r!r}")
+        # /painel (12/10 review §7 item 11): the ledger in one line, the health check only for the owner
+        r = p.linha_livro("matheus")
+        if not ("💬 DM: 1" in r and "(falhou)" in r and "/livro" in r):
+            falhas.append(f"livro numa linha: {r!r}")
+        if "nada registrado" not in p.linha_livro("ninguem"):
+            falhas.append("livro vazio para quem não tem ações")
+        import time
+
+        p.SAUDE = tmp / "saude.json"
+        if "ainda não conferida" not in p.linha_saude():
+            falhas.append("saúde sem conferência")
+        agora = time.time()
+        p.SAUDE.write_text(json.dumps({"em": time.strftime("%FT%TZ", time.gmtime(agora - 3600)), "problemas": []}))
+        r = p.linha_saude(agora)
+        if not ("tudo certo" in r and "atrasada" not in r):
+            falhas.append(f"saúde em dia: {r!r}")
+        p.SAUDE.write_text(json.dumps({"em": time.strftime("%FT%TZ", time.gmtime(agora - 30 * 3600)),
+                                       "problemas": ["disco 91% cheio", "backup atrasado"]}))
+        r = p.linha_saude(agora)
+        if not ("atrasada" in r and "2 problema(s)" in r and "• disco 91% cheio" in r):
+            falhas.append(f"saúde atrasada e com problemas: {r!r}")
+        p.chave = lambda: "x"
+        p.urllib.request.urlopen = _resposta_painel
+        p.gasto = lambda: (1.5, 20.0)
+        p.cfg = lambda: {}
+        r = p.texto_painel("matheus")
+        if not (r.index("Fazendo agora") < r.index("Livro de hoje") < r.index("Saúde") < r.index("Gasto")):
+            falhas.append(f"painel na ordem: {r!r}")
+        if "Saúde" in p.texto_painel("outra"):
+            falhas.append("a saúde da VM só aparece para o dono")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:
         print("FALHA", f)
-    print("TESTES", 4 - len(falhas), 4)
+    print("TESTES", 11 - len(falhas), 11)
     return 1 if falhas else 0
 
 

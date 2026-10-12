@@ -2235,6 +2235,49 @@ def botao_assumir(login: str, lid: str) -> list:
     return [{"id": f"pl:{_login(login)}:{lid}:eu", "titulo": "🙋 Quero falar eu"}]
 
 
+FUNIL = (("aquecido", "aquecidos"), ("abordado", "abordados"), ("respondeu", "responderam"), ("lead", "leads"),
+         ("demo", "demos"), ("cliente", "clientes"))
+
+
+def painel(login: str) -> str:
+    """/painel (12/10 review §7 item 11): the funnel, the stock and the week in a few lines, from the register (no
+    model). The funnel counts who REACHED each stage (a lead who answered was also approached); '' with no leads."""
+    d = carregar(login)
+    if not d["leads"]:
+        return ""
+    ordem = {e: i for i, e in enumerate(ETAPAS)}
+
+    def chegou(l, etapa):
+        if l["etapa"] in ordem and l["etapa"] not in ("sem_resposta", "descartado") and ordem[l["etapa"]] >= ordem[etapa]:
+            return True
+        return any(h["tipo"] == f"etapa:{etapa}" or (etapa == "abordado" and h["tipo"] == "dm_abertura")
+                   or (etapa == "aquecido" and h["tipo"] in ("aquecer", "dm_abertura")) for h in l["historico"])
+
+    funil = " → ".join(f"{sum(1 for l in d['leads'] if chegou(l, e))} {nome}" for e, nome in FUNIL)
+    e = estoque(login)
+    pf = e["por_fonte"]
+    fontes = " · ".join(f"{o} {pf[o]['prontos']}/{pf[o]['alvo']}" if pf[o]["alvo"] else f"{o} {pf[o]['prontos']}"
+                        for o in ORIGENS if pf[o]["alvo"] or pf[o]["prontos"])
+    m = metricas(login, 7)
+    g, c = m["geral"], m["comentarios"]
+    hoje = _hoje_local()
+    feitas = Counter(a["tipo"] for a in d["acoes"] if a["estado"] == "executada" and a.get("executada_em")
+                     and _hoje_local(a["executada_em"]) == hoje)
+    nomes = {"aquecer": "aquecidos", "dm_abertura": "primeiras mensagens", "dm_lembrete": "lembretes", "resposta": "respostas"}
+    linhas = [f"Funil (desde o início): {funil}",
+              f"Estoque: {e['prontos']}/{e['alvo']} prontos para aquecer ({fontes})",
+              f"Semana: {g['abordados']} abordados, {g['responderam']} responderam ({g['taxa_resposta']:.0f}%)"
+              + (f"; comentários: {c['responderam']} de {c['comentados']} responderam" if c["comentados"] else ""),
+              "Hoje: " + (", ".join(f"{n} {nomes.get(t, t)}" for t, n in feitas.most_common()) if feitas else "nada saiu ainda")]
+    comigo = [l["handle"] for l in d["leads"] if l.get("humano")]
+    if comigo:
+        linhas.append("Com você (a automação não fala): " + ", ".join(f"@{h}" for h in comigo[:5]))
+    if agora() < d["bloqueio_ate"]:
+        linhas.append("⛔ Pausada por bloqueio do Instagram até "
+                      + dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M"))
+    return "\n".join(linhas)
+
+
 def resumo_contexto(login: str) -> str:
     """What a search round needs: limits left, leads due a next step, handles already known, pause state."""
     expirar(login)

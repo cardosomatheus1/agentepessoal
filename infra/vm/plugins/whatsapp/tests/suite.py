@@ -105,8 +105,8 @@ class Suite:
                       "❗ Resumo do dia"):
             ok(not p.urgente(texto), f"não urgente (fica para fora do silêncio): {texto}")
 
-    def t_pendentes_junta_o_que_espera_ele(self):
-        # 12/10 review §7 item 2: one list of what waits on the person (the panel showed only approvals and codes)
+    def _painel(self):
+        """api/painel.py loaded on its own (outside the container, helpers.api is a stub)."""
         import types
 
         stubs = {"helpers": types.ModuleType("helpers"), "helpers.api": types.ModuleType("helpers.api")}
@@ -127,6 +127,24 @@ class Suite:
                     sys.modules.pop(k, None)
                 else:
                     sys.modules[k] = v
+        return m
+
+    def t_painel_rotinas_numa_tela(self):
+        # 12/10 review §7 item 11: the panel listed all ~15 routines; now errors and running first, then the next 6
+        m = self._painel()
+        t = lambda nome, estado, quando: {"linha": f"• {nome}", "estado": estado, "quando": quando}  # noqa: E731
+        tarefas = [t(f"r{i}", "idle", 1000 + i) for i in range(9, 0, -1)] + [t("quebrada", "error", None),
+                                                                              t("agora", "running", None),
+                                                                              t("parada", "disabled", None)]
+        linhas = m.linhas_rotinas(tarefas).splitlines()
+        eq(linhas[:2], ["• quebrada", "• agora"], "com erro e rodando vêm primeiro")
+        eq(linhas[2:8], [f"• r{i}" for i in range(1, 7)], "depois as 6 próximas, na ordem do horário")
+        eq(linhas[8], "+3 ativa(s) · 1 pausada(s)", "o resto só contado")
+        eq(m.linhas_rotinas([]), "Nenhuma.", "sem rotinas")
+
+    def t_pendentes_junta_o_que_espera_ele(self):
+        # 12/10 review §7 item 2: one list of what waits on the person (the panel showed only approvals and codes)
+        m = self._painel()
         linhas = m.lista_esperando([{"resumo": "enviar e-mail ao contador", "conversa": "Radar"}],
                                    {"motivo": "Google", "codigo": ""}, 3, ["IPTU — R$ 120,00 (vence amanhã, 13/10)"], 2,
                                    ["Mandar a proposta ao Pedro (prazo 2026-10-15)"])

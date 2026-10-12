@@ -115,6 +115,7 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | Radar (Gmail/Agenda) e Fios soltos viraram uma rodada só, 3×/dia (8h40, 13h40, 18h40): uma leitura do Gmail e da Agenda; o que pede atenção vira fio com botões (antes eram 8 rodadas por dia em duas rotinas) | ✅ | rotinas (git = VM) |
 | Teto de avisos: passou de 8 avisos de progresso no dia, o resto chega agrupado às 12h30, 18h30 ou de manhã (urgente, resposta e pedido de decisão seguem na hora). Aviso segurado agora mantém os botões (antes, no silêncio, os botões se perdiam) | ✅ | ponte |
 | Uma revisão por semana: o relatório da prospecção (segunda 8h41) virou a seção *Prospecção* da Revisão da semana (domingo 19h47), com números, A × B, respostas a comentários e a conferência do livro de ações | ✅ | rotinas (git = VM) |
+| `/painel` numa tela: prospecção (funil de quem chegou a cada etapa, estoque por fonte, semana, o que saiu hoje, quem está com você), livro de hoje numa linha, saúde da última conferência e só as rotinas que importam (com erro, rodando e as 6 próximas; o resto contado) | ✅ | whatsapp + prospecção + ponte |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |

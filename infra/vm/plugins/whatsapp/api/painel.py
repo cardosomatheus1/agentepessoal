@@ -97,6 +97,20 @@ def esperando(usuario: str) -> tuple[list[str], list]:
     return lista_esperando(aprovacoes, pedido, propostas, contas, rascunhos, fios), botoes
 
 
+def linhas_rotinas(tarefas: list, mostrar: int = 6) -> str:
+    """The panel's routines (12/10 review §7 item 11: one screen): the ones with an error or running always, then
+    the next `mostrar` to run; the rest only counted. `tarefas`: {"linha", "estado", "quando" (next run or None)}."""
+    if not tarefas:
+        return "Nenhuma."
+    primeiro = [t for t in tarefas if t["estado"] in ("error", "running")]
+    proximas = sorted((t for t in tarefas if t not in primeiro and t["quando"]), key=lambda t: t["quando"])[:mostrar]
+    resto = [t for t in tarefas if t not in primeiro and t not in proximas]
+    ativas = sum(1 for t in resto if t["estado"] != "disabled")
+    pausadas = len(resto) - ativas
+    fim = " · ".join(x for x in (f"+{ativas} ativa(s)" if ativas else "", f"{pausadas} pausada(s)" if pausadas else "") if x)
+    return "\n".join([t["linha"] for t in primeiro + proximas] + ([fim] if fim else []))
+
+
 def painel(usuario: str) -> str:
     from agent import AgentContext
 
@@ -117,6 +131,14 @@ def painel(usuario: str) -> str:
     linhas, _ = esperando(usuario)
     saida.append("⏳ *Esperando você*\n" + ("\n".join(linhas) if linhas else "Nada."))
 
+    try:  # 12/10 review §7 item 11: funnel and stock straight from the register
+        pr = _helper("prospeccao_helper", "/a0/usr/plugins/prospeccao/helpers/prospeccao.py")
+        bloco = pr.painel(usuario) if pr and hasattr(pr, "painel") else ""
+    except Exception as exc:
+        bloco = f"(não consegui ler: {str(exc)[:80]})"
+    if bloco:
+        saida.append("🎯 *Prospecção*\n" + bloco)
+
     tarefas = []
     try:
         from helpers.task_scheduler import ScheduledTask, TaskScheduler
@@ -130,7 +152,7 @@ def painel(usuario: str) -> str:
             if ctx is None and usuario != "matheus":
                 continue
             estado = getattr(t.state, "value", str(t.state))
-            prox = ""
+            prox, nxt = "", None
             if isinstance(t, ScheduledTask) and estado != "disabled":
                 nxt = t.get_next_run()
                 prox = f", próxima {_hora(nxt)}" if nxt else ""
@@ -140,10 +162,11 @@ def painel(usuario: str) -> str:
                 if reg.get("ate"):
                     fim = f", termina {datetime.fromtimestamp(reg['ate'], FUSO):%d/%m}"
             rotulo = {"idle": "ativa", "running": "rodando", "disabled": "pausada", "error": "com erro"}.get(estado, estado)
-            tarefas.append(f"• {t.name} — {rotulo}{prox}{fim}")
+            quando = nxt.timestamp() if nxt else None
+            tarefas.append({"linha": f"• {t.name} — {rotulo}{prox}{fim}", "estado": estado, "quando": quando})
     except Exception as exc:
-        tarefas.append(f"(não consegui ler: {str(exc)[:80]})")
-    saida.append("📅 *Tarefas agendadas*\n" + ("\n".join(tarefas) if tarefas else "Nenhuma."))
+        tarefas.append({"linha": f"(não consegui ler: {str(exc)[:80]})", "estado": "error", "quando": None})
+    saida.append("📅 *Rotinas*\n" + linhas_rotinas(tarefas))
 
     ultimas = []
     try:

@@ -735,11 +735,14 @@ def texto_painel(usuario: str) -> str:
             corpo = json.loads(r.read() or b"{}").get("texto") or ""
     except Exception as exc:
         corpo = f"(não consegui ler o agente agora: {str(exc)[:120]})"
-    return "📊 *Painel*\n\n" + corpo + "\n\n" + texto_gasto()
+    partes = [corpo, linha_livro(usuario)] + ([linha_saude()] if usuario == DONO else []) + [texto_gasto()]
+    return "📊 *Painel*\n\n" + "\n\n".join(partes)
 
 
 DECISOES = USR_HOST / "memoria" / "decisoes"  # plugins/memoria_pessoal (helpers/decisoes.py)
 LIVRO = USR_HOST / "central" / "agente.db"  # plugins/central (helpers/livro.py)
+SAUDE = Path("/var/lib/agentepessoal/saude.json")  # written by saude.py (daily health check)
+DONO = "matheus"  # the VM's owner: the only one who sees its health in /painel
 ROTULO_TIPO = {"proibicao": "🚫", "permissao": "✅", "decisao": "📌", "preferencia": "💬"}
 ROTULO_VERBO = {"dm": "💬 DM", "comentario": "🗨️ comentário", "seguir_curtir": "➕ seguir e curtir", "aviso": "📣 aviso"}
 
@@ -768,33 +771,78 @@ def texto_decisoes(usuario: str, agora: float | None = None) -> str:
             + "\n\nPara mudar ou desfazer uma, diga ao agente (ex.: \"revoga a 7\").")
 
 
+def _livro_de_hoje(usuario: str, agora: float | None = None) -> list | None:
+    """Today's finished actions of the person in the ledger ([] when none or no ledger yet; None when unreadable)."""
+    import sqlite3
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    if not LIVRO.exists():
+        return []
+    inicio = datetime.fromtimestamp(agora or time.time(), ZoneInfo("America/Bahia")).replace(
+        hour=0, minute=0, second=0, microsecond=0).timestamp()
+    try:
+        con = sqlite3.connect(f"file:{LIVRO}?mode=ro", uri=True, timeout=5)
+        try:
+            return con.execute("SELECT em, fase, verbo, alvo, conteudo_previa, resultado FROM acao WHERE login = ? AND em >= ? "
+                               "AND fase IN ('executada','falhou','cancelada','divergente') ORDER BY em",
+                               (_login_arquivo(usuario), inicio)).fetchall()
+        finally:
+            con.close()
+    except sqlite3.Error:
+        return None
+
+
+def _contagem_livro(linhas: list) -> str:
+    contagem: dict = {}
+    for _, fase, verbo, *_ in linhas:
+        contagem[(verbo, fase)] = contagem.get((verbo, fase), 0) + 1
+    return " · ".join(f"{ROTULO_VERBO.get(v, v)}: {n}" + ("" if f == "executada" else f" ({f})")
+                     for (v, f), n in sorted(contagem.items()))
+
+
+def linha_livro(usuario: str, agora: float | None = None) -> str:
+    """/painel (12/10 review §7 item 11): today's ledger in one line; the detail is in /livro."""
+    linhas = _livro_de_hoje(usuario, agora)
+    if linhas is None:
+        return "📒 *Livro de hoje*: não consegui ler agora."
+    return "📒 *Livro de hoje*: " + (_contagem_livro(linhas) + " (detalhe: /livro)" if linhas else "nada registrado ainda.")
+
+
+def linha_saude(agora: float | None = None) -> str:
+    """/painel: the last daily health check (saude.py, 8h50), late when older than a day."""
+    from datetime import datetime, timezone
+    from zoneinfo import ZoneInfo
+
+    try:
+        s = json.loads(SAUDE.read_text(encoding="utf-8"))
+        em = datetime.strptime(s["em"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    except FileNotFoundError:
+        return "🩺 *Saúde*: ainda não conferida."
+    except (OSError, ValueError, KeyError, TypeError):
+        return "🩺 *Saúde*: não consegui ler a última conferência."
+    atrasada = (agora or time.time()) - em.timestamp() > 26 * 3600
+    problemas = s.get("problemas") or []
+    topo = f"🩺 *Saúde* (conferida {em.astimezone(ZoneInfo('America/Bahia')):%d/%m %H:%M}" + (", atrasada" if atrasada else "") + "): "
+    if not problemas:
+        return topo + "tudo certo."
+    return topo + f"{len(problemas)} problema(s)\n" + "\n".join(f"• {str(p)[:160]}" for p in problemas[:5])
+
+
 def texto_livro(usuario: str, agora: float | None = None) -> str:
     """/livro: what the agent did today, from the action ledger (read-only; no model)."""
-    import sqlite3
     from datetime import datetime
     from zoneinfo import ZoneInfo
 
     if not LIVRO.exists():
         return "📒 O livro de ações ainda está vazio."
     fuso = ZoneInfo("America/Bahia")
-    inicio = datetime.fromtimestamp(agora or time.time(), fuso).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-    try:
-        con = sqlite3.connect(f"file:{LIVRO}?mode=ro", uri=True, timeout=5)
-        try:
-            linhas = con.execute("SELECT em, fase, verbo, alvo, conteudo_previa, resultado FROM acao WHERE login = ? AND em >= ? "
-                                 "AND fase IN ('executada','falhou','cancelada','divergente') ORDER BY em",
-                                 (_login_arquivo(usuario), inicio)).fetchall()
-        finally:
-            con.close()
-    except sqlite3.Error:
+    linhas = _livro_de_hoje(usuario, agora)
+    if linhas is None:
         return "Não consegui ler o livro de ações agora. Tente de novo em 1 minuto."
     if not linhas:
         return "📒 *Livro de hoje*: nada registrado ainda."
-    contagem: dict = {}
-    for _, fase, verbo, *_ in linhas:
-        contagem[(verbo, fase)] = contagem.get((verbo, fase), 0) + 1
-    topo = " · ".join(f"{ROTULO_VERBO.get(v, v)}: {n}" + ("" if f == "executada" else f" ({f})")
-                      for (v, f), n in sorted(contagem.items()))
+    topo = _contagem_livro(linhas)
     detalhe = [f"{datetime.fromtimestamp(em, fuso).strftime('%H:%M')} {ROTULO_VERBO.get(verbo, verbo)} "
                f"{alvo.split(':', 1)[-1]}" + ("" if fase == "executada" else f" — {fase}: {(resultado or '')[:60]}")
                + (f" «{previa[:60]}»" if previa and fase == "executada" else "")

@@ -1883,6 +1883,25 @@ class Suite:
         eq(m["por_variante"]["A"]["taxa_resposta"], 50.0, "A: 50%")
         eq(m["por_variante"]["B"]["taxa_resposta"], 100.0, "B: 100%")
 
+    def t_painel(self):
+        """/painel (12/10 review §7 item 11): funnel by who reached each stage, stock, the week and today."""
+        p = self.p
+        eq(p.painel(LOGIN), "", "sem leads, nada no painel")
+        self.em(self.hora(10))
+        um, dois = self._aquecido("painel1"), self._aquecido("painel2")
+        self._lead("painel3")
+        self._executar(um, "dm_abertura", TEXTOS[0].format(n="Pessoa 0"), "A")
+        self.em(self.relogio + 200)
+        self._executar(dois, "dm_abertura", TEXTOS[1].format(n="Pessoa 1"), "B")
+        p.mudar_etapa(LOGIN, dois, "lead", "")
+        p.assumir_lead(LOGIN, dois)
+        t = p.painel(LOGIN)
+        ok("2 aquecidos → 2 abordados → 1 responderam → 1 leads → 0 demos → 0 clientes" in t, f"funil: {t}")
+        ok("Estoque: 1/" in t, f"estoque: {t}")
+        ok("Semana: 2 abordados, 1 responderam (50%)" in t, f"semana: {t}")
+        ok("Hoje: 2 primeiras mensagens" in t, f"hoje: {t}")
+        ok("@painel2" in t and "@painel1" not in t.split("Com você")[-1], f"só quem está com ele: {t}")
+
 
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if a != "--json"]
