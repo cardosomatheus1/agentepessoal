@@ -105,7 +105,7 @@ def _documento(dados: dict, tamanho: float):
         p.add_run("Mensagem sugerida: ").bold = True
         p.add_run(f"«{dados['proxima']}»")
     rodape = doc.add_paragraph().add_run(f"Gerado em {dados['gerado']} a partir do registro da prospecção. "
-                                         "Para falar você mesmo, toque em «Quero falar eu» no aviso.")
+                                         "Para falar você mesmo, toque em «Deixa comigo» no aviso.")
     rodape.font.size, rodape.font.color.rgb = Pt(7.5), cinza
     return doc
 

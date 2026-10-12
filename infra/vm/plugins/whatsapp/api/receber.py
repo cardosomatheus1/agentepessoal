@@ -510,7 +510,7 @@ async def _botao_prospeccao(usuario: str, botao: str) -> dict:
 
 
 async def _botao_lead(usuario: str, botao: str) -> dict:
-    """🙋 Quero falar eu, under a hot-lead notice: the automation stops for that @ (12/10 review §7 item 3)."""
+    """🙋 Deixa comigo, under a hot-lead notice: the automation stops for that @ (12/10 review §7 item 3)."""
     _, login, lid, _acao = (botao.split(":") + ["", "", "", ""])[:4]
     if login != usuario:
         return {"ok": False}
@@ -578,7 +578,7 @@ class Receber(ApiHandler):
             return await _botao_conta(usuario, botao)
         if botao.startswith("pa:"):  # a prospecting action of plugins/prospeccao
             return await _botao_prospeccao(usuario, botao)
-        if botao.startswith("pl:"):  # "Quero falar eu" under a hot lead of plugins/prospeccao
+        if botao.startswith("pl:"):  # "Deixa comigo" under a hot lead of plugins/prospeccao
             return await _botao_lead(usuario, botao)
 
         pedido = ponte().PEDIDOS.get(usuario)

@@ -1808,9 +1808,11 @@ class Suite:
         eq(p.validar_texto("resposta", "Oi, Ana! Pode mandar a receita sim, que eu calculo. — Matheus", d, "x"), "",
            "na resposta a quem ofereceu, quem julga é o revisor")
 
-    def t_quero_falar_eu_para_a_automacao(self):
-        # 12/10 review §7 item 3: "🙋 Quero falar eu" stops the automation for that @ until he hands it back
+    def t_deixa_comigo_para_a_automacao(self):
+        # 12/10 review §7 item 3: "🙋 Deixa comigo" stops the automation for that @ until he hands it back
         p = self.p
+        eq(p.botao_assumir(LOGIN, "x")[0]["titulo"], "🙋 Deixa comigo", "o botão diz \"Deixa comigo\" (e cabe no WhatsApp)")
+        ok(len(p.botao_assumir(LOGIN, "x")[0]["titulo"]) <= 20, "título de botão do WhatsApp: até 20 caracteres")
         self.em(self.hora(10))
         lid = self._lead("quente")
         aid = p.propor(LOGIN, [{"lead_id": lid, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]

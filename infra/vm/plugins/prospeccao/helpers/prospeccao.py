@@ -2207,7 +2207,7 @@ def conferencia_livro(login: str, feitas: list, comentados: list) -> str:
 
 @_transacao
 def assumir_lead(login: str, lid: str) -> dict | None:
-    """"🙋 Quero falar eu" (12/10 review §7 item 3): the person takes this @ over. The automation stops for it: what is
+    """"🙋 Deixa comigo" (12/10 review §7 item 3): the person takes this @ over. The automation stops for it: what is
     proposed or approved (and not already being executed) is cancelled, and nothing new is accepted until he hands it
     back (`devolver_lead`). Returns the lead, or None when it does not exist."""
     d = carregar(login)
@@ -2238,7 +2238,7 @@ def devolver_lead(login: str, lid: str) -> dict | None:
 
 
 def botao_assumir(login: str, lid: str) -> list:
-    return [{"id": f"pl:{_login(login)}:{lid}:eu", "titulo": "🙋 Quero falar eu"}]
+    return [{"id": f"pl:{_login(login)}:{lid}:eu", "titulo": "🙋 Deixa comigo"}]  # 12/10: "Quero falar eu" soava estranho
 
 
 FUNIL = (("aquecido", "aquecidos"), ("abordado", "abordados"), ("respondeu", "responderam"), ("lead", "leads"),

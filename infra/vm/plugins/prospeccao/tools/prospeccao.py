@@ -409,7 +409,7 @@ class Prospeccao(Tool):
                 lugar = "num comentário" if onde == "comentario" else "no Direct"
                 await asyncio.to_thread(p.enviar, login, f"{emoji} *{lead['nome']}* (@{lead['handle']}) {frase} {lugar}\n\n«{nota[:500]}»\n\n"
                          "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu. Se preferir "
-                         "conversar você mesmo, toque em 🙋.\n" + lead["url"], p.botao_assumir(login, lead["id"]),
+                         "conversar você mesmo, toque em 🙋 Deixa comigo.\n" + lead["url"], p.botao_assumir(login, lead["id"]),
                          tipo="urgente", ponte=ponte())  # someone answered: tell him now (Telegram), even in quiet hours
             if etapa in ("lead", "demo"):  # hot: the one-page card follows the notice
                 erro = await mandar_cartao(login, lead["id"])
@@ -447,7 +447,7 @@ class Prospeccao(Tool):
             for n in out["novas"]:
                 await asyncio.to_thread(p.enviar, login, f"💬 *{n['nome']}* (@{n['handle']}) respondeu no Direct\n\n«{n['texto'][:500]}»\n\n"
                          "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu. Se preferir "
-                         "conversar você mesmo, toque em 🙋.\n" + n["url"], p.botao_assumir(login, n["lead_id"]), tipo="urgente", ponte=ponte())
+                         "conversar você mesmo, toque em 🙋 Deixa comigo.\n" + n["url"], p.botao_assumir(login, n["lead_id"]), tipo="urgente", ponte=ponte())
             if out["erros"] and not out["conversas"]:
                 return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Leia pela tela (skill, seção 5).")
             resumo = (f"{out['conversas']} conversas lidas pela API; respostas novas de leads: "

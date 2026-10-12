@@ -235,7 +235,7 @@ scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fic
 - **Rotinas**: `rotinas.py aplicar` leva nome e horário além dos prompts; iniciativa 2×/dia só "adiantei"; radar de IA
   semanal; urgente só com "PRECISA DE VOCÊ" ou bloqueio real; `/pendentes` no celular.
 - **Prospecção**: testes em outro processo (API `testar` também); veredito do revisor guardado por hash; "nunca pedir
-  receita" no código; métrica com respostas a comentários; A/B pelos números (`acao variante`); "🙋 Quero falar eu"
+  receita" no código; métrica com respostas a comentários; A/B pelos números (`acao variante`); "🙋 Deixa comigo"
   (`acao assumir`/`devolver`); resumo do dia conferido no livro.
 - **Testes do host** (todos no CI): `infra/vm/tests/test_{cofre_ponte,saude,comandos_ponte,bilhete_ponte,fila_ponte,
   sem_bloqueio,proxy,despertar,gasto}.py` e `infra/control/tests/test_telegram.py`.
