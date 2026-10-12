@@ -82,6 +82,8 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | **Livro de ações** (§4.1, primeira parte): plugin `central`, banco que só acrescenta; a prospecção grava cada ação feita, que falhou ou foi apagada; Conferência a cada 30 min (sem modelo) avisa 1× se a mesma mensagem foi para a mesma pessoa 2× em 24 h; ferramenta `livro` ("o que você fez hoje?"); backup com cópia consistente | ✅ | plugin `central` |
 | `/decisoes` e `/livro` no celular (§7 item 2): respondem na hora, sem modelo, lendo o registro de decisões e o livro | ✅ | ponte do celular |
 | Recuperação de desastre: restauração só é marcada se deu certo e, sem a marca, o backup nunca apaga nada no S3; a interface sempre exige login (antes podia subir aberta numa VM nova) | ✅ | `setup.sh`, `backup.sh` |
+| Logs do Docker com limite: rotação diária acima de 100 MB (3 cópias compactadas) nos contêineres atuais; limite de 50 MB × 3 nos que forem criados | ✅ | `setup.sh` + aplicado ao vivo (206 MB → 50 MB) |
+| Lembrete de conta que não chegou é tentado de novo (antes era marcado como enviado antes do envio) | ✅ | `66c152d` |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Botões assinados (o agente não consegue aprovar a si mesmo) | depois: precisa de assinatura que o contêiner não forja; hoje o id já fecha o caso do botão velho | §3.1 |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |

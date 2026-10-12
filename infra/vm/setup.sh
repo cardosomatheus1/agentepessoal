@@ -14,6 +14,24 @@ if ! command -v docker >/dev/null || ! command -v adb >/dev/null; then
   apt-get install -y docker.io python3-venv unzip curl adb "linux-modules-extra-$(uname -r)" || \
     apt-get install -y docker.io python3-venv unzip curl adb
 fi
+# 12/10 review: the agent's Docker log grew ~200 MB a day with no limit. Containers created from now on get a size
+# limit from the daemon (read when docker starts); existing ones keep their settings, so their logs are rotated in place.
+if [ ! -f /etc/docker/daemon.json ]; then
+  mkdir -p /etc/docker
+  echo '{"log-driver": "json-file", "log-opts": {"max-size": "50m", "max-file": "3"}}' > /etc/docker/daemon.json
+  systemctl restart docker 2>/dev/null || true
+fi
+cat > /etc/logrotate.d/agentepessoal-docker <<'EOF'
+/var/lib/docker/containers/*/*-json.log {
+  daily
+  maxsize 100M
+  rotate 3
+  compress
+  missingok
+  notifempty
+  copytruncate
+}
+EOF
 systemctl enable --now docker
 if ! command -v cloudflared >/dev/null; then
   curl -sSfL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb -o /tmp/cloudflared.deb
