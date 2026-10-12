@@ -235,8 +235,8 @@ class Prospeccao(Tool):
                 conferir = (f"ANTES DE SEGUIR: este perfil foi achado fora do Instagram (catálogo de CNPJ/buscador). Confira que é "
                             f"mesmo «{lead['nome']}» ({lead['cidade']}), a data do primeiro post NÃO fixado e o número de seguidores. Se for "
                             "outro negócio, o último post tiver mais de 30 dias, ou tiver menos de 300 ou mais de 50 mil seguidores, NÃO siga nem curta: chame `prospeccao` acao \"etapa\" com "
-                            "etapa \"descartado\" e nota (\"parado há N dias\", \"perfil de outro negócio\" ou \"N seguidores\"), e depois \"resultado\" "
-                            "com ok=false e esse detalhe. Se estiver ativo, siga normalmente e diga no detalhe a data do último post.\n")
+                            f"lead_id \"{lead['id']}\", etapa \"descartado\" e nota (\"parado há N dias\", \"perfil de outro negócio\" ou \"N seguidores\") — isso já encerra "
+                            "esta visita (não precisa de \"resultado\") — e chame \"proxima\" de novo: vem o próximo da fila. Se estiver ativo, siga normalmente e diga no detalhe a data do último post.\n")
             return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) {'PRÉ-APROVADA (autorização do Matheus, dentro do limite do dia; texto revisado)' if a.get('auto') else 'APROVADA pelo Matheus'} para @{lead['handle']} — {lead['url']}\n"
                      f"{conferir}{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
                      + (("PARA DIGITAR NO DIRECT (obrigatório, NÃO digite à mão): com a conversa aberta, 1) clique no campo de mensagem, "
@@ -274,6 +274,10 @@ class Prospeccao(Tool):
             a = p.resultado(login, acao_id, ok_bool, detalhe, bloq)
             p.encerrar_liberacao(self.agent.context)
             if not a:
+                x = next((y for y in p.carregar(login)["acoes"] if y["id"] == acao_id), None)
+                if x and x["estado"] in ("cancelada", "falhou", "executada"):
+                    return r(f"Essa ação já estava encerrada ({x['estado']}; lead descartado, fechado ou já registrado). "
+                             "Nada a fazer: chame `prospeccao` acao \"proxima\" para a seguinte.")
                 return r("Ação não encontrada ou não estava aprovada.")
             if bloq:
                 p.enviar(login, "⛔ *Prospecção pausada por 48 h*\n\nO Instagram mostrou um bloqueio/limite: " + detalhe[:300] +

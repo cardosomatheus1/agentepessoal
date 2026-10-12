@@ -156,12 +156,16 @@ def normalizar(handle: str) -> str:
 
 
 def _lead(d: dict, lid: str) -> dict | None:
-    """By internal id or by the profile: "zen.marmitas", "@zen.marmitas" or its instagram.com URL (11/10: the agent
-    passed the @ and the stage change was refused)."""
+    """By internal id, by the profile: "zen.marmitas", "@zen.marmitas" or its instagram.com URL (11/10: the agent
+    passed the @ and the stage change was refused), or by the id of one of its actions (12/10: the visit found an
+    inactive profile, the agent passed the warm-up's id to discard it, was refused and stopped the round)."""
     lid = str(lid or "").strip()
     achado = next((l for l in d["leads"] if l["id"] == lid), None)
     if achado or not lid:
         return achado
+    acao = next((a for a in d.get("acoes", []) if a["id"] == lid), None)
+    if acao:
+        return next((l for l in d["leads"] if l["id"] == acao["lead_id"]), None)
     handle = lid.rstrip("/").rsplit("/", 1)[-1].lstrip("@").lower()
     return next((l for l in d["leads"] if str(l.get("handle", "")).lower() == handle), None)
 

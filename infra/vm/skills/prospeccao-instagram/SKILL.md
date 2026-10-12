@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 3.1.0
+version: 3.1.1
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -166,9 +166,9 @@ Depois, `prospeccao` acao "proxima" com `conta_ativa` = o @ ativo agora. Para a 
    - a data do primeiro post NÃO fixado (até 30 dias);
    - os seguidores (de 300 a 50 mil).
 
-   Se falhar: NÃO siga nem curta. Chame `etapa` com etapa "descartado" e a nota ("parado há N dias", "perfil de
-   outro negócio" ou "N seguidores"), e depois `resultado` com ok=false. Se passar, siga em frente e diga no
-   detalhe a data do último post.
+   Se falhar: NÃO siga nem curta. Chame `etapa` com o `lead_id` que veio na ação, etapa "descartado" e a nota
+   ("parado há N dias", "perfil de outro negócio" ou "N seguidores"). Isso já encerra a visita (não precisa de
+   `resultado`). Se passar, siga em frente e diga no detalhe a data do último post.
    **Descartou? Vem o próximo:** chame `proxima` de novo na hora. A vaga do dia não se perde: a ferramenta repõe
    com o melhor lead novo da fila (seguir e curtir, sem comentário). Descarte não conta nas 3 ações da rodada.
 3. **Seguir:** botão "Seguir". Se já diz "Seguindo", está ok.

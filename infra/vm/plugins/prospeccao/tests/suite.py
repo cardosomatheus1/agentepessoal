@@ -528,6 +528,25 @@ class Suite:
         out = f.enriquecer(LOGIN, p, 10)
         ok(len(chamadas) > n, "no dia seguinte o teto zera")
 
+    def t_descarte_na_visita_pelo_id_da_acao(self):
+        # 12/10: the visit found an inactive profile; the agent passed the warm-up's id to discard the lead, was
+        # refused and stopped the round with «PRECISA DE VOCÊ»
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._lead("parado1")
+        aid = p.propor(LOGIN, [{"lead_id": lid, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aid, "aprovar")
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+        p.salvar(LOGIN, d)
+        x, _ = p.proxima(LOGIN, "raizconnect")
+        eq(x["id"], aid, "a visita sai")
+        lead = p.mudar_etapa(LOGIN, aid, "descartado", "parado há 150 dias")
+        ok(lead and lead["id"] == lid and lead["etapa"] == "descartado", f"o id da ação leva ao lead dela: {lead}")
+        eq(next(y for y in p.carregar(LOGIN)["acoes"] if y["id"] == aid)["estado"], "cancelada", "descartar encerra a visita")
+        ok(p.resultado(LOGIN, aid, False, "parado") is None, "resultado depois do descarte não muda nada")
+        ok(p.mudar_etapa(LOGIN, "naoexiste", "descartado", "x") is None, "id desconhecido continua recusado")
+
     def t_resposta_apagada_libera_uma_nova(self):
         p = self.p
         self.em(self.hora(10))
