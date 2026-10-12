@@ -11,7 +11,10 @@
       "Bash(python3 infra/operador/resumo_novo.py:*)",
       "Bash(python3 infra/vm/plugins/prospeccao/rodadas.py:*)",
       "Bash(aws s3 cp:*)",
-      "Bash(aws sts get-caller-identity:*)"
+      "Bash(aws sts get-caller-identity:*)",
+      "Bash(python3 infra/operador/tarefa_atualizar.py:*)",
+      "Bash(python3 infra/operador/implantar.py:*)",
+      "Bash(python3 infra/operador/apagar_chat.py:*)"
     ]
   }
 }
