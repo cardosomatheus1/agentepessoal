@@ -2033,16 +2033,22 @@ def ids_do_pacote(login: str, pid: str) -> list:
     return (carregar(login).get("pacotes") or {}).get(pid, {}).get("ids", [])
 
 
-def enviar(login: str, texto: str, botoes: list | None = None, tipo: str = "progresso", ponte=None) -> str:
-    """Phone message; in test mode it is recorded instead (no third party is ever involved here — it is the owner's
-    phone — but tests must not buzz it)."""
+def enviar(login: str, texto: str, botoes: list | None = None, tipo: str = "progresso", ponte=None, arquivo: str = "",
+           legenda: str = "") -> str:
+    """Phone message (or a file, e.g. the hot lead's card); in test mode it is recorded instead (no third party is
+    ever involved here — it is the owner's phone — but tests must not buzz it)."""
     if modo_teste(login):
         CAIXA_TESTES.parent.mkdir(parents=True, exist_ok=True)
         with CAIXA_TESTES.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"em": agora(), "usuario": _login(login), "texto": texto, "botoes": botoes or [],
-                                "tipo": tipo, "origem": "prospeccao"}, ensure_ascii=False) + "\n")
+                                "tipo": tipo, "origem": "prospeccao", "arquivo": arquivo, "legenda": legenda},
+                               ensure_ascii=False) + "\n")
         return ""
-    return ponte.enviar(login, texto, botoes=botoes, tipo=tipo) if ponte else "ponte indisponível"
+    if not ponte:
+        return "ponte indisponível"
+    if arquivo:
+        return ponte.enviar(login, texto, arquivo=arquivo, legenda=legenda, botoes=botoes, tipo=tipo)
+    return ponte.enviar(login, texto, botoes=botoes, tipo=tipo)
 
 
 # ------------------------------------------------------------------ numbers
@@ -2332,6 +2338,39 @@ def definir_crm(login: str, planilha: str) -> None:
     d = carregar(login)
     d["config"]["crm_planilha"] = str(planilha or "")
     salvar(login, d)
+
+
+def cartao_lead(login: str, lid: str) -> dict | None:
+    """The hot lead's card (12/10 review §7 item 3), one page for the person to take over well: who it is, what the
+    agent saw on the profile, the whole conversation (both sides, in order) and the next message suggested."""
+    d = carregar(login)
+    l = _lead(d, lid)
+    if not l:
+        return None
+    acoes = [a for a in d["acoes"] if a["lead_id"] == l["id"]]
+    pendente = next((a for a in reversed(acoes) if a["estado"] in ("proposta", "aprovada", "incerta")), None)
+    quando = lambda ts: dt.datetime.fromtimestamp(ts, _tz()).strftime("%d/%m %H:%M")  # noqa: E731
+    nosso = {"aquecer": "comentário da Raiz", "comentario": "comentário da Raiz", "dm_abertura": "Raiz no Direct",
+             "dm_lembrete": "Raiz no Direct (lembrete)", "resposta": "Raiz respondeu"}
+    conversa = []
+    for h in l["historico"]:
+        texto = " ".join(str(h.get("texto") or "").split())
+        if not texto:
+            continue
+        if h["tipo"] in nosso:
+            conversa.append({"quando": quando(h["em"]), "quem": nosso[h["tipo"]], "texto": texto[:300]})
+        elif h["tipo"].startswith("etapa:") and h["tipo"] not in ("etapa:descartado", "etapa:sem_resposta"):
+            onde = "no comentário" if h.get("onde") == "comentario" else "no Direct"
+            conversa.append({"quando": quando(h["em"]), "quem": f"{l.get('nome') or l['handle']} {onde}", "texto": texto[:300]})
+    vistos = [a["base"] for a in acoes if a.get("base") and not a["base"].startswith("reposição automática")]
+    return {"nome": str(l.get("nome") or l["handle"]), "handle": l["handle"], "url": l.get("url", ""),
+            "etapa": CRM_ETAPA.get(l["etapa"], l["etapa"]), "segmento": str(l.get("segmento") or ""),
+            "cidade": str(l.get("cidade") or ""), "seguidores": str(l.get("seguidores") or ""),
+            "nota": "" if l.get("nota") is None else str(l["nota"]), "fonte": origem(l),
+            "motivo": str(l.get("motivo") or "")[:400], "post_recente": str(l.get("post_recente") or "")[:200],
+            "vistos": [v[:250] for v in vistos[-3:]], "conversa": conversa[-8:],
+            "proxima": (pendente or {}).get("texto", "")[:500] if (pendente or {}).get("tipo") != "aquecer" else "",
+            "proximo_passo": _proximo_passo(l, pendente), "gerado": quando(agora())}
 
 
 def resumo_contexto(login: str) -> str:

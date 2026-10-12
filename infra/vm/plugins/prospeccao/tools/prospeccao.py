@@ -40,6 +40,28 @@ def pr():
     return _carregar("prospeccao_helper", RAIZ / "helpers" / "prospeccao.py")
 
 
+def cartao():
+    return _carregar("prospeccao_cartao", RAIZ / "helpers" / "cartao.py")
+
+
+async def mandar_cartao(login: str, lid: str) -> str:
+    """The hot lead's one-page card (12/10 review §7 item 3) to the phone; '' when it went, else why not."""
+    import time
+
+    p = pr()
+    dados = await asyncio.to_thread(p.cartao_lead, login, lid)
+    if not dados:
+        return "lead não encontrado"
+    c = cartao()
+    destino = c.PASTA / f"{dados['handle']}-{time.strftime('%Y%m%d-%H%M%S')}.pdf"
+    erro = await asyncio.to_thread(c.gerar_pdf, dados, destino)
+    if erro:
+        return erro
+    c.limpar_antigos(time.time())
+    return await asyncio.to_thread(p.enviar, login, "", None, "urgente", ponte(), str(destino),
+                                   f"📇 Cartão de {dados['nome']} (@{dados['handle']})")
+
+
 def fontes():
     return _carregar("prospeccao_fontes", RAIZ / "helpers" / "fontes.py")
 
@@ -389,7 +411,14 @@ class Prospeccao(Tool):
                          "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu. Se preferir "
                          "conversar você mesmo, toque em 🙋.\n" + lead["url"], p.botao_assumir(login, lead["id"]),
                          tipo="urgente", ponte=ponte())  # someone answered: tell him now (Telegram), even in quiet hours
+            if etapa in ("lead", "demo"):  # hot: the one-page card follows the notice
+                erro = await mandar_cartao(login, lead["id"])
+                if erro:
+                    print(f"prospeccao: cartão de @{lead['handle']} não saiu: {erro}", flush=True)
             return r(f"@{lead['handle']} agora está em {etapa}.")
+        if acao == "cartao":  # "me manda o cartão do @x"
+            erro = await mandar_cartao(login, lead_id)
+            return r(f"Não consegui mandar o cartão: {erro}" if erro else "Cartão enviado ao celular do Matheus.")
         if acao == "variante":  # A/B decided with the numbers, after the person agrees ("" = alternate again)
             v = await asyncio.to_thread(p.definir_variante, login, texto)
             return r(f"Primeira mensagem: só a variante {v} daqui em diante." if v else "Primeira mensagem: alternando A e B de novo.")

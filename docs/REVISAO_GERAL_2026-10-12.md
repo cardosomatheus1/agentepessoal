@@ -120,6 +120,7 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | Contas sem duplicar: a mesma conta vinda por e-mail e por foto (descrições diferentes) vira uma só — mesmo emissor, valor e vencimento, ou a mesma linha do boleto/Pix; fica o que já se sabia e só se completam as lacunas | ✅ | auxiliar |
 | Manhã numa mensagem só: os avisos guardados durante a noite esperam o resumo das 7h45 e vão dentro dele ("🌙 Da noite"); os que têm botão vêm logo depois, com o botão. Sem resumo até 8h30, ou se você já estiver escrevendo, saem como antes | ✅ | ponte + whatsapp |
 | Planilha **CRM Raiz** no seu Google Drive: todo dia às 20h30, os leads da prospecção (mais quentes primeiro) com etapa, fonte, nota, último contato, o que aconteceu e o próximo passo. Só para ver: quem manda é o registro. Escrita pelo conector Google do agente, sem modelo; o link aparece no `/painel` | ✅ | prospecção |
+| **Cartão do lead quente** (PDF de 1 página): quem é, o que se viu no perfil, a conversa dos dois lados e a próxima mensagem sugerida. Chega logo depois do aviso quando alguém vira lead ou topa conversar; também sob pedido ("me manda o cartão do @x") | ✅ | prospecção |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |

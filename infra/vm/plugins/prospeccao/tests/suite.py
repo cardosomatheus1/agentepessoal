@@ -11,7 +11,9 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import sys
+import tempfile
 import time
 import traceback
 from pathlib import Path
@@ -1882,6 +1884,40 @@ class Suite:
         eq(m["geral"]["leads"], 1, "1 lead")
         eq(m["por_variante"]["A"]["taxa_resposta"], 50.0, "A: 50%")
         eq(m["por_variante"]["B"]["taxa_resposta"], 100.0, "B: 100%")
+
+    def t_cartao_lead(self):
+        """12/10 review §7 item 3: the hot lead's one-page card — both sides of the conversation, in order."""
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("cartao1")
+        self._executar(lid, "dm_abertura", TEXTOS[0].format(n="Ana"), "A")
+        self.em(self.relogio + 3600)
+        p.mudar_etapa(LOGIN, lid, "lead", "quero a calculadora, como funciona?", "direct")
+        dados = p.cartao_lead(LOGIN, "@cartao1")
+        eq([c["quem"] for c in dados["conversa"]], ["Raiz no Direct", "Marmitas da Ana no Direct"], "os dois lados, em ordem")
+        eq(dados["conversa"][-1]["texto"], "quero a calculadora, como funciona?", "o que a pessoa disse")
+        eq((dados["etapa"], dados["handle"]), ("lead", "cartao1"), "etapa e @")
+        ok(dados["proximo_passo"] and dados["motivo"], f"próximo passo e por que encaixa: {dados}")
+        eq(p.cartao_lead(LOGIN, "naoexiste"), None, "lead que não existe")
+        if not shutil.which("soffice"):  # the PDF itself only where LibreOffice is (the agent container)
+            return
+        spec = importlib.util.spec_from_file_location("prospeccao_cartao_teste", RAIZ / "helpers" / "cartao.py")
+        c = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(c)
+        pasta = Path(tempfile.mkdtemp(prefix="cartao-"))
+        try:
+            longo = {**dados, "motivo": "m" * 400, "vistos": ["v" * 250] * 3,
+                     "conversa": [{"quando": "12/10 10:00", "quem": "Raiz no Direct", "texto": "palavra " * 37}] * 8,
+                     "proxima": "Oi, Ana! " * 30}
+            for nome, d_ in (("normal", dados), ("cheio", longo)):
+                destino = pasta / f"{nome}.pdf"
+                eq(c.gerar_pdf(d_, destino), "", f"PDF {nome} gerado")
+                ok(destino.read_bytes()[:4] == b"%PDF", "é PDF")
+                from pypdf import PdfReader
+
+                eq(len(PdfReader(str(destino)).pages), 1, f"cartão {nome} cabe em 1 página")
+        finally:
+            shutil.rmtree(pasta, ignore_errors=True)
 
     async def t_crm_planilha(self):
         """12/10 review §5.2 item 10: the "CRM Raiz" sheet, a daily view of the register."""
