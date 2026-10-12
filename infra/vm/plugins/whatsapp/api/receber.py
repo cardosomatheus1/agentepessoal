@@ -267,6 +267,8 @@ AJUDA = """*Comandos*
 /atividade — últimas ações importantes (aprovadas, bloqueadas, recusadas)
 /gasto — quanto o agente gastou hoje e no mês
 /painel — tudo numa tela: o que está fazendo, o que espera de você, tarefas agendadas e gasto
+/livro — o que o agente fez hoje (DMs, comentários, seguir e curtir), do registro que não se altera
+/decisoes — as suas decisões em vigor (o agente segue sem perguntar de novo)
 /senha NOME valor — guarda uma senha no seu cofre (o agente nunca vê; a mensagem é apagada)
 /silencio 23-7 — horário de silêncio: avisos de progresso esperam até de manhã (/silencio off desliga)
 Áudio, foto e arquivo também valem. Os botões Aprovar/Recusar respondem pedidos de aprovação."""

@@ -588,6 +588,70 @@ def texto_painel(usuario: str) -> str:
     return "📊 *Painel*\n\n" + corpo + "\n\n" + texto_gasto()
 
 
+DECISOES = USR_HOST / "memoria" / "decisoes"  # plugins/memoria_pessoal (helpers/decisoes.py)
+LIVRO = USR_HOST / "central" / "agente.db"  # plugins/central (helpers/livro.py)
+ROTULO_TIPO = {"proibicao": "🚫", "permissao": "✅", "decisao": "📌", "preferencia": "💬"}
+ROTULO_VERBO = {"dm": "💬 DM", "comentario": "🗨️ comentário", "seguir_curtir": "➕ seguir e curtir", "aviso": "📣 aviso"}
+
+
+def _login_arquivo(usuario: str) -> str:
+    return re.sub(r"[^a-z0-9_.-]", "", (usuario or "").lower()) or "matheus"
+
+
+def texto_decisoes(usuario: str, agora: float | None = None) -> str:
+    """/decisoes: the decisions in force, straight from the register (no model; the file is replaced whole)."""
+    agora = agora or time.time()
+    try:
+        dados = json.loads((DECISOES / f"{_login_arquivo(usuario)}.json").read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return "📋 Nenhuma decisão registrada ainda."
+    except (OSError, ValueError):
+        return "Não consegui ler o registro de decisões agora. Tente de novo em 1 minuto."
+    vivas = [x for x in dados.get("decisoes", []) if x.get("estado") == "ativa"
+             and not (x.get("valido_ate") and x["valido_ate"] < agora)]
+    if not vivas:
+        return "📋 Nenhuma decisão em vigor."
+    ordem = list(ROTULO_TIPO)
+    vivas.sort(key=lambda x: (ordem.index(x["tipo"]) if x.get("tipo") in ordem else 9, x.get("tema", "")))
+    linhas = [f"{ROTULO_TIPO.get(x.get('tipo'), '📌')} #{x['id']} {x['valor']}" for x in vivas]
+    return ("📋 *Suas decisões em vigor* (o agente segue sem perguntar)\n\n" + "\n".join(linhas)[:3500]
+            + "\n\nPara mudar ou desfazer uma, diga ao agente (ex.: \"revoga a 7\").")
+
+
+def texto_livro(usuario: str, agora: float | None = None) -> str:
+    """/livro: what the agent did today, from the action ledger (read-only; no model)."""
+    import sqlite3
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    if not LIVRO.exists():
+        return "📒 O livro de ações ainda está vazio."
+    fuso = ZoneInfo("America/Bahia")
+    inicio = datetime.fromtimestamp(agora or time.time(), fuso).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+    try:
+        con = sqlite3.connect(f"file:{LIVRO}?mode=ro", uri=True, timeout=5)
+        try:
+            linhas = con.execute("SELECT em, fase, verbo, alvo, conteudo_previa, resultado FROM acao WHERE login = ? AND em >= ? "
+                                 "AND fase IN ('executada','falhou','cancelada','divergente') ORDER BY em",
+                                 (_login_arquivo(usuario), inicio)).fetchall()
+        finally:
+            con.close()
+    except sqlite3.Error:
+        return "Não consegui ler o livro de ações agora. Tente de novo em 1 minuto."
+    if not linhas:
+        return "📒 *Livro de hoje*: nada registrado ainda."
+    contagem: dict = {}
+    for _, fase, verbo, *_ in linhas:
+        contagem[(verbo, fase)] = contagem.get((verbo, fase), 0) + 1
+    topo = " · ".join(f"{ROTULO_VERBO.get(v, v)}: {n}" + ("" if f == "executada" else f" ({f})")
+                      for (v, f), n in sorted(contagem.items()))
+    detalhe = [f"{datetime.fromtimestamp(em, fuso).strftime('%H:%M')} {ROTULO_VERBO.get(verbo, verbo)} "
+               f"{alvo.split(':', 1)[-1]}" + ("" if fase == "executada" else f" — {fase}: {(resultado or '')[:60]}")
+               + (f" «{previa[:60]}»" if previa and fase == "executada" else "")
+               for em, fase, verbo, alvo, previa, resultado in linhas[-15:]]
+    return f"📒 *Livro de hoje* (registrado na hora; não se altera)\n{topo}\n\n" + "\n".join(detalhe)
+
+
 def texto_gasto() -> str:
     hoje, mes = gasto()
     limite = float(cfg().get("limite_dia_usd") or LIMITE_DIA_PADRAO)
@@ -722,6 +786,10 @@ def ciclo_entrada() -> None:
                         tg_texto(item["chat"], resposta_cofre)
                     elif (msg.get("text") or "").strip().lower() == "/gasto":
                         tg_texto(item["chat"], texto_gasto())
+                    elif (msg.get("text") or "").strip().lower().split("@")[0] in ("/decisoes", "/decisões"):
+                        tg_texto(item["chat"], texto_decisoes(item["usuario"]))
+                    elif (msg.get("text") or "").strip().lower().split("@")[0] == "/livro":
+                        tg_texto(item["chat"], texto_livro(item["usuario"]))
                     elif (msg.get("text") or "").strip().lower().split("@")[0] in ("/painel", "/status"):
                         tg_texto(item["chat"], texto_painel(item["usuario"]))
                     else:
@@ -773,6 +841,13 @@ def ciclo_entrada() -> None:
                     continue
                 if (item["mensagem"].get("text") or {}).get("body", "").strip().lower() == "/gasto":
                     enviar_texto(item["numero"], texto_gasto())  # answered here: the usage log is on the host
+                    _lembrar(mid)
+                    sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+                    continue
+                comando = (item["mensagem"].get("text") or {}).get("body", "").strip().lower()
+                if comando in ("/decisoes", "/decisões", "/livro"):  # answered here, from the files (no model)
+                    enviar_texto(item["numero"], texto_livro(item["usuario"]) if comando == "/livro"
+                                 else texto_decisoes(item["usuario"]))
                     _lembrar(mid)
                     sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
                     continue
