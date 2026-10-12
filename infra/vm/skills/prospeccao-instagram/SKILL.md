@@ -75,9 +75,9 @@ precisa dele (bloqueio, verificação, conta, erro), em até 3 linhas.
 1. Em https://www.instagram.com/, leia o link "Perfil" do menu lateral: ele tem de apontar para
    https://www.instagram.com/raiz.connect/. Se não der para ler, abra https://www.instagram.com/accounts/edit/ e leia
    o nome de usuário.
-2. Outra conta ativa: "Mais" (≡) ou a foto do perfil → **Trocar de conta** → `raiz.connect` (já está adicionada, não
-   pede senha). Confira de novo.
-3. `raiz.connect` não aparece, ou pede senha ou código: pare com "PRECISA DE VOCÊ: a conta da Raiz saiu do navegador".
+2. Este navegador só tem a @raiz.connect (a conta pessoal do Matheus foi tirada dele em 12/10). Nunca troque de
+   conta nem entre em outra: outra conta ativa, tela de login, senha ou código → pare com "PRECISA DE VOCÊ: o
+   navegador não está na @raiz.connect".
 
 ## 2. Ler respostas (toda rodada de execução, antes de agir)
 

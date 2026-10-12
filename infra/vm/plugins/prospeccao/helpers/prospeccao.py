@@ -2089,7 +2089,7 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
     if not esperada:
         return None, "a conta de Instagram da prospecção não está configurada: nada é executado"
     if ativa in CONTAS_PROIBIDAS:
-        return None, f"a conta ativa é @{ativa} (pessoal): troque para @{esperada} (skill, seção 1) e chame de novo"
+        return None, f"a conta ativa é @{ativa} (pessoal): não troque nem execute nada; termine com PRECISA DE VOCÊ (skill, seção 1)"
     if ativa != esperada:
         return None, (f"confirme a conta ATIVA no Instagram (skill, seção 1) e chame `proxima` com conta_ativa; tem que "
                       f"ser @{esperada}")
