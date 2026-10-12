@@ -7,15 +7,18 @@ import asyncio
 import datetime as dt
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
+import threading
 import time
 import traceback
 from pathlib import Path
 
 LOGIN = "teste_aux"
 OUTRO = "teste_outro"
+SO_NO_AGENTE = ("t_reuniao_agenda_e_reagenda", "t_reuniao_casos_de_borda")  # they use the live scheduler
 CAIXA = Path("/a0/usr/testes/celular.jsonl")
 RAIZ = Path(__file__).resolve().parents[1]
 
@@ -68,8 +71,13 @@ class Suite:
             shutil.rmtree(pasta, ignore_errors=True)
 
     async def rodar(self, so: str = "") -> dict:
+        # implantar.py runs this on a staging copy in a separate process (ESTAGIO=1): the tests that create tasks in the
+        # scheduler would make that process a second writer of the live tasks.json, so they only run inside the agent
+        # (infra/operador/rodar_testes.py → /plugins/auxiliar/testar)
+        estagio = bool(os.environ.get("ESTAGIO"))
         self.limpar()
-        testes = [(n, getattr(self, n)) for n in sorted(dir(self)) if n.startswith("t_") and (not so or so in n)]
+        testes = [(n, getattr(self, n)) for n in sorted(dir(self)) if n.startswith("t_") and (not so or so in n)
+                  and not (estagio and n in SO_NO_AGENTE)]
         for nome, f in testes:
             self.limpar()  # every test starts from an empty record
             inicio = time.time()
@@ -81,7 +89,8 @@ class Suite:
             except Exception as exc:
                 self.resultados.append({"teste": nome, "ok": False, "erro": f"{type(exc).__name__}: {exc}",
                                         "onde": traceback.format_exc().splitlines()[-3:], "s": round(time.time() - inicio, 2)})
-        await self._limpar_tarefas()
+        if not estagio:
+            await self._limpar_tarefas()
         self.limpar()
         passou = sum(r["ok"] for r in self.resultados)
         return {"passou": passou, "total": len(self.resultados), "resultados": self.resultados}
@@ -287,6 +296,37 @@ class Suite:
         pos = [t for t in self._tarefas("TESTE_AUX Sem fim") if t.name.startswith("📝")][0]
         eq(pos.plan.todo[0], ini + dt.timedelta(minutes=70), "fim inválido vira 1 h")
         await self._limpar_tarefas()
+
+    def t_estado_ilegivel_nao_vira_vazio(self):
+        # 12/10 review: an unreadable file was read as empty and the next save wiped bills, drafts and meetings
+        a = self.a
+        a.salvar_conta(LOGIN, "Luz", "2030-01-10", "120,00")
+        arq = a.PASTA / f"{LOGIN}.json"
+        arq.write_text('{"contas": [{"descricao": "Lu', encoding="utf-8")
+        try:
+            a.salvar_conta(LOGIN, "Água", "2030-01-11", "55,10")
+            raise Falha("gravar por cima de um arquivo ilegível devia dar erro")
+        except a.EstadoIlegivel:
+            pass
+        eq(arq.read_text(encoding="utf-8"), '{"contas": [{"descricao": "Lu', "o arquivo não foi sobrescrito")
+        ok(not list(a.PASTA.glob(f".{LOGIN}.*.tmp")), "nenhum temporário largado")
+
+    def t_gravacoes_simultaneas_nao_se_apagam(self):
+        a = self.a
+        erros = []
+
+        def gravar(prefixo):
+            try:
+                for i in range(10):
+                    a.salvar_conta(LOGIN, f"Conta {prefixo} {i}", "2030-02-01", "10")
+            except Exception as exc:  # pragma: no cover
+                erros.append(repr(exc))
+
+        fios = [threading.Thread(target=gravar, args=(p,)) for p in ("a", "b", "c")]
+        [x.start() for x in fios]
+        [x.join() for x in fios]
+        eq(erros, [], "sem erro")
+        eq(len(a.carregar(LOGIN)["contas"]), 30, "as 30 contas ficaram (nenhuma gravação apagou a outra)")
 
     def t_reuniao_pos_pendente(self):
         a = self.a

@@ -1,12 +1,18 @@
 """Initiative: unprompted messages the agent decides to send after looking at everything going on (an idea,
 work done ahead, a relevant find, a pattern), with a daily cap and learning from the person's reactions."""
 
+import fcntl
+import functools
 import importlib.util
 import json
+import os
 import re
 import sys
+import tempfile
+import threading
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 PASTA = Path("/a0/usr/iniciativa")
@@ -23,21 +29,98 @@ def arquivo(login: str) -> Path:
     return PASTA / f"{_login(login)}.json"
 
 
+# ------------------------------------------------------------------ safe state file
+# 12/10 review: an unreadable file was read as empty, so the daily cap and the learned preferences ("não me manda
+# isso") vanished on the next save; two writers could overwrite each other. Now: one writer at a time per person (a
+# short file lock, never held during the reviewer call), the file replaced whole, and unreadable = stop.
+ESPERA_TRAVA = 30  # seconds; writes take milliseconds
+_DONO = threading.local()
+
+
+class EstadoIlegivel(RuntimeError):
+    pass
+
+
+@contextmanager
+def _exclusivo(login: str):
+    """One writer at a time per person, across threads and processes; re-entrant in the same thread."""
+    chave = _login(login)
+    travas = getattr(_DONO, "travas", None)
+    if travas is None:
+        travas = _DONO.travas = {}
+    if travas.get(chave):
+        travas[chave] += 1
+        try:
+            yield
+        finally:
+            travas[chave] -= 1
+        return
+    PASTA.mkdir(parents=True, exist_ok=True)
+    with open(PASTA / f"{chave}.lock", "a") as fh:
+        limite = time.time() + ESPERA_TRAVA
+        while True:
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.time() > limite:
+                    raise RuntimeError("a iniciativa está ocupada gravando há mais de 30 s; tente de novo") from None
+                time.sleep(0.05)
+        travas[chave] = 1
+        try:
+            yield
+        finally:
+            travas[chave] = 0
+            fcntl.flock(fh, fcntl.LOCK_UN)
+
+
+def _transacao(fn):
+    """Load → change → save as one step for the person in the first argument."""
+    @functools.wraps(fn)
+    def envolta(login, *args, **kwargs):
+        with _exclusivo(login):
+            return fn(login, *args, **kwargs)
+    return envolta
+
+
 def carregar(login: str) -> dict:
-    try:
-        d = json.loads(arquivo(login).read_text(encoding="utf-8"))
-    except Exception:
-        d = {}
+    arq = arquivo(login)
+    d = {}
+    if arq.exists():
+        for tentativa in range(3):
+            try:
+                d = json.loads(arq.read_text(encoding="utf-8"))
+                if not isinstance(d, dict):
+                    raise ValueError("não é um objeto JSON")
+                break
+            except (OSError, ValueError) as exc:
+                if tentativa == 2:
+                    raise EstadoIlegivel(f"o arquivo da iniciativa ({arq.name}) não pôde ser lido ({str(exc)[:60]}); "
+                                         "nada foi gravado") from None
+                time.sleep(0.1)
     d.setdefault("enviadas", [])
     d.setdefault("aprendizados", [])
     return d
 
 
 def salvar(login: str, d: dict) -> None:
-    PASTA.mkdir(parents=True, exist_ok=True)
-    d["enviadas"] = d["enviadas"][-200:]
-    d["aprendizados"] = d["aprendizados"][-40:]
-    arquivo(login).write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+    with _exclusivo(login):
+        d["enviadas"] = d["enviadas"][-200:]
+        d["aprendizados"] = d["aprendizados"][-40:]
+        fd, tmp = tempfile.mkstemp(dir=PASTA, prefix=f".{_login(login)}.", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(d, f, ensure_ascii=False, indent=1)
+                f.flush()
+                os.fsync(f.fileno())
+            os.chmod(tmp, 0o644)
+            os.replace(tmp, arquivo(login))
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
 
 
 def pode_enviar(login: str) -> tuple[bool, str]:
@@ -61,6 +144,7 @@ def nota_minima(login: str) -> int:
     return 3 if nenhuma_hoje and time.localtime().tm_hour >= 13 else 4
 
 
+@_transacao
 def avaliar(login: str, candidatos: list) -> str:
     """Record what the round thought of and say which one (if any) is worth sending."""
     d = carregar(login)
@@ -155,6 +239,7 @@ def revisar(login: str, titulo: str, texto: str, tipo: str, arquivo_texto: str =
             "titulo": str(res.get("titulo") or "").strip()[:80], "texto": str(res.get("texto") or "").strip()[:1500]}
 
 
+@_transacao
 def descartada(login: str, titulo: str, motivo: str) -> None:
     d = carregar(login)
     d.setdefault("descartadas", []).append({"quando": time.time(), "titulo": titulo[:120], "motivo": motivo[:300]})
@@ -162,6 +247,7 @@ def descartada(login: str, titulo: str, motivo: str) -> None:
     salvar(login, d)
 
 
+@_transacao
 def registrar(login: str, titulo: str, texto: str, tipo: str) -> str:
     d = carregar(login)
     iid = uuid.uuid4().hex[:6]
@@ -171,6 +257,7 @@ def registrar(login: str, titulo: str, texto: str, tipo: str) -> str:
     return iid
 
 
+@_transacao
 def reagir(login: str, iid: str, reacao: str) -> dict | None:
     d = carregar(login)
     item = next((e for e in d["enviadas"] if e["id"] == iid), None)
@@ -181,6 +268,7 @@ def reagir(login: str, iid: str, reacao: str) -> dict | None:
     return item
 
 
+@_transacao
 def aprender(login: str, texto: str) -> None:
     d = carregar(login)
     texto = re.sub(r"\s+", " ", texto).strip()[:300]

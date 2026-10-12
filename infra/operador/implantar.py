@@ -132,7 +132,8 @@ def main() -> None:
     # 3. staging copy + tests, then swap
     estagio = f"/tmp/implantar-{plugin}"
     teste = (f"docker cp {estagio}/{caminho} agent-zero:/tmp/estagio-{plugin} && "
-             f"docker exec agent-zero sh -c 'cd /a0 && /opt/venv-a0/bin/python - <<\"PY\"\n"
+             # ESTAGIO=1: suites skip what only runs inside the agent (e.g. tests that write the live scheduler)
+             f"docker exec -e ESTAGIO=1 agent-zero sh -c 'cd /a0 && /opt/venv-a0/bin/python - <<\"PY\"\n"
              "import asyncio, importlib.util\n"
              f"s = importlib.util.spec_from_file_location(\"estagio\", \"/tmp/estagio-{plugin}/tests/suite.py\")\n"
              "m = importlib.util.module_from_spec(s); s.loader.exec_module(m)\n"

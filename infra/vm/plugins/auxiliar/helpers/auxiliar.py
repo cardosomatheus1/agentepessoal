@@ -2,11 +2,17 @@
 bills and due dates, and the morning summary as a voice note. State lives in /a0/usr/auxiliar/<login>.json."""
 
 import datetime as dt
+import fcntl
+import functools
 import json
+import os
 import re
 import subprocess
+import tempfile
+import threading
 import time
 import uuid
+from contextlib import contextmanager
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -24,11 +30,75 @@ def _id() -> str:
     return uuid.uuid4().hex[:6]
 
 
+# ------------------------------------------------------------------ safe state file
+# 12/10 review: an unreadable file was read as empty, so the next save wiped bills, drafts and meetings (and their
+# reminders); writers shared one temporary name and could overwrite each other. Now: one writer at a time per person
+# (a short file lock, never held across an await), a unique temporary file flushed to disk, and unreadable = stop.
+ESPERA_TRAVA = 30  # seconds; writes take milliseconds
+_DONO = threading.local()
+
+
+class EstadoIlegivel(RuntimeError):
+    pass
+
+
+@contextmanager
+def _exclusivo(login: str):
+    """One writer at a time per person, across threads and processes; re-entrant in the same thread."""
+    chave = _login(login)
+    travas = getattr(_DONO, "travas", None)
+    if travas is None:
+        travas = _DONO.travas = {}
+    if travas.get(chave):
+        travas[chave] += 1
+        try:
+            yield
+        finally:
+            travas[chave] -= 1
+        return
+    PASTA.mkdir(parents=True, exist_ok=True)
+    with open(PASTA / f"{chave}.lock", "a") as fh:
+        limite = time.time() + ESPERA_TRAVA
+        while True:
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.time() > limite:
+                    raise RuntimeError("o auxiliar está ocupado gravando há mais de 30 s; tente de novo") from None
+                time.sleep(0.05)
+        travas[chave] = 1
+        try:
+            yield
+        finally:
+            travas[chave] = 0
+            fcntl.flock(fh, fcntl.LOCK_UN)
+
+
+def _transacao(fn):
+    """Load → change → save as one step for the person in the first argument (sync functions only)."""
+    @functools.wraps(fn)
+    def envolta(login, *args, **kwargs):
+        with _exclusivo(login):
+            return fn(login, *args, **kwargs)
+    return envolta
+
+
 def carregar(login: str) -> dict:
-    try:
-        d = json.loads((PASTA / f"{_login(login)}.json").read_text(encoding="utf-8"))
-    except Exception:
-        d = {}
+    arq = PASTA / f"{_login(login)}.json"
+    d = {}
+    if arq.exists():
+        for tentativa in range(3):
+            try:
+                d = json.loads(arq.read_text(encoding="utf-8"))
+                if not isinstance(d, dict):
+                    raise ValueError("não é um objeto JSON")
+                break
+            except (OSError, ValueError) as exc:
+                if tentativa == 2:
+                    raise EstadoIlegivel(f"o arquivo do auxiliar ({arq.name}) não pôde ser lido ({str(exc)[:60]}); "
+                                         "nada foi gravado") from None
+                time.sleep(0.1)
     for chave in ("rascunhos", "contas", "reunioes"):
         d.setdefault(chave, [])
     d.setdefault("config", {})
@@ -36,15 +106,25 @@ def carregar(login: str) -> dict:
 
 
 def salvar(login: str, d: dict) -> None:
-    PASTA.mkdir(parents=True, exist_ok=True)
-    corte = time.time() - 45 * 86400
-    d["rascunhos"] = [r for r in d["rascunhos"] if r["criado"] > corte][-100:]
-    d["reunioes"] = [r for r in d["reunioes"] if r.get("fim_ts", 0) > corte][-100:]
-    d["contas"] = [c for c in d["contas"] if c["estado"] == "aberta" or c.get("fechada_em", 0) > corte][-200:]
-    alvo = PASTA / f"{_login(login)}.json"
-    tmp = alvo.with_suffix(".tmp")
-    tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
-    tmp.replace(alvo)
+    with _exclusivo(login):
+        corte = time.time() - 45 * 86400
+        d["rascunhos"] = [r for r in d["rascunhos"] if r["criado"] > corte][-100:]
+        d["reunioes"] = [r for r in d["reunioes"] if r.get("fim_ts", 0) > corte][-100:]
+        d["contas"] = [c for c in d["contas"] if c["estado"] == "aberta" or c.get("fechada_em", 0) > corte][-200:]
+        fd, tmp = tempfile.mkstemp(dir=PASTA, prefix=f".{_login(login)}.", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(d, f, ensure_ascii=False, indent=1)
+                f.flush()
+                os.fsync(f.fileno())
+            os.chmod(tmp, 0o644)
+            os.replace(tmp, PASTA / f"{_login(login)}.json")
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
 
 
 def _tz():
@@ -127,6 +207,7 @@ def ja_tratado(login: str, para: str, assunto: str) -> dict | None:
                  and r["estado"] != "substituido" and _chave(r["para"], r["assunto"]) == chave), None)
 
 
+@_transacao
 def novo_rascunho(login: str, para: str, assunto: str, texto: str, pedido: str = "", referencia: str = "") -> dict:
     d = carregar(login)
     chave = _chave(para, assunto)
@@ -145,6 +226,7 @@ def obter_rascunho(login: str, rid: str) -> dict | None:
     return next((r for r in carregar(login)["rascunhos"] if r["id"] == rid), None)
 
 
+@_transacao
 def marcar_rascunho(login: str, rid: str, estado: str) -> None:
     d = carregar(login)
     for r in d["rascunhos"]:
@@ -188,6 +270,7 @@ def _valor(valor) -> str:
         return ""
 
 
+@_transacao
 def salvar_conta(login: str, descricao: str, vencimento: str, valor="", moeda: str = "BRL", fonte: str = "",
                  cid: str = "") -> tuple[dict | None, str]:
     venc = _data(vencimento)
@@ -208,6 +291,7 @@ def salvar_conta(login: str, descricao: str, vencimento: str, valor="", moeda: s
     return conta, ""
 
 
+@_transacao
 def fechar_conta(login: str, cid: str, estado: str = "paga") -> bool:
     d = carregar(login)
     for c in d["contas"]:
@@ -218,6 +302,7 @@ def fechar_conta(login: str, cid: str, estado: str = "paga") -> bool:
     return False
 
 
+@_transacao
 def adiar_conta(login: str, cid: str) -> dict | None:
     d = carregar(login)
     for c in d["contas"]:
@@ -260,6 +345,7 @@ def contas_abertas(login: str, dias: int = 30) -> list[dict]:
                   key=lambda c: c["vencimento"])
 
 
+@_transacao
 def lembretes_de_contas(login: str) -> list[tuple[dict, str]]:
     """Bills to remind about now, once per stage: 3 days before, the day before, the day itself."""
     hoje = agora().date()
@@ -344,8 +430,10 @@ async def cancelar_reuniao(login: str, evento_id: str) -> str:
     if not r:
         return "Essa reunião não estava agendada."
     await _remover_tarefas(r)
-    d["reunioes"] = [x for x in d["reunioes"] if x is not r]
-    salvar(login, d)
+    with _exclusivo(login):  # re-read after the awaits: apply only this change to the current state
+        atual = carregar(login)
+        atual["reunioes"] = [x for x in atual["reunioes"] if x["evento_id"] != r["evento_id"]]
+        salvar(login, atual)
     return f"«{r['titulo']}» cancelada: briefing e pós-reunião removidos."
 
 
@@ -388,7 +476,10 @@ async def agendar_reuniao(login: str, evento_id: str, titulo: str, inicio: str, 
     await agendador.add_task(t)
     r["tarefa_pos"] = t.uuid
     feito.append(f"pergunta do pós às {(fim_dt + DEPOIS_DA_REUNIAO).astimezone(_tz()).strftime('%H:%M')}")
-    salvar(login, d)
+    with _exclusivo(login):  # re-read after the awaits: apply only this meeting to the current state
+        atual = carregar(login)
+        atual["reunioes"] = [x for x in atual["reunioes"] if x["evento_id"] != r["evento_id"]] + [r]
+        salvar(login, atual)
     await limpar_tarefas_antigas()
     return f"«{r['titulo']}»: " + " e ".join(feito) + "."
 
@@ -413,6 +504,7 @@ def pos_pendentes(login: str) -> list[dict]:
             and 0 < agora_ts - (r["fim_ts"] + DEPOIS_DA_REUNIAO.total_seconds()) < 86400]
 
 
+@_transacao
 def registrar_pos(login: str, evento_id: str) -> bool:
     d = carregar(login)
     for r in d["reunioes"]:

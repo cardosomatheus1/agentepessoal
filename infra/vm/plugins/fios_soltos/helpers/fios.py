@@ -2,10 +2,16 @@
 recent (chats, scheduled tasks, notices, goals, approvals, memory) for the model to cross-check."""
 
 import ast
+import fcntl
+import functools
 import json
+import os
 import re
+import tempfile
+import threading
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 PASTA = Path("/a0/usr/fios")
@@ -28,24 +34,102 @@ def arquivo(login: str) -> Path:
     return PASTA / f"{_login(login)}.json"
 
 
+# ------------------------------------------------------------------ safe state file
+# 12/10 review: an unreadable register was read as empty and the next save wiped every loose end (and the "ignored"
+# list, so dismissed subjects came back); two writers could overwrite each other. Now: one writer at a time per
+# person (a short file lock), the file replaced whole, and an unreadable file stops the change instead.
+ESPERA_TRAVA = 30  # seconds; writes take milliseconds
+_DONO = threading.local()
+
+
+class EstadoIlegivel(RuntimeError):
+    pass
+
+
+@contextmanager
+def _exclusivo(login: str):
+    """One writer at a time per person, across threads and processes; re-entrant in the same thread."""
+    chave = _login(login)
+    travas = getattr(_DONO, "travas", None)
+    if travas is None:
+        travas = _DONO.travas = {}
+    if travas.get(chave):
+        travas[chave] += 1
+        try:
+            yield
+        finally:
+            travas[chave] -= 1
+        return
+    PASTA.mkdir(parents=True, exist_ok=True)
+    with open(PASTA / f"{chave}.lock", "a") as fh:
+        limite = time.time() + ESPERA_TRAVA
+        while True:
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.time() > limite:
+                    raise RuntimeError("o registro de fios está ocupado há mais de 30 s; tente de novo") from None
+                time.sleep(0.05)
+        travas[chave] = 1
+        try:
+            yield
+        finally:
+            travas[chave] = 0
+            fcntl.flock(fh, fcntl.LOCK_UN)
+
+
+def _transacao(fn):
+    """Load → change → save as one step for the person in the first argument."""
+    @functools.wraps(fn)
+    def envolta(login, *args, **kwargs):
+        with _exclusivo(login):
+            return fn(login, *args, **kwargs)
+    return envolta
+
+
 def carregar(login: str) -> dict:
-    try:
-        dados = json.loads(arquivo(login).read_text(encoding="utf-8"))
-        dados.setdefault("fios", [])
-        return dados
-    except Exception:
-        return {"fios": []}
+    arq = arquivo(login)
+    dados = {}
+    if arq.exists():
+        for tentativa in range(3):
+            try:
+                dados = json.loads(arq.read_text(encoding="utf-8"))
+                if not isinstance(dados, dict):
+                    raise ValueError("não é um objeto JSON")
+                break
+            except (OSError, ValueError) as exc:
+                if tentativa == 2:
+                    raise EstadoIlegivel(f"o registro de fios ({arq.name}) não pôde ser lido ({str(exc)[:60]}); "
+                                         "nada foi gravado") from None
+                time.sleep(0.1)
+    dados.setdefault("fios", [])
+    return dados
 
 
 def salvar(login: str, dados: dict) -> None:
-    PASTA.mkdir(parents=True, exist_ok=True)
-    agora = time.time()
-    # resolved/ignored ones are kept 14 days, so a later round does not recreate them
-    dados["fios"] = [f for f in dados.get("fios", [])
-                     if f.get("estado", "aberto") in ("aberto", "adiado") or agora - f.get("atualizado", agora) < 14 * 86400]
-    arquivo(login).write_text(json.dumps(dados, ensure_ascii=False, indent=1), encoding="utf-8")
+    with _exclusivo(login):
+        agora = time.time()
+        # resolved/ignored ones are kept 14 days, so a later round does not recreate them
+        dados["fios"] = [f for f in dados.get("fios", [])
+                         if f.get("estado", "aberto") in ("aberto", "adiado") or agora - f.get("atualizado", agora) < 14 * 86400]
+        fd, tmp = tempfile.mkstemp(dir=PASTA, prefix=f".{_login(login)}.", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(dados, f, ensure_ascii=False, indent=1)
+                f.flush()
+                os.fsync(f.fileno())
+            os.chmod(tmp, 0o644)
+            os.replace(tmp, arquivo(login))
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
 
 
+@_transacao
 def mesclar(login: str, novos: list, resolvidos: list | None = None) -> tuple[int, int, int]:
     dados = carregar(login)
     por_id = {f["id"]: f for f in dados["fios"] if f.get("id")}
@@ -74,6 +158,7 @@ def mesclar(login: str, novos: list, resolvidos: list | None = None) -> tuple[in
     return criados, atualizados, fechados
 
 
+@_transacao
 def ignorar(login: str, fid: str) -> dict | None:
     """The person tapped "Ignorar": close it and remember the subject as noise for later rounds."""
     dados = carregar(login)
@@ -86,6 +171,7 @@ def ignorar(login: str, fid: str) -> dict | None:
     return fio
 
 
+@_transacao
 def adiar(login: str, fid: str, dias: int = 1) -> dict | None:
     dados = carregar(login)
     fio = next((f for f in dados["fios"] if f.get("id") == fid), None)
