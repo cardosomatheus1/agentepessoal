@@ -25,6 +25,11 @@ BACKUP_MAX_H = 26
 RODANDO_MAX_H = 3
 HIBERNACAO_FALHOU = Path("/var/lib/agentepessoal/hibernacao_falhou")  # written by hibernate.sh
 BINDER = Path("/sys/module/binder_linux")  # the phone container needs it
+# 12/10 review: the backup said "done" but nobody ever restored from it. Every day these copies come back from S3 to a
+# temporary folder and must open (JSON parses, SQLite passes integrity_check) and keep up with the live file.
+CRITICOS = ("prospeccao/matheus.json", "memoria/decisoes/matheus.json", "scheduler/tasks.json", "central/agente.copia.db")
+USR = Path("/opt/a0/usr")
+ATRASO_MAX = 3 * 3600
 
 
 def _data(texto) -> dt.datetime | None:
@@ -89,6 +94,60 @@ def _cmd(*args: str) -> str:
         return ""
 
 
+def problema_da_copia(nome: str, local: Path, copia: Path | None, agora: float) -> str:
+    """What is wrong with one file restored from S3 ('' when it would restore fine)."""
+    import sqlite3
+
+    if copia is None or not copia.exists():
+        return f"backup: {nome} não está no S3"
+    try:
+        if nome.endswith(".db"):
+            con = sqlite3.connect(f"file:{copia}?mode=ro", uri=True)
+            try:
+                integro = con.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+            finally:
+                con.close()
+            if not integro:
+                return f"backup: a cópia de {nome} no S3 está corrompida"
+        else:
+            json.loads(copia.read_text(encoding="utf-8"))
+    except Exception:
+        return f"backup: a cópia de {nome} no S3 não abre"
+    try:
+        if agora - local.stat().st_mtime > ATRASO_MAX and local.read_bytes() != copia.read_bytes():
+            return f"backup: {nome} mudou há mais de 3 h e o S3 ainda tem a versão antiga"
+    except OSError:
+        pass
+    return ""
+
+
+def _bucket() -> str:
+    try:
+        for linha in Path("/etc/agentepessoal.env").read_text().splitlines():
+            if linha.startswith("BACKUP_BUCKET="):
+                return linha.split("=", 1)[1].strip().strip('"')
+    except OSError:
+        pass
+    return ""
+
+
+def conferir_backup() -> list[str]:
+    """Restore the critical files from S3 into a temporary folder and check each one."""
+    import tempfile
+
+    bucket = _bucket()
+    if not bucket:
+        return ["backup: não achei o nome do bucket em /etc/agentepessoal.env"]
+    problemas = []
+    with tempfile.TemporaryDirectory(prefix="saude-backup-") as tmp:
+        for nome in CRITICOS:
+            destino = Path(tmp) / nome.replace("/", "__")
+            _cmd("/usr/local/bin/aws", "s3", "cp", "--only-show-errors", f"s3://{bucket}/usr/{nome}", str(destino))
+            if p := problema_da_copia(nome, USR / nome, destino if destino.exists() else None, time.time()):
+                problemas.append(p)
+    return problemas
+
+
 def checar() -> list[str]:
     problemas = []
     uso = shutil.disk_usage("/")
@@ -113,6 +172,7 @@ def checar() -> list[str]:
             problemas.append("a hibernação falhou e a VM foi desligada: religou do zero, sem as conversas abertas")
     except OSError:
         pass
+    problemas += conferir_backup()
     feitos = _cmd("journalctl", "-t", "agentepessoal", "--since", f"-{BACKUP_MAX_H}h", "-o", "cat")
     if "backup to s3" not in feitos or " done" not in feitos:
         problemas.append(f"backup de hora em hora sem sucesso nas últimas {BACKUP_MAX_H} h")

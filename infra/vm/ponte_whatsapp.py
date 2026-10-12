@@ -45,8 +45,16 @@ ATIVIDADE = Path("/var/lib/agentepessoal/last-activity")
 LIMITE_TEXTO = 3800  # WhatsApp allows 4096 per message
 USO = Path("/var/lib/agentepessoal/uso.jsonl")  # every model call, written by bedrock_proxy
 ALERTA = Path("/var/lib/agentepessoal/alerta_gasto.json")
-# US$ per million tokens: input, cached input (1/10), output; cache writes cost 1.25x input
-PRECOS = {"sol": (2.20, 0.22, 11.0), "luna": (0.11, 0.011, 0.55)}
+# US$ per million tokens: input, cached input, output and, when known, cache writes (else 1.25x input).
+# 12/10 review: Haiku (the reviewers) and Nova were priced as Luna; their prices come from the AWS Pricing API
+# (Bedrock, us-east-1, 12/10). The first name contained in the model id wins; anything else is priced as Luna.
+PRECOS = {"sol": (2.20, 0.22, 11.0), "haiku": (0.55, 0.055, 2.75, 0.1375), "nova-pro": (0.80, 0.20, 1.60, 0.0),
+          "luna": (0.11, 0.011, 0.55)}
+
+
+def preco(modelo: str) -> tuple:
+    modelo = str(modelo or "").lower()
+    return next((v for k, v in PRECOS.items() if k in modelo), PRECOS["luna"])
 LIMITE_DIA_PADRAO = 15.0  # US$; cfg "limite_dia_usd" overrides
 
 ssm = boto3.client("ssm", region_name=REGION)
@@ -567,10 +575,12 @@ def gasto() -> tuple[float, float]:
             continue
         if (quando.year, quando.month) != (agora.year, agora.month):
             continue
-        p_in, p_cache, p_out = PRECOS["sol"] if "sol" in u.get("modelo", "") else PRECOS["luna"]
+        p = preco(u.get("modelo", ""))
+        p_in, p_cache, p_out = p[:3]
+        p_gravar = p[3] if len(p) > 3 else p_in * 1.25
         cache, gravado = u.get("cache", 0) or 0, u.get("cache_gravado", 0) or 0
         normal = max(0, (u.get("entrada", 0) or 0) - cache - gravado)
-        custo = (normal * p_in + cache * p_cache + gravado * p_in * 1.25 + (u.get("saida", 0) or 0) * p_out) / 1e6
+        custo = (normal * p_in + cache * p_cache + gravado * p_gravar + (u.get("saida", 0) or 0) * p_out) / 1e6
         mes += custo
         if quando.date() == agora.date():
             hoje += custo

@@ -52,6 +52,7 @@ def main() -> int:
     s._cmd = lambda *a: "true" if a[0] == "docker" else "backup to s3 ... done"
     s.shutil.disk_usage = lambda caminho: type("U", (), {"used": 10, "total": 100})()
     s.BINDER, s.HIBERNACAO_FALHOU = tmp / "sem_binder", tmp / "hibernacao_falhou"
+    s.conferir_backup = lambda: []  # restore check tested on its own below
     s.HIBERNACAO_FALHOU.touch()
     achados = s.checar()
     if not any("binder" in a for a in achados) or not any("hibernação falhou" in a for a in achados) or len(achados) != 2:
@@ -60,10 +61,37 @@ def main() -> int:
     s.HIBERNACAO_FALHOU.unlink()
     if s.checar():
         falhas.append(f"checar: tudo bem devia dar lista vazia: {s.checar()}")
+    # restore check: a copy from S3 must open and keep up with the live file
+    import json as _json
+    import os
+    import sqlite3
+
+    vivo, copia = tmp / "vivo.json", tmp / "copia.json"
+    vivo.write_text(_json.dumps({"a": 2}))
+    copia.write_text(_json.dumps({"a": 1}))
+    agora_s = __import__("time").time()
+    os.utime(vivo, (agora_s - 3600, agora_s - 3600))
+    if s.problema_da_copia("x.json", vivo, copia, agora_s):
+        falhas.append("backup: diferença de 1 h é atraso normal do backup de hora em hora")
+    os.utime(vivo, (agora_s - 5 * 3600, agora_s - 5 * 3600))
+    if "versão antiga" not in s.problema_da_copia("x.json", vivo, copia, agora_s):
+        falhas.append("backup: mudou há 5 h e o S3 não pegou deveria aparecer")
+    copia.write_text("{cortado")
+    if "não abre" not in s.problema_da_copia("x.json", vivo, copia, agora_s):
+        falhas.append("backup: JSON cortado no S3 deveria aparecer")
+    if "não está" not in s.problema_da_copia("x.json", vivo, None, agora_s):
+        falhas.append("backup: arquivo ausente no S3 deveria aparecer")
+    banco = tmp / "copia.db"
+    con = sqlite3.connect(banco)
+    con.execute("CREATE TABLE t (x)")
+    con.commit()
+    con.close()
+    if s.problema_da_copia("central/agente.copia.db", tmp / "nao_existe.db", banco, agora_s):
+        falhas.append("backup: banco íntegro no S3 não é problema")
     s.shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:
         print("FALHA", f)
-    print("TESTES", 4 - len(falhas), 4)
+    print("TESTES", 9 - len(falhas), 9)
     return 1 if falhas else 0
 
 
