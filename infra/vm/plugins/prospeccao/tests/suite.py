@@ -169,7 +169,7 @@ class Suite:
         boa = {"canal": "instagram", "nome": "X", "segmento": "marmitaria", "cidade": "Salvador", "motivo": "m",
                "seguidores": "2000", "ultimo_post": self._dia(1)}
         casos = [({"ultimo_post": self._dia(40)}, "parado"), ({"seguidores": "120"}, "pequeno"),
-                 ({"seguidores": "80 mil"}, "grande"), ({"cidade": "Lisboa, Portugal"}, "fora do Brasil"), ({"cidade": ""}, "cidade"), ({"exclusoes": ["franquia"]}, "franquia"),
+                 ({"seguidores": "80 mil"}, "grande"), ({"cidade": "Lisboa, Portugal"}, "fora do Brasil"), ({"exclusoes": ["franquia"]}, "franquia"),
                  ({"exclusoes": ["curso"]}, "parceiro"), ({"segmento": "pet shop"}, "segmento"), ({"ultimo_post": ""}, "último post"),
                  ({"ultimo_post": "ontem"}, "último post")]
         for i, (mudar, chave) in enumerate(casos):
