@@ -56,7 +56,8 @@ dia; comentário: `comentar`, até 2). `editar` troca o texto de uma ação apro
 
 **Execução** (minutos 8 e 38, das 9h08 às 12h38 e das 14h08 às 21h38): 1. a espera sorteada do prompt; 2. conta
 certa (seção 1); 3. `contexto`; 4. `playbook` (inteiro, sempre: a etapa e a resposta de cada fala dependem dele);
-5. ler respostas e `caixa_lida` (seção 2); 6. `proxima` até 3 ações feitas ou "NADA AGORA" (seção 3); 7. resposta final.
+5. ler respostas e `caixa_lida` (seção 2); 6. `proxima` até 3 ações feitas ou "NADA AGORA" (seção 3; respostas a quem
+escreveu saem primeiro e não contam nas 3); 7. resposta final. As seções 4 a 7 servem à busca e aos pedidos do Matheus.
 Depois das 20h e no domingo, a `proxima` só entrega respostas a quem escreveu, até 22h.
 
 **Busca** (8h07 e 13h07): 1. a espera sorteada; 2. conta certa; 3. `playbook` e `contexto`; 4. propor o que é devido
