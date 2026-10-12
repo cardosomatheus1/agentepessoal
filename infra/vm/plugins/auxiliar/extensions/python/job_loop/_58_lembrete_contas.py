@@ -39,7 +39,8 @@ class LembreteContas(Extension):
                 for conta, etapa in a.lembretes_de_contas(login):
                     erro = await asyncio.to_thread(ponte.enviar, login, a.mensagem_conta(conta, etapa), "", "",
                                                    a.botoes_conta(login, conta["id"]), "resposta")
-                    if erro:
-                        print(f"auxiliar: reminder for bill {conta['id']} not delivered: {erro}", flush=True)
+                    if erro:  # not delivered: unmarked, so the next pass tries again
+                        a.desfazer_lembrete(login, conta["id"], etapa)
+                        print(f"auxiliar: reminder for bill {conta['id']} not delivered (will retry): {erro}", flush=True)
         except Exception as exc:
             print(f"auxiliar: bill reminders failed: {exc}", flush=True)

@@ -366,6 +366,20 @@ def lembretes_de_contas(login: str) -> list[tuple[dict, str]]:
     return saida
 
 
+@_transacao
+def desfazer_lembrete(login: str, cid: str, etapa: str) -> bool:
+    """The reminder did not reach the phone: unmark it so the next pass (2 min) tries again (12/10 review: the stage
+    was marked before sending, so a failed send lost the reminder for good)."""
+    d = carregar(login)
+    for c in d["contas"]:
+        if c["id"] == cid and c["lembrada"].pop(etapa, None) is not None:
+            if etapa.startswith("adiado-"):
+                c["lembrar_em"] = etapa.split("adiado-", 1)[1]
+            salvar(login, d)
+            return True
+    return False
+
+
 def botoes_conta(login: str, cid: str) -> list:
     base = f"ct:{_login(login)}:{cid}"
     return [{"id": f"{base}:paga", "titulo": "✅ Já paguei"}, {"id": f"{base}:amanha", "titulo": "⏰ Amanhã"},

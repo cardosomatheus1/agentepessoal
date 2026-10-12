@@ -144,6 +144,10 @@ class Suite:
         vistos = {c["id"]: e for c, e in a.lembretes_de_contas(LOGIN)}
         eq(vistos, {k: v for k, v in esperado.items() if v}, "etapas de lembrete")
         eq(a.lembretes_de_contas(LOGIN), [], "segunda passada no mesmo dia não repete")
+        um = next(cid for cid, e in esperado.items() if e == "d1")
+        ok(a.desfazer_lembrete(LOGIN, um, "d1"), "envio falhou: desmarca")
+        eq([(c["id"], e) for c, e in a.lembretes_de_contas(LOGIN)], [(um, "d1")], "e a próxima passada tenta de novo só esse")
+        ok(not a.desfazer_lembrete(LOGIN, um, "d3"), "etapa que não foi marcada: nada a desfazer")
 
     def t_contas_adiar_e_fechar(self):
         a = self.a
