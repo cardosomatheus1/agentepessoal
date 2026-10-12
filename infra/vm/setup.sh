@@ -137,6 +137,13 @@ else
   docker restart agent-zero
 fi
 docker network connect phone agent-zero 2>/dev/null || true
+# 12/10 review: no container may take the whole VM (10/10 the agent's browser reached 11.8 GB and the VM froze for
+# 30 min). Past its limit the kernel ends a process inside that container (a browser tab, or the agent, which
+# supervisord restarts) and the rest of the VM keeps working; memguard.sh stays as the last line. Applied on every
+# setup, also to containers that already exist.
+docker update --memory 10g --memory-swap 10g agent-zero >/dev/null
+docker update --memory 3g --memory-swap 3g android >/dev/null 2>&1 || true
+docker update --memory 512m --memory-swap 512m ws-scrcpy >/dev/null 2>&1 || true
 # The agent's browser kept a "Save password?" bubble over every page (and every screen recording):
 # turn the password manager and autofill off with a Chromium managed policy (lives in the
 # container's /etc, so it is rewritten on every setup)

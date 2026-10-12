@@ -201,6 +201,9 @@ scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fic
   feito e falha real manda 1 aviso por dia. Snapshot diário do disco (AWS DLM `policy-02fbf93a68b2656da`, 14 dias).
 - **Vigia de memória** (`memguard.sh`): reinicia o contêiner que mais pesa (agente ou celular), no máximo 2×/hora, e
   avisa no Telegram.
+- **Limite de memória por contêiner** (`setup.sh`, `docker update`): agente 10 GB, celular 3 GB, tela 512 MB. Passou
+  do limite, o kernel encerra um processo dentro daquele contêiner (uma aba, ou o agente, que o supervisord religa) e
+  a VM não congela.
 - **Aprovações**: decisão só vale com o id do pedido.
 - **Limpeza/agenda**: rodada viva nunca é destravada nem duplicada; rodada pausada é retomada (ou cancelada se pausar
   de novo); limites ilegíveis nunca desligam rotina.
