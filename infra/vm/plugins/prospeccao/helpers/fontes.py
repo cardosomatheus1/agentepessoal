@@ -494,6 +494,7 @@ def enriquecer(login: str, p, limite: int = 20, origens: list | None = None) -> 
 
 APIFY = "https://api.apify.com/v2/acts"
 APIFY_USD_MES = 5.0
+PAUSA_APIFY = 30  # seconds before the second try
 PRECO_APIFY = {"apify~instagram-search-scraper": 0.0027, "apify~instagram-profile-scraper": 0.0026}  # per item, free plan
 PALAVRAS_INSTAGRAM = ("marmita fit", "marmitaria", "marmitas congeladas", "confeitaria", "bolo caseiro", "salgados",
                       "doces gourmet", "comida congelada")
@@ -508,13 +509,22 @@ def _apify_token() -> str:
 
 
 def _apify(ator: str, entrada: dict, max_usd: float) -> list:
-    """Runs an actor and returns its items (synchronous call: Apify waits up to 300 s)."""
+    """Runs an actor and returns its items (synchronous call: Apify waits up to 300 s). One more try after a refusal
+    (12/10: a 400 right after three runs in a row; the same call went through a minute later)."""
     url = f"{APIFY}/{ator}/run-sync-get-dataset-items?timeout=280&format=json&clean=true&maxTotalChargeUsd={max_usd:.2f}"
-    req = urllib.request.Request(url, data=json.dumps(entrada).encode(),
-                                 headers={"Content-Type": "application/json", "Authorization": f"Bearer {_apify_token()}"})
-    with urllib.request.urlopen(req, timeout=300) as r:
-        itens = json.loads(r.read() or b"[]")
-    return itens if isinstance(itens, list) else []
+    for tentativa in (1, 2):
+        req = urllib.request.Request(url, data=json.dumps(entrada).encode(),
+                                     headers={"Content-Type": "application/json", "Authorization": f"Bearer {_apify_token()}"})
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                itens = json.loads(r.read() or b"[]")
+            return itens if isinstance(itens, list) else []
+        except urllib.error.HTTPError as exc:
+            corpo = exc.read()[:200].decode("utf-8", "ignore")
+            if tentativa == 2 or exc.code in (401, 403):
+                raise RuntimeError(f"HTTP {exc.code}: {corpo}") from None
+            time.sleep(PAUSA_APIFY)
+    return []
 
 
 def apify_pronto(login: str) -> bool:

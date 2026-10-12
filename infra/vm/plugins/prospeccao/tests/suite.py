@@ -73,7 +73,7 @@ class Suite:
 
     def _fontes(self):
         f = _carregar("prospeccao_fontes_teste", RAIZ / "helpers" / "fontes.py")
-        f.PAUSA_BUSCA = f.PAUSA_GUIAPJ = 0
+        f.PAUSA_BUSCA = f.PAUSA_GUIAPJ = f.PAUSA_APIFY = 0
         return f
 
     def em(self, ts):  # simulated clock
