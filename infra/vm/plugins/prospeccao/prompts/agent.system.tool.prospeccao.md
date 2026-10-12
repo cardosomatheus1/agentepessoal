@@ -8,6 +8,9 @@ Prospecção de clientes da Raiz Connect, um a um. Tudo está pré-aprovado pelo
 - "token_meta": lê o token da Meta da aba aberta (Explorador da Graph API / ferramenta de token) e guarda no cofre — o valor nunca passa por você
 - "perfis_script": `achados` = o JSON do buscar_script (ou `leads` = lista de @, até 15) → devolve um script para rodar com `browser` action "evaluate" numa aba do instagram.com; ele traz os dados de todos os perfis de uma vez
 - "avaliar_perfis": `dados` = o texto JSON que o script devolveu → registra com nota os que encaixam, recusa os que não encaixam e devolve só os que precisam ser conferidos à mão
+- "fontes": `limite` (até 40) → repõe a parte do estoque da planilha e do catálogo que falta (acha o Instagram pelo @ da fonte, pelo site da empresa ou pela busca, com teto por dia) e diz quanto falta de cada fonte
+- "conferir_estoque" → script (5 perfis por vez) que confere atividade, seguidores e privado dos leads achados fora do Instagram, antes da vez deles; com a API oficial configurada, confere direto
+- "conferidos": `dados` = o texto JSON que o script do conferir_estoque devolveu → descarta do estoque o que está parado, grande/pequeno demais ou privado e guarda os números reais dos que passam
 - "rejeitar": `leads` = lista de {handle, motivo curto} dos perfis que você examinou e NÃO encaixam (não voltam por 60 dias)
 - "propor": `acoes` = lista de {lead_id, tipo (aquecer | dm_abertura | dm_lembrete | resposta | parceiro), texto, variante ("A"/"B" para dm_abertura)} — as aprovadas pelo revisor ficam prontas para executar; as reprovadas voltam em "recusadas" com o motivo para você reescrever; a ferramenta recusa o que fere o playbook (link, texto repetido, cedo demais, limite do dia) e diz o motivo
 - "comentar": `acao_id` (o aquecer em execução, ou um aquecer feito nos últimos 3 dias sem comentário), `texto` (comentário sobre o primeiro post NÃO fixado: útil, específico, sem venda, sem citar a Raiz, até 220 caracteres), `base` (o post e a data) → o revisor confere; só publique se vier COMENTÁRIO APROVADO
@@ -19,7 +22,7 @@ Prospecção de clientes da Raiz Connect, um a um. Tudo está pré-aprovado pelo
 - "etapa": `lead_id`, `etapa` (respondeu | lead | demo | teste | cliente | descartado), `nota` (o que a pessoa disse), `onde` ("direct" ou "comentario") — respondeu/lead/demo avisam o Matheus na hora (uma vez por resposta)
 - "editar": `acao_id`, `texto` — nova versão (volta para aprovação)
 - "hoje": o resumo do dia para o celular (ou "NADA HOJE")
-- "metricas": `dias` — números por variante, segmento, cidade e faixa de nota
+- "metricas": `dias` — números por variante, segmento, cidade, faixa de nota e fonte (planilha, instagram, catálogo)
 ~~~json
 {"tool_name": "prospeccao", "tool_args": {"acao": "registrar", "leads": [{"canal": "instagram", "handle": "marmitasdaana", "url": "https://www.instagram.com/marmitasdaana/", "nome": "Marmitas da Ana", "segmento": "marmitaria", "cidade": "Salvador", "seguidores": "3.2k", "motivo": "marmitas fit por encomenda, cardápio semanal com preços, post de ontem", "sinal": "reajustou preços na semana passada", "ultimo_post": "2026-10-09", "canais": ["encomenda", "whatsapp", "ifood"], "sinais": ["reajuste", "kits"], "cardapio": true, "link_pedido": true, "exclusoes": [], "post_recente": "kit de 10 marmitas de frango com batata-doce"}]}}
 ~~~

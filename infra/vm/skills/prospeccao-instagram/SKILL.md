@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 3.2.0
+version: 3.3.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -92,8 +92,15 @@ abertos. As buscas na internet têm teto por dia: quando a ferramenta avisar, pa
 4. registra com nota os que encaixam e anota os recusados.
 
 Chame de novo até ela dizer que a parte encheu ou a fila acabou. Esses leads vêm com `conferir_atividade`, porque a
-data do último post e às vezes os seguidores não aparecem na busca. A conferência acontece na visita do aquecimento
-(seção 5).
+data do último post e às vezes os seguidores não aparecem na busca: a rodada de busca confere em lote (2c) e, se não
+der tempo, a visita do aquecimento confere (seção 5).
+
+### 2c. Conferir o estoque antes da vez (leads de fora do Instagram)
+
+`prospeccao` acao "conferir_estoque" → rode o script com `browser` action "evaluate" numa aba em
+https://www.instagram.com/ → passe o texto inteiro para "conferidos". A ferramenta tira do estoque o que está parado
+(mais de 30 dias), grande ou pequeno demais, privado ou não existe mais, e guarda os números reais dos que passam. No
+máximo 3 vezes por rodada (15 perfis). "Nada a conferir", pausa ou "http 429": pare esta parte.
 
 ### 2b. Parte do Instagram: busca no Instagram (por script)
 

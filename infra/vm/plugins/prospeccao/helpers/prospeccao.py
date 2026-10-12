@@ -612,6 +612,99 @@ def avaliar_perfis(login: str, dados) -> dict:
     return out
 
 
+# ------------------------------------------------------------------ stock check before the visit
+# 12/10: 11 of the 15 sheet profiles visited were discarded on the visit (stale, too big, private, gone). Leads found
+# outside Instagram are now checked in batches before their turn: the browser script (5 profiles a call), the
+# official API (business discovery) or a scraper's data (Apify) in the same shape. What fails the hard rules leaves
+# the stock now; what passes gets its real numbers and score. Whether it is the right business is still looked at on
+# the visit (conferir_negocio).
+
+def a_conferir(login: str, limite: int = 5) -> list:
+    """Handles of stock leads whose activity and size were not checked yet, best score first."""
+    d = carregar(login)
+    tentados = {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")}
+    pend = [l for l in d["leads"] if l["etapa"] == "novo" and l.get("conferir_atividade") and l["id"] not in tentados
+            and l.get("conferencia_falhas", 0) < 2]
+    pend.sort(key=lambda l: -(l.get("nota") or 0))
+    return [l["handle"] for l in pend[:limite]]
+
+
+def _perfil_padrao(p: dict) -> dict:
+    """An Apify instagram-profile-scraper item in the browser script's shape (script/API items pass unchanged)."""
+    if "handle" in p or "username" not in p:
+        return p
+    if p.get("error") or p.get("errorDescription"):
+        return {"handle": p["username"], "erro": "perfil não encontrado" if "not" in str(p.get("error") or p.get("errorDescription")).lower()
+                else str(p.get("error") or p.get("errorDescription"))[:80]}
+    posts = []
+    for m in p.get("latestPosts") or []:
+        try:
+            ts = int(dt.datetime.fromisoformat(str(m.get("timestamp")).replace("Z", "+00:00")).timestamp())
+        except ValueError:
+            continue
+        posts.append({"fixado": bool(m.get("isPinned")), "ts": ts, "codigo": m.get("shortCode") or "",
+                      "legenda": (m.get("caption") or "")[:200]})
+    return {"handle": p["username"], "nome": p.get("fullName") or "", "seguidores": p.get("followersCount") or 0,
+            "privado": bool(p.get("private")), "bio": (p.get("biography") or "")[:300], "link": p.get("externalUrl") or "",
+            "categoria": p.get("businessCategoryName") or "", "posts": posts}
+
+
+def conferir_perfis(login: str, dados, fonte: str = "script") -> dict:
+    """Profile data for stock leads still to be checked. Returns {"conferidos": [...], "descartados": [...], "erros": [...]}."""
+    perfis = json.loads(dados) if isinstance(dados, str) else (dados or [])
+    out = {"conferidos": [], "descartados": [], "erros": []}
+    d = carregar(login)
+    por_handle = {l["handle"]: l for l in d["leads"]}
+    descartar = []
+    for bruto in perfis if isinstance(perfis, list) else []:
+        if not isinstance(bruto, dict):
+            continue
+        perfil = _perfil_padrao(bruto)
+        lead = por_handle.get(normalizar(str(perfil.get("handle") or "")))
+        if not lead or lead["etapa"] != "novo" or not lead.get("conferir_atividade"):
+            continue
+        erro = str(perfil.get("erro") or "")
+        if erro:
+            if re.search(r"não encontrado|inexistente|conta pessoal|http 404", erro):
+                descartar.append((lead, f"conferido antes da visita: {erro}"))
+            else:  # rate limit or network: try again later; after 2 tries the visit checks it
+                lead["conferencia_falhas"] = lead.get("conferencia_falhas", 0) + 1
+                out["erros"].append({"handle": lead["handle"], "erro": erro})
+            continue
+        ev = _evidencia(perfil)
+        item = {**ev, "segmento": ev["segmento"] or lead["segmento"], "cidade": ev["cidade"] or lead["cidade"],
+                "canais": sorted(set(ev["canais"]) | set((lead.get("evidencias") or {}).get("canais") or []))}
+        teste = pontuar(item)
+        motivo = teste.get("rejeitado") or (f"nota {teste['nota']} depois de conferir (mínimo {NOTA_MINIMA})"
+                                            if teste["nota"] < NOTA_MINIMA else "")
+        if motivo:
+            descartar.append((lead, f"conferido antes da visita: {motivo}"))
+            continue
+        lead.update({"nota": teste["nota"], "faixa": teste["faixa"], "seguidores": str(ev["seguidores"])[:20],
+                     "avaliacao": {k: teste[k] for k in ("partes", "faixa", "dias_ultimo_post", "seguidores_n", "segmento_rubrica")},
+                     "conferir_atividade": False, "conferir_negocio": origem(lead) != "instagram",
+                     "conferencia": {"em": agora(), "fonte": fonte, "ultimo_post": ev["ultimo_post"], "seguidores": ev["seguidores"]}})
+        lead.setdefault("evidencias", {}).update({k: item[k] for k in ("ultimo_post", "canais", "post_recente") if item.get(k)})
+        out["conferidos"].append({"handle": lead["handle"], "nota": teste["nota"], "ultimo_post": ev["ultimo_post"],
+                                  "seguidores": ev["seguidores"]})
+    if any("429" in e["erro"] for e in out["erros"]):  # Instagram rate limit: profile scripts pause for 15 min
+        d["config"]["api_pausa_ate"] = agora() + 15 * 60
+    salvar(login, d)
+    for lead, motivo in descartar:
+        mudar_etapa(login, lead["id"], "descartado", motivo[:300])
+        out["descartados"].append({"handle": lead["handle"], "motivo": motivo})
+    return out
+
+
+def api_meta_pronta(login: str) -> bool:
+    """The official API (business discovery) is configured in the person's vault."""
+    try:
+        s = _cofre().carregar(login)
+    except Exception:
+        return False
+    return bool(s.get(COFRE_TOKEN) and s.get(COFRE_IG))
+
+
 REJEITADO_DIAS = 60
 
 

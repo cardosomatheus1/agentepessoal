@@ -160,6 +160,28 @@ class Prospeccao(Tool):
                      + "Rode este script com a ferramenta `browser`, action \"evaluate\", numa aba já aberta em https://www.instagram.com/ "
                      "(logada como @raiz.connect). Ele devolve um texto JSON; passe esse texto INTEIRO, sem mudar nada, para "
                      "`prospeccao` acao \"avaliar_perfis\" com `dados` = o texto.\n\n" + p.montar_script(handles))
+        if acao == "conferir_estoque":
+            # leads found outside Instagram: activity, size and privacy checked before their turn (12/10: 73% of the
+            # sheet's visits ended in a discard)
+            handles = p.a_conferir(login, 5)
+            if not handles:
+                return r("Nada a conferir no estoque agora.")
+            if p.api_meta_pronta(login):
+                perfis = await asyncio.to_thread(p.descobrir_perfis, login, p.a_conferir(login, 25))
+                out = p.conferir_perfis(login, perfis, "api")
+                return r(json.dumps(out, ensure_ascii=False) + "\nConferidos pela API oficial. Chame `conferir_estoque` de novo se ainda houver.")
+            pausa = p.api_pausada(login)
+            if pausa:
+                return r(f"Scripts de perfil pausados até {pausa} (o Instagram limitou as consultas): pule a conferência nesta rodada.")
+            return r("Rode este script com a ferramenta `browser`, action \"evaluate\", numa aba já aberta em https://www.instagram.com/ "
+                     "(logada como @raiz.connect). Ele devolve um texto JSON; passe esse texto INTEIRO, sem mudar nada, para "
+                     "`prospeccao` acao \"conferidos\" com `dados` = o texto.\n\n" + p.montar_script(handles))
+        if acao == "conferidos":
+            out = p.conferir_perfis(login, kwargs.get("dados") or texto)
+            if any("429" in e.get("erro", "") for e in out["erros"]):
+                return r(json.dumps(out, ensure_ascii=False) + "\nO Instagram limitou as consultas (429): pare a conferência nesta rodada.")
+            return r(json.dumps(out, ensure_ascii=False) + "\nDescartados já saíram do estoque; conferidos ficam prontos para a vez deles. "
+                     "Chame `conferir_estoque` de novo (no máximo 3 vezes por rodada).")
         if acao == "avaliar_perfis":
             out = p.avaliar_perfis(login, kwargs.get("dados") or texto)
             if any("429" in e.get("erro", "") for e in out["erros"]):
@@ -250,6 +272,11 @@ class Prospeccao(Tool):
                             "outro negócio, o último post tiver mais de 30 dias, ou tiver menos de 300 ou mais de 50 mil seguidores, NÃO siga nem curta: chame `prospeccao` acao \"etapa\" com "
                             f"lead_id \"{lead['id']}\", etapa \"descartado\" e nota (\"parado há N dias\", \"perfil de outro negócio\" ou \"N seguidores\") — isso já encerra "
                             "esta visita (não precisa de \"resultado\") — e chame \"proxima\" de novo: vem o próximo da fila. Se estiver ativo, siga normalmente e diga no detalhe a data do último post.\n")
+            elif a["tipo"] == "aquecer" and lead.get("conferir_negocio"):
+                conferir = (f"ANTES DE SEGUIR: este perfil veio de fora do Instagram e já foi conferido (ativo, tamanho certo). Só confira "
+                            f"que é mesmo «{lead['nome']}» ({lead['cidade']}). Se for outro negócio, NÃO siga: chame `prospeccao` acao "
+                            f"\"etapa\" com lead_id \"{lead['id']}\", etapa \"descartado\" e nota \"perfil de outro negócio\" — isso já "
+                            "encerra esta visita — e chame \"proxima\" de novo.\n")
             return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) {'PRÉ-APROVADA (autorização do Matheus, dentro do limite do dia; texto revisado)' if a.get('auto') else 'APROVADA pelo Matheus'} para @{lead['handle']} — {lead['url']}\n"
                      f"{conferir}{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
                      + (("PARA DIGITAR NO DIRECT (obrigatório, NÃO digite à mão): com a conversa aberta, 1) clique no campo de mensagem, "

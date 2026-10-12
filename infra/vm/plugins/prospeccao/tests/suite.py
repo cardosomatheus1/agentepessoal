@@ -607,6 +607,53 @@ class Suite:
         ok("(instagram 1, planilha 3)" in p.resumo_hoje(LOGIN) or "(planilha 3, instagram 1)" in p.resumo_hoje(LOGIN),
            "o resumo do dia diz de onde vieram os leads novos")
 
+    def t_conferir_estoque_antes_da_visita(self):
+        # 12/10: 11 of the 15 sheet profiles visited were discarded on the visit; now they are checked before their turn
+        p = self.p
+        self.em(self.hora(10))
+        pl = dict(fonte="Planilha SDR Grok", atividade_pendente=True, ultimo_post="", motivo="Planilha SDR Grok (Solutudo)")
+        for h in ("ativo1", "parado1", "grande1", "privado1", "sumiu1", "lento1"):
+            self._lead(h, **pl)
+        self._lead("doinsta")  # found on Instagram itself: nothing to check
+        eq(sorted(p.a_conferir(LOGIN, 10)), ["ativo1", "grande1", "lento1", "parado1", "privado1", "sumiu1"],
+           "só os achados fora do Instagram, ainda sem conferir")
+        ts = lambda dias: int(p.agora() - dias * 86400)  # noqa: E731
+        script = [
+            {"handle": "ativo1", "nome": "Ativo", "seguidores": 2400, "privado": False, "bio": "marmitas fit", "link": "",
+             "categoria": "", "posts": [{"fixado": True, "ts": ts(200), "codigo": "a", "legenda": "fixado antigo"},
+                                         {"fixado": False, "ts": ts(3), "codigo": "b", "legenda": "cardápio da semana"}]},
+            {"handle": "parado1", "nome": "Parado", "seguidores": 900, "privado": False, "bio": "", "link": "", "categoria": "",
+             "posts": [{"fixado": False, "ts": ts(90), "codigo": "c", "legenda": "x"}]},
+            {"handle": "privado1", "nome": "Priv", "seguidores": 800, "privado": True, "bio": "", "link": "", "categoria": "", "posts": []},
+            {"handle": "sumiu1", "erro": "perfil não encontrado"},
+            {"handle": "lento1", "erro": "http 500"},
+            {"handle": "doinsta", "nome": "x", "seguidores": 99, "privado": True, "posts": []},
+        ]
+        apify = [{"username": "grande1", "fullName": "Grande", "followersCount": 72500, "private": False, "biography": "",
+                  "latestPosts": [{"timestamp": dt.datetime.fromtimestamp(ts(2), dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                                   "isPinned": False, "shortCode": "g", "caption": "x"}]}]
+        out = p.conferir_perfis(LOGIN, json.dumps(script))
+        out2 = p.conferir_perfis(LOGIN, apify, "apify")
+        eq([c["handle"] for c in out["conferidos"]], ["ativo1"], f"só o ativo passa: {out}")
+        eq(sorted(x["handle"] for x in out["descartados"] + out2["descartados"]), ["grande1", "parado1", "privado1", "sumiu1"],
+           f"saem do estoque antes da visita: {out} {out2}")
+        L = {l["handle"]: l for l in p.carregar(LOGIN)["leads"]}
+        ok(not L["ativo1"]["conferir_atividade"] and L["ativo1"]["conferir_negocio"], "atividade conferida; o negócio ainda é olhado na visita")
+        eq(L["ativo1"]["evidencias"]["ultimo_post"], self._dia(3), "a data é a do primeiro post NÃO fixado")
+        eq(L["ativo1"]["conferencia"]["seguidores"], 2400, "números reais guardados")
+        ok("parado há 90 dias" in L["parado1"]["historico"][-1]["texto"], L["parado1"]["historico"][-1])
+        ok("grande demais" in L["grande1"]["historico"][-1]["texto"], "dados do Apify no mesmo formato")
+        eq(L["doinsta"]["etapa"], "novo", "lead achado no Instagram não é mexido pela conferência")
+        eq((L["lento1"]["etapa"], L["lento1"].get("conferencia_falhas")), ("novo", 1), "erro passageiro: tenta de novo depois")
+        e = p.estoque(LOGIN)["por_fonte"]["planilha"]
+        eq((e["prontos"], e["a_conferir"]), (2, 1), "estoque da planilha: o conferido e o que ainda falta conferir")
+        eq(p.a_conferir(LOGIN, 10), ["lento1"], "o que falhou volta à lista")
+        p.conferir_perfis(LOGIN, [{"handle": "lento1", "erro": "http 500"}])
+        eq(p.a_conferir(LOGIN, 10), [], "depois de 2 falhas fica para a visita")
+        ok(not p.api_pausada(LOGIN), "sem 429, sem pausa")
+        p.conferir_perfis(LOGIN, [{"handle": "lento1", "erro": "http 429"}])
+        ok(p.api_pausada(LOGIN), "429 pausa os scripts de perfil")
+
     def t_planilha_completa_site_e_partes(self):
         p, f = self.p, self._fontes()
         self.em(self.hora(10))
