@@ -27,7 +27,14 @@ if [ -f "$SRC/central/agente.db" ]; then
   python3 -c 'import sqlite3, sys; o = sqlite3.connect(sys.argv[1]); d = sqlite3.connect(sys.argv[2]); o.backup(d); d.close(); o.close()' \
     "$SRC/central/agente.db" "$SRC/central/agente.copia.db" || logger -t agentepessoal "backup: copy of the action ledger failed"
 fi
-/usr/local/bin/aws s3 sync "$SRC" "s3://${BUCKET}/usr" --delete --only-show-errors \
+# Deleting in S3 only after a confirmed restore (setup.sh marks it): with a failed restore, --delete would erase from S3
+# everything that did not come back (12/10 review).
+APAGAR=--delete
+if [ ! -f /var/lib/agentepessoal/restored ]; then
+  APAGAR=
+  logger -t agentepessoal "backup: restore not confirmed; copying without deleting anything in S3"
+fi
+/usr/local/bin/aws s3 sync "$SRC" "s3://${BUCKET}/usr" $APAGAR --only-show-errors \
   --exclude "tmp/*" --exclude "*/__pycache__/*" --exclude "navegador/*" \
   --exclude "plugins/_desktop/profiles/*/.ssh/agent/*" --exclude "central/agente.db" --exclude "central/agente.db-*"
 rc=$?

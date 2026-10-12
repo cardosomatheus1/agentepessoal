@@ -52,9 +52,16 @@ EOF
 chmod +x /usr/lib/systemd/system-sleep/agentepessoal
 
 # --- restore data, then agent configuration -----------------------------------------
+# 12/10 review: a restore that failed was marked as done anyway, and the next hourly backup (sync --delete) would then
+# delete from S3 everything that had not come back. Now the mark only follows a restore that worked (2 = some special
+# file skipped), and backup.sh never deletes in S3 while the mark is missing; the next boot tries again.
 if [ ! -f /var/lib/agentepessoal/restored ]; then
-  /usr/local/bin/aws s3 sync "s3://${BACKUP_BUCKET}/usr" /opt/a0/usr --only-show-errors || true
-  touch /var/lib/agentepessoal/restored
+  /usr/local/bin/aws s3 sync "s3://${BACKUP_BUCKET}/usr" /opt/a0/usr --only-show-errors; rc=$?
+  if [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then
+    touch /var/lib/agentepessoal/restored
+  else
+    logger -t agentepessoal "restore from S3 failed (rc=$rc): the backup will not delete anything in S3 until it works"
+  fi
 fi
 mkdir -p /opt/a0/usr/plugins/_model_config /opt/a0/usr/plugins/_code_execution /opt/a0/usr/memoria /opt/a0/usr/skills
 cp "$B/generated/presets.yaml" /opt/a0/usr/plugins/_model_config/presets.yaml
@@ -82,10 +89,11 @@ sed -i -E '/^(AUTH_LOGIN|AUTH_PASSWORD|API_KEY_OTHER|ALLOWED_ORIGINS|FLASK_SECRE
 {
   echo "API_KEY_OTHER=local-proxy"
   echo "ALLOWED_ORIGINS=*://localhost,*://localhost:*,*://127.0.0.1,*://127.0.0.1:*"
-  if [ -s /opt/a0/usr/usuarios.json ]; then
-    echo "AUTH_LOGIN=_agentepessoal"
-    echo "AUTH_PASSWORD=$(cat /opt/agentepessoal/auth-master)"
-  fi
+  # Always: login required (12/10 review: when the restore from S3 failed and usuarios.json was missing, the UI came up
+  # with no login at all, reachable through the tunnel). Without usuarios.json only the master pair in
+  # /opt/agentepessoal/auth-master gets in, until the users are restored (usuarios.py).
+  echo "AUTH_LOGIN=_agentepessoal"
+  echo "AUTH_PASSWORD=$(cat /opt/agentepessoal/auth-master)"
   echo "FLASK_SECRET_KEY=$(cat /opt/agentepessoal/flask-secret)"
 } >> /opt/a0/usr/.env
 set -x
