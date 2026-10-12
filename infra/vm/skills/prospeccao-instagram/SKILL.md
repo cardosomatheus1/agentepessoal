@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 2.9.0
+version: 3.0.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -57,7 +57,7 @@ resumo das 20h17.
 
 | Rodada | Quando (Bahia) | O que faz |
 |---|---|---|
-| 🎯 Prospecção — buscar | 9h23 | seções 2 e 3 (leads novos e nota) e seção 4 (propõe aquecer, mensagens e lembretes devidos) |
+| 🎯 Prospecção — buscar | 9h23 e 14h23 | seção 4 (mensagens e lembretes devidos) e seções 2 e 3 (repor o estoque de 100 leads) |
 | 🎯 Prospecção — executar | :20 e :50, das 9h às 19h | seção 6 (lê respostas) e seção 5 (executa até 3 ações) |
 | 🎯 Prospecção — resumo do dia | 20h17 | `prospeccao` acao "hoje": relatório ao celular |
 | 🎯 Prospecção — semana | segunda, 8h41 | `metricas` de 7 e 28 dias: o que funcionou e o que muda |
@@ -74,8 +74,9 @@ Rodada sem novidade termina com a resposta exata **SEM NOVIDADE** (não vai ao c
 
 ## 2. Achar leads
 
-**Meta da rodada:** tantos leads CRIADOS quanto a cota de «aquecer» de hoje, até 15. Contam os que encaixam, não os
-perfis abertos.
+**Estoque:** manter **100 leads prontos para aquecer** (o `contexto` mostra quanto falta). A busca (9h23 e 14h23)
+repõe; a execução consome (a vaga de aquecer é preenchida sozinha com o melhor lead do estoque). Contam os que
+encaixam, não os perfis abertos. As buscas na internet têm teto por dia: quando a ferramenta avisar, pare.
 
 ### 2a. Primeiro: fontes fora do Instagram (não gastam consulta no Instagram e não levam 429)
 

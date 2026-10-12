@@ -28,6 +28,7 @@ SEARX = "http://localhost:55510/search"
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
 PAUSA_GUIAPJ = 1.5   # seconds between directory pages (polite)
 PAUSA_BUSCA = 1.0    # seconds between search queries
+BUSCAS_DIA = 100     # search API calls per day (config "buscas_dia" in the fontes file): Tavily is billed per call
 
 # activity code -> rubric segment used when the bio says nothing better (order = priority)
 CNAES = (("5620104", "marmitaria"),      # alimentos preparados para consumo domiciliar
@@ -260,7 +261,7 @@ def _bio(texto: str) -> str:
     return " ".join((m.group(1) if m else texto).split())[:300]
 
 
-def achar_instagram(e: dict) -> dict | None:
+def achar_instagram(e: dict, conta: dict | None = None) -> dict | None:
     """The company's Instagram from search results, only when it matches: same phone, the handle the source already
     gave, or the same name (and city). Returns {handle, seguidores, bio, titulo, confianca} or None."""
     dado = str(e.get("instagram") or "").strip().lstrip("@").rstrip("/").rsplit("/", 1)[-1]
@@ -271,6 +272,8 @@ def achar_instagram(e: dict) -> dict | None:
     fone = _digitos(e.get("telefone"))[-8:]
     falhas = 0
     for consulta in consultas:
+        if conta is not None:
+            conta["n"] = conta.get("n", 0) + 1
         try:
             resultados = _buscar(consulta)
         except Exception:
@@ -348,7 +351,15 @@ def enriquecer(login: str, p, limite: int = 20) -> dict:
     out = {"examinadas": 0, "criados": [], "sem_instagram": 0, "recusados": [], "pulados": 0}
     segmentos = dict(CNAES)
     itens = []
+    hoje = time.strftime("%Y-%m-%d")
+    conta = d.setdefault("buscas", {})
+    if conta.get("dia") != hoje:
+        conta.update({"dia": hoje, "n": 0})
+    teto = int(d.get("buscas_dia") or BUSCAS_DIA)
     for k in fila[:limite]:
+        if conta["n"] >= teto:
+            out["erro_busca"] = f"limite diário de {teto} buscas atingido; a fila continua amanhã"
+            break
         e = d["empresas"][k]
         out["examinadas"] += 1
         if (e.get("situacao") and e["situacao"] != "Ativa") or FORA.search(f"{e.get('nome', '')} {e.get('razao', '')}"):
@@ -362,7 +373,7 @@ def enriquecer(login: str, p, limite: int = 20) -> dict:
         dado = str(e.get("instagram") or "").strip().lstrip("@").rstrip("/").rsplit("/", 1)[-1].lower()
         try:
             ig = ({"handle": dado, "seguidores": "", "bio": "", "titulo": "", "confianca": "fonte"} if dado
-                  else achar_instagram(e))
+                  else achar_instagram(e, conta))
         except RuntimeError:
             out["erro_busca"] = "buscador indisponível agora; a empresa continua na fila"
             break

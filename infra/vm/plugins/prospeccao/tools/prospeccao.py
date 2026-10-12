@@ -176,10 +176,12 @@ class Prospeccao(Tool):
             if sum(1 for e in d["empresas"].values() if e["estado"] == "fila") < limite:
                 coleta = await asyncio.to_thread(f.coletar, login, int(kwargs.get("paginas") or 4))
             out = await asyncio.to_thread(f.enriquecer, login, p, limite)
-            return r(json.dumps({"coleta": coleta, **out}, ensure_ascii=False) +
+            e = p.estoque(login)
+            return r(json.dumps({"coleta": coleta, **out, "estoque": e}, ensure_ascii=False) +
                      "\nCriados já estão registrados com nota (achados fora do Instagram: a data do último post é conferida na "
-                     "visita do aquecimento). Proponha «aquecer» para eles SEM comentário (você ainda não viu os posts). "
-                     "Para mais leads, chame `fontes` de novo (a fila anda sozinha pelo catálogo).")
+                     "visita do aquecimento, quando o comentário também é escrito). Não precisa propor «aquecer»: a execução "
+                     "consome o estoque sozinha. " + (f"Estoque {e['prontos']}/{e['alvo']}: chame `fontes` de novo para repor."
+                                                      if e["faltam"] and not out.get("erro_busca") else "Estoque cheio ou buscas do dia esgotadas: pare."))
         if acao == "importar_lista":
             caminho = Path(str(kwargs.get("arquivo") or texto or ""))
             if not caminho.is_file() or caminho.suffix != ".json":

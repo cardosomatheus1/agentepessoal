@@ -14,9 +14,8 @@ BUSCAR = """Rodada de busca da prospecção Raiz Connect.
 2. Leads com passo devido ("Devem receber"), na ordem do contexto (maiores notas e quem interagiu primeiro):
    - «dm_abertura»: abra o perfil, veja os 3 posts mais recentes NÃO fixados e escreva no modelo do playbook, alternando A (pergunta sobre como precificam, sem oferta) e B (oferta direta), citando UMA coisa concreta que você viu agora. Sem link. Em `base`, o que viu e em que post (data).
    - «dm_lembrete»: o lembrete do playbook com o link da calculadora (ou o do simulador de delivery para quem vende no iFood), diferente para cada pessoa.
-3. Leads novos — META: tantos CRIADOS quanto a cota de «aquecer» de hoje (até 15). PRIMEIRO `prospeccao` acao "fontes" (catálogo de CNPJ + buscador, sem Instagram; chame de novo até a meta ou a fila acabar); só se faltar, a busca no Instagram (skill, seções 2b e 3) até 30 perfis examinados. "http 429" no Instagram não é problema seu: volte para "fontes".
-   Para cada lead criado, proponha «aquecer» (maiores notas primeiro); comentário só se houver algo genuíno sobre o post_recente (leads de "fontes" não têm: proponha sem texto; o comentário é escrito na visita), sem citar a Raiz; em `base`, o post (data e assunto) ou "achado em fontes".
-4. Tudo em UMA chamada `prospeccao` acao "propor" (lead_id, tipo, texto, variante, base). Recusou? Corrija pelo motivo e proponha de novo uma vez.
+3. ESTOQUE DE LEADS (alvo 100 prontos para aquecer — o contexto mostra "Estoque de leads prontos: N de 100"). Se faltar: chame `prospeccao` acao "fontes" (limite 20) de novo e de novo até o estoque encher, a fila das fontes acabar ou a ferramenta avisar que as buscas do dia acabaram. Só se as fontes secarem, faça a busca no Instagram (skill, seções 2b e 3) até 30 perfis examinados. "http 429" no Instagram não é problema seu: volte para "fontes". NÃO proponha «aquecer»: a rodada de execução consome o estoque sozinha e escreve o comentário na visita.
+4. As mensagens do passo 2 em UMA chamada `prospeccao` acao "propor" (lead_id, tipo, texto, variante, base). "REESCREVA"? Corrija pelo motivo do revisor e proponha de novo (até 3 versões).
 5. Resposta final: exatamente SEM NOVIDADE. Só se travou (login, bloqueio, verificação, captcha): "PRECISA DE VOCÊ:" e o que aconteceu."""
 
 SIS_EXEC = ("Você executa a prospecção da Raiz Connect pela conta de Instagram da Raiz (nunca pela pessoal do Matheus). Só executa ações que a ferramenta "
@@ -47,7 +46,7 @@ HOJE = """Resumo do dia da prospecção Raiz Connect. Só leitura.
 3. Senão, responda com o texto que ela devolveu, exatamente como veio (já está no formato do celular). Não acrescente nada."""
 
 TAREFAS = {
-    "🎯 Prospecção — buscar": (SIS_BUSCA, BUSCAR, {"minute": "23", "hour": "9", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
+    "🎯 Prospecção — buscar": (SIS_BUSCA, BUSCAR, {"minute": "23", "hour": "9,14", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
     "🎯 Prospecção — executar": (SIS_EXEC, EXECUTAR, {"minute": "50,20", "hour": "9-19", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
     "🎯 Prospecção — resumo do dia": ("Você só repassa o resumo do dia da prospecção, sem acrescentar nada.", HOJE, {"minute": "17", "hour": "20", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
     "🎯 Prospecção — semana": ("Você faz o relatório semanal da prospecção, só leitura.", SEMANA, {"minute": "41", "hour": "8", "day": "*", "month": "*", "weekday": "1", "timezone": "America/Bahia"}),

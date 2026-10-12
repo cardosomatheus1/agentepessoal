@@ -353,8 +353,8 @@ class Suite:
         ok("Oi, Ana!" in txt, "mostra a DM que saiu")
         ok("@resumo1 — seguiu e curtiu; comentou «Que capricho" in txt, f"cada aquecimento com o comentário: {txt}")
         ok("@resumo2 — primeira mensagem: «Oi, Ana!" in txt, "cada mensagem com o texto")
-        ok("2 entraram hoje" in txt and "na fila para aquecer" in txt and "1 descartados hoje" in txt,
-           f"leads: novos de hoje separados da fila e dos descartados: {txt}")
+        ok("2 entraram hoje" in txt and "estoque " in txt and "prontos para aquecer" in txt and "1 descartados hoje" in txt,
+           f"leads: novos de hoje separados do estoque e dos descartados: {txt}")
         # a visit that failed: one readable line per profile, first sentence of why
         c = self._lead("resumo3")
         self.em(self.relogio + p.INTERVALO + 1)
@@ -471,6 +471,45 @@ class Suite:
         eq(out2["criados"], [], "segunda passada não cria de novo")
         aid = p.propor(LOGIN, [{"lead_id": lead["id"], "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
         ok(aid, "aquecer sem comentário pode ser proposto")
+
+    def t_estoque_de_leads_e_teto_de_buscas(self):
+        p, f = self.p, self._fontes()
+        self.em(self.hora(10))
+        eq(p.estoque(LOGIN), {"prontos": 0, "alvo": 100, "faltam": 100}, "estoque vazio: faltam 100")
+        a, b = self._lead("est1"), self._lead("est2")
+        self._aquecido("est3")
+        e = p.estoque(LOGIN)
+        eq((e["prontos"], e["faltam"]), (2, 98), "só leads novos contam no estoque (aquecido não)")
+        aid = p.propor(LOGIN, [{"lead_id": a, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aid, "aprovar")
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect", "estoque_alvo": 3})
+        p.salvar(LOGIN, d)
+        x, _ = p.proxima(LOGIN, "raizconnect")
+        p.resultado(LOGIN, x["id"], False, "perfil parado")
+        eq(p.estoque(LOGIN), {"prontos": 1, "alvo": 3, "faltam": 2}, "visita que falhou sai do estoque; alvo configurável")
+        ok("Estoque de leads prontos para aquecer: 1 de 3 — FALTAM 2" in p.resumo_contexto(LOGIN), "contexto mostra o estoque e quanto falta")
+        ok("estoque 1/3" in p.resumo_hoje(LOGIN), "resumo do dia mostra o estoque")
+        # daily cap of paid search calls
+        d = f.carregar(LOGIN)
+        for i in range(4):
+            e = {"nome": f"MARMITARIA TESTE {i}", "cidade": "Salvador", "uf": "BA", "situacao": "Ativa", "cnae": "5620104",
+                 "fonte": "GuiaPJ", "cnpj": f"9{i}"}
+            d["empresas"][f._chave(e)] = {**e, "estado": "fila"}
+        d["buscas_dia"] = 3
+        f.salvar(LOGIN, d)
+        chamadas = []
+        f._buscar = lambda q: chamadas.append(q) or []
+        out = f.enriquecer(LOGIN, p, 10)
+        ok(len(chamadas) <= 4 and "limite diário de 3 buscas" in out.get("erro_busca", ""), f"para no teto de buscas do dia: {len(chamadas)} {out}")
+        n = len(chamadas)
+        out = f.enriquecer(LOGIN, p, 10)
+        eq(len(chamadas), n, "no mesmo dia, não busca mais nada")
+        d = f.carregar(LOGIN)
+        d["buscas"]["dia"] = "2000-01-01"  # as if the count were from another day
+        f.salvar(LOGIN, d)
+        out = f.enriquecer(LOGIN, p, 10)
+        ok(len(chamadas) > n, "no dia seguinte o teto zera")
 
     def t_resposta_apagada_libera_uma_nova(self):
         p = self.p

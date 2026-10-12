@@ -664,6 +664,20 @@ def _dias_desde(ts: float) -> int:
     return (dt.datetime.fromtimestamp(agora(), _tz()).date() - dt.datetime.fromtimestamp(ts, _tz()).date()).days
 
 
+# Lead stock (Matheus, 12/10: "manter um estoque de 100 — o que consumir, buscar"): the search rounds refill the
+# queue of new leads up to this target; the execution rounds consume it (refill of «aquecer» slots).
+ESTOQUE_ALVO = 100
+
+
+def estoque(login: str) -> dict:
+    """New leads ready to be warmed (Instagram, never tried) vs the target: {"prontos", "alvo", "faltam"}."""
+    d = carregar(login)
+    tentados = {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")}
+    prontos = sum(1 for l in d["leads"] if l["etapa"] == "novo" and l["canal"] == "instagram" and l["id"] not in tentados)
+    alvo = int(d["config"].get("estoque_alvo") or ESTOQUE_ALVO)
+    return {"prontos": prontos, "alvo": alvo, "faltam": max(0, alvo - prontos)}
+
+
 def _fila_repor(login: str) -> list:
     """Best new lead that may take a free «aquecer» slot today ([] when none or no pre-approval)."""
     d = carregar(login)
@@ -1441,9 +1455,10 @@ def resumo_hoje(login: str) -> str:
     if comentados:  # comments written today on warm-ups of earlier days
         linhas.append(f"\n💬 *Comentários em perfis já aquecidos:* {len(comentados)}")
         linhas += [f"• @{(leads.get(a['lead_id']) or {}).get('handle')} — «{a['comentario']['texto'][:90]}»" for a in comentados]
-    fila = sum(1 for l in d["leads"] if l["etapa"] == "novo")
-    if novos or rejeitados:
-        linhas.append(f"\n🔎 *Leads:* {len(novos)} entraram hoje · {fila} na fila para aquecer · {rejeitados} descartados hoje")
+    e = estoque(login)
+    if novos or rejeitados or e["faltam"]:
+        linhas.append(f"\n🔎 *Leads:* {len(novos)} entraram hoje · estoque {e['prontos']}/{e['alvo']} prontos para aquecer"
+                      f" · {rejeitados} descartados hoje")
         novos.sort(key=lambda l: -(l.get("nota") or 0))
         if novos:
             linhas.append("Melhores de hoje: " + ", ".join(f"@{l['handle']} ({l['nota']})" for l in novos[:3] if l.get("nota") is not None))
@@ -1470,8 +1485,11 @@ def resumo_contexto(login: str) -> str:
     d = carregar(login)
     c = cotas(login)
     dev = devidos(login)
+    e = estoque(login)
     linhas = [f"# Prospecção — {dt.datetime.now(_tz()).strftime('%a %d/%m %H:%M')} ({FUSO})",
-              "Cotas que ainda cabem hoje (propostas aprovadas contam): " + ", ".join(f"{k} {v}" for k, v in c.items())]
+              "Cotas que ainda cabem hoje (propostas aprovadas contam): " + ", ".join(f"{k} {v}" for k, v in c.items()),
+              f"Estoque de leads prontos para aquecer: {e['prontos']} de {e['alvo']}" +
+              (f" — FALTAM {e['faltam']}: reponha com `fontes` (e a busca no Instagram se as fontes secarem)." if e["faltam"] else " (cheio).")]
     if agora() < d["bloqueio_ate"]:
         linhas.append("⛔ PAUSADO após bloqueio do Instagram — não proponha nada até " +
                       dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M"))
