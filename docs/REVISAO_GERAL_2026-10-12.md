@@ -22,6 +22,32 @@ Foi feita com três análises independentes: infraestrutura, código dos plugins
 
 ---
 
+## Decisões do Matheus (12/10, tarde)
+
+1. **Poucas travas.** "Quero evitar tantas travas de segurança, porque sempre acaba travando demais o sistema." Daqui
+   em diante:
+   - **toda trava tem saída automática:** uma pausa vira retomada ou cancelamento, e uma recusa diz o que fazer em
+     seguida. Nada fica parado esperando alguém apertar um botão (desde hoje a limpeza retoma rodada pausada);
+   - **antes de bloquear, registrar e conferir depois:** o livro de ações (§4.1) e a Conferência pegam o erro sem
+     parar o trabalho;
+   - **bloqueio só para o irreversível e externo:** pagamento, apagar, publicar ou impulsionar. O resto segue e fica
+     registrado;
+   - **nada de pedir ok** para o que já foi decidido.
+2. **AWS: acesso total mantido.** A restrição da chave e o MFA saíram do plano. (Opcional, sem mudar o acesso: girar a
+   chave, que passou pelo cofre em 10/10.)
+3. **Tela do celular: fica como está.** O túnel sob demanda e o login na frente saíram do plano.
+4. **Senhas: proteger melhor (aprovado).** O plano não cria nenhuma trava nova:
+   - **backup:** o cofre sai do backup de hora em hora em texto puro e passa a ir cifrado (KMS). Para você, nada muda;
+   - **máscara:** o valor de um segredo nunca aparece em saída de ferramenta, histórico, log ou Telegram. Ele vira
+     `§§secret(NOME)`, e o agente continua usando normalmente;
+   - **setup:** sem `set -x` nos trechos que mexem com senha;
+   - **você:** trocar as senhas do Gmail e do Facebook/Instagram (a mesma senha nas duas). Elas apareceram em
+     log e em saída de ferramenta;
+   - **apagar as cópias antigas em texto puro no S3** (30 dias de versões): só com o seu ok, porque é destrutivo.
+5. **O resto: aprovado.** É a arquitetura das seções 4 a 8, já ajustada às decisões acima.
+
+---
+
 ## Resumo em 1 minuto
 
 **O que está bem.**
@@ -45,10 +71,10 @@ Foi feita com três análises independentes: infraestrutura, código dos plugins
 
 | # | Problema | Grav. | Como resolver (resumo) |
 |---|---|---|---|
-| 1 | Senhas do cofre ficam **em texto puro** na VM e vão **para o backup no S3** (versões guardadas 30 dias) | 🔴 | Criptografar o cofre (KMS), tirar do backup; trocar as senhas do Gmail e do Facebook/Instagram (a mesma senha nas duas) |
-| 2 | A chave AWS das sessões do Claude é **administradora da conta inteira** e passou pelo cofre do agente em 10/10 | 🔴 | Trocar a chave; um usuário só com o necessário para operar e outro, com MFA, para mudanças grandes |
-| 3 | **Tela do celular virtual** (Android privilegiado) publicada na internet **sem senha** | 🔴 | Ligar só quando precisar, com login na frente (Cloudflare Access) |
-| 4 | **Texto de terceiros** (DM, e-mail, página) pode induzir o agente; a janela de 12 min após `proxima` libera qualquer mensagem | 🔴 | Liberação larga já apertada hoje; falta o **bilhete de envio** (só sai o texto aprovado, conferido no campo) |
+| 1 | Senhas do cofre ficam **em texto puro** na VM e vão **para o backup no S3** (versões guardadas 30 dias) | 🔴 | **Aprovado:** backup cifrado (KMS), máscara de segredos em toda saída, troca das senhas do Gmail e do Facebook/Instagram (a mesma senha nas duas) |
+| 2 | A chave AWS das sessões do Claude é **administradora da conta inteira** | ⚪ | **Decisão: acesso total mantido.** Opcional: girar a chave (mesmo acesso) |
+| 3 | **Tela do celular virtual** publicada na internet **sem senha** | ⚪ | **Decisão: fica como está** |
+| 4 | **Texto de terceiros** (DM, e-mail, página) pode induzir o agente; a janela de 12 min após `proxima` libera qualquer mensagem | 🔴 | Liberação larga já apertada hoje; falta o **bilhete de envio**: só sai o texto aprovado, conferido no campo, sem perguntar nada a você |
 | 5 | Arquivos de estado **lidos, alterados e regravados sem trava**: duas tarefas ao mesmo tempo **apagam o trabalho uma da outra**; arquivo ilegível vira **vazio** | 🔴 | Função única de gravação com trava (ou SQLite); arquivo ruim **para e avisa**, nunca "começa vazio" |
 | 6 | Ação sem reserva: duas rodadas podem mandar a **mesma DM** | 🔴 | Reserva da ação + estado "incerta" após queda (confere antes de reenviar) |
 | 7 | **Recuperação de desastre perigosa**: restauração que falha em silêncio faz o próximo backup **apagar o S3**; a interface pode subir **sem login** | 🔴 | Conferir a restauração antes de qualquer `--delete`; login obrigatório; teste mensal |
@@ -65,10 +91,13 @@ Foi feita com três análises independentes: infraestrutura, código dos plugins
 - comentário escrito na visita;
 - nada vai ao celular para aprovar.
 
+Depois do relatório, já no ar (ver `docs/ESTUDO_FONTES_2026-10-12.md`): fontes divididas, planilha inteira do Grok
+importada e conferência do estoque antes da visita.
+
 Próximos passos de maior impacto:
 
 - **descobrir de onde vem cada cadastro**, com um link curto e um código por lead;
-- **importar a planilha inteira do Grok** (4.342 empresas);
+- **Apify** para achar perfis direto no Instagram e conferir a planilha em lote (falta o token);
 - corrigir a **deduplicação das respostas** (o mesmo "respondeu" saía 3–4×);
 - contar resposta a comentário na métrica;
 - usar a **API oficial** para responder quem já falou com a Raiz.
@@ -121,6 +150,11 @@ Próximos passos de maior impacto:
   - corrigido nos dois plugins, com testes; a busca foi relançada.
 - **Descarte na visita:** o perfil parado não era descartado porque o agente passava o id da ação. O id da ação agora
   vale, e a instrução já traz o id do lead.
+- **Rodada pausada para sempre:** o detector de repetição pausou a busca (por causa das cópias), e rodada automática
+  pausada nunca mais andava. Agora a limpeza retoma a rodada, ou a cancela se ela pausar de novo. Rodada marcada como
+  "rodando" antes de um reinício volta na hora.
+- **Fontes** (tarde): estoque dividido por fonte, planilha completa, @ pelo site da empresa e conferência do estoque
+  antes da visita. Os detalhes estão em `docs/ESTUDO_FONTES_2026-10-12.md`.
 
 ---
 
@@ -130,18 +164,18 @@ Próximos passos de maior impacto:
 
 | Grav. | Problema | Onde | Como resolver |
 |---|---|---|---|
-| 🔴 | Cofre **em texto puro**, copiado para o S3 a cada hora (e a ponte do celular grava o mesmo arquivo, sem trava) | `cofre/helpers/cofre.py`, `infra/vm/ponte_whatsapp.py`, `backup.sh` | Criptografar cada segredo com KMS (chave usada só pelo papel da VM) ou SSM SecureString; excluir `segredos/`, `.env`, `whatsapp/.chave` e credenciais do Google do `sync`; apagar as versões antigas desses arquivos no bucket |
-| 🔴 | Chave AWS das sessões é **administradora**; passou pelo cofre (`CLAUDE_ENV_*`) em 10/10 (hoje já não está lá) | IAM `agent-studio-bedrock` | **Trocar a chave**. Criar `operador-agente` só com: `ssm:SendCommand` na VM; S3 no bucket; `ssm:GetParameter` em `/agentepessoal/*`; `ec2:Describe*` e `Reboot` na VM. A administradora fica para o `deploy.py`, com MFA. Tirar `aws s3 cp:*` das permissões automáticas em `.claude/settings.json` |
-| 🔴 | **Tela do celular pública e sem login**; o Android roda `--privileged` (root no Android ≈ root na máquina) | `infra/vm/setup.sh` (túnel do ws-scrcpy) | Túnel só sob demanda + Cloudflare Access; desligar o shell do ws-scrcpy; tentar rodar sem `--privileged` |
-| 🔴 | Texto de terceiros entra no modelo sem marcação de "dado, não ordem" (até no prompt da conversa do celular, via avisos); a janela de 12 min após `proxima`/`comentar` libera **qualquer** mensagem em qualquer site | `aprovacoes/…/_05_revisar_acao.py`, `prospeccao.py` (`liberar`), `whatsapp/…/_60_conversa_whatsapp.py` | **Bilhete de envio** (§4.4); texto de terceiros sempre entre marcadores "DADO EXTERNO"; avisos guardam só metadados |
+| 🔴 | Cofre **em texto puro**, copiado para o S3 a cada hora (e a ponte do celular grava o mesmo arquivo, sem trava) | `cofre/helpers/cofre.py`, `infra/vm/ponte_whatsapp.py`, `backup.sh` | **Aprovado (sem trava nova):** `segredos/`, `.env`, `whatsapp/.chave` e credenciais do Google saem do `sync` e vão num pacote cifrado com KMS (a restauração decifra sozinha); máscara de segredos nas saídas; apagar as versões antigas no bucket **só com o ok do Matheus** |
+| ⚪ | Chave AWS das sessões é **administradora** | IAM `agent-studio-bedrock` | **Decisão do Matheus: acesso total mantido.** Opcional: girar a chave, que passou pelo cofre em 10/10 (mesmo acesso) |
+| ⚪ | **Tela do celular pública e sem login** | `infra/vm/setup.sh` (túnel do ws-scrcpy) | **Decisão do Matheus: fica como está** |
+| 🔴 | Texto de terceiros entra no modelo sem marcação de "dado, não ordem" (até no prompt da conversa do celular, via avisos); a janela de 12 min após `proxima`/`comentar` libera **qualquer** mensagem em qualquer site | `aprovacoes/…/_05_revisar_acao.py`, `prospeccao.py` (`liberar`), `whatsapp/…/_60_conversa_whatsapp.py` | **Bilhete de envio** (§4.4), invisível no uso normal; texto de terceiros sempre entre marcadores "DADO EXTERNO"; avisos guardam só metadados |
 | 🔴 | O agente pode **aprovar a própria ação**: a chave da ponte fica no volume dele, e aprovação sem id é aceita | `aprovacoes/helpers/revisor.py` (`decidir`), `whatsapp/api/receber.py` | Exigir sempre o id; assinar os botões (HMAC) com chave que o contêiner não lê |
 | 🔴 | Código de vínculo do Telegram **não expira e pode ser reusado** (dá acesso total como "matheus") | `infra/control/telegram.py` | Código de uso único, 15 min, aviso nos chats já vinculados |
 | 🔴 | Interface pode subir **sem login** numa VM nova (se a restauração falhar) | `setup.sh` (`.env` só se houver usuários) | Sempre gravar o login; não criar túnel sem login |
 | 🟠 | Proxy de modelos (8787) e credenciais Meta (8788) abertos a **todos** os contêineres, inclusive o Android | `bedrock_proxy.py`, `credenciais_meta.py` | Escutar só na rede do agente + cabeçalho secreto; separar a rede do celular |
 | 🟠 | Segredos em log (`set -x` imprime a senha do login e a chave das sessões web) | `setup.sh` | `set +x` nesses trechos e trocar os valores |
-| 🟠 | `§§secret()` é substituído em qualquer argumento (até URL ou `curl -d`) | `cofre/…/_08_segredos_da_pessoa.py` | Cada segredo amarrado ao site em que pode ser usado |
-| 🟠 | Login sem 2FA, sessão de 400 dias, trava de tentativas **global** (qualquer um bloqueia o dono) | `login_usuarios` | Cloudflare Access; sessão de 30 dias; trava por IP |
-| 🟠 | E-mail para o agente confia no "De:" (só recusa SPF `fail`); assinatura do WhatsApp é opcional | `_57_email_do_agente.py`, `infra/control/ctl/whatsapp.py` | Exigir `dmarc=pass`; recusar webhook sem `app_secret` |
+| 🟠 | `§§secret()` é substituído em qualquer argumento (até URL ou `curl -d`), e o valor pode voltar na saída da ferramenta | `cofre/…/_08_segredos_da_pessoa.py` | **Máscara** em toda saída, histórico, log e Telegram (sem bloquear o uso). "Amarrar cada segredo a um site" saiu do plano: trava demais |
+| 🟠 | Trava de tentativas de login **global** (qualquer um bloqueia o dono) | `login_usuarios` | Trava por IP (assim ninguém tranca você para fora). 2FA e sessão curta saíram do plano: atrito |
+| 🟠 | E-mail para o agente confia no "De:" (só recusa SPF `fail`); assinatura do WhatsApp é opcional | `_57_email_do_agente.py`, `infra/control/ctl/whatsapp.py` | Sem `dmarc=pass`, o e-mail chega marcado como "remetente não confirmado" e o agente não executa ordens dele (não é recusado); webhook sem `app_secret`, recusado |
 | 🟠 | A API de testes da prospecção troca o revisor de verdade por um que aprova tudo, no mesmo processo das rodadas | `prospeccao/api/testar.py` + `tests/suite.py` | Carregar o helper com outro nome nos testes, ou desligar essa API em produção |
 
 ### 3.2 Perda de dados e duplicidade
@@ -204,6 +238,10 @@ Próximos passos de maior impacto:
 ---
 
 ## 4. Arquitetura à prova de erros (proposta)
+
+> **Regra de ouro (decisão de 12/10): poucas travas, todas com saída automática.** A arquitetura abaixo pega os erros
+> registrando e conferindo depois (livro, Conferência, Saúde). Ela não para o trabalho para perguntar; só bloqueia o
+> irreversível e externo.
 
 **Ideia central.** Três peças compartilhadas, num plugin novo `central` com banco SQLite
 `/a0/usr/central/agente.db` em modo WAL (várias leituras e uma escrita por vez, sem corromper):
@@ -393,7 +431,9 @@ def transacao(arq: Path, vazio):
   - a conversa for do perfil certo;
   - a conta for a @raiz.connect.
 
-  Sem bilhete, mensagem a terceiros pede ok. Isso substitui a janela de 12 min, que libera qualquer mensagem.
+  No uso normal ele nunca aparece: o script digita exatamente o texto aprovado. Se não bater, a mensagem não sai e fica
+  registrada para a Conferência, **sem perguntar nada ao Matheus** (decisão de 12/10: poucas travas). Isso substitui
+  a janela de 12 min, que libera qualquer mensagem.
 
 ### 4.5 Regras numa fonte só
 
@@ -532,10 +572,10 @@ Se tudo estiver bem, não manda nada.
 
 | Fase | Quando | O quê | Esforço |
 |---|---|---|---|
-| **0 — Hoje** | já | **Você:** trocar a chave AWS e as senhas do Gmail e do Facebook/Instagram. **Eu:** desligar o túnel da tela do celular; `set +x` no setup; pausar "Acompanhar Claude Code"; corrigir a deduplicação do "respondeu" | 1–2 h |
-| **1 — Base à prova de erro** | semana 1 | `transacao()` em todos os JSON (erro de leitura para e avisa); reserva de ação + "incerta"; limites de memória + vigia que avisa; perfil do navegador em volume + snapshot diário; cofre criptografado e fora do backup; bilhete de envio no lugar da janela de 12 min; aprovação sempre com id e botões assinados | 3–4 dias |
+| **0 — Hoje** | já | **Você:** trocar as senhas do Gmail e do Facebook/Instagram. **Eu:** `set +x` no setup; backup do cofre cifrado; máscara de segredos; pausar "Acompanhar Claude Code"; corrigir a deduplicação do "respondeu" | 1–2 h |
+| **1 — Base à prova de erro** | semana 1 | `transacao()` em todos os JSON (erro de leitura para e avisa); reserva de ação + "incerta"; limites de memória (generosos) + vigia que avisa; perfil do navegador em volume + snapshot diário; bilhete de envio no lugar da janela de 12 min (sem perguntar nada); aprovação sempre com id e botões assinados | 3–4 dias |
 | **2 — Livro, decisões e portão** | semana 2 | Plugin `central` (livro, decisões, itens, fatos, avisos); prospecção, fios e avisos migrados; `/livro`, `/pendentes`, `/decisoes`; Conferência; resumo, "Feito hoje" e revisão gerados do banco; rotinas em silêncio por padrão | 4–5 dias |
-| **3 — Confiabilidade contínua** | semana 3 | Saúde diária + canário do Instagram; implantador único (host e rotinas incluídos; 5 prompts no git); CI; testes mínimos em ponte, cofre, login, agenda; teste de restauração; AWS Budgets; Cloudflare Access | 3 dias |
+| **3 — Confiabilidade contínua** | semana 3 | Saúde diária + canário do Instagram; implantador único (host e rotinas incluídos; 5 prompts no git); CI; testes mínimos em ponte, cofre, login, agenda; teste de restauração; AWS Budgets | 3 dias |
 | **4 — Crescimento** | semana 3–4 | Link curto + cadastros ligados aos leads; planilha inteira do Grok; métricas por origem; API oficial para respostas; demo com agenda; cartão do lead quente; Apify; enxugar funções (YouTube, iniciativa, radar+fios) | 4–5 dias |
 
 ---
