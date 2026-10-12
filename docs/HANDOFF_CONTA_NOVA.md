@@ -265,6 +265,12 @@ scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fic
   estado em memória na ponte; no plugin, `ponte.proximos_andamentos` e `/a0/usr/whatsapp/andamento.json`); vira
   "✅ Terminei" quando nada mais roda. WhatsApp: no máximo 1 a cada 4 min.
 - **Resumo da manhã** (`nW924Nkj`) também lê `livro` acao "hoje" dias 1.
+- **Prospecção pela avaliação cega da skill (12/10)**: skill 4.0.0 (só o como), playbook (regras e modelos, o que o
+  revisor usa) e ferramenta (parâmetros) sem regra repetida. No código: `interacao_comentario` (tool `etapa` com
+  onde=comentario sem `negocio`), `seguimento` (novo tipo, 2 dias depois do link), lembrete só para `interagiu` e sem
+  link, `_espera` 2–6 min, `PICO_DM` 10h30–14h, `limite_consulta`/`liberar_consultas`/`reservar_consultas` (429 até o
+  dia seguinte; 2 dias seguidos até liberar; 30 consultas/dia), `varredura_devida` (Direct completo a cada 4 h),
+  `pausar_por_bloqueio` (bloqueio sem acao_id), nota "lê o Direct", AB_MINIMO 100. Execução às :08 e :38.
 - **Precisa do Matheus**: "Usar" do rascunho virar rascunho no Gmail exige trocar o conector para `gmail:drafts`
   (`setup.sh`, unidade do workspace-mcp) e ele autorizar no Google uma vez; depois ligar `config.gmail_rascunhos`.
 

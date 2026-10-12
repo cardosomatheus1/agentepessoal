@@ -26,10 +26,15 @@ PASTA = Path("/a0/usr/prospeccao")
 FUSO = "America/Bahia"
 CAIXA_TESTES = Path("/a0/usr/testes/celular.jsonl")
 
-TIPOS = ("aquecer", "dm_abertura", "dm_lembrete", "resposta", "parceiro")
-LIMITE_DIA = {"aquecer": 20, "dm_abertura": 12, "dm_lembrete": 10, "resposta": 15, "parceiro": 5}
-INTERVALO = 3 * 60                 # between two executed actions
+TIPOS = ("aquecer", "dm_abertura", "dm_lembrete", "resposta", "parceiro", "seguimento")
+LIMITE_DIA = {"aquecer": 20, "dm_abertura": 12, "dm_lembrete": 10, "resposta": 15, "parceiro": 5, "seguimento": 10}
+FORA_DO_PICO = ("dm_abertura", "dm_lembrete", "seguimento")  # not sent during PICO_DM
+DIAS_SEGUIMENTO = 2  # after our link, with no word from the person: one follow-up (12/10 blind review, item 7)
+INTERVALO = 3 * 60                 # typical spacing between two executed actions (tests use it)
+ESPACO = (2 * 60, 6 * 60)          # 12/10 blind review: the real spacing varies 2-6 min (a fixed 3 min looked like a robot)
 HORARIO = (9, 20)                  # executions only within [9h, 20h) local time
+PICO_DM = ("10:30", "14:00")       # no first message, reminder or follow-up while food producers are busiest
+CONSULTAS_DIA = 30                 # profiles/searches read by script with our account, per day (blind review, item 1)
 BLOQUEIO = 48 * 3600               # pause after Instagram blocks an action
 DIAS_DM = 2                        # calendar days after warming up, before the first DM
 DIAS_LEMBRETE = 3                  # calendar days after the first DM, before the reminder
@@ -55,7 +60,7 @@ LINK_CALCULADORA = "raizconnect.com.br/materiais/precificacao/calculadora"  # sh
 LINK_DELIVERY = "raizconnect.com.br/materiais/quanto-sobra-no-delivery"
 CALCULADORA = re.compile(r"(https?://)?(www\.)?raizconnect\.com\.br/materiais/(precificacao/calculadora|quanto-sobra-no-delivery)"
                          r"(\?[\w=&%.-]*)?(?![\w/])", re.I)
-TIPOS_COM_LINK = ("dm_lembrete", "resposta")
+TIPOS_COM_LINK = ("resposta",)  # 12/10 blind review: the reminder offers the link, it does not carry it
 
 
 # ------------------------------------------------------------------ storage
@@ -263,8 +268,9 @@ NOTA_MINIMA = 55   # below: not a lead
 NOTA_QUENTE = 75   # first in line for the day's limited slots
 PONTOS_SEGMENTO = {"marmitaria": 25, "congelados": 25, "cozinha_producao": 25, "fabrica": 22, "confeitaria": 20,
                    "salgados": 20, "doces": 18, "padaria": 15, "restaurante": 15, "outro_alimento": 5}
-CANAIS_VENDA = ("ifood", "encomenda", "delivery", "whatsapp", "loja", "catalogo")
-SINAIS = ("reajuste", "insumo", "expansao", "contratacao", "cardapio_precos", "kits", "promocao", "reclamacao_custo")
+CANAIS_VENDA = ("ifood", "encomenda", "delivery", "whatsapp", "loja", "catalogo", "direct")
+SINAIS = ("reajuste", "insumo", "expansao", "contratacao", "cardapio_precos", "kits", "promocao", "reclamacao_custo",
+          "responde_comentarios")
 EXCLUSOES = {"rede": "rede ou franquia", "franquia": "rede ou franquia", "pessoal": "perfil pessoal",
              "privado": "perfil privado", "concorrente": "concorrente/sistema/consultoria",
              "curso": "curso/influenciador (é parceiro, não cliente)", "influencer": "curso/influenciador (é parceiro, não cliente)"}
@@ -363,8 +369,10 @@ def pontuar(item: dict) -> dict:
         "canais": min(10, 3 * len(canais) + (1 if len(canais) >= 3 else 0)),
         "sinais": min(15, 5 * len(sinais)),
         "profissional": (5 if item.get("cardapio") else 0) + (5 if item.get("link_pedido") else 0),
+        # will this person read a DM? orders by Direct or answers to comments: yes; orders only by WhatsApp: less likely
+        "le_direct": 5 if ("direct" in canais or "responde_comentarios" in sinais) else -5 if canais == {"whatsapp"} else 0,
     }
-    nota = sum(partes.values())
+    nota = max(0, min(100, sum(partes.values())))
     return {"nota": nota, "partes": partes, "dias_ultimo_post": dias, "seguidores_n": seguidores, "segmento_rubrica": seg,
             "faixa": "quente" if nota >= NOTA_QUENTE else "bom" if nota >= 65 else "ok" if nota >= NOTA_MINIMA else "fraco"}
 
@@ -444,7 +452,8 @@ SCRIPT_PERFIS = """(async () => {
 })()"""
 
 RX_CANAIS = {"ifood": r"ifood", "encomenda": r"encomend|sob encomenda|pedidos? antecipad", "delivery": r"delivery|entrega",
-             "whatsapp": r"whats|wa\.me|zap", "loja": r"\bloja\b|retirada|endere[cç]o|\brua\b|\bav\.", "catalogo": r"cat[aá]logo"}
+             "whatsapp": r"whats|wa\.me|zap", "loja": r"\bloja\b|retirada|endere[cç]o|\brua\b|\bav\.", "catalogo": r"cat[aá]logo",
+             "direct": r"\b(?:no|pelo|via|chama no|manda(?: um)?)\s+direct\b|\bdm\b|\binbox\b"}
 RX_SINAIS = {"reajuste": r"reajust|novos? pre[cç]os|aumento", "insumo": r"insumo|mat[eé]ria[- ]prima|ingrediente.*(caro|sub)",
              "expansao": r"nova unidade|segunda unidade|inaugura|nova loja", "contratacao": r"contratando|vaga|estamos contratando",
              "cardapio_precos": r"card[aá]pio.*(r\$|pre[cç])|r\$ ?\d", "kits": r"\bkits?\b|combo", "promocao": r"promo|desconto|oferta"}
@@ -465,7 +474,7 @@ SCRIPT_BUSCA = """(async () => {
     try {
       const r = await fetch('/web/search/topsearch/?context=blended&include_reel=false&query=' + q,
                             {headers: {'x-ig-app-id': '936619743392459'}, credentials: 'include'});
-      if (r.status === 429) break;
+      if (r.status === 429) { achados['__429__'] = 'http 429'; break; }
       if (r.ok) pegar(await r.text(), t);
     } catch (e) {}
     await new Promise(f => setTimeout(f, 1500));
@@ -493,9 +502,64 @@ def novos_handles(login: str, achados, limite: int = 30) -> list:
 
 
 def api_pausada(login: str) -> str:
-    """'' or until when the profile scripts are paused after an Instagram 429."""
-    ate = carregar(login)["config"].get("api_pausa_ate") or 0
-    return dt.datetime.fromtimestamp(ate, _tz()).strftime("%H:%M") if agora() < ate else ""
+    """'' or until when the profile scripts are paused after an Instagram 429 (or the day's query ceiling)."""
+    c = carregar(login)["config"]
+    ate = c.get("api_pausa_ate") or 0
+    if agora() >= ate:
+        return ""
+    if ate - agora() > 30 * 86400:
+        return "o Matheus liberar (o Instagram limitou as consultas dois dias seguidos)"
+    return "amanhã" if _hoje_local(ate) != _hoje_local() else dt.datetime.fromtimestamp(ate, _tz()).strftime("%H:%M")
+
+
+def _amanha_cedo() -> float:
+    amanha = dt.datetime.fromtimestamp(agora(), _tz()).date() + dt.timedelta(days=1)
+    return dt.datetime.combine(amanha, dt.time(0, 0), _tz()).timestamp()
+
+
+def _registrar_429(d: dict) -> None:
+    """12/10 blind review, item 1: the 429 is the Instagram warning about OUR account. Every script that reads
+    Instagram with it stops until the next day (it used to be 15 min, and the round then opened profiles by hand);
+    two days in a row, nothing runs until the person decides (`liberar_consultas`)."""
+    hoje = _hoje_local()
+    ontem = (dt.datetime.fromtimestamp(agora(), _tz()).date() - dt.timedelta(days=1)).isoformat()
+    dias = [x for x in (d["config"].get("api_429_dias") or []) if x != hoje][-5:] + [hoje]
+    d["config"]["api_429_dias"] = dias
+    d["config"]["api_pausa_ate"] = agora() + 365 * 86400 if ontem in dias else _amanha_cedo()
+
+
+@_transacao
+def limite_consulta(login: str, detalhe: str = "") -> str:
+    """The round saw a 429 (or a "try again later" on a query): record it; returns until when the queries stop."""
+    d = carregar(login)
+    _registrar_429(d)
+    d["config"]["api_pausa_detalhe"] = str(detalhe or "")[:200]
+    salvar(login, d)
+    return api_pausada(login)
+
+
+@_transacao
+def liberar_consultas(login: str) -> None:
+    """The person allows the profile scripts again (after a two-day 429 stop)."""
+    d = carregar(login)
+    d["config"]["api_pausa_ate"] = 0
+    d["config"]["api_429_dias"] = []
+    salvar(login, d)
+
+
+@_transacao
+def reservar_consultas(login: str, n: int) -> int:
+    """How many of `n` profile/search reads with our account fit in today's ceiling (CONSULTAS_DIA); counted now."""
+    d = carregar(login)
+    reg = d["config"].get("consultas_dia") or {}
+    if reg.get("dia") != _hoje_local():
+        reg = {"dia": _hoje_local(), "n": 0}
+    teto = int(d["config"].get("consultas_teto") or CONSULTAS_DIA)
+    cabem = max(0, min(int(n), teto - int(reg["n"])))
+    reg["n"] = int(reg["n"]) + cabem
+    d["config"]["consultas_dia"] = reg
+    salvar(login, d)
+    return cabem
 
 
 # ------------------------------------------------------------------ official API (Instagram Graph "business discovery")
@@ -727,9 +791,9 @@ def avaliar_perfis(login: str, dados) -> dict:
                 out["conferir"].append({"falta": falta, "item": ev})
             continue
         para_registrar.append(ev)
-    if any("429" in e["erro"] for e in out["erros"]):  # Instagram rate limit: profile scripts pause for 15 min
+    if any("429" in e["erro"] for e in out["erros"]):  # Instagram rate limit on our account: stop reading
         d = carregar(login)
-        d["config"]["api_pausa_ate"] = agora() + 15 * 60
+        _registrar_429(d)
         salvar(login, d)
     if para_registrar:
         r = registrar(login, para_registrar)
@@ -821,8 +885,8 @@ def conferir_perfis(login: str, dados, fonte: str = "script") -> dict:
         lead.setdefault("evidencias", {}).update({k: item[k] for k in ("ultimo_post", "canais", "post_recente") if item.get(k)})
         out["conferidos"].append({"handle": lead["handle"], "nota": teste["nota"], "ultimo_post": ev["ultimo_post"],
                                   "seguidores": ev["seguidores"]})
-    if any("429" in e["erro"] for e in out["erros"]):  # Instagram rate limit: profile scripts pause for 15 min
-        d["config"]["api_pausa_ate"] = agora() + 15 * 60
+    if any("429" in e["erro"] for e in out["erros"]):  # Instagram rate limit on our account: stop reading
+        _registrar_429(d)
     salvar(login, d)
     for lead, motivo in descartar:
         mudar_etapa(login, lead["id"], "descartado", motivo[:300])
@@ -928,6 +992,27 @@ RESPOSTAS_ETAPAS = ("respondeu", "lead", "demo", "teste", "cliente")  # the answ
 
 
 @_transacao
+def interacao_comentario(login: str, lid: str, nota: str = "") -> dict | None:
+    """12/10 blind review, item 3: someone who answers our comment ("obrigada! fazemos sim") did not answer an offer.
+    It is an interaction: the person goes first in the queue of the first message (which may mention the exchange),
+    no reply with the link is proposed and the person is not notified about it. Only talk about price/cost, or a
+    message in the Direct, makes "respondeu"."""
+    d = carregar(login)
+    lead = _lead(d, lid)
+    if not lead:
+        return None
+    nota = " ".join(str(nota or "").split())[:300]
+    if any(h["tipo"] == "interagiu" and h.get("onde") == "comentario" and _citacao(h.get("texto", "")) == _citacao(nota)
+           for h in lead["historico"]):
+        return {**lead, "novidade": False}
+    lead["interagiu"] = lead.get("interagiu") or agora()
+    lead["historico"].append({"em": agora(), "tipo": "interagiu", "texto": nota or "respondeu ao nosso comentário",
+                              "onde": "comentario"})
+    salvar(login, d)
+    return {**lead, "novidade": True}
+
+
+@_transacao
 def mudar_etapa(login: str, lid: str, etapa: str, nota: str = "", onde: str = "direct") -> dict | None:
     """New stage. The returned lead carries "novidade": False when it is not a new answer: the rounds re-read the same
     Direct and comments every half hour and describe the same message in other words (11–12/10: "respondeu" reached
@@ -983,6 +1068,10 @@ def fechar_vencidos(login: str) -> int:
     for l in d["leads"]:
         if l["etapa"] == "lembrado" and agora() - l["atualizado"] > ESPERA_FIM:
             l["etapa"], l["atualizado"] = "sem_resposta", agora()
+            n += 1
+        elif (l["etapa"] == "abordado" and not l.get("interagiu")
+              and agora() - l["atualizado"] > DIAS_LEMBRETE * 86400 + ESPERA_FIM):
+            l["etapa"], l["atualizado"] = "sem_resposta", agora()  # no reminder for them: closes after the same wait
             n += 1
     if n:
         salvar(login, d)
@@ -1143,11 +1232,29 @@ def repor_aquecer(login: str) -> int:
     return len(out.get("automaticas", []))
 
 
+def _seguimento_devido(d: dict, lead: dict) -> bool:
+    """One follow-up, DIAS_SEGUIMENTO days after we sent the calculator link, when the person wrote nothing since
+    (12/10 blind review, item 7: the conversation died at the link)."""
+    if lead["etapa"] not in ("respondeu", "lead") or lead.get("humano") or lead["canal"] != "instagram":
+        return False
+    acoes = [a for a in d["acoes"] if a["lead_id"] == lead["id"]]
+    if any(a["tipo"] == "seguimento" and a["estado"] in ("proposta", "aprovada", "incerta", "executada") for a in acoes):
+        return False
+    links = [a.get("executada_em") or 0 for a in acoes if a["estado"] == "executada" and a["tipo"] in ("resposta", "dm_lembrete")
+             and CALCULADORA.search(a.get("texto") or "")]
+    if not links:
+        return False
+    falas = [h["em"] for h in lead["historico"] if h["tipo"] in {f"etapa:{e}" for e in RESPOSTAS_ETAPAS}]
+    if falas and max(falas) > max(links):
+        return False  # the person wrote after the link: that is a reply, not a follow-up
+    return _dias_desde(max(links)) >= DIAS_SEGUIMENTO
+
+
 def devidos(login: str) -> dict:
     """What each lead needs next, by the playbook's timing."""
     d = carregar(login)
     pendentes = {a["lead_id"] for a in d["acoes"] if a["estado"] in ("proposta", "aprovada", "incerta")}
-    out = {"dm_abertura": [], "dm_lembrete": [], "aquecer": []}
+    out = {"dm_abertura": [], "dm_lembrete": [], "seguimento": [], "aquecer": []}
     for l in d["leads"]:
         if l["id"] in pendentes or l["canal"] != "instagram":
             continue
@@ -1156,8 +1263,10 @@ def devidos(login: str) -> dict:
             out["aquecer"].append(l)
         elif l["etapa"] == "aquecido" and dias >= DIAS_DM:
             out["dm_abertura"].append(l)
-        elif l["etapa"] == "abordado" and dias >= DIAS_LEMBRETE:
-            out["dm_lembrete"].append(l)
+        elif l["etapa"] == "abordado" and dias >= DIAS_LEMBRETE and l.get("interagiu"):
+            out["dm_lembrete"].append(l)  # the others' first message sits in "requests": no second one (blind review)
+        elif _seguimento_devido(d, l):
+            out["seguimento"].append(l)
     for lista in out.values():  # who engaged back first, then best fit: the day's slots are limited
         lista.sort(key=lambda l: (not l.get("interagiu"), -(l.get("nota") if l.get("nota") is not None else 60)))
     return out
@@ -1165,7 +1274,8 @@ def devidos(login: str) -> dict:
 
 # ------------------------------------------------------------------ actions
 
-LIMITE_PILOTO = {"aquecer": 15, "dm_abertura": 5, "dm_lembrete": 5, "resposta": 15, "parceiro": 3}  # aquecer 8 → 15: Matheus, 12/10
+LIMITE_PILOTO = {"aquecer": 15, "dm_abertura": 5, "dm_lembrete": 5, "resposta": 15, "parceiro": 3,  # aquecer 8 → 15: Matheus, 12/10
+                 "seguimento": 5}
 
 
 def limites(d: dict) -> dict:
@@ -1208,9 +1318,19 @@ def validar_texto(tipo: str, texto: str, d: dict, lid: str) -> str:
         return "mensagem longa demais para uma DM (até 900 caracteres)"
     sem_calculadora = CALCULADORA.sub("", t)
     if LINK.search(sem_calculadora) or (tipo not in TIPOS_COM_LINK and CALCULADORA.search(t)):
-        return (f"link só o da calculadora ({LINK_CALCULADORA}) ou o do simulador de delivery ({LINK_DELIVERY}), e só no "
-                "lembrete ou na resposta a quem escreveu" if tipo in TIPOS_COM_LINK
-                else "sem link na primeira mensagem nem em mensagem a parceiro")
+        if tipo in TIPOS_COM_LINK:
+            return (f"link só o da calculadora ({LINK_CALCULADORA}) ou o do simulador de delivery ({LINK_DELIVERY}), e só "
+                    "na resposta a quem escreveu")
+        if tipo == "dm_lembrete":
+            return "lembrete sem link: ofereça mandar (\"quer que eu te mande o link aqui?\")"
+        return "sem link na primeira mensagem, no seguimento nem em mensagem a parceiro"
+    lead = _lead(d, lid) or {}
+    if tipo == "resposta" and CALCULADORA.search(t):
+        if lead.get("etapa") == "descartado":
+            return "quem disse não recebe só um obrigado curto: sem link e sem pergunta"
+        if any(a["lead_id"] == lead.get("id") and a["estado"] == "executada" and CALCULADORA.search(a.get("texto") or "")
+               for a in d["acoes"]):
+            return "a pessoa já recebeu o link: não repita; pergunte se conseguiu abrir ou se ficou alguma dúvida"
     if tipo != "resposta" and PROIBIDAS.search(t):
         return f"palavra fora do tom do playbook: «{PROIBIDAS.search(t).group(0)}»"
     if tipo != "resposta" and PEDE_RECEITA.search(t):
@@ -1276,6 +1396,12 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
             motivo = "lembrete só para quem recebeu a abertura e não respondeu"
         elif tipo == "dm_lembrete" and _dias_desde(lead["atualizado"]) < DIAS_LEMBRETE:
             motivo = "cedo demais para o lembrete"
+        elif tipo == "dm_lembrete" and not lead.get("interagiu"):
+            motivo = ("lembrete só para quem segue a Raiz ou interagiu com ela (para os outros a 1ª mensagem está em "
+                      "Solicitações): deixe fechar sem resposta")
+        elif tipo == "seguimento" and not _seguimento_devido(d, lead):
+            motivo = (f"seguimento só uma vez, {DIAS_SEGUIMENTO} dias depois de mandarmos o link, e só se a pessoa não "
+                      "escreveu mais")
         elif tipo == "resposta" and lead["etapa"] not in ("respondeu", "lead", "demo", "teste", "descartado"):
             motivo = "resposta só para quem escreveu"
         elif tipo == "resposta" and _ja_respondido(d, lead):
@@ -1315,7 +1441,7 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
 
 # ------------------------------------------------------------------ pre-approved within the daily limits
 
-AUTO_TIPOS = ("aquecer", "dm_abertura", "dm_lembrete", "resposta", "parceiro")
+AUTO_TIPOS = ("aquecer", "dm_abertura", "dm_lembrete", "resposta", "parceiro", "seguimento")
 # Matheus, 12/10: "não preciso aprovar as coisas do Instagram, pode me avisar que foi feito". With pre-approval on
 # and config sem_aprovacao (default true), what the reviewer rejects is NOT sent to his phone: the agent rewrites it
 # by the reviewer's reason, up to VERSOES_REVISOR versions per lead and type a day.
@@ -1328,18 +1454,21 @@ REVISOR = """Você é o revisor independente das mensagens de prospecção da Ra
 SEM perguntar a ele, então você é a última barreira antes de uma pessoa real recebê-las. Reprove um item SÓ se:
 1. Afirma um fato sobre o negócio (prato, unidade, novidade, número, cidade) que NÃO está nos DADOS DO LEAD nem no que
    o agente diz ter visto. Pergunta não é afirmação ("ele entra no kit?" é aceitável); elogio a algo que está nos
-   dados também é.
-2. Fere o playbook: comentário de aquecimento que vende, cita a Raiz, um sistema ou chama para o direct; jargão
-   (ERP, sistema de gestão, CMV, solução) na abertura; promessa de resultado ou número inventado; pressão; link na
-   primeira mensagem (os únicos links permitidos são a calculadora de precificação e o simulador de delivery da
-   Raiz, no lembrete e nas respostas — e são opcionais: lembrete sem link também vale); primeira mensagem
-   sem a assinatura do Matheus. A primeira mensagem pode ser só uma pergunta sobre como a pessoa precifica (variante
-   A) ou já trazer a oferta da calculadora grátis (variante B): as duas são válidas. Pedir a receita da pessoa
-   ("me manda a receita", ficha técnica) fere o playbook: soa invasivo.
+   dados também é. Dizer que o Matheus está na cidade do lead ("aqui em {cidade}") quando ela não é Salvador, ou que
+   ele também produz comida, é fato inventado.
+2. Fere o playbook: comentário de aquecimento que vende, cita a Raiz, um sistema, chama para o direct ou faz pergunta
+   de compra ("vocês fazem…?", "entregam em…?", "quanto custa?"); jargão (ERP, sistema de gestão, CMV, solução) na
+   abertura; promessa de resultado ou número inventado; pressão; link fora do lugar (os únicos links permitidos são a
+   calculadora de precificação e o simulador de delivery da Raiz, e só na resposta a quem escreveu: primeira
+   mensagem, lembrete e seguimento vão sem link); repetir o link a quem já recebeu; oferta ou link para quem disse
+   não; primeira mensagem sem a assinatura do Matheus. A primeira mensagem pode ser só uma pergunta sobre como a
+   pessoa precifica (variante A) ou já trazer a oferta da calculadora grátis pedindo licença para mandar o link
+   (variante B): as duas são válidas. Pedir a receita da pessoa ("me manda a receita", ficha técnica) fere o
+   playbook: soa invasivo.
 3. Soa como spam, intimidade forçada ou constrange a pessoa.
 4. Tem erro de português ou abreviação de internet que faça a marca parecer descuidada.
 5. Numa resposta: não combina com O QUE A PESSOA DISSE (ignora a pergunta dela, insiste depois de um não, ou finge
-   uma conversa que não houve).
+   uma conversa que não houve). Perguntou se é robô: a resposta não pode negar que há um assistente.
 Os modelos do playbook são guia, não texto fixo: variações naturais são boas (falar de entrega, embalagem ou iFood ao
 explicar o cálculo; outra forma de oferecer a calculadora; outro elogio verdadeiro). Não reprove por estilo.
 Na dúvida REAL sobre fato ou respeito, reprove: o item volta ao dono para ele decidir, nada se perde.
@@ -1384,7 +1513,8 @@ def _resposta_falhou(d: dict, lead: dict) -> bool:
 # Every executed, failed or deleted action also goes to the append-only ledger, where the Conferência checks it (e.g. the
 # same DM to the same person twice). The ledger is optional and never stops the work: no plugin, no record.
 LIVRO = Path("/a0/usr/plugins/central/helpers/livro.py")
-VERBO_LIVRO = {"aquecer": "seguir_curtir", "dm_abertura": "dm", "dm_lembrete": "dm", "resposta": "dm", "parceiro": "dm"}
+VERBO_LIVRO = {"aquecer": "seguir_curtir", "dm_abertura": "dm", "dm_lembrete": "dm", "resposta": "dm", "parceiro": "dm",
+               "seguimento": "dm"}
 LIVRO_MODULO = None  # tests put a stand-in here
 
 
@@ -1614,7 +1744,7 @@ def _contradiz(a: dict, motivo: str) -> bool:
                            or "cadastro" in m and re.search(r"sem cadastro", t, re.I)))
 
 
-AB_MINIMO = 30       # first messages per variant before the numbers decide (12/10 review §5 item 11)
+AB_MINIMO = 100      # first messages per variant before the numbers decide (12/10 blind review: 30 was noise)
 AB_DIFERENCA = 5.0   # points of answer rate that make one variant the better one
 
 
@@ -1709,10 +1839,15 @@ def definir_conta(login: str, handle: str) -> str:
 
 
 CONFERENCIA_VALE = 40 * 60  # an execution round must have read the Direct and the notifications this recently
+VARREDURA_H = 4  # 12/10 blind review, item 2: every conversation opened one by one ~3x a day (9h-19h), not every round
+
+
+def varredura_devida(d: dict) -> bool:
+    return agora() - float(d.get("varredura_em") or 0) >= VARREDURA_H * 3600
 
 
 @_transacao
-def conferido(login: str, direct: str, notificacoes: str, interagiram: list | None = None) -> str:
+def conferido(login: str, direct: str, notificacoes: str, interagiram: list | None = None, varredura: bool = False) -> str:
     """The round says what it read in the Direct and in the notifications (answers are looked for before acting).
     '' when recorded, else why not: the notifications text must be what is on the page, not a one-word claim."""
     direct, notificacoes = (direct or "").strip(), (notificacoes or "").strip()
@@ -1721,6 +1856,8 @@ def conferido(login: str, direct: str, notificacoes: str, interagiram: list | No
                 "as primeiras linhas que aparecem na página de notificações")
     d = carregar(login)
     d["conferencia"] = {"em": agora(), "direct": direct[:500], "notificacoes": notificacoes[:800]}
+    if varredura:
+        d["varredura_em"] = agora()
     for h in interagiram or []:  # followed back / liked / commented: warmer, goes first for the next message
         lead = next((l for l in d["leads"] if l["handle"] == normalizar(str(h))), None)
         if lead and not lead.get("interagiu"):
@@ -1776,8 +1913,9 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
         # nothing to do at all: say so now, not "wait for the spacing" (11/10 17h20: the round waited on nothing)
         return None, "nenhuma ação aprovada esperando"
     ultima = _ultima_acao(d)  # a catch-up comment also counts for the spacing
-    if agora() - ultima < INTERVALO:
-        return None, f"espaçamento: próxima a partir de {dt.datetime.fromtimestamp(ultima + INTERVALO, _tz()).strftime('%H:%M')}"
+    if ultima and agora() - ultima < _espera(ultima):
+        return None, f"espaçamento: próxima a partir de {dt.datetime.fromtimestamp(ultima + _espera(ultima), _tz()).strftime('%H:%M')}"
+    pico = False
     # replies go first (someone is waiting), then the rest in approval order
     for a in sorted((x for x in d["acoes"] if x["estado"] == "aprovada"), key=lambda x: (x["tipo"] != "resposta", x.get("decidida", 0))):
         lead = _lead(d, a["lead_id"])
@@ -1789,6 +1927,9 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
             continue
         if not _livre(a, quem):
             continue  # another round has it
+        if a["tipo"] in FORA_DO_PICO and _no_pico():
+            pico = True
+            continue  # stays approved for after the peak
         executadas_hoje = sum(1 for x in d["acoes"] if x["tipo"] == a["tipo"] and x["estado"] == "executada"
                               and _hoje_local(x.get("executada_em")) == _hoje_local())
         if executadas_hoje >= limites(d)[a["tipo"]]:
@@ -1799,6 +1940,9 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
     salvar(login, d)
     if repor and repor_aquecer(login):
         return proxima(login, conta_ativa, repor=False, quem=quem)
+    if pico:
+        return None, (f"primeiras mensagens, lembretes e seguimentos esperam o fim do pico de produção ({PICO_DM[1]}); "
+                      "nada mais agora")
     return None, "nenhuma ação aprovada esperando"
 
 
@@ -1807,7 +1951,7 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
 # warm-ups of the day had no comment. Now, on the visit, the agent reads the latest post and may write one; the
 # reviewer checks it; only an approved comment is published. Also for warm-ups done in the last days (catch-up).
 DIAS_COMENTARIO = 3
-TENTATIVAS_COMENTARIO = 4  # the reviewer said no: rewrite with its reason and try again, up to this many (Matheus, 11/10)
+TENTATIVAS_COMENTARIO = 2  # the reviewer said no twice: no comment, just follow and like (12/10 blind review, item 3)
 
 
 def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, str]:
@@ -1833,8 +1977,8 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
         ultima = _ultima_acao(d)
         if not HORARIO[0] <= h < HORARIO[1]:
             motivo = f"fora do horário ({HORARIO[0]}h–{HORARIO[1]}h)"
-        elif agora() - ultima < INTERVALO:
-            motivo = "espaçamento: próxima a partir de " + dt.datetime.fromtimestamp(ultima + INTERVALO, _tz()).strftime("%H:%M")
+        elif ultima and agora() - ultima < _espera(ultima):
+            motivo = "espaçamento: próxima a partir de " + dt.datetime.fromtimestamp(ultima + _espera(ultima), _tz()).strftime("%H:%M")
     if motivo:
         return False, motivo
     tentativas = (a.get("comentario") or {}).get("tentativas", 0)
@@ -1897,11 +2041,25 @@ def sem_comentario(login: str) -> list[dict]:
     return sorted(out, key=lambda x: -x["executada_em"])
 
 
+def _espera(ultima: float) -> float:
+    """Seconds to wait after the last action: between ESPACO[0] and ESPACO[1], different each time but the same for
+    the same action (every `proxima` call agrees on the next time)."""
+    lo, hi = ESPACO
+    return lo + int(hashlib.sha256(f"{ultima:.3f}".encode()).hexdigest(), 16) % (hi - lo + 1)
+
+
+def _no_pico(ts: float | None = None) -> bool:
+    if not PICO_DM:
+        return False
+    agora_hm = dt.datetime.fromtimestamp(ts or agora(), _tz()).strftime("%H:%M")
+    return PICO_DM[0] <= agora_hm < PICO_DM[1]
+
+
 def _ultima_acao(d: dict) -> float:
     return max([a.get("executada_em", 0) for a in d["acoes"]] + [a.get("comentado_em", 0) for a in d["acoes"]] + [0])
 
 
-TIPOS_DIRECT = ("dm_abertura", "dm_lembrete", "resposta", "parceiro")
+TIPOS_DIRECT = ("dm_abertura", "dm_lembrete", "resposta", "parceiro", "seguimento")
 
 
 def script_digitar(texto: str) -> str:
@@ -1933,6 +2091,16 @@ def aviso_sem_acao(motivo: str) -> str:
         return (f"ESPERE: {motivo}. Aguarde até esse horário (ex.: code_execution_tool com `sleep 180`) e chame "
                 "`proxima` de novo. A rodada só termina com NADA AGORA ou depois de 3 ações feitas.")
     return f"NADA AGORA: {motivo}. Termine a rodada."
+
+
+@_transacao
+def pausar_por_bloqueio(login: str, detalhe: str = "") -> None:
+    """12/10 blind review, item 9: a block or verification seen with no action in hand (e.g. reading the Direct)
+    pauses the prospecting like a blocked action does."""
+    d = carregar(login)
+    d["bloqueio_ate"] = agora() + BLOQUEIO
+    d.setdefault("bloqueios", []).append({"em": agora(), "detalhe": str(detalhe or "")[:300]})
+    salvar(login, d)
 
 
 @_transacao
@@ -1992,7 +2160,7 @@ def encerrar_liberacao(contexto) -> None:
 # ------------------------------------------------------------------ phone
 
 ROTULO = {"aquecer": "🔥 Aquecer", "dm_abertura": "💬 Primeira mensagem", "dm_lembrete": "🔁 Lembrete",
-          "resposta": "↩️ Resposta", "parceiro": "🤝 Parceiro"}
+          "resposta": "↩️ Resposta", "parceiro": "🤝 Parceiro", "seguimento": "🔗 Depois do link"}
 
 
 def mensagem_acao(a: dict, lead: dict) -> str:
@@ -2089,8 +2257,9 @@ def metricas(login: str, dias: int = 7) -> dict:
                 or (c.get("estado") == "publicado" and (c.get("feito_em") or 0) >= corte)):
             comentou.add(a["lead_id"])
     comentados = [l for l in d["leads"] if l["id"] in comentou]
-    pelo_comentario = [l for l in comentados if any(h["tipo"].startswith("etapa:") and h.get("onde") == "comentario"
-                                                    and h["tipo"] != "etapa:descartado" for h in l["historico"])]
+    pelo_comentario = [l for l in comentados if any((h["tipo"].startswith("etapa:") or h["tipo"] == "interagiu")
+                                                    and h.get("onde") == "comentario" and h["tipo"] != "etapa:descartado"
+                                                    for h in l["historico"])]
     aprovadas = sum(1 for a in acoes if a["estado"] in ("aprovada", "executada", "falhou"))
     decididas = sum(1 for a in acoes if a["estado"] in ("aprovada", "executada", "falhou", "pulada"))
     return {"dias": dias, "acoes": por_estado, "etapas": etapas, "geral": taxa(abordados),
@@ -2117,7 +2286,9 @@ def resumo_hoje(login: str) -> str:
     novos = [l for l in d["leads"] if de_hoje(l["criado"])]
     rejeitados = sum(1 for v in (d.get("rejeitados") or {}).values() if de_hoje(v["em"]))
     esperando = [a for a in d["acoes"] if a["estado"] == "proposta"]
-    if not (respostas or feitas or falhas or novos or esperando):
+    if not (respostas or feitas or falhas or novos or esperando or any(
+            h["tipo"] == "interagiu" and h.get("onde") == "comentario" and de_hoje(h["em"])
+            for l in d["leads"] for h in l["historico"])):
         return ""
     linhas = [f"🎯 *Prospecção Raiz — {dt.datetime.fromtimestamp(agora(), _tz()).strftime('%d/%m')}*"]
     if respostas:
@@ -2126,9 +2297,14 @@ def resumo_hoje(login: str) -> str:
             h = next(x for x in reversed(l["historico"]) if x["tipo"].startswith("etapa:") and de_hoje(x["em"]))
             onde = "no comentário" if h.get("onde") == "comentario" else "no Direct"
             linhas.append(f"• {l['nome'][:40]} (@{l['handle']}) — {onde}: «{(h.get('texto') or '')[:160]}» ({l['etapa']})")
+    interacoes = [(l, h) for l in d["leads"] for h in l["historico"]
+                  if h["tipo"] == "interagiu" and h.get("onde") == "comentario" and de_hoje(h["em"])]
+    if interacoes:  # answers to our comments are no longer notified one by one (12/10 blind review): they show here
+        linhas.append("\n👋 *Responderam ao nosso comentário* (vão primeiro na 1ª mensagem)")
+        linhas += [f"• @{l['handle']}: «{(h.get('texto') or '')[:120]}»" for l, h in interacoes[:8]]
     if feitas:  # everything that went out today, one line per profile
         n = {t: sum(1 for a in feitas if a["tipo"] == t) for t in TIPOS}
-        nomes = {"aquecer": "aquecidos", "dm_abertura": "primeiras mensagens", "dm_lembrete": "lembretes",
+        nomes = {"aquecer": "aquecidos", "dm_abertura": "primeiras mensagens", "dm_lembrete": "lembretes", "seguimento": "seguimentos",
                  "resposta": "respostas", "parceiro": "parceiros"}
         linhas.append("\n✅ *Feito hoje:* " + ", ".join(f"{n[t]} {nomes[t]}" for t in TIPOS if n[t]))
         for a in sorted(feitas, key=lambda x: x["executada_em"]):
@@ -2269,7 +2445,8 @@ def painel(login: str) -> str:
     hoje = _hoje_local()
     feitas = Counter(a["tipo"] for a in d["acoes"] if a["estado"] == "executada" and a.get("executada_em")
                      and _hoje_local(a["executada_em"]) == hoje)
-    nomes = {"aquecer": "aquecidos", "dm_abertura": "primeiras mensagens", "dm_lembrete": "lembretes", "resposta": "respostas"}
+    nomes = {"aquecer": "aquecidos", "dm_abertura": "primeiras mensagens", "dm_lembrete": "lembretes", "resposta": "respostas",
+             "seguimento": "seguimentos depois do link"}
     linhas = [f"Funil (desde o início): {funil}",
               f"Estoque: {e['prontos']}/{e['alvo']} prontos para aquecer ({fontes})",
               f"Semana: {g['abordados']} abordados, {g['responderam']} responderam ({g['taxa_resposta']:.0f}%)"
@@ -2351,7 +2528,8 @@ def cartao_lead(login: str, lid: str) -> dict | None:
     pendente = next((a for a in reversed(acoes) if a["estado"] in ("proposta", "aprovada", "incerta")), None)
     quando = lambda ts: dt.datetime.fromtimestamp(ts, _tz()).strftime("%d/%m %H:%M")  # noqa: E731
     nosso = {"aquecer": "comentário da Raiz", "comentario": "comentário da Raiz", "dm_abertura": "Raiz no Direct",
-             "dm_lembrete": "Raiz no Direct (lembrete)", "resposta": "Raiz respondeu"}
+             "dm_lembrete": "Raiz no Direct (lembrete)", "resposta": "Raiz respondeu",
+             "seguimento": "Raiz no Direct (depois do link)"}
     conversa = []
     for h in l["historico"]:
         texto = " ".join(str(h.get("texto") or "").split())
@@ -2406,10 +2584,16 @@ def resumo_contexto(login: str) -> str:
             linhas += [f"- [{l['id']}] @{l['handle']} — {l['nome']} ({l['segmento']}, {l['cidade']}; nota {l.get('nota', '—')}); motivo: {l['motivo'][:120]}"
                        + (f"; já recebeu: {l['historico'][-1]['texto'][:160]}" if l["historico"] else "") for l in lista[:25]]
     conversas = [l for l in d["leads"] if l["etapa"] in ("abordado", "lembrado", "respondeu", "lead", "demo")]
-    if conversas:
-        linhas.append(f"\n## Conversas no Direct para conferir ({len(conversas)}) — abra cada uma (perfil → Mensagem)")
+    if conversas and varredura_devida(d):
+        linhas.append(f"\n## VARREDURA COMPLETA do Direct agora ({len(conversas)}) — abra cada uma (perfil → Mensagem), "
+                      "depois `conferido` com varredura: true")
         linhas += [f"- [{l['id']}] @{l['handle']} ({l['etapa']}); última nossa: {l['historico'][-1]['texto'][:80] if l['historico'] else ''}"
                    for l in conversas[:20]]
+    elif conversas:
+        proxima_v = dt.datetime.fromtimestamp((d.get("varredura_em") or 0) + VARREDURA_H * 3600, _tz()).strftime("%H:%M")
+        linhas.append(f"\n## Direct nesta rodada: só o que é novo ({len(conversas)} conversas em andamento; varredura "
+                      f"completa a partir das {proxima_v}). Veja o número de não lidas no ícone de Mensagens, as "
+                      "solicitações e as notificações; abra só as conversas com mensagem nova.")
     conhecidos = sorted(l["handle"] for l in d["leads"])
     linhas.append(f"\n## Já conhecidos ({len(conhecidos)}) — não registre de novo\n" + (", ".join(conhecidos[-400:]) or "(nenhum)"))
     rej = d.get("rejeitados") or {}

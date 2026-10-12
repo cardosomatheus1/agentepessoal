@@ -152,6 +152,14 @@ class Prospeccao(Tool):
             termos = termos if isinstance(termos, list) else [t.strip() for t in str(termos or "").split(",") if t.strip()]
             if not termos:
                 return r("Passe `termos` = lista de buscas (ex.: [\"marmita salvador\", \"marmitaria salvador\", \"marmita fit salvador\"]).")
+            pausa = p.api_pausada(login)
+            if pausa:
+                return r(f"Buscas pelo Instagram paradas até {pausa} (o Instagram limitou as consultas da nossa conta). "
+                         "Complete o estoque com `fontes`; não abra perfis um a um.")
+            cabem = await asyncio.to_thread(p.reservar_consultas, login, min(len(termos), 3))
+            if not cabem:
+                return r("Teto de consultas pelo Instagram de hoje atingido. Complete o estoque com `fontes` e pare a busca no Instagram.")
+            termos = termos[:cabem]
             return r("Rode este script com `browser` action \"evaluate\" numa aba do instagram.com (logada como @raiz.connect). "
                      "Ele devolve um JSON com os @ achados; passe-o INTEIRO para `prospeccao` acao \"perfis_script\" com "
                      "`achados` = o texto (a ferramenta tira os já conhecidos e rejeitados).\n\n" + p.montar_busca(termos))
@@ -178,9 +186,14 @@ class Prospeccao(Tool):
             out = await asyncio.to_thread(p.guardar_token_meta, login, token)
             return r(json.dumps(out, ensure_ascii=False))
         if acao == "perfis_script":
+            if "__429__" in str(kwargs.get("achados") or ""):
+                ate = await asyncio.to_thread(p.limite_consulta, login, "a busca devolveu http 429")
+                return r(f"O Instagram limitou as consultas da nossa conta (429): nenhuma busca ou avaliação pelo Instagram até {ate}. "
+                         "Complete o estoque com `fontes`; não abra perfis um a um.")
             pausa = p.api_pausada(login)
             if pausa:
-                return r(f"Scripts de perfil pausados até {pausa} (o Instagram limitou as consultas). Espere, ou avalie abrindo os perfis um a um.")
+                return r(f"Scripts de perfil parados até {pausa} (o Instagram limitou as consultas). Complete o estoque com "
+                         "`fontes`; não abra perfis um a um.")
             if kwargs.get("achados"):
                 handles = p.novos_handles(login, kwargs["achados"])
                 if not handles:
@@ -190,11 +203,14 @@ class Prospeccao(Tool):
                 handles = p.novos_handles(login, handles)
             if not handles:
                 return r("Passe `leads` = lista de @ (até 15).")
-            fila = handles[5:]
-            return r((f"Novos achados: {len(handles)}. Este script avalia os 5 primeiros; depois chame de novo `perfis_script` com `leads` = {fila[:25]} (de 5 em 5). " if fila else "")
+            cabem = await asyncio.to_thread(p.reservar_consultas, login, min(len(handles), 5))
+            if not cabem:
+                return r("Teto de consultas pelo Instagram de hoje atingido: pare a avaliação por script. Complete o estoque com `fontes`.")
+            lote, fila = handles[:cabem], handles[cabem:]
+            return r((f"Novos achados: {len(handles)}. Este script avalia {len(lote)}; depois chame de novo `perfis_script` com `leads` = {fila[:25]} (de 5 em 5). " if fila else "")
                      + "Rode este script com a ferramenta `browser`, action \"evaluate\", numa aba já aberta em https://www.instagram.com/ "
                      "(logada como @raiz.connect). Ele devolve um texto JSON; passe esse texto INTEIRO, sem mudar nada, para "
-                     "`prospeccao` acao \"avaliar_perfis\" com `dados` = o texto.\n\n" + p.montar_script(handles))
+                     "`prospeccao` acao \"avaliar_perfis\" com `dados` = o texto.\n\n" + p.montar_script(lote))
         if acao == "conferir_estoque":
             # leads found outside Instagram: activity, size and privacy checked before their turn (12/10: 73% of the
             # sheet's visits ended in a discard)
@@ -213,21 +229,26 @@ class Prospeccao(Tool):
                     return r(json.dumps(out, ensure_ascii=False) + "\nConferidos pelo Apify. Chame `conferir_estoque` de novo se ainda houver.")
             pausa = p.api_pausada(login)
             if pausa:
-                return r(f"Scripts de perfil pausados até {pausa} (o Instagram limitou as consultas): pule a conferência nesta rodada.")
+                return r(f"Scripts de perfil parados até {pausa} (o Instagram limitou as consultas): pule a conferência.")
+            cabem = await asyncio.to_thread(p.reservar_consultas, login, len(handles))
+            if not cabem:
+                return r("Teto de consultas pelo Instagram de hoje atingido: a visita do aquecimento confere esses perfis.")
+            handles = handles[:cabem]
             return r("Rode este script com a ferramenta `browser`, action \"evaluate\", numa aba já aberta em https://www.instagram.com/ "
                      "(logada como @raiz.connect). Ele devolve um texto JSON; passe esse texto INTEIRO, sem mudar nada, para "
                      "`prospeccao` acao \"conferidos\" com `dados` = o texto.\n\n" + p.montar_script(handles))
         if acao == "conferidos":
             out = p.conferir_perfis(login, kwargs.get("dados") or texto)
             if any("429" in e.get("erro", "") for e in out["erros"]):
-                return r(json.dumps(out, ensure_ascii=False) + "\nO Instagram limitou as consultas (429): pare a conferência nesta rodada.")
+                return r(json.dumps(out, ensure_ascii=False) + "\nO Instagram limitou as consultas da nossa conta (429): nenhuma "
+                         "consulta pelo Instagram até amanhã. Não abra perfis um a um.")
             return r(json.dumps(out, ensure_ascii=False) + "\nDescartados já saíram do estoque; conferidos ficam prontos para a vez deles. "
                      "Chame `conferir_estoque` de novo (no máximo 3 vezes por rodada).")
         if acao == "avaliar_perfis":
             out = p.avaliar_perfis(login, kwargs.get("dados") or texto)
             if any("429" in e.get("erro", "") for e in out["erros"]):
-                return r(json.dumps(out, ensure_ascii=False) + "\nO Instagram limitou as consultas (429). NÃO insista: pare os scripts de "
-                         "perfil por 10 minutos. Se precisar seguir agora, avalie abrindo os perfis um a um (método antigo da skill).")
+                return r(json.dumps(out, ensure_ascii=False) + "\nO Instagram limitou as consultas da nossa conta (429): nenhuma "
+                         "busca ou avaliação pelo Instagram até amanhã. Não abra perfis um a um; complete o estoque com `fontes`.")
             return r(json.dumps(out, ensure_ascii=False) + "\nCriados já estão registrados com nota; recusados já anotados. "
                      "Só os de \"conferir\" precisam de você: abra o perfil, descubra o que falta (cidade/segmento) e registre "
                      "com `registrar` usando o item como base (ou `rejeitar`).")
@@ -377,6 +398,12 @@ class Prospeccao(Tool):
         if acao == "resultado":
             ok_bool = str(ok).lower() in ("true", "1", "sim", "ok")
             bloq = str(bloqueio).lower() in ("true", "1", "sim")
+            if bloq and not acao_id:  # a block or verification seen while reading (no action in hand)
+                await asyncio.to_thread(p.pausar_por_bloqueio, login, detalhe)
+                await asyncio.to_thread(p.enviar, login, "⛔ *Prospecção pausada por 48 h*\n\nO Instagram mostrou um bloqueio ou "
+                                        "pediu verificação: " + str(detalhe or "")[:300] + "\nNada mais sai até lá.",
+                                        tipo="urgente", ponte=ponte())
+                return r("Registrado. Prospecção pausada por 48 h. Termine a rodada.")
             a = await asyncio.to_thread(p.resultado, login, acao_id, ok_bool, detalhe, bloq, quem=self.agent.context.id)
             p.encerrar_liberacao(self.agent.context)
             if not a:
@@ -398,6 +425,15 @@ class Prospeccao(Tool):
             return r(f"Registrado: {a['estado']}. Chame `prospeccao` acao \"proxima\" de novo para a seguinte.")
         if acao == "etapa":
             onde = str(kwargs.get("onde") or "direct").lower()
+            negocio = str(kwargs.get("negocio") or "").lower() in ("true", "1", "sim")
+            if etapa == "respondeu" and onde == "comentario" and not negocio:
+                lead = await asyncio.to_thread(p.interacao_comentario, login, lead_id, nota)
+                if not lead:
+                    return r("Lead não encontrado (use o @, a URL ou o id).")
+                return r(f"@{lead['handle']}: registrado como INTERAÇÃO (respondeu ao nosso comentário sem falar de preço, custo "
+                         "ou do sistema). Não proponha resposta no Direct: a pessoa vai primeiro na fila da 1ª mensagem, que "
+                         "pode citar essa troca. Se ela falou de preço/custo/lucro ou pediu para conversar, chame de novo com "
+                         "negocio: true.")
             lead = await asyncio.to_thread(p.mudar_etapa, login, lead_id, etapa, nota, onde)
             if not lead:
                 return r(f"Lead ou etapa inválidos (etapas: {', '.join(p.ETAPAS)}).")
@@ -419,6 +455,14 @@ class Prospeccao(Tool):
         if acao == "cartao":  # "me manda o cartão do @x"
             erro = await mandar_cartao(login, lead_id)
             return r(f"Não consegui mandar o cartão: {erro}" if erro else "Cartão enviado ao celular do Matheus.")
+        if acao == "limite_consulta":  # the round saw "http 429" (or "try again later") on a query
+            ate = await asyncio.to_thread(p.limite_consulta, login, detalhe or texto)
+            return r(f"Registrado: nenhuma busca, avaliação ou conferência pelo Instagram até {ate}. Não abra perfis um a um "
+                     "para compensar; termine a rodada com o que não usa o Instagram e escreva no fim "
+                     "\"CONSULTA LIMITADA (429)\".")
+        if acao == "liberar_consultas":  # the person decides to allow the profile scripts again
+            await asyncio.to_thread(p.liberar_consultas, login)
+            return r("Consultas pelo Instagram liberadas de novo.")
         if acao == "variante":  # A/B decided with the numbers, after the person agrees ("" = alternate again)
             v = await asyncio.to_thread(p.definir_variante, login, texto)
             return r(f"Primeira mensagem: só a variante {v} daqui em diante." if v else "Primeira mensagem: alternando A e B de novo.")
@@ -457,7 +501,9 @@ class Prospeccao(Tool):
         if acao == "conferido":
             inter = kwargs.get("interagiram") or []
             inter = inter if isinstance(inter, list) else [h.strip() for h in str(inter).split(",") if h.strip()]
-            erro = await asyncio.to_thread(p.conferido, login, str(kwargs.get("direct") or ""), str(kwargs.get("notificacoes") or ""), inter)
+            varredura = str(kwargs.get("varredura") or "").lower() in ("true", "1", "sim")
+            erro = await asyncio.to_thread(p.conferido, login, str(kwargs.get("direct") or ""), str(kwargs.get("notificacoes") or ""),
+                                           inter, varredura)
             return r(erro or "Conferência registrada. Agora chame `prospeccao` acao \"proxima\".")
         if acao == "hoje":
             texto_dia = p.resumo_hoje(login)

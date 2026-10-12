@@ -85,6 +85,15 @@ class Suite:
         f.PAUSA_BUSCA = f.PAUSA_GUIAPJ = f.PAUSA_APIFY = 0
         return f
 
+    def _padrao_dos_testes(self):
+        """Spacing fixed at INTERVALO and no peak window: the tests of the flow stay deterministic; t_espaco_variado and
+        t_sem_dm_no_pico test the real rules."""
+        p = self.p
+        if not hasattr(self, "_espera_real"):
+            self._espera_real, self._pico_real = p._espera, p.PICO_DM
+        p._espera = lambda ultima: p.INTERVALO
+        p.PICO_DM = ()
+
     def em(self, ts):  # simulated clock
         self.relogio = ts
         self.p.agora = lambda: self.relogio
@@ -100,6 +109,7 @@ class Suite:
                            and not (fora_da_vm and n in SO_NA_VM)):
             self.limpar()
             self.p.agora = original
+            self._padrao_dos_testes()
             inicio = time.time()
             try:
                 r = getattr(self, nome)()
@@ -892,13 +902,20 @@ class Suite:
         d = p.carregar(LOGIN)
         lembrete = ("Oi, Ana! Passando só pra deixar uma coisa útil: fizemos uma calculadora grátis que mostra quanto sobra "
                     "em cada marmita depois de insumo, embalagem e taxa do iFood: {link} — se preferir, me conta o preço de uma 🙂")
-        eq(p.validar_texto("dm_lembrete", lembrete.format(link=p.LINK_CALCULADORA), d, "x"), "", "calculadora no lembrete")
+        # 12/10 blind review, item 6: the reminder offers the link ("quer que eu te mande?"), it never carries one
+        ok("lembrete sem link" in p.validar_texto("dm_lembrete", lembrete.format(link=p.LINK_CALCULADORA), d, "x"),
+           "calculadora no lembrete é barrada")
+        eq(p.validar_texto("dm_lembrete", "Oi, pessoal da Ana! Sei que a rotina de marmita é corrida. Fizemos uma calculadora "
+                                          "grátis que mostra quanto sobra em cada marmita: quer que eu te mande o link aqui?",
+                           d, "x"), "", "lembrete oferecendo o link passa")
+        ok(p.validar_texto("seguimento", "E aí, conseguiu fazer a conta da marmita? " + p.LINK_CALCULADORA, d, "x"),
+           "seguimento sem link")
         eq(p.validar_texto("resposta", lembrete.format(link="raizconnect.com.br/materiais/quanto-sobra-no-delivery"), d, "x"), "",
            "simulador de delivery na resposta, sem https")
         for ruim in ("https://raizconnect.com.br/materiais/raio-x-do-lucro", "https://raizconnect.com.br/#/register",
                      "https://raizconnect.com.br/materiais/precificacao", "bit.ly/calc",
                      p.LINK_CALCULADORA + " e www.outro.com.br"):
-            ok(p.validar_texto("dm_lembrete", lembrete.format(link=ruim), d, "x"), f"link fora da lista barrado: {ruim}")
+            ok(p.validar_texto("resposta", lembrete.format(link=ruim), d, "x"), f"link fora da lista barrado: {ruim}")
         ok("primeira mensagem" in p.validar_texto("dm_abertura", DM_A.replace("Se quiser", p.LINK_CALCULADORA + " Se quiser"), d, "x"),
            "nem a calculadora na primeira mensagem")
 
@@ -1078,9 +1095,17 @@ class Suite:
         eq(p.avaliar_perfis(LOGIN, json.dumps([perfil("boa")]))["recusados"][0]["motivo"], "já conhecido", "repetido não duplica")
         eq(p.api_pausada(LOGIN), "", "sem 429, sem pausa")
         p.avaliar_perfis(LOGIN, json.dumps([{"handle": "x1", "erro": "http 429"}]))
-        ok(p.api_pausada(LOGIN), "429 pausa os scripts de perfil")
+        eq(p.api_pausada(LOGIN), "amanhã", "429 para as consultas pelo Instagram até o dia seguinte (blind review, item 1)")
         self.em(self.relogio + 16 * 60)
-        eq(p.api_pausada(LOGIN), "", "a pausa acaba em 15 min")
+        eq(p.api_pausada(LOGIN), "amanhã", "não volta em 15 min (antes voltava e a rodada abria perfis à mão)")
+        self.em(self.hora(10, dias=1))
+        eq(p.api_pausada(LOGIN), "", "no dia seguinte, volta")
+        p.limite_consulta(LOGIN, "http 429 na busca")
+        ok("Matheus" in p.api_pausada(LOGIN), "dois dias seguidos: só volta quando o Matheus liberar")
+        self.em(self.hora(10, dias=5))
+        ok("Matheus" in p.api_pausada(LOGIN), "e não volta sozinho")
+        p.liberar_consultas(LOGIN)
+        eq(p.api_pausada(LOGIN), "", "liberado")
 
     def t_metricas_por_faixa(self):
         p = self.p
@@ -1144,6 +1169,12 @@ class Suite:
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_lembrete", "texto": "Oi, Ana! Só pra não deixar passar: o cálculo continua de pé, é só me dizer o preço de um 🙂"}])
         ok(r["recusadas"] and "cedo" in r["recusadas"][0]["motivo"], "lembrete antes de 3 dias é barrado")
         self.em(self.relogio + 3 * 86400 + 60)
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_lembrete", "texto": "Oi, Ana! Só pra não deixar passar: o cálculo continua de pé, é só me dizer o preço de um 🙂"}])
+        ok(r["recusadas"] and "interagiu" in r["recusadas"][0]["motivo"],
+           "sem seguir de volta nem interagir, não há lembrete (a 1ª mensagem está em Solicitações)")
+        eq(p.devidos(LOGIN)["dm_lembrete"], [], "e ele não aparece como devido")
+        p.conferido(LOGIN, "1 conversa nova: ninguém do registro", "Notificações: marmitasdaana começou a seguir você. Curtiu sua foto.",
+                    ["marmitasdaana"])
         self._executar(lid, "dm_lembrete", "Oi, Ana! Só pra não deixar passar: o cálculo continua de pé, é só me dizer o preço de um 🙂")
         eq(p._lead(p.carregar(LOGIN), lid)["etapa"], "lembrado", "lembrado")
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_lembrete", "texto": "Oi, Ana! Passando de novo para lembrar do cálculo gratuito da sua marmita, combinado?"}])
@@ -1246,7 +1277,7 @@ class Suite:
         self.em(self.relogio + 4 * 60)
         self._revisor(reprovar=(b["id"],))
         r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Vocês fazem por encomenda pra festa?", "post de 09/10")
-        ok(not r and m.startswith("REESCREVA") and "3 tentativa" in m, f"revisor reprovou: manda reescrever com o motivo: {m}")
+        ok(not r and m.startswith("REESCREVA") and "1 tentativa" in m, f"revisor reprovou: manda reescrever com o motivo: {m}")
         ok(not p.comentado(LOGIN, b["id"], True, "x"), "sem aprovação, 'comentado' não registra nada")
         self._revisor()
         r, m = p.comentar(LOGIN, b["id"], "Esse bolo de pote de ninho ficou lindo! Sai mais por encomenda ou na pronta entrega?", "post de 09/10")
@@ -1286,7 +1317,8 @@ class Suite:
            "script recusa campo com rascunho, insere uma vez e espera o texto aparecer (editor do Instagram é assíncrono)")
         ok(json.dumps('Oi, pessoal da "Ana"! 😊 raizconnect.com.br/materiais/precificacao/calculadora', ensure_ascii=False) in s,
            "texto exato, com aspas escapadas")
-        ok(set(p.TIPOS_DIRECT) == {"dm_abertura", "dm_lembrete", "resposta", "parceiro"}, "todo envio no Direct usa o script")
+        ok(set(p.TIPOS_DIRECT) == {"dm_abertura", "dm_lembrete", "resposta", "parceiro", "seguimento"},
+           "todo envio no Direct usa o script")
         lid = self._lead("relida")
         n1 = p.mudar_etapa(LOGIN, lid, "respondeu", "Respondeu ao comentário da Raiz com orientação sobre aquecer marmitas: pode ir ao micro-ondas.", "comentario")
         ok(n1["novidade"], "primeira leitura avisa")
@@ -1832,13 +1864,16 @@ class Suite:
         eq(hist.count("humano"), 2, "assumir e devolver ficam no histórico")
 
     def t_ab_decidido_pelos_numeros(self):
-        # 12/10 review §5 item 11: after 30 first messages per variant, the weekly report proposes the better one
+        # 12/10 review §5 item 11: after AB_MINIMO first messages per variant (100 since the blind review: 30 was
+        # noise), the weekly report proposes the better one
         p = self.p
-        ok(p.sugestao_ab({"A": {"abordados": 29, "taxa_resposta": 3.0}, "B": {"abordados": 40, "taxa_resposta": 20.0}}) == "",
-           "menos de 30 em uma das duas: cedo para decidir")
-        r = p.sugestao_ab({"A": {"abordados": 31, "taxa_resposta": 3.2}, "B": {"abordados": 34, "taxa_resposta": 11.8}})
+        n = p.AB_MINIMO
+        eq(n, 100, "100 por variante")
+        ok(p.sugestao_ab({"A": {"abordados": n - 1, "taxa_resposta": 3.0}, "B": {"abordados": n + 10, "taxa_resposta": 20.0}}) == "",
+           f"menos de {n} em uma das duas: cedo para decidir")
+        r = p.sugestao_ab({"A": {"abordados": n + 1, "taxa_resposta": 3.2}, "B": {"abordados": n + 4, "taxa_resposta": 11.8}})
         ok("variante B responde mais" in r and "só a B" in r, r)
-        ok("parecido" in p.sugestao_ab({"A": {"abordados": 30, "taxa_resposta": 10.0}, "B": {"abordados": 30, "taxa_resposta": 12.0}}),
+        ok("parecido" in p.sugestao_ab({"A": {"abordados": n, "taxa_resposta": 10.0}, "B": {"abordados": n, "taxa_resposta": 12.0}}),
            "diferença pequena: manter as duas")
         eq(p.definir_variante(LOGIN, "b"), "B", "fixa a B")
         self.em(self.hora(10))
@@ -1984,6 +2019,175 @@ class Suite:
         sid2, criada2 = await crm.sincronizar(p, LOGIN, chamar, "conta@x")
         ok(criada2 and sid2 == "1AbCdEfGhIjKlMnOpQrStUvWx0002" and p.carregar(LOGIN)["config"]["crm_planilha"] == sid2,
            "apagada: cria outra e guarda o id novo")
+
+    # ------------------------------------------------------------------ 12/10 blind review of the skill
+    def t_espaco_variado(self):
+        """Item 2: 2 to 6 minutes between actions, different each time, the same for every call about one action."""
+        p = self.p
+        esperas = [self._espera_real(1_800_000_000.0 + i * 977) for i in range(40)]
+        ok(all(p.ESPACO[0] <= e <= p.ESPACO[1] for e in esperas), f"entre 2 e 6 min: {sorted(set(esperas))[:5]}…")
+        ok(len(set(esperas)) > 10, "varia de uma ação para outra")
+        eq(self._espera_real(1_800_000_000.0), self._espera_real(1_800_000_000.0), "a mesma ação, a mesma espera")
+        p._espera = lambda ultima: 300
+        self.em(self.hora(10))
+        a1, a2 = self._lead("esp1"), self._lead("esp2")
+        self._executar(a1, "aquecer", "")
+        aid = p.propor(LOGIN, [{"lead_id": a2, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aid, "aprovar")
+        self.em(self.relogio + 200)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a is None and "espaçamento" in motivo, f"antes da espera sorteada, não: {motivo}")
+        self.em(self.relogio + 101)
+        a, _ = p.proxima(LOGIN, "raizconnect")
+        ok(a and a["id"] == aid, "depois dela, sim")
+
+    def t_sem_dm_no_pico(self):
+        """Strategy: no first message, reminder or follow-up while food producers are busiest (10h30-14h)."""
+        p = self.p
+        p.PICO_DM = self._pico_real
+        self.em(self.hora(10))
+        dm = self._aquecido("pico1")
+        aid = p.propor(LOGIN, [{"lead_id": dm, "tipo": "dm_abertura", "texto": DM_A}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aid, "aprovar")
+        d = p.carregar(LOGIN)
+        d["config"]["executar_em_teste"], d["config"]["conta_instagram"] = True, "raizconnect"
+        p.salvar(LOGIN, d)
+        self.em(self.hora(11))
+        a, motivo = p.proxima(LOGIN, "raizconnect", repor=False)
+        ok(a is None and "pico" in motivo, f"11h: a primeira mensagem espera o fim do pico: {motivo}")
+        q = self._lead("pico2")
+        aq = p.propor(LOGIN, [{"lead_id": q, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aq, "aprovar")
+        a, _ = p.proxima(LOGIN, "raizconnect", repor=False)
+        ok(a and a["id"] == aq, "seguir e curtir podem no pico")
+        p.resultado(LOGIN, aq, True, "feito")
+        self.em(self.hora(14) + 60)
+        a, _ = p.proxima(LOGIN, "raizconnect", repor=False)
+        ok(a and a["id"] == aid, "14h01: a mensagem sai")
+
+    def t_resposta_a_comentario_e_interacao(self):
+        """Item 3: "obrigada! fazemos sim" under OUR comment is an interaction, not an answer to an offer."""
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("coment1")
+        outro = self._aquecido("coment2")
+        d = p.carregar(LOGIN)
+        p._lead(d, outro)["nota"] = 99  # the better fit... until the other one interacts
+        p.salvar(LOGIN, d)
+        r = p.interacao_comentario(LOGIN, "@coment1", "Obrigada! Fazemos sim, chama no direct")
+        ok(r["novidade"] and r["etapa"] == "aquecido" and r.get("interagiu"), "fica aquecido, marcado como quem interagiu")
+        eq(p.interacao_comentario(LOGIN, lid, "Obrigada!  Fazemos sim, chama no direct")["novidade"], False, "a mesma fala, uma vez")
+        self.em(self.relogio + 2 * 86400 + 60)
+        eq([l["handle"] for l in p.devidos(LOGIN)["dm_abertura"]][:1], ["coment1"], "vai primeiro na fila da 1ª mensagem")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, pessoal! Obrigado! A calculadora: " + p.LINK_CALCULADORA}])
+        ok(r["recusadas"] and "escreveu" in r["recusadas"][0]["motivo"], "não vira resposta com link no Direct")
+        m = p.metricas(LOGIN, 7)
+        ok(m["geral"]["responderam"] == 0, "não conta como resposta à mensagem")
+        self.em(self.hora(18))
+        p.interacao_comentario(LOGIN, outro, "Valeu! Montamos tudo no mesmo dia sim")
+        resumo = p.resumo_hoje(LOGIN)
+        ok("Responderam ao nosso comentário" in resumo and "@coment2" in resumo, f"aparece no resumo das 20h17: {resumo}")
+
+    def t_seguimento_depois_do_link(self):
+        """Item 7: one follow-up 2 days after our link, only if the person wrote nothing since."""
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("seg1")
+        self._executar(lid, "dm_abertura", DM_A)
+        p.mudar_etapa(LOGIN, lid, "respondeu", "Oi! A gente faz pela concorrência mesmo", "direct")
+        self.em(self.relogio + 400)
+        resposta = ("Oi, pessoal da Ana! Faz sentido, muita gente começa assim. Fizemos uma calculadora grátis que mostra "
+                    "quanto sobra em cada marmita: " + p.LINK_CALCULADORA)
+        self._executar(lid, "resposta", resposta)
+        eq(p.devidos(LOGIN)["seguimento"], [], "logo depois do link, nada")
+        texto = ("E aí, conseguiu fazer a conta da marmita? Se quiser, te mostro em 10 minutos como fica com o cardápio "
+                 "inteiro, ou vocês testam o sistema 15 dias grátis, sem cartão.")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "seguimento", "texto": texto}])
+        ok(r["recusadas"] and "2 dias" in r["recusadas"][0]["motivo"], "cedo demais")
+        self.em(self.relogio + 2 * 86400 + 60)
+        eq([l["handle"] for l in p.devidos(LOGIN)["seguimento"]], ["seg1"], "2 dias sem resposta: devido")
+        self._executar(lid, "seguimento", texto)
+        eq(p.devidos(LOGIN)["seguimento"], [], "uma vez só")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "seguimento", "texto": texto.replace("E aí", "Oi de novo")}])
+        ok(r["recusadas"], "nunca um segundo seguimento")
+        self.em(self.relogio + 3600)
+        p.mudar_etapa(LOGIN, lid, "lead", "Ainda não consegui abrir, onde fica mesmo?", "direct")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi! Aqui de novo o link: " + p.LINK_CALCULADORA}])
+        ok(r["recusadas"] and "já recebeu o link" in r["recusadas"][0]["motivo"], f"o link não se repete: {r['recusadas']}")
+        outro = self._aquecido("seg2")
+        self._executar(outro, "dm_abertura", TEXTOS[1].format(n="Bia"))
+        p.mudar_etapa(LOGIN, outro, "respondeu", "pode mandar!", "direct")
+        self.em(self.relogio + 400)
+        self._executar(outro, "resposta", "Oi, pessoal da Bia! Aqui está a calculadora grátis: " + p.LINK_CALCULADORA)
+        self.em(self.relogio + 3600)
+        p.mudar_etapa(LOGIN, outro, "lead", "Vou testar hoje à noite, obrigada!", "direct")
+        self.em(self.relogio + 3 * 86400)
+        ok(all(l["handle"] != "seg2" for l in p.devidos(LOGIN)["seguimento"]), "escreveu depois do link: é resposta, não seguimento")
+
+    def t_resposta_a_quem_disse_nao(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("nao1")
+        self._executar(lid, "dm_abertura", DM_A)
+        p.mudar_etapa(LOGIN, lid, "descartado", "Não tenho interesse, obrigado", "direct")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Tranquilo! Se mudar de ideia: " + p.LINK_CALCULADORA}])
+        ok(r["recusadas"] and "obrigado curto" in r["recusadas"][0]["motivo"], "quem disse não: sem link")
+
+    def t_quem_nao_interagiu_fecha_sem_lembrete(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("fecha1")
+        self._executar(lid, "dm_abertura", DM_A)
+        self.em(self.relogio + p.DIAS_LEMBRETE * 86400 + 3600)
+        eq(p.fechar_vencidos(LOGIN), 0, "ainda no prazo")
+        self.em(self.relogio + p.ESPERA_FIM)
+        eq(p.fechar_vencidos(LOGIN), 1, "sem lembrete: fecha no mesmo prazo de quem recebeu")
+        eq(p._lead(p.carregar(LOGIN), lid)["etapa"], "sem_resposta", "sem resposta")
+
+    def t_teto_de_consultas(self):
+        p = self.p
+        self.em(self.hora(10))
+        eq(p.reservar_consultas(LOGIN, 5), 5, "cabem")
+        for _ in range(4):
+            p.reservar_consultas(LOGIN, 5)
+        eq(p.reservar_consultas(LOGIN, 5), p.CONSULTAS_DIA - 25, "o que sobra até o teto")
+        eq(p.reservar_consultas(LOGIN, 5), 0, "teto do dia")
+        self.em(self.hora(10, dias=1))
+        eq(p.reservar_consultas(LOGIN, 5), 5, "no dia seguinte recomeça")
+
+    def t_nota_quem_le_o_direct(self):
+        p = self.p
+        base = {"segmento": "marmitaria", "ultimo_post": dt.datetime.fromtimestamp(p.agora(), p._tz()).date().isoformat(),
+                "seguidores": "3.000", "cidade": "Recife", "cardapio": True, "link_pedido": True}
+        neutro = p.pontuar({**base, "canais": ["encomenda", "whatsapp"]})["nota"]
+        direct = p.pontuar({**base, "canais": ["encomenda", "whatsapp", "direct"]})
+        so_zap = p.pontuar({**base, "canais": ["whatsapp"]})
+        ok(direct["nota"] > neutro and direct["partes"]["le_direct"] == 5, f"pedidos pelo Direct: mais ({direct['nota']} × {neutro})")
+        eq(so_zap["partes"]["le_direct"], -5, "pedidos só no WhatsApp: menos")
+        ok("direct" in p._evidencia({"handle": "x", "bio": "Encomendas pelo direct 💌", "posts": []})["canais"],
+           "\"pelo direct\" na bio vira canal")
+
+    def t_bloqueio_sem_acao_em_maos(self):
+        p = self.p
+        self.em(self.hora(10))
+        p.pausar_por_bloqueio(LOGIN, "verificação pedida ao abrir o Direct")
+        d = p.carregar(LOGIN)
+        d["config"]["executar_em_teste"], d["config"]["conta_instagram"] = True, "raizconnect"
+        p.salvar(LOGIN, d)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a is None and "pausado" in motivo, f"pausa tudo por 48 h: {motivo}")
+
+    def t_varredura_do_direct(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("var1")
+        self._executar(lid, "dm_abertura", DM_A)
+        ok("VARREDURA COMPLETA" in p.resumo_contexto(LOGIN), "sem varredura recente: abrir todas")
+        p.conferido(LOGIN, "1 conversa conferida: sem resposta", "Notificações: nada novo do registro hoje à tarde.", [], True)
+        ctx = p.resumo_contexto(LOGIN)
+        ok("só o que é novo" in ctx and "VARREDURA COMPLETA" not in ctx, "logo depois: só o que é novo")
+        self.em(self.relogio + p.VARREDURA_H * 3600 + 60)
+        ok("VARREDURA COMPLETA" in p.resumo_contexto(LOGIN), "4 h depois: de novo")
 
     def t_painel(self):
         """/painel (12/10 review §7 item 11): funnel by who reached each stage, stock, the week and today."""
