@@ -2355,7 +2355,7 @@ def cartao_lead(login: str, lid: str) -> dict | None:
     conversa = []
     for h in l["historico"]:
         texto = " ".join(str(h.get("texto") or "").split())
-        if not texto:
+        if not texto or h.get("mesma_fala"):  # the same answer understood better (stage moved up): said once
             continue
         if h["tipo"] in nosso:
             conversa.append({"quando": quando(h["em"]), "quem": nosso[h["tipo"]], "texto": texto[:300]})

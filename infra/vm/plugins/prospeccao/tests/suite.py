@@ -1893,10 +1893,11 @@ class Suite:
         self._executar(lid, "dm_abertura", TEXTOS[0].format(n="Ana"), "A")
         self.em(self.relogio + 3600)
         p.mudar_etapa(LOGIN, lid, "lead", "quero a calculadora, como funciona?", "direct")
+        p.mudar_etapa(LOGIN, lid, "demo", "quero a calculadora, como funciona?", "direct")  # same answer, read better
         dados = p.cartao_lead(LOGIN, "@cartao1")
         eq([c["quem"] for c in dados["conversa"]], ["Raiz no Direct", "Marmitas da Ana no Direct"], "os dois lados, em ordem")
         eq(dados["conversa"][-1]["texto"], "quero a calculadora, como funciona?", "o que a pessoa disse")
-        eq((dados["etapa"], dados["handle"]), ("lead", "cartao1"), "etapa e @")
+        eq((dados["etapa"], dados["handle"]), ("demo", "cartao1"), "etapa e @ (a mesma fala lida melhor não repete)")
         ok(dados["proximo_passo"] and dados["motivo"], f"próximo passo e por que encaixa: {dados}")
         eq(p.cartao_lead(LOGIN, "naoexiste"), None, "lead que não existe")
         if not shutil.which("soffice"):  # the PDF itself only where LibreOffice is (the agent container)
