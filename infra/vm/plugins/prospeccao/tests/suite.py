@@ -263,28 +263,39 @@ class Suite:
         self.em(self.hora(10))
         p.definir_auto(LOGIN, True)
         try:
-            a, b = self._aquecido("aa1"), self._aquecido("bb1")
-            # first, a reviewer that rejects one item
+            a, b, c = self._aquecido("aa1"), self._aquecido("bb1"), self._aquecido("cc1")
             self._revisor(reprovar=())
             prim = p.propor(LOGIN, [{"lead_id": a, "tipo": "dm_abertura", "texto": DM_A}])
             ok(prim["automaticas"], "a primeira passa")
-            texto_b = TEXTOS[1].format(n="Bia")
-            ids_antes = {x["id"] for x in p.carregar(LOGIN)["acoes"]}
-            self.p.revisor = lambda pedido: json.dumps({"itens": [{"id": i, "aprovado": False, "motivo": "cita escondidinho que não aparece no perfil"}
-                                                                  for i in re.findall(r"## Item (\w+) — ", pedido)]})
-            out = p.propor(LOGIN, [{"lead_id": b, "tipo": "dm_abertura", "texto": texto_b}])
-            eq(out["automaticas"], [], "reprovada não sai sozinha")
-            eq(len(out["propostas"]), 1, "vai ao Matheus")
-            nova = next(x for x in p.carregar(LOGIN)["acoes"] if x["id"] not in ids_antes)
-            eq(nova["estado"], "proposta", "fica esperando o ✅")
-            ok("escondidinho" in nova["revisao"], "com o motivo do revisor")
+            reprova = lambda pedido: json.dumps({"itens": [{"id": i, "aprovado": False, "motivo": "cita escondidinho que não aparece no perfil"}
+                                                           for i in re.findall(r"## Item (\w+) — ", pedido)]})
+            # sem aprovação (padrão, pedido do Matheus 12/10): reprovada volta ao agente para reescrever, não vai ao celular
+            self.p.revisor = reprova
+            for n in range(p.VERSOES_REVISOR):
+                out = p.propor(LOGIN, [{"lead_id": b, "tipo": "dm_abertura", "texto": TEXTOS[1].format(n="Bia") + " " * n}])
+                eq((out["automaticas"], out["propostas"]), ([], []), f"versão {n}: não sai e não vai ao Matheus")
+                ok(out["recusadas"] and "escondidinho" in out["recusadas"][0]["motivo"], f"motivo do revisor volta ao agente: {out['recusadas']}")
+                if n < p.VERSOES_REVISOR - 1:
+                    ok(out["recusadas"][0]["motivo"].startswith("REESCREVA"), "manda reescrever")
+            ok("amanhã" in out["recusadas"][0]["motivo"], f"última versão avisa que acabou: {out['recusadas']}")
+            out = p.propor(LOGIN, [{"lead_id": b, "tipo": "dm_abertura", "texto": TEXTOS[2].format(n="Bia")}])
+            ok(out["recusadas"] and "amanhã" in out["recusadas"][0]["motivo"] and not self.p.carregar(LOGIN)["acoes"][-1]["texto"].startswith(TEXTOS[2][:10]),
+               f"depois de {p.VERSOES_REVISOR} versões, nem vai ao revisor: {out['recusadas']}")
+            ok(all(x["estado"] == "pulada" for x in p.carregar(LOGIN)["acoes"] if x["lead_id"] == b), "reprovadas ficam como puladas")
+            # revisor fora do ar: nada sai sozinho e nada vai ao celular
             for modo in ({"erro": True}, {"lixo": True}):
-                p.decidir(LOGIN, nova["id"], "pular")
                 self._revisor(**modo)
-                out = p.propor(LOGIN, [{"lead_id": b, "tipo": "dm_abertura", "texto": texto_b + " "}])
-                eq(out["automaticas"], [], f"revisor {modo}: falha fechada")
-                ok(out["propostas"] and out["propostas"][0]["revisao"], f"motivo registrado ({modo})")
-                nova = out["propostas"][0]
+                out = p.propor(LOGIN, [{"lead_id": c, "tipo": "dm_abertura", "texto": TEXTOS[3].format(n="Cida") + (" " if modo.get("lixo") else "")}])
+                eq((out["automaticas"], out["propostas"]), ([], []), f"revisor {modo}: falha fechada, sem celular")
+            # quem desligar o "sem aprovação" volta ao fluxo antigo (vai ao ✅)
+            d = p.carregar(LOGIN)
+            d["config"]["sem_aprovacao"] = False
+            p.salvar(LOGIN, d)
+            self.p.revisor = reprova
+            d2 = self._aquecido("dd1")
+            out = p.propor(LOGIN, [{"lead_id": d2, "tipo": "dm_abertura", "texto": TEXTOS[0].format(n="Dani")}])
+            eq(len(out["propostas"]), 1, "com sem_aprovacao desligado, reprovada vai ao Matheus")
+            eq(out["propostas"][0]["estado"], "proposta", "fica esperando o ✅")
         finally:
             p.revisor = None
 
@@ -341,7 +352,18 @@ class Suite:
         ok("Oi, Ana!" in txt, "mostra a DM que saiu")
         ok("@resumo1 — seguiu e curtiu; comentou «Que capricho" in txt, f"cada aquecimento com o comentário: {txt}")
         ok("@resumo2 — primeira mensagem: «Oi, Ana!" in txt, "cada mensagem com o texto")
-        ok("leads novos" in txt and "nota " in txt and "1 perfis examinados e descartados" in txt, f"novos com nota e descartados: {txt}")
+        ok("2 entraram hoje" in txt and "na fila para aquecer" in txt and "1 descartados hoje" in txt,
+           f"leads: novos de hoje separados da fila e dos descartados: {txt}")
+        # a visit that failed: one readable line per profile, first sentence of why
+        c = self._lead("resumo3")
+        self.em(self.relogio + p.INTERVALO + 1)
+        aid = p.propor(LOGIN, [{"lead_id": c, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aid, "aprovar")
+        p.proxima(LOGIN, "raizconnect")
+        p.resultado(LOGIN, aid, False, "Perfil parado há 90 dias. Não segui nem curti; o último post é de julho.")
+        txt = p.resumo_hoje(LOGIN)
+        ok("Não saíram" in txt and "@resumo3 (🔥 Aquecer) — Perfil parado há 90 dias." in txt and "julho" not in txt,
+           f"falha legível, uma linha por perfil: {txt}")
         ok(len(txt) < 1500, "curto")
         self.em(self.relogio + 86400)
         eq(p.resumo_hoje(LOGIN), "", "no dia seguinte, sem novidade não manda nada")

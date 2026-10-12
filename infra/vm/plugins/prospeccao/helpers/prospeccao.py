@@ -789,6 +789,8 @@ def propor(login: str, itens: list) -> dict:
             motivo = f"lead encerrado ({lead['etapa']}): não contate de novo"
         elif (lid, tipo) in ja:
             motivo = "já existe essa ação pendente para esse lead"
+        elif d["config"].get("auto") and _versoes_reprovadas(d, lid, tipo) >= VERSOES_REVISOR:
+            motivo = f"o revisor já reprovou {VERSOES_REVISOR} versões hoje: deixe para amanhã"
         elif tipo == "dm_abertura" and lead["etapa"] != "aquecido":
             motivo = "DM de abertura só depois do aquecimento"
         elif tipo == "dm_lembrete" and lead["etapa"] != "abordado":
@@ -830,7 +832,11 @@ def propor(login: str, itens: list) -> dict:
 
 # ------------------------------------------------------------------ pre-approved within the daily limits
 
-AUTO_TIPOS = ("aquecer", "dm_abertura", "dm_lembrete", "resposta")  # partner messages still go to the person (replies auto since 11/10, Matheus)
+AUTO_TIPOS = ("aquecer", "dm_abertura", "dm_lembrete", "resposta", "parceiro")
+# Matheus, 12/10: "não preciso aprovar as coisas do Instagram, pode me avisar que foi feito". With pre-approval on
+# and config sem_aprovacao (default true), what the reviewer rejects is NOT sent to his phone: the agent rewrites it
+# by the reviewer's reason, up to VERSOES_REVISOR versions per lead and type a day.
+VERSOES_REVISOR = 3
 PROXY = "http://host.docker.internal:8787"
 MODELO_REVISOR = "openai.gpt-6-luna"
 revisor = None  # tests replace it: fn(pedido: str) -> str
@@ -957,6 +963,8 @@ def _auto_aprovar(login: str, out: dict) -> dict:
             vereditos[a["id"]] = {"aprovado": segunda.get("aprovado") is True,
                                   "motivo": f"2ª revisão: {segunda.get('motivo', '')} (a 1ª errou: {vereditos[a['id']]['motivo'][:80]})"[:200]}
     automaticas, manuais = [], [a for a in out["propostas"] if a["tipo"] not in AUTO_TIPOS]
+    recusadas = list(out.get("recusadas", []))
+    sem_aprovacao = d["config"].get("sem_aprovacao", True)
     for a in candidatas:
         v = vereditos.get(a["id"], {"aprovado": True, "motivo": "seguir e curtir, sem texto"})
         guardada = next(x for x in d["acoes"] if x["id"] == a["id"])
@@ -964,10 +972,24 @@ def _auto_aprovar(login: str, out: dict) -> dict:
         if v["aprovado"]:
             _mudar(d, guardada, "aprovada", f"revisor: {v['motivo']}", decidida=agora(), auto=True)
             automaticas.append(guardada)
+        elif sem_aprovacao:
+            _mudar(d, guardada, "pulada", f"revisor reprovou: {v['motivo']}", decidida=agora(), reprovada_revisor=True)
+            versoes = _versoes_reprovadas(d, guardada["lead_id"], guardada["tipo"])
+            restam = VERSOES_REVISOR - versoes
+            recusadas.append({"lead_id": guardada["lead_id"], "tipo": guardada["tipo"], "motivo": (
+                f"REESCREVA — o revisor reprovou: {v['motivo']}. Escreva outra versão que resolva isso e proponha de novo "
+                f"({restam} versão(ões) restante(s) hoje)." if restam > 0 else
+                f"o revisor reprovou {VERSOES_REVISOR} versões ({v['motivo']}): deixe este para amanhã")})
         else:
             manuais.append(guardada)
     salvar(login, d)
-    return {**out, "propostas": manuais, "automaticas": automaticas}
+    return {**out, "propostas": manuais, "automaticas": automaticas, "recusadas": recusadas}
+
+
+def _versoes_reprovadas(d: dict, lid: str, tipo: str) -> int:
+    hoje = _hoje_local()
+    return sum(1 for a in d["acoes"] if a["lead_id"] == lid and a["tipo"] == tipo and a.get("reprovada_revisor")
+               and _hoje_local(a.get("decidida") or a["criada"]) == hoje)
 
 
 def _fatos(a: dict) -> str:
@@ -1400,19 +1422,34 @@ def resumo_hoje(login: str) -> str:
         for a in sorted(feitas, key=lambda x: x["executada_em"]):
             l = leads.get(a["lead_id"]) or {}
             if a["tipo"] == "aquecer":
-                comentou = a["texto"] and "não saiu" not in (a.get("detalhe") or "") and "não foi publicado" not in (a.get("detalhe") or "")
-                o_que = "seguiu e curtiu" + (f"; comentou «{a['texto'][:90]}{'…' if len(a['texto']) > 90 else ''}»" if comentou else
+                c = a.get("comentario") or {}
+                texto_c = a["texto"] or (c.get("texto") if c.get("estado") == "publicado" else "")
+                comentou = texto_c and "não saiu" not in (a.get("detalhe") or "") and "não foi publicado" not in (a.get("detalhe") or "")
+                o_que = "seguiu e curtiu" + (f"; comentou «{texto_c[:90]}{'…' if len(texto_c) > 90 else ''}»" if comentou else
                                              " (o comentário não saiu)" if a["texto"] else "")
             else:
                 o_que = f"{nomes[a['tipo']][:-1] if a['tipo'] != 'dm_abertura' else 'primeira mensagem'}: «{a['texto'][:120]}{'…' if len(a['texto']) > 120 else ''}»"
             linhas.append(f"• @{l.get('handle')} — {o_que}")
-    if novos:
+    comentados = [a for a in d["acoes"] if a not in feitas and (a.get("comentario") or {}).get("estado") == "publicado"
+                  and de_hoje(a["comentario"].get("feito_em"))]
+    if comentados:  # comments written today on warm-ups of earlier days
+        linhas.append(f"\n💬 *Comentários em perfis já aquecidos:* {len(comentados)}")
+        linhas += [f"• @{(leads.get(a['lead_id']) or {}).get('handle')} — «{a['comentario']['texto'][:90]}»" for a in comentados]
+    fila = sum(1 for l in d["leads"] if l["etapa"] == "novo")
+    if novos or rejeitados:
+        linhas.append(f"\n🔎 *Leads:* {len(novos)} entraram hoje · {fila} na fila para aquecer · {rejeitados} descartados hoje")
         novos.sort(key=lambda l: -(l.get("nota") or 0))
-        linhas.append(f"\n🔎 *{len(novos)} leads novos* ({rejeitados} perfis examinados e descartados)")
-        linhas += [f"• {l['nome'][:40]} — " + (f"nota {l['nota']}" if l.get("nota") is not None else "sem nota (antes da avaliação)")
-                   + f" ({l['segmento'][:30]}, {l['cidade'][:30]})" for l in novos[:5]]
+        if novos:
+            linhas.append("Melhores de hoje: " + ", ".join(f"@{l['handle']} ({l['nota']})" for l in novos[:3] if l.get("nota") is not None))
     if falhas:
-        linhas.append(f"\n⚠️ {len(falhas)} não saíram: " + "; ".join(a.get("detalhe", "")[:80] for a in falhas[:3]))
+        vistos, itens = set(), []
+        for a in falhas:  # one line per profile: who, what, and the first sentence of why
+            if a["lead_id"] in vistos:
+                continue
+            vistos.add(a["lead_id"])
+            motivo = re.split(r"(?<=[.;])\s", (a.get("detalhe") or "sem detalhe").strip())[0][:110]
+            itens.append(f"• @{(leads.get(a['lead_id']) or {}).get('handle')} ({ROTULO.get(a['tipo'], a['tipo'])}) — {motivo}")
+        linhas.append("\n⚠️ *Não saíram:*\n" + "\n".join(itens[:5]))
     if esperando:
         linhas.append(f"\n✋ {len(esperando)} esperando o seu ✅ (o revisor não liberou sozinho)")
     if agora() < d["bloqueio_ate"]:

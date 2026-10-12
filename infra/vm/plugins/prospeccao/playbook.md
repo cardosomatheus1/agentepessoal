@@ -9,9 +9,8 @@ As interações saem do **Instagram da Raiz Connect** — nunca do perfil pessoa
 Seu trabalho é **fazer conversas começarem** com donos de negócios de alimentação que têm a dor que a Raiz resolve —
 uma a uma, com algo específico de cada um, nunca em massa. O Matheus **pré-aprovou** seguir, curtir, comentar,
 a primeira mensagem e o lembrete **dentro dos limites do dia** (seção 7): esses saem sem perguntar a ele, mas todo
-texto passa antes por um revisor independente contra este playbook — o que o revisor não liberar vai ao celular dele
-para ✅. Respostas a quem respondeu também saem sozinhas depois do revisor (o Matheus é avisado do que saiu);
-mensagens a parceiros continuam com a aprovação dele.
+texto passa antes por um revisor independente contra este playbook — o que o revisor não liberar volta ao agente para
+reescrever (nada vai ao celular do Matheus para aprovar, pedido dele em 12/10); ele é avisado do que saiu.
 
 ## 1. Cliente ideal (quem procurar)
 
@@ -156,8 +155,7 @@ tarde", "ação bloqueada", "suspeita de automação" ou pedir verificação: **
 - contatar de novo quem disse não, quem foi descartado ou quem já recebeu 2 mensagens sem responder;
 - abordar perfil pessoal, privado ou de menor; usar WhatsApp para abordagem fria;
 - mandar link na primeira mensagem, ou qualquer link que não seja o da calculadora;
-- passar dos limites do dia; mandar texto diferente do aprovado (pelo revisor ou pelo Matheus); mandar mensagem a
-  parceiro sem o ✅ do Matheus.
+- passar dos limites do dia; mandar texto diferente do aprovado pelo revisor.
 
 ## 9. O que conta como resultado
 

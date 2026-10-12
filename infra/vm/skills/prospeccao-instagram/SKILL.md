@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 2.7.0
+version: 2.8.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -22,16 +22,18 @@ antes de escrever qualquer mensagem, porque ele muda.
 
 ## Quem aprova o quê
 
-| Ação | Quem libera | Observação |
-|---|---|---|
-| achar e registrar leads | você | só leitura, nada é enviado |
-| aquecer: seguir, curtir 1–2 posts e, se fizer sentido, 1 comentário | revisor automático, dentro do limite do dia | o Matheus pré-aprovou |
-| primeira mensagem (variante A ou B) | revisor automático, dentro do limite do dia | sem link, sem preço |
-| lembrete (1 só, com a calculadora) | revisor automático, dentro do limite do dia | |
-| resposta a quem respondeu | revisor automático | o Matheus é avisado da resposta da pessoa e do que saiu |
-| mensagem a parceiro (curso, consultor) | **✅ do Matheus** | |
+**Nada vai ao celular do Matheus para aprovar** (pedido dele, 12/10: "não preciso aprovar as coisas do Instagram,
+pode me avisar que foi feito"). Todo texto passa pelo revisor automático, dentro dos limites do dia:
 
-O que o revisor não liberar vai ao celular do Matheus para ✅ (a ferramenta faz isso sozinha).
+| Ação | O que acontece |
+|---|---|
+| achar e registrar leads | você faz; nada é enviado |
+| aquecer (seguir, curtir, comentar) | sem texto: direto; comentário: revisor |
+| primeira mensagem, lembrete, resposta, parceiro | revisor; aprovado sai na rodada |
+| revisor reprovou | volta para você com o motivo: **reescreva** e proponha de novo (até 3 versões por perfil e tipo no dia) |
+
+O Matheus fica sabendo do que saiu: aviso na hora quando alguém responde, "↩️ Respondi…" quando a resposta sai e o
+resumo das 20h17.
 
 ## Regras que nunca mudam
 
@@ -146,8 +148,8 @@ ser o id ou o @. Em `base`, diga o que você viu e onde (post e data), ou "achad
 - **Nunca:** texto igual para duas pessoas, fato inventado, mais de 2 mensagens sem resposta, contatar de novo quem
   disse não ou foi descartado.
 
-O revisor confere cada texto contra o playbook. Proposta recusada traz o motivo: corrija exatamente o que ele apontou e
-proponha de novo, até passar (no máximo 3 versões por texto).
+O revisor confere cada texto contra o playbook. Proposta recusada traz o motivo ("REESCREVA…"): corrija exatamente o
+que ele apontou e proponha de novo, até passar (no máximo 3 versões por perfil e tipo no dia).
 
 ## 5. Executar (uma ação por vez)
 
