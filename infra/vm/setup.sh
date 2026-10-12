@@ -84,9 +84,11 @@ fi
 mkdir -p /opt/a0/usr/plugins/_model_config /opt/a0/usr/plugins/_code_execution /opt/a0/usr/memoria /opt/a0/usr/skills
 cp "$B/generated/presets.yaml" /opt/a0/usr/plugins/_model_config/presets.yaml
 cp "$B/generated/code_execution.json" /opt/a0/usr/plugins/_code_execution/config.json
-for d in "$B"/plugins/*/; do n=$(basename "$d"); rm -rf "/opt/a0/usr/plugins/$n" && cp -r "$d" /opt/a0/usr/plugins/; done
-# Overlay (no delete): keeps scripts the agent saved itself, e.g. skills/piloto-rapido/scripts/tarefas/.
-for d in "$B"/skills/*/; do n=$(basename "$d"); mkdir -p "/opt/a0/usr/skills/$n" && cp -r "$d". "/opt/a0/usr/skills/$n/"; done
+# 12/10 review: re-running setup (deploy.py --update) deleted every plugin installed by implantar.py, with its .versao and
+# config.json, and copied the local folder over it (even what was never committed). Now setup only installs a plugin
+# or skill that is not there yet (a new VM); updates go through infra/operador/implantar.py: from git, tested first.
+for d in "$B"/plugins/*/; do n=$(basename "$d"); [ -d "/opt/a0/usr/plugins/$n" ] || cp -r "$d" /opt/a0/usr/plugins/; done
+for d in "$B"/skills/*/; do n=$(basename "$d"); [ -d "/opt/a0/usr/skills/$n" ] || { mkdir -p "/opt/a0/usr/skills/$n" && cp -r "$d". "/opt/a0/usr/skills/$n/"; }; done
 # One profile per person (login_usuarios); the original single profile becomes the owner's.
 mkdir -p /opt/a0/usr/memoria/usuarios
 if [ ! -f /opt/a0/usr/memoria/usuarios/matheus.md ]; then

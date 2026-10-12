@@ -256,6 +256,8 @@ Próximos passos de maior impacto:
 - 🔴 **Dois caminhos de implantação que se atropelam.** O `deploy.py --update` apaga os plugins e copia a pasta local
   (até o que não foi commitado) por cima do que o `implantar.py` instalou, e apaga o `.versao`.
   → Um implantador só, a partir do git, que preserva `config.json` e `.versao`.
+  **✅ Feito:** o `setup.sh` (e portanto o `deploy.py --update`) só instala plugin ou skill que ainda não existe;
+  atualização é só pelo `implantar.py`.
 - 🟠 **Faltam testes.** 26 plugins sem testes, entre eles os críticos: ponte do celular, cofre, login, agenda e
   limpeza. O implantador aceita "0 de 0" como aprovado.
 - 🟠 **Serviços da VM** (proxy, ponte, vigia) são atualizados à mão, sem versão.
