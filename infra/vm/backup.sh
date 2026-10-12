@@ -21,9 +21,15 @@ avisar() {  # Telegram through the host bridge, at most once a day; never stops 
   return 0
 }
 
+# The action ledger (SQLite, plugins/central): S3 gets a consistent copy made by SQLite itself, never the live files
+# caught in the middle of a write.
+if [ -f "$SRC/central/agente.db" ]; then
+  python3 -c 'import sqlite3, sys; o = sqlite3.connect(sys.argv[1]); d = sqlite3.connect(sys.argv[2]); o.backup(d); d.close(); o.close()' \
+    "$SRC/central/agente.db" "$SRC/central/agente.copia.db" || logger -t agentepessoal "backup: copy of the action ledger failed"
+fi
 /usr/local/bin/aws s3 sync "$SRC" "s3://${BUCKET}/usr" --delete --only-show-errors \
   --exclude "tmp/*" --exclude "*/__pycache__/*" --exclude "navegador/*" \
-  --exclude "plugins/_desktop/profiles/*/.ssh/agent/*"
+  --exclude "plugins/_desktop/profiles/*/.ssh/agent/*" --exclude "central/agente.db" --exclude "central/agente.db-*"
 rc=$?
 # 2 = some special files (sockets, dangling links) were skipped; every other file was copied
 if [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then

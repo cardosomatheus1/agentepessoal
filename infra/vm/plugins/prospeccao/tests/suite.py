@@ -1629,6 +1629,36 @@ class Suite:
                                     agora_ts)
         ok("vence em 3 dia(s)" in aviso, f"vale a data que chegar primeiro: {aviso}")
 
+    def t_livro_de_acoes(self):
+        # 12/10 review §4.1: every executed, failed or deleted action also goes to the append-only ledger
+        p = self.p
+
+        class LivroFalso:
+            def __init__(self):
+                self.chamadas = []
+
+            def registrar(self, **kw):
+                self.chamadas.append(kw)
+                return "id"
+
+        falso = LivroFalso()
+        p.LIVRO_MODULO = falso
+        try:
+            self.em(self.hora(10))
+            lid = self._lead("livroteste")
+            aid = self._executar(lid, "aquecer")
+            eq([(c["fase"], c["verbo"], c["alvo"], c["chave"]) for c in falso.chamadas],
+               [("executada", "seguir_curtir", "instagram:@livroteste", f"prosp:{aid}")], "aquecer executado vai ao livro")
+        finally:
+            p.LIVRO_MODULO = None
+        m = p.registro_livro({"id": "a1", "tipo": "dm_abertura", "texto": "Oi, pessoal da Ana!", "lead_id": "l1"},
+                             {"handle": "ana"}, "falhou", "script falhou")
+        eq((m["verbo"], m["alvo"], m["conteudo"], m["chave"], m["resultado"]),
+           ("dm", "instagram:@ana", "Oi, pessoal da Ana!", "prosp:a1", "script falhou"), "DM que falhou")
+        c = p.registro_livro({"id": "a2", "tipo": "aquecer", "comentario": {"texto": "Que capricho!"}}, {"handle": "zen"},
+                             "executada", comentario=True)
+        eq((c["verbo"], c["conteudo"], c["chave"]), ("comentario", "Que capricho!", "prosp:a2:comentario"), "comentário")
+
     def t_rejeitados(self):
         p = self.p
         lid = self._lead("jaelead")

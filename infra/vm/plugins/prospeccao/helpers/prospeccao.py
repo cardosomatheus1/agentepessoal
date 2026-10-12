@@ -1361,6 +1361,55 @@ def _resposta_falhou(d: dict, lead: dict) -> bool:
     return any(a["estado"] == "falhou" for a in minhas)
 
 
+# ------------------------------------------------------------------ action ledger (plugins/central; 12/10 review §4.1)
+# Every executed, failed or deleted action also goes to the append-only ledger, where the Conferência checks it (e.g. the
+# same DM to the same person twice). The ledger is optional and never stops the work: no plugin, no record.
+LIVRO = Path("/a0/usr/plugins/central/helpers/livro.py")
+VERBO_LIVRO = {"aquecer": "seguir_curtir", "dm_abertura": "dm", "dm_lembrete": "dm", "resposta": "dm", "parceiro": "dm"}
+LIVRO_MODULO = None  # tests put a stand-in here
+
+
+def _livro():
+    import importlib.util
+    import sys
+
+    if LIVRO_MODULO is not None:
+        return LIVRO_MODULO
+    if not LIVRO.exists():
+        return None
+    antigo = sys.modules.get("central_livro")
+    mtime = LIVRO.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location("central_livro", LIVRO)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
+        sys.modules["central_livro"] = modulo
+    return sys.modules["central_livro"]
+
+
+def registro_livro(a: dict, lead: dict | None, fase: str, detalhe: str = "", comentario: bool = False) -> dict:
+    """The ledger fields of one prospecting action (what, to whom, which text, which key)."""
+    if comentario:
+        verbo, conteudo, chave = "comentario", (a.get("comentario") or {}).get("texto", ""), f"prosp:{a['id']}:comentario"
+    else:
+        verbo, conteudo, chave = VERBO_LIVRO.get(a["tipo"], a["tipo"]), a.get("texto", ""), f"prosp:{a['id']}"
+    return {"fase": fase, "origem": "prospeccao", "ferramenta": "instagram", "verbo": verbo,
+            "alvo": f"instagram:@{(lead or {}).get('handle') or '?'}", "conteudo": conteudo, "chave": chave,
+            "resultado": str(detalhe or "")[:300], "evidencia": {"tipo": a["tipo"], "lead": a.get("lead_id")}}
+
+
+def _anotar(login: str, a: dict, lead: dict | None, fase: str, detalhe: str = "", comentario: bool = False,
+            ctx_id: str = "") -> None:
+    try:
+        livro = _livro()
+        if livro:
+            livro.registrar(login=login, ator=AUTOR["quem"], ctx_id=ctx_id,
+                            **registro_livro(a, lead, fase, detalhe, comentario))
+    except Exception as exc:  # pragma: no cover - the ledger never stops the round
+        print(f"prospeccao: livro não registrou {a.get('id')}: {exc}", flush=True)
+
+
 @_transacao
 def marcar_apagada(login: str, aid: str, detalhe: str = "") -> dict | None:
     """An executed message that was deleted (unsent) in the Instagram: it no longer counts as answered, so one
@@ -1374,6 +1423,7 @@ def marcar_apagada(login: str, aid: str, detalhe: str = "") -> dict | None:
     if lead:
         lead["historico"].append({"em": agora(), "tipo": "apagada", "texto": f"{a['tipo']} {aid} apagada: {detalhe}"[:300]})
     salvar(login, d)
+    _anotar(login, a, lead, "cancelada", f"apagada no Instagram: {detalhe}")
     return a
 
 
@@ -1718,13 +1768,14 @@ def comentado(login: str, aid: str, ok: bool, detalhe: str = "") -> dict | None:
     if not a or (a.get("comentario") or {}).get("estado") != "aprovado":
         return None
     a["comentario"].update({"estado": "publicado" if ok else "falhou", "detalhe": str(detalhe)[:300], "feito_em": agora()})
+    lead = _lead(d, a["lead_id"])
     if ok:
         a["comentado_em"] = agora()
-        lead = _lead(d, a["lead_id"])
         if lead:
             lead["historico"].append({"em": agora(), "tipo": "comentario", "texto": a["comentario"]["texto"][:300]})
     _evento(d, a, a["estado"], a["estado"], f"comentário {'publicado' if ok else 'não saiu'}: {detalhe}")
     salvar(login, d)
+    _anotar(login, a, lead, "executada" if ok else "falhou", detalhe, comentario=True)
     return a
 
 
@@ -1787,6 +1838,7 @@ def resultado(login: str, aid: str, ok: bool, detalhe: str = "", bloqueio: bool 
     a = next((x for x in d["acoes"] if x["id"] == aid), None)
     if not a or a["estado"] not in ("aprovada", "incerta") or not _livre(a, quem):
         return None
+    era_incerta = a["estado"] == "incerta"
     _mudar(d, a, "executada" if ok else "falhou", detalhe, executada_em=agora(), detalhe=detalhe[:300])
     lead = _lead(d, a["lead_id"])
     if ok and lead:
@@ -1800,6 +1852,8 @@ def resultado(login: str, aid: str, ok: bool, detalhe: str = "", bloqueio: bool 
     if bloqueio:
         d["bloqueio_ate"] = agora() + BLOQUEIO
     salvar(login, d)
+    _anotar(login, a, lead, "executada" if ok else "falhou",
+            ("conferida na tela depois de incerta: " if era_incerta else "") + detalhe, ctx_id=quem)
     return a
 
 
