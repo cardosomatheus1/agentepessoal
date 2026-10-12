@@ -209,6 +209,7 @@ scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fic
 - **Livro de ações** (plugin `central`, `/a0/usr/central/agente.db`, só acrescenta): a prospecção grava cada ação
   feita/falhou/apagada; a Conferência (a cada 30 min, sem modelo) avisa 1× se a mesma mensagem foi 2× para a mesma
   pessoa; ferramenta `livro` responde "o que você fez hoje?" pelo registro.
+- **Celular**: `/decisoes` e `/livro` respondem na ponte, sem modelo (Telegram e WhatsApp).
 - **Aprovações**: decisão só vale com o id do pedido.
 - **Limpeza/agenda**: rodada viva nunca é destravada nem duplicada; rodada pausada é retomada (ou cancelada se pausar
   de novo); limites ilegíveis nunca desligam rotina.

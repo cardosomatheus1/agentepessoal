@@ -80,6 +80,7 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | Testes automáticos no GitHub a cada push (94 testes das suítes + scripts da VM + sintaxe) | ✅ | `.github/workflows/testes.yml` |
 | Rotinas no git: as 8 ativas fora da prospecção em `infra/vm/rotinas/`, com `rotinas.py comparar` para pegar mudança feita fora do git | ✅ | `infra/operador/rotinas.py` |
 | **Livro de ações** (§4.1, primeira parte): plugin `central`, banco que só acrescenta; a prospecção grava cada ação feita, que falhou ou foi apagada; Conferência a cada 30 min (sem modelo) avisa 1× se a mesma mensagem foi para a mesma pessoa 2× em 24 h; ferramenta `livro` ("o que você fez hoje?"); backup com cópia consistente | ✅ | plugin `central` |
+| `/decisoes` e `/livro` no celular (§7 item 2): respondem na hora, sem modelo, lendo o registro de decisões e o livro | ✅ | ponte do celular |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Botões assinados (o agente não consegue aprovar a si mesmo) | depois: precisa de assinatura que o contêiner não forja; hoje o id já fecha o caso do botão velho | §3.1 |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
