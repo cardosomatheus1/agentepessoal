@@ -68,21 +68,23 @@ def urgente(texto: str) -> bool:
 
 
 def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", botoes: list | None = None,
-           tipo: str = "", sempre: bool = False) -> str:
+           tipo: str = "", sempre: bool = False, rotina: str = "") -> str:
     """'' when sent, else the reason it was not. botoes: up to 3 [{"id", "titulo"}] reply buttons.
     tipo: "resposta" (default: answer to the person), "urgente" (needs them now: goes even in quiet hours) or
     "progresso" (held during their quiet hours and delivered together afterwards).
-    sempre: send even when identical to a recent notice (a new request that happens to read the same, e.g. a code)."""
+    sempre: send even when identical to a recent notice (a new request that happens to read the same, e.g. a code).
+    rotina: the scheduled task that wrote it (the bridge puts the night's held notices inside the morning summary)."""
     if not usuario:
         return "conversa sem dono"
     if usuario.startswith("teste_"):  # test logins: what would reach the phone is recorded, nothing is sent
         CAIXA_TESTES.parent.mkdir(parents=True, exist_ok=True)
         with CAIXA_TESTES.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"em": time.time(), "usuario": usuario, "texto": texto, "arquivo": arquivo,
-                                "legenda": legenda, "botoes": botoes or [], "tipo": tipo}, ensure_ascii=False) + "\n")
+                                "legenda": legenda, "botoes": botoes or [], "tipo": tipo, "rotina": rotina},
+                               ensure_ascii=False) + "\n")
         return ""
     corpo = {"usuario": usuario, "texto": formatar(texto) if texto else "", "arquivo": arquivo, "legenda": legenda,
-             "botoes": botoes or [], "tipo": tipo or ("urgente" if botoes else "resposta")}
+             "botoes": botoes or [], "tipo": tipo or ("urgente" if botoes else "resposta"), "rotina": rotina}
     marca = _chave_aviso(texto, arquivo, botoes)
     janela = REPETIDO_H.get(corpo["tipo"])
     if janela and texto and not sempre and _ja_avisado(usuario, marca, janela):

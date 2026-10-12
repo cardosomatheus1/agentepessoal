@@ -70,6 +70,14 @@ class Suite:
         p.enviar(LOGIN, texto.replace("oieeee", "oi de novo"), tipo="progresso")
         eq(len(self.enviados), 2, "fala nova sai")
 
+    def t_resumo_da_manha_vai_marcado(self):
+        # 12/10 review §6: the bridge puts the night's held notices inside the morning summary; it knows it by the routine
+        p = self.p
+        eq(p.enviar(LOGIN, "*📰 Resumo do dia*\n\nBom dia!", tipo="progresso", rotina="📰 Resumo do dia"), "", "sai")
+        eq(self.enviados[-1].get("rotina"), "📰 Resumo do dia", "a ponte recebe o nome da rotina")
+        p.enviar(LOGIN, "resposta comum")
+        eq(self.enviados[-1].get("rotina"), "", "conversa não tem rotina")
+
     def t_janela_e_excecoes(self):
         p = self.p
         p.enviar(LOGIN, "⚠️ Instagram pediu login de novo", tipo="urgente")

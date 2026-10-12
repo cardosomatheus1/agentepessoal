@@ -121,7 +121,8 @@ class EnviarResposta(Extension):
         # the person's quiet hours unless it says it needs them
         urgente = p.urgente(texto) or any(t == "urgente" for _, t in avisos)
         tipo = "resposta" if de_whatsapp else ("urgente" if urgente else "progresso")
-        erro = await asyncio.to_thread(p.enviar, destino, mensagem, "", "", None, tipo)
+        erro = await asyncio.to_thread(p.enviar, destino, mensagem, "", "", None, tipo, False,
+                                       nome_tarefa if tarefa and not de_whatsapp else "")
         if erro:
             print(f"whatsapp: answer from {ctx.id} not delivered: {erro}", flush=True)
         elif tarefa:

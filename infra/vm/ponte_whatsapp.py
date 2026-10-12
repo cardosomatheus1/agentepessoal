@@ -422,24 +422,133 @@ def descarregar(arq: Path) -> int:
     texto_so = [it for it in itens if not it.get("botoes")]
     if not texto_so:
         return len(itens)
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
-
-    partes, total = [], 0
-    for it in texto_so:
-        hora = datetime.fromtimestamp(it["em"], ZoneInfo("America/Bahia")).strftime("%H:%M")
-        trecho = f"• {hora} — {it['texto'].strip()[:700]}"
-        if total + len(trecho) > LIMITE_TEXTO - 200:
-            partes.append(f"… e mais {len(texto_so) - len(partes)} avisos (veja no app).")
-            break
-        partes.append(trecho)
-        total += len(trecho)
     titulo = ("🎯 *Fim do foco* — o que chegou enquanto isso:" if time.time() - _foco_ate(usuario) < 15 * 60
               else f"📦 *Avisos agrupados* (o dia passou de {TETO_DIA} avisos):"
               if time.time() - _teto_ate(usuario) < 15 * 60
               else "🌅 *Enquanto você descansava* (avisos de progresso guardados):")
-    avisar(usuario, titulo + "\n\n" + "\n\n".join(partes))
+    avisar(usuario, titulo + "\n\n" + _bloco_guardados(texto_so, LIMITE_TEXTO - 200))
     return len(itens)
+
+
+def _bloco_guardados(itens: list, limite: int) -> str:
+    """Held notices as "• HH:MM — text", cut at `limite` characters."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    partes, total = [], 0
+    for it in itens:
+        hora = datetime.fromtimestamp(it["em"], ZoneInfo("America/Bahia")).strftime("%H:%M")
+        trecho = f"• {hora} — {it['texto'].strip()[:700]}"
+        if total + len(trecho) > limite:
+            partes.append(f"… e mais {len(itens) - len(partes)} avisos (veja no app).")
+            break
+        partes.append(trecho)
+        total += len(trecho)
+    return "\n\n".join(partes)
+
+
+# 12/10 review §6 (one message in the morning): the notices held overnight went out at 7:00 ("while you were
+# resting") and the morning summary at 7:45. Now, for whoever gets a morning summary, they wait for it and go inside
+# it; MANHA_ATE is the limit (no summary by then: they go on their own, as before).
+MANHA_ATE = "08:30"
+RESUMO_MANHA = Path("/var/lib/agentepessoal/resumo_manha.json")  # {login: "AAAA-MM-DD" of the last morning summary}
+AGENDADAS = Path("/opt/a0/usr/scheduler/tasks.json")  # read only: does the owner have a 📰 routine switched on?
+
+
+def _arquivo_fila(usuario: str) -> Path:
+    return FILA / f"{re.sub(r'[^a-z0-9_.-]', '', usuario)}.jsonl"
+
+
+def _tem_resumo_da_manha(usuario: str) -> bool:
+    """The VM's owner with a morning summary routine (name starting with 📰) that is not switched off."""
+    if usuario != DONO:
+        return False
+    try:
+        tarefas = json.loads(AGENDADAS.read_text(encoding="utf-8")).get("tasks") or []
+    except Exception:
+        return False
+    return any(str(t.get("name", "")).startswith("📰") and t.get("state") != "disabled" for t in tarefas)
+
+
+def esperando_resumo(usuario: str, agora: float | None = None) -> bool:
+    """Between the end of quiet hours and MANHA_ATE, before today's summary, for whoever gets one (a summary in the
+    last 3 days, or the owner's 📰 routine switched on) and is not writing right now (awake and talking: what was held
+    goes at once, as before)."""
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+
+    agora = agora or time.time()
+    regra = _silencio(usuario)
+    if regra.get("desligado") or agora - ULTIMA_ENTRADA.get(usuario, 0) < ACORDADO:
+        return False
+    try:
+        ultimo = str(json.loads(RESUMO_MANHA.read_text(encoding="utf-8")).get(usuario) or "")
+    except Exception:
+        ultimo = ""
+    momento = datetime.fromtimestamp(agora, ZoneInfo("America/Bahia"))
+    hoje = momento.date()
+    if ultimo >= hoje.isoformat():  # today's summary already went
+        return False
+    if not (ultimo and ultimo >= (hoje - timedelta(days=3)).isoformat()) and not _tem_resumo_da_manha(usuario):
+        return False
+    return regra.get("fim", "07:00") <= momento.strftime("%H:%M") < MANHA_ATE
+
+
+def resumo_com_a_noite(usuario: str, texto: str) -> tuple[str, list]:
+    """The morning summary with the notices held overnight inside it. Returns the text to send and the held items
+    it took (those with buttons go after it, one by one); nothing leaves the queue here (see tirar_da_fila)."""
+    try:
+        itens = [json.loads(l) for l in _arquivo_fila(usuario).read_text(encoding="utf-8").splitlines() if l.strip()]
+    except FileNotFoundError:
+        return texto, []
+    except (OSError, ValueError) as exc:
+        log(f"held notices unreadable for the morning summary: {exc}")
+        return texto, []
+    so_texto = [it for it in itens if not it.get("botoes")]
+    if so_texto:
+        texto = (texto.rstrip() + "\n\n🌙 *Da noite* (avisos guardados):\n\n"
+                 + _bloco_guardados(so_texto, max(300, LIMITE_TEXTO - len(texto) - 100)))
+    return texto, itens
+
+
+def tirar_da_fila(usuario: str, itens: list) -> None:
+    """Remove from the person's queue exactly these items (others may have arrived meanwhile)."""
+    arq = _arquivo_fila(usuario)
+    tirar = {json.dumps(it, ensure_ascii=False, sort_keys=True) for it in itens}
+    try:
+        linhas = [l for l in arq.read_text(encoding="utf-8").splitlines() if l.strip()]
+    except OSError:
+        return
+    ficam = [l for l in linhas if json.dumps(json.loads(l), ensure_ascii=False, sort_keys=True) not in tirar]
+    if ficam:
+        arq.write_text("\n".join(ficam) + "\n", encoding="utf-8")
+    else:
+        arq.unlink(missing_ok=True)
+
+
+def resumo_entregue(usuario: str, itens: list) -> None:
+    """After the morning summary went out: its held items leave the queue, the day is marked, and the ones with
+    buttons follow one by one (back to the queue if one fails)."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    tirar_da_fila(usuario, itens)
+    try:
+        todos = json.loads(RESUMO_MANHA.read_text(encoding="utf-8"))
+    except Exception:
+        todos = {}
+    todos[usuario] = datetime.now(ZoneInfo("America/Bahia")).date().isoformat()
+    try:
+        RESUMO_MANHA.parent.mkdir(parents=True, exist_ok=True)
+        RESUMO_MANHA.write_text(json.dumps(todos), encoding="utf-8")
+    except OSError as exc:
+        log(f"morning summary mark not saved: {exc}")
+    for it in [it for it in itens if it.get("botoes")]:
+        try:
+            avisar_com_botoes(usuario, it["texto"], it["botoes"])
+        except Exception as exc:
+            log(f"held notice with buttons failed after the summary: {exc}")
+            guardar_para_depois(usuario, it["texto"], it["botoes"])
 
 
 def ciclo_fila() -> None:
@@ -448,7 +557,7 @@ def ciclo_fila() -> None:
         time.sleep(60)
         try:
             for arq in sorted(FILA.glob("*.jsonl")) if FILA.is_dir() else []:
-                if not em_silencio(arq.stem):
+                if not em_silencio(arq.stem) and not esperando_resumo(arq.stem):
                     n = descarregar(arq)
                     log(f"held notices delivered to {arq.stem}: {n}")
         except Exception as exc:
@@ -1247,9 +1356,14 @@ class Saida(http.server.BaseHTTPRequestHandler):
                     em_silencio(usuario) or passou_do_teto(usuario)):
                 guardar_para_depois(usuario, str(pedido["texto"]), pedido.get("botoes") or None)
                 return self._responder(200, {"ok": True, "adiado": True})
+            da_noite = None
+            if str(pedido.get("rotina") or "").startswith("📰") and pedido.get("texto") and not pedido.get("botoes"):
+                pedido["texto"], da_noite = resumo_com_a_noite(usuario, str(pedido["texto"]))
             if chat:
                 if pedido.get("texto"):
                     tg_texto(chat, str(pedido["texto"]), pedido.get("botoes") or None)
+                if da_noite is not None:
+                    resumo_entregue(usuario, da_noite)
                 if pedido.get("arquivo"):
                     caminho = Path(str(pedido["arquivo"]))
                     if str(caminho).startswith(USR_A0 + "/"):
@@ -1266,6 +1380,8 @@ class Saida(http.server.BaseHTTPRequestHandler):
                     enviar_texto(numero, str(pedido["texto"]) + "\n\nResponda: aprovar, sempre ou recusar.")
             elif pedido.get("texto"):
                 enviar_texto(numero, str(pedido["texto"]))
+                if da_noite is not None:
+                    resumo_entregue(usuario, da_noite)
             if pedido.get("arquivo"):
                 caminho = Path(str(pedido["arquivo"]))
                 if str(caminho).startswith(USR_A0 + "/"):

@@ -118,6 +118,7 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | `/painel` numa tela: prospecção (funil de quem chegou a cada etapa, estoque por fonte, semana, o que saiu hoje, quem está com você), livro de hoje numa linha, saúde da última conferência e só as rotinas que importam (com erro, rodando e as 6 próximas; o resto contado) | ✅ | whatsapp + prospecção + ponte |
 | Áudio do resumo da manhã só quando o dia pede algo de você (pergunta ou "Precisa de você") ou tem 2+ itens; um item só se lê mais rápido do que se ouve | ✅ | auxiliar |
 | Contas sem duplicar: a mesma conta vinda por e-mail e por foto (descrições diferentes) vira uma só — mesmo emissor, valor e vencimento, ou a mesma linha do boleto/Pix; fica o que já se sabia e só se completam as lacunas | ✅ | auxiliar |
+| Manhã numa mensagem só: os avisos guardados durante a noite esperam o resumo das 7h45 e vão dentro dele ("🌙 Da noite"); os que têm botão vêm logo depois, com o botão. Sem resumo até 8h30, ou se você já estiver escrevendo, saem como antes | ✅ | ponte + whatsapp |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |

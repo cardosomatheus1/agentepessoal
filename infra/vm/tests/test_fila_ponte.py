@@ -2,12 +2,15 @@
 given up only after ~25 min (kept aside, the person told to resend), and a Telegram update re-sent by Telegram is
 handled once. Run from the repository root: python3 infra/vm/tests/test_fila_ponte.py (boto3 for the import; no AWS)."""
 
+import http.server
 import importlib.util
 import json
 import shutil
 import sys
 import tempfile
+import threading
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[3]
@@ -149,6 +152,70 @@ def main() -> int:
         ok(enviados[0][2][0]["id"] == "fio:matheus:f1:fazer", "o botão continua o mesmo")
         ok("Resumo do Radar" in enviados[1][1] and "3 aquecidos" in enviados[1][1], "os sem botão vão juntos")
         ok(not (p.FILA / "matheus.jsonl").exists(), "a fila esvazia")
+
+        # 12/10 review §6: one message in the morning — the night's notices wait for the summary and go inside it
+        p.RESUMO_MANHA = tmp / "resumo_manha.json"
+        p.SILENCIO.write_text(json.dumps({"matheus": {"inicio": "23:00", "fim": "07:00"}}))
+        p.ULTIMA_ENTRADA["matheus"] = 0
+        sete_e_vinte = dt.datetime(2026, 10, 13, 7, 20, tzinfo=fuso).timestamp()
+        p.AGENDADAS = tmp / "tasks.json"
+        ok(not p.esperando_resumo("matheus", sete_e_vinte), "quem nunca recebeu resumo não espera")
+        p.AGENDADAS.write_text(json.dumps({"tasks": [{"name": "📰 Resumo do dia", "state": "idle"}]}))
+        ok(p.esperando_resumo("matheus", sete_e_vinte), "o dono com a rotina 📰 ligada espera já no primeiro dia")
+        ok(not p.esperando_resumo("outra", sete_e_vinte), "a rotina do dono não vale para outra pessoa")
+        p.AGENDADAS.write_text(json.dumps({"tasks": [{"name": "📰 Resumo do dia", "state": "disabled"}]}))
+        ok(not p.esperando_resumo("matheus", sete_e_vinte), "rotina desligada: não espera")
+        p.RESUMO_MANHA.write_text(json.dumps({"matheus": "2026-10-12"}))
+        ok(p.esperando_resumo("matheus", sete_e_vinte), "7h20: a noite espera o resumo")
+        ok(not p.esperando_resumo("matheus", sete_e_vinte + 75 * 60), "8h35: passou do limite, sai sozinho")
+        ok(not p.esperando_resumo("matheus", sete_e_vinte - 30 * 60), "6h50: ainda é silêncio (outra regra)")
+        p.ULTIMA_ENTRADA["matheus"] = sete_e_vinte - 60
+        ok(not p.esperando_resumo("matheus", sete_e_vinte), "escrevendo agora: não segura")
+        p.ULTIMA_ENTRADA["matheus"] = 0
+        p.RESUMO_MANHA.write_text(json.dumps({"matheus": "2026-10-05"}))
+        ok(not p.esperando_resumo("matheus", sete_e_vinte), "sem resumo há mais de 3 dias: não espera")
+        p.RESUMO_MANHA.write_text(json.dumps({"matheus": "2026-10-12"}))
+
+        enviados.clear()
+        p.guardar_para_depois("matheus", "Radar: 2 e-mails novos do contador")
+        p.guardar_para_depois("matheus", "🧵 Fio: cobrar a Carla", [{"id": "fio:matheus:f2:fazer", "titulo": "✅ Faz pra mim"}])
+        p.guardar_para_depois("matheus", "Prospecção: 4 perfis aquecidos")
+        # the whole path: the summary arrives at /enviar marked as the 📰 routine
+        p.chave = lambda: "k"
+        p.cfg = lambda: {"tg_chats": {"42": "matheus"}, "numeros": {}}
+        p.ativo = lambda: None
+        p.em_silencio = lambda u: False
+        p.passou_do_teto = lambda u, agora=None: False
+        ditos.clear()
+        servidor = http.server.ThreadingHTTPServer(("127.0.0.1", 0), p.Saida)
+        threading.Thread(target=servidor.serve_forever, daemon=True).start()
+        try:
+            corpo = {"usuario": "matheus", "texto": "*📰 Resumo do dia*\n\n*Bom dia!* Reunião às 15h.", "tipo": "progresso",
+                     "rotina": "📰 Resumo do dia"}
+            req = urllib.request.Request(f"http://127.0.0.1:{servidor.server_address[1]}/enviar", data=json.dumps(corpo).encode(),
+                                         headers={"Content-Type": "application/json", "X-Chave": "k"})
+            with urllib.request.urlopen(req, timeout=10) as r:
+                ok(json.loads(r.read()).get("ok"), "resumo entregue")
+        finally:
+            servidor.shutdown()
+        ok(len(ditos) == 1, f"uma mensagem de texto só: {ditos}")
+        texto = ditos[0][1] if ditos else ""
+        ok(texto.startswith("*📰 Resumo do dia*") and "🌙 *Da noite*" in texto and "contador" in texto
+           and "4 perfis aquecidos" in texto and "cobrar a Carla" not in texto, f"a noite dentro do resumo: {texto!r}")
+        ok([e[0] for e in enviados] == ["botoes"] and enviados[0][2][0]["id"] == "fio:matheus:f2:fazer",
+           f"o que tem botão vem depois, com o botão: {enviados}")
+        ok(not (p.FILA / "matheus.jsonl").exists(), "a fila da noite esvaziou")
+        ok(json.loads(p.RESUMO_MANHA.read_text())["matheus"] == dt.datetime.now(fuso).date().isoformat(), "resumo de hoje marcado")
+        ok(not p.esperando_resumo("matheus"), "depois do resumo, nada mais espera")
+
+        # what arrives between reading the night and sending the summary stays in the queue
+        p.guardar_para_depois("matheus", "A")
+        texto, itens = p.resumo_com_a_noite("matheus", "Resumo")
+        p.guardar_para_depois("matheus", "B (chegou durante o envio)")
+        p.tirar_da_fila("matheus", itens)
+        restam = [json.loads(l)["texto"] for l in (p.FILA / "matheus.jsonl").read_text().splitlines()]
+        ok(restam == ["B (chegou durante o envio)"], f"só sai o que foi junto: {restam}")
+        ok(p.resumo_com_a_noite("ninguem", "Resumo") == ("Resumo", []), "sem fila, o resumo vai como está")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:
