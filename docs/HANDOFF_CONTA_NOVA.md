@@ -188,7 +188,11 @@ scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fic
   Correção do operador: `infra/operador/decisoes.py`.
 - **Gravação segura** (trava curta por pessoa, arquivo trocado inteiro, ilegível = erro e nunca "vazio") em:
   prospecção, decisões, cofre (agente **e** ponte do celular, com a mesma trava), limites da agenda, fios,
-  iniciativa e auxiliar. Falta o radar (baixo risco).
+  iniciativa, auxiliar e monitores do radar.
+- **Avisos**: o mesmo aviso não chega 2× ao celular (registro do que foi segurado em
+  `/a0/usr/whatsapp/avisos/<login>.segurados.jsonl`).
+- **Saúde diária** (`saude.py`, timer `agentepessoal-saude`, 8h50 Bahia): só avisa se algo estiver errado; último
+  resultado em `/var/lib/agentepessoal/saude.json`.
 - **Perfis do navegador** (logins do Instagram, Google, Meta): `/a0/tmp/browser/sessions` é atalho para
   `/a0/usr/navegador/sessions` (disco da VM, no snapshot diário, fora do backup de hora em hora). A pasta antiga ficou
   em `/a0/tmp/browser/sessions.antes-20261012-150020` (dentro do contêiner; pode sair depois de uma semana sem

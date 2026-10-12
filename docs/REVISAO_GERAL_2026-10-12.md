@@ -73,8 +73,10 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | Limites das rotinas ilegíveis nunca desligam rotina | ✅ | `c982d14` |
 | Gravação segura em fios, iniciativa e auxiliar | ✅ | `628da8d` |
 | Aprovação só com o id do pedido | ✅ | `1b76899` |
+| Monitores do radar com gravação segura | ✅ | `79a4e79` |
+| Mesmo aviso não chega 2× ao celular (6 h urgente, 12 h progresso; respostas e pedido de código sempre saem) — primeira peça do portão (§4.3) | ✅ | `a4c449f` |
+| Saúde diária 8h50 (disco, contêineres, interface, proxy, ponte, backup, rotinas): só avisa se algo estiver errado | ✅ | `3d341ef` |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
-| Gravação segura no radar (monitores) | baixo risco, depois | §4.4 |
 | Botões assinados (o agente não consegue aprovar a si mesmo) | depois: precisa de assinatura que o contêiner não forja; hoje o id já fecha o caso do botão velho | §3.1 |
 | Portão único de avisos, livro de ações, Conferência | fase 2 | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |
@@ -610,7 +612,7 @@ Se tudo estiver bem, não manda nada.
 | Fase | Quando | O quê | Esforço |
 |---|---|---|---|
 | **0 — Hoje** | já | **Você:** repositório privado (1 clique). **Eu:** bucket e repositório conferidos ✓; `set +x` no setup ✓; pausar "Acompanhar Claude Code" ✓; corrigir a deduplicação do "respondeu" ✓ | 1–2 h |
-| **1 — Base à prova de erro** | semana 1 | `transacao()` em todos os JSON ✓ (falta só o radar); reserva de ação + "incerta" ✓; limites de memória (generosos) + vigia que avisa (vigia ✓); perfil do navegador fora do contêiner ✓ + snapshot diário ✓; backup que diz a verdade ✓; bilhete de envio no lugar da janela de 12 min (adiado, ver "Andamento"); aprovação sempre com id ✓ e botões assinados (depois) | 3–4 dias |
+| **1 — Base à prova de erro** | semana 1 | `transacao()` em todos os JSON ✓; reserva de ação + "incerta" ✓; limites de memória (generosos) + vigia que avisa (vigia ✓); perfil do navegador fora do contêiner ✓ + snapshot diário ✓; backup que diz a verdade ✓; bilhete de envio no lugar da janela de 12 min (adiado, ver "Andamento"); aprovação sempre com id ✓ e botões assinados (depois) | 3–4 dias |
 | **2 — Livro, decisões e portão** | semana 2 | Plugin `central` (livro, decisões, itens, fatos, avisos); prospecção, fios e avisos migrados; `/livro`, `/pendentes`, `/decisoes`; Conferência; resumo, "Feito hoje" e revisão gerados do banco; rotinas em silêncio por padrão. **Adiantado:** registro de decisões ✓ (em `memoria_pessoal`; migra para o `central` junto com o resto) | 4–5 dias |
 | **3 — Confiabilidade contínua** | semana 3 | Saúde diária + canário do Instagram; implantador único (host e rotinas incluídos; 5 prompts no git); CI; testes mínimos em ponte, cofre, login, agenda; teste de restauração; AWS Budgets | 3 dias |
 | **4 — Crescimento** | semana 3–4 | Link curto + cadastros ligados aos leads; planilha inteira do Grok; métricas por origem; API oficial para respostas; demo com agenda; cartão do lead quente; Apify; enxugar funções (YouTube, iniciativa, radar+fios) | 4–5 dias |
