@@ -1414,6 +1414,33 @@ class Suite:
         p.definir_auto(LOGIN, True)
         ok(not list(p.PASTA.glob(f".{LOGIN}.*.tmp")), "nenhum arquivo temporário largado")
 
+    def t_reserva_e_incerta(self):
+        # 12/10 review: two rounds could get the same action; a round that fell after sending left it "aprovada"
+        p = self.p
+        self.em(self.hora(10))
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+        p.salvar(LOGIN, d)
+        x, y = self._lead("res1"), self._lead("res2")
+        ids = [p.propor(LOGIN, [{"lead_id": l, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"] for l in (x, y)]
+        for i in ids:
+            p.decidir(LOGIN, i, "aprovar")
+        a1, _ = p.proxima(LOGIN, "raizconnect", quem="rodadaA")
+        a2, _ = p.proxima(LOGIN, "raizconnect", quem="rodadaB")
+        ok(a1 and a2 and a1["id"] != a2["id"], "duas rodadas ao mesmo tempo nunca pegam a mesma ação")
+        eq(p.proxima(LOGIN, "raizconnect", quem="rodadaA")[0]["id"], a1["id"], "a mesma rodada pedindo de novo recebe a dela")
+        ok(p.resultado(LOGIN, a1["id"], True, "feito", quem="rodadaB") is None, "outra rodada não registra a ação reservada")
+        eq(p.resultado(LOGIN, a1["id"], True, "seguiu e curtiu", quem="rodadaA")["estado"], "executada", "quem reservou registra")
+        self.em(self.relogio + 21 * 60)  # rodadaB fell after acting, with no result
+        c, motivo = p.proxima(LOGIN, "raizconnect", quem="rodadaC")
+        ok(c and c["id"] == a2["id"] and c.get("conferir") and c["estado"] == "incerta",
+           f"reserva vencida: volta como conferência na tela, não como reenvio ({motivo})")
+        e, _ = p.proxima(LOGIN, "raizconnect", quem="rodadaD")
+        ok(not e, "a incerta em conferência não vai para outra rodada")
+        r = p.resultado(LOGIN, a2["id"], True, "já seguíamos: a visita tinha saído", quem="rodadaC")
+        eq((r["estado"], p._lead(p.carregar(LOGIN), y)["etapa"]), ("executada", "aquecido"), "conferida: conta como feita, sem repetir")
+        ok(any(ev["para"] == "incerta" for ev in p.eventos(LOGIN, 50)), "o diário registra a passagem por incerta")
+
     def t_resposta_e_descarte(self):
         p = self.p
         lid = self._lead()

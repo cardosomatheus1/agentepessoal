@@ -160,7 +160,8 @@ def carregar(login: str) -> dict:
 # state can never jump (11/10: "executada" was edited by hand to "duplicada" and a lock stayed on for good).
 TRANSICOES = {
     "proposta": {"aprovada", "pulada", "expirada", "cancelada", "proposta"},
-    "aprovada": {"executada", "falhou", "cancelada", "proposta"},  # "proposta" again = new text (editar)
+    "aprovada": {"executada", "falhou", "cancelada", "proposta", "incerta"},  # "proposta" again = new text (editar)
+    "incerta": {"executada", "falhou"},  # handed out, never reported: checked on the screen before anything is resent
     "executada": {"apagada"},  # the message was deleted (unsent) in the Instagram
     "falhou": set(), "pulada": set(), "expirada": set(), "cancelada": set(), "apagada": set(),
 }
@@ -1097,7 +1098,7 @@ def repor_aquecer(login: str) -> int:
 def devidos(login: str) -> dict:
     """What each lead needs next, by the playbook's timing."""
     d = carregar(login)
-    pendentes = {a["lead_id"] for a in d["acoes"] if a["estado"] in ("proposta", "aprovada")}
+    pendentes = {a["lead_id"] for a in d["acoes"] if a["estado"] in ("proposta", "aprovada", "incerta")}
     out = {"dm_abertura": [], "dm_lembrete": [], "aquecer": []}
     for l in d["leads"]:
         if l["id"] in pendentes or l["canal"] != "instagram":
@@ -1188,7 +1189,7 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
     d = carregar(login)
     out = {"propostas": [], "recusadas": []}
     restantes = cotas(login)
-    ja = {(a["lead_id"], a["tipo"]) for a in d["acoes"] if a["estado"] in ("proposta", "aprovada")}
+    ja = {(a["lead_id"], a["tipo"]) for a in d["acoes"] if a["estado"] in ("proposta", "aprovada", "incerta")}
     for item in itens if isinstance(itens, list) else []:
         if not isinstance(item, dict):
             continue
@@ -1530,9 +1531,21 @@ def conferido(login: str, direct: str, notificacoes: str, interagiram: list | No
     return ""
 
 
+RESERVA = 20 * 60  # an action handed out to a round is that round's; with no result in this time it becomes "incerta"
+
+
+def _livre(a: dict, quem: str) -> bool:
+    """Not reserved by another round (or the reservation ran out)."""
+    return (not a.get("em_execucao") or agora() - a["em_execucao"] > RESERVA
+            or a.get("reservada_por", "") in ("", quem))
+
+
 @_transacao
-def proxima(login: str, conta_ativa: str = "", repor: bool = True) -> tuple[dict | None, str]:
-    """Next approved action that may run now (right account, hours, pause, spacing, daily limits)."""
+def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "") -> tuple[dict | None, str]:
+    """Next approved action that may run now (right account, hours, pause, spacing, daily limits). The action is
+    reserved for the round that asked (`quem`): another round never gets it (12/10 review: two rounds could send the
+    same DM). One handed out and never reported may have gone out (the round fell after sending): it becomes
+    "incerta" and comes back first as a check on the screen, never as a resend."""
     d = carregar(login)
     esperada, ativa = conta(login), normalizar(conta_ativa)
     if not esperada:
@@ -1552,6 +1565,14 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True) -> tuple[dict
     h = _hora_local()
     if not HORARIO[0] <= h < HORARIO[1]:
         return None, f"fora do horário ({HORARIO[0]}h–{HORARIO[1]}h)"
+    for x in d["acoes"]:
+        if x["estado"] == "aprovada" and x.get("em_execucao") and agora() - x["em_execucao"] > RESERVA:
+            _mudar(d, x, "incerta", "entregue a uma rodada e sem resultado: conferir na tela antes de qualquer reenvio")
+    incerta = next((x for x in d["acoes"] if x["estado"] == "incerta" and _livre(x, quem)), None)
+    if incerta:
+        incerta["em_execucao"], incerta["reservada_por"] = agora(), quem
+        salvar(login, d)
+        return {**incerta, "lead": _lead(d, incerta["lead_id"]) or {}, "conferir": True}, ""
     if repor and not any(x["estado"] == "aprovada" for x in d["acoes"]) and not _fila_repor(login):
         # nothing to do at all: say so now, not "wait for the spacing" (11/10 17h20: the round waited on nothing)
         return None, "nenhuma ação aprovada esperando"
@@ -1564,16 +1585,18 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True) -> tuple[dict
         if not lead or (lead["etapa"] in FINAIS and not (a["tipo"] == "resposta" and lead["etapa"] == "descartado")):
             _mudar(d, a, "cancelada", "lead encerrado antes da execução")
             continue
+        if not _livre(a, quem):
+            continue  # another round has it
         executadas_hoje = sum(1 for x in d["acoes"] if x["tipo"] == a["tipo"] and x["estado"] == "executada"
                               and _hoje_local(x.get("executada_em")) == _hoje_local())
         if executadas_hoje >= limites(d)[a["tipo"]]:
             continue
-        a["em_execucao"] = agora()
+        a["em_execucao"], a["reservada_por"] = agora(), quem
         salvar(login, d)
         return {**a, "lead": lead}, ""
     salvar(login, d)
     if repor and repor_aquecer(login):
-        return proxima(login, conta_ativa, repor=False)
+        return proxima(login, conta_ativa, repor=False, quem=quem)
     return None, "nenhuma ação aprovada esperando"
 
 
@@ -1710,10 +1733,12 @@ def aviso_sem_acao(motivo: str) -> str:
 
 
 @_transacao
-def resultado(login: str, aid: str, ok: bool, detalhe: str = "", bloqueio: bool = False) -> dict | None:
+def resultado(login: str, aid: str, ok: bool, detalhe: str = "", bloqueio: bool = False, quem: str = "") -> dict | None:
+    """What happened to an action handed out by `proxima` (or the check of an "incerta"). Only the round that holds the
+    action reports it."""
     d = carregar(login)
     a = next((x for x in d["acoes"] if x["id"] == aid), None)
-    if not a or a["estado"] != "aprovada":
+    if not a or a["estado"] not in ("aprovada", "incerta") or not _livre(a, quem):
         return None
     _mudar(d, a, "executada" if ok else "falhou", detalhe, executada_em=agora(), detalhe=detalhe[:300])
     lead = _lead(d, a["lead_id"])

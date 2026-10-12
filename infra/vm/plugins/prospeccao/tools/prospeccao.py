@@ -282,10 +282,20 @@ class Prospeccao(Tool):
             return r(json.dumps(resumo, ensure_ascii=False) +
                      ("\nCorrija as recusadas (motivo ao lado) e proponha de novo, ou deixe de fora." if out["recusadas"] else ""))
         if acao == "proxima":
-            a, motivo = p.proxima(login, conta_ativa)
+            a, motivo = p.proxima(login, conta_ativa, quem=self.agent.context.id)
             if not a:
                 p.encerrar_liberacao(self.agent.context)
                 return r(p.aviso_sem_acao(motivo))
+            if a.get("conferir"):  # handed out before and never reported: it may have gone out
+                p.encerrar_liberacao(self.agent.context)
+                lead = a["lead"]
+                no_direct = a["tipo"] in p.TIPOS_DIRECT
+                return r(f"CONFIRA ANTES DE QUALQUER ENVIO: a ação {a['id']} ({a['tipo']}) para @{lead.get('handle', '')} foi "
+                         "entregue a uma rodada e ficou sem resultado — pode ter saído. Abra " + lead.get("url", "o perfil")
+                         + (f" e a conversa no Direct: a mensagem «{a['texto'][:90]}» está lá?" if no_direct
+                            else " e veja se já seguimos (botão «Seguindo») e curtimos.")
+                         + " Depois chame `prospeccao` acao \"resultado\" com acao_id, ok=true se saiu (uma vez) ou ok=false se "
+                         "não saiu, e detalhe com o que viu. NÃO envie nem refaça nada agora.")
             p.liberar(self.agent.context, a)
             lead = a["lead"]
             conferir = ""
@@ -334,10 +344,12 @@ class Prospeccao(Tool):
         if acao == "resultado":
             ok_bool = str(ok).lower() in ("true", "1", "sim", "ok")
             bloq = str(bloqueio).lower() in ("true", "1", "sim")
-            a = p.resultado(login, acao_id, ok_bool, detalhe, bloq)
+            a = p.resultado(login, acao_id, ok_bool, detalhe, bloq, quem=self.agent.context.id)
             p.encerrar_liberacao(self.agent.context)
             if not a:
                 x = next((y for y in p.carregar(login)["acoes"] if y["id"] == acao_id), None)
+                if x and x["estado"] in ("aprovada", "incerta"):
+                    return r("Essa ação está com outra rodada: não registre nada por ela. Chame `prospeccao` acao \"proxima\".")
                 if x and x["estado"] in ("cancelada", "falhou", "executada"):
                     return r(f"Essa ação já estava encerrada ({x['estado']}; lead descartado, fechado ou já registrado). "
                              "Nada a fazer: chame `prospeccao` acao \"proxima\" para a seguinte.")
