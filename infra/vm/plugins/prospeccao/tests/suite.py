@@ -90,9 +90,10 @@ class Suite:
         t_sem_dm_no_pico test the real rules."""
         p = self.p
         if not hasattr(self, "_espera_real"):
-            self._espera_real, self._pico_real = p._espera, p.PICO_DM
+            self._espera_real, self._pico_real, self._pico_seg_real = p._espera, p.PICO_DM, dict(p.PICO_SEGMENTO)
         p._espera = lambda ultima: p.INTERVALO
         p.PICO_DM = ()
+        p.PICO_SEGMENTO = {}
         p.FOLGA = 9  # no rest day (the suite runs on any weekday); t_folga_e_noite tests it
 
     def em(self, ts):  # simulated clock
@@ -581,7 +582,10 @@ class Suite:
         eq(e["por_fonte"]["planilha"]["a_conferir"], 3, "achados fora do Instagram ainda a conferir")
         ctx = p.resumo_contexto(LOGIN)
         ok("Por fonte: planilha 4/40 (FALTAM 36); instagram 3/60 (FALTAM 57); catalogo 1 (fora da divisão)" in ctx, ctx[:700])
-        ok("busque no Instagram (skill, 2b e 3) até 57 novos" in ctx, "a parte do Instagram é a busca no Instagram")
+        ok("Instagram: faltam 57 (sem Apify e com os scripts desligados" in ctx, "sem Apify e sem scripts: segue com o que há")
+        p.definir_scripts_conta(LOGIN, True)
+        ok("busque no Instagram (skill, seção 5) até 57 novos" in p.resumo_contexto(LOGIN), "com os scripts ligados: a busca")
+        p.definir_scripts_conta(LOGIN, False)
         def vez():
             a, motivo = p.proxima(LOGIN, "raizconnect")
             ok(a and a["tipo"] == "aquecer", f"repõe ({motivo})")
@@ -2372,6 +2376,89 @@ class Suite:
         ok("Esperando você" in texto and "funciona no celular" in texto, f"a promessa feita em nome dele aparece à noite: {texto}")
         self.em(self.relogio + 2 * 86400)
         ok("Esperando você" not in (p.resumo_hoje(LOGIN) or ""), "depois de 2 dias sai da lista")
+
+    def t_pico_por_segmento(self):
+        """Blind review 5: marmitarias cook from 7h; their first message waits until 14h, a confeitaria's does not."""
+        p = self.p
+        p.PICO_SEGMENTO = dict(self._pico_seg_real)
+        self.em(self.hora(9) + 1800)
+        d = p.carregar(LOGIN)
+        d["config"]["executar_em_teste"], d["config"]["conta_instagram"] = True, "raizconnect"
+        p.salvar(LOGIN, d)
+        marm = self._aquecido("seg_marm")
+        doce = self._aquecido("seg_doce")
+        d = p.carregar(LOGIN)
+        p._lead(d, doce)["segmento"] = "confeitaria"
+        p.salvar(LOGIN, d)
+        for lid in (marm, doce):
+            aid = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_abertura", "texto": DM_A if lid == marm else TEXTOS[0].format(n="Lu")}])["propostas"][0]["id"]
+            p.decidir(LOGIN, aid, "aprovar")
+        a, motivo = p.proxima(LOGIN, "raizconnect", repor=False)
+        ok(a and a["lead_id"] == doce, f"9h30: a confeitaria recebe, a marmitaria espera ({motivo})")
+        p.resultado(LOGIN, a["id"], True, "enviada")
+        self.em(self.relogio + 600)
+        a, motivo = p.proxima(LOGIN, "raizconnect", repor=False)
+        ok(a is None and "14:00" in motivo, f"a da marmitaria espera as 14h: {motivo}")
+
+    def t_segundo_bloqueio_para_ate_liberar(self):
+        p = self.p
+        self.em(self.hora(10))
+        ok(not p.pausar_por_bloqueio(LOGIN, "ação bloqueada ao seguir"), "primeiro bloqueio: 48 h")
+        self.em(self.relogio + 3 * 86400)
+        ok(p.pausar_por_bloqueio(LOGIN, "ação bloqueada de novo"), "segundo em 30 dias")
+        self.em(self.relogio + 30 * 86400)
+        d = p.carregar(LOGIN)
+        d["config"]["executar_em_teste"], d["config"]["conta_instagram"] = True, "raizconnect"
+        p.salvar(LOGIN, d)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a is None and "pausado" in motivo, f"um mês depois, ainda parado: {motivo}")
+        ok("até o Matheus liberar" in p.resumo_contexto(LOGIN), "o contexto diz que só ele libera")
+        p.liberar_bloqueio(LOGIN)
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok("pausado" not in motivo, f"liberado: {motivo}")
+
+    def t_comentario_so_em_lead_quente(self):
+        p = self.p
+        self.em(self.hora(10))
+        self._revisor(reprovar=())
+        p.definir_auto(LOGIN, True)
+        d = p.carregar(LOGIN)
+        d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
+        p.salvar(LOGIN, d)
+        frio = self._lead("frio1", canais=["whatsapp"], sinais=[], cardapio=False, seguidores="25k")
+        d = p.carregar(LOGIN)
+        ok((p._lead(d, frio)["nota"] or 0) < p.NOTA_QUENTE, f"lead morno: {p._lead(d, frio)['nota']}")
+        a, motivo = p.proxima(LOGIN, "raizconnect")
+        ok(a and a["lead_id"] == frio, f"visita ao morno ({motivo})")
+        ontem = dt.datetime.fromtimestamp(self.relogio - 86400, p._tz()).date().isoformat()
+        r, m = p.comentar(LOGIN, a["id"], "Kit de 10 com duas proteínas resolve a semana de quem congela!", f"\"Kit\", {ontem}")
+        ok(not r and "lead quente" in m, f"comentário só em lead quente: {m}")
+        p.revisor = None
+
+    def t_datas_de_pico(self):
+        p = self.p
+        eq(p._pascoa(2026), dt.date(2026, 4, 5), "Páscoa 2026")
+        eq(p._pascoa(2027), dt.date(2027, 3, 28), "Páscoa 2027")
+        eq(p.data_de_pico("confeitaria", dt.date(2027, 3, 20)), "Páscoa", "8 dias antes da Páscoa")
+        eq(p.data_de_pico("doces", dt.date(2026, 5, 2)), "Dia das Mães", "Dia das Mães (10/5/2026)")
+        eq(p.data_de_pico("confeitaria", dt.date(2026, 12, 3)), "dezembro (Natal)", "dezembro inteiro")
+        eq(p.data_de_pico("marmitaria", dt.date(2026, 12, 3)), "", "marmitaria não para")
+        eq(p.data_de_pico("confeitaria", dt.date(2026, 11, 3)), "", "novembro: nada")
+        self.em(dt.datetime(2026, 12, 3, 10, tzinfo=p._tz()).timestamp())
+        lid = self._lead("natal1", segmento="confeitaria")
+        d = p.carregar(LOGIN)
+        l = p._lead(d, lid)
+        l["etapa"], l["atualizado"] = "aquecido", p.agora() - 3 * 86400
+        p.salvar(LOGIN, d)
+        ok(lid not in [x["id"] for x in p.devidos(LOGIN)["dm_abertura"]], "confeitaria em dezembro: a 1ª mensagem espera")
+
+    def t_textos_de_hoje_no_contexto(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("txt1")
+        self._executar(lid, "dm_abertura", DM_A)
+        ok("## Textos de hoje" in p.resumo_contexto(LOGIN) and DM_A[:40] in p.resumo_contexto(LOGIN),
+           "o contexto mostra o começo das aberturas do dia")
 
     def t_marca_429_nao_e_perfil(self):
         p = self.p

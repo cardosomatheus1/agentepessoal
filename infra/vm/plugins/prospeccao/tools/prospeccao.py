@@ -82,14 +82,14 @@ SEM_SCRIPTS = ("Busca e avaliação por script com a nossa conta estão desligad
                "liga, com acao \"scripts_conta\"). ")
 
 COMO_EXECUTAR = {
-    "aquecer": "Abra o perfil, siga (se ainda não segue), curta 1 ou 2 posts recentes e veja os stories, se houver. Comentário: só num "
-               "post de até 7 dias com algo ESCRITO para comentar (legenda, texto na arte, preço; a descrição automática do Instagram não "
-               "conta). SEM texto aprovado: chame `prospeccao` acao \"comentar\" (acao_id, texto, base = o trecho copiado entre aspas e a "
-               "data do post) ANTES do resultado e só publique se vier COMENTÁRIO APROVADO; depois, \"comentado\". COM texto aprovado: "
-               "comente EXATAMENTE esse texto no post mais recente. Para comentar, abra o post pelo link dele "
-               "(https://www.instagram.com/p/<código>/), clique em \"Adicione um comentário…\", digite, clique em \"Publicar\" e confira "
-               "que o comentário aparece na lista. No resultado: ok=true se SEGUIU, mesmo que o comentário não tenha saído (diga no "
-               "detalhe o que saiu e o que não saiu); ok=false só se nem seguir deu certo.",
+    "aquecer": "Abra o perfil e leia a bio e os posts; siga (se ainda não segue), veja os stories se houver anel colorido (sem "
+               "reagir) e curta 1 post que você leu. Comentário: só se esta ação disser PODE COMENTAR, num post de até 7 dias com "
+               "algo ESCRITO para comentar (a descrição automática do Instagram não conta): chame `prospeccao` acao \"comentar\" "
+               "(acao_id, texto, base = o trecho copiado entre aspas e a data do post) ANTES do resultado e só publique se vier "
+               "COMENTÁRIO APROVADO; depois, \"comentado\". Para comentar, abra o post pelo link dele "
+               "(https://www.instagram.com/p/<código>/), clique em \"Adicione um comentário…\", digite com a ação `type`, clique em "
+               "\"Publicar\" e confira que o comentário aparece. No resultado: ok=true se SEGUIU, mesmo que o comentário não tenha "
+               "saído (diga no detalhe o que saiu e o que não saiu); ok=false só se nem seguir deu certo.",
     "dm_abertura": "Abra o perfil → Mensagem e envie EXATAMENTE este texto (sem mudar nada).",
     "dm_lembrete": "Abra o perfil → Mensagem (abre a conversa que já existe) e envie EXATAMENTE este texto.",
     "seguimento": "Abra o perfil → Mensagem (abre a conversa que já existe) e envie EXATAMENTE este texto.",
@@ -279,7 +279,7 @@ class Prospeccao(Tool):
             if not origens:
                 ig = pf["instagram"]["faltam"]
                 return r("A parte da planilha e a do catálogo no estoque estão cheias: não chame `fontes` de novo agora."
-                         + (f" Falta a parte do Instagram ({ig}): busque no Instagram (skill, 2b e 3)." if ig else " Estoque cheio."))
+                         + (f" Falta a parte do Instagram ({ig}): `fontes_instagram`." if ig else " Estoque cheio."))
             coleta = None
             d = f.carregar(login)
             if "catalogo" in origens and sum(1 for e in d["empresas"].values()
@@ -295,7 +295,7 @@ class Prospeccao(Tool):
                      "consome o estoque sozinha. "
                      + ("Chame `fontes` de novo para repor a planilha/catálogo." if falta_fontes and not out.get("erro_busca")
                         else "Planilha/catálogo: pare (parte cheia ou buscas do dia esgotadas).")
-                     + (f" Instagram: faltam {pf['instagram']['faltam']} — busque no Instagram (skill, 2b e 3)." if pf["instagram"]["faltam"] else ""))
+                     + (f" Instagram: faltam {pf['instagram']['faltam']} — `fontes_instagram`." if pf["instagram"]["faltam"] else ""))
         if acao == "fontes_instagram":
             # the Instagram share of the stock through Apify (12/10 pilot: 20 of 38 profiles fit, ~US$ 0.10)
             f = fontes()
@@ -303,13 +303,14 @@ class Prospeccao(Tool):
             if not pf["faltam"]:
                 return r("A parte do Instagram no estoque está cheia: não chame de novo agora.")
             if not f.apify_pronto(login):
-                return r("Sem Apify configurado: " + ("encha a parte do Instagram com a busca no Instagram (skill, seção 2)."
+                return r("Sem Apify configurado: " + ("encha a parte do Instagram com a busca no Instagram (skill, seção 5)."
                                                       if p.scripts_conta(login) else "siga com `fontes` e o estoque que há."))
             out = await asyncio.to_thread(f.buscar_instagram, login, p, _numero(kwargs.get("buscas") or kwargs.get("termos"), 3),
                                           _numero(kwargs.get("por_termo"), 20))
             pf = p.estoque(login)["por_fonte"]["instagram"]
             if out.get("erro"):
-                return r(f"{out['erro']}. Se precisar, use a busca no Instagram (skill, 2b e 3) para a parte que falta ({pf['faltam']}).")
+                return r(f"{out['erro']}. " + (f"Se precisar, use a busca no Instagram (skill, seção 5) para a parte que falta ({pf['faltam']})."
+                                                if p.scripts_conta(login) else "Siga com o estoque que há."))
             return r(json.dumps({**out, "parte_instagram": pf}, ensure_ascii=False) + "\nCriados já estão registrados e conferidos "
                      "(último post, seguidores, privado). " + (f"Faltam {pf['faltam']}: chame `fontes_instagram` de novo." if pf["faltam"]
                                                                else "Parte do Instagram cheia: pare."))
@@ -385,6 +386,10 @@ class Prospeccao(Tool):
                             f"que é mesmo «{lead['nome']}» ({lead['cidade']}). Se for outro negócio, NÃO siga: chame `prospeccao` acao "
                             f"\"etapa\" com lead_id \"{lead['id']}\", etapa \"descartado\" e nota \"perfil de outro negócio\" — isso já "
                             "encerra esta visita — e chame \"proxima\" de novo.\n")
+            if a["tipo"] == "aquecer":
+                conferir += ("COMENTÁRIO JÁ APROVADO: publique EXATAMENTE o texto abaixo no post mais recente.\n" if a.get("texto")
+                             else "PODE COMENTAR (lead quente), se houver o que dizer.\n" if p.pode_comentar(lead)
+                             else "SEM COMENTÁRIO nesta visita (só lead quente): siga, veja os stories e curta 1 post.\n")
             return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) {'PRÉ-APROVADA (autorização do Matheus, dentro do limite do dia; texto revisado)' if a.get('auto') else 'APROVADA pelo Matheus'} para @{lead['handle']} — {lead['url']}\n"
                      f"{conferir}{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
                      + (("PARA DIGITAR NO DIRECT (obrigatório, NÃO digite à mão): com a conversa aberta, 1) clique no campo de mensagem, "
@@ -420,11 +425,12 @@ class Prospeccao(Tool):
             ok_bool = str(ok).lower() in ("true", "1", "sim", "ok")
             bloq = str(bloqueio).lower() in ("true", "1", "sim")
             if bloq and not acao_id:  # a block or verification seen while reading (no action in hand)
-                await asyncio.to_thread(p.pausar_por_bloqueio, login, detalhe)
-                await asyncio.to_thread(p.enviar, login, "⛔ *Prospecção pausada por 48 h*\n\nO Instagram mostrou um bloqueio ou "
+                segundo = await asyncio.to_thread(p.pausar_por_bloqueio, login, detalhe)
+                await asyncio.to_thread(p.enviar, login, ("⛔ *Prospecção parada até você liberar* (segundo bloqueio em 30 dias)"
+                                        if segundo else "⛔ *Prospecção pausada por 48 h*") + "\n\nO Instagram mostrou um bloqueio ou "
                                         "pediu verificação: " + str(detalhe or "")[:300] + "\nNada mais sai até lá.",
                                         tipo="urgente", ponte=ponte())
-                return r("Registrado. Prospecção pausada por 48 h. Termine a rodada.")
+                return r("Registrado. Prospecção pausada. Termine a rodada.")
             a = await asyncio.to_thread(p.resultado, login, acao_id, ok_bool, detalhe, bloq, quem=self.agent.context.id)
             p.encerrar_liberacao(self.agent.context)
             if not a:
@@ -436,9 +442,11 @@ class Prospeccao(Tool):
                              "Nada a fazer: chame `prospeccao` acao \"proxima\" para a seguinte.")
                 return r("Ação não encontrada ou não estava aprovada.")
             if bloq:
-                await asyncio.to_thread(p.enviar, login, "⛔ *Prospecção pausada por 48 h*\n\nO Instagram mostrou um bloqueio/limite: " + detalhe[:300] +
-                         "\nNada mais sai até lá.", tipo="urgente", ponte=ponte())
-                return r("Registrado. Prospecção pausada por 48 h. Termine a rodada.")
+                segundo = bool(p.carregar(login)["config"].get("bloqueio_matheus"))
+                await asyncio.to_thread(p.enviar, login, ("⛔ *Prospecção parada até você liberar* (segundo bloqueio em 30 dias)"
+                         if segundo else "⛔ *Prospecção pausada por 48 h*") + "\n\nO Instagram mostrou um bloqueio/limite: "
+                         + detalhe[:300] + "\nNada mais sai até lá.", tipo="urgente", ponte=ponte())
+                return r("Registrado. Prospecção pausada. Termine a rodada.")
             if a["tipo"] == "resposta" and a.get("auto") and a["estado"] == "executada":
                 lead = p._lead(p.carregar(login), a["lead_id"]) or {}
                 await asyncio.to_thread(p.enviar, login, f"↩️ Respondi *{lead.get('nome', '')}* (@{lead.get('handle', '')}) pela @raiz.connect\n\n«{a['texto'][:600]}»",
@@ -505,6 +513,9 @@ class Prospeccao(Tool):
             return r(f"Registrado: nenhuma busca, avaliação ou conferência pelo Instagram até {ate}. Não abra perfis um a um "
                      "para compensar; termine a rodada com o que não usa o Instagram e escreva no fim "
                      "\"CONSULTA LIMITADA (429)\".")
+        if acao == "liberar_bloqueio":  # only on the person's order, after a second block in 30 days
+            await asyncio.to_thread(p.liberar_bloqueio, login)
+            return r("Prospecção liberada: volta pela metade do ritmo por 7 dias.")
         if acao == "liberar_consultas":  # the person decides to allow the profile scripts again
             await asyncio.to_thread(p.liberar_consultas, login)
             return r("Consultas pelo Instagram liberadas de novo.")
@@ -543,7 +554,7 @@ class Prospeccao(Tool):
                          "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu. Se preferir "
                          "conversar você mesmo, toque em 🙋 Deixa comigo.\n" + n["url"], p.botao_assumir(login, n["lead_id"]), tipo="urgente", ponte=ponte())
             if out["erros"] and not out["conversas"]:
-                return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Leia pela tela (skill, seção 6).")
+                return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Leia pela tela (skill, seção 2).")
             resumo = (f"{out['conversas']} conversas lidas pela API; respostas novas de leads: "
                       + (", ".join("@" + n["handle"] for n in out["novas"]) or "nenhuma"))
             return r(json.dumps(out, ensure_ascii=False) + f"\nUse em `caixa_lida` → direct: \"{resumo}\". Para cada resposta nova, "
