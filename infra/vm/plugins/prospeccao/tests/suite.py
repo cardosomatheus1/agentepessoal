@@ -5,6 +5,7 @@ import asyncio
 import datetime as dt
 import importlib.util
 import json
+import os
 import re
 import sys
 import time
@@ -12,6 +13,7 @@ import traceback
 from pathlib import Path
 
 LOGIN, OUTRO = "teste_pro", "teste_pro2"
+SO_NA_VM = ("t_botoes",)  # uses /a0/usr/plugins/whatsapp/api/receber.py as installed on the VM
 RAIZ = Path(__file__).resolve().parents[1]
 CAIXA = Path("/a0/usr/testes/celular.jsonl")
 
@@ -86,7 +88,9 @@ class Suite:
 
     async def rodar(self, so=""):
         original = self.p.agora
-        for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
+        fora_da_vm = bool(os.environ.get("CI"))  # CI: no installed whatsapp plugin to press the phone buttons on
+        for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)
+                           and not (fora_da_vm and n in SO_NA_VM)):
             self.limpar()
             self.p.agora = original
             inicio = time.time()

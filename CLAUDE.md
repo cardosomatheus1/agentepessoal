@@ -17,7 +17,8 @@ porque erros bobos aconteceram quando duas sessões mexeram na mesma coisa sem r
   Se a função certa não existe, crie-a com teste, commite e implante.
 - **Estado de ação da prospecção só muda por `_mudar()`** (tabela `TRANSICOES`). Transição proibida dá erro: não
   contorne; corrija a causa.
-- **Toda mudança de comportamento vem com teste** na suíte do plugin, e a suíte inteira passa antes do commit.
+- **Toda mudança de comportamento vem com teste** na suíte do plugin, e a suíte inteira passa antes do commit
+  (`python3 infra/operador/rodar_suites_locais.py` roda todas fora da VM; o GitHub roda o mesmo a cada push).
 - **Ação destrutiva fora daqui** (apagar mensagem, desfazer envio, apagar arquivo do usuário) só com ordem explícita
   do Matheus para aquele caso.
 - **Uma frente, uma sessão:** antes de mexer num plugin, confira no `git log` se outra sessão mexeu nele nas últimas
