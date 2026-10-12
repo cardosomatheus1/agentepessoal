@@ -58,9 +58,17 @@ def main() -> int:
         r = p.texto_livro("matheus")
         if not ("@zen.marmitas" in r and "falhou: script falhou" in r and "@x" not in r):
             falhas.append(f"livro do dia só da pessoa: {r!r}")
+        # 12/10 review §6: the secret's name (never the value) and the research's file are in the ledger too
+        l.registrar("executada", "matheus", "cofre", "browser", "segredo", "cofre:FEQ", "", resultado="senha FEQ entregue")
+        l.registrar("executada", "matheus", "pesquisa", "pesquisar", "pesquisa",
+                    "arquivo:/a0/usr/workdir/pesquisas/20261012-152000/sintese.md", "Qual lava e seca compensa?")
+        r = p.texto_livro("matheus")
+        if not ("🔑 senha usada: 1" in r and "senha usada FEQ" in r and "🔎 pesquisa 20261012-152000 «Qual lava e seca" in r
+                and "/a0/usr/workdir" not in r):
+            falhas.append(f"senha usada (só o nome) e pesquisa no /livro: {r!r}")
         # /painel (12/10 review §7 item 11): the ledger in one line, the health check only for the owner
         r = p.linha_livro("matheus")
-        if not ("💬 DM: 1" in r and "(falhou)" in r and "/livro" in r):
+        if not ("💬 DM: 1" in r and "(falhou)" in r and "🔑 senha usada: 1" in r and "/livro" in r):
             falhas.append(f"livro numa linha: {r!r}")
         if "nada registrado" not in p.linha_livro("ninguem"):
             falhas.append("livro vazio para quem não tem ações")
@@ -92,7 +100,7 @@ def main() -> int:
         shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:
         print("FALHA", f)
-    print("TESTES", 11 - len(falhas), 11)
+    print("TESTES", 12 - len(falhas), 12)
     return 1 if falhas else 0
 
 

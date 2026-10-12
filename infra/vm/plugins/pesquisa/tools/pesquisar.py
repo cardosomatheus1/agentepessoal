@@ -8,9 +8,11 @@ parallel, and returns one synthesis with numbered sources. Depth 2 runs a second
 
 import asyncio
 import html as htmllib
+import importlib.util
 import json
 import re
 import subprocess
+import sys
 import time
 import urllib.request
 from pathlib import Path
@@ -299,7 +301,8 @@ def _buscas_iniciais(pergunta: str) -> list[str]:
     return [l.strip(" -•\t") for l in texto.splitlines() if l.strip(" -•\t")][:8]
 
 
-async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos: bool) -> str:
+async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos: bool, ao_salvar=None) -> str:
+    """`ao_salvar(arquivo, fontes)`: called once the synthesis is written (the ledger record)."""
     inicio = time.time()
     pasta = PASTA / time.strftime("%Y%m%d-%H%M%S")
     pasta.mkdir(parents=True, exist_ok=True)
@@ -347,6 +350,11 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
     lista = "\n".join(f"[{i}] {f['titulo'] or ''} — {f['url']}" for i, f in enumerate(fontes, 1))
     (pasta / "notas.md").write_text(f"# {pergunta}\n\nBuscas: {todas_buscas}\n\n{notas}\n", encoding="utf-8")
     (pasta / "sintese.md").write_text(sintese + "\n\n" + lista, encoding="utf-8")
+    if ao_salvar:
+        try:
+            ao_salvar(str(pasta / "sintese.md"), len(fontes))
+        except Exception as exc:  # the ledger never stops the research
+            print(f"pesquisa: não registrei no livro: {exc}", flush=True)
     segundos = int(time.time() - inicio)
     assistidos = sum(1 for f in fontes if f["tipo"] == "vídeo assistido")
     por_legenda = sum(1 for f in fontes if f["tipo"] == "vídeo (legendas)")
@@ -354,6 +362,20 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
     return (f"Pesquisa feita em {segundos} s: {len(todas_buscas)} buscas + {web} buscas na web do modelo, {len(fontes)} fontes úteis "
             f"({assistidos} vídeos assistidos inteiros pelo Gemini, {por_legenda} pelas legendas).\n\n{sintese}\n\nFontes:\n{lista}\n\n"
             f"Notas completas de cada fonte: {pasta / 'notas.md'}")
+
+
+def _livro_pesquisa():
+    nome = "pesquisa_livro"
+    caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists()) / "helpers" / "livro_pesquisa.py"
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
 
 
 class Pesquisar(Tool):
@@ -369,8 +391,17 @@ class Pesquisar(Tool):
         except (TypeError, ValueError):
             profundidade = 1
         videos = str(videos).lower() not in ("false", "0", "nao", "não", "no")
+        lp = _livro_pesquisa()
+        ctx = self.agent.context
+        sep = sys.modules.get("login_usuarios_separacao")
         try:
-            texto = await pesquisar(pergunta, buscas, profundidade, videos)
+            login = ((sep.dono_contexto(ctx) if sep else ctx.get_data("dono")) or "matheus").lower()
+        except Exception:
+            login = "matheus"
+        ao_salvar = lambda arquivo, fontes: lp.registrar(lp.livro(), login, pergunta, arquivo, fontes,  # noqa: E731
+                                                         getattr(ctx, "id", "") or "")
+        try:
+            texto = await pesquisar(pergunta, buscas, profundidade, videos, ao_salvar)
         except Exception as exc:
             texto = f"A pesquisa falhou: {str(exc)[:400]}. Faça buscas com search_engine."
         return Response(message=texto, break_loop=False)

@@ -20,6 +20,20 @@ def cofre():
     return sys.modules[nome]
 
 
+def _livro_cofre():
+    nome = "cofre_livro"
+    caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists()) / "helpers" / "livro_cofre.py"
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
+
+
 from helpers.extension import Extension
 
 
@@ -67,6 +81,15 @@ class SegredosDaPessoa(Extension):
             tool_args[k] = c.trocar(v, dados)
         # for _08_mascarar: tell the agent plainly that the value went in (it only ever sees it masked)
         self.agent.set_data("_cofre_usados", [(n, len(dados[n])) for n in usados])
+        if usados:  # the ledger gets the names only (12/10 review §6); it never stops the tool
+            try:
+                lc = _livro_cofre()
+                ultimos = dict(self.agent.get_data("_cofre_livro") or {})
+                lc.registrar_usos(lc.livro(), c.dono(self.agent.context), tool_name, usados, ultimos,
+                                  getattr(self.agent.context, "id", "") or "")
+                self.agent.set_data("_cofre_livro", ultimos)
+            except Exception as exc:
+                print(f"cofre: uso não registrado no livro: {type(exc).__name__}: {exc}", flush=True)
         faltando = sorted({n for n in c.PADRAO.findall(bruto) if n not in dados})
         if faltando:
             try:  # Agent Zero's own (global) secrets still apply to names it knows

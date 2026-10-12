@@ -853,7 +853,14 @@ LIVRO = USR_HOST / "central" / "agente.db"  # plugins/central (helpers/livro.py)
 SAUDE = Path("/var/lib/agentepessoal/saude.json")  # written by saude.py (daily health check)
 DONO = "matheus"  # the VM's owner: the only one who sees its health in /painel
 ROTULO_TIPO = {"proibicao": "🚫", "permissao": "✅", "decisao": "📌", "preferencia": "💬"}
-ROTULO_VERBO = {"dm": "💬 DM", "comentario": "🗨️ comentário", "seguir_curtir": "➕ seguir e curtir", "aviso": "📣 aviso"}
+ROTULO_VERBO = {"dm": "💬 DM", "comentario": "🗨️ comentário", "seguir_curtir": "➕ seguir e curtir", "aviso": "📣 aviso",
+                "segredo": "🔑 senha usada", "pesquisa": "🔎 pesquisa"}
+
+
+def _alvo_curto(alvo: str) -> str:
+    """"instagram:@x" → "@x", "cofre:FEQ" → "FEQ"; a file → its folder (a research: the time it ran)."""
+    valor = str(alvo or "").split(":", 1)[-1]
+    return (Path(valor).parent.name or valor) if str(alvo).startswith("arquivo:") else valor
 
 
 def _login_arquivo(usuario: str) -> str:
@@ -953,7 +960,7 @@ def texto_livro(usuario: str, agora: float | None = None) -> str:
         return "📒 *Livro de hoje*: nada registrado ainda."
     topo = _contagem_livro(linhas)
     detalhe = [f"{datetime.fromtimestamp(em, fuso).strftime('%H:%M')} {ROTULO_VERBO.get(verbo, verbo)} "
-               f"{alvo.split(':', 1)[-1]}" + ("" if fase == "executada" else f" — {fase}: {(resultado or '')[:60]}")
+               f"{_alvo_curto(alvo)}" + ("" if fase == "executada" else f" — {fase}: {(resultado or '')[:60]}")
                + (f" «{previa[:60]}»" if previa and fase == "executada" else "")
                for em, fase, verbo, alvo, previa, resultado in linhas[-15:]]
     return f"📒 *Livro de hoje* (registrado na hora; não se altera)\n{topo}\n\n" + "\n".join(detalhe)

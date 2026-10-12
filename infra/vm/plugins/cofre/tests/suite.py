@@ -99,6 +99,28 @@ class Suite:
         eq(erros, [], "sem erro")
         eq(len(c.carregar(LOGIN)), 45, "as 45 senhas ficaram (nenhuma gravação apagou a outra)")
 
+    def t_livro_so_com_o_nome(self):
+        # 12/10 review §6: the ledger records which secret was handed to which tool — the name, never the value
+        lc = _carregar("cofre_livro_teste", RAIZ / "helpers" / "livro_cofre.py")
+        central = RAIZ.parent / "central" / "helpers" / "livro.py"
+        if not central.exists():
+            central = Path("/a0/usr/plugins/central/helpers/livro.py")
+        livro = _carregar("central_livro_teste", central)
+        livro.PASTA, livro.BANCO = self._tmp / "central", self._tmp / "central" / "agente.db"
+        ultimos = {}
+        feitos = lc.registrar_usos(livro, "pessoa_cofre", "browser", ["FEQ", "GMAIL_SENHA"], ultimos, "ctx1", agora=1000.0)
+        eq(feitos, ["FEQ", "GMAIL_SENHA"], "os dois nomes registrados")
+        eq(lc.registrar_usos(livro, "pessoa_cofre", "browser", ["FEQ"], ultimos, "ctx1", agora=1300.0), [],
+           "o mesmo nome na mesma conversa em 10 min não repete")
+        eq(lc.registrar_usos(livro, "pessoa_cofre", "browser", ["FEQ"], ultimos, "ctx1", agora=1000.0 + lc.INTERVALO), ["FEQ"],
+           "depois de 10 min registra de novo")
+        linhas = livro.do_periodo("pessoa_cofre", 0)
+        eq(sorted(r["alvo"] for r in linhas), ["cofre:FEQ", "cofre:FEQ", "cofre:GMAIL_SENHA"], "alvo = nome no cofre")
+        ok(all(not r["conteudo_previa"] and not r["conteudo_hash"] and r["verbo"] == "segredo" for r in linhas),
+           "nada do valor no livro")
+        eq(lc.registrar_usos(None, "pessoa_cofre", "browser", ["X"], {}, agora=1.0), [], "sem livro instalado: nada, sem erro")
+        eq(lc.registrar_usos(livro, "teste_cofre", "browser", ["X"], {}, agora=1.0), [], "login de teste não vai ao livro")
+
     async def rodar(self, so=""):
         try:
             for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):

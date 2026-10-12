@@ -146,7 +146,7 @@ def conferir(login: str, agora: float | None = None) -> list[dict]:
 
 
 ROTULOS = {"dm": "mensagens no Direct", "comentario": "comentários", "seguir_curtir": "seguir e curtir",
-           "aviso": "avisos no celular"}
+           "aviso": "avisos no celular", "segredo": "senhas usadas (só o nome)", "pesquisa": "pesquisas"}
 
 
 def resumo(login: str, desde: float, ate: float | None = None, limite: int = 25) -> str:
