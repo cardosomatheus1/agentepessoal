@@ -47,8 +47,22 @@ def _minutos(quando, agora: float) -> float:
     return (agora - quando.timestamp()) / 60 if quando else 9999
 
 
+def _inicio_processo() -> float:
+    """When this Agent Zero process started (boot time + the process start in clock ticks): no run is older."""
+    try:
+        import os
+
+        with open("/proc/self/stat") as f:
+            ticks = int(f.read().rsplit(")", 1)[1].split()[19])  # field 22, starttime
+        with open("/proc/stat") as f:
+            boot = next(int(l.split()[1]) for l in f if l.startswith("btime"))
+        return boot + ticks / os.sysconf("SC_CLK_TCK")
+    except Exception:
+        return 0.0
+
+
 def destravar(tarefas, rodando: dict, tarefa_do_chat, agora: float, running, error, pausada=None,
-              pausas: dict | None = None) -> list[dict]:
+              pausas: dict | None = None, inicio: float = 0.0) -> list[dict]:
     """Which tasks go back to idle (or get resumed / cancelled). `rodando`: the scheduler's live runs by task uuid;
     `tarefa_do_chat(id)`: the run of the task's chat, or None; `pausada(id)`: the chat is paused; `pausas`: per task,
     when it was first seen paused and when it was last resumed (updated in place)."""
@@ -79,8 +93,10 @@ def destravar(tarefas, rodando: dict, tarefa_do_chat, agora: float, running, err
             pausas[t.uuid] = reg
         if _vivo(rodando.get(t.uuid)) or _vivo(tarefa_do_chat(t.context_id) if t.context_id else None):
             continue
-        m = _minutos(getattr(t, "updated_at", None) or getattr(t, "last_run", None), agora)
-        if m > PRESA_MIN:
+        quando = getattr(t, "updated_at", None) or getattr(t, "last_run", None)
+        m = _minutos(quando, agora)
+        if m > PRESA_MIN or (inicio and quando and quando.timestamp() < inicio):
+            # a run never survives a restart: marked "running" before this process started means nothing runs it
             soltas.append({"tarefa": t.uuid, "nome": t.name, "presa_min": int(m)})
     for k in [k for k, v in pausas.items() if not v.get("desde") and agora - v.get("retomada", 0) > REPETIR_H * 3600]:
         del pausas[k]
@@ -114,7 +130,7 @@ class DestravarRotinas(Extension):
                 pausas = {}
             tarefas = {t.uuid: t for t in sched.get_tasks()}
             soltas = destravar(tarefas.values(), rodando, tarefa_do_chat, time.time(), TaskState.RUNNING, TaskState.ERROR,
-                               pausada, pausas)
+                               pausada, pausas, _inicio_processo())
             PAUSAS.parent.mkdir(parents=True, exist_ok=True)
             PAUSAS.write_text(json.dumps(pausas), encoding="utf-8")
             for s in soltas:

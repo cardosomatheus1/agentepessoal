@@ -78,6 +78,16 @@ class Suite:
                                          updated_at=None, last_run=None)
         ok(self._soltas([sem_data]) == ["x"], "sem data nenhuma conta como presa")
 
+    def t_depois_de_reiniciar_volta_na_hora(self):
+        # 12/10: copies of a round frozen in a paused chat were killed by restarting the agent; the round stays
+        # "running" with nothing running it: it must not wait 90 min (it would miss its next time)
+        agora = time.time()
+        antes = self._tarefa("antes", "running", atualizada_min=20)
+        depois = self._tarefa("depois", "running", atualizada_min=2)
+        soltas = [s["tarefa"] for s in self.dr.destravar([antes, depois], {}, lambda cid: None, agora, "running", "error",
+                                                         None, {}, agora - 5 * 60)]
+        ok(soltas == ["antes"], f"marcada como rodando antes do reinício volta já; a que começou depois, não: {soltas}")
+
     def t_erro_volta_a_rodar_no_proximo_horario(self):
         erro = self._tarefa("erro", "error", atualizada_min=10, ultima_min=10)
         recente = self._tarefa("recente", "error", atualizada_min=2, ultima_min=2)
