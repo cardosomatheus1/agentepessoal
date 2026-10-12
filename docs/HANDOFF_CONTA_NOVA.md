@@ -169,15 +169,37 @@ comando (a máquina não lê o bucket S3).
 | `tarefas_auxiliar.py`, `resumo_novo.py` | Tarefas do auxiliar e do resumo diário |
 | `resetar_chat.py <ctx>`, `apagar_chat.py` | Limpar conversas de teste |
 | `ver_chat.sh <ctx>` (rodar na VM) | Últimas mensagens de uma conversa do agente |
+| `implantar.py <plugin> [--skill s]` / `implantar.py --host <script> [--reiniciar unit]` | **O único jeito** de levar plugin, skill ou script do host à VM (só o commitado e no GitHub; testa numa cópia de estágio com `ESTAGIO=1` antes) |
+| `decisoes.py listar\|registrar\|revogar\|semear` | Registro de decisões do Matheus pelo helper (`--motivo` obrigatório para mudar) |
+| `retomar_chat.py <ctx> [--pausar]`, `aprovar_pendente.py <ctx> [--so-ver]` | Despausar/pausar uma conversa; ver/aprovar o pedido de ok que está esperando |
+| `mover_perfis_navegador.py` | (feito em 12/10) levou os perfis do navegador para fora do contêiner |
 
-**Implantar um plugin**: `tar czf pro.tgz -C infra/vm/plugins <plugin>` → `aws s3 cp` para `tmp/` do bucket →
-`vmcmd.py` copiando para `/opt/a0/usr/plugins/` → `docker exec agent-zero curl -s -X POST http://127.0.0.1:80/api/cache_reset`.
-Serviços do host (`bedrock_proxy.py`, `ponte_whatsapp.py`): `install -m 755` em `/opt/agentepessoal/` e
-`systemctl restart agentepessoal-proxy|agentepessoal-whatsapp`.
+**Implantar**: só `python3 infra/operador/implantar.py …` (ver `CLAUDE.md`). Nada de copiar plugin à mão. Para os
+scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fica em `/opt/agentepessoal/.versao-*`).
 
 **Mandar algo ao Telegram do Matheus** (na VM): carregar `/a0/usr/plugins/whatsapp/helpers/ponte.py` e chamar
 `enviar("matheus", texto, tipo="resposta"|"urgente"|"progresso")`. Logins `teste_*` só gravam em
 `/a0/usr/testes/celular.jsonl`.
+
+## Revisão de 12/10: o que mudou na base (detalhes em `docs/REVISAO_GERAL_2026-10-12.md`)
+
+- **Decisões do Matheus** (`memoria_pessoal`): `/a0/usr/memoria/decisoes/<login>.json`, uma por assunto (`tema`),
+  injetadas em todo turno do agente ("não pergunte de novo"); o agente grava as novas com a ferramenta `decisao`.
+  Correção do operador: `infra/operador/decisoes.py`.
+- **Gravação segura** (trava curta por pessoa, arquivo trocado inteiro, ilegível = erro e nunca "vazio") em:
+  prospecção, decisões, cofre (agente **e** ponte do celular, com a mesma trava), limites da agenda, fios,
+  iniciativa e auxiliar. Falta o radar (baixo risco).
+- **Perfis do navegador** (logins do Instagram, Google, Meta): `/a0/tmp/browser/sessions` é atalho para
+  `/a0/usr/navegador/sessions` (disco da VM, no snapshot diário, fora do backup de hora em hora). A pasta antiga ficou
+  em `/a0/tmp/browser/sessions.antes-20261012-150020` (dentro do contêiner; pode sair depois de uma semana sem
+  problema).
+- **Backup de hora em hora**: saía com código 2 toda hora (sockets do desktop) e aparecia como falha; agora código 2 =
+  feito e falha real manda 1 aviso por dia. Snapshot diário do disco (AWS DLM `policy-02fbf93a68b2656da`, 14 dias).
+- **Vigia de memória** (`memguard.sh`): reinicia o contêiner que mais pesa (agente ou celular), no máximo 2×/hora, e
+  avisa no Telegram.
+- **Aprovações**: decisão só vale com o id do pedido.
+- **Limpeza/agenda**: rodada viva nunca é destravada nem duplicada; rodada pausada é retomada (ou cancelada se pausar
+  de novo); limites ilegíveis nunca desligam rotina.
 
 ## Memória e limpeza (incidente de 10/10)
 
