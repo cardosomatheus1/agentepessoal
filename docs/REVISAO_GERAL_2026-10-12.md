@@ -123,6 +123,7 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | **Cartão do lead quente** (PDF de 1 página): quem é, o que se viu no perfil, a conversa dos dois lados e a próxima mensagem sugerida. Chega logo depois do aviso quando alguém vira lead ou topa conversar; também sob pedido ("me manda o cartão do @x") | ✅ | prospecção |
 | Livro de ações também registra **qual senha do cofre** o agente usou e em que ferramenta (só o nome, nunca o valor; 1 registro por senha a cada 10 min na mesma conversa) e **cada pesquisa** (a pergunta e onde ficou o resultado); aparecem no `/livro` | ✅ | cofre, pesquisa, central, ponte |
 | Pedidos em paralelo: **uma mensagem de andamento só**, que se atualiza no lugar no Telegram (lista os pedidos em andamento, com os minutos) e vira "✅ Terminei" quando tudo foi respondido — antes eram 4 a 8 avisos "ainda trabalhando". No WhatsApp (não deixa editar), no máximo 1 a cada 4 min, juntando os pedidos | ✅ | ponte + whatsapp |
+| Resumo da manhã também lê o livro de ações desde ontem (não repete como pendente o que já foi feito) | ✅ | rotinas (git = VM) |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |

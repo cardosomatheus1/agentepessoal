@@ -258,6 +258,13 @@ scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fic
   `/opt/a0/usr/marcas/crm_raiz.json`.
 - **Cartão do lead quente**: `prospeccao.cartao_lead()` + `helpers/cartao.py` (python-docx + LibreOffice do contêiner),
   1 página, sai depois do aviso de lead/demo e com `acao cartao`. PDFs em `/opt/a0/usr/prospeccao/cartoes` (30 dias).
+- **Livro**: o cofre registra o NOME da senha entregue a uma ferramenta (`cofre/helpers/livro_cofre.py`, 1x por
+  nome/conversa a cada 10 min; nunca o valor) e cada pesquisa registra a pergunta e o arquivo da síntese
+  (`pesquisa/helpers/livro_pesquisa.py`, suíte nova). `/livro` mostra "🔑 senha usada" e "🔎 pesquisa".
+- **Andamento de pedidos do celular**: uma mensagem por pessoa, editada no lugar no Telegram (`POST :8789/andamento`,
+  estado em memória na ponte; no plugin, `ponte.proximos_andamentos` e `/a0/usr/whatsapp/andamento.json`); vira
+  "✅ Terminei" quando nada mais roda. WhatsApp: no máximo 1 a cada 4 min.
+- **Resumo da manhã** (`nW924Nkj`) também lê `livro` acao "hoje" dias 1.
 - **Precisa do Matheus**: "Usar" do rascunho virar rascunho no Gmail exige trocar o conector para `gmail:drafts`
   (`setup.sh`, unidade do workspace-mcp) e ele autorizar no Google uma vez; depois ligar `config.gmail_rascunhos`.
 
