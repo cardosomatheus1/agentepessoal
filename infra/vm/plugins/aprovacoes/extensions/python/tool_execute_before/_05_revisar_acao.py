@@ -81,10 +81,10 @@ class RevisarAcao(Extension):
                        "resumo": f"{tool_name} (o revisor falhou: {str(exc)[:80]})"}
             decisao = "perguntar"
         liberadas = agent.context.get_data("_aprovacoes_liberadas") or {}
-        if (decisao == "perguntar" and analise["categoria"] in (liberadas.get("categorias") or [])
-                and time.time() < float(liberadas.get("ate") or 0)):
-            # the person already approved this exact action on the phone (e.g. a prospecting message): asking again
-            # would only make them approve twice. Never overrides a "nunca" rule; the window is minutes long.
+        if decisao == "perguntar" and rv.liberacao_vale(analise, tool_name, liberadas,
+                                                        agent.context.get_data("_navegador_url") or "", time.time()):
+            # the person already approved this exact action (e.g. a prospecting message): asking again would only make
+            # them approve twice. Never overrides a "nunca" rule; minutes long; only in the browser on the Instagram.
             decisao = "permitir"
             analise["resumo"] = f"{analise['resumo']} — pré-aprovado: {liberadas.get('motivo', '')}"[:300]
         if decisao == "perguntar" and rv.livre_instagram(analise, tool_name, args, intencao, cfg):
