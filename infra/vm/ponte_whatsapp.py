@@ -330,7 +330,7 @@ def _foco_ate(usuario: str) -> float:
 def em_silencio(usuario: str) -> bool:
     """Quiet hours (America/Bahia) and the person has not written recently — or a /foco still running (12/10 review
     §7 item 10: the person types "foco até 15h" and only what is urgent reaches them until then, even while awake)."""
-    if time.time() < _foco_ate(usuario):
+    if time.time() < _foco_ate(usuario) or time.time() < _teto_ate(usuario):
         return True
     regra = _silencio(usuario)
     if regra.get("desligado") or time.time() - ULTIMA_ENTRADA.get(usuario, 0) < ACORDADO:
@@ -343,41 +343,114 @@ def em_silencio(usuario: str) -> bool:
     return (inicio <= agora or agora < fim) if inicio > fim else (inicio <= agora < fim)
 
 
-def guardar_para_depois(usuario: str, texto: str) -> None:
+def guardar_para_depois(usuario: str, texto: str, botoes: list | None = None) -> None:
     FILA.mkdir(parents=True, exist_ok=True)
     with (FILA / f"{re.sub(r'[^a-z0-9_.-]', '', usuario)}.jsonl").open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"em": time.time(), "texto": texto}, ensure_ascii=False) + "\n")
+        f.write(json.dumps({"em": time.time(), "texto": texto, "botoes": botoes or []}, ensure_ascii=False) + "\n")
+
+
+# 12/10 review (§4.3, item 6): a ceiling of progress notices a day. Past it, progress waits for the next grouped
+# delivery (12:30, 18:30 or the next morning) — urgent ones, answers and anything with a decision still go at once.
+TETO_DIA = 8
+HORARIOS_AGRUPADOS = ("12:30", "18:30")
+CONTAGEM = Path("/var/lib/agentepessoal/avisos_dia.json")  # {login: {"dia": "AAAA-MM-DD", "n": int, "ate": epoch}}
+
+
+def _contagem() -> dict:
+    try:
+        return json.loads(CONTAGEM.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _teto_ate(usuario: str) -> float:
+    return float((_contagem().get(usuario) or {}).get("ate") or 0)
+
+
+def proximo_agrupado(agora: float) -> float:
+    """The next grouped delivery: 12:30 or 18:30 today, else 7:00 tomorrow (Bahia)."""
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+
+    fuso = ZoneInfo("America/Bahia")
+    hoje = datetime.fromtimestamp(agora, fuso)
+    for hhmm in HORARIOS_AGRUPADOS:
+        h, m = (int(x) for x in hhmm.split(":"))
+        alvo = hoje.replace(hour=h, minute=m, second=0, microsecond=0)
+        if alvo.timestamp() > agora:
+            return alvo.timestamp()
+    return (hoje.replace(hour=7, minute=0, second=0, microsecond=0) + timedelta(days=1)).timestamp()
+
+
+def passou_do_teto(usuario: str, agora: float | None = None) -> bool:
+    """Count one more progress notice for today; True (and grouped until the next delivery) when past the ceiling."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    agora = agora or time.time()
+    dia = datetime.fromtimestamp(agora, ZoneInfo("America/Bahia")).strftime("%Y-%m-%d")
+    todos = _contagem()
+    reg = todos.get(usuario) or {}
+    if reg.get("dia") != dia:
+        reg = {"dia": dia, "n": 0, "ate": 0}
+    if reg["n"] >= TETO_DIA:
+        reg["ate"] = max(float(reg.get("ate") or 0), proximo_agrupado(agora))
+        passou = True
+    else:
+        reg["n"] += 1
+        passou = False
+    todos[usuario] = reg
+    try:
+        CONTAGEM.parent.mkdir(parents=True, exist_ok=True)
+        CONTAGEM.write_text(json.dumps(todos), encoding="utf-8")
+    except OSError:
+        pass
+    return passou
+
+
+def descarregar(arq: Path) -> int:
+    """Deliver one person's held notices now: those with buttons one by one (a decision keeps its buttons; 12/10 they
+    were dropped), the rest grouped in one message. Returns how many were delivered."""
+    usuario = arq.stem
+    itens = [json.loads(l) for l in arq.read_text(encoding="utf-8").splitlines() if l.strip()]
+    arq.unlink()
+    for it in [it for it in itens if it.get("botoes")]:
+        try:
+            avisar_com_botoes(usuario, it["texto"], it["botoes"])
+        except Exception as exc:
+            log(f"held notice with buttons failed: {exc}")
+    texto_so = [it for it in itens if not it.get("botoes")]
+    if not texto_so:
+        return len(itens)
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    partes, total = [], 0
+    for it in texto_so:
+        hora = datetime.fromtimestamp(it["em"], ZoneInfo("America/Bahia")).strftime("%H:%M")
+        trecho = f"• {hora} — {it['texto'].strip()[:700]}"
+        if total + len(trecho) > LIMITE_TEXTO - 200:
+            partes.append(f"… e mais {len(texto_so) - len(partes)} avisos (veja no app).")
+            break
+        partes.append(trecho)
+        total += len(trecho)
+    titulo = ("🎯 *Fim do foco* — o que chegou enquanto isso:" if time.time() - _foco_ate(usuario) < 15 * 60
+              else f"📦 *Avisos agrupados* (o dia passou de {TETO_DIA} avisos):"
+              if time.time() - _teto_ate(usuario) < 15 * 60
+              else "🌅 *Enquanto você descansava* (avisos de progresso guardados):")
+    avisar(usuario, titulo + "\n\n" + "\n\n".join(partes))
+    return len(itens)
 
 
 def ciclo_fila() -> None:
-    """When quiet hours end (or the person writes), deliver what was held as one summary."""
+    """When quiet hours, a /foco or the daily ceiling end (or the person writes), deliver what was held."""
     while True:
         time.sleep(60)
         try:
             for arq in sorted(FILA.glob("*.jsonl")) if FILA.is_dir() else []:
-                usuario = arq.stem
-                if em_silencio(usuario):
-                    continue
-                itens = [json.loads(l) for l in arq.read_text(encoding="utf-8").splitlines() if l.strip()]
-                arq.unlink()
-                if not itens:
-                    continue
-                partes, total = [], 0
-                for it in itens:
-                    from datetime import datetime
-                    from zoneinfo import ZoneInfo
-
-                    hora = datetime.fromtimestamp(it["em"], ZoneInfo("America/Bahia")).strftime("%H:%M")
-                    trecho = f"• {hora} — {it['texto'].strip()[:700]}"
-                    if total + len(trecho) > LIMITE_TEXTO - 200:
-                        partes.append(f"… e mais {len(itens) - len(partes)} avisos (veja no app).")
-                        break
-                    partes.append(trecho)
-                    total += len(trecho)
-                titulo = ("🎯 *Fim do foco* — o que chegou enquanto isso:" if time.time() - _foco_ate(usuario) < 15 * 60
-                          else "🌅 *Enquanto você descansava* (avisos de progresso guardados):")
-                avisar(usuario, titulo + "\n\n" + "\n\n".join(partes))
-                log(f"quiet hours over: delivered {len(itens)} held notices to {usuario}")
+                if not em_silencio(arq.stem):
+                    n = descarregar(arq)
+                    log(f"held notices delivered to {arq.stem}: {n}")
         except Exception as exc:
             log(f"held notices failed: {exc}")
 
@@ -595,6 +668,19 @@ def ciclo_digitando() -> None:
             except Exception:
                 pass
         time.sleep(4)
+
+
+def avisar_com_botoes(usuario: str, texto: str, botoes: list) -> None:
+    """A notice with reply buttons on the person's channel (Telegram when linked, else WhatsApp)."""
+    chat = tg_chat(usuario)
+    if chat:
+        return tg_texto(chat, texto, botoes)
+    numero = next((n for n, u in (cfg().get("numeros") or {}).items() if u == usuario), "")
+    if numero:
+        try:
+            enviar_botoes(numero, texto, botoes)
+        except RuntimeError:  # outside the 24 h window buttons cannot go
+            enviar_texto(numero, texto)
 
 
 def avisar(usuario: str, texto: str) -> None:
@@ -1109,8 +1195,9 @@ class Saida(http.server.BaseHTTPRequestHandler):
                 return self._responder(404, {"erro": "pessoa sem WhatsApp/Telegram cadastrado"})
             ativo()
             tipo = str(pedido.get("tipo") or ("urgente" if pedido.get("botoes") else "resposta"))
-            if tipo == "progresso" and pedido.get("texto") and not pedido.get("arquivo") and em_silencio(usuario):
-                guardar_para_depois(usuario, str(pedido["texto"]))
+            if tipo == "progresso" and pedido.get("texto") and not pedido.get("arquivo") and (
+                    em_silencio(usuario) or passou_do_teto(usuario)):
+                guardar_para_depois(usuario, str(pedido["texto"]), pedido.get("botoes") or None)
                 return self._responder(200, {"ok": True, "adiado": True})
             if chat:
                 if pedido.get("texto"):

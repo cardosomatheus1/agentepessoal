@@ -124,6 +124,31 @@ def main() -> int:
         ok(not p.em_silencio("matheus"), "sem foco e com silêncio desligado, nada é segurado")
         ok("Use /foco" in p.comando_foco("matheus", "/foco amanhã cedo", agora=base), "o que não entende, explica")
         ok(p.comando_foco("matheus", "oi") is None, "mensagem comum não é comando")
+
+        # daily ceiling of progress notices (12/10 review §4.3 item 6), grouped at 12:30 / 18:30 / next morning
+        p.CONTAGEM = tmp / "avisos_dia.json"
+        dez = dt.datetime(2026, 10, 13, 10, 0, tzinfo=fuso).timestamp()
+        quando = lambda ts: dt.datetime.fromtimestamp(ts, fuso).strftime("%d %H:%M")  # noqa: E731
+        ok(quando(p.proximo_agrupado(dez)) == "13 12:30" and quando(p.proximo_agrupado(dez + 3 * 3600)) == "13 18:30"
+           and quando(p.proximo_agrupado(dez + 9 * 3600)) == "14 07:00", "próximos horários de agrupar")
+        saidas = [p.passou_do_teto("matheus", dez + i) for i in range(p.TETO_DIA + 2)]
+        ok(saidas == [False] * p.TETO_DIA + [True, True], f"os {p.TETO_DIA} primeiros saem; o resto agrupa: {saidas}")
+        ok(quando(p._teto_ate("matheus")) == "13 12:30", "agrupado até as 12h30")
+        ok(not p.passou_do_teto("matheus", dez + 86400), "no dia seguinte a contagem recomeça")
+
+        # held notices: buttons are kept and delivered one by one; plain ones grouped
+        p.FILA = tmp / "fila"
+        enviados = []
+        p.avisar = lambda u, texto: enviados.append(("grupo", texto))
+        p.avisar_com_botoes = lambda u, texto, botoes: enviados.append(("botoes", texto, botoes))
+        p.guardar_para_depois("matheus", "Resumo do Radar: 2 e-mails")
+        p.guardar_para_depois("matheus", "🧵 Fio: cobrar o contador", [{"id": "fio:matheus:f1:fazer", "titulo": "✅ Faz pra mim"}])
+        p.guardar_para_depois("matheus", "Prospecção: 3 aquecidos")
+        n = p.descarregar(p.FILA / "matheus.jsonl")
+        ok(n == 3 and [e[0] for e in enviados] == ["botoes", "grupo"], f"um com botões + um agrupado: {enviados}")
+        ok(enviados[0][2][0]["id"] == "fio:matheus:f1:fazer", "o botão continua o mesmo")
+        ok("Resumo do Radar" in enviados[1][1] and "3 aquecidos" in enviados[1][1], "os sem botão vão juntos")
+        ok(not (p.FILA / "matheus.jsonl").exists(), "a fila esvazia")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:
