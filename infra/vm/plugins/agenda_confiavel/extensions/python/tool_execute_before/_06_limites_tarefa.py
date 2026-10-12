@@ -9,11 +9,14 @@ from helpers.extension import Extension
 
 def limites():
     nome = "agenda_limites"
-    if nome not in sys.modules:
-        caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists()) / "helpers_limites.py"
+    caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists()) / "helpers_limites.py"
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
         spec = importlib.util.spec_from_file_location(nome, caminho)
         modulo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
         sys.modules[nome] = modulo
     return sys.modules[nome]
 

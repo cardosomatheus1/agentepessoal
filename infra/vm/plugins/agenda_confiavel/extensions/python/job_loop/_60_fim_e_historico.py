@@ -3,22 +3,26 @@
 import importlib.util
 import sys
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 
 from helpers.extension import Extension
 
 
 def carregar(nome: str, caminho: Path):
-    if nome not in sys.modules:
+    """Load by path, again when the file changes (a deploy takes effect without restarting the agent)."""
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
         spec = importlib.util.spec_from_file_location(nome, caminho)
         modulo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
         sys.modules[nome] = modulo
     return sys.modules[nome]
 
 
 RAIZ = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
+_avisado = Path("/a0/usr/agenda/.limites_ilegiveis_avisado")
 
 
 class FimEHistorico(Extension):
@@ -26,24 +30,23 @@ class FimEHistorico(Extension):
         from helpers.task_scheduler import ScheduledTask, TaskScheduler, TaskState
 
         L = carregar("agenda_limites", RAIZ / "helpers_limites.py")
-        dados = L.carregar()
+        try:
+            dados = L.carregar()
+            _avisado.unlink(missing_ok=True)
+        except L.LimitesIlegiveis as exc:
+            dados = None  # never switch a routine off when its limit cannot be read
+            if not _avisado.exists():
+                _avisado.touch()
+                print(f"agenda_confiavel: {exc}; nenhuma rotina será desligada até o arquivo voltar", flush=True)
         agendador = TaskScheduler.get()
-        agora = time.time()
-        for task in agendador.get_tasks():
-            if not isinstance(task, ScheduledTask):
-                continue
+        tarefas = [t for t in agendador.get_tasks() if isinstance(t, ScheduledTask)]
+        for task in tarefas:
             if task.last_run:
                 try:
                     L.registrar_rodada(task.uuid, task.last_run.isoformat(), str(task.last_result or ""))
                 except Exception:
                     pass
-            reg = dados.get(task.uuid, {})
-            if task.uuid in L.EXISTENTES or reg.get("permanente") or task.state == TaskState.DISABLED:
-                continue
-            criado = task.created_at if task.created_at.tzinfo else task.created_at.replace(tzinfo=timezone.utc)
-            ate = reg.get("ate") or (criado.timestamp() + L.VALIDADE_PADRAO)
-            if agora < ate or task.state == TaskState.RUNNING:
-                continue
+        for task in L.a_desligar(tarefas, dados, time.time(), TaskState.DISABLED, TaskState.RUNNING):
             try:
                 await agendador.update_task(task.uuid, state=TaskState.DISABLED)
                 print(f"agenda_confiavel: '{task.name}' reached its end date; disabled", flush=True)
