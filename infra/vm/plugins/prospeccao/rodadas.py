@@ -30,16 +30,9 @@ EXECUTAR = """Rodada de execução da prospecção Raiz Connect.
 3. EXECUÇÃO: skill, seção 5 — respostas primeiro; `proxima` com conta_ativa; faça exatamente a ação com o texto exato; confira na tela; `resultado`. Espere 3 min entre ações; no máximo 3 por rodada. "NADA AGORA": termine. Bloqueio: pare e mande bloqueio: true.
 4. Resposta final: exatamente SEM NOVIDADE. Só se travou (login, bloqueio, captcha, erro que impede seguir): "PRECISA DE VOCÊ:" e o que aconteceu."""
 
-SEMANA = """Relatório semanal da prospecção Raiz Connect (segunda de manhã). Só leitura.
-
-1. `prospeccao` acao "metricas" com dias 7 e de novo com dias 28.
-2. Resposta final (vai inteira ao celular do Matheus), objetiva, no máximo 12 linhas, sem jargão:
-*Semana em números:* perfis aquecidos, abordados, responderam (%), leads (%), demos.
-*O que funcionou:* variante A × B (taxa de resposta de cada uma; só diga que uma é melhor se houver pelo menos 15 abordados em cada), segmento e cidade que mais responderam; respostas a comentários (grupo "comentarios" das métricas).
-*O que não funcionou:* propostas que ele pulou (taxa de aprovação), falhas e bloqueios.
-*Mudança para esta semana:* 1 a 3 ajustes concretos (ex.: "focar em confeitarias de Salvador", "usar a variante B", "comentários antes da DM"), cada um com o número que justifica.
-Se ainda houver menos de 20 abordados no total, diga que é cedo para conclusões e só mostre os números.
-Se as métricas de 28 dias trouxerem `ab` preenchido com "proponho usar só a…", ponha essa frase em *Mudança para esta semana* e pergunte se pode fixar; quando ele disser que pode, chame `prospeccao` acao "variante" com texto "A" ou "B"."""
+# The weekly prospecting report ("🎯 Prospecção — semana", Monday 8:41, gOqdMBE3) became a section of the weekly
+# review ("🗓️ Revisão da semana", Sunday 19:47, infra/vm/rotinas/bMU33E1T.json): one message instead of two
+# (12/10 review §6). The old task stays disabled on the VM and is no longer managed here.
 
 HOJE = """Resumo do dia da prospecção Raiz Connect. Só leitura.
 
@@ -51,7 +44,6 @@ TAREFAS = {
     "🎯 Prospecção — buscar": (SIS_BUSCA, BUSCAR, {"minute": "23", "hour": "9,14", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
     "🎯 Prospecção — executar": (SIS_EXEC, EXECUTAR, {"minute": "50,20", "hour": "9-19", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
     "🎯 Prospecção — resumo do dia": ("Você só repassa o resumo do dia da prospecção, sem acrescentar nada.", HOJE, {"minute": "17", "hour": "20", "day": "*", "month": "*", "weekday": "*", "timezone": "America/Bahia"}),
-    "🎯 Prospecção — semana": ("Você faz o relatório semanal da prospecção, só leitura.", SEMANA, {"minute": "41", "hour": "8", "day": "*", "month": "*", "weekday": "1", "timezone": "America/Bahia"}),
 }
 
 
