@@ -25,6 +25,17 @@ def _carregar(nome: str, caminho: Path):
 RAIZ = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
 
 
+def _numero(valor, padrao: int) -> int:
+    """A count from the model: a list counts its items (12/10: `termos` came as the list of searches and the call
+    crashed), a numeric text is read, anything else is the default."""
+    if isinstance(valor, (list, tuple)):
+        return len(valor) or padrao
+    try:
+        return int(float(str(valor).strip())) if valor not in (None, "") else padrao
+    except ValueError:
+        return padrao
+
+
 def pr():
     return _carregar("prospeccao_helper", RAIZ / "helpers" / "prospeccao.py")
 
@@ -202,7 +213,7 @@ class Prospeccao(Tool):
             # the stock is split among the sources (12/10): this action refills only the share of the sheet and of the
             # CNPJ catalog that is missing; the Instagram share is the search round's own search on Instagram
             f = fontes()
-            limite = max(1, min(40, int(kwargs.get("limite") or 20)))
+            limite = max(1, min(40, _numero(kwargs.get("limite"), 20)))
             pf = p.estoque(login)["por_fonte"]
             origens = [o for o in ("planilha", "catalogo") if pf[o]["faltam"]]
             if not origens:
@@ -213,7 +224,7 @@ class Prospeccao(Tool):
             d = f.carregar(login)
             if "catalogo" in origens and sum(1 for e in d["empresas"].values()
                                              if e["estado"] == "fila" and f.origem_empresa(e) == "catalogo") < limite:
-                coleta = await asyncio.to_thread(f.coletar, login, int(kwargs.get("paginas") or 4))
+                coleta = await asyncio.to_thread(f.coletar, login, _numero(kwargs.get("paginas"), 4))
             out = await asyncio.to_thread(f.enriquecer, login, p, limite, origens)
             e = p.estoque(login)
             pf = e["por_fonte"]
@@ -233,7 +244,7 @@ class Prospeccao(Tool):
                 return r("A parte do Instagram no estoque está cheia: não chame de novo agora.")
             if not f.apify_pronto(login):
                 return r("Sem Apify configurado: encha a parte do Instagram com a busca no Instagram (skill, 2b e 3).")
-            out = await asyncio.to_thread(f.buscar_instagram, login, p, int(kwargs.get("termos") or 3), int(kwargs.get("por_termo") or 20))
+            out = await asyncio.to_thread(f.buscar_instagram, login, p, _numero(kwargs.get("termos"), 3), _numero(kwargs.get("por_termo"), 20))
             pf = p.estoque(login)["por_fonte"]["instagram"]
             if out.get("erro"):
                 return r(f"{out['erro']}. Se precisar, use a busca no Instagram (skill, 2b e 3) para a parte que falta ({pf['faltam']}).")
@@ -247,7 +258,7 @@ class Prospeccao(Tool):
             out = fontes().importar(login, json.loads(caminho.read_text(encoding="utf-8")))
             return r(json.dumps(out, ensure_ascii=False))
         if acao == "eventos":
-            evs = p.eventos(login, int(kwargs.get("ultimos") or 30))
+            evs = p.eventos(login, _numero(kwargs.get("ultimos"), 30))
             if lead_id:
                 lead = p._lead(p.carregar(login), lead_id)
                 evs = [e for e in evs if lead and e["lead"] == lead["id"]]
@@ -416,5 +427,5 @@ class Prospeccao(Tool):
             p.definir_auto(login, ligado)
             return r("Aprovação automática " + ("LIGADA" if ligado else "DESLIGADA") + " (aquecer, primeira mensagem e lembrete).")
         if acao == "metricas":
-            return r(json.dumps(p.metricas(login, int(dias or 7)), ensure_ascii=False))
+            return r(json.dumps(p.metricas(login, _numero(dias, 7)), ensure_ascii=False))
         return r("acao: playbook | contexto | registrar | rejeitar | propor | proxima | resultado | direct_script | ler_direct | buscar_script | avaliar_api | token_meta | perfis_script | avaliar_perfis | etapa | conferido | editar | hoje | auto | metricas")

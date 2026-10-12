@@ -1679,6 +1679,32 @@ class Suite:
         eq(diretas, [], "chamadas lentas direto no laço da conversa")
         ok(fonte.count("asyncio.to_thread(p.") >= 15, "as chamadas lentas rodam em outra thread")
 
+    def t_ferramenta_le_numero_mesmo_vindo_como_lista(self):
+        # 12/10: `termos` came as the list of searches in "fontes_instagram" and the call crashed (int() of a list)
+        import types
+
+        antes = {k: sys.modules.get(k) for k in ("helpers", "helpers.tool")}
+        try:
+            import helpers.tool  # noqa: F401  (inside the container)
+        except Exception:
+            sys.modules["helpers"] = types.ModuleType("helpers")
+            ferramenta = types.ModuleType("helpers.tool")
+            ferramenta.Response, ferramenta.Tool = type("Response", (), {}), type("Tool", (), {})
+            sys.modules["helpers.tool"] = ferramenta
+        try:
+            spec = importlib.util.spec_from_file_location("prospeccao_ferramenta_teste", RAIZ / "tools" / "prospeccao.py")
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+        finally:
+            for k, v in antes.items():
+                if v is None:
+                    sys.modules.pop(k, None)
+                else:
+                    sys.modules[k] = v
+        eq(m._numero(["marmita salvador", "bolo salvador"], 3), 2, "lista vale quantos itens tem")
+        eq((m._numero("5", 3), m._numero(4, 3), m._numero("2.0", 3)), (5, 4, 2), "número e texto de número")
+        eq((m._numero(None, 3), m._numero("", 3), m._numero("muitos", 3), m._numero([], 3)), (3, 3, 3, 3), "senão, o padrão")
+
     def t_rejeitados(self):
         p = self.p
         lid = self._lead("jaelead")
