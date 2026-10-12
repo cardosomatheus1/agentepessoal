@@ -1,7 +1,7 @@
 {
  "uuid": "8COQyGTD",
  "name": "🧵 Fios soltos",
- "state": "idle",
+ "state": "disabled",
  "schedule": {
   "minute": "10",
   "hour": "9,13,18",

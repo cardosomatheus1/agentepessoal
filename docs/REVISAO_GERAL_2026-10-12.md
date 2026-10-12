@@ -112,6 +112,7 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | `/foco 15h` (ou `15:30`, `45min`): até lá só o urgente chega, mesmo com você mexendo no celular; o resto vem junto no fim ("Fim do foco"). `/foco off` encerra | ✅ | ponte |
 | "🙋 Quero falar eu" no aviso de lead quente (respondeu, virou lead, topou conversar): a automação para só para aquele @ até você devolver ("pode voltar a falar com @x") | ✅ | prospecção + whatsapp |
 | A/B decidido pelos números: com 30+ primeiras mensagens em cada variante, as métricas dizem qual responde mais e o relatório de segunda propõe fixar; com o seu "pode", a variante fica fixa (a outra é recusada) | ✅ | prospecção (rodada "semana") |
+| Radar (Gmail/Agenda) e Fios soltos viraram uma rodada só, 3×/dia (8h40, 13h40, 18h40): uma leitura do Gmail e da Agenda; o que pede atenção vira fio com botões (antes eram 8 rodadas por dia em duas rotinas) | ✅ | rotinas (git = VM) |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |

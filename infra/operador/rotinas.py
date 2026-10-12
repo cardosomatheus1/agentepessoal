@@ -2,7 +2,7 @@
 
     python3 infra/operador/rotinas.py exportar          # live → infra/vm/rotinas/<uuid>.json (then review and commit)
     python3 infra/operador/rotinas.py comparar          # what differs between the VM and git
-    A0_SENHA=... python3 infra/operador/rotinas.py aplicar <uuid>   # git → VM (name, schedule, prompts, by the API)
+    A0_SENHA=... python3 infra/operador/rotinas.py aplicar <uuid>   # git → VM (name, schedule, prompts, off; by the API)
 
 The prospecting rounds stay in infra/vm/plugins/prospeccao/rodadas.py. Reading is by SSM (tasks.json is never
 edited); "aplicar" goes through the scheduler's own API, like tarefa_atualizar.py. Anything that looks like a secret
@@ -116,7 +116,10 @@ async def aplicar(uuid: str) -> None:
             const r = await api.callJsonApi('scheduler_task_update', dados); return String(!!(r.task || r.ok)) + (r.error ? ' ' + r.error : ''); }""",
                              {"task_id": uuid, "name": t["name"], "prompt": t["prompt"], "system_prompt": t["system_prompt"],
                               # 12/10: schedules go from git too (the scheduler API takes the cron fields + timezone)
-                              **({"schedule": t["schedule"]} if t.get("schedule") else {})})
+                              **({"schedule": t["schedule"]} if t.get("schedule") else {}),
+                              # switching off goes from git as well; switching on is never sent here (a routine that is
+                              # running would be marked idle under the scheduler: use tarefa_atualizar.py estado idle)
+                              **({"state": "disabled"} if t.get("state") == "disabled" else {})})
         print(f"{uuid} {t['name']}: atualizada = {r}")
         await b.close()
 
