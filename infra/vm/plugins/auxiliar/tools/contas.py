@@ -28,12 +28,12 @@ def dono(context) -> str:
 
 class Contas(Tool):
     async def execute(self, acao: str = "listar", descricao: str = "", vencimento: str = "", valor: str = "",
-                      moeda: str = "BRL", fonte: str = "", id: str = "", **kwargs) -> Response:
+                      moeda: str = "BRL", fonte: str = "", id: str = "", codigo: str = "", **kwargs) -> Response:
         a = aux()
         login = dono(self.agent.context)
         acao = str(acao or "listar").lower()
         if acao == "salvar":
-            conta, erro = a.salvar_conta(login, descricao, vencimento, valor, moeda, fonte, id)
+            conta, erro = a.salvar_conta(login, descricao, vencimento, valor, moeda, fonte, id, codigo)
             if erro:
                 return Response(message=erro, break_loop=False)
             return Response(message=f"Conta [{conta['id']}] registrada: {a.linha_conta(conta)}. O lembrete sai sozinho "

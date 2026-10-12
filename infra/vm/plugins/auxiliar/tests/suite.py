@@ -176,6 +176,23 @@ class Suite:
         for b in a.botoes_conta(LOGIN, c["id"]):
             ok(len(b["id"].encode()) <= 64, "callback do Telegram cabe em 64 bytes")
 
+    def t_contas_codigo_para_copiar(self):
+        # 12/10 review: the boleto/Pix code in the reminder, to copy (the agent never pays)
+        a = self.a
+        hoje = a.agora().date().isoformat()
+        linha = "23793.38128 60000.000003 00000.000400 1 84340000012990"
+        c, _ = a.salvar_conta(LOGIN, "Fatura Vivo", hoje, "129,90", codigo=linha)
+        m = a.mensagem_conta(c, "d0")
+        ok("Linha digitável do boleto" in m and "```\n23793381286000000000300000000400184340000012990\n```" in m,
+           f"linha digitável limpa, em bloco de copiar: {m}")
+        pix = "00020126580014BR.GOV.BCB.PIX0136123e4567-e12b-12d1-a456-4266554400005204000053039865802BR5913Fulano6008BRASILIA62070503***6304ABCD"
+        c2, _ = a.salvar_conta(LOGIN, "Escola", hoje, "500", codigo=pix)
+        ok("Pix copia e cola" in a.mensagem_conta(c2, "d1"), "Pix copia e cola reconhecido")
+        c3, _ = a.salvar_conta(LOGIN, "Outra", hoje, "10", codigo="123 abc")
+        ok("```" not in a.mensagem_conta(c3, "d0"), "código inválido não aparece")
+        c4, _ = a.salvar_conta(LOGIN, "Fatura Vivo", hoje, "129,90")
+        ok(c4["id"] == c["id"] and c4["codigo"], "a mesma conta vista de novo sem código mantém o que tinha")
+
     def t_contas_isoladas_por_pessoa(self):
         a = self.a
         a.salvar_conta(LOGIN, "Só minha", "2030-01-01")

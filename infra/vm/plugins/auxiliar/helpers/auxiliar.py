@@ -287,8 +287,18 @@ def _valor(valor) -> str:
 
 
 @_transacao
+def codigo_pagamento(texto: str) -> str:
+    """The boleto's typed line (44-48 digits) or a Pix copy-and-paste code (EMV, starts with 000201), cleaned; '' when
+    it is neither. Only for the person to copy (12/10 review): the agent never pays."""
+    bruto = str(texto or "").strip()
+    if bruto.startswith("000201") and 50 <= len(bruto) <= 512 and " " not in bruto:
+        return bruto
+    digitos = re.sub(r"[\s.\-]", "", bruto)
+    return digitos if digitos.isdigit() and 44 <= len(digitos) <= 48 else ""
+
+
 def salvar_conta(login: str, descricao: str, vencimento: str, valor="", moeda: str = "BRL", fonte: str = "",
-                 cid: str = "") -> tuple[dict | None, str]:
+                 cid: str = "", codigo: str = "") -> tuple[dict | None, str]:
     venc = _data(vencimento)
     if not descricao.strip() or venc is None:
         return None, "Diga `descricao` e `vencimento` (AAAA-MM-DD)."
@@ -302,7 +312,8 @@ def salvar_conta(login: str, descricao: str, vencimento: str, valor="", moeda: s
         d["contas"].append(conta)
     conta.update({"descricao": descricao.strip()[:160], "vencimento": venc.date().isoformat(),
                   "valor": _valor(valor) or conta.get("valor", ""), "moeda": (moeda or "BRL").upper()[:3],
-                  "fonte": (fonte or conta.get("fonte", "")).strip()[:300]})
+                  "fonte": (fonte or conta.get("fonte", "")).strip()[:300],
+                  "codigo": codigo_pagamento(codigo) or conta.get("codigo", "")})
     salvar(login, d)
     return conta, ""
 
@@ -334,6 +345,9 @@ def mensagem_conta(c: dict, etapa: str) -> str:
     linhas = [f"💳 *{titulo}*", "", linha_conta(c)]
     if c.get("fonte"):
         linhas.append(f"_De: {c['fonte']}_")
+    if c.get("codigo"):  # tap to copy in Telegram; paying is always the person's
+        nome = "Pix copia e cola" if c["codigo"].startswith("000201") else "Linha digitável do boleto"
+        linhas += ["", f"{nome} (toque para copiar):", f"```\n{c['codigo']}\n```"]
     return "\n".join(linhas)
 
 

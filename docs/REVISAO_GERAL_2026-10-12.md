@@ -108,6 +108,8 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | Backup conferido de verdade todo dia: os arquivos críticos (prospecção, decisões, agendador, livro) voltam do S3 para uma pasta temporária e precisam abrir e estar em dia; senão a saúde avisa | ✅ | `saude.py` |
 | Métrica certa: resposta a comentário conta (grupo "comentários": quantos perfis comentados e quantos responderam por ali) — as primeiras respostas vieram de comentário | ✅ | prospecção (`metricas`) |
 | Revisor estável: o mesmo texto, para o mesmo lead e com o mesmo contexto, recebe o mesmo veredito (guardado por 30 dias; mudar o playbook renova); "nunca pedir a receita" virou regra no código | ✅ | prospecção |
+| Contas com o código para copiar: a linha digitável do boleto ou o Pix copia e cola vai no lembrete, num bloco que se copia com um toque (o agente nunca paga) | ✅ | auxiliar |
+| `/foco 15h` (ou `15:30`, `45min`): até lá só o urgente chega, mesmo com você mexendo no celular; o resto vem junto no fim ("Fim do foco"). `/foco off` encerra | ✅ | ponte |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |

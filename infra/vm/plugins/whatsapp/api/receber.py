@@ -273,6 +273,7 @@ AJUDA = """*Comandos*
 /decisoes — as suas decisões em vigor (o agente segue sem perguntar de novo)
 /senha NOME valor — guarda uma senha no seu cofre (o agente nunca vê; a mensagem é apagada)
 /silencio 23-7 — horário de silêncio: avisos de progresso esperam até de manhã (/silencio off desliga)
+/foco 15h — até as 15h só o urgente chega; o resto vem junto no fim (/foco off encerra)
 Áudio, foto e arquivo também valem. Os botões Aprovar/Recusar respondem pedidos de aprovação."""
 
 

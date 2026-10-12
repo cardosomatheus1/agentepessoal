@@ -317,8 +317,21 @@ def _silencio(usuario: str) -> dict:
         return SILENCIO_PADRAO
 
 
+FOCO = Path("/opt/a0/usr/whatsapp/foco.json")  # {login: until (epoch)}: /foco 15h holds progress notices until then
+
+
+def _foco_ate(usuario: str) -> float:
+    try:
+        return float(json.loads(FOCO.read_text(encoding="utf-8")).get(usuario) or 0)
+    except Exception:
+        return 0.0
+
+
 def em_silencio(usuario: str) -> bool:
-    """Quiet hours (America/Bahia) and the person has not written recently."""
+    """Quiet hours (America/Bahia) and the person has not written recently — or a /foco still running (12/10 review
+    §7 item 10: the person types "foco até 15h" and only what is urgent reaches them until then, even while awake)."""
+    if time.time() < _foco_ate(usuario):
+        return True
     regra = _silencio(usuario)
     if regra.get("desligado") or time.time() - ULTIMA_ENTRADA.get(usuario, 0) < ACORDADO:
         return False
@@ -361,7 +374,9 @@ def ciclo_fila() -> None:
                         break
                     partes.append(trecho)
                     total += len(trecho)
-                avisar(usuario, "🌅 *Enquanto você descansava* (avisos de progresso guardados):\n\n" + "\n\n".join(partes))
+                titulo = ("🎯 *Fim do foco* — o que chegou enquanto isso:" if time.time() - _foco_ate(usuario) < 15 * 60
+                          else "🌅 *Enquanto você descansava* (avisos de progresso guardados):")
+                avisar(usuario, titulo + "\n\n" + "\n\n".join(partes))
                 log(f"quiet hours over: delivered {len(itens)} held notices to {usuario}")
         except Exception as exc:
             log(f"held notices failed: {exc}")
@@ -393,6 +408,44 @@ def comando_silencio(usuario: str, texto: str) -> str | None:
     return (f"🌙 Horário de silêncio: {regra['inicio']}–{regra['fim']}. Nesse horário, avisos de progresso ficam "
             "guardados e chegam juntos quando acabar; o que precisa de você (aprovação, código, decisão, erro) "
             "chega na hora. Se você escrever, entende que está acordado. Mude com /silencio 23-7 ou /silencio off.")
+
+
+def comando_foco(usuario: str, texto: str, agora: float | None = None) -> str | None:
+    """/foco 15h | /foco 15:30 | /foco 45min | /foco off | /foco : hold progress notices until then (urgent ones go)."""
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+
+    partes = texto.strip().lower().replace("até", "").split()
+    if not partes or partes[0].split("@")[0] != "/foco":
+        return None
+    agora = agora or time.time()
+    try:
+        todos = json.loads(FOCO.read_text(encoding="utf-8"))
+    except Exception:
+        todos = {}
+    fuso = ZoneInfo("America/Bahia")
+    if len(partes) > 1:
+        arg = "".join(partes[1:])
+        if arg in ("off", "fim", "acabou", "sair"):
+            todos.pop(usuario, None)
+        elif m := re.fullmatch(r"(\d{1,3})(min|m)", arg):
+            todos[usuario] = agora + int(m[1]) * 60
+        elif m := re.fullmatch(r"(\d{1,2})(?:h|:)?(\d{2})?h?", arg):
+            if int(m[1]) > 23 or int(m[2] or 0) > 59:
+                return "Use /foco 15h, /foco 15:30, /foco 45min ou /foco off."
+            alvo = datetime.fromtimestamp(agora, fuso).replace(hour=int(m[1]), minute=int(m[2] or 0), second=0, microsecond=0)
+            if alvo.timestamp() <= agora:
+                alvo += timedelta(days=1)
+            todos[usuario] = alvo.timestamp()
+        else:
+            return "Use /foco 15h, /foco 15:30, /foco 45min ou /foco off."
+        FOCO.parent.mkdir(parents=True, exist_ok=True)
+        FOCO.write_text(json.dumps(todos), encoding="utf-8")
+    ate = float(todos.get(usuario) or 0)
+    if ate <= agora:
+        return "🎯 Sem foco agora: os avisos chegam normalmente. Use /foco 15h para segurar o que não é urgente até as 15h."
+    return (f"🎯 Foco até {datetime.fromtimestamp(ate, fuso).strftime('%H:%M')}: só o urgente chega (aprovação, código, "
+            "bloqueio); o resto fica guardado e chega junto no fim. /foco off encerra antes.")
 
 
 DESCREVER: dict[str, tuple[str, float]] = {}  # login -> (secret just saved, when): its "which account?" is pending
@@ -896,6 +949,8 @@ def tratar(url: str, m: dict) -> None:
             resposta_cofre = comando_cofre(item["usuario"], msg.get("text") or "")
             if resposta_cofre is None:
                 resposta_cofre = comando_silencio(item["usuario"], msg.get("text") or "")
+            if resposta_cofre is None:
+                resposta_cofre = comando_foco(item["usuario"], msg.get("text") or "")
             if resposta_cofre is not None:  # passwords never reach the agent
                 if (msg.get("text") or "").split()[0].lower().startswith("/senha") and len((msg.get("text") or "").split()) > 2:
                     try:
@@ -947,8 +1002,11 @@ def tratar(url: str, m: dict) -> None:
         resposta_cofre = comando_cofre(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
         if resposta_cofre is None:
             resposta_cofre = comando_silencio(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
+        if resposta_cofre is None:
+            resposta_cofre = comando_foco(item["usuario"], (item["mensagem"].get("text") or {}).get("body", ""))
         if resposta_cofre is not None:  # passwords never reach the agent (WhatsApp cannot delete it)
-            enviar_texto(item["numero"], resposta_cofre + "\nApague sua mensagem com a senha deste chat.")
+            pediu_senha = (item["mensagem"].get("text") or {}).get("body", "").strip().lower().startswith("/senha")
+            enviar_texto(item["numero"], resposta_cofre + ("\nApague sua mensagem com a senha deste chat." if pediu_senha else ""))
             _lembrar(mid)
             sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
             return

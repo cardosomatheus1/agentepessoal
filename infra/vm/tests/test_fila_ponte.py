@@ -103,6 +103,27 @@ def main() -> int:
         modo["erro"] = None
         p.tratar("fila", {**wa, "ReceiptHandle": "w2", "Attributes": {"ApproximateReceiveCount": "2"}})
         ok(fila.apagadas[-1] == "w2", "quando o agente sobe, chega e sai da fila")
+        # /foco: holds progress notices until the chosen time, even while the person is awake (writing)
+        import datetime as dt
+        from zoneinfo import ZoneInfo
+
+        p.FOCO, p.SILENCIO = tmp / "foco.json", tmp / "silencio.json"
+        p.SILENCIO.write_text(json.dumps({"matheus": {"desligado": True}}))
+        fuso = ZoneInfo("America/Bahia")
+        base = dt.datetime(2026, 10, 13, 10, 0, tzinfo=fuso).timestamp()
+        r = p.comando_foco("matheus", "/foco até 15h", agora=base)
+        ate = p._foco_ate("matheus")
+        ok(dt.datetime.fromtimestamp(ate, fuso).strftime("%d %H:%M") == "13 15:00" and "15:00" in r, f"foco até as 15h: {r}")
+        p.ULTIMA_ENTRADA["matheus"] = __import__("time").time()  # awake, writing
+        ok(p.em_silencio("matheus") == (__import__("time").time() < ate), "em foco, segura mesmo acordado")
+        r = p.comando_foco("matheus", "/foco 9:30", agora=base)
+        ok(dt.datetime.fromtimestamp(p._foco_ate("matheus"), fuso).strftime("%d %H:%M") == "14 09:30", f"hora que já passou = amanhã: {r}")
+        p.comando_foco("matheus", "/foco 45min", agora=base)
+        ok(abs(p._foco_ate("matheus") - (base + 45 * 60)) < 1, "duração em minutos")
+        ok("Sem foco" in p.comando_foco("matheus", "/foco off", agora=base), "/foco off encerra")
+        ok(not p.em_silencio("matheus"), "sem foco e com silêncio desligado, nada é segurado")
+        ok("Use /foco" in p.comando_foco("matheus", "/foco amanhã cedo", agora=base), "o que não entende, explica")
+        ok(p.comando_foco("matheus", "oi") is None, "mensagem comum não é comando")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:
