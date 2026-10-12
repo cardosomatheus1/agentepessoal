@@ -63,7 +63,7 @@ class VariosUsuarios(Extension):
         if not usuario:
             bloqueio.falhou(ip)
             import asyncio
-            await asyncio.sleep(1)
+            await asyncio.sleep(bloqueio.espera())
             data["result"] = _pagina("Usuário ou senha incorretos.", proximo)
             return
         bloqueio.ok(ip)

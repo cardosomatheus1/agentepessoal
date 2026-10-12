@@ -35,23 +35,29 @@ def nomes() -> list[str]:
 
 
 class Bloqueio:
-    """Failed logins per IP (and overall), kept in the app process."""
+    """Failed logins, kept in the app process. Only the IP that failed is locked out (12/10 review: a global lock let
+    anyone, from a few addresses, lock the owner out for 15 min). Many failures overall only make every failed
+    attempt slower (`espera`); a right password from an IP that is not locked always gets in."""
 
     def __init__(self):
         self.falhas: dict[str, list[float]] = {}
 
-    def _recentes(self, chave: str) -> list[float]:
-        agora = time.time()
+    def _recentes(self, chave: str, agora: float | None = None) -> list[float]:
+        agora = agora or time.time()
         lst = [t for t in self.falhas.get(chave, []) if agora - t < JANELA]
         self.falhas[chave] = lst
         return lst
 
-    def bloqueado(self, ip: str) -> bool:
-        return len(self._recentes(ip)) >= TENTATIVAS or len(self._recentes("*")) >= TENTATIVAS * 6
+    def bloqueado(self, ip: str, agora: float | None = None) -> bool:
+        return len(self._recentes(ip, agora)) >= TENTATIVAS
 
-    def falhou(self, ip: str) -> None:
+    def falhou(self, ip: str, agora: float | None = None) -> None:
         for chave in (ip, "*"):
-            self._recentes(chave).append(time.time())
+            self._recentes(chave, agora).append(agora or time.time())
+
+    def espera(self, agora: float | None = None) -> float:
+        """Seconds to hold a failed attempt: 1 normally, 5 when there are many failures overall (distributed)."""
+        return 5.0 if len(self._recentes("*", agora)) >= TENTATIVAS * 6 else 1.0
 
     def ok(self, ip: str) -> None:
         self.falhas.pop(ip, None)
