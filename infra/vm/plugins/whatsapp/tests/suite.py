@@ -142,6 +142,29 @@ class Suite:
         eq(linhas[8], "+3 ativa(s) · 1 pausada(s)", "o resto só contado")
         eq(m.linhas_rotinas([]), "Nenhuma.", "sem rotinas")
 
+    def t_painel_usa_o_codigo_novo_depois_de_implantar(self):
+        # 12/10: the panel kept the prospecting helper loaded before the deploy (without `painel`)
+        import os
+
+        m = self._painel()
+        tmp = Path(tempfile.mkdtemp(prefix="painel-helper-"))
+        nome = "helper_painel_teste"
+        try:
+            arq = tmp / "h.py"
+            arq.write_text("VERSAO = 1\n")
+            eq(m._helper(nome, str(arq)).VERSAO, 1, "carrega pelo caminho")
+            arq.write_text("VERSAO = 2\n")
+            os.utime(arq, (time.time() + 5, time.time() + 5))
+            eq(m._helper(nome, str(arq)).VERSAO, 2, "arquivo mudou (implantação): carrega de novo")
+            eq(m._helper(nome, str(arq)).VERSAO, 2, "sem mudança, fica o mesmo")
+            outro = type(sys)("sem_marca")
+            sys.modules[nome] = outro
+            ok(m._helper(nome, str(arq)) is outro, "módulo carregado por outro caminho (sem marca) é mantido")
+            ok(m._helper(nome, str(tmp / "nao_existe.py")) is outro, "plugin ausente: devolve o que houver")
+        finally:
+            sys.modules.pop(nome, None)
+            shutil.rmtree(tmp, ignore_errors=True)
+
     def t_pendentes_junta_o_que_espera_ele(self):
         # 12/10 review §7 item 2: one list of what waits on the person (the panel showed only approvals and codes)
         m = self._painel()

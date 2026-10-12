@@ -30,14 +30,18 @@ def _hora(dt) -> str:
 
 
 def _helper(nome: str, caminho: str):
-    """A plugin helper already loaded by the agent, or loaded here by path (None when the plugin is not installed)."""
-    if nome in sys.modules:
-        return sys.modules[nome]
+    """A plugin helper shared with the plugin's own code through sys.modules, loaded here by path when missing and
+    again when its file changed (12/10: after a deploy the panel kept the old prospecting code, without `painel`, until
+    a tool reloaded it). A module loaded without the `_mtime` mark is kept as is. None when the plugin is not
+    installed."""
     import importlib.util
 
     arquivo = Path(caminho)
+    antigo = sys.modules.get(nome)
     if not arquivo.exists():
-        return None
+        return antigo
+    if antigo is not None and getattr(antigo, "_mtime", arquivo.stat().st_mtime) == arquivo.stat().st_mtime:
+        return antigo
     spec = importlib.util.spec_from_file_location(nome, arquivo)
     modulo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modulo)
