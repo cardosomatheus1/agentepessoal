@@ -54,6 +54,9 @@ class Iniciativa(Tool):
         if acao == "enviar":
             if not titulo.strip() or not texto.strip():
                 return Response(message="Diga `titulo` e `texto`.", break_loop=False)
+            if not ini.tipo_permitido(tipo):
+                return Response(message="Não enviado: só sai iniciativa do tipo 'adiantei' (trabalho já pronto). "
+                                        "Responda SEM NOVIDADE.", break_loop=False)
             ok, motivo = ini.pode_enviar(login)
             if not ok:
                 return Response(message=f"Não enviado: {motivo}. Responda SEM NOVIDADE.", break_loop=False)

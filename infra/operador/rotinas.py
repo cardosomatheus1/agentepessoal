@@ -2,7 +2,7 @@
 
     python3 infra/operador/rotinas.py exportar          # live → infra/vm/rotinas/<uuid>.json (then review and commit)
     python3 infra/operador/rotinas.py comparar          # what differs between the VM and git
-    A0_SENHA=... python3 infra/operador/rotinas.py aplicar <uuid>   # git → VM (prompt and system_prompt, by the API)
+    A0_SENHA=... python3 infra/operador/rotinas.py aplicar <uuid>   # git → VM (name, schedule, prompts, by the API)
 
 The prospecting rounds stay in infra/vm/plugins/prospeccao/rodadas.py. Reading is by SSM (tasks.json is never
 edited); "aplicar" goes through the scheduler's own API, like tarefa_atualizar.py. Anything that looks like a secret
@@ -114,7 +114,9 @@ async def aplicar(uuid: str) -> None:
         await a.wait_for_selector("#chat-input", timeout=90000)
         r = await a.evaluate("""async (dados) => { const api = await import('/js/api.js');
             const r = await api.callJsonApi('scheduler_task_update', dados); return String(!!(r.task || r.ok)) + (r.error ? ' ' + r.error : ''); }""",
-                             {"task_id": uuid, "prompt": t["prompt"], "system_prompt": t["system_prompt"]})
+                             {"task_id": uuid, "name": t["name"], "prompt": t["prompt"], "system_prompt": t["system_prompt"],
+                              # 12/10: schedules go from git too (the scheduler API takes the cron fields + timezone)
+                              **({"schedule": t["schedule"]} if t.get("schedule") else {})})
         print(f"{uuid} {t['name']}: atualizada = {r}")
         await b.close()
 

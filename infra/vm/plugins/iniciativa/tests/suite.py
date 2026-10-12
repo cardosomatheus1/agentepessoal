@@ -56,6 +56,18 @@ class Suite:
         ok(not pode and "100 min" in motivo, f"intervalo entre iniciativas respeitado: {motivo}")
         ok(not list(i.PASTA.glob(".*.tmp")), "nenhum temporário largado")
 
+    def t_so_sai_o_que_ja_esta_pronto(self):
+        # 12/10 review: only "já adiantei" (work done) goes out, at most 2 a day; ideas and news were the noise
+        i = self.i
+        ok(i.LIMITE_DIA == 2 and i.tipo_permitido("adiantei") and not i.tipo_permitido("ideia"), "só adiantei, 2 por dia")
+        r = i.avaliar(LOGIN, [{"titulo": "Ideia ótima", "tipo": "ideia", "nota": 5, "porque": "x"},
+                              {"titulo": "Planilha pronta", "tipo": "adiantei", "nota": 4, "porque": "y"}])
+        ok("Planilha pronta" in r and "Ideia ótima" not in r, f"escolhe o adiantei, mesmo com nota menor: {r}")
+        r = i.avaliar(LOGIN, [{"titulo": "Notícia", "tipo": "novidade", "nota": 5, "porque": "x"},
+                              {"titulo": "Conexão", "tipo": "conexao", "nota": 5, "porque": "y"}])
+        ok("SEM NOVIDADE" in r, f"sem adiantei, não sai nada: {r}")
+        ok(len(i.carregar(LOGIN)["pensadas"]) == 2, "o que foi pensado continua registrado")
+
     def t_arquivo_ilegivel_nao_apaga_preferencias(self):
         i = self.i
         i.aprender(LOGIN, "Prefere receber de manhã")

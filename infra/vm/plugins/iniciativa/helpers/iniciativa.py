@@ -16,9 +16,16 @@ from contextlib import contextmanager
 from pathlib import Path
 
 PASTA = Path("/a0/usr/iniciativa")
-LIMITE_DIA = 3          # unprompted messages per day
+LIMITE_DIA = 2          # unprompted messages per day (12/10 review: 3 a day over 6 rounds was noise)
 INTERVALO_MIN = 100 * 60  # at least this long between two of them
 TIPOS = ("adiantei", "ideia", "novidade", "padrao", "conexao")
+# 12/10 review: only work already done goes out ("já adiantei"); ideas, news and connections overlapped the loose ends
+# (fios) and were the noisy part. The others are still thought of and recorded, never sent.
+TIPOS_QUE_SAEM = ("adiantei",)
+
+
+def tipo_permitido(tipo: str) -> bool:
+    return str(tipo or "").strip().lower() in TIPOS_QUE_SAEM
 
 
 def _login(login: str) -> str:
@@ -164,10 +171,14 @@ def avaliar(login: str, candidatos: list) -> str:
     d["pensadas"] = d["pensadas"][-60:]
     salvar(login, d)
     ok, motivo = pode_enviar(login)
-    melhor = max(validos, key=lambda c: c["nota"])
     minima = nota_minima(login)
     if not ok:
         return f"Não mande agora ({motivo}). Responda SEM NOVIDADE."
+    prontos = [c for c in validos if tipo_permitido(c["tipo"])]
+    if not prontos:
+        return ("Só sai iniciativa do tipo 'adiantei' (trabalho já pronto) e nenhum candidato é assim. "
+                "Responda SEM NOVIDADE.")
+    melhor = max(prontos, key=lambda c: c["nota"])
     if melhor["nota"] < minima:
         return f"Nenhum candidato chegou à nota {minima} (o melhor: «{melhor['titulo']}», {melhor['nota']}). Responda SEM NOVIDADE."
     return (f"Mande «{melhor['titulo']}» (nota {melhor['nota']}, mínimo {minima}). Se for 'adiantei', faça antes o trabalho; "
