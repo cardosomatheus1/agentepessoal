@@ -386,9 +386,16 @@ class Prospeccao(Tool):
                                 "demo": ("📅", "topou conversar")}[etapa]
                 lugar = "num comentário" if onde == "comentario" else "no Direct"
                 await asyncio.to_thread(p.enviar, login, f"{emoji} *{lead['nome']}* (@{lead['handle']}) {frase} {lugar}\n\n«{nota[:500]}»\n\n"
-                         "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu.\n" + lead["url"],
+                         "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu. Se preferir "
+                         "conversar você mesmo, toque em 🙋.\n" + lead["url"], p.botao_assumir(login, lead["id"]),
                          tipo="urgente", ponte=ponte())  # someone answered: tell him now (Telegram), even in quiet hours
             return r(f"@{lead['handle']} agora está em {etapa}.")
+        if acao in ("assumir", "devolver"):  # he talks to this @ himself / hands it back to the rounds
+            lead = await asyncio.to_thread(p.assumir_lead if acao == "assumir" else p.devolver_lead, login, lead_id)
+            if not lead:
+                return r("Lead não encontrado (use o @, a URL ou o id).")
+            return r(f"@{lead['handle']}: " + ("a automação parou; é o Matheus quem conversa." if acao == "assumir"
+                                               else "devolvido; as rodadas podem voltar a propor para esse perfil."))
         if acao == "editar":
             a, motivo = await asyncio.to_thread(p.editar, login, acao_id, texto)
             if not a:
@@ -407,7 +414,8 @@ class Prospeccao(Tool):
             out = await asyncio.to_thread(p.processar_direct, login, kwargs.get("dados") or texto)
             for n in out["novas"]:
                 await asyncio.to_thread(p.enviar, login, f"💬 *{n['nome']}* (@{n['handle']}) respondeu no Direct\n\n«{n['texto'][:500]}»\n\n"
-                         "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu.\n" + n["url"], tipo="urgente", ponte=ponte())
+                         "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu. Se preferir "
+                         "conversar você mesmo, toque em 🙋.\n" + n["url"], p.botao_assumir(login, n["lead_id"]), tipo="urgente", ponte=ponte())
             if out["erros"] and not out["conversas"]:
                 return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Leia pela tela (skill, seção 5).")
             resumo = (f"{out['conversas']} conversas lidas pela API; respostas novas de leads: "

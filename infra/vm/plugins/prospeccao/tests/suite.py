@@ -1585,6 +1585,12 @@ class Suite:
         ok("já foi decidida" in caixa(desde)[-1]["texto"], "segundo toque")
         for b in p.botoes_acao(LOGIN, a1) + [{"id": f"pa:{LOGIN}:{pid}:todas"}]:
             ok(len(b["id"].encode()) <= 64, "callback cabe em 64 bytes")
+        if hasattr(rc, "_botao_lead"):  # 🙋 Quero falar eu (whatsapp plugin installed first)
+            lid = self._lead("b4")
+            eq((await rc._botao_lead(OUTRO, f"pl:{LOGIN}:{lid}:eu"))["ok"], False, "botão de outra pessoa")
+            await rc._botao_lead(LOGIN, f"pl:{LOGIN}:{lid}:eu")
+            ok(p._lead(p.carregar(LOGIN), lid).get("humano"), "o toque em 🙋 para a automação para esse @")
+            ok("Combinado" in caixa(desde)[-1]["texto"], "e confirma no celular")
 
     def t_mensagem_no_celular(self):
         p = self.p
@@ -1799,6 +1805,27 @@ class Suite:
            "", "citar a receita do post não é pedir")
         eq(p.validar_texto("resposta", "Oi, Ana! Pode mandar a receita sim, que eu calculo. — Matheus", d, "x"), "",
            "na resposta a quem ofereceu, quem julga é o revisor")
+
+    def t_quero_falar_eu_para_a_automacao(self):
+        # 12/10 review §7 item 3: "🙋 Quero falar eu" stops the automation for that @ until he hands it back
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._lead("quente")
+        aid = p.propor(LOGIN, [{"lead_id": lid, "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
+        p.decidir(LOGIN, aid, "aprovar")
+        lead = p.assumir_lead(LOGIN, "@quente")
+        ok(lead and lead.get("humano"), "assumido pelo @")
+        a = next(x for x in p.carregar(LOGIN)["acoes"] if x["id"] == aid)
+        eq(a["estado"], "cancelada", "o que estava aprovado para ele é cancelado")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "aquecer", "texto": ""}])
+        ok(not r["propostas"] and "pessoalmente" in r["recusadas"][0]["motivo"], f"nada novo é aceito: {r['recusadas']}")
+        b = p.botao_assumir(LOGIN, lid)[0]
+        ok(b["id"].startswith("pl:") and len(b["id"].encode()) <= 64, "botão cabe no Telegram")
+        p.devolver_lead(LOGIN, lid)
+        ok(not p._lead(p.carregar(LOGIN), lid).get("humano"), "devolvido")
+        ok(p.propor(LOGIN, [{"lead_id": lid, "tipo": "aquecer", "texto": ""}])["propostas"], "depois de devolver, volta a propor")
+        hist = [h["tipo"] for h in p._lead(p.carregar(LOGIN), lid)["historico"]]
+        eq(hist.count("humano"), 2, "assumir e devolver ficam no histórico")
 
     def t_rejeitados(self):
         p = self.p

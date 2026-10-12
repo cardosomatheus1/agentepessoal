@@ -21,6 +21,7 @@ Prospecção de clientes da Raiz Connect, um a um. Tudo está pré-aprovado pelo
 - "proxima": `conta_ativa` (o @ que está ATIVO no Instagram agora — confira no menu do perfil antes) → a próxima ação APROVADA que pode ser executada, com o texto exato e como fazer (ou "NADA AGORA"); recusa se a conta ativa não for a da Raiz
 - "resultado": `acao_id`, `ok` (true/false), `detalhe` (o que apareceu na tela), `bloqueio` (true se o Instagram bloqueou/limitou — pausa 48 h)
 - "etapa": `lead_id`, `etapa` (respondeu | lead | demo | teste | cliente | descartado), `nota` (o que a pessoa disse), `onde` ("direct" ou "comentario") — respondeu/lead/demo avisam o Matheus na hora (uma vez por resposta)
+- "assumir" / "devolver": `lead_id` (@, URL ou id) → o Matheus conversa pessoalmente com esse perfil (as rodadas param e nada é proposto para ele) / devolve ao agente. Use quando ele disser "deixa que eu falo com @x" ou "pode voltar a falar com @x"
 - "editar": `acao_id`, `texto` — nova versão (volta para aprovação)
 - "hoje": o resumo do dia para o celular (ou "NADA HOJE")
 - "metricas": `dias` — números por variante, segmento, cidade, faixa de nota e fonte (planilha, instagram, catálogo)

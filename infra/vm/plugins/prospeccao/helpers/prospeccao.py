@@ -1263,6 +1263,9 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
             motivo = "lead não encontrado (registre antes)"
         elif lead["etapa"] in FINAIS and not (tipo == "resposta" and lead["etapa"] == "descartado"):
             motivo = f"lead encerrado ({lead['etapa']}): não contate de novo"
+        elif lead.get("humano"):
+            motivo = ("o Matheus está conversando com esse perfil pessoalmente: não proponha nada (ele devolve quando "
+                      "quiser, e aí `prospeccao` acao \"devolver\")")
         elif (lid, tipo) in ja:
             motivo = "já existe essa ação pendente para esse lead"
         elif d["config"].get("auto") and _versoes_reprovadas(d, lid, tipo) >= VERSOES_REVISOR:
@@ -1742,6 +1745,9 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
         if not lead or (lead["etapa"] in FINAIS and not (a["tipo"] == "resposta" and lead["etapa"] == "descartado")):
             _mudar(d, a, "cancelada", "lead encerrado antes da execução")
             continue
+        if lead.get("humano") and not a.get("em_execucao"):
+            _mudar(d, a, "cancelada", "o Matheus assumiu a conversa com esse perfil")
+            continue
         if not _livre(a, quem):
             continue  # another round has it
         executadas_hoje = sum(1 for x in d["acoes"] if x["tipo"] == a["tipo"] and x["estado"] == "executada"
@@ -2151,6 +2157,42 @@ def conferencia_livro(login: str, feitas: list, comentados: list) -> str:
         return "📒 Conferido no livro: " + ", ".join(f"{aqui[v]} {nomes[v]}" for v in nomes if aqui[v]) + "."
     return ("📒 ⚠️ O livro não bate: " + "; ".join(f"{nomes[v]} {no_livro[v]} no livro × {aqui[v]} na prospecção"
                                                  for v in diferentes) + ". Confira se algo saiu repetido ou sem registro.")
+
+
+@_transacao
+def assumir_lead(login: str, lid: str) -> dict | None:
+    """"🙋 Quero falar eu" (12/10 review §7 item 3): the person takes this @ over. The automation stops for it: what is
+    proposed or approved (and not already being executed) is cancelled, and nothing new is accepted until he hands it
+    back (`devolver_lead`). Returns the lead, or None when it does not exist."""
+    d = carregar(login)
+    lead = _lead(d, lid)
+    if not lead:
+        return None
+    if not lead.get("humano"):
+        lead["humano"] = {"desde": agora()}
+        lead["historico"].append({"em": agora(), "tipo": "humano", "texto": "o Matheus assumiu a conversa"})
+    for a in d["acoes"]:
+        if a["lead_id"] == lead["id"] and a["estado"] in ("proposta", "aprovada") and not a.get("em_execucao"):
+            _mudar(d, a, "cancelada", "o Matheus assumiu a conversa com esse perfil")
+    salvar(login, d)
+    return lead
+
+
+@_transacao
+def devolver_lead(login: str, lid: str) -> dict | None:
+    """The person hands the @ back: the rounds may propose for it again."""
+    d = carregar(login)
+    lead = _lead(d, lid)
+    if not lead or not lead.get("humano"):
+        return lead
+    lead.pop("humano")
+    lead["historico"].append({"em": agora(), "tipo": "humano", "texto": "o Matheus devolveu a conversa ao agente"})
+    salvar(login, d)
+    return lead
+
+
+def botao_assumir(login: str, lid: str) -> list:
+    return [{"id": f"pl:{_login(login)}:{lid}:eu", "titulo": "🙋 Quero falar eu"}]
 
 
 def resumo_contexto(login: str) -> str:

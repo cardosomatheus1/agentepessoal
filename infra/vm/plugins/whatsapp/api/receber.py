@@ -509,6 +509,20 @@ async def _botao_prospeccao(usuario: str, botao: str) -> dict:
     return {"ok": True}
 
 
+async def _botao_lead(usuario: str, botao: str) -> dict:
+    """🙋 Quero falar eu, under a hot-lead notice: the automation stops for that @ (12/10 review §7 item 3)."""
+    _, login, lid, _acao = (botao.split(":") + ["", "", "", ""])[:4]
+    if login != usuario:
+        return {"ok": False}
+    p = _prospeccao()
+    lead = await asyncio.to_thread(p.assumir_lead, login, lid)
+    texto = (f"🙋 Combinado: parei a automação com @{lead['handle']}. É com você — {lead.get('url', '')}\n"
+             f"Quando quiser devolver, me diga \"pode voltar a falar com @{lead['handle']}\"."
+             if lead else "Não achei esse perfil na prospecção.")
+    await asyncio.to_thread(ponte().enviar, usuario, texto, "", "", None, "resposta", True)
+    return {"ok": True}
+
+
 class Receber(ApiHandler):
     @classmethod
     def requires_auth(cls) -> bool:
@@ -564,6 +578,8 @@ class Receber(ApiHandler):
             return await _botao_conta(usuario, botao)
         if botao.startswith("pa:"):  # a prospecting action of plugins/prospeccao
             return await _botao_prospeccao(usuario, botao)
+        if botao.startswith("pl:"):  # "Quero falar eu" under a hot lead of plugins/prospeccao
+            return await _botao_lead(usuario, botao)
 
         pedido = ponte().PEDIDOS.get(usuario)
         if pedido and not pedido.get("codigo") and texto and len(texto) <= 40 and "\n" not in texto \
