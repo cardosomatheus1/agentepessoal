@@ -47,7 +47,8 @@ def vm(comando: str, timeout: int = 600) -> str:
 
 # host scripts installed by setup.sh in /opt/agentepessoal (12/10 review: they were copied to the VM by hand)
 HOST_ARQUIVOS = ("bedrock_proxy.py", "report_url.py", "watchdog.sh", "memguard.sh", "backup.sh", "hibernate.sh",
-                 "entrada.sh", "credenciais_meta.py", "ponte_whatsapp.py", "proximo_despertar.py", "agent_tools.sh")
+                 "entrada.sh", "credenciais_meta.py", "ponte_whatsapp.py", "proximo_despertar.py", "agent_tools.sh",
+                 "saude.py")
 
 
 def _conferir_git(caminhos: list) -> str:
