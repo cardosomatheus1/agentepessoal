@@ -14,6 +14,7 @@ reply lock stayed on and the only message to a lead was deleted. Rules enforced 
 """
 
 import io
+import re
 import subprocess
 import sys
 import tarfile
@@ -206,6 +207,12 @@ def main() -> None:
              "docker exec agent-zero curl -s -X POST http://127.0.0.1:80/api/cache_reset && echo && "
              f"cat {destino}/.versao"))
     print(f"implantado: {plugin} @ {head[:8]}" + (f" + skill {skill}" if skill else ""))
+    if skill:  # 12/10: a chat that already loaded the skill keeps the old text ("already loaded in visible chat history")
+        chats = vm(f"grep -l 'skill_name.*{skill}' /opt/a0/usr/chats/*/chat.json 2>/dev/null | cut -d/ -f6 | sort -u | head -20")
+        ids = [c for c in chats.split() if re.fullmatch(r"[A-Za-z0-9_-]{4,40}", c)]
+        if ids:
+            print(f"ATENÇÃO: estas conversas já carregaram a skill {skill} e continuam com a versão antiga até serem "
+                  "reiniciadas (quando estiverem paradas): A0_SENHA=… python3 infra/operador/resetar_chat.py " + " ".join(ids))
 
 
 if __name__ == "__main__":

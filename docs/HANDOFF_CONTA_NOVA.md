@@ -271,6 +271,10 @@ scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fic
   link, `_espera` 2–6 min, `PICO_DM` 10h30–14h, `limite_consulta`/`liberar_consultas`/`reservar_consultas` (429 até o
   dia seguinte; 2 dias seguidos até liberar; 30 consultas/dia), `varredura_devida` (Direct completo a cada 4 h),
   `pausar_por_bloqueio` (bloqueio sem acao_id), nota "lê o Direct", AB_MINIMO 100. Execução às :08 e :38.
+- **Skill nova não pega sozinho nas rodadas**: a conversa que já carregou a skill guarda o texto antigo ("already
+  loaded in visible chat history"). Depois de `implantar.py <plugin> --skill <skill>`, o próprio implantar lista as
+  conversas a reiniciar; reinicie com `resetar_chat.py` só quando a rodada estiver parada (12/10: busca laMIuaPt e
+  execução F9Ku9frw reiniciadas depois da skill 4.0.0).
 - **Precisa do Matheus**: "Usar" do rascunho virar rascunho no Gmail exige trocar o conector para `gmail:drafts`
   (`setup.sh`, unidade do workspace-mcp) e ele autorizar no Google uma vez; depois ligar `config.gmail_rascunhos`.
 
