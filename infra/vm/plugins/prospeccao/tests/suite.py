@@ -1605,6 +1605,26 @@ class Suite:
         p.encerrar_liberacao(c)
         eq(c.get_data("_aprovacoes_liberadas"), None, "fecha depois do resultado")
 
+    def t_renovar_acesso_da_meta(self):
+        # 12/10: the Page token never expires, but Meta cuts data access 90 days after the last authorization; Matheus
+        # wants at least 90 days: the round renews it by itself in the last 15 days
+        p, agora_ts = self.p, time.time()
+        dia = 86400
+        eq(p.aviso_acesso_meta({}, agora_ts), "", "sem API configurada: nada")
+        eq(p.aviso_acesso_meta({"expira": 0, "acesso_ate": agora_ts + 90 * dia, "valido": True}, agora_ts), "",
+           "90 dias pela frente: nada")
+        eq(p.aviso_acesso_meta({"expira": 0, "acesso_ate": 0, "valido": True}, agora_ts), "", "sem limite nenhum: nada")
+        aviso = p.aviso_acesso_meta({"expira": 0, "acesso_ate": agora_ts + 10 * dia, "valido": True}, agora_ts)
+        ok("vence em 10 dia(s)" in aviso and "token_meta" in aviso and "sem pedir ok" in aviso,
+           f"nos últimos 15 dias a rodada recebe os passos para renovar: {aviso}")
+        ok("já venceu" in p.aviso_acesso_meta({"expira": 0, "acesso_ate": agora_ts - dia, "valido": True}, agora_ts),
+           "vencido também")
+        ok("já venceu" in p.aviso_acesso_meta({"expira": 0, "acesso_ate": 0, "valido": False}, agora_ts),
+           "token inválido também")
+        aviso = p.aviso_acesso_meta({"expira": agora_ts + 3 * dia, "acesso_ate": agora_ts + 80 * dia, "valido": True},
+                                    agora_ts)
+        ok("vence em 3 dia(s)" in aviso, f"vale a data que chegar primeiro: {aviso}")
+
     def t_rejeitados(self):
         p = self.p
         lid = self._lead("jaelead")

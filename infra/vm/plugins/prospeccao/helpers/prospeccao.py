@@ -575,9 +575,11 @@ def guardar_token_meta(login: str, token_usuario: str) -> dict:
     if alvo.get("id"):
         c.salvar(login, COFRE_PAGINA, str(alvo["id"])); c.descrever(login, COFRE_PAGINA, f"Meta · id da Página {alvo['name']}")
     info = _graph("debug_token", {"input_token": alvo["access_token"], "access_token": alvo["access_token"]}).get("data") or {}
-    expira = info.get("expires_at", 0)
+    expira, acesso = info.get("expires_at", 0), info.get("data_access_expires_at", 0)
+    _ACESSO_META.pop(_login(login), None)  # the next round reads the new dates
     out = {"ok": True, "pagina": alvo["name"], "instagram": esperado,
-           "expira": "nunca" if not expira else dt.datetime.fromtimestamp(expira, _tz()).strftime("%d/%m/%Y %H:%M")}
+           "expira": "nunca" if not expira else dt.datetime.fromtimestamp(expira, _tz()).strftime("%d/%m/%Y %H:%M"),
+           "acesso_aos_dados_ate": dt.datetime.fromtimestamp(acesso, _tz()).strftime("%d/%m/%Y") if acesso else "sem limite"}
     if expira:
         out["aviso"] = ("este token vence: no Explorador da Graph API escolha «Token do usuário» (não Página), gere, abra na "
                         "ferramenta de token, clique em «Estender token de acesso» e chame token_meta de novo com essa aba aberta")
@@ -843,6 +845,51 @@ def api_meta_pronta(login: str) -> bool:
     except Exception:
         return False
     return bool(s.get(COFRE_TOKEN) and s.get(COFRE_IG))
+
+
+# The Page token never expires, but Meta cuts its access to data 90 days after the Facebook account last authorized
+# the app ("data access expiration"; 12/10 → 10/01/2027). Matheus asked for at least 90 days: the search round sees
+# the date and renews it by itself (same steps as the first time) in the last 15 days, before anything stops.
+RENOVAR_META_DIAS = 15
+_ACESSO_META: dict = {}
+
+
+def acesso_meta(login: str) -> dict:
+    """{"expira": ts|0, "acesso_ate": ts|0, "valido": bool} of the stored token, by Meta itself; cached for 6 h."""
+    guardado = _ACESSO_META.get(_login(login))
+    if guardado and agora() - guardado["em"] < 6 * 3600:
+        return guardado["info"]
+    try:
+        tok = _cofre().carregar(login).get(COFRE_TOKEN) or ""
+    except Exception:
+        tok = ""
+    if not tok:
+        return {}
+    d = _graph("debug_token", {"input_token": tok, "access_token": tok}).get("data") or {}
+    info = {"expira": d.get("expires_at") or 0, "acesso_ate": d.get("data_access_expires_at") or 0,
+            "valido": bool(d.get("is_valid"))} if d else {}
+    _ACESSO_META[_login(login)] = {"em": agora(), "info": info}
+    return info
+
+
+def aviso_acesso_meta(info: dict, agora_ts: float) -> str:
+    """The renewal instruction for the round when the data access ends within RENOVAR_META_DIAS (or already ended)."""
+    if not info:
+        return ""
+    datas = [t for t in (info.get("expira"), info.get("acesso_ate")) if t]
+    fim, valido = (min(datas) if datas else 0), info.get("valido", True)
+    if valido and (not fim or fim - agora_ts > RENOVAR_META_DIAS * 86400):
+        return ""
+    if not valido or (fim and fim <= agora_ts):
+        quando = "já venceu"
+    else:
+        quando = (f"vence em {max(1, int((fim - agora_ts) // 86400))} dia(s), "
+                  f"{dt.datetime.fromtimestamp(fim, _tz()).strftime('%d/%m')}")
+    return (f"🔑 O acesso da API da Meta aos dados {quando}: renove agora, sem pedir ok (decisão do Matheus). "
+            "Explorador da Graph API → app «Raiz Prospecção» → Token do usuário (pages_show_list, pages_read_engagement, "
+            "instagram_basic, instagram_manage_insights) → Generate Access Token (autorize a Página e a @raiz.connect) → "
+            "«i» → abrir na ferramenta de token → Estender token de acesso → `prospeccao` acao \"token_meta\" com a aba "
+            "aberta. Confira no resultado o novo «acesso_aos_dados_ate».")
 
 
 REJEITADO_DIAS = 60
@@ -1968,6 +2015,10 @@ def resumo_contexto(login: str) -> str:
     if agora() < d["bloqueio_ate"]:
         linhas.append("⛔ PAUSADO após bloqueio do Instagram — não proponha nada até " +
                       dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M"))
+    if api_meta_pronta(login):
+        renovar = aviso_acesso_meta(acesso_meta(login), agora())
+        if renovar:
+            linhas.append(renovar)
     for tipo, lista in dev.items():
         if lista:
             linhas.append(f"\n## Devem receber «{tipo}» agora ({len(lista)})")
