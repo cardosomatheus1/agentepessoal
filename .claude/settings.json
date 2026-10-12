@@ -17,7 +17,9 @@
       "Bash(python3 infra/operador/apagar_chat.py:*)",
       "Bash(python3 infra/operador/retomar_chat.py:*)",
       "Bash(python3 infra/operador/aprovar_pendente.py:*)",
-      "Bash(python3 infra/operador/decisoes.py:*)"
+      "Bash(python3 infra/operador/decisoes.py:*)",
+      "Bash(python3 infra/operador/rotinas.py:*)",
+      "Bash(python3 infra/operador/rodar_suites_locais.py:*)"
     ]
   }
 }

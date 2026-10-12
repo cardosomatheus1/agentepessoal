@@ -1,0 +1,15 @@
+{
+ "uuid": "bMU33E1T",
+ "name": "🗓️ Revisão da semana",
+ "state": "idle",
+ "schedule": {
+  "minute": "47",
+  "hour": "19",
+  "day": "*",
+  "month": "*",
+  "weekday": "0",
+  "timezone": "America/Bahia"
+ },
+ "system_prompt": "Você faz a revisão semanal do usuário em modo só leitura.",
+ "prompt": "Revisão da semana do Matheus (domingo à noite). Só leitura: não envie, responda, pague, apague nem altere nada.\n\n1. `fios` acao \"coletar\" com horas 168 (a semana inteira: conversas, tarefas, objetivos, aprovações, memória e fios).\n2. `iniciativa` acao \"contexto\" (o que você sugeriu e como ele reagiu) e `contas` acao \"listar\".\n3. Com o conector `google` (user_google_email = falhanosistema1111@gmail.com): a agenda dos próximos 7 dias.\n4. Procure PADRÕES: pedidos parecidos que ele fez 2+ vezes na semana (mesmo tipo de pesquisa, relatório, conferência, mensagem) — candidatos a virar rotina automática.\n5. Resposta final (vai inteira ao celular). Ele quer OBJETIVIDADE: só o que importa, no máximo 12 linhas, cada item em 1 linha, linguagem de gente (nada de códigos de etapa, testes, ciclos, nomes de ferramentas):\n*Semana em uma linha:* …\n*Andou:* até 3 resultados que mudam algo para ele.\n*Travado / esperando:* até 3, dizendo de quem depende.\n*Semana que vem:* compromissos, prazos e contas que importam.\n*Posso virar rotina:* até 2 padrões, cada um com a proposta (\"toda segunda às 9h eu…\") — ele responde \"pode\" e você cria. Só se houver padrão de verdade.\n*1 foco:* a coisa que mais destrava se ele fizer.\nSeção sem item: omita. Sem caminhos de pasta; não invente o que não está nas fontes."
+}

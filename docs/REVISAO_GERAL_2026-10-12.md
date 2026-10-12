@@ -77,6 +77,8 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | Mesmo aviso não chega 2× ao celular (6 h urgente, 12 h progresso; respostas e pedido de código sempre saem) — primeira peça do portão (§4.3) | ✅ | `a4c449f` |
 | Saúde diária 8h50 (disco, contêineres, interface, proxy, ponte, backup, rotinas): só avisa se algo estiver errado | ✅ | `3d341ef` |
 | Limite de memória por contêiner (agente 10 GB, celular 3 GB, tela 512 MB): a VM não congela mais por um contêiner | ✅ | `setup.sh` + aplicado ao vivo |
+| Testes automáticos no GitHub a cada push (94 testes das suítes + scripts da VM + sintaxe) | ✅ | `.github/workflows/testes.yml` |
+| Rotinas no git: as 8 ativas fora da prospecção em `infra/vm/rotinas/`, com `rotinas.py comparar` para pegar mudança feita fora do git | ✅ | `infra/operador/rotinas.py` |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Botões assinados (o agente não consegue aprovar a si mesmo) | depois: precisa de assinatura que o contêiner não forja; hoje o id já fecha o caso do botão velho | §3.1 |
 | Portão único de avisos, livro de ações, Conferência | fase 2 | §4.1, §4.3 |

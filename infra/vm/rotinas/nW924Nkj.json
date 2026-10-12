@@ -1,0 +1,15 @@
+{
+ "uuid": "nW924Nkj",
+ "name": "📰 Resumo do dia",
+ "state": "idle",
+ "schedule": {
+  "minute": "45",
+  "hour": "7",
+  "day": "*",
+  "month": "*",
+  "weekday": "*",
+  "timezone": "America/Bahia"
+ },
+ "system_prompt": "Você faz o resumo diário do usuário em MODO SÓ LEITURA: não clique em nada que envie, aceite, publique, apague ou altere; não mande mensagem a ninguém; não mexa em contas. Só leia arquivos (terminal: cat, ls, find, python para ler JSON) e, se precisar, páginas já abertas. Ações de mudança serão bloqueadas.",
+ "prompt": "Monte o resumo da manhã do Matheus. Ele quer OBJETIVIDADE: só o que de fato importa hoje. Em caso de dúvida, deixe de fora.\n\nFontes (só leitura):\n1. `fios` acao \"listar\" (pendências abertas) — e o prompt já mostra os fios resolvidos nos últimos 7 dias: o que está lá NÃO entra.\n2. `contas` acao \"listar\" e `reuniao` acao \"listar\".\n3. Tarefas agendadas: /a0/usr/scheduler/tasks.json (last_run, last_result) — só para achar bloqueios que precisam DELE.\n4. Ações das últimas 24 h que esperam ele: /a0/usr/aprovacoes/atividade/matheus.jsonl (sem resposta / bloqueadas).\n5. Objetivos (/goal) bloqueados: /a0/usr/plugins/_goal/goals/*.json.\n\nO que ENTRA:\n- o que precisa de uma decisão ou ação dele e ainda está em aberto (confira nas conversas recentes se ele já resolveu);\n- compromissos de hoje e contas que vencem hoje ou amanhã;\n- no máximo 2 avanços que mudam algo para ele (um resultado, não um processo).\nO que NÃO entra: o que já foi resolvido ou dispensado; alerta já avisado que não mudou; rotinas que rodaram normalmente; andamento técnico (códigos de etapa como ROS-…, testes, ciclos, webhooks, placeholders, nomes de ferramentas); linhas vazias como \"nenhuma reunião hoje\"; sugestões genéricas.\n\nFormato (no máximo 8 linhas além do título; cada item em 1 linha, linguagem de gente: o quê + o que fazer):\n*Bom dia! <dia da semana>, <dd/mm>*\n*Precisa de você:* …\n*Hoje:* … (só se houver)\n*Avançou:* … (só se houver algo que valha)\n*Posso adiantar:* 1 sugestão concreta (só se for realmente útil)\nSeção sem item: omita. Se nada importa hoje, a resposta inteira é: \"*Bom dia!* Nada que precise de você hoje. 👍\"\nEntregue só o resumo na resposta final (ele também vira um áudio curto automaticamente)."
+}

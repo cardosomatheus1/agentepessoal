@@ -173,6 +173,8 @@ comando (a máquina não lê o bucket S3).
 | `decisoes.py listar\|registrar\|revogar\|semear` | Registro de decisões do Matheus pelo helper (`--motivo` obrigatório para mudar) |
 | `retomar_chat.py <ctx> [--pausar]`, `aprovar_pendente.py <ctx> [--so-ver]` | Despausar/pausar uma conversa; ver/aprovar o pedido de ok que está esperando |
 | `mover_perfis_navegador.py` | (feito em 12/10) levou os perfis do navegador para fora do contêiner |
+| `rotinas.py comparar\|exportar\|aplicar <uuid>` | Rotinas do agendador versionadas em `infra/vm/rotinas/` (as da prospecção ficam em `rodadas.py`) |
+| `rodar_suites_locais.py [plugin…]` | Todas as suítes que rodam fora da VM (o GitHub roda o mesmo a cada push) |
 
 **Implantar**: só `python3 infra/operador/implantar.py …` (ver `CLAUDE.md`). Nada de copiar plugin à mão. Para os
 scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fica em `/opt/agentepessoal/.versao-*`).
