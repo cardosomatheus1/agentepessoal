@@ -37,6 +37,9 @@ s3 = boto3.client(
 )
 
 
+LOGINS = ("matheus", "fernanda")  # people who can link a Telegram chat
+
+
 def _authorized(password: str) -> bool:
     digest = hashlib.sha256((password or "").encode()).hexdigest()
     return hmac.compare_digest(digest, PASSWORD_SHA256)
@@ -203,16 +206,26 @@ def handler(event, _context):
         return _json(_upload_url(data.get("name", ""), data.get("size", 0)))
     if action == "apk":
         return _json(_apk_url())
+    if action in ("telegram_link", "telegram_desligar"):
+        login = str(data.get("login") or "")
+        if login not in LOGINS:
+            return _json({"error": "login desconhecido"}, 400)
+        if action == "telegram_desligar":
+            return _json({"desligados": telegram.desligar(login), **telegram.status(LOGINS)})
+        try:
+            return _json({"url": telegram.novo_link(login), "validade_min": telegram.VALIDADE // 60})
+        except ValueError as exc:
+            return _json({"error": str(exc)}, 400)
     if action in ("whatsapp", "whatsapp_salvar", "telegram_salvar"):
         base = "https://" + event.get("requestContext", {}).get("domainName", "")
         if action == "whatsapp_salvar":
             whatsapp.save_config(data.get("campos") or {})
         if action == "telegram_salvar":
             try:
-                telegram.configurar(str((data.get("campos") or {}).get("tg_token") or ""), base, ["matheus", "fernanda"])
+                telegram.configurar(str((data.get("campos") or {}).get("tg_token") or ""), base, list(LOGINS))
             except Exception as exc:
                 return _json({"error": f"Telegram recusou o token: {str(exc)[:120]}"}, 400)
-        return _json({**whatsapp.status(base), **telegram.status()})
+        return _json({**whatsapp.status(base), **telegram.status(LOGINS)})
     if action == "start":
         if _state() == "stopped":
             _start()
@@ -314,9 +327,15 @@ async function waSalvar(){try{$("err").textContent="";const campos={token:$("waT
 const r=await fetch(location.origin+location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:key,action:"whatsapp_salvar",campos})});
 const d=await r.json();if(!r.ok)throw new Error(d.error||"falhou");["waToken","waSecret","waNums","waPhone"].forEach(i=>$(i).value="");waRender(d);$("err").textContent="Salvo ✓"}catch(e){$("err").textContent=e.message}}
 function tgRender(d){if(!d.tg_bot){$("tgEstado").textContent=d.tem_tg_token?"Token salvo, bot não encontrado.":"Nenhum bot ainda.";return}
-let h="Bot: <b>@"+d.tg_bot+"</b><br>Conectados: <b>"+((d.tg_ligados||[]).join(", ")||"ninguém")+"</b>";
-for(const [login,url] of Object.entries(d.tg_links||{}))h+='<a class="btn secondary" href="'+url+'">Conectar '+login+'</a>';
+const n=d.tg_chats_por_login||{};let h="Bot: <b>@"+d.tg_bot+"</b><br>Conectados: <b>"+(Object.entries(n).map(([l,c])=>l+(c>1?" ("+c+" chats)":"")).join(", ")||"ninguém")+"</b><br><small>O link vale 15 minutos e uma vez só.</small>";
+for(const login of d.tg_logins||[]){h+='<button class="secondary" data-l="'+login+'" onclick="tgLink(this.dataset.l)">Conectar '+login+'</button>';
+if(n[login])h+='<button class="secondary" data-l="'+login+'" onclick="tgDesligar(this.dataset.l)">Desconectar '+login+'</button>'}
 $("tgEstado").innerHTML=h}
+async function tgPost(action,login){const r=await fetch(location.origin+location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:key,action,login})});
+const d=await r.json();if(!r.ok)throw new Error(d.error||"falhou");return d}
+async function tgLink(login){try{$("err").textContent="";const d=await tgPost("telegram_link",login);location.href=d.url}catch(e){$("err").textContent=e.message}}
+async function tgDesligar(login){if(!confirm("Desconectar todos os chats do Telegram de "+login+"?"))return;
+try{$("err").textContent="";const d=await tgPost("telegram_desligar",login);tgRender(d);$("err").textContent="Desconectado ("+d.desligados+") ✓"}catch(e){$("err").textContent=e.message}}
 async function tgSalvar(){try{$("err").textContent="";const r=await fetch(location.origin+location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:key,action:"telegram_salvar",campos:{tg_token:$("tgToken").value}})});
 const d=await r.json();if(!r.ok)throw new Error(d.error||"falhou");$("tgToken").value="";waRender(d);tgRender(d);$("err").textContent="Salvo ✓"}catch(e){$("err").textContent=e.message}}
 if(key){$("panel").hidden=false;refresh()}else{$("nokey").hidden=false}

@@ -1,7 +1,8 @@
 """The only way to put a plugin (or skill), or a host script, on the agent VM. Usage, from the repository root:
 
     python3 infra/operador/implantar.py prospeccao [--skill prospeccao-instagram] [--forcar]
-    python3 infra/operador/implantar.py --host memguard.sh [--reiniciar agentepessoal-ponte.service] [--forcar]
+    python3 infra/operador/implantar.py --host ponte_whatsapp.py [--reiniciar agentepessoal-whatsapp.service] [--forcar]
+    python3 infra/operador/implantar.py --controle [--forcar]   (the control page / webhooks Lambda, infra/control)
 
 Why (11/10): two Claude sessions deployed the same plugin over each other and one edited the live data by hand; a
 reply lock stayed on and the only message to a lead was deleted. Rules enforced here:
@@ -93,10 +94,56 @@ def host(args: list) -> None:
     print(f"implantado no host: {arquivo} @ {head[:8]}")
 
 
+CONTROLE = ("index.py", "whatsapp.py", "telegram.py")  # what deploy.py zips into the control function
+FUNCAO = "agentepessoal-control"
+
+
+def controle(args: list) -> None:
+    """The control function (Lambda): committed and pushed code only, compiled here first, version kept in its
+    description; then the page must still load and refuse a wrong key. Same files deploy.py packs."""
+    import urllib.error
+    import urllib.request
+    import zipfile
+
+    caminhos = [f"infra/control/{a}" for a in CONTROLE]
+    head = _conferir_git(caminhos)
+    lam = boto3.client("lambda", region_name="us-east-1")
+    no_ar = (lam.get_function_configuration(FunctionName=FUNCAO).get("Description") or "").split(" ")
+    no_ar = no_ar[1] if len(no_ar) > 1 and no_ar[0] == "versao" else ""
+    if no_ar and "--forcar" not in args and subprocess.run(["git", "merge-base", "--is-ancestor", no_ar, head], cwd=RAIZ).returncode:
+        raise SystemExit(f"a função de controle roda {no_ar[:8]}, que não está no seu histórico: faça git pull (ou --forcar).")
+    pacote = io.BytesIO()
+    with zipfile.ZipFile(pacote, "w", zipfile.ZIP_DEFLATED) as z:
+        for nome, caminho in zip(CONTROLE, caminhos):
+            fonte = subprocess.run(["git", "show", f"HEAD:{caminho}"], cwd=RAIZ, check=True, capture_output=True).stdout
+            compile(fonte, caminho, "exec")  # a syntax error stops here, before anything is replaced
+            z.writestr(nome, fonte)
+    lam.update_function_code(FunctionName=FUNCAO, ZipFile=pacote.getvalue())
+    lam.get_waiter("function_updated_v2").wait(FunctionName=FUNCAO)
+    lam.update_function_configuration(FunctionName=FUNCAO,
+                                      Description=f"versao {head} {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}")
+    lam.get_waiter("function_updated_v2").wait(FunctionName=FUNCAO)
+    url = lam.get_function_url_config(FunctionName=FUNCAO)["FunctionUrl"]
+    with urllib.request.urlopen(url, timeout=20) as r:
+        pagina = r.read().decode("utf-8", "replace")
+    req = urllib.request.Request(url, data=b'{"password": "errada", "action": "status"}', method="POST",
+                                 headers={"Content-Type": "application/json"})
+    try:
+        urllib.request.urlopen(req, timeout=20)
+        recusou = False
+    except urllib.error.HTTPError as exc:
+        recusou = exc.code == 401
+    if "Agente" not in pagina or not recusou:
+        raise SystemExit("a função de controle subiu mas não respondeu como esperado (página ou senha): confira já.")
+    print(f"implantado: função de controle @ {head[:8]} (página ok, chave errada recusada)")
+
+
 def main() -> None:
     args = sys.argv[1:]
     if "--host" in args:
         return host(args)
+    if "--controle" in args:
+        return controle(args)
     if not args or args[0].startswith("-"):
         raise SystemExit(__doc__)
     plugin, forcar = args[0], "--forcar" in args
