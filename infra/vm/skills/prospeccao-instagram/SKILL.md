@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 3.0.0
+version: 3.1.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -82,7 +82,7 @@ encaixam, não os perfis abertos. As buscas na internet têm teto por dia: quand
 
 `prospeccao` acao "fontes" (`limite` 20). A ferramenta, sozinha:
 1. pega empresas das **listas importadas** (planilha do SDR) e do **catálogo de CNPJ** (GuiaPJ: marmitas, pratos
-   prontos, confeitaria e padaria em Salvador, Lauro de Freitas e Camaçari), avançando página por página;
+   prontos, confeitaria e padaria: Bahia primeiro, depois as capitais e grandes cidades do Brasil), avançando página por página;
 2. acha o Instagram de cada empresa pelo buscador (Tavily) e só aceita quando o perfil bate com a empresa: mesmo
    telefone, @ dado pela fonte, ou mesmo nome e cidade;
 3. pula bar, lanchonete, pizzaria e MEI com nome de pessoa sem gastar busca;
@@ -93,8 +93,8 @@ post e às vezes os seguidores não aparecem na busca. A conferência acontece n
 
 ### 2b. Se faltar: busca no Instagram (por script)
 
-1. `prospeccao` acao "buscar_script" com `termos` = até 3 buscas de região e segmento (ex.: "marmita salvador",
-   "congelados salvador", "confeitaria lauro de freitas").
+1. `prospeccao` acao "buscar_script" com `termos` = até 3 buscas de cidade e segmento, em qualquer lugar do Brasil (ex.:
+   "marmita fit bh", "congelados curitiba", "confeitaria recife").
 2. Rode o script com `browser` action "evaluate" numa aba em https://www.instagram.com/. Ele devolve um JSON com os
    @ achados.
 3. Passe esse JSON para `perfis_script` (`achados` = o texto). A ferramenta tira os já conhecidos e rejeitados e

@@ -51,7 +51,7 @@ WhatsApp na bio), `exclusoes` (rede, franquia, pessoal, privado, concorrente, cu
 | Segmento | marmitaria, congelados, cozinha de produção 25 · fábrica 22 · confeitaria, salgados 20 · doces 18 · padaria, restaurante 15 · outro alimento 5 |
 | Atividade (último post não fixado) | até 7 dias 15 · até 14 dias 12 · até 30 dias 8 · mais de 30 → fora |
 | Porte (seguidores) | 500–5 mil 15 · 5–20 mil 12 · 20–50 mil 8 · 300–500 6 · menos de 300 ou mais de 50 mil → fora |
-| Região alvo | 10 · fora da região → fora |
+| Região | 10 em qualquer cidade do Brasil · fora do Brasil → fora |
 | Canais de venda | 3 por canal (até 10) |
 | Sinais de dor | 5 por sinal (até 15) |
 | Profissionalização | cardápio com preço 5 · link de pedido 5 |
@@ -62,9 +62,9 @@ inventada estraga a nota e o relatório semanal confere se nota alta de fato res
 
 ## 2. Região
 
-Fase 1: **Salvador e região metropolitana**, **São Paulo (capital)** e **Campinas**. Procure pela localização do
-perfil/bio, pelo endereço, pelas tags de local e por hashtags locais (#marmitassalvador, #confeitariassp,
-#congeladoscampinas, #marmitafitsp, #docessalvador, #salgadosparafestacampinas…). Fora dessas regiões, não registre.
+**Brasil todo** (Matheus, 12/10). Use a localização do perfil/bio, o endereço, as tags de local e as hashtags locais
+(#marmitassalvador, #confeitariasp, #marmitafitbh, #docesrecife…). Fora do Brasil, não registre. Sem cidade, confira no
+perfil antes de registrar.
 
 ## 3. A oferta (o gancho)
 

@@ -36,8 +36,15 @@ CNAES = (("5620104", "marmitaria"),      # alimentos preparados para consumo dom
          ("1091102", "confeitaria"),     # fabricação de produtos de padaria e confeitaria
          ("4721102", "padaria"),         # padaria e confeitaria (revenda)
          ("1092900", "outro_alimento"))  # massas alimentícias
-# region of the playbook, in the order the directory is walked (the rubric's REGIOES decides what scores)
-CIDADES = ("salvador", "lauro de freitas", "camacari", "simoes filho", "candeias", "dias d'avila")
+# cities walked in the directory, in order (uf, name): Bahia first (where it started), then the capitals and big
+# cities of Brazil (Matheus, 12/10: "é Brasil mesmo")
+CIDADES = (("BA", "salvador"), ("BA", "lauro de freitas"), ("BA", "camacari"), ("BA", "simoes filho"), ("BA", "candeias"),
+           ("BA", "dias d'avila"), ("SP", "sao paulo"), ("SP", "campinas"), ("RJ", "rio de janeiro"),
+           ("MG", "belo horizonte"), ("PR", "curitiba"), ("RS", "porto alegre"), ("PE", "recife"), ("CE", "fortaleza"),
+           ("DF", "brasilia"), ("GO", "goiania"), ("SC", "florianopolis"), ("ES", "vitoria"), ("BA", "feira de santana"),
+           ("AM", "manaus"), ("PA", "belem"), ("MA", "sao luis"), ("PB", "joao pessoa"), ("RN", "natal"),
+           ("AL", "maceio"), ("SE", "aracaju"), ("PI", "teresina"), ("MT", "cuiaba"), ("MS", "campo grande"),
+           ("SP", "ribeirao preto"), ("SP", "sorocaba"), ("SP", "santos"), ("PR", "londrina"), ("SC", "joinville"))
 # names that are clearly not a food producer: not worth a search query
 FORA = re.compile(r"\b(bar|bares|boteco|lanchonete|pizzari|espetinho|a[cç]a[ií]|sorvet|mercad|mercearia|dep[oó]sito|"
                   r"distribuidora|churrascaria|pastelaria|hamburg|burger|cervej|adega|conveni[eê]ncia)", re.I)
@@ -116,15 +123,16 @@ def ler_listagem(pagina_html: str) -> list[dict]:
     return empresas
 
 
-def _municipios(d: dict, cnae: str) -> dict:
-    """City name -> municipality code for this activity in Bahia (read once from the state page)."""
-    if not d["municipios"].get(cnae):
-        pagina = _baixar(f"{GUIAPJ}/uf/BA/cnae/{cnae}")
+def _municipios(d: dict, cnae: str, uf: str = "BA") -> dict:
+    """City name -> municipality code for this activity in this state (read once from the state page)."""
+    chave = cnae if uf == "BA" else f"{uf}:{cnae}"  # Bahia keeps the old key (already cached on the VM)
+    if not d["municipios"].get(chave):
+        pagina = _baixar(f"{GUIAPJ}/uf/{uf}/cnae/{cnae}")
         achados = {}
         for codigo, nome in re.findall(rf'href="/cnae/{cnae}/municipio/(\d+)"[^>]*>(.*?)</a>', pagina, re.S):
             achados[_sem_acento(_texto(nome)).split("/")[0].strip()] = codigo
-        d["municipios"][cnae] = achados
-    return d["municipios"][cnae]
+        d["municipios"][chave] = achados
+    return d["municipios"][chave]
 
 
 def coletar(login: str, paginas: int = 4) -> dict:
@@ -134,12 +142,12 @@ def coletar(login: str, paginas: int = 4) -> dict:
     for cnae, _seg in CNAES:
         if lidas >= paginas:
             break
-        try:
-            mapa = _municipios(d, cnae)
-        except Exception as exc:
-            erros.append(f"{cnae}: {exc}")
-            continue
-        for cidade in CIDADES:
+        for uf, cidade in CIDADES:
+            try:
+                mapa = _municipios(d, cnae, uf)
+            except Exception as exc:
+                erros.append(f"{cnae}/{uf}: {exc}")
+                continue
             codigo = next((c for nome, c in mapa.items() if nome == cidade or nome.startswith(cidade)), "")
             if cidade == "salvador" and not codigo:
                 codigo = "3849"  # Salvador's code is stable; the state page may list it under a variant

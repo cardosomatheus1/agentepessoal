@@ -169,7 +169,7 @@ class Suite:
         boa = {"canal": "instagram", "nome": "X", "segmento": "marmitaria", "cidade": "Salvador", "motivo": "m",
                "seguidores": "2000", "ultimo_post": self._dia(1)}
         casos = [({"ultimo_post": self._dia(40)}, "parado"), ({"seguidores": "120"}, "pequeno"),
-                 ({"seguidores": "80 mil"}, "grande"), ({"cidade": "Recife"}, "região"), ({"exclusoes": ["franquia"]}, "franquia"),
+                 ({"seguidores": "80 mil"}, "grande"), ({"cidade": "Lisboa, Portugal"}, "fora do Brasil"), ({"cidade": ""}, "cidade"), ({"exclusoes": ["franquia"]}, "franquia"),
                  ({"exclusoes": ["curso"]}, "parceiro"), ({"segmento": "pet shop"}, "segmento"), ({"ultimo_post": ""}, "último post"),
                  ({"ultimo_post": "ontem"}, "último post")]
         for i, (mudar, chave) in enumerate(casos):
@@ -473,6 +473,21 @@ class Suite:
         eq(out2["criados"], [], "segunda passada não cria de novo")
         aid = p.propor(LOGIN, [{"lead_id": lead["id"], "tipo": "aquecer", "texto": ""}])["propostas"][0]["id"]
         ok(aid, "aquecer sem comentário pode ser proposto")
+
+    def t_brasil_todo(self):
+        p, f = self.p, self._fontes()
+        self.em(self.hora(10))
+        for cidade in ("Recife", "Belo Horizonte", "Porto Alegre", "Feira de Santana", "Manaus"):
+            ok(self._lead(f"br{cidade[:4].lower()}", cidade=cidade), f"{cidade}: qualquer cidade do Brasil entra (Matheus, 12/10)")
+        ev = p._evidencia({"handle": "x", "nome": "Doces da Lu", "bio": "Bolos por encomenda em Belo Horizonte - MG", "posts": []})
+        eq(ev["cidade"], "Belo Horizonte", "cidade lida da bio fora da Bahia")
+        ok(("SP", "sao paulo") in f.CIDADES and ("PE", "recife") in f.CIDADES and f.CIDADES[0] == ("BA", "salvador"),
+           "catálogo anda pela Bahia e depois pelas capitais")
+        paginas = []
+        f._baixar = lambda url: paginas.append(url) or ('<a href="/cnae/5620104/municipio/1234">RECIFE/PE</a>' if "/uf/PE/" in url else "")
+        d = f.carregar(LOGIN)
+        eq(f._municipios(d, "5620104", "PE"), {"recife": "1234"}, "municípios de outro estado")
+        ok(any("/uf/PE/cnae/5620104" in u for u in paginas), "lê a página do estado certo")
 
     def t_estoque_de_leads_e_teto_de_buscas(self):
         p, f = self.p, self._fontes()

@@ -177,9 +177,26 @@ SINAIS = ("reajuste", "insumo", "expansao", "contratacao", "cardapio_precos", "k
 EXCLUSOES = {"rede": "rede ou franquia", "franquia": "rede ou franquia", "pessoal": "perfil pessoal",
              "privado": "perfil privado", "concorrente": "concorrente/sistema/consultoria",
              "curso": "curso/influenciador (é parceiro, não cliente)", "influencer": "curso/influenciador (é parceiro, não cliente)"}
+# Region (Matheus, 12/10: "não precisa ser só Salvador, é Brasil mesmo"): any city in Brazil scores; only a city
+# clearly abroad is out. CIDADES_BR is only used to READ the city from a bio (the rubric no longer filters by it).
 REGIOES = ("salvador", "lauro de freitas", "camaçari", "camacari", "simões filho", "simoes filho", "candeias",
            "dias d'ávila", "dias davila", "madre de deus", "são francisco do conde", "vera cruz", "itaparica",
            "são paulo", "sao paulo", "campinas")
+CIDADES_BR = REGIOES + (
+    "rio de janeiro", "belo horizonte", "curitiba", "porto alegre", "recife", "fortaleza", "brasília", "brasilia",
+    "goiânia", "goiania", "florianópolis", "florianopolis", "vitória", "vitoria", "manaus", "belém", "belem",
+    "são luís", "sao luis", "joão pessoa", "joao pessoa", "natal", "maceió", "maceio", "aracaju", "teresina",
+    "cuiabá", "cuiaba", "campo grande", "palmas", "porto velho", "rio branco", "macapá", "macapa", "boa vista",
+    "guarulhos", "santo andré", "santo andre", "são bernardo", "sao bernardo", "osasco", "santos", "sorocaba",
+    "ribeirão preto", "ribeirao preto", "são josé dos campos", "sao jose dos campos", "jundiaí", "jundiai",
+    "niterói", "niteroi", "duque de caxias", "nova iguaçu", "nova iguacu", "contagem", "uberlândia", "uberlandia",
+    "juiz de fora", "londrina", "maringá", "maringa", "joinville", "blumenau", "caxias do sul", "pelotas",
+    "feira de santana", "vitória da conquista", "vitoria da conquista", "ilhéus", "ilheus", "itabuna", "jaboatão",
+    "olinda", "caruaru", "petrolina", "juazeiro", "campina grande", "mossoró", "mossoro", "anápolis", "anapolis",
+    "aparecida de goiânia", "vila velha", "serra", "cariacica", "betim", "montes claros")
+FORA_DO_BRASIL = re.compile(r"\b(portugal|lisboa|porto, portugal|miami|orlando|eua|usa|estados unidos|new york|london|"
+                            r"londres|argentina|buenos aires|chile|santiago de chile|m[eé]xico|espanha|madrid|"
+                            r"barcelona|paris|it[aá]lia|roma|canad[aá]|toronto|uruguai|montevid[eé]u|paraguai)\b", re.I)
 
 
 RADICAIS_SEGMENTO = (  # free text from the search round -> rubric key (the best-scoring match wins)
@@ -240,9 +257,11 @@ def pontuar(item: dict) -> dict:
         return {"rejeitado": f"pequeno demais ({seguidores} seguidores)"}
     if seguidores > 50_000:
         return {"rejeitado": f"grande demais ({seguidores} seguidores: cara de rede)"}
-    cidade = str(item.get("cidade") or "").lower()
-    if not any(r in cidade for r in REGIOES):
-        return {"rejeitado": f"fora da região ({item.get('cidade')})"}
+    cidade = str(item.get("cidade") or "").strip().lower()
+    if not cidade:
+        return {"rejeitado": "sem a cidade (confira no perfil)"}
+    if FORA_DO_BRASIL.search(cidade):
+        return {"rejeitado": f"fora do Brasil ({item.get('cidade')})"}
     canais = {str(x).lower() for x in (item.get("canais") or [])} & set(CANAIS_VENDA)
     sinais = {str(x).lower() for x in (item.get("sinais") or [])} & set(SINAIS)
     partes = {
@@ -531,7 +550,7 @@ def _evidencia(perfil: dict) -> dict:
     legendas = " ".join(x.get("legenda", "") for x in posts[:6]).lower()
     tudo = f"{texto_bio} {legendas} {perfil.get('link', '').lower()}"
     ultimo = nao_fixados[0] if nao_fixados else None
-    cidade = next((r for r in REGIOES if r in texto_bio), "")
+    cidade = next((r for r in CIDADES_BR if re.search(rf"\b{re.escape(r)}\b", texto_bio)), "")
     return {
         "handle": perfil["handle"], "canal": "instagram", "nome": (perfil.get("nome") or perfil["handle"])[:80],
         "segmento": segmento_rubrica(f"{perfil.get('categoria', '')} {perfil.get('nome', '')} {perfil.get('bio', '')}") or "",
