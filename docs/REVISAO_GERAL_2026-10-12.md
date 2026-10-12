@@ -36,14 +36,16 @@ Foi feita com três análises independentes: infraestrutura, código dos plugins
 2. **AWS: acesso total mantido.** A restrição da chave e o MFA saíram do plano. (Opcional, sem mudar o acesso: girar a
    chave, que passou pelo cofre em 10/10.)
 3. **Tela do celular: fica como está.** O túnel sob demanda e o login na frente saíram do plano.
-4. **Senhas: proteger melhor (aprovado).** O plano não cria nenhuma trava nova:
-   - **backup:** o cofre sai do backup de hora em hora em texto puro e passa a ir cifrado (KMS). Para você, nada muda;
-   - **máscara:** o valor de um segredo nunca aparece em saída de ferramenta, histórico, log ou Telegram. Ele vira
-     `§§secret(NOME)`, e o agente continua usando normalmente;
-   - **setup:** sem `set -x` nos trechos que mexem com senha;
-   - **você:** trocar as senhas do Gmail e do Facebook/Instagram (a mesma senha nas duas). Elas apareceram em
-     log e em saída de ferramenta;
-   - **apagar as cópias antigas em texto puro no S3** (30 dias de versões): só com o seu ok, porque é destrutivo.
+4. **Senhas: o que importa é que nada fique público.** Sem troca de senha e sem apagar backup (decisão do Matheus).
+   Conferido em 12/10:
+   - **bucket do backup:** bloqueio total de acesso público, sem política aberta ✓;
+   - **repositório no GitHub:** estava **público**. A varredura dos 204 commits, nos dois ramos, não achou senha,
+     token, chave nem o endereço do túnel da tela ✓;
+   - **mesmo assim, privado:** o repositório tem e-mails pessoais, detalhes da infraestrutura e esta revisão, que
+     descreve os pontos fracos. **Tornar privado** (autorizado pelo Matheus). Nada na VM depende de o repositório
+     ser público (conferido). As ferramentas do GitHub desta sessão não mudam configuração do repositório, então é
+     1 clique dele: Settings → General → Danger Zone → Change visibility → Private;
+   - **opcional, sem trava:** backup do cofre cifrado e máscara de segredos nas saídas.
 5. **O resto: aprovado.** É a arquitetura das seções 4 a 8, já ajustada às decisões acima.
 
 ---
@@ -71,7 +73,7 @@ Foi feita com três análises independentes: infraestrutura, código dos plugins
 
 | # | Problema | Grav. | Como resolver (resumo) |
 |---|---|---|---|
-| 1 | Senhas do cofre ficam **em texto puro** na VM e vão **para o backup no S3** (versões guardadas 30 dias) | 🔴 | **Aprovado:** backup cifrado (KMS), máscara de segredos em toda saída, troca das senhas do Gmail e do Facebook/Instagram (a mesma senha nas duas) |
+| 1 | Senhas do cofre ficam **em texto puro** na VM e no backup do S3; o **repositório estava público** | 🟠 | **Decisão:** sem troca e sem apagar; nada público. Bucket fechado ✓, repositório sem segredos ✓, repositório privado (1 clique do Matheus) |
 | 2 | A chave AWS das sessões do Claude é **administradora da conta inteira** | ⚪ | **Decisão: acesso total mantido.** Opcional: girar a chave (mesmo acesso) |
 | 3 | **Tela do celular virtual** publicada na internet **sem senha** | ⚪ | **Decisão: fica como está** |
 | 4 | **Texto de terceiros** (DM, e-mail, página) pode induzir o agente; a janela de 12 min após `proxima` libera qualquer mensagem | 🔴 | Liberação larga já apertada hoje; falta o **bilhete de envio**: só sai o texto aprovado, conferido no campo, sem perguntar nada a você |
@@ -164,7 +166,7 @@ Próximos passos de maior impacto:
 
 | Grav. | Problema | Onde | Como resolver |
 |---|---|---|---|
-| 🔴 | Cofre **em texto puro**, copiado para o S3 a cada hora (e a ponte do celular grava o mesmo arquivo, sem trava) | `cofre/helpers/cofre.py`, `infra/vm/ponte_whatsapp.py`, `backup.sh` | **Aprovado (sem trava nova):** `segredos/`, `.env`, `whatsapp/.chave` e credenciais do Google saem do `sync` e vão num pacote cifrado com KMS (a restauração decifra sozinha); máscara de segredos nas saídas; apagar as versões antigas no bucket **só com o ok do Matheus** |
+| 🟠 | Cofre **em texto puro**, copiado para o S3 a cada hora (e a ponte do celular grava o mesmo arquivo, sem trava) | `cofre/helpers/cofre.py`, `infra/vm/ponte_whatsapp.py`, `backup.sh` | **Decisão do Matheus:** só garantir que nada fique público (bucket fechado ✓; repositório privado). Opcional, sem trava: pacote cifrado com KMS no lugar do `sync` dos segredos; máscara de segredos nas saídas |
 | ⚪ | Chave AWS das sessões é **administradora** | IAM `agent-studio-bedrock` | **Decisão do Matheus: acesso total mantido.** Opcional: girar a chave, que passou pelo cofre em 10/10 (mesmo acesso) |
 | ⚪ | **Tela do celular pública e sem login** | `infra/vm/setup.sh` (túnel do ws-scrcpy) | **Decisão do Matheus: fica como está** |
 | 🔴 | Texto de terceiros entra no modelo sem marcação de "dado, não ordem" (até no prompt da conversa do celular, via avisos); a janela de 12 min após `proxima`/`comentar` libera **qualquer** mensagem em qualquer site | `aprovacoes/…/_05_revisar_acao.py`, `prospeccao.py` (`liberar`), `whatsapp/…/_60_conversa_whatsapp.py` | **Bilhete de envio** (§4.4), invisível no uso normal; texto de terceiros sempre entre marcadores "DADO EXTERNO"; avisos guardam só metadados |
@@ -572,7 +574,7 @@ Se tudo estiver bem, não manda nada.
 
 | Fase | Quando | O quê | Esforço |
 |---|---|---|---|
-| **0 — Hoje** | já | **Você:** trocar as senhas do Gmail e do Facebook/Instagram. **Eu:** `set +x` no setup; backup do cofre cifrado; máscara de segredos; pausar "Acompanhar Claude Code"; corrigir a deduplicação do "respondeu" | 1–2 h |
+| **0 — Hoje** | já | **Você:** repositório privado (1 clique). **Eu:** bucket e repositório conferidos ✓; `set +x` no setup; pausar "Acompanhar Claude Code"; corrigir a deduplicação do "respondeu" | 1–2 h |
 | **1 — Base à prova de erro** | semana 1 | `transacao()` em todos os JSON (erro de leitura para e avisa); reserva de ação + "incerta"; limites de memória (generosos) + vigia que avisa; perfil do navegador em volume + snapshot diário; bilhete de envio no lugar da janela de 12 min (sem perguntar nada); aprovação sempre com id e botões assinados | 3–4 dias |
 | **2 — Livro, decisões e portão** | semana 2 | Plugin `central` (livro, decisões, itens, fatos, avisos); prospecção, fios e avisos migrados; `/livro`, `/pendentes`, `/decisoes`; Conferência; resumo, "Feito hoje" e revisão gerados do banco; rotinas em silêncio por padrão | 4–5 dias |
 | **3 — Confiabilidade contínua** | semana 3 | Saúde diária + canário do Instagram; implantador único (host e rotinas incluídos; 5 prompts no git); CI; testes mínimos em ponte, cofre, login, agenda; teste de restauração; AWS Budgets | 3 dias |
