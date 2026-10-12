@@ -286,7 +286,6 @@ def _valor(valor) -> str:
         return ""
 
 
-@_transacao
 def codigo_pagamento(texto: str) -> str:
     """The boleto's typed line (44-48 digits) or a Pix copy-and-paste code (EMV, starts with 000201), cleaned; '' when
     it is neither. Only for the person to copy (12/10 review): the agent never pays."""
@@ -297,6 +296,7 @@ def codigo_pagamento(texto: str) -> str:
     return digitos if digitos.isdigit() and 44 <= len(digitos) <= 48 else ""
 
 
+@_transacao
 def salvar_conta(login: str, descricao: str, vencimento: str, valor="", moeda: str = "BRL", fonte: str = "",
                  cid: str = "", codigo: str = "") -> tuple[dict | None, str]:
     venc = _data(vencimento)
