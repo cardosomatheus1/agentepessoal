@@ -76,9 +76,10 @@ class Suite:
         r = d.registrar(LOGIN, "Aprovações do Instagram", "Ações no Instagram da Raiz não precisam de ok",
                         tipo="permissao", citacao="aprovo tudo lá do Instagram", por="matheus")
         eq((r["efeito"], r["tema"], r["id"]), ("nova", "aprovacoes-do-instagram", 1), "primeira decisão")
-        r2 = d.registrar(LOGIN, "aprovacoes do instagram", "  Ações no Instagram  da Raiz não precisam de ok ",
+        r2 = d.registrar(LOGIN, "aprovacoes do instagram", "  Ações no Instagram  da Raiz não precisam de ok. ",
                          tipo="permissao")
-        eq((r2["efeito"], r2["id"]), ("igual", 1), "mesmo texto de novo (espaços e acento no tema não importam): nada muda")
+        eq((r2["efeito"], r2["id"]), ("igual", 1),
+           "mesmo texto de novo (espaços, ponto final e acento no tema não importam): nada muda")
         r3 = d.registrar(LOGIN, "aprovacoes-do-instagram", "Instagram sem ok, menos publicar e impulsionar",
                          tipo="permissao", por="matheus")
         eq((r3["efeito"], r3["id"], r3["anterior"]["id"]), ("substituiu", 2, 1), "texto novo no mesmo tema substitui")
@@ -170,9 +171,9 @@ class Suite:
         d = self.d
         ferramenta = _carregar("memoria_decisao_tool_teste", RAIZ / "tools" / "decisao.py", _stubs())
         r = ferramenta.executar(d, LOGIN, "registrar", tema="aprovacoes.instagram", tipo="permissao",
-                                decisao="Ações no Instagram da Raiz não precisam de ok; só avisar",
+                                decisao="Ações no Instagram da Raiz não precisam de ok; só avisar.",
                                 citacao="aprovo tudo lá do Instagram")
-        ok(r.startswith("Registrado #1 aprovacoes.instagram") and "Anotado:" in r, r)
+        ok(r.startswith("Registrado #1 aprovacoes.instagram") and "Anotado:" in r and ".." not in r, r)
         r = ferramenta.executar(d, LOGIN, "registrar", tema="aprovacoes.instagram", tipo="permissao",
                                 decisao="Ações no Instagram da Raiz não precisam de ok; só avisar")
         ok(r.startswith("Já estava registrado"), r)

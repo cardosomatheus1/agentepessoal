@@ -50,6 +50,37 @@ Foi feita com três análises independentes: infraestrutura, código dos plugins
 
 ---
 
+## Andamento do plano (12/10, noite)
+
+Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
+
+| Item do plano | Situação | Onde |
+|---|---|---|
+| Senha fora do log do `setup.sh` | ✅ | `b92ba8d` |
+| "Respondeu" avisa uma vez por fala; a etapa nunca volta | ✅ | `b92ba8d` (prospecção) |
+| Rotina "Acompanhar Claude Code" pausada | ✅ | agendador |
+| Gravação segura na prospecção (trava, troca atômica, arquivo ilegível para tudo) | ✅ | `bad28da` |
+| Reserva de ação por rodada + estado "incerta" (nunca reenviar no escuro) | ✅ | `4c315df`, skill 3.5.0 `d886f95` |
+| Vigia de memória: reinicia quem mais pesa, no máximo 2×/hora, avisa no celular | ✅ | `351b42b` |
+| Implantador também para os scripts da VM (`--host`) | ✅ | `351b42b` |
+| Cópia diária do disco da VM (snapshot, 14 dias) | ✅ | AWS DLM |
+| Rodada pausada é retomada ou cancelada sozinha; rodada viva nunca é duplicada | ✅ | limpeza `a77a4e3f`, agenda confiável `bc6fd981` |
+| **Registro de decisões** (§4.2): uma decisão por assunto, em todo turno do agente, ferramenta `decisao`, 17 decisões cadastradas | ✅ | `110f2d2` (memoria_pessoal) |
+| Fontes divididas, planilha inteira, Apify, API da Meta para conferir perfis | ✅ | `docs/ESTUDO_FONTES_2026-10-12.md` |
+| Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
+| Gravação segura nos outros arquivos (fios, auxiliar, iniciativa, cofre, radar, agenda) | próximo | §4.4 |
+| Perfil do navegador fora do contêiner (logins sobrevivem a recriar o contêiner) | próximo | §4.7 |
+| Aprovação sempre com id | próximo | §3.1 |
+| Portão único de avisos, livro de ações, Conferência | fase 2 | §4.1, §4.3 |
+| Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |
+
+**Como as decisões funcionam agora.** Cada conversa do agente (inclusive celular e rotinas) recebe a lista das
+decisões em vigor, com as proibições primeiro, e a regra "assunto decidido não se pergunta de novo". Quando você
+decide algo novo, o agente grava com as suas palavras e termina a resposta com "Anotado: …". Decidir de novo o mesmo
+assunto substitui a anterior (que fica no histórico). Conferido de ponta a ponta numa conversa de teste.
+
+---
+
 ## Resumo em 1 minuto
 
 **O que está bem.**
@@ -77,12 +108,12 @@ Foi feita com três análises independentes: infraestrutura, código dos plugins
 | 2 | A chave AWS das sessões do Claude é **administradora da conta inteira** | ⚪ | **Decisão: acesso total mantido.** Opcional: girar a chave (mesmo acesso) |
 | 3 | **Tela do celular virtual** publicada na internet **sem senha** | ⚪ | **Decisão: fica como está** |
 | 4 | **Texto de terceiros** (DM, e-mail, página) pode induzir o agente; a janela de 12 min após `proxima` libera qualquer mensagem | 🔴 | Liberação larga já apertada hoje; falta o **bilhete de envio**: só sai o texto aprovado, conferido no campo, sem perguntar nada a você |
-| 5 | Arquivos de estado **lidos, alterados e regravados sem trava**: duas tarefas ao mesmo tempo **apagam o trabalho uma da outra**; arquivo ilegível vira **vazio** | 🔴 | Função única de gravação com trava (ou SQLite); arquivo ruim **para e avisa**, nunca "começa vazio" |
-| 6 | Ação sem reserva: duas rodadas podem mandar a **mesma DM** | 🔴 | Reserva da ação + estado "incerta" após queda (confere antes de reenviar) |
+| 5 | Arquivos de estado **lidos, alterados e regravados sem trava**: duas tarefas ao mesmo tempo **apagam o trabalho uma da outra**; arquivo ilegível vira **vazio** | 🔴 | Função única de gravação com trava (ou SQLite); arquivo ruim **para e avisa**, nunca "começa vazio". **✅ Prospecção e decisões**; faltam os outros |
+| 6 | Ação sem reserva: duas rodadas podem mandar a **mesma DM** | 🔴 | **✅ No ar:** reserva da ação + estado "incerta" após queda (confere a tela antes de reenviar) |
 | 7 | **Recuperação de desastre perigosa**: restauração que falha em silêncio faz o próximo backup **apagar o S3**; a interface pode subir **sem login** | 🔴 | Conferir a restauração antes de qualquer `--delete`; login obrigatório; teste mensal |
 | 8 | **Perfil do navegador** (logins do Instagram, Google, Meta) fora do volume e do backup: some se o contêiner for recriado | 🔴 | Volume próprio + snapshot diário do disco |
 | 9 | Sem **livro de ações**: nada registra e confere o que foi feito (DM, comentário, e-mail, aviso) | 🟠 | Plugin `central` com livro de ações + rotina **Conferência** (§4.1) |
-| 10 | Mesma informação em vários lugares; decisões não lembradas → **perguntas repetidas**, revisão da semana errada | 🟠 | **Registro de decisões e itens** com nome de assunto (`tema`) consultado por todas as funções (§4.2) |
+| 10 | Mesma informação em vários lugares; decisões não lembradas → **perguntas repetidas**, revisão da semana errada | 🟠 | **Registro de decisões ✅ no ar** (todo turno vê as decisões em vigor); falta ligar itens e avisos ao mesmo `tema` (§4.2) |
 | 11 | Avisos sem **portão único** (Nexos de 6 em 6 h, "respondeu" 3–4×, "PRECISA DE VOCÊ" à toa) | 🟠 | **Portão de avisos**: chave, intervalo, prioridade por código, resumo agrupado, silêncio por padrão (§4.3) |
 | 12 | Só **3 de 29 plugins têm testes**; serviços da VM implantados à mão; 5 prompts de rotina fora do git; nada de CI | 🟠 | Implantador único, CI, testes mínimos nos críticos, rotinas no git |
 
@@ -94,13 +125,12 @@ Foi feita com três análises independentes: infraestrutura, código dos plugins
 - nada vai ao celular para aprovar.
 
 Depois do relatório, já no ar (ver `docs/ESTUDO_FONTES_2026-10-12.md`): fontes divididas, planilha inteira do Grok
-importada e conferência do estoque antes da visita.
+importada, conferência do estoque antes da visita, **Apify** achando perfis no Instagram, **API da Meta** (token
+permanente) conferindo perfis de graça e a **deduplicação das respostas** (cada fala avisa uma vez).
 
 Próximos passos de maior impacto:
 
 - **descobrir de onde vem cada cadastro**, com um link curto e um código por lead;
-- **Apify** para achar perfis direto no Instagram e conferir a planilha em lote (falta o token);
-- corrigir a **deduplicação das respostas** (o mesmo "respondeu" saía 3–4×);
 - contar resposta a comentário na métrica;
 - usar a **API oficial** para responder quem já falou com a Raiz.
 
@@ -574,9 +604,9 @@ Se tudo estiver bem, não manda nada.
 
 | Fase | Quando | O quê | Esforço |
 |---|---|---|---|
-| **0 — Hoje** | já | **Você:** repositório privado (1 clique). **Eu:** bucket e repositório conferidos ✓; `set +x` no setup; pausar "Acompanhar Claude Code"; corrigir a deduplicação do "respondeu" | 1–2 h |
-| **1 — Base à prova de erro** | semana 1 | `transacao()` em todos os JSON (erro de leitura para e avisa); reserva de ação + "incerta"; limites de memória (generosos) + vigia que avisa; perfil do navegador em volume + snapshot diário; bilhete de envio no lugar da janela de 12 min (sem perguntar nada); aprovação sempre com id e botões assinados | 3–4 dias |
-| **2 — Livro, decisões e portão** | semana 2 | Plugin `central` (livro, decisões, itens, fatos, avisos); prospecção, fios e avisos migrados; `/livro`, `/pendentes`, `/decisoes`; Conferência; resumo, "Feito hoje" e revisão gerados do banco; rotinas em silêncio por padrão | 4–5 dias |
+| **0 — Hoje** | já | **Você:** repositório privado (1 clique). **Eu:** bucket e repositório conferidos ✓; `set +x` no setup ✓; pausar "Acompanhar Claude Code" ✓; corrigir a deduplicação do "respondeu" ✓ | 1–2 h |
+| **1 — Base à prova de erro** | semana 1 | `transacao()` em todos os JSON (prospecção ✓; faltam os outros); reserva de ação + "incerta" ✓; limites de memória (generosos) + vigia que avisa (vigia ✓); perfil do navegador em volume + snapshot diário (snapshot ✓); bilhete de envio no lugar da janela de 12 min (adiado, ver "Andamento"); aprovação sempre com id e botões assinados | 3–4 dias |
+| **2 — Livro, decisões e portão** | semana 2 | Plugin `central` (livro, decisões, itens, fatos, avisos); prospecção, fios e avisos migrados; `/livro`, `/pendentes`, `/decisoes`; Conferência; resumo, "Feito hoje" e revisão gerados do banco; rotinas em silêncio por padrão. **Adiantado:** registro de decisões ✓ (em `memoria_pessoal`; migra para o `central` junto com o resto) | 4–5 dias |
 | **3 — Confiabilidade contínua** | semana 3 | Saúde diária + canário do Instagram; implantador único (host e rotinas incluídos; 5 prompts no git); CI; testes mínimos em ponte, cofre, login, agenda; teste de restauração; AWS Budgets | 3 dias |
 | **4 — Crescimento** | semana 3–4 | Link curto + cadastros ligados aos leads; planilha inteira do Grok; métricas por origem; API oficial para respostas; demo com agenda; cartão do lead quente; Apify; enxugar funções (YouTube, iniciativa, radar+fios) | 4–5 dias |
 

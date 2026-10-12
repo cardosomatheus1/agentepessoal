@@ -153,7 +153,7 @@ def registrar(login: str, tema: str, decisao: str, tipo: str = "decisao", citaca
     """Record a decision; one active per tema (a new one replaces the old). Returns the record plus "efeito":
     "nova" | "substituiu" (with "anterior") | "igual" (same text again: nothing changes)."""
     agora = agora or time.time()
-    tema_c, valor, tipo = tema_canonico(tema), _texto(decisao), str(tipo or "decisao").strip().lower()
+    tema_c, valor, tipo = tema_canonico(tema), _texto(decisao).rstrip(" .;"), str(tipo or "decisao").strip().lower()
     if not tema_c:
         raise DecisaoInvalida("falta o `tema` (nome curto do assunto, ex.: aprovacoes.instagram)")
     if len(valor) < 8:
