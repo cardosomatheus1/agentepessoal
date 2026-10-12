@@ -56,14 +56,14 @@ def caixa(desde):
 
 
 TEXTOS = [
-    "Oi, {n}! Vi o bolo de pote de ninho com morango de vocês, que capricho na camada. Vocês sabem quanto sobra em cada pote depois da embalagem? Faço essa conta de graça se me mandar a receita. — Matheus, da Raiz Connect",
+    "Oi, {n}! Vi o bolo de pote de ninho com morango de vocês, que capricho na camada. Vocês sabem quanto sobra em cada pote depois da embalagem? Faço essa conta de graça para vocês, se quiserem. — Matheus, da Raiz Connect",
     "Oi, {n}! Acompanhei o cardápio fit da semana, gostei da opção de escondidinho de mandioca. Com a carne subindo, muita marmitaria vende com margem menor sem perceber. Calculo de graça o lucro de 1 marmita. Topa? — Matheus, da Raiz Connect",
     "Oi, {n}! Que lindo o kit de salgados para festa com coxinha de costela. Vocês já sabem quanto lucram por cento de salgado depois do óleo e das embalagens? Se quiser, faço essa conta sem custo. — Matheus, da Raiz Connect",
-    "Oi, {n}! Vi que vocês abriram encomendas de congelados para o mês, a lasanha de berinjela parece ótima. Me manda a receita e o preço que eu calculo quanto sobra em cada uma, de graça. — Matheus, da Raiz Connect",
+    "Oi, {n}! Vi que vocês abriram encomendas de congelados para o mês, a lasanha de berinjela parece ótima. Se quiserem, eu calculo de graça quanto sobra em cada uma. — Matheus, da Raiz Connect",
 ]
 
 DM_A = ("Oi, Ana! Vi a marmita de frango com batata-doce de vocês — capricho no tempero. Vocês sabem quanto sobra de "
-        "verdade em cada marmita depois de embalagem e taxa do iFood? Me manda a receita que eu faço a conta. — Matheus, da Raiz Connect")
+        "verdade em cada marmita depois de embalagem e taxa do iFood? Se quiser, eu faço essa conta de graça. — Matheus, da Raiz Connect")
 
 
 class Suite:
@@ -76,6 +76,7 @@ class Suite:
         for l in (LOGIN, OUTRO):
             (self.p.PASTA / f"{l}.json").unlink(missing_ok=True)
             (self.p.PASTA / f"{l}_fontes.json").unlink(missing_ok=True)
+            (self.p.PASTA / f"{l}_vereditos.json").unlink(missing_ok=True)
 
     def _fontes(self):
         f = _carregar("prospeccao_fontes_teste", RAIZ / "helpers" / "fontes.py")
@@ -888,7 +889,7 @@ class Suite:
         p = self.p
         d = p.carregar(LOGIN)
         lembrete = ("Oi, Ana! Passando só pra deixar uma coisa útil: fizemos uma calculadora grátis que mostra quanto sobra "
-                    "em cada marmita depois de insumo, embalagem e taxa do iFood: {link} — se preferir, me manda a receita 🙂")
+                    "em cada marmita depois de insumo, embalagem e taxa do iFood: {link} — se preferir, me conta o preço de uma 🙂")
         eq(p.validar_texto("dm_lembrete", lembrete.format(link=p.LINK_CALCULADORA), d, "x"), "", "calculadora no lembrete")
         eq(p.validar_texto("resposta", lembrete.format(link="raizconnect.com.br/materiais/quanto-sobra-no-delivery"), d, "x"), "",
            "simulador de delivery na resposta, sem https")
@@ -896,7 +897,7 @@ class Suite:
                      "https://raizconnect.com.br/materiais/precificacao", "bit.ly/calc",
                      p.LINK_CALCULADORA + " e www.outro.com.br"):
             ok(p.validar_texto("dm_lembrete", lembrete.format(link=ruim), d, "x"), f"link fora da lista barrado: {ruim}")
-        ok("primeira mensagem" in p.validar_texto("dm_abertura", DM_A.replace("Me manda", p.LINK_CALCULADORA + " Me manda"), d, "x"),
+        ok("primeira mensagem" in p.validar_texto("dm_abertura", DM_A.replace("Se quiser", p.LINK_CALCULADORA + " Se quiser"), d, "x"),
            "nem a calculadora na primeira mensagem")
 
     def t_quem_interagiu_vai_primeiro(self):
@@ -1092,7 +1093,7 @@ class Suite:
         p = self.p
         d = p.carregar(LOGIN)
         casos = {
-            "dm_abertura": [(DM_A.replace("Me manda", "Veja raizconnect.com.br e me manda"), "link"),
+            "dm_abertura": [(DM_A.replace("Se quiser", "Veja raizconnect.com.br. Se quiser"), "link"),
                             (DM_A + " Promoção imperdível!", "palavra"), (DM_A.replace("Matheus", "Equipe"), "assine"),
                             ("Oi! Tudo bem?", "curta"), (DM_A * 5, "longa")],
             "aquecer": [("Que lindo! Conheçam a Raiz Connect", "Raiz"), ("Lindo! www.site.com.br", "link")],
@@ -1138,10 +1139,10 @@ class Suite:
         lead = p._lead(p.carregar(LOGIN), lid)
         eq(lead["etapa"], "abordado", "abordado")
         ok(lead.get("variante") in ("A", "B"), "variante registrada no lead")
-        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_lembrete", "texto": "Oi, Ana! Só pra não deixar passar: o cálculo continua de pé, é só mandar a receita de um 🙂"}])
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_lembrete", "texto": "Oi, Ana! Só pra não deixar passar: o cálculo continua de pé, é só me dizer o preço de um 🙂"}])
         ok(r["recusadas"] and "cedo" in r["recusadas"][0]["motivo"], "lembrete antes de 3 dias é barrado")
         self.em(self.relogio + 3 * 86400 + 60)
-        self._executar(lid, "dm_lembrete", "Oi, Ana! Só pra não deixar passar: o cálculo continua de pé, é só mandar a receita de um 🙂")
+        self._executar(lid, "dm_lembrete", "Oi, Ana! Só pra não deixar passar: o cálculo continua de pé, é só me dizer o preço de um 🙂")
         eq(p._lead(p.carregar(LOGIN), lid)["etapa"], "lembrado", "lembrado")
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_lembrete", "texto": "Oi, Ana! Passando de novo para lembrar do cálculo gratuito da sua marmita, combinado?"}])
         ok(r["recusadas"], "terceira mensagem sem resposta é barrada")
@@ -1734,6 +1735,70 @@ class Suite:
             ok(r.startswith("📒 Conferido no livro: 1 mensagens"), f"o que saiu antes do livro existir não conta: {r}")
         finally:
             p.LIVRO_MODULO = None
+
+    def t_metrica_conta_resposta_a_comentario(self):
+        # 12/10 review: the 2 first answers came from comments; the DM-only rate showed 0
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._lead("comentou", seguidores="2k")
+        self._executar(lid, "aquecer", "Que capricho esse bolo de pote! Vocês entregam no fim de semana?")
+        outro = self._lead("so_curtiu", seguidores="2k")
+        self.em(self.relogio + 400)
+        self._executar(outro, "aquecer")
+        p.mudar_etapa(LOGIN, lid, "respondeu", "oieeee entra sim!!!", "comentario")
+        m = p.metricas(LOGIN, 7)["comentarios"]
+        eq((m["comentados"], m["responderam"], m["taxa_resposta"]), (1, 1, 100.0),
+           "comentário com resposta conta; o perfil só curtido não entra no grupo")
+
+    def t_revisor_estavel_mesmo_texto_mesmo_veredito(self):
+        # 12/10 review: the same text was approved and later held; the verdict is now kept by what the reviewer saw
+        p = self.p
+        lid = self._lead("estavel")
+        chamadas = []
+
+        def revisor(pedido):
+            chamadas.append(pedido)
+            ids = re.findall(r"## Item (\w+)", pedido)
+            return json.dumps({"itens": [{"id": i, "aprovado": len(chamadas) % 2 == 1, "motivo": f"chamada {len(chamadas)}"}
+                                         for i in ids]})
+
+        antigo, p.revisor = p.revisor, revisor
+        try:
+            d = p.carregar(LOGIN)
+            item = {"id": "x1", "lead_id": lid, "tipo": "dm_abertura", "texto": "Oi, pessoal! Que capricho no cardápio."}
+            v1 = p.revisar_textos(d, [item], LOGIN)["x1"]
+            v2 = p.revisar_textos(d, [{**item, "id": "x2"}], LOGIN)["x2"]
+            eq((len(chamadas), v1["aprovado"], v2["aprovado"]), (1, True, True), "mesmo texto, mesmo lead: mesmo veredito, sem chamar de novo")
+            p.revisar_textos(d, [{**item, "id": "x3", "texto": item["texto"] + " Topa?"}], LOGIN)
+            eq(len(chamadas), 2, "texto diferente vai ao revisor")
+            p.revisar_textos(d, [{**item, "id": "x4", "tipo": "resposta"}], LOGIN)
+            eq(len(chamadas), 3, "mesmo texto em outro tipo de ação é outro item")
+            p.revisar_textos(d, [{**item, "id": "x5"}])
+            eq(len(chamadas), 4, "sem login (sem cache), sempre pergunta")
+
+            def fora(pedido):
+                raise OSError("fora do ar")
+
+            p.revisor = fora
+            v = p.revisar_textos(d, [{**item, "id": "x6", "texto": "Outro texto qualquer, bem diferente."}], LOGIN)["x6"]
+            ok(not v["aprovado"] and "indisponível" in v["motivo"], "revisor fora do ar: falha fechada")
+            p.revisor = revisor
+            p.revisar_textos(d, [{**item, "id": "x7", "texto": "Outro texto qualquer, bem diferente."}], LOGIN)
+            eq(len(chamadas), 5, "falha do revisor não fica guardada como veredito")
+        finally:
+            p.revisor = antigo
+
+    def t_nao_pede_receita(self):
+        # the playbook forbids asking for the recipe; it is checked in code now, not left to the reviewer's mood
+        p = self.p
+        d = p.carregar(LOGIN)
+        for tipo, texto in (("dm_abertura", "Oi, pessoal! Vi o bolo de pote de vocês, que capricho. Me manda a receita que eu calculo o lucro. — Matheus, da Raiz Connect"),
+                            ("dm_lembrete", "Oi, Ana! O cálculo continua de pé: se mandarem a ficha técnica, faço a conta de graça 🙂")):
+            ok("receita" in p.validar_texto(tipo, texto, d, "x"), f"{tipo} pedindo a receita é barrado: {texto[:60]}")
+        eq(p.validar_texto("dm_abertura", "Oi, pessoal! Vi a receita nova de brigadeiro no post, ficou linda. Calculo de graça quanto sobra em cada um. — Matheus, da Raiz Connect", d, "x"),
+           "", "citar a receita do post não é pedir")
+        eq(p.validar_texto("resposta", "Oi, Ana! Pode mandar a receita sim, que eu calculo. — Matheus", d, "x"), "",
+           "na resposta a quem ofereceu, quem julga é o revisor")
 
     def t_rejeitados(self):
         p = self.p

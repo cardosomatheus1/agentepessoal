@@ -9,6 +9,7 @@ again after a "no") are enforced here, not left to the prompt."""
 import datetime as dt
 import fcntl
 import functools
+import hashlib
 import json
 import os
 import re
@@ -1187,6 +1188,13 @@ def cotas(login: str) -> dict:
     return {t: max(0, lim[t] - _usadas_hoje(d, t)) for t in TIPOS}
 
 
+# 12/10 review ("revisor estável"): what is objective is checked here, not left to the model. The playbook forbids
+# asking for the person's recipe ("me manda a receita que eu calculo" sounds invasive); a reply to someone who offers
+# it is left to the reviewer.
+PEDE_RECEITA = re.compile(r"\b(mand\w*|envi[ae]\w*|compartilh\w*|pass(a|e|ar|em|arem))\b[^.!?\n]{0,20}"
+                          r"\b(receita|ficha t[eé]cnica)", re.I)
+
+
 def validar_texto(tipo: str, texto: str, d: dict, lid: str) -> str:
     """'' when the text may be proposed, else why not (playbook rules a model could slip on)."""
     t = (texto or "").strip()
@@ -1205,6 +1213,8 @@ def validar_texto(tipo: str, texto: str, d: dict, lid: str) -> str:
                 else "sem link na primeira mensagem nem em mensagem a parceiro")
     if tipo != "resposta" and PROIBIDAS.search(t):
         return f"palavra fora do tom do playbook: «{PROIBIDAS.search(t).group(0)}»"
+    if tipo != "resposta" and PEDE_RECEITA.search(t):
+        return "não peça a receita (o playbook proíbe: soa invasivo); ofereça a conta de graça ou a calculadora"
     if tipo in ("dm_abertura", "parceiro") and not re.search(r"matheus", t, re.I):
         return "assine como Matheus, da Raiz Connect"
     norma = re.sub(r"\W+", " ", t.lower())
@@ -1433,9 +1443,47 @@ def _disse(lead: dict) -> str:
     return (falas[-1]["texto"][:300] + f" (em {falas[-1].get('onde', 'direct')})") if falas else "(não registrado)"
 
 
-def revisar_textos(d: dict, acoes: list) -> dict:
+VEREDITOS_DIAS = 30
+
+
+def _arq_vereditos(login: str) -> Path:
+    return PASTA / f"{_login(login)}_vereditos.json"
+
+
+def _ler_vereditos(login: str) -> dict:
+    try:
+        return json.loads(_arq_vereditos(login).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _guardar_vereditos(login: str, novos: dict) -> None:
+    """The reviewer's verdicts by hash of exactly what it saw (12/10 review: the same text was approved and later
+    held). A cache: losing it only means asking again."""
+    if not novos:
+        return
+    with _exclusivo(login):
+        dados = {**_ler_vereditos(login), **novos}
+        corte = agora() - VEREDITOS_DIAS * 86400
+        dados = dict(sorted(((k, v) for k, v in dados.items() if v.get("em", 0) >= corte), key=lambda kv: kv[1]["em"])[-1000:])
+        PASTA.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=PASTA, prefix=f".{_login(login)}_vereditos.", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(dados, f, ensure_ascii=False)
+            os.replace(tmp, _arq_vereditos(login))
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+
+
+def revisar_textos(d: dict, acoes: list, login: str = "") -> dict:
     """{id: {"aprovado": bool, "motivo": str}} from a fresh model against the playbook. Fails closed: when the
-    reviewer is unreachable or unclear, nothing is approved here (it goes to the person)."""
+    reviewer is unreachable or unclear, nothing is approved here (it goes to the person). With `login`, an item the
+    reviewer already judged with exactly the same data and text gets the same verdict, without asking again."""
     playbook = (Path(__file__).resolve().parents[1] / "playbook.md")
     blocos = []
     for a in acoes:
@@ -1446,18 +1494,30 @@ def revisar_textos(d: dict, acoes: list) -> dict:
                       + (f"JÁ RECEBEU: {lead['historico'][-1]['texto'][:300]}\n" if lead.get("historico") and a["tipo"] != "resposta" else "")
                       + (f"O QUE A PESSOA DISSE: {_disse(lead)}\n" if a["tipo"] == "resposta" else "")
                       + f"TEXTO:\n«{a['texto']}»")
-    pedido = (REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:12000] if playbook.exists() else "")
-              + "\n\n# ITENS\n" + "\n\n".join(blocos))
+    regras = REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:12000] if playbook.exists() else "")
+    guardados = _ler_vereditos(login) if login else {}
+    chaves = {a["id"]: hashlib.sha256(f"{regras}\n{a['tipo']}\n{b.split(chr(10), 1)[1]}".encode()).hexdigest()[:32]
+              for a, b in zip(acoes, blocos)}  # the item's id stays out: the same text for the same lead is the same item
+    prontos = {a["id"]: {"aprovado": guardados[chaves[a["id"]]]["aprovado"], "motivo": guardados[chaves[a["id"]]]["motivo"]}
+               for a in acoes if chaves[a["id"]] in guardados}
+    faltam = [(a, b) for a, b in zip(acoes, blocos) if a["id"] not in prontos]
+    if not faltam:
+        return prontos
+    pedido = regras + "\n\n# ITENS\n" + "\n\n".join(b for _, b in faltam)
     try:
         saida = _chamar_revisor(pedido)
         achado = re.search(r"\{.*\}", saida or "", re.S)
         res = json.loads(achado.group(0), strict=False) if achado else {}
     except Exception as exc:
-        return {a["id"]: {"aprovado": False, "motivo": f"revisor indisponível ({str(exc)[:80]})"} for a in acoes}
+        return {**prontos, **{a["id"]: {"aprovado": False, "motivo": f"revisor indisponível ({str(exc)[:80]})"}
+                              for a, _ in faltam}}
     vistos = {str(i.get("id")): i for i in (res.get("itens") or []) if isinstance(i, dict)}
-    return {a["id"]: {"aprovado": vistos.get(a["id"], {}).get("aprovado") is True,
-                      "motivo": str(vistos.get(a["id"], {}).get("motivo") or "revisor não respondeu sobre este item")[:200]}
-            for a in acoes}
+    novos = {a["id"]: {"aprovado": vistos.get(a["id"], {}).get("aprovado") is True,
+                       "motivo": str(vistos.get(a["id"], {}).get("motivo") or "revisor não respondeu sobre este item")[:200]}
+             for a, _ in faltam}
+    if login:  # only what the reviewer really judged is kept
+        _guardar_vereditos(login, {chaves[i]: {**v, "em": agora()} for i, v in novos.items() if i in vistos})
+    return {**prontos, **novos}
 
 
 def _auto_aprovar(login: str, out: dict) -> dict:
@@ -1466,7 +1526,7 @@ def _auto_aprovar(login: str, out: dict) -> dict:
     d = carregar(login)  # a snapshot for the reviewer, who may take minutes: nothing is saved from it
     candidatas = [a for a in out["propostas"] if a["tipo"] in AUTO_TIPOS]
     com_texto = [a for a in candidatas if a["texto"]]
-    vereditos = revisar_textos(d, com_texto) if com_texto else {}
+    vereditos = revisar_textos(d, com_texto, login) if com_texto else {}
     # the reviewer claimed something is missing that a plain rule shows is there (11/10: it held a reply "for not
     # introducing Matheus nor linking the calculator" — the text did both): ask once more, pointing at the fact
     contraditos = [a for a in com_texto if not vereditos.get(a["id"], {}).get("aprovado") and _contradiz(a, vereditos[a["id"]]["motivo"])]
@@ -1474,7 +1534,7 @@ def _auto_aprovar(login: str, out: dict) -> dict:
         for a in contraditos:
             a = {**a, "base": (a.get("base") or "") + f" | CONFERIDO POR REGRA, NÃO PELO MODELO: {_fatos(a)}. "
                  f"Uma revisão anterior disse: «{vereditos[a['id']]['motivo']}» — isso contradiz o texto; reveja só pelo resto."}
-            segunda = revisar_textos(d, [a]).get(a["id"], {})
+            segunda = revisar_textos(d, [a], login).get(a["id"], {})
             vereditos[a["id"]] = {"aprovado": segunda.get("aprovado") is True,
                                   "motivo": f"2ª revisão: {segunda.get('motivo', '')} (a 1ª errou: {vereditos[a['id']]['motivo'][:80]})"[:200]}
     with _exclusivo(login):
@@ -1735,7 +1795,7 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
     tentativas = (a.get("comentario") or {}).get("tentativas", 0)
     if tentativas >= TENTATIVAS_COMENTARIO:
         return False, f"{TENTATIVAS_COMENTARIO} versões reprovadas pelo revisor: siga sem comentário neste perfil"
-    v = revisar_textos(d, [{"id": a["id"], "lead_id": a["lead_id"], "tipo": "aquecer", "texto": t, "base": base}])[a["id"]]
+    v = revisar_textos(d, [{"id": a["id"], "lead_id": a["lead_id"], "tipo": "aquecer", "texto": t, "base": base}], login)[a["id"]]
     with _exclusivo(login):  # the reviewer ran on a snapshot; the verdict goes into the current state
         return _gravar_comentario(login, aid, t, base, v)
 
@@ -1970,9 +2030,21 @@ def metricas(login: str, dias: int = 7) -> dict:
     etapas: dict = {}
     for l in d["leads"]:
         etapas[l["etapa"]] = etapas.get(l["etapa"], 0) + 1
+    # 12/10 review (§5, "métrica certa"): the first answers came from comments, which the DM-only rate never counted
+    comentou: set = set()
+    for a in d["acoes"]:
+        c = a.get("comentario") or {}
+        if ((a["tipo"] == "aquecer" and a["estado"] == "executada" and a.get("texto") and (a.get("executada_em") or 0) >= corte)
+                or (c.get("estado") == "publicado" and (c.get("feito_em") or 0) >= corte)):
+            comentou.add(a["lead_id"])
+    comentados = [l for l in d["leads"] if l["id"] in comentou]
+    pelo_comentario = [l for l in comentados if any(h["tipo"].startswith("etapa:") and h.get("onde") == "comentario"
+                                                    and h["tipo"] != "etapa:descartado" for h in l["historico"])]
     aprovadas = sum(1 for a in acoes if a["estado"] in ("aprovada", "executada", "falhou"))
     decididas = sum(1 for a in acoes if a["estado"] in ("aprovada", "executada", "falhou", "pulada"))
     return {"dias": dias, "acoes": por_estado, "etapas": etapas, "geral": taxa(abordados),
+            "comentarios": {"comentados": len(comentados), "responderam": len(pelo_comentario),
+                            "taxa_resposta": round(100 * len(pelo_comentario) / len(comentados), 1) if comentados else 0.0},
             "por_variante": por("variante"), "por_segmento": por("segmento"), "por_cidade": por("cidade"),
             "por_faixa": por("faixa"), "por_fonte": metricas_fontes(login, dias),
             "taxa_aprovacao": round(100 * aprovadas / decididas, 1) if decididas else 0.0,
