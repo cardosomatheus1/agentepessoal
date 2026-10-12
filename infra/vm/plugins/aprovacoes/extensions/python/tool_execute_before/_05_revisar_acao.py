@@ -52,6 +52,14 @@ def _config(agent) -> dict:
         return {}
 
 
+CATEGORIA_LEGIVEL = {
+    "mensagem_terceiros": "mensagem para outra pessoa", "publicar": "publicação", "apagar": "apagar algo",
+    "termos": "aceitar termos", "enviar_analise": "enviar para análise", "contas_reais": "mudar conta real",
+    "chaves_acesso": "chave de acesso", "producao": "sistema em produção", "pagamento": "pagamento", "compra": "compra",
+    "senha_seguranca": "senha / segurança",
+}
+
+
 class RevisarAcao(Extension):
     async def execute(self, tool_args: dict | None = None, tool_name: str = "", **kwargs):
         agent = self.agent
@@ -79,6 +87,9 @@ class RevisarAcao(Extension):
             # would only make them approve twice. Never overrides a "nunca" rule; the window is minutes long.
             decisao = "permitir"
             analise["resumo"] = f"{analise['resumo']} — pré-aprovado: {liberadas.get('motivo', '')}"[:300]
+        if decisao == "perguntar" and rv.livre_instagram(analise, tool_name, args, intencao, cfg):
+            decisao = "permitir"  # the person said Instagram actions need no approval; they get told what was done
+            analise["resumo"] = f"{analise['resumo']} — Instagram: liberado pelo Matheus"[:300]
         if analise["categoria"] != "nenhuma" and agent.context.id in rv.somente_leitura():
             decisao = "nunca"  # read-only chats (daily brief, proactive research) never change anything
         print(f"aprovacoes: {tool_name} -> {analise['categoria']}/{decisao}: {analise['resumo']}", flush=True)
@@ -111,7 +122,9 @@ class RevisarAcao(Extension):
                                   "usuário o que está travando.")
 
         pendente = rv.abrir(ctx.id, analise, tool_name)
-        texto = f"🔐 *Aprovação necessária* — {ctx.name or 'conversa'}\n\n{pendente['resumo']}\n_(categoria: {analise['categoria']})_"
+        onde = ctx.name if ctx.name and ctx.name.lower() not in ("conversa", "chat", "nova conversa") else "uma tarefa"
+        texto = (f"🔐 *Preciso do seu ok* ({onde})\n\n{pendente['resumo']}\n\n"
+                 f"_Tipo: {CATEGORIA_LEGIVEL.get(analise['categoria'], analise['categoria'])}_")
         self._registrar(agent, texto.replace("*", "**", 2) + "\n\nResponda **aprovar**, **sempre** ou **recusar** (ou use os botões).")
         try:  # a failed notice never lets the action through: it still waits for the chat card
             wa = whatsapp()

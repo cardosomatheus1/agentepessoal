@@ -128,7 +128,9 @@ Ferramenta: {tool}
 Argumentos: {_texto(args)[:1500]}
 Intenção declarada pelo agente: {intencao[:2000]}
 
-Responda só JSON: {{"categoria": "<uma das categorias ou nenhuma>", "sempre_permitida": false, "resumo": "<o que vai acontecer, em uma frase curta em português, do ponto de vista do usuário>"}}"""
+Apagar ou substituir um arquivo que o próprio agente gerou nesta tarefa (ex.: refazer um PDF de relatório) é "nenhuma".
+
+Responda só JSON: {{"categoria": "<uma das categorias ou nenhuma>", "sempre_permitida": false, "resumo": "<o que vai acontecer, em uma frase curta em português, dizendo ONDE (site/app), PARA QUEM (nome ou @) e O QUÊ (o texto, se houver, entre aspas, até 120 caracteres). Ex.: Enviar no Instagram para @fulano: «Oi, tudo bem?»>"}}"""
     body = {"model": MODELO, "reasoning": {"effort": "low"}, "input": [{"role": "user", "content": pedido}]}
     req = urllib.request.Request(URL, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=60) as r:
@@ -143,6 +145,25 @@ Responda só JSON: {{"categoria": "<uma das categorias ou nenhuma>", "sempre_per
         "sempre_permitida": bool(resultado.get("sempre_permitida")),
         "resumo": str(resultado.get("resumo") or "").strip()[:300],
     }
+
+
+INSTAGRAM = re.compile(r"instagram|@raiz\.connect|\bdirect\b|\breels?\b|coment[aá]rio|\bcurt(ir|ida)\b|\bseguir\b", re.I)
+APAGAR_MENSAGEM = re.compile(r"mensage|coment|envio|unsend|direct", re.I)
+
+
+def livre_instagram(analise: dict, tool: str, args: dict, intencao: str, cfg: dict) -> bool:
+    """Matheus (12/10): "não preciso aprovar as coisas do Instagram, pode me avisar que foi feito". Messages,
+    comments, likes/follows and unsending a message on the Instagram go without asking. Payments, passwords, keys
+    and everything outside the Instagram keep their rules."""
+    if not cfg.get("instagram_sem_perguntar", True) or (tool or "").lower() != "browser":
+        return False
+    categoria = analise.get("categoria")
+    texto = f"{intencao} {_texto(args)} {analise.get('resumo', '')}"
+    if not INSTAGRAM.search(texto):
+        return False
+    if categoria in ("mensagem_terceiros", "publicar"):
+        return True
+    return categoria == "apagar" and bool(APAGAR_MENSAGEM.search(texto))
 
 
 def veredito(regras: dict, analise: dict) -> str:
