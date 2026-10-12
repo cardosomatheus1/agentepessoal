@@ -103,6 +103,7 @@ Tudo abaixo está no ar, com teste, e foi implantado pelo `implantar.py`.
 | `/pendentes`: uma lista só do que espera você (aprovações com botões, código pedido, propostas da prospecção, contas em 7 dias, respostas de e-mail prontas, fios abertos); o `/painel` usa a mesma lista | ✅ | whatsapp |
 | Estilo de escrita (2.500 caracteres) só entra na conversa em que você pede algo escrito em seu nome; nas rotinas, só a dica de buscar o estilo quando forem escrever | ✅ | auxiliar |
 | Acompanhamento do Nexos saiu da lista "nunca expira": termina em 30 dias (ou antes, sozinho, quando a Meta decidir) | ✅ | agenda_confiavel |
+| "Feito hoje" conferido: o resumo das 20h17 da prospecção compara o que saiu com o livro de ações e diz "conferido" ou o que não bate (mensagens, comentários, seguir e curtir) | ✅ | prospecção + `central` |
 | Repositório privado | ⏳ 1 clique do Matheus | GitHub → Settings |
 | Livro: gancho das aprovações (mensagens fora da prospecção), conferência na tela 3×/dia, "Feito hoje" e `/livro` gerados dele; portão de avisos completo | fase 2 (continua) | §4.1, §4.3 |
 | Bilhete de envio | adiado: a reserva + "incerta" já cobrem a DM em dobro; o bilhete só entra se não travar nada | §4.4 |

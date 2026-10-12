@@ -1705,6 +1705,36 @@ class Suite:
         eq((m._numero("5", 3), m._numero(4, 3), m._numero("2.0", 3)), (5, 4, 2), "número e texto de número")
         eq((m._numero(None, 3), m._numero("", 3), m._numero("muitos", 3), m._numero([], 3)), (3, 3, 3, 3), "senão, o padrão")
 
+    def t_resumo_conferido_no_livro(self):
+        # 12/10 review §7 item 1: "Feito hoje" checked against the append-only ledger
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._lead("conferido")
+        self._executar(lid, "aquecer")
+        feitas = [a for a in p.carregar(LOGIN)["acoes"] if a["estado"] == "executada"]
+
+        class Livro:
+            def __init__(self, linhas):
+                self.linhas = linhas
+
+            def do_periodo(self, login, desde, ate=None):
+                return [r for r in self.linhas if r["em"] >= desde]
+
+        base = {"origem": "prospeccao", "fase": "executada", "em": p.agora() - 60}
+        p.LIVRO_MODULO = Livro([{**base, "verbo": "seguir_curtir"}])
+        try:
+            ok(p.conferencia_livro(LOGIN, feitas, []).startswith("📒 Conferido no livro: 1 seguir e curtir"),
+               p.conferencia_livro(LOGIN, feitas, []))
+            p.LIVRO_MODULO = Livro([{**base, "verbo": "seguir_curtir"}, {**base, "verbo": "dm"}])
+            ok("não bate" in p.conferencia_livro(LOGIN, feitas, []), "uma DM no livro que a prospecção não tem aparece")
+            antes, depois = p.agora() - 3600, p.agora() - 60  # the ledger started between two actions of the day
+            p.LIVRO_MODULO = Livro([{**base, "verbo": "dm", "em": depois}])
+            r = p.conferencia_livro(LOGIN, [{"tipo": "aquecer", "executada_em": antes},
+                                            {"tipo": "dm_abertura", "executada_em": depois}], [])
+            ok(r.startswith("📒 Conferido no livro: 1 mensagens"), f"o que saiu antes do livro existir não conta: {r}")
+        finally:
+            p.LIVRO_MODULO = None
+
     def t_rejeitados(self):
         p = self.p
         lid = self._lead("jaelead")

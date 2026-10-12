@@ -2043,9 +2043,42 @@ def resumo_hoje(login: str) -> str:
         linhas.append("\n⚠️ *Não saíram:*\n" + "\n".join(itens[:5]))
     if esperando:
         linhas.append(f"\n✋ {len(esperando)} esperando o seu ✅ (o revisor não liberou sozinho)")
+    conferido = conferencia_livro(login, feitas, comentados)
+    if conferido:
+        linhas.append("\n" + conferido)
     if agora() < d["bloqueio_ate"]:
         linhas.append("\n⛔ Pausado até " + dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M"))
     return "\n".join(linhas)
+
+
+def conferencia_livro(login: str, feitas: list, comentados: list) -> str:
+    """'Feito hoje' conferido (12/10 review §7 item 1): what the prospecting file says went out today, checked against
+    the append-only ledger. Counted only from the ledger's first record (it started 12/10), so its start never looks
+    like a gap. '' when there is no ledger or nothing to compare."""
+    try:
+        livro = _livro()
+        if not livro or not hasattr(livro, "do_periodo"):
+            return ""
+        meia_noite = dt.datetime.fromtimestamp(agora(), _tz()).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        linhas = [r for r in livro.do_periodo(login, meia_noite) if r["origem"] == "prospeccao"]
+        todas = livro.do_periodo(login, 0) if not linhas else linhas
+        if not todas:
+            return ""
+        inicio = max(meia_noite, min(r["em"] for r in todas))
+    except Exception as exc:  # the ledger never breaks the summary
+        print(f"prospeccao: conferência com o livro falhou: {exc}", flush=True)
+        return ""
+    no_livro = Counter(r["verbo"] for r in linhas if r["fase"] == "executada" and r["em"] >= inicio)
+    aqui = Counter(VERBO_LIVRO.get(a["tipo"], a["tipo"]) for a in feitas if (a.get("executada_em") or 0) >= inicio)
+    aqui["comentario"] += sum(1 for a in comentados if (a["comentario"].get("feito_em") or 0) >= inicio)
+    nomes = {"dm": "mensagens", "seguir_curtir": "seguir e curtir", "comentario": "comentários"}
+    if not (sum(no_livro.values()) or sum(aqui.values())):
+        return ""
+    diferentes = [v for v in nomes if no_livro[v] != aqui[v]]
+    if not diferentes:
+        return "📒 Conferido no livro: " + ", ".join(f"{aqui[v]} {nomes[v]}" for v in nomes if aqui[v]) + "."
+    return ("📒 ⚠️ O livro não bate: " + "; ".join(f"{nomes[v]} {no_livro[v]} no livro × {aqui[v]} na prospecção"
+                                                 for v in diferentes) + ". Confira se algo saiu repetido ou sem registro.")
 
 
 def resumo_contexto(login: str) -> str:
