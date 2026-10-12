@@ -390,6 +390,9 @@ class Prospeccao(Tool):
                          "conversar você mesmo, toque em 🙋.\n" + lead["url"], p.botao_assumir(login, lead["id"]),
                          tipo="urgente", ponte=ponte())  # someone answered: tell him now (Telegram), even in quiet hours
             return r(f"@{lead['handle']} agora está em {etapa}.")
+        if acao == "variante":  # A/B decided with the numbers, after the person agrees ("" = alternate again)
+            v = await asyncio.to_thread(p.definir_variante, login, texto)
+            return r(f"Primeira mensagem: só a variante {v} daqui em diante." if v else "Primeira mensagem: alternando A e B de novo.")
         if acao in ("assumir", "devolver"):  # he talks to this @ himself / hands it back to the rounds
             lead = await asyncio.to_thread(p.assumir_lead if acao == "assumir" else p.devolver_lead, login, lead_id)
             if not lead:

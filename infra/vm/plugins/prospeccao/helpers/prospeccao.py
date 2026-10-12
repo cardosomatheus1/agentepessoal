@@ -1293,7 +1293,13 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
             out["recusadas"].append({"lead_id": lid, "tipo": tipo, "motivo": motivo})
             continue
         variante = str(item.get("variante") or "").upper()[:1]
-        if tipo == "dm_abertura" and variante not in ("A", "B"):
+        fixa = d["config"].get("variante_fixa")
+        if tipo == "dm_abertura" and fixa in ("A", "B") and variante in ("A", "B") and variante != fixa:
+            out["recusadas"].append({**item, "motivo": f"a variante {fixa} foi fixada pelos números: escreva no modelo {fixa}"})
+            continue
+        if tipo == "dm_abertura" and fixa in ("A", "B"):
+            variante = fixa
+        elif tipo == "dm_abertura" and variante not in ("A", "B"):
             variante = "A" if sum(1 for a in d["acoes"] if a["tipo"] == "dm_abertura") % 2 == 0 else "B"
         acao = {"id": _id(), "lead_id": lid, "tipo": tipo, "texto": texto[:900], "variante": variante,
                 "alvo": str(item.get("alvo") or lead["url"])[:200], "base": str(item.get("base") or "")[:300],
@@ -1606,6 +1612,39 @@ def _contradiz(a: dict, motivo: str) -> bool:
     return bool(falta and (("matheus" in m or "assinatura" in m or "apresent" in m) and re.search(r"matheus", t, re.I)
                            or ("link" in m or "calculadora" in m) and CALCULADORA.search(t)
                            or "cadastro" in m and re.search(r"sem cadastro", t, re.I)))
+
+
+AB_MINIMO = 30       # first messages per variant before the numbers decide (12/10 review §5 item 11)
+AB_DIFERENCA = 5.0   # points of answer rate that make one variant the better one
+
+
+def sugestao_ab(por_variante: dict) -> str:
+    """What the weekly report proposes about A × B, from the numbers only ('' while there are too few)."""
+    a, b = por_variante.get("A") or {}, por_variante.get("B") or {}
+    if min(a.get("abordados", 0), b.get("abordados", 0)) < AB_MINIMO:
+        return ""
+    ta, tb = a["taxa_resposta"], b["taxa_resposta"]
+    if abs(ta - tb) < AB_DIFERENCA:
+        return f"A e B respondem parecido ({ta}% × {tb}%, {a['abordados']} e {b['abordados']} abordagens): manter as duas."
+    melhor, pior = ("A", "B") if ta > tb else ("B", "A")
+    m, p = por_variante[melhor], por_variante[pior]
+    return (f"A variante {melhor} responde mais ({m['taxa_resposta']}% × {p['taxa_resposta']}%, {m['abordados']} e "
+            f"{p['abordados']} abordagens): proponho usar só a {melhor}.")
+
+
+@_transacao
+def definir_variante(login: str, variante: str) -> str:
+    """Fix the first-message variant ("A" or "B") after the person agrees with the numbers; "" goes back to
+    alternating. Returns what is in force."""
+    v = str(variante or "").strip().upper()[:1]
+    d = carregar(login)
+    if v in ("A", "B"):
+        d["config"]["variante_fixa"] = v
+    else:
+        d["config"].pop("variante_fixa", None)
+        v = ""
+    salvar(login, d)
+    return v
 
 
 @_transacao
@@ -2051,7 +2090,8 @@ def metricas(login: str, dias: int = 7) -> dict:
     return {"dias": dias, "acoes": por_estado, "etapas": etapas, "geral": taxa(abordados),
             "comentarios": {"comentados": len(comentados), "responderam": len(pelo_comentario),
                             "taxa_resposta": round(100 * len(pelo_comentario) / len(comentados), 1) if comentados else 0.0},
-            "por_variante": por("variante"), "por_segmento": por("segmento"), "por_cidade": por("cidade"),
+            "por_variante": por("variante"), "ab": sugestao_ab(por("variante")),
+            "variante_fixa": d["config"].get("variante_fixa", ""), "por_segmento": por("segmento"), "por_cidade": por("cidade"),
             "por_faixa": por("faixa"), "por_fonte": metricas_fontes(login, dias),
             "taxa_aprovacao": round(100 * aprovadas / decididas, 1) if decididas else 0.0,
             "falhas": [a.get("detalhe", "") for a in acoes if a["estado"] == "falhou"][-5:],
@@ -2216,6 +2256,8 @@ def resumo_contexto(login: str) -> str:
     if agora() < d["bloqueio_ate"]:
         linhas.append("⛔ PAUSADO após bloqueio do Instagram — não proponha nada até " +
                       dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M"))
+    if d["config"].get("variante_fixa") in ("A", "B"):
+        linhas.append(f"Primeira mensagem: só a variante {d['config']['variante_fixa']} (fixada pelos números; não alterne).")
     if api_meta_pronta(login):
         renovar = aviso_acesso_meta(acesso_meta(login), agora())
         if renovar:

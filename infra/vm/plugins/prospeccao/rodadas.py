@@ -35,10 +35,11 @@ SEMANA = """Relatório semanal da prospecção Raiz Connect (segunda de manhã).
 1. `prospeccao` acao "metricas" com dias 7 e de novo com dias 28.
 2. Resposta final (vai inteira ao celular do Matheus), objetiva, no máximo 12 linhas, sem jargão:
 *Semana em números:* perfis aquecidos, abordados, responderam (%), leads (%), demos.
-*O que funcionou:* variante A × B (taxa de resposta de cada uma; só diga que uma é melhor se houver pelo menos 15 abordados em cada), segmento e cidade que mais responderam.
+*O que funcionou:* variante A × B (taxa de resposta de cada uma; só diga que uma é melhor se houver pelo menos 15 abordados em cada), segmento e cidade que mais responderam; respostas a comentários (grupo "comentarios" das métricas).
 *O que não funcionou:* propostas que ele pulou (taxa de aprovação), falhas e bloqueios.
 *Mudança para esta semana:* 1 a 3 ajustes concretos (ex.: "focar em confeitarias de Salvador", "usar a variante B", "comentários antes da DM"), cada um com o número que justifica.
-Se ainda houver menos de 20 abordados no total, diga que é cedo para conclusões e só mostre os números."""
+Se ainda houver menos de 20 abordados no total, diga que é cedo para conclusões e só mostre os números.
+Se as métricas de 28 dias trouxerem `ab` preenchido com "proponho usar só a…", ponha essa frase em *Mudança para esta semana* e pergunte se pode fixar; quando ele disser que pode, chame `prospeccao` acao "variante" com texto "A" ou "B"."""
 
 HOJE = """Resumo do dia da prospecção Raiz Connect. Só leitura.
 

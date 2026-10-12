@@ -1827,6 +1827,29 @@ class Suite:
         hist = [h["tipo"] for h in p._lead(p.carregar(LOGIN), lid)["historico"]]
         eq(hist.count("humano"), 2, "assumir e devolver ficam no histórico")
 
+    def t_ab_decidido_pelos_numeros(self):
+        # 12/10 review §5 item 11: after 30 first messages per variant, the weekly report proposes the better one
+        p = self.p
+        ok(p.sugestao_ab({"A": {"abordados": 29, "taxa_resposta": 3.0}, "B": {"abordados": 40, "taxa_resposta": 20.0}}) == "",
+           "menos de 30 em uma das duas: cedo para decidir")
+        r = p.sugestao_ab({"A": {"abordados": 31, "taxa_resposta": 3.2}, "B": {"abordados": 34, "taxa_resposta": 11.8}})
+        ok("variante B responde mais" in r and "só a B" in r, r)
+        ok("parecido" in p.sugestao_ab({"A": {"abordados": 30, "taxa_resposta": 10.0}, "B": {"abordados": 30, "taxa_resposta": 12.0}}),
+           "diferença pequena: manter as duas")
+        eq(p.definir_variante(LOGIN, "b"), "B", "fixa a B")
+        self.em(self.hora(10))
+        lid = self._lead("ab1")
+        d = p.carregar(LOGIN)
+        p._lead(d, lid)["etapa"] = "aquecido"
+        p.salvar(LOGIN, d)
+        texto = "Oi, pessoal da Ana! Vi a marmita de frango de vocês. Fiz uma calculadora grátis que mostra quanto sobra em cada uma. — Matheus, da Raiz Connect"
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_abertura", "texto": texto, "variante": "A"}])
+        ok(not r["propostas"] and "fixada" in r["recusadas"][0]["motivo"], f"a variante errada é recusada: {r['recusadas']}")
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_abertura", "texto": texto}])
+        eq(r["propostas"][0]["variante"], "B", "sem variante, entra a fixada")
+        ok("só a variante B" in p.resumo_contexto(LOGIN), "o contexto da rodada diz para não alternar")
+        eq(p.definir_variante(LOGIN, ""), "", "volta a alternar")
+
     def t_rejeitados(self):
         p = self.p
         lid = self._lead("jaelead")
