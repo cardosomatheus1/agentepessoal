@@ -522,6 +522,21 @@ def _graph(caminho: str, params: dict) -> dict:
             return {"error": {"message": f"http {e.code}"}}
 
 
+def escolher_token_meta(tokens: list) -> str:
+    """Of the tokens read on the screen, the one that lasts longest by Meta's own answer (debug_token): never expiring
+    first, then the latest expiry; invalid ones are left out."""
+    melhor, nota_melhor = "", -1.0
+    for tok in tokens[:10]:
+        info = _graph("debug_token", {"input_token": tok, "access_token": tok}).get("data") or {}
+        if not info.get("is_valid", True):
+            continue
+        expira = info.get("expires_at") or 0
+        nota = float("inf") if not expira else float(expira)
+        if nota > nota_melhor:
+            melhor, nota_melhor = tok, nota
+    return melhor
+
+
 def guardar_token_meta(login: str, token_usuario: str) -> dict:
     """From a token read on the screen: the Page token linked to the prospecting Instagram account and the IG user id,
     kept in the owner's vault. A Page token taken from a LONG-lived user token never expires; from a short one it lasts

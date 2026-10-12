@@ -62,9 +62,10 @@ COMO_EXECUTAR = {
 }
 
 
-async def _ler_token_da_tela(context_id: str) -> str:
-    """Reads a Meta access token straight from an open tab (Graph API Explorer / Access Token Tool), so the value
-    never goes through the model. Prefers the longest one (the extended token is the longest on the debugger page)."""
+async def _ler_tokens_da_tela(context_id: str) -> list:
+    """Every Meta access token on the open facebook.com tabs (Graph API Explorer / Access Token Tool), read straight
+    from the page so the value never goes through the model. The helper asks Meta about each one and keeps the one
+    that lasts longest (12/10: "the longest string" picked the short token, not the extended one)."""
     import re as _re
     from plugins._browser.helpers import runtime as modulo
 
@@ -84,7 +85,7 @@ async def _ler_token_da_tela(context_id: str) -> str:
             continue
         texto = str(res.get("result") if isinstance(res, dict) else res)
         melhores += _re.findall(r"EAA[A-Za-z0-9]{80,}", texto)
-    return max(melhores, key=len) if melhores else ""
+    return list(dict.fromkeys(melhores))
 
 
 class Prospeccao(Tool):
@@ -136,7 +137,8 @@ class Prospeccao(Tool):
             return r(json.dumps(out, ensure_ascii=False) + "\nAvaliados pela API oficial. Criados já estão registrados com nota; "
                      "recusados anotados; \"conta pessoal ou inexistente\" = perfil sem conta comercial (fora do perfil ideal).")
         if acao == "token_meta":
-            token = await _ler_token_da_tela(self.agent.context.id)
+            tokens = await _ler_tokens_da_tela(self.agent.context.id)
+            token = await asyncio.to_thread(p.escolher_token_meta, tokens) if tokens else ""
             if not token:
                 return r("Não achei um token (EAA…) em nenhuma aba aberta. Deixe aberta a aba do Explorador da Graph API ou da "
                          "ferramenta de token (depois de \"Estender\") e chame de novo.")

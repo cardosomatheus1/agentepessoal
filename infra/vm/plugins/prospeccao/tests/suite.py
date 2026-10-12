@@ -979,6 +979,13 @@ class Suite:
         p._cofre, p._graph = (lambda: C()), graph
         try:
             d = p.carregar(LOGIN); d["config"]["conta_instagram"] = "raizconnect"; p.salvar(LOGIN, d)
+            infos = {"EAAcurto": {"is_valid": True, "expires_at": vence}, "EAAlongo": {"is_valid": True, "expires_at": vence + 60 * 86400},
+                     "EAAvencido": {"is_valid": False, "expires_at": 0}, "EAAeterno": {"is_valid": True, "expires_at": 0}}
+            g0 = p._graph
+            p._graph = lambda caminho, params: {"data": infos[params["input_token"]]} if caminho == "debug_token" else {}
+            eq(p.escolher_token_meta(["EAAcurto", "EAAlongo", "EAAvencido"]), "EAAlongo", "da tela, o que dura mais (não o texto mais longo)")
+            eq(p.escolher_token_meta(["EAAlongo", "EAAeterno"]), "EAAeterno", "o que nunca vence ganha")
+            p._graph = g0
             res = p.guardar_token_meta(LOGIN, "EAApagina")
             ok(res["ok"] and cofre == {"META_IG_TOKEN": "EAApagina", "META_IG_USER_ID": "178"}, f"token de Página reconhecido e guardado: {res}")
             ok(res["expira"] != "nunca" and "Estender token de acesso" in res["aviso"], f"vence: diz exatamente o que estender: {res}")
