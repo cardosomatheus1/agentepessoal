@@ -42,9 +42,28 @@ def main() -> int:
     msg = s.mensagem(["a", "b"])
     if "2 coisas" not in msg or "• a" not in msg:
         falhas.append(f"mensagem: {msg!r}")
+    # checar(): binder missing and a failed hibernation are reported (12/10 review); everything else stubbed as healthy
+    import tempfile
+
+    tmp = Path(tempfile.mkdtemp(prefix="saude-"))
+    s.TAREFAS = tmp / "tasks.json"
+    s.TAREFAS.write_text('{"tasks": []}')
+    s._http = lambda url: 200
+    s._cmd = lambda *a: "true" if a[0] == "docker" else "backup to s3 ... done"
+    s.shutil.disk_usage = lambda caminho: type("U", (), {"used": 10, "total": 100})()
+    s.BINDER, s.HIBERNACAO_FALHOU = tmp / "sem_binder", tmp / "hibernacao_falhou"
+    s.HIBERNACAO_FALHOU.touch()
+    achados = s.checar()
+    if not any("binder" in a for a in achados) or not any("hibernação falhou" in a for a in achados) or len(achados) != 2:
+        falhas.append(f"checar: binder e hibernação deviam aparecer (e só eles): {achados}")
+    s.BINDER.mkdir()
+    s.HIBERNACAO_FALHOU.unlink()
+    if s.checar():
+        falhas.append(f"checar: tudo bem devia dar lista vazia: {s.checar()}")
+    s.shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:
         print("FALHA", f)
-    print("TESTES", 3 - len(falhas), 3)
+    print("TESTES", 4 - len(falhas), 4)
     return 1 if falhas else 0
 
 

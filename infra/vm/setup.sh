@@ -14,6 +14,11 @@ if ! command -v docker >/dev/null || ! command -v adb >/dev/null; then
   apt-get install -y docker.io python3-venv unzip curl adb "linux-modules-extra-$(uname -r)" || \
     apt-get install -y docker.io python3-venv unzip curl adb
 fi
+# 12/10 review: binder (the phone's driver) came only for the kernel running at install time, so a kernel update
+# (unattended upgrades are on) would boot without it and the phone would not start. This metapackage follows every
+# kernel update.
+dpkg -s linux-modules-extra-aws >/dev/null 2>&1 || apt-get install -y linux-modules-extra-aws || \
+  logger -t agentepessoal "linux-modules-extra-aws não instalou: o celular pode não subir depois de um kernel novo"
 # 12/10 review: the agent's Docker log grew ~200 MB a day with no limit. Containers created from now on get a size
 # limit from the daemon (read when docker starts); existing ones keep their settings, so their logs are rotated in place.
 if [ ! -f /etc/docker/daemon.json ]; then
@@ -52,7 +57,8 @@ fi
 # Binder driver for the Android container.
 echo binder_linux > /etc/modules-load.d/redroid.conf
 echo 'options binder_linux devices="binder,hwbinder,vndbinder"' > /etc/modprobe.d/redroid.conf
-modprobe binder_linux devices="binder,hwbinder,vndbinder" || true
+modprobe binder_linux devices="binder,hwbinder,vndbinder" || \
+  logger -t agentepessoal "binder FALHOU no kernel $(uname -r): o celular virtual não sobe sem ele"
 
 # --- helper services and scripts -------------------------------------------------
 mkdir -p /opt/agentepessoal /var/lib/agentepessoal /opt/a0/usr /opt/android-data
