@@ -240,6 +240,27 @@ scripts do host vale a lista `HOST_ARQUIVOS` do implantador (a versão no ar fic
 - **Testes do host** (todos no CI): `infra/vm/tests/test_{cofre_ponte,saude,comandos_ponte,bilhete_ponte,fila_ponte,
   sem_bloqueio,proxy,despertar,gasto}.py` e `infra/control/tests/test_telegram.py`.
 
+### Revisão de 12/10, fim da noite (o que você vê no celular)
+
+- **Revisão da semana** (domingo 19h47, `infra/vm/rotinas/bMU33E1T.json`) traz a seção *Prospecção* (métricas 7/28
+  dias, A/B, comentários, `livro conferir`). A rodada "🎯 Prospecção — semana" (gOqdMBE3) ficou desligada e saiu de
+  `rodadas.py`.
+- **`/painel`**: bloco da prospecção (`prospeccao.painel()`: funil de quem chegou a cada etapa, estoque por fonte,
+  semana, hoje, quem está com o Matheus, link do CRM), rotinas resumidas (`linhas_rotinas`: erro/rodando + 6 próximas),
+  livro de hoje numa linha e saúde (`/var/lib/agentepessoal/saude.json`, só para o dono). `api/painel.py` recarrega o
+  helper de outro plugin quando o arquivo muda (antes ficava com o código de antes da implantação).
+- **Manhã numa mensagem**: a ponte segura a fila da noite até o resumo "📰" (o plugin manda `rotina` no `/enviar`) e
+  junta tudo ("🌙 Da noite"); prazo `MANHA_ATE` 8h30; marca em `/var/lib/agentepessoal/resumo_manha.json`.
+- **Auxiliar**: áudio do resumo só com pergunta/"Precisa de você" ou 2+ itens; conta igual por emissor + valor +
+  vencimento (ou mesma linha do boleto/Pix) não duplica.
+- **CRM Raiz**: `prospeccao/extensions/python/job_loop/_46_crm_raiz.py` + `helpers/crm.py` escrevem a planilha todo dia
+  às 20h30 pelo conector Google (MCP `google.*`, sem modelo); id em `config.crm_planilha`; estado em
+  `/opt/a0/usr/marcas/crm_raiz.json`.
+- **Cartão do lead quente**: `prospeccao.cartao_lead()` + `helpers/cartao.py` (python-docx + LibreOffice do contêiner),
+  1 página, sai depois do aviso de lead/demo e com `acao cartao`. PDFs em `/opt/a0/usr/prospeccao/cartoes` (30 dias).
+- **Precisa do Matheus**: "Usar" do rascunho virar rascunho no Gmail exige trocar o conector para `gmail:drafts`
+  (`setup.sh`, unidade do workspace-mcp) e ele autorizar no Google uma vez; depois ligar `config.gmail_rascunhos`.
+
 ## Memória e limpeza (incidente de 10/10)
 
 O navegador do agente acumulava abas de todas as conversas e rodadas (75 processos, 11,8 GB): a VM congelou por
