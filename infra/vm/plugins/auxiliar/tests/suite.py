@@ -134,6 +134,26 @@ class Suite:
         c4, _ = a.salvar_conta(LOGIN, "Fatura Vivo", "2030-02-15T10:00:00-03:00")
         eq(c4["id"], c1["id"], "data com hora vira a mesma data")
 
+    def t_contas_mesma_por_emissor_valor_vencimento(self):
+        # 12/10 review §6: the e-mail and the photo of the same bill came with different descriptions and became two
+        a = self.a
+        c1, _ = a.salvar_conta(LOGIN, "Fatura Vivo", "2030-02-15", "129,90", fonte="e-mail da Vivo")
+        c2, _ = a.salvar_conta(LOGIN, "Conta da Vivo Fibra - fevereiro", "2030-02-15", "R$ 129,90", fonte="foto")
+        eq(c2["id"], c1["id"], "mesmo emissor, valor e vencimento: a mesma conta")
+        eq((c2["descricao"], c2["fonte"]), ("Fatura Vivo", "e-mail da Vivo"), "fica a descrição que já tinha")
+        c3, _ = a.salvar_conta(LOGIN, "Fatura Nubank", "2030-02-15", "129,90")
+        ok(c3["id"] != c1["id"], "outro emissor com o mesmo valor e dia: outra conta")
+        c4, _ = a.salvar_conta(LOGIN, "Conta Vivo", "2030-02-15", "89,90")
+        ok(c4["id"] != c1["id"], "mesmo emissor com outro valor: outra conta")
+        c5, _ = a.salvar_conta(LOGIN, "Fatura fevereiro", "2030-02-15", "129,90")
+        ok(c5["id"] not in (c1["id"], c3["id"]), "só palavras genéricas em comum não juntam")
+        linha = "34191.79001 01043.510047 91020.150008 1 84410000012990"
+        c6, _ = a.salvar_conta(LOGIN, "Energia Coelba", "2030-02-20", "210,00", codigo=linha)
+        c7, _ = a.salvar_conta(LOGIN, "Boleto luz", "2030-02-21", "", codigo=linha.replace(" ", ""))
+        eq(c7["id"], c6["id"], "a mesma linha digitável é a mesma conta, mesmo com outra data lida")
+        eq((c7["vencimento"], c7["valor"]), ("2030-02-20", "210.00"), "e não perde o que já sabia")
+        eq(len([c for c in a.carregar(LOGIN)["contas"] if c["estado"] == "aberta"]), 5, "5 contas, não 7")
+
     def t_contas_lembretes_etapas(self):
         a = self.a
         hoje = a.agora().date()
@@ -424,6 +444,14 @@ class Suite:
         ok(not a.vale_audio("*Bom dia!* Reunião às 15h."), "muito curto: sem áudio")
         ok(a.vale_audio("*Bom dia! Sábado, 10/10*\n*Precisa de você:* aprovar o orçamento da instalação que a Carla mandou ontem; "
                         "ela espera resposta até segunda.\n*Hoje:* 15h reunião com o João sobre o contrato do NEXOS."), "resumo real: com áudio")
+        # 12/10 review §6: only with a question for him or 2+ items
+        um_item = ("*Bom dia! Segunda, 13/10*\n*Hoje:* 15h reunião com o João sobre o contrato do NEXOS, na sala 3 do "
+                   "escritório, levando a proposta impressa e o cronograma revisado da instalação da fábrica.")
+        ok(not a.vale_audio(um_item), "um item só, sem pergunta: sem áudio (o texto basta)")
+        ok(a.vale_audio(um_item.replace("*Hoje:*", "*Precisa de você:*")), "algo que precisa dele: com áudio")
+        ok(a.vale_audio(um_item.replace(", levando", ". Levo a proposta impressa?").replace(" e o cronograma", "")
+                        + " Confirme até as 11h para eu imprimir."), "uma pergunta para ele: com áudio")
+        ok(a.vale_audio(um_item + "\n*Avançou:* o orçamento da Carla chegou e ficou dentro do previsto."), "dois itens: com áudio")
 
     def t_voz_texto_falavel(self):
         a = self.a

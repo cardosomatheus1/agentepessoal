@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import threading
 import time
+import unicodedata
 import uuid
 from contextlib import contextmanager
 from decimal import Decimal, InvalidOperation
@@ -296,6 +297,35 @@ def codigo_pagamento(texto: str) -> str:
     return digitos if digitos.isdigit() and 44 <= len(digitos) <= 48 else ""
 
 
+# Words that do not tell who charges: "Fatura Vivo" and "Conta da Vivo Fibra - outubro" share only "vivo"
+SEM_EMISSOR = {"conta", "contas", "fatura", "boleto", "pagamento", "mensalidade", "parcela", "valor", "vencimento",
+               "referente", "ref", "mes", "para", "com", "sua", "seu", "das", "dos", "pix", "cobranca", "janeiro",
+               "fevereiro", "marco", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro",
+               "dezembro", "jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"}
+
+
+def _emissor(descricao: str) -> set:
+    t = "".join(ch for ch in unicodedata.normalize("NFD", descricao.lower()) if unicodedata.category(ch) != "Mn")
+    return {w for w in re.findall(r"[a-z]{3,}", t) if w not in SEM_EMISSOR}
+
+
+def _mesma_conta(c: dict, descricao: str, venc: str, valor: str, codigo: str) -> str:
+    """How an open bill matches the one being saved: "codigo" (the same boleto line or Pix code), "igual" (same
+    description and due date), "emissor" (same due date and amount and a word of who charges in common — 12/10 review
+    §6: the e-mail and the photo of the same bill came with different descriptions and became two) or "" (another)."""
+    if c["estado"] != "aberta":
+        return ""
+    if codigo and c.get("codigo") == codigo:
+        return "codigo"
+    if c["vencimento"] != venc:
+        return ""
+    if c["descricao"].lower() == descricao.lower():
+        return "igual"
+    if valor and c.get("valor") == valor and _emissor(c["descricao"]) & _emissor(descricao):
+        return "emissor"
+    return ""
+
+
 @_transacao
 def salvar_conta(login: str, descricao: str, vencimento: str, valor="", moeda: str = "BRL", fonte: str = "",
                  cid: str = "", codigo: str = "") -> tuple[dict | None, str]:
@@ -303,17 +333,21 @@ def salvar_conta(login: str, descricao: str, vencimento: str, valor="", moeda: s
     if not descricao.strip() or venc is None:
         return None, "Diga `descricao` e `vencimento` (AAAA-MM-DD)."
     d = carregar(login)
-    conta = next((c for c in d["contas"] if cid and c["id"] == cid), None)
-    if conta is None:  # same bill seen again (another e-mail, another round): update it
-        conta = next((c for c in d["contas"] if c["estado"] == "aberta" and c["vencimento"] == venc.date().isoformat()
-                      and c["descricao"].lower() == descricao.strip().lower()), None)
+    descricao, venc_iso, valor_n, codigo_n = descricao.strip(), venc.date().isoformat(), _valor(valor), codigo_pagamento(codigo)
+    conta, como = next((c for c in d["contas"] if cid and c["id"] == cid), None), "id"
+    if conta is None:  # same bill seen again (another e-mail, the photo, another round): update it
+        conta, como = next(((c, m) for c in d["contas"] if (m := _mesma_conta(c, descricao, venc_iso, valor_n, codigo_n))),
+                           (None, ""))
     if conta is None:
         conta = {"id": _id(), "estado": "aberta", "criada": time.time(), "lembrada": {}}
         d["contas"].append(conta)
-    conta.update({"descricao": descricao.strip()[:160], "vencimento": venc.date().isoformat(),
-                  "valor": _valor(valor) or conta.get("valor", ""), "moeda": (moeda or "BRL").upper()[:3],
-                  "fonte": (fonte or conta.get("fonte", "")).strip()[:300],
-                  "codigo": codigo_pagamento(codigo) or conta.get("codigo", "")})
+    if como in ("codigo", "emissor"):  # another description of a bill already known: keep what it had, fill the gaps
+        conta.update({"valor": conta.get("valor") or valor_n, "fonte": conta.get("fonte") or fonte.strip()[:300],
+                      "codigo": conta.get("codigo") or codigo_n})
+    else:
+        conta.update({"descricao": descricao[:160], "vencimento": venc_iso, "valor": valor_n or conta.get("valor", ""),
+                      "moeda": (moeda or "BRL").upper()[:3], "fonte": (fonte or conta.get("fonte", "")).strip()[:300],
+                      "codigo": codigo_n or conta.get("codigo", "")})
     salvar(login, d)
     return conta, ""
 
@@ -570,8 +604,16 @@ def _falavel(texto: str) -> str:
 
 
 def vale_audio(texto: str) -> bool:
-    """A voice note only when the summary has something to say ("nothing needs you today" is not worth one)."""
-    return len(_falavel(texto).split()) >= 25 and "nada que precise de você" not in texto.lower()
+    """A voice note only when the summary has something to say ("nothing needs you today" is not worth one). 12/10
+    review §6: the note repeats the text, so it also needs the day to ask something of him (a question, or a
+    "Precisa de você" line) or to have 2+ items; one plain item is read faster than heard."""
+    if len(_falavel(texto).split()) < 25 or "nada que precise de você" in texto.lower():
+        return False
+    linhas = [_falavel(l) for l in texto.splitlines() if _falavel(l)]
+    if linhas and re.match(r"\W*bom dia", linhas[0], re.I):  # the title
+        linhas = linhas[1:]
+    pede = "?" in texto or any(re.match(r"\W*precisa de voc", l, re.I) for l in linhas)
+    return pede or len(linhas) >= 2
 
 
 def roteiro_falado(texto: str) -> str:
