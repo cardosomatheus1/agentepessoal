@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Dependências
-        run: pip install boto3 cryptography
+        run: pip install boto3 cryptography croniter
       - name: Pasta /a0/usr vazia (as suítes só usam logins teste_* e pastas temporárias)
         run: sudo mkdir -p /a0/usr && sudo chown -R "$USER" /a0
       - name: Suítes dos plugins
@@ -32,6 +32,7 @@ jobs:
           python3 infra/vm/tests/test_fila_ponte.py
           python3 infra/vm/tests/test_sem_bloqueio.py
           python3 infra/vm/tests/test_proxy.py
+          python3 infra/vm/tests/test_despertar.py
           python3 infra/control/tests/test_telegram.py
       - name: Sintaxe
         run: |

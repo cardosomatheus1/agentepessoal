@@ -457,6 +457,27 @@ def ensure_wake_schedule(instance_id: str) -> None:
         log("removed the fixed wake-up schedule")
     except scheduler.exceptions.ResourceNotFoundException:
         pass
+    ensure_safety_wake(instance_id)
+
+
+def ensure_safety_wake(instance_id: str) -> None:
+    """Once a day (8:45, Salvador time), start the VM if it is off: if the wake-up for the next task could not be set
+    at hibernation (12/10 review), routines and queued messages wait at most until the next morning. Starting a VM
+    that is already running does nothing."""
+    scheduler = boto3.client("scheduler", region_name=REGION)
+    args = dict(
+        Name=f"{NAME}-acordar-diario", ScheduleExpression="cron(45 8 * * ? *)",
+        ScheduleExpressionTimezone="America/Bahia", FlexibleTimeWindow={"Mode": "OFF"},
+        Target={"Arn": "arn:aws:scheduler:::aws-sdk:ec2:startInstances",
+                "RoleArn": f"arn:aws:iam::{account}:role/{WAKE_ROLE}",
+                "Input": json.dumps({"InstanceIds": [instance_id]}),
+                "RetryPolicy": {"MaximumRetryAttempts": 10, "MaximumEventAgeInSeconds": 3600}},
+    )
+    try:
+        scheduler.create_schedule(**args)
+        log("created the daily safety wake-up (8:45)")
+    except scheduler.exceptions.ConflictException:
+        scheduler.update_schedule(**args)
 
 
 # ---------------------------------------------------------------- control page
@@ -612,6 +633,8 @@ def ensure_upload_cors(page_url: str) -> None:
 
 
 def main() -> None:
+    if "--despertar" in sys.argv:  # only the wake-up schedules (no VM, page or password changes)
+        return ensure_wake_schedule(find_instance()["InstanceId"])
     log(f"account {account}, region {REGION}")
     password, created = ensure_parameters()
     ensure_bucket()

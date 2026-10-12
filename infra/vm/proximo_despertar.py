@@ -8,6 +8,10 @@
 
 Reads Agent Zero's /opt/a0/usr/scheduler/tasks.json: "scheduled" tasks (cron fields + timezone)
 and "planned" tasks (a list of datetimes still to run).
+
+12/10 review: an unreadable tasks file looked like "nothing scheduled" and DELETED the wake-up; now the wake-up already
+set is kept. And a start refused for a moment (the VM still stopping) is retried by EventBridge instead of being lost
+(RetryPolicy). A daily safety wake-up (deploy.py) covers the case where this script could not run at all.
 """
 
 import datetime as dt
@@ -23,13 +27,18 @@ TAREFAS = Path("/opt/a0/usr/scheduler/tasks.json")
 REGION = "us-east-1"
 NOME = "agentepessoal-acordar-tarefa"
 ANTES = dt.timedelta(minutes=5)
+RETENTAR = {"MaximumRetryAttempts": 10, "MaximumEventAgeInSeconds": 3600}  # start refused (still stopping): retried
+
+
+class LeituraFalhou(Exception):
+    """tasks.json could not be read: that is not the same as "nothing scheduled"."""
 
 
 def proximas(agora: dt.datetime) -> list[tuple[dt.datetime, str]]:
     try:
         tarefas = json.loads(TAREFAS.read_text()).get("tasks", [])
-    except Exception:
-        return []
+    except Exception as exc:
+        raise LeituraFalhou(str(exc)[:200]) from exc
     saida = []
     for t in tarefas:
         if t.get("state") == "disabled":
@@ -69,7 +78,11 @@ def instancia() -> str:
 
 def agendar(agora: dt.datetime) -> None:
     scheduler = boto3.client("scheduler", region_name=REGION)
-    lista = proximas(agora)
+    try:
+        lista = proximas(agora)
+    except LeituraFalhou as exc:
+        print(f"não li as tarefas ({exc}): mantive o despertar que já estava (e há o diário de segurança)")
+        return
     if not lista:
         try:
             scheduler.delete_schedule(Name=NOME)
@@ -85,7 +98,7 @@ def agendar(agora: dt.datetime) -> None:
         ScheduleExpressionTimezone="UTC", FlexibleTimeWindow={"Mode": "OFF"}, ActionAfterCompletion="DELETE",
         Target={"Arn": "arn:aws:scheduler:::aws-sdk:ec2:startInstances",
                 "RoleArn": f"arn:aws:iam::{conta}:role/agentepessoal-acordar-vm",
-                "Input": json.dumps({"InstanceIds": [instancia()]})},
+                "Input": json.dumps({"InstanceIds": [instancia()]}), "RetryPolicy": RETENTAR},
     )
     try:
         scheduler.create_schedule(**args)
@@ -97,7 +110,10 @@ def agendar(agora: dt.datetime) -> None:
 def main() -> int:
     agora = dt.datetime.now(dt.timezone.utc)
     if len(sys.argv) > 2 and sys.argv[1] == "--perto":
-        lista = proximas(agora)
+        try:
+            lista = proximas(agora)
+        except LeituraFalhou:
+            return 0  # unknown: the wake-up already set and the daily safety one stay
         perto = bool(lista) and lista[0][0] - agora <= dt.timedelta(minutes=float(sys.argv[2]))
         return 3 if perto else 0
     agendar(agora)

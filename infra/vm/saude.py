@@ -23,6 +23,7 @@ CONTEINERES = ("agent-zero", "android", "ws-scrcpy")
 DISCO_MAX = 85  # % used
 BACKUP_MAX_H = 26
 RODANDO_MAX_H = 3
+HIBERNACAO_FALHOU = Path("/var/lib/agentepessoal/hibernacao_falhou")  # written by hibernate.sh
 
 
 def _data(texto) -> dt.datetime | None:
@@ -104,6 +105,11 @@ def checar() -> list[str]:
         problemas.append("o proxy de modelos não consegue gerar a chave da AWS (Bedrock)")
     if not _http("http://127.0.0.1:8789/"):
         problemas.append("a ponte do celular não responde")
+    try:
+        if time.time() - HIBERNACAO_FALHOU.stat().st_mtime < 24 * 3600:
+            problemas.append("a hibernação falhou e a VM foi desligada: religou do zero, sem as conversas abertas")
+    except OSError:
+        pass
     feitos = _cmd("journalctl", "-t", "agentepessoal", "--since", f"-{BACKUP_MAX_H}h", "-o", "cat")
     if "backup to s3" not in feitos or " done" not in feitos:
         problemas.append(f"backup de hora em hora sem sucesso nas últimas {BACKUP_MAX_H} h")

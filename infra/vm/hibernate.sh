@@ -12,4 +12,9 @@ for p in agent-url phone-url; do
   /usr/local/bin/aws ssm put-parameter --region "$REGION" --name "/agentepessoal/$p" --value stopped --type String --overwrite >/dev/null 2>&1 || true
 done
 logger -t agentepessoal "hibernating $IID"
-/usr/local/bin/aws ec2 stop-instances --region "$REGION" --instance-ids "$IID" --hibernate >/dev/null || shutdown -h now
+if ! /usr/local/bin/aws ec2 stop-instances --region "$REGION" --instance-ids "$IID" --hibernate >/dev/null; then
+  # 12/10 review: this turned into a plain shutdown without a word; now it is logged and the daily health check says so
+  logger -t agentepessoal "hibernação FALHOU: desligando (a próxima partida começa do zero)"
+  touch /var/lib/agentepessoal/hibernacao_falhou
+  shutdown -h now
+fi

@@ -114,7 +114,9 @@ def _start_later() -> None:
         Name=WAKE_LATER, ScheduleExpression=f"at({when})", ScheduleExpressionTimezone="UTC",
         FlexibleTimeWindow={"Mode": "OFF"}, ActionAfterCompletion="DELETE",
         Target={"Arn": "arn:aws:scheduler:::aws-sdk:ec2:startInstances", "RoleArn": WAKE_ROLE_ARN,
-                "Input": json.dumps({"InstanceIds": [INSTANCE_ID]})},
+                "Input": json.dumps({"InstanceIds": [INSTANCE_ID]}),
+                # still stopping at that minute: EventBridge tries again instead of dropping it (12/10 review)
+                "RetryPolicy": {"MaximumRetryAttempts": 10, "MaximumEventAgeInSeconds": 3600}},
     )
     scheduler = boto3.client("scheduler")
     try:
