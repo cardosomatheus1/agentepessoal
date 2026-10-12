@@ -237,10 +237,11 @@ class Prospeccao(Tool):
                             "com ok=false e esse detalhe. Se estiver ativo, siga normalmente e diga no detalhe a data do último post.\n")
             return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) {'PRÉ-APROVADA (autorização do Matheus, dentro do limite do dia; texto revisado)' if a.get('auto') else 'APROVADA pelo Matheus'} para @{lead['handle']} — {lead['url']}\n"
                      f"{conferir}{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
-                     + (("PARA DIGITAR NO DIRECT (obrigatório): com a conversa aberta, NÃO digite à mão. Rode este script com `browser` "
-                         "action \"evaluate\": ele esvazia o campo (o Instagram guarda rascunho de tentativa anterior) e coloca o texto uma vez. "
-                         "Só aperte Enter/Enviar se ele devolver OK; qualquer outra resposta = não envie, rode de novo; depois de enviar, leia a "
-                         "conversa e confira que a mensagem aparece UMA vez.\n" + p.script_digitar(a["texto"]) + "\n\n")
+                     + (("PARA DIGITAR NO DIRECT (obrigatório, NÃO digite à mão): com a conversa aberta, 1) clique no campo de mensagem, "
+                         "2) aperte Control+A e depois Backspace (ações press do browser) para apagar rascunho de tentativa anterior, "
+                         "3) rode este script com `browser` action \"evaluate\" — ele confere que o campo está vazio, coloca o texto uma vez "
+                         "e espera aparecer. Só aperte Enter/Enviar se ele devolver OK. \"CAMPO NÃO ESTÁ VAZIO\": repita 1–3. "
+                         "Depois de enviar, leia a conversa e confira que a mensagem aparece UMA vez.\n" + p.script_digitar(a["texto"]) + "\n\n")
                         if a["tipo"] in p.TIPOS_DIRECT else "")
                      + "Depois chame `prospeccao` acao \"resultado\" com acao_id, ok (true/false) e detalhe (o que viu na tela). "
                      "Se o Instagram mostrar bloqueio/limite/'tente mais tarde'/verificação, PARE e mande bloqueio: true.")

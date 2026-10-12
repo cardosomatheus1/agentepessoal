@@ -904,7 +904,8 @@ class Suite:
         p = self.p
         self.em(self.hora(10))
         s = p.script_digitar('Oi, pessoal da "Ana"! 😊 raizconnect.com.br/materiais/precificacao/calculadora')
-        ok('selectAll' in s and "delete" in s and "insertText" in s, "script esvazia o campo antes de digitar")
+        ok("CAMPO NÃO ESTÁ VAZIO" in s and "insertText" in s and "await espera" in s,
+           "script recusa campo com rascunho, insere uma vez e espera o texto aparecer (editor do Instagram é assíncrono)")
         ok(json.dumps('Oi, pessoal da "Ana"! 😊 raizconnect.com.br/materiais/precificacao/calculadora', ensure_ascii=False) in s,
            "texto exato, com aspas escapadas")
         ok(set(p.TIPOS_DIRECT) == {"dm_abertura", "dm_lembrete", "resposta", "parceiro"}, "todo envio no Direct usa o script")
