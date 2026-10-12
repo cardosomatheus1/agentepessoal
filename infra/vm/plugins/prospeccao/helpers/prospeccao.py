@@ -76,6 +76,8 @@ LINK_CALCULADORA = "raizconnect.com.br/materiais/precificacao/calculadora"  # sh
 LINK_DELIVERY = "raizconnect.com.br/materiais/quanto-sobra-no-delivery"
 CALCULADORA = re.compile(r"(https?://)?(www\.)?raizconnect\.com\.br/materiais/(precificacao/calculadora|quanto-sobra-no-delivery)"
                          r"(\?[\w=&%.-]*)?(?![\w/])", re.I)
+LINK_CADASTRO = "raizconnect.com.br/#/register"  # the 15-day trial signup (Matheus, 12/10: send it to who wants to test)
+CADASTRO = re.compile(r"(https?://)?(www\.)?raizconnect\.com\.br/?#/register(?![\w/])", re.I)
 TIPOS_COM_LINK = ("resposta",)  # 12/10 blind review: the reminder offers the link, it does not carry it
 
 
@@ -1361,6 +1363,20 @@ MOTIVOS_SEGUIMENTO = {"link": "2 dias depois do link, sem resposta (playbook ›
                       "vai_passar": "2 dias depois de «vou passar pro dono»: pergunte se conseguiu falar"}
 
 
+def marcar_links(texto: str, d: dict, lid: str) -> str:
+    """Matheus, 12/10: the calculator link carries the variant of the first message (?o=ig-a / ig-b), so the Raiz site
+    can tell which opening leads to the calculator and to the trial. Short on purpose (a long UTM looked huge)."""
+    var = next((str(a.get("variante") or "").lower() for a in reversed(d["acoes"])
+                if a["lead_id"] == lid and a["tipo"] == "dm_abertura" and a.get("variante") in ("A", "B")), "x")
+    return CALCULADORA.sub(lambda m: m.group(0) if m.group(4) else m.group(0) + f"?o=ig-{var}", texto)
+
+
+def avisar_agora(etapa: str, nota: str = "") -> bool:
+    """Matheus, 12/10: the phone rings right away only for lead, demo and what waits on him ("pendente:"); a plain
+    answer ("oi", a heart) goes to the 20h17 summary."""
+    return etapa in ("lead", "demo") or str(nota or "").strip().lower().startswith("pendente:")
+
+
 def _seguimento_devido(d: dict, lead: dict) -> bool:
     return bool(motivo_seguimento(d, lead))
 
@@ -1480,15 +1496,21 @@ def validar_texto(tipo: str, texto: str, d: dict, lid: str) -> str:
         return "mensagem curta demais para ser específica"
     if len(t) > 900:
         return "mensagem longa demais para uma DM (até 900 caracteres)"
-    sem_calculadora = CALCULADORA.sub("", t)
-    if LINK.search(sem_calculadora) or (tipo not in TIPOS_COM_LINK and CALCULADORA.search(t)):
+    sem_calculadora = CADASTRO.sub("", CALCULADORA.sub("", t))
+    if LINK.search(sem_calculadora) or (tipo not in TIPOS_COM_LINK and (CALCULADORA.search(t) or CADASTRO.search(t))):
         if tipo in TIPOS_COM_LINK:
-            return (f"link só o da calculadora ({LINK_CALCULADORA}) ou o do simulador de delivery ({LINK_DELIVERY}), e só "
-                    "na resposta a quem escreveu")
+            return (f"link só o da calculadora ({LINK_CALCULADORA}), o do simulador de delivery ({LINK_DELIVERY}) ou o do "
+                    f"cadastro do teste ({LINK_CADASTRO}), e só na resposta a quem escreveu")
         if tipo == "dm_lembrete":
             return "lembrete sem link: ofereça mandar (\"quer que eu te mande o link aqui?\")"
         return "sem link na primeira mensagem, no seguimento nem em mensagem a parceiro"
     lead = _lead(d, lid) or {}
+    if tipo == "resposta" and CADASTRO.search(t):
+        if lead.get("etapa") == "descartado":
+            return "quem disse não recebe só um obrigado curto: sem link"
+        if any(a["lead_id"] == lead.get("id") and a["estado"] == "executada" and CADASTRO.search(a.get("texto") or "")
+               for a in d["acoes"]):
+            return "a pessoa já recebeu o link do cadastro: não repita; pergunte se conseguiu entrar"
     if tipo == "resposta" and CALCULADORA.search(t):
         if lead.get("etapa") == "descartado":
             return "quem disse não recebe só um obrigado curto: sem link e sem pergunta"
@@ -1594,6 +1616,8 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
             variante = fixa
         elif tipo == "dm_abertura" and variante not in ("A", "B"):
             variante = variante_sugerida(d, lead)
+        if tipo in TIPOS_COM_LINK:
+            texto = marcar_links(texto, d, lid)
         acao = {"id": _id(), "lead_id": lid, "tipo": tipo, "texto": texto[:900], "variante": variante,
                 "alvo": str(item.get("alvo") or lead["url"])[:200], "base": str(item.get("base") or "")[:300],
                 "estado": "proposta", "criada": agora()}
@@ -1630,7 +1654,7 @@ SEM perguntar a ele, então você é a última barreira antes de uma pessoa real
 2. Fere o playbook: comentário de aquecimento que vende, cita a Raiz, um sistema, chama para o direct ou faz pergunta
    (o comentário é uma observação, sem pergunta: a conta não volta ao comentário para continuar a conversa); jargão (ERP, sistema de gestão, CMV, solução) na
    abertura; promessa de resultado ou número inventado; pressão; link fora do lugar (os únicos links permitidos são a
-   calculadora de precificação e o simulador de delivery da Raiz, e só na resposta a quem escreveu: primeira
+   calculadora de precificação, o simulador de delivery e o cadastro do teste da Raiz, e só na resposta a quem escreveu: primeira
    mensagem, lembrete e seguimento vão sem link); repetir o link a quem já recebeu; oferta ou link para quem disse
    não ("agora não", "sem tempo" e "depois vejo" não são não: o playbook manda deixar o link); primeira mensagem sem
    a assinatura do Matheus. A primeira mensagem pode ser só uma pergunta sobre como a

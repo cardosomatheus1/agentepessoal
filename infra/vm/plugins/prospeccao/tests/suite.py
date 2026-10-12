@@ -917,7 +917,9 @@ class Suite:
            "seguimento sem link")
         eq(p.validar_texto("resposta", lembrete.format(link="raizconnect.com.br/materiais/quanto-sobra-no-delivery"), d, "x"), "",
            "simulador de delivery na resposta, sem https")
-        for ruim in ("https://raizconnect.com.br/materiais/raio-x-do-lucro", "https://raizconnect.com.br/#/register",
+        eq(p.validar_texto("resposta", lembrete.format(link="https://raizconnect.com.br/#/register"), d, "x"), "",
+           "o cadastro do teste vai na resposta (Matheus, 12/10)")
+        for ruim in ("https://raizconnect.com.br/materiais/raio-x-do-lucro", "https://raizconnect.com.br/#/login",
                      "https://raizconnect.com.br/materiais/precificacao", "bit.ly/calc",
                      p.LINK_CALCULADORA + " e www.outro.com.br"):
             ok(p.validar_texto("resposta", lembrete.format(link=ruim), d, "x"), f"link fora da lista barrado: {ruim}")
@@ -2459,6 +2461,32 @@ class Suite:
         self._executar(lid, "dm_abertura", DM_A)
         ok("## Textos de hoje" in p.resumo_contexto(LOGIN) and DM_A[:40] in p.resumo_contexto(LOGIN),
            "o contexto mostra o começo das aberturas do dia")
+
+    def t_link_do_cadastro_e_links_marcados(self):
+        """Matheus, 12/10: the signup link goes to who wants to test (once, only in a reply); the calculator link carries
+        the first message's variant."""
+        p = self.p
+        self.em(self.hora(10))
+        self._revisor(reprovar=())
+        lid = self._aquecido("cad1")
+        self._executar(lid, "dm_abertura", DM_A, "A")
+        p.mudar_etapa(LOGIN, lid, "lead", "quero testar o sistema!", "direct")
+        self.em(self.relogio + 400)
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Fechado! É só criar a conta aqui, 15 dias grátis: " + p.LINK_CADASTRO}])
+        ok(r["propostas"] or r.get("automaticas"), f"o cadastro vai na resposta: {r['recusadas']}")
+        r = p.propor(LOGIN, [{"lead_id": self._aquecido("cad2"), "tipo": "dm_abertura", "texto": DM_A + " " + p.LINK_CADASTRO}])
+        ok(r["recusadas"], "nunca na primeira mensagem")
+        d = p.carregar(LOGIN)
+        eq(p.marcar_links("Aqui: " + p.LINK_CALCULADORA, d, lid), "Aqui: " + p.LINK_CALCULADORA + "?o=ig-a", "marca a variante")
+        eq(p.marcar_links("Aqui: " + p.LINK_CALCULADORA + "?o=ig-b", d, lid), "Aqui: " + p.LINK_CALCULADORA + "?o=ig-b", "não marca duas vezes")
+        ok(p.CALCULADORA.search(p.LINK_CALCULADORA + "?o=ig-a"), "o link marcado continua sendo o da calculadora")
+        p.revisor = None
+
+    def t_aviso_na_hora_so_do_que_importa(self):
+        p = self.p
+        eq([p.avisar_agora(e, n) for e, n in (("respondeu", "oi"), ("respondeu", "pendente: pergunta: tem app?"),
+                                               ("lead", "quero o link"), ("demo", "me liga"))],
+           [False, True, True, True], "oi vai no resumo; lead, demo e pendência tocam na hora")
 
     def t_marca_429_nao_e_perfil(self):
         p = self.p

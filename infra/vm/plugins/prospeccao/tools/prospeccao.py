@@ -468,7 +468,7 @@ class Prospeccao(Tool):
                 return r(f"Lead ou etapa inválidos (etapas: {', '.join(p.ETAPAS)}).")
             if not lead["novidade"]:
                 return r(f"Essa resposta de @{lead['handle']} já estava registrada (o Matheus já foi avisado). Siga.")
-            if etapa in ("respondeu", "lead", "demo"):
+            if etapa in ("respondeu", "lead", "demo") and p.avisar_agora(etapa, nota):  # the rest goes to the 20h17 summary
                 emoji, frase = {"respondeu": ("💬", "respondeu"), "lead": ("🔥", "virou lead (quer a calculadora / quer conversar)"),
                                 "demo": ("📅", "topou conversar")}[etapa]
                 lugar = "num comentário" if onde == "comentario" else "no Direct"

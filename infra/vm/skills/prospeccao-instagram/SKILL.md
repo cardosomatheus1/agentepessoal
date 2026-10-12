@@ -104,7 +104,7 @@ precisa dele (bloqueio, verificação, conta, erro), em até 3 linhas.
    - **respondeu ao nosso comentário:** `etapa` com etapa "interagiu" e a `nota` (o que disse). Só se falou de preço,
      custo, lucro ou do sistema: etapa "respondeu", `onde` "comentario" e negocio: true, e proponha a `resposta`;
    - **no Direct:** `etapa` pelo que a pessoa disse (playbook › Respostas), `nota` = o que disse (começando por
-     "pendente:" quando depende do Matheus), `onde` "direct". O Matheus é avisado na hora. Depois proponha a `resposta`
+     "pendente:" quando depende do Matheus), `onde` "direct". Lead, demo e pendência avisam o Matheus na hora. Depois proponha a `resposta`
      (`base` = a fala dela, entre aspas); ela sai pela `proxima`, nesta rodada ou na próxima.
 6. **@ fora do registro que escreveu para a Raiz:** `entrou` com `handle`, `nota` (o que escreveu) e negocio: true se
    fala da Raiz, da calculadora, de preço ou do nosso comentário. Com negocio, a pessoa entra no registro e você propõe
