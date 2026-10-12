@@ -25,7 +25,8 @@ Base do estudo:
 - **Por quê:** a planilha foi montada para **WhatsApp**. Todas as 4.342 empresas têm WhatsApp, mas só **192 (4%)**
   têm o @ e **531 (12%)** têm site. A busca acha o perfil de metade delas, e muitos estão parados.
 - **Decisão (já no ar):**
-  - as fontes foram **divididas**: o estoque de 100 é repartido entre planilha (60), Instagram (30) e catálogo (10);
+  - as fontes foram **divididas**: o estoque de 100 é repartido entre **Instagram (60)** e planilha (40); o catálogo
+    ficou fora da divisão (só entra quando as outras acabam);
   - as visitas **alternam** as fontes, e o resumo mostra o rendimento de cada uma;
   - a planilha inteira foi importada, com prioridade A+ → C;
   - o @ é procurado primeiro **no site da empresa**, que é de graça;
@@ -118,7 +119,7 @@ levariam meses e, pelo que vimos, uns 3 em cada 4 perfis achados cairiam na conf
 | **Site da empresa** (nosso, novo) | o @ linkado no site | grátis | 531 empresas da planilha têm site | nenhum | **No ar** |
 | Planilha do Grok | 4.342 empresas com WhatsApp; 192 com @ | já feita | 56% acham o @; 73% caíam na visita (agora há conferência antes) | nenhum | **No ar**, como volume de fundo, A+ e A primeiro |
 | Tavily (busca na internet) | acha o @ por nome + cidade | 1.000 grátis por mês; depois US$ 0,008 por consulta (~US$ 16/mês no nosso ritmo) | ~56% | nenhum | Manter enquanto houver planilha; **Serper sai pela metade** (US$ 1 por mil) |
-| Catálogo GuiaPJ / Receita | empresas por CNAE e cidade, com telefone | grátis | 2% viram lead | nenhum | Manter só nos 10% do estoque |
+| Catálogo GuiaPJ / Receita | empresas por CNAE e cidade, com telefone | grátis | 2% viram lead | nenhum | Fora da divisão: só entra quando as outras acabam |
 | Dados abertos da Receita (base inteira) | todas as empresas por CNAE e cidade, com telefone e e-mail; **sem Instagram** | grátis (5,4 GB por mês) | precisaria da busca para cada uma | nenhum | Não vale agora: rende como o catálogo |
 | Casa dos Dados | o mesmo que a Receita, com filtros | ~R$ 0,01 por CNPJ | idem | nenhum | Não |
 | Google Places (API oficial) | lugares do Maps; **sem redes sociais**; proíbe guardar a lista | US$ 32–35 por mil | baixo | contrato | Não |
@@ -131,19 +132,21 @@ levariam meses e, pelo que vimos, uns 3 em cada 4 perfis achados cairiam na conf
 
 ```
 descoberta ──► achar o @ ──► pré-checagem ──► estoque (por fonte) ──► visita (seguir, curtir, comentar) ──► DM
- Instagram      já vem         API Meta             planilha 60          a vez alterna as fontes         D+2
- planilha       site           ou Apify             instagram 30         (quem interagiu passa na frente)
- catálogo       busca          ou script            catálogo 10
+ Instagram      já vem         API Meta             instagram 60         a vez alterna as fontes         D+2
+ planilha       site           ou Apify             planilha 40          (quem interagiu passa na frente)
+ catálogo       busca          ou script            catálogo: só reserva
 ```
 
 - **Hoje:**
-  - planilha 60, Instagram 30, catálogo 10;
+  - **Instagram 60, planilha 40, catálogo fora da divisão.** A primeira versão dava 60 à planilha porque ela era a
+    única com volume; os números mostram o contrário (pergunta do Matheus: "se a planilha rende pouco Instagram, como
+    ela vai ficar com 60%?"). O catálogo só entra quando as outras acabam;
   - a parte do Instagram é enchida pela busca do agente;
   - a pré-checagem usa o script do navegador, 5 perfis por vez, no máximo 15 por rodada.
 - **Com o Apify:**
   - a parte do Instagram passa a vir do Search Scraper, cerca de 30 perfis novos e já conferidos por dia, sem tocar a
     nossa conta;
-  - sugestão de divisão: **planilha 40, Instagram 50, catálogo 10**.
+  - sugestão de divisão: **Instagram 70 ou 80, planilha o resto**, conforme as respostas de cada uma.
 - **Ajuste semanal:** toda segunda, o relatório mostra o funil por fonte. A parte de cada fonte acompanha quem mais
   responde por perfil aquecido, mas só com pelo menos 15 abordados por fonte, para não decidir no acaso.
 
@@ -218,4 +221,4 @@ descoberta ──► achar o @ ──► pré-checagem ──► estoque (por fo
    - o agente já tem a ação `token_meta`, que lê o token da tela e guarda no cofre sem mostrar.
 3. **Tavily:** qual é o plano? Se for o grátis, baixo o teto para 30 por dia. Se for pague-pelo-uso, mantenho ou troco
    pelo Serper.
-4. **Divisão do estoque:** fica 60/30/10 até o Apify entrar. Depois, 40/50/10.
+4. **Divisão do estoque:** Instagram 60 e planilha 40 desde já. Com o Apify, o Instagram pode ir a 70 ou 80.

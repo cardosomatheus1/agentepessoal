@@ -163,13 +163,14 @@ class Prospeccao(Tool):
         if acao == "conferir_estoque":
             # leads found outside Instagram: activity, size and privacy checked before their turn (12/10: 73% of the
             # sheet's visits ended in a discard)
+            if p.api_meta_pronta(login) and p.a_conferir(login, 1, "api"):
+                perfis = await asyncio.to_thread(p.descobrir_perfis, login, p.a_conferir(login, 25, "api"))
+                out = p.conferir_perfis(login, perfis, "api")
+                return r(json.dumps(out, ensure_ascii=False) + "\nConferidos pela API oficial (os de conta não comercial ficam para o "
+                         "script). Chame `conferir_estoque` de novo se ainda houver.")
             handles = p.a_conferir(login, 5)
             if not handles:
                 return r("Nada a conferir no estoque agora.")
-            if p.api_meta_pronta(login):
-                perfis = await asyncio.to_thread(p.descobrir_perfis, login, p.a_conferir(login, 25))
-                out = p.conferir_perfis(login, perfis, "api")
-                return r(json.dumps(out, ensure_ascii=False) + "\nConferidos pela API oficial. Chame `conferir_estoque` de novo se ainda houver.")
             pausa = p.api_pausada(login)
             if pausa:
                 return r(f"Scripts de perfil pausados até {pausa} (o Instagram limitou as consultas): pule a conferência nesta rodada.")

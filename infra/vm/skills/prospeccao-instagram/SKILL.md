@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Fluxo completo da prospecção da Raiz Connect pela conta @raiz.connect: achar leads (catálogo de CNPJ, listas, buscador e Instagram), dar nota, aquecer (seguir, curtir, comentar), mandar a primeira mensagem e o lembrete no Direct, ler e responder quem respondeu, com a ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 3.3.0
+version: 3.3.1
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct", "dm", "comentário", "curtir", "seguir"]
 trigger_patterns:
   - "prospec"
@@ -74,8 +74,8 @@ Rodada sem novidade termina com a resposta exata **SEM NOVIDADE** (não vai ao c
 
 ## 2. Achar leads
 
-**Estoque:** manter **100 leads prontos para aquecer**, **divididos por fonte** (padrão: planilha 60, Instagram 30,
-catálogo 10; o `contexto` mostra cada parte e quanto falta). A busca (9h23 e 14h23) repõe cada parte pela sua fonte;
+**Estoque:** manter **100 leads prontos para aquecer**, **divididos por fonte** (padrão: Instagram 60, planilha 40;
+o catálogo de CNPJ fica fora da divisão, porque rendeu 2 leads em 100 empresas; o `contexto` mostra cada parte e quanto falta). A busca (9h23 e 14h23) repõe cada parte pela sua fonte;
 a execução consome alternando as fontes (assim dá para comparar qual rende) e o "Rendimento por fonte" do `contexto`
 mostra quantos de cada uma foram descartados na visita e quantos responderam. Contam os que encaixam, não os perfis
 abertos. As buscas na internet têm teto por dia: quando a ferramenta avisar, pare.

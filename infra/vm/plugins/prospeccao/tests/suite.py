@@ -530,7 +530,8 @@ class Suite:
         ok(len(chamadas) > n, "no dia seguinte o teto zera")
 
     def t_fontes_divididas_no_estoque_e_na_vez(self):
-        # Matheus, 12/10: "acho que temos que dividir as fontes"
+        # Matheus, 12/10: "acho que temos que dividir as fontes"; and then "se a planilha rende pouco Instagram, como
+        # ela vai ficar com 60%?": Instagram 60, planilha 40, catálogo fora da divisão (só quando as outras acabam)
         p = self.p
         self.em(self.hora(10))
         self._revisor()
@@ -545,35 +546,35 @@ class Suite:
         # already checked (last post known) but with a lower score than the ones still to be checked
         self._lead("planok", fonte="Planilha SDR Grok", motivo="Planilha SDR Grok (site); perfil conferido", seguidores="40k",
                    ultimo_post=self._dia(10), canais=["encomenda"], sinais=[], cardapio=False)
-        for i in range(2):
+        for i in range(3):
             self._lead(f"insta{i}")
         self._lead("cat0", fonte="GuiaPJ", atividade_pendente=True, ultimo_post="", motivo="CNPJ 09.205.662/0001-72 (GuiaPJ)")
         d = p.carregar(LOGIN)
         eq({l["handle"]: l["origem"] for l in d["leads"]},
            {"plan0": "planilha", "plan1": "planilha", "plan2": "planilha", "planok": "planilha", "insta0": "instagram",
-            "insta1": "instagram", "cat0": "catalogo"}, "cada lead guarda de onde veio")
+            "insta1": "instagram", "insta2": "instagram", "cat0": "catalogo"}, "cada lead guarda de onde veio")
         e = p.estoque(LOGIN)
         eq({o: (v["prontos"], v["alvo"]) for o, v in e["por_fonte"].items()},
-           {"planilha": (4, 60), "instagram": (2, 30), "catalogo": (1, 10)}, "estoque dividido 60/30/10")
-        eq(e["por_fonte"]["planilha"]["a_conferir"], 3, "achados fora do Instagram ainda a conferir na visita")
+           {"planilha": (4, 40), "instagram": (3, 60), "catalogo": (1, 0)}, "Instagram com a maior parte; catálogo fora")
+        eq(e["por_fonte"]["planilha"]["a_conferir"], 3, "achados fora do Instagram ainda a conferir")
         ctx = p.resumo_contexto(LOGIN)
-        ok("Por fonte: planilha 4/60 (FALTAM 56); instagram 2/30 (FALTAM 28); catalogo 1/10 (FALTAM 9)" in ctx, ctx[:600])
-        ok("busque no Instagram (skill, 2b e 3) até 28 novos" in ctx, "a parte do Instagram é a busca no Instagram")
-        vez = []
-        for _ in range(4):
+        ok("Por fonte: planilha 4/40 (FALTAM 36); instagram 3/60 (FALTAM 57); catalogo 1 (fora da divisão)" in ctx, ctx[:700])
+        ok("busque no Instagram (skill, 2b e 3) até 57 novos" in ctx, "a parte do Instagram é a busca no Instagram")
+        def vez():
             a, motivo = p.proxima(LOGIN, "raizconnect")
             ok(a and a["tipo"] == "aquecer", f"repõe ({motivo})")
-            vez.append((p.origem(a["lead"]), a["lead"]["handle"]))
             p.resultado(LOGIN, a["id"], True, "seguiu e curtiu")
             self.em(self.relogio + 4 * 60)
-        eq([o for o, _ in vez], ["planilha", "instagram", "catalogo", "planilha"],
-           f"as fontes se alternam pela parte de cada uma, todas testadas no dia: {vez}")
-        eq(vez[0][1], "planok", "dentro da fonte, perfil já conferido vem antes do que falta conferir")
+            return p.origem(a["lead"]), a["lead"]["handle"]
+        seq = [vez() for _ in range(4)]
+        eq([o for o, _ in seq], ["instagram", "planilha", "instagram", "planilha"], f"as fontes se alternam pela parte de cada uma: {seq}")
+        eq(seq[1][1], "planok", "dentro da fonte, perfil já conferido vem antes do que falta conferir")
         d = p.carregar(LOGIN)
-        next(l for l in d["leads"] if l["handle"] == "insta1")["interagiu"] = True
+        next(l for l in d["leads"] if l["handle"] == "plan2")["interagiu"] = True
         p.salvar(LOGIN, d)
-        a, motivo = p.proxima(LOGIN, "raizconnect")
-        eq(a["lead"]["handle"], "insta1", f"quem interagiu com a Raiz passa na frente da vez das fontes ({motivo})")
+        eq(vez()[1], "plan2", "quem interagiu com a Raiz passa na frente da vez das fontes")
+        eq([vez()[0] for _ in range(2)], ["instagram", "planilha"], "segue a vez")
+        eq(vez(), ("catalogo", "cat0"), "fonte fora da divisão só entra quando as outras acabam")
         d = p.carregar(LOGIN)
         d["config"]["estoque_fontes"] = {"planilha": 1, "instagram": 1, "catalogo": 0}
         p.salvar(LOGIN, d)
@@ -650,6 +651,12 @@ class Suite:
         eq(p.a_conferir(LOGIN, 10), ["lento1"], "o que falhou volta à lista")
         p.conferir_perfis(LOGIN, [{"handle": "lento1", "erro": "http 500"}])
         eq(p.a_conferir(LOGIN, 10), [], "depois de 2 falhas fica para a visita")
+        # the official API reads only business/creator accounts: a small producer's personal account goes to the
+        # browser script, and is never discarded for that
+        self._lead("pessoal1", **pl)
+        out = p.conferir_perfis(LOGIN, [{"handle": "pessoal1", "erro": "conta pessoal ou inexistente"}], "api")
+        eq((out.get("pelo_script"), out["descartados"]), (["pessoal1"], []), f"conta não comercial vai para o script: {out}")
+        eq((p.a_conferir(LOGIN, 10, "api"), p.a_conferir(LOGIN, 10)), ([], ["pessoal1"]), "a API não tenta de novo; o script sim")
         ok(not p.api_pausada(LOGIN), "sem 429, sem pausa")
         p.conferir_perfis(LOGIN, [{"handle": "lento1", "erro": "http 429"}])
         ok(p.api_pausada(LOGIN), "429 pausa os scripts de perfil")

@@ -37,7 +37,7 @@ quê, quando, quantas vezes e em que ordem é regra do código, nunca do modelo.
 - Vaga de «aquecer» livre (descarte na visita) é reposta pela `proxima` com o melhor lead novo, sem texto, um por vez
   (só com a pré-aprovação ligada); visita que falhou não é tentada de novo.
 - Esperas em dias de calendário (aquecido no dia D → primeira mensagem a partir do dia D+2; lembrete D+3).
-- Estoque de 100 leads prontos **dividido por fonte** (`ESTOQUE_FONTES`: planilha 60, Instagram 30, catálogo 10;
+- Estoque de 100 leads prontos **dividido por fonte** (`ESTOQUE_FONTES`: Instagram 60, planilha 40, catálogo fora da divisão;
   config `estoque_fontes`). Cada lead guarda a `origem`; a reposição de «aquecer» alterna as fontes pela parte de
   cada uma (quem interagiu com a Raiz passa na frente) e `metricas_fontes` mede o funil de cada fonte.
 - Achar o Instagram de uma empresa: o @ da fonte, depois o site da empresa (grátis), por último a busca paga (teto

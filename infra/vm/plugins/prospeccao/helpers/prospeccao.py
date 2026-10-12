@@ -414,7 +414,7 @@ def api_pausada(login: str) -> str:
 
 # ------------------------------------------------------------------ official API (Instagram Graph "business discovery")
 
-GRAPH = "https://graph.facebook.com/v21.0"
+GRAPH = "https://graph.facebook.com/v25.0"
 COFRE_TOKEN, COFRE_IG = "META_IG_TOKEN", "META_IG_USER_ID"
 
 
@@ -619,12 +619,13 @@ def avaliar_perfis(login: str, dados) -> dict:
 # the stock now; what passes gets its real numbers and score. Whether it is the right business is still looked at on
 # the visit (conferir_negocio).
 
-def a_conferir(login: str, limite: int = 5) -> list:
-    """Handles of stock leads whose activity and size were not checked yet, best score first."""
+def a_conferir(login: str, limite: int = 5, via: str = "script") -> list:
+    """Handles of stock leads whose activity and size were not checked yet, best score first. The official API only
+    reads business/creator accounts: via="api" leaves out the ones it could not read (they go by the script)."""
     d = carregar(login)
     tentados = {a["lead_id"] for a in d["acoes"] if a["tipo"] == "aquecer" and a["estado"] in ("falhou", "cancelada")}
     pend = [l for l in d["leads"] if l["etapa"] == "novo" and l.get("conferir_atividade") and l["id"] not in tentados
-            and l.get("conferencia_falhas", 0) < 2]
+            and l.get("conferencia_falhas", 0) < 2 and not (via == "api" and l.get("conferir_por_script"))]
     pend.sort(key=lambda l: -(l.get("nota") or 0))
     return [l["handle"] for l in pend[:limite]]
 
@@ -665,7 +666,12 @@ def conferir_perfis(login: str, dados, fonte: str = "script") -> dict:
             continue
         erro = str(perfil.get("erro") or "")
         if erro:
-            if re.search(r"não encontrado|inexistente|conta pessoal|http 404", erro):
+            if fonte == "api" and "conta pessoal" in erro:
+                # the API reads only business/creator accounts; a small producer often has a personal one: the
+                # browser script checks it instead (never a discard for that)
+                lead["conferir_por_script"] = True
+                out.setdefault("pelo_script", []).append(lead["handle"])
+            elif re.search(r"não encontrado|http 404", erro):
                 descartar.append((lead, f"conferido antes da visita: {erro}"))
             else:  # rate limit or network: try again later; after 2 tries the visit checks it
                 lead["conferencia_falhas"] = lead.get("conferencia_falhas", 0) + 1
@@ -788,9 +794,12 @@ def _dias_desde(ts: float) -> int:
 ESTOQUE_ALVO = 100
 # The stock is split among the sources (Matheus, 12/10: "acho que temos que dividir as fontes") so each one keeps
 # flowing and its yield can be compared: by 12/10, 11 of the 15 sheet profiles visited were discarded (stale, too big,
-# private) while the 14 found on Instagram itself had no discard and gave both replies. Config "estoque_fontes".
+# private) while the 14 found on Instagram itself had no discard and gave both replies. So Instagram gets the bigger
+# share (Matheus: "se a planilha rende pouco Instagram, como ela vai ficar com 60%?") and the CNPJ catalog (2 leads out
+# of 100 companies) is out until it proves otherwise. A source with no share is used only when the others are empty.
+# Config "estoque_fontes".
 ORIGENS = ("planilha", "instagram", "catalogo")
-ESTOQUE_FONTES = {"planilha": 60, "instagram": 30, "catalogo": 10}
+ESTOQUE_FONTES = {"planilha": 40, "instagram": 60, "catalogo": 0}
 
 
 def origem(lead: dict) -> str:
@@ -1728,8 +1737,8 @@ def resumo_contexto(login: str) -> str:
     dev = devidos(login)
     e = estoque(login)
     pf = e["por_fonte"]
-    partes = "; ".join(f"{o} {pf[o]['prontos']}/{pf[o]['alvo']}" + (f" (FALTAM {pf[o]['faltam']})" if pf[o]["faltam"] else "")
-                       for o in ORIGENS)
+    partes = "; ".join((f"{o} {pf[o]['prontos']}/{pf[o]['alvo']}" + (f" (FALTAM {pf[o]['faltam']})" if pf[o]["faltam"] else ""))
+                       if pf[o]["alvo"] else f"{o} {pf[o]['prontos']} (fora da divisão)" for o in ORIGENS)
     linhas = [f"# Prospecção — {dt.datetime.now(_tz()).strftime('%a %d/%m %H:%M')} ({FUSO})",
               "Cotas que ainda cabem hoje (propostas aprovadas contam): " + ", ".join(f"{k} {v}" for k, v in c.items()),
               f"Estoque de leads prontos para aquecer: {e['prontos']} de {e['alvo']}" +
