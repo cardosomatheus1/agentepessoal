@@ -1,0 +1,7 @@
+{"_marca": "sem-logo", "_formato": "reel", "ramo": "todo ateliê de costura",
+ "tipos": [
+  {"nome": "A da festa amanhã", "frase": "Dá pra ajustar até amanhã cedo?", "icone": "relogio"},
+  {"nome": "O que perdeu o botão", "frase": "É só um botãozinho, rapidinho", "icone": "vestido"},
+  {"nome": "A que traz o tecido", "frase": "Comprei esse tecido lindo, faz um vestido?", "icone": "presente"}
+ ],
+ "falas": ["Os três tipos de cliente de todo ateliê de costura.", "A da festa amanhã: dá pra ajustar até amanhã cedo?", "O que perdeu o botão: é só um botãozinho, rapidinho.", "A que traz o tecido: comprei esse tecido lindo, faz um vestido?", "E você, qual desses é? Comenta o número.", "Chama a gente no direct."]}

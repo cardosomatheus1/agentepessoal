@@ -1,0 +1,10 @@
+{"_marca": "studio-bella", "_formato": "carrossel", "ramo": "todo salão",
+ "tipos": [
+  {"nome": "A da foto da atriz", "frase": "Quero igualzinho, mas sem mexer no comprimento", "icone": "camera"},
+  {"nome": "A que vai só aparar", "frase": "Só as pontinhas, viu? Bem pouquinho", "icone": "tesoura"},
+  {"nome": "A pesquisadora", "frase": "Vi num vídeo que esse tom combina comigo", "icone": "lupa"},
+  {"nome": "A que vira amiga", "frase": "Já marca a próxima que a gente põe o papo em dia", "icone": "coracao"},
+  {"nome": "A pontual", "frase": "Cheguei dez minutos antes, tudo bem?", "icone": "relogio"},
+  {"nome": "A da mudança radical", "frase": "Pode cortar, hoje eu tô corajosa", "icone": "brilho"}
+ ],
+ "pergunta": "Qual dessas é você?"}

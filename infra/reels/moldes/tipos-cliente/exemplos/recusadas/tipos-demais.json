@@ -1,0 +1,6 @@
+{"_marca": "raiz", "_formato": "carrossel", "ramo": "toda confeitaria",
+ "tipos": [
+  {"nome": "Um", "frase": "frase um aqui", "icone": "relogio"}, {"nome": "Dois", "frase": "frase dois aqui", "icone": "relogio"},
+  {"nome": "Três", "frase": "frase três aqui", "icone": "relogio"}, {"nome": "Quatro", "frase": "frase quatro aqui", "icone": "relogio"},
+  {"nome": "Cinco", "frase": "frase cinco aqui", "icone": "relogio"}, {"nome": "Seis", "frase": "frase seis aqui", "icone": "relogio"},
+  {"nome": "Sete", "frase": "frase sete aqui", "icone": "relogio"}]}

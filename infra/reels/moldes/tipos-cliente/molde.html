@@ -1,0 +1,160 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* trading cards: one collectible card per customer type, dealt from a deck and flipped */
+.carta{position:absolute;left:0;top:0;width:720px;height:1040px;transform-origin:50% 50%}
+.carta .frente,.carta .verso{position:absolute;inset:0;border-radius:44px;overflow:hidden}
+.carta .frente{background:var(--fundo);box-shadow:var(--sombra)}
+.carta .frente .pele{position:absolute;inset:0;border-radius:44px}
+body.e-pop .carta .frente .pele{border-radius:28px}
+.carta .topo{position:absolute;left:22px;right:22px;top:22px;height:430px;border-radius:30px;background:var(--destaque);overflow:hidden}
+.carta .topo:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,color-mix(in srgb,var(--sobre-destaque) 7%,transparent) 0 18px,transparent 18px 40px)}
+.carta .ic{position:absolute;left:50%;top:60px;width:310px;height:310px;margin-left:-155px;border-radius:50%;background:color-mix(in srgb,var(--sobre-destaque) 12%,transparent);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:200px}
+.carta .num{position:absolute;left:28px;top:24px;height:76px;min-width:76px;padding:0 18px;border-radius:38px;background:var(--sobre-destaque);color:var(--destaque);font-family:var(--ft);font-weight:900;font-size:48px;line-height:76px;text-align:center}
+.carta .de{position:absolute;right:30px;top:30px;width:200px;height:60px;line-height:60px;text-align:right;color:var(--sobre-destaque);font-weight:800;font-size:38px;opacity:.85}
+.carta .nm{position:absolute;left:50px;right:50px;top:476px;height:170px;font-size:72px;line-height:1.02;display:flex;align-items:center;justify-content:center;text-align:center}
+.carta .fr{position:absolute;left:50px;right:50px;top:668px;height:330px;padding:34px 40px;border-radius:34px 34px 34px 10px;background:var(--fundo2);font-size:50px;font-weight:700;line-height:1.18;display:flex;align-items:center}
+.carta .fr:before{content:'“';position:absolute;left:-14px;top:-62px;font-family:var(--ft);font-weight:900;font-size:170px;line-height:1;color:var(--destaque)}
+.carta .grande{position:absolute;left:0;right:0;top:600px;height:330px;text-align:center;font-family:var(--ft);font-weight:900;font-size:300px;line-height:330px;color:var(--destaque);opacity:0}
+.carta .verso{background:var(--destaque);display:none}
+.carta .verso:before{content:'';position:absolute;inset:26px;border-radius:30px;border:6px solid color-mix(in srgb,var(--sobre-destaque) 45%,transparent);background:radial-gradient(circle,color-mix(in srgb,var(--sobre-destaque) 16%,transparent) 3px,transparent 4px) 0 0/44px 44px}
+.carta .verso b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--ft);font-weight:900;font-size:380px;color:var(--sobre-destaque);opacity:.9}
+.carta.mini .nm,.carta.mini .fr,.carta.mini .de{opacity:0}
+.carta.mini .grande{opacity:1}
+.carta.mini .num{display:none}
+/* video */
+#mesa{position:absolute;inset:0}
+#tit{position:absolute;left:110px;top:400px;width:790px;height:480px;font-size:118px;line-height:1.02;text-align:center;display:flex;align-items:center;justify-content:center}
+#tit .mk{color:var(--sobre-destaque)}
+#perg{position:absolute;left:110px;top:400px;width:790px;height:300px;font-size:120px;line-height:1;text-align:center;display:flex;align-items:center;justify-content:center}
+#comenta{position:absolute;left:240px;top:722px;width:540px;height:96px;line-height:96px;padding:0;text-align:center;font-size:48px}
+/* carousel */
+.slide .sobre{position:absolute;left:84px;right:84px;top:140px;height:50px;font-size:34px;font-weight:700;text-align:center}
+.slide .pe{position:absolute;left:84px;right:84px;bottom:66px;height:50px;font-size:32px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.slide.capa .tt{position:absolute;left:84px;right:84px;top:150px;height:520px;font-size:124px;line-height:1;display:flex;align-items:center;justify-content:center;text-align:center}
+.slide.capa .tt .mk{color:var(--sobre-destaque)}
+.slide.qual .tt{position:absolute;left:84px;right:84px;top:130px;height:180px;font-size:110px;line-height:1;text-align:center;display:flex;align-items:center;justify-content:center}
+.slide.qual .lista{position:absolute;left:110px;right:110px;top:350px;bottom:250px;display:flex;flex-direction:column;justify-content:center;gap:22px}
+.slide.qual .lin{display:flex;align-items:center;gap:26px;height:110px;padding:0 30px;border-radius:30px}
+.slide.qual .lin .n{flex:none;width:82px;height:82px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900;font-size:46px;line-height:82px;text-align:center}
+.slide.qual .lin .i{flex:none;font-size:62px;color:var(--destaque)}
+.slide.qual .lin .x{flex:1;height:64px;font-size:46px;font-weight:800;line-height:64px;white-space:nowrap}
+.slide.qual .cm{position:absolute;left:250px;right:250px;bottom:150px;height:84px;line-height:84px;padding:0;text-align:center;font-size:42px}
+</style></head><body><div id="palco">
+<div class="cena" id="mesaC"><div class="full" id="mesa">
+ <div id="tit" class="tit t seg"></div>
+ <div id="perg" class="tit t seg"></div>
+ <div id="comenta" class="chip t seg">Comenta o número</div>
+</div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Os tipos de cliente": every type is a collectible card (number, big icon from a fixed set, name and the typical
+// line in a speech balloon). In the video the cards are dealt from a face-down deck and flipped one per beat, then
+// fan out for "qual desses é você?". In the carousel: cover, one card per slide, numbered list to comment.
+let D = {};
+const DEBOCHE = /p[aã]o[\s-]*dur|\bchat[oa]s?\b|m[aã]o[\s-]+de[\s-]+vaca|calote|folgad|pentelh|sem[\s-]+no[cç][aã]o|\bmalas?\b|barraqueir|muquiran|mesquinh|sovina|pid[aã]o|pidona|\bburr|idiot|insuport|enjoad|caga|mala[\s-]+sem/i;
+function conferir(F, $m) {
+  F.tipos.forEach((x, i) => { if (DEBOCHE.test(x.nome + ' ' + x.frase)) $m.erro(`tipos[${i + 1}]: tipo que debocha do cliente (pão-duro, chato…) não entra; descreva o jeito, não xingue`); });
+  const nomes = F.tipos.map(x => x.nome.trim().toLowerCase()); if (new Set(nomes).size < nomes.length) $m.erro('tipos: dois tipos com o mesmo nome');
+}
+function titulo(el, F) {
+  el.textContent = `Os ${F.tipos.length} tipos de cliente de `;
+  const s = document.createElement('span'); s.className = 'mk'; s.textContent = F.ramo; el.appendChild(s);
+}
+function carta(x, i, n, $m) {
+  const c = document.createElement('div'); c.className = 'carta';
+  c.innerHTML = '<div class="verso"><b>?</b></div><div class="frente"><div class="pele cartao"></div><div class="topo"><div class="num"></div><div class="de t"></div><div class="ic"></div></div><div class="grande"></div><div class="nm tit t seg"></div><div class="fr t seg"></div></div>';
+  c.querySelector('.num').textContent = i + 1; c.querySelector('.grande').textContent = i + 1;
+  c.querySelector('.de').textContent = `${i + 1} de ${n}`;
+  c.querySelector('.ic').innerHTML = $m.icone(x.icone);
+  c.querySelector('.nm').textContent = x.nome; c.querySelector('.fr').textContent = x.frase;
+  return c;
+}
+// card placement: center (cx, cy), rotation, scale, flip (0 back .. 1 front)
+function por(c, cx, cy, r, s, f = 1, o = 1) {
+  const sx = Math.max(0.001, Math.abs(Math.cos(Math.PI * (1 - f))));
+  c.style.transform = `translate(${cx - 360}px,${cy - 520}px) rotate(${r}deg) scale(${s * sx},${s})`;
+  c.querySelector('.verso').style.display = f < 0.5 ? 'block' : 'none';
+  c.querySelector('.frente').style.display = f < 0.5 ? 'none' : 'block';
+  c.style.opacity = o;
+}
+Motor.molde({
+  id: 'tipos-cliente', formatos: ['carrossel', 'reel'],
+  montar(F, M, $m) {
+    const { $ } = $m, n = F.tipos.length;
+    conferir(F, $m);
+    if (F.falas && F.falas.length !== n + 3) $m.erro(`falas: ${F.falas.length}, precisa de ${n + 3} (título, uma por tipo, a pergunta e a chamada)`);
+    const narrado = window.TEMPOS && window.TEMPOS.length > 1;
+    if (!narrado && n > 5) $m.erro('no Reel sem narração cabem até 5 tipos (até 18 s); use o carrossel para 6');
+    titulo($('#tit'), F);
+    $('#perg').textContent = F.pergunta || 'Qual desses é você?';
+    D.cartas = F.tipos.map((x, i) => { const c = carta(x, i, n, $m); $('#mesa').appendChild(c); return c; });
+    const por1 = Math.min(2.6, 10.2 / n);
+    return { duracoes: [2.6, ...F.tipos.map(x => +Math.min(por1 + 0.4, Math.max(por1 - 0.3, por1 + (x.frase.length - 40) * 0.012)).toFixed(2)), 2.6] };
+  },
+  quadro(t, F, $m) {
+    const { $, p, eo, eo5, eio, eb, cl, lerp, ini, rnd } = $m, n = F.tipos.length, Q = n + 1;
+    $m.cena('#mesaC', t, 0, Q);
+    // title and the deck
+    const ti = eo5(p(t, 0.1, 0.6)), to = eo(p(t, ini(1) - 0.2, 0.3));
+    $('#tit').style.opacity = ti * (1 - to); $('#tit').style.transform = `translateY(${(1 - ti) * 50}px)`;
+    $m.marcador($('#tit .mk'), t, 0.7);
+    const pq = eo5(p(t, ini(Q) + 0.15, 0.5));
+    $('#perg').style.opacity = pq; $('#perg').style.transform = `scale(${0.8 + 0.2 * eb(p(t, ini(Q) + 0.15, 0.5))})`;
+    const cm = eb(p(t, ini(Q) + 0.6, 0.5)); $('#comenta').style.opacity = cl(cm * 2); $('#comenta').style.transform = `scale(${cm})`;
+    D.cartas.forEach((c, k) => {
+      const mk = k - (n - 1) / 2;
+      // deck slot
+      const dx = 540 + mk * 34, dy = 1230 + Math.abs(mk) * 8, dr = mk * 5, ds = 0.4;
+      const ent = eb(p(t, 0.3 + k * 0.12, 0.5));
+      let x = dx, y = dy + (1 - ent) * 900, r = dr, s = ds, f = 0, o = cl(ent * 3);
+      // dealt and flipped in its scene
+      const a = ini(1 + k), dl = eo5(p(t, a, 0.55)), fl = eio(p(t, a + 0.1, 0.45));
+      if (t >= a) { x = lerp(dx, 540, dl); y = lerp(dy, 925, dl); r = lerp(dr, 0, dl) + (1 - dl) * 12; s = lerp(ds, 1, dl); f = fl; }
+      // thrown to the side when the next one comes
+      const b = ini(2 + k), sai = eio(p(t, b, 0.5));
+      if (t >= b && t < ini(Q)) { x = 540 - 1100 * sai; y = 925 - 120 * sai; r = -24 * sai; }
+      // fan for the question
+      const fq = eo5(p(t, ini(Q) + 0.05 + k * 0.07, 0.6));
+      if (t >= ini(Q)) {
+        const th = n > 1 ? lerp(-16, 16, k / (n - 1)) : 0, R = 1050;
+        const fx = 540 + R * Math.sin(th * Math.PI / 180), fy = 2210 - R * Math.cos(th * Math.PI / 180);
+        x = lerp(k === n - 1 ? 540 : -560, fx, fq); y = lerp(925, fy, fq); r = lerp(k === n - 1 ? 0 : -24, th, fq); s = lerp(1, 0.34, fq); f = 1;
+      }
+      c.classList.toggle('mini', t >= ini(Q) + 0.2);
+      // the phrase balloon pops after the flip
+      const bal = eb(p(t, a + 0.55, 0.45)); const fr = c.querySelector('.fr');
+      fr.style.transform = t < ini(Q) ? `scale(${cl(bal, 0, 2)})` : ''; fr.style.transformOrigin = '10% 100%';
+      c.querySelector('.nm').style.opacity = t < ini(Q) ? eo(p(t, a + 0.4, 0.3)) : 0;
+      c.style.zIndex = t >= ini(Q) ? 10 + k : (t >= a ? 20 + k : 10 - k);
+      por(c, x, y, r, s, f, o);
+    });
+  },
+  slides(F, M, $m) {
+    const palco = $m.$('#palco'), n = F.tipos.length; $m.$$('.cena', palco).forEach(c => c.remove());
+    conferir(F, $m);
+    const capa = document.createElement('div'); capa.className = 'slide capa';
+    capa.innerHTML = '<div class="tt tit t seg"></div><div class="pe t2"><span></span><span>arrasta</span></div>';
+    titulo(capa.querySelector('.tt'), F);
+    F.tipos.forEach((x, k) => { const c = carta(x, k, n, $m); c.classList.add('mini'); capa.appendChild(c);
+      const th = n > 1 ? $m.lerp(-18, 18, k / (n - 1)) : 0, R = 900; por(c, 540 + R * Math.sin(th * Math.PI / 180), 1960 - R * Math.cos(th * Math.PI / 180), th, 0.36); });
+    capa.querySelector('.tt .mk').style.setProperty('--k', 1);
+    palco.appendChild(capa);
+    F.tipos.forEach((x, k) => {
+      const s = document.createElement('div'); s.className = 'slide';
+      s.innerHTML = '<div class="sobre t t2"></div><div class="pe t2"><span></span><span></span></div>';
+      s.querySelector('.sobre').textContent = `Os tipos de cliente de ${F.ramo}`;
+      s.querySelector('.pe span:last-child').textContent = k < n - 1 ? 'arrasta' : '';
+      const c = carta(x, k, n, $m); s.appendChild(c); por(c, 540, 702, k % 2 ? 1.2 : -1.2, 0.92);
+      palco.appendChild(s);
+    });
+    const q = document.createElement('div'); q.className = 'slide qual';
+    q.innerHTML = '<div class="tt tit t seg"></div><div class="lista"></div><div class="cm chip t seg">Comenta o número</div>';
+    q.querySelector('.tt').textContent = F.pergunta || 'Qual desses é você?';
+    F.tipos.forEach((x, k) => { const l = document.createElement('div'); l.className = 'lin cartao'; l.innerHTML = '<div class="n"></div><div class="i"></div><div class="x t seg"></div>';
+      l.querySelector('.n').textContent = k + 1; l.querySelector('.i').innerHTML = $m.icone(x.icone); l.querySelector('.x').textContent = x.nome; q.querySelector('.lista').appendChild(l); });
+    palco.appendChild(q);
+  },
+});
+</script></body></html>

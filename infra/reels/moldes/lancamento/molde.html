@@ -14,7 +14,7 @@ body.e-papel #moldura{border-radius:6px}
 #novo{position:absolute;right:-70px;top:-60px;width:330px;height:150px;font-family:var(--ft),sans-serif;font-weight:900;font-size:104px;line-height:132px;text-align:center;color:var(--destaque);border:10px solid var(--destaque);border-radius:22px;background:color-mix(in srgb,var(--fundo) 88%,transparent);letter-spacing:.06em;opacity:0}
 body.e-pop #novo{background:var(--fundo)}
 /* curtain: two pleated halves */
-.cortina{position:absolute;top:-40px;width:600px;height:2000px;z-index:5;
+.cortina{position:absolute;top:-40px;width:570px;height:2000px;z-index:5;
  background:repeating-linear-gradient(90deg,var(--destaque) 0 34px,color-mix(in srgb,var(--destaque) 62%,var(--fundo)) 60px,var(--destaque) 92px);box-shadow:var(--sombra)}
 .cortina:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--fundo) 35%,transparent),transparent 30%,transparent 75%,color-mix(in srgb,var(--fundo) 45%,transparent))}
 #cE{left:-30px;transform-origin:0 0}#cD{right:-30px;transform-origin:100% 0}
@@ -23,10 +23,10 @@ body.e-pop #novo{background:var(--fundo)}
 #vemS{z-index:7;left:90px;width:820px;top:930px;height:70px;font-size:48px;font-weight:800;color:var(--sobre-destaque);opacity:.9}
 /* confetti */
 #confete{position:absolute;inset:0;z-index:8;pointer-events:none}
-#confete i{position:absolute;left:0;top:0;width:22px;height:34px;border-radius:4px}
+#confete i{position:absolute;left:-15px;top:-22px;width:30px;height:44px;border-radius:5px}
 /* scene 2: name */
-#nome{left:90px;width:820px;top:1060px;height:250px;font-size:124px;line-height:1;text-align:center}
-#quando{position:absolute;left:90px;width:820px;top:1340px;text-align:center}
+#nome{left:90px;width:820px;top:1040px;height:300px;font-size:150px;line-height:1;text-align:center}
+#quando{position:absolute;left:90px;width:820px;top:1360px;text-align:center}
 #quando span{display:inline-block;font-size:46px;padding:16px 36px;white-space:nowrap}
 /* scene 3: attributes */
 #leque{position:absolute;left:0;right:0;top:390px;height:470px}
@@ -89,7 +89,7 @@ Motor.molde({
       d.innerHTML = '<div class="n tit"></div><div class="tx t seg"></div>'; d.querySelector('.n').textContent = k + 1; d.querySelector('.tx').textContent = a; $('#attrs').appendChild(d); });
     // confetti pieces (deterministic)
     const cores = ['var(--destaque)', 'var(--c2)', 'var(--texto)', 'var(--c1)'];
-    for (let i = 0; i < 46; i++) { const c = document.createElement('i'); c.style.background = cores[i % 4]; c.dataset.i = i; $('#confete').appendChild(c); }
+    for (let i = 0; i < 72; i++) { const c = document.createElement('i'); c.style.background = cores[i % 4]; c.dataset.i = i; $('#confete').appendChild(c); }
     if (F.preco != null) { const pr = brl(F.preco).replace(' ', ' '); F.final_extra = F.final_extra ? F.final_extra + ' · ' + pr : 'Lançamento por ' + pr; }
     return { duracoes: [1.6, 2.0, 2.4, 3.4] };
   },
@@ -99,9 +99,9 @@ Motor.molde({
     $m.cena('#cAll', t, 0, 3, { push: 0.02 });
     // curtain: closed with a sliver of light, then opens (each half swings and gathers to its side)
     const ab = eio(p(t, S1 + 0.05, 1.1)), sw = Math.sin(p(t, S1, 1.6) * Math.PI * 3) * (1 - p(t, S1, 1.6));
-    const gap = 26 + 30 * Math.sin(t * 3) * (1 - ab);
-    $('#cE').style.transform = `translateX(${-gap / 2 - ab * 640}px) skewX(${sw * 4}deg) scaleX(${1 - ab * 0.35})`;
-    $('#cD').style.transform = `translateX(${gap / 2 + ab * 640}px) skewX(${-sw * 4}deg) scaleX(${1 - ab * 0.35})`;
+    const gap = (46 + 22 * Math.sin(t * 4)) * (1 - ab);
+    $('#cE').style.transform = `translateX(${-gap / 2}px) skewX(${sw * 3}deg) scaleX(${1 - ab * 0.8})`;
+    $('#cD').style.transform = `translateX(${gap / 2}px) skewX(${-sw * 3}deg) scaleX(${1 - ab * 0.8})`;
     $('#bando').style.transform = `translateY(${-eio(p(t, S1 + 0.5, 0.8)) * 300}px)`;
     // "vem novidade" sits on the curtain and leaves with it
     $m.revela('#vem', t, 0.15, 0.1); $m.entra('#vemS', t, 0.7, 0.4, 30);
@@ -125,8 +125,8 @@ Motor.molde({
     $m.carimbo('#novo', t, S2 + 0.85);
     const qd = eb(p(t, S2 + 1.2, 0.5)); $('#quando').style.opacity = cl(qd * 2) * (1 - eo(p(t, S3 - 0.1, 0.3))); $('#quando').style.transform = `scale(${0.7 + 0.3 * qd})`;
     // attributes: photos fan out on top, cards slide in one by one
-    $$('#leque .ph').forEach(d => { const k = +d.dataset.k, n = +d.dataset.n, q = eb(p(t, S3 + 0.1 + k * 0.12, 0.6)); const ang = n === 1 ? 0 : (k - (n - 1) / 2) * 16;
-      d.style.opacity = t >= S3 ? cl(q * 2) : 0; d.style.transform = `translateX(${(k - (n - 1) / 2) * 150 * q}px) rotate(${ang * q}deg) scale(${0.6 + 0.4 * q})`; d.style.zIndex = n - Math.abs(k - (n - 1) / 2) * 2; });
+    $$('#leque .ph').forEach(d => { const k = +d.dataset.k, n = +d.dataset.n, q = eb(p(t, S3 + 0.1 + k * 0.12, 0.6)); const ang = n === 1 ? -3 : (k - (n - 1) / 2) * 10;
+      d.style.opacity = t >= S3 ? cl(q * 2) : 0; d.style.transform = `translateX(${(k - (n - 1) / 2) * (n === 2 ? 210 : 250) * q}px) rotate(${ang * q}deg) scale(${0.6 + 0.4 * q})`; d.style.zIndex = n - Math.abs(k - (n - 1) / 2) * 2; });
     $$('#attrs .at').forEach(d => { const k = +d.dataset.k, q = eo5(p(t, S3 + 0.45 + k * 0.45, 0.55));
       d.style.opacity = t >= S3 ? q : 0; d.style.translate = `${(1 - q) * 700}px 0`; });
   },

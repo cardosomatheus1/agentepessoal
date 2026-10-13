@@ -1,0 +1,186 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* a live calendar: the week (or month) builds, a scan line crosses it, booked slots get struck and free ones light up */
+#cabT{left:80px;right:80px;top:380px;height:100px;font-size:92px;line-height:1.05;white-space:nowrap}
+#cabS{left:80px;right:80px;top:488px;height:56px;font-size:42px;font-weight:700;white-space:nowrap}
+#cal{position:absolute;left:66px;top:580px;width:948px;height:820px;padding:34px 30px;overflow:hidden}
+#cal .mes{position:absolute;left:30px;right:30px;top:24px;height:56px;font-size:40px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+#cols{position:absolute;left:30px;right:30px;top:96px;bottom:30px;display:flex;gap:12px}
+.col{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0}
+.col .cab{height:118px;border-radius:24px;background:color-mix(in srgb,var(--texto) 7%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.col .cab .ds{height:40px;font-size:30px;font-weight:900;letter-spacing:.06em;width:100%;text-align:center;white-space:nowrap}
+.col .cab .dn{height:62px;font-size:56px;line-height:62px;width:100%;text-align:center;white-space:nowrap}
+.sl{position:relative;height:86px;border-radius:20px;border:3px solid var(--borda);display:flex;align-items:center;justify-content:center}
+.sl .t{width:100%;height:44px;font-size:34px;font-weight:800;text-align:center;white-space:nowrap;line-height:44px}
+.sl .risco{position:absolute;left:10%;top:50%;width:80%;height:6px;margin-top:-3px;border-radius:3px;background:var(--ruim);transform-origin:0 50%;transform:rotate(-14deg) scaleX(0)}
+.sl.livre{border-color:var(--destaque)}
+/* month grid */
+#grade{position:absolute;left:30px;right:30px;top:100px;bottom:26px;display:grid;grid-template-columns:repeat(7,1fr);gap:10px;align-content:start}
+#grade .sem{height:46px;font-size:30px;font-weight:900;text-align:center}
+#grade .dia{position:relative;height:100px;border-radius:22px;display:flex;align-items:center;justify-content:center}
+#grade .dia .t{width:100%;height:58px;font-size:46px;font-weight:800;text-align:center;line-height:58px}
+#grade .dia.fora .t{opacity:.28}
+#grade .dia .risco{position:absolute;left:18%;top:50%;width:64%;height:6px;margin-top:-3px;border-radius:3px;background:var(--ruim);transform-origin:0 50%;transform:rotate(-30deg) scaleX(0)}
+#grade .dia .qt{position:absolute;right:6px;top:4px;min-width:38px;height:38px;border-radius:19px;padding:0 8px;font-size:24px;font-weight:900;line-height:38px;text-align:center;background:var(--texto);color:var(--fundo);opacity:0}
+#scan{position:absolute;left:0;right:0;height:140px;background:linear-gradient(transparent,color-mix(in srgb,var(--destaque) 26%,transparent) 80%,var(--destaque));opacity:0;pointer-events:none}
+#conta{left:80px;right:80px;top:1424px;height:110px;display:flex;align-items:center;justify-content:center;gap:22px}
+#contaN{font-size:104px;line-height:110px;height:110px}
+#contaT{font-size:46px;font-weight:800;height:60px;white-space:nowrap}
+/* scene 2: the free slots come forward */
+#c2T{left:80px;right:80px;top:390px;height:150px;font-size:136px;line-height:1.05;white-space:nowrap}
+#c2S{left:80px;right:80px;top:552px;height:56px;font-size:42px;font-weight:700;white-space:nowrap}
+#lista{position:absolute;left:80px;right:80px;top:650px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.vg{height:150px;border-radius:30px;background:var(--destaque);color:var(--sobre-destaque);display:flex;flex-direction:column;justify-content:center;padding:0 30px;box-shadow:var(--sombra)}
+body.e-pop .vg{border:5px solid var(--texto);box-shadow:10px 10px 0 var(--texto)}
+body.e-noite .vg{box-shadow:0 0 34px color-mix(in srgb,var(--destaque) 60%,transparent)}
+.vg .a{height:44px;font-size:34px;font-weight:800;white-space:nowrap;opacity:.85}
+.vg .b{height:74px;font-size:66px;line-height:74px;white-space:nowrap}
+.vg.mais{background:transparent;color:var(--texto);border:3px dashed var(--borda);box-shadow:none;align-items:center}
+#cta{position:absolute;left:80px;right:80px;top:1300px;height:200px;border-radius:40px;padding:0 44px;display:flex;align-items:center;gap:30px;background:var(--texto);color:var(--fundo)}
+#cta .ico{flex:none;font-size:84px}
+#ctaT{flex:1;height:150px;font-size:54px;font-weight:900;line-height:1.12;display:flex;align-items:center}
+</style></head><body><div id="palco">
+<div class="cena" id="c0"><div class="cam full">
+ <div class="ctr tit t seg rv" id="cabT"></div>
+ <div class="ctr t t2 seg" id="cabS"></div>
+ <div id="cal" class="cartao"><div class="mes t dest seg" id="mes"></div><div id="cols"></div><div id="grade"></div><div id="scan"></div></div>
+ <div class="ctr seg" id="conta"><span class="tit dest t" id="contaN"></span><span class="t" id="contaT"></span></div>
+</div></div>
+<div class="cena" id="c2"><div class="cam full">
+ <div class="ctr tit t seg rv" id="c2T"></div>
+ <div class="ctr t t2 seg" id="c2S"></div>
+ <div id="lista"></div>
+ <div id="cta"><span id="ctaIc"></span><div class="t seg rv" id="ctaT"></div></div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Agenda aberta": only real slots (from the calendar system or confirmed by the owner today). The week view shows
+// columns of hours; the month view shows the days. Booked ones get a red strike, free ones light up, the count of
+// free slots is computed here, then the free ones come forward with how to book. Weekdays come from the dates.
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const SIG = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const dt = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const ddmm = s => s.slice(8, 10) + '/' + s.slice(5, 7);
+const hh = h => h.endsWith(':00') ? String(+h.slice(0, 2)) + 'h' : String(+h.slice(0, 2)) + 'h' + h.slice(3);
+let D = {};
+Motor.molde({
+  id: 'agenda', formatos: ['story'],
+  montar(F, M, $m) {
+    const { $ } = $m, hoje = F._hoje || iso(new Date()), sem = F.periodo === 'semana';
+    if (F.confirmado_em !== hoje) $m.erro('horários confirmados em ' + ddmm(F.confirmado_em) + ': a agenda tem de ser lida ou confirmada hoje');
+    const H = F.horarios.slice().sort((a, b) => (a.data + (a.hora || '')).localeCompare(b.data + (b.hora || '')));
+    if (H.some(h => h.data < hoje)) $m.erro('há horário em data que já passou');
+    if (!H.some(h => h.livre)) $m.erro('nenhum horário livre: use o molde Aviso (agenda cheia)');
+    const chaves = new Set(H.map(h => h.data + (h.hora || ''))); if (chaves.size < H.length) $m.erro('horário repetido');
+    const datas = [...new Set(H.map(h => h.data))];
+    const livres = H.filter(h => h.livre);
+    D = { sem, H, livres };
+    if (sem) {
+      if (H.some(h => !h.hora)) $m.erro('na semana, todo horário precisa de hora');
+      if ((dt(datas[datas.length - 1]) - dt(datas[0])) / 864e5 > 6) $m.erro('a semana vai de um dia a, no máximo, 6 dias depois');
+      const porDia = datas.map(d => H.filter(h => h.data === d));
+      if (porDia.some(x => x.length > 6)) $m.erro('no máximo 6 horários por dia (mostre os principais)');
+      const d0 = dt(datas[0]), d1 = dt(datas[datas.length - 1]);
+      $('#mes').textContent = d0.getMonth() === d1.getMonth() ? `${d0.getDate()} a ${d1.getDate()} de ${MESES[d1.getMonth()]}` : `${ddmm(datas[0])} a ${ddmm(datas[datas.length - 1])}`;
+      $('#grade').remove();
+      porDia.forEach((hs, k) => {
+        const c = document.createElement('div'); c.className = 'col'; c.dataset.k = k;
+        const d = dt(hs[0].data);
+        c.innerHTML = '<div class="cab"><div class="ds t"></div><div class="dn tit t"></div></div>';
+        c.querySelector('.ds').textContent = SIG[d.getDay()]; c.querySelector('.dn').textContent = d.getDate();
+        hs.forEach(h => { const s = document.createElement('div'); s.className = 'sl' + (h.livre ? ' livre' : ' ocup');
+          const x = document.createElement('div'); x.className = 't seg'; x.textContent = hh(h.hora); s.appendChild(x);
+          if (!h.livre) s.insertAdjacentHTML('beforeend', '<i class="risco"></i>'); c.appendChild(s); });
+        $('#cols').appendChild(c);
+      });
+      if (porDia.length > 5) document.querySelectorAll('.sl .t').forEach(e => { e.style.fontSize = '31px'; });
+    } else {
+      const m0 = datas[0].slice(0, 7);
+      if (datas.some(d => d.slice(0, 7) !== m0)) $m.erro('no mês, todas as datas no mesmo mês');
+      const d0 = dt(m0 + '-01'), y = d0.getFullYear(), mo = d0.getMonth(), nd = new Date(y, mo + 1, 0).getDate();
+      $('#mes').textContent = MESES[mo] + ' ' + y;
+      $('#cols').remove();
+      ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(l => { const e = document.createElement('div'); e.className = 'sem t t2'; e.textContent = l; $('#grade').appendChild(e); });
+      for (let i = 0; i < d0.getDay(); i++) $('#grade').appendChild(document.createElement('div'));
+      const rows = Math.ceil((d0.getDay() + nd) / 7);
+      for (let d = 1; d <= nd; d++) {
+        const ds = `${m0}-${String(d).padStart(2, '0')}`, hs = H.filter(h => h.data === ds), nl = hs.filter(h => h.livre).length;
+        const e = document.createElement('div'); e.className = 'dia' + (hs.length ? (nl ? ' livre' : ' ocup') : ' fora'); e.dataset.r = Math.floor((d0.getDay() + d - 1) / 7);
+        e.innerHTML = '<div class="t tit"></div>'; e.querySelector('.t').textContent = d;
+        if (hs.length && !nl) e.insertAdjacentHTML('beforeend', '<i class="risco"></i>');
+        if (nl && hs.some(h => h.hora)) { const q = document.createElement('b'); q.className = 'qt'; q.textContent = nl; e.appendChild(q); }
+        if (hs.length) e.querySelector('.t').classList.add('seg');
+        e.style.height = (rows > 5 ? 92 : 104) + 'px';
+        $('#grade').appendChild(e);
+      }
+    }
+    $('#cabT').textContent = F.titulo || 'Agenda aberta';
+    $('#cabS').textContent = F.servico || (sem ? 'horários da semana' : 'datas do mês');
+    const nl = livres.length, un = sem || livres.some(h => h.hora) ? ['horário livre', 'horários livres'] : ['data livre', 'datas livres'];
+    $('#contaN').textContent = nl; $('#contaT').textContent = nl === 1 ? un[0] : un[1];
+    D.nl = nl;
+    // scene 2
+    $('#c2T').textContent = nl === 1 ? 'Garanta a sua' : 'Garanta o seu';
+    if (nl === 1 && un[0].startsWith('horário')) $('#c2T').textContent = 'Garanta o seu';
+    $('#c2S').textContent = nl === 1 ? 'só sobrou esta vaga' : `${nl} vagas de verdade, sem repetir`;
+    const mostra = livres.slice(0, nl > 8 ? 7 : 8);
+    mostra.forEach(h => { const v = document.createElement('div'); v.className = 'vg';
+      v.innerHTML = '<div class="a t"></div><div class="b tit t seg"></div>';
+      const d = dt(h.data); v.querySelector('.a').textContent = `${DIAS[d.getDay()]}, ${ddmm(h.data)}`;
+      v.querySelector('.b').textContent = h.hora ? hh(h.hora) : String(d.getDate()) + ' de ' + MESES[d.getMonth()].slice(0, 3);
+      $('#lista').appendChild(v); });
+    if (nl > 8) { const v = document.createElement('div'); v.className = 'vg mais'; v.innerHTML = '<div class="b tit t seg"></div>'; v.querySelector('.b').textContent = '+' + (nl - 7); $('#lista').appendChild(v); }
+    if (mostra.length === 1) $('#lista').style.gridTemplateColumns = '1fr';
+    const linhas = Math.ceil($('#lista').children.length / 2);
+    if (linhas <= 2) document.querySelectorAll('.vg').forEach(v => { v.style.height = '190px'; });
+    $('#ctaIc').innerHTML = $m.icone(F.icone || 'chat'); $('#ctaT').textContent = F.como_agendar;
+    $('#nota').textContent = F.nota || '';
+    return { duracoes: [2.2, 3.4, 3.4] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, ini } = $m;
+    // scenes 0 and 1 share the calendar: it builds, then the scan resolves every slot
+    $m.cena('#c0', t, 0, 1, { push: 0.03 });
+    $m.revela('#cabT', t, 0.1); $m.entra('#cabS', t, 0.45, 0.5, 24);
+    const ci = eo5(p(t, 0.2, 0.7)); $('#cal').style.opacity = ci; $('#cal').style.transform = `translateY(${(1 - ci) * 140}px) scale(${0.94 + 0.06 * ci})`;
+    $m.entra('#mes', t, 0.5, 0.4, 16);
+    const a1 = ini(1), calH = 820;
+    const sc = p(t, a1 + 0.1, 1.5); $('#scan').style.top = (-140 + sc * (calH + 140)) + 'px'; $('#scan').style.opacity = sc > 0 && sc < 1 ? 1 : 0;
+    const passou = y => t > a1 + 0.1 + (y + 140) / (calH + 140) * 1.5 - 0.1;
+    if (D.sem) {
+      $$('.col').forEach(c => { const k = +c.dataset.k, q = eb(p(t, 0.5 + k * 0.09, 0.5)); c.style.opacity = cl(q * 2); c.style.transform = `translateY(${(1 - q) * -90}px)`; });
+      $$('.sl').forEach(s => {
+        const y = s.offsetTop + 96 + 34, on = passou(y), q = eo5(p(t, a1 + 0.1 + (y + 140) / (calH + 140) * 1.5 - 0.1, 0.4));
+        if (s.classList.contains('livre')) {
+          s.style.background = on ? `color-mix(in srgb,var(--destaque) ${Math.round(q * 100)}%,transparent)` : 'transparent';
+          s.style.color = on && q > 0.5 ? 'var(--sobre-destaque)' : 'var(--texto)';
+          const pul = on ? 1 + 0.12 * Math.sin(q * Math.PI) + 0.025 * Math.sin((t - a1) * 5) * p(t, a1 + 1.8, 0.4) : 1;
+          s.style.transform = `scale(${pul})`; s.style.boxShadow = on ? `0 0 ${30 * q}px color-mix(in srgb,var(--destaque) 70%,transparent)` : 'none';
+        } else { s.querySelector('.risco').style.transform = `rotate(-14deg) scaleX(${q})`; s.style.opacity = 1 - 0.5 * q; }
+      });
+    } else {
+      $$('#grade>*').forEach((e, i) => { const q = eb(p(t, 0.45 + (i % 7) * 0.04 + Math.floor(i / 7) * 0.05, 0.45)); e.style.opacity = cl(q * 2); e.style.transform = `scale(${0.7 + 0.3 * q})`; });
+      $$('#grade .dia').forEach(e => {
+        const y = e.offsetTop + 100, on = passou(y), q = eo5(p(t, a1 + 0.1 + (y + 140) / (calH + 140) * 1.5 - 0.1, 0.4));
+        if (e.classList.contains('livre')) { e.style.background = on ? `color-mix(in srgb,var(--destaque) ${Math.round(q * 100)}%,transparent)` : 'transparent'; e.style.color = on && q > 0.5 ? 'var(--sobre-destaque)' : 'var(--texto)';
+          e.style.boxShadow = on ? `0 0 ${30 * q}px color-mix(in srgb,var(--destaque) 70%,transparent)` : 'none'; const b = e.querySelector('.qt'); if (b) b.style.opacity = on ? q : 0; }
+        else if (e.classList.contains('ocup')) { e.querySelector('.risco').style.transform = `rotate(-30deg) scaleX(${q})`; e.style.opacity = 1 - 0.45 * q; }
+      });
+    }
+    const cq = el(p(t, a1 + 1.7, 0.9)); $('#conta').style.opacity = cl(cq * 3); $('#conta').style.transform = `scale(${0.6 + 0.4 * cq})`;
+    $m.conta('#contaN', t, a1 + 1.7, 0.8, D.nl);
+    // scene 2: free slots forward
+    const a2 = ini(2); $m.cena('#c2', t, 2);
+    $m.revela('#c2T', t, a2 + 0.1); $m.entra('#c2S', t, a2 + 0.5, 0.5, 20);
+    $$('#lista .vg').forEach((v, i) => { const q = eb(p(t, a2 + 0.35 + i * 0.12, 0.55)); v.style.opacity = cl(q * 2); v.style.transform = `translateY(${(1 - q) * 160}px) rotate(${(1 - q) * (i % 2 ? 6 : -6)}deg)`; });
+    const cq2 = eo5(p(t, a2 + 1.1, 0.6)); $('#cta').style.opacity = cq2; $('#cta').style.transform = `translateY(${(1 - cq2) * 80}px)`;
+    $m.revela('#ctaT', t, a2 + 1.3, 0.05);
+    $('#nota').style.opacity = t < $m.fim(2) ? 1 : 0;
+  },
+});
+</script></body></html>

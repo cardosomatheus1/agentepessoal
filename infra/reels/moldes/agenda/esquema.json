@@ -1,0 +1,72 @@
+{
+ "formatos": [
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "periodo": {
+   "tipo": "escolha",
+   "opcoes": [
+    "semana",
+    "mes"
+   ],
+   "dica": "semana: colunas de dias com horas; mes: calendário do mês com as datas"
+  },
+  "titulo": {
+   "tipo": "texto",
+   "max": 18,
+   "obrigatorio": false,
+   "dica": "padrão: Agenda aberta"
+  },
+  "servico": {
+   "tipo": "texto",
+   "max": 34,
+   "obrigatorio": false,
+   "dica": "Corte, escova e coloração"
+  },
+  "horarios": {
+   "tipo": "lista",
+   "min": 2,
+   "max": 42,
+   "real": true,
+   "dica": "lidos da agenda (sistema) ou confirmados pelo dono hoje; livres e ocupados. Semana: até 7 dias seguidos e 6 horas por dia, todos com hora. Mês: datas do mesmo mês, hora opcional",
+   "item": {
+    "data": {
+     "tipo": "data"
+    },
+    "hora": {
+     "tipo": "hora",
+     "obrigatorio": false
+    },
+    "livre": {
+     "tipo": "booleano"
+    }
+   }
+  },
+  "confirmado_em": {
+   "tipo": "data",
+   "dica": "dia em que a agenda foi lida ou confirmada; tem de ser hoje"
+  },
+  "como_agendar": {
+   "tipo": "texto",
+   "max": 50
+  },
+  "icone": {
+   "tipo": "escolha",
+   "opcoes": [
+    "chat",
+    "telefone",
+    "calendario",
+    "link",
+    "local"
+   ],
+   "obrigatorio": false
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ }
+}

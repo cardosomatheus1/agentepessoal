@@ -1,0 +1,5 @@
+{"_marca": "burger-noite", "_formato": "reel", "ramo": "toda hamburgueria",
+ "tipos": [
+  {"nome": "O que tira tudo", "frase": "Sem cebola, sem tomate", "icone": "palhaco"},
+  {"nome": "O indeciso", "frase": "Qual você mais gosta?", "icone": "lupa"},
+  {"nome": "O fotógrafo", "frase": "Ninguém come antes da foto!", "icone": "camera"}]}
