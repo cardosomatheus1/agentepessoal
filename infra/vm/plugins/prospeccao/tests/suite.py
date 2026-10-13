@@ -2237,10 +2237,9 @@ class Suite:
         ok("VARREDURA COMPLETA" in p.resumo_contexto(LOGIN), "sem varredura recente: abrir todas")
         p.conferido(LOGIN, "1 conversa conferida: sem resposta", "Notificações: nada novo do registro hoje à tarde.", [], True)
         ctx = p.resumo_contexto(LOGIN)
-        ok("contador de não lidas" in ctx and "VARREDURA COMPLETA" not in ctx and "@var1" in ctx
-           and "direct_script" not in ctx, f"logo depois: o contador e só as conversas recentes: {ctx[-400:]}")
-        ok("Todas as conversas em andamento (1), para a varredura completa: @var1" in ctx,
-           "e a lista inteira, para quando o contador mostrar algo que não está entre as recentes")
+        ok("Direct nesta rodada" in ctx and "VARREDURA COMPLETA" not in ctx and "@var1" in ctx
+           and "direct_script" in ctx, f"logo depois: a lista lida pelo script e as conversas recentes: {ctx[-400:]}")
+        ok("Todas as conversas em andamento (1): @var1" in ctx, "e a lista inteira das conversas em andamento")
         self.em(self.relogio + p.VARREDURA_H * 3600 + 60)
         ok("VARREDURA COMPLETA" in p.resumo_contexto(LOGIN), "4 h depois: de novo")
 
@@ -2597,6 +2596,68 @@ class Suite:
            "só o parado ou pequeno volta; outro negócio, rede e quem disse não, nunca")
         ok(p._lead(d, parado).get("conferir_atividade"), "volta para ser conferido na visita")
         ok(parado in {l["id"] for l in p.devidos(LOGIN)["aquecer"]}, "e entra de novo no estoque")
+
+    def t_caixa_lida_pela_lista_da_pagina(self):
+        """13/10: the inbox list is not in the page text; a round saw "Primary vazio" with six conversations on screen,
+        one of them an answer, and stopped asking Matheus. The script reads the list; the helper matches each row."""
+        p = self.p
+        self.em(self.hora(10))
+        ids = {}
+        textos = {
+            "ginis.industria": "Oi, pessoal da Gini's! Vi que vocês fazem salgados congelados para atacado e varejo. Quanto sobra em cada cento depois da massa, do óleo e da embalagem? Se quiser, eu faço essa conta de graça.\nMatheus, da Raiz Connect",
+            "habitusmarmitas": "Oi, Habitus! Vi o kit de marmitas fit da semana com acompanhamento de nutricionista. Vocês sabem o custo real de cada uma com a entrega? Posso calcular isso com vocês, sem custo.\nMatheus, da Raiz Connect",
+            "soul.cozinha": "Olá, Soul Cozinha! O cardápio personalizado chamou atenção. Fica difícil precificar prato sob medida? Tenho uma calculadora que ajuda nisso e posso mostrar.\nMatheus, da Raiz Connect",
+            "leal.salg": "Oi, Leal Salgados! Gostei das opções diferentes no freezer para cada cliente. Já pararam para ver qual sabor dá mais lucro? Faço essa conta com vocês de graça.\nMatheus, da Raiz Connect",
+            "sumida": "Oi, Sumida! Vi a lasanha congelada no último post. O preço cobre a embalagem e a taxa do aplicativo? Se quiser, a gente faz a conta junto.\nMatheus, da Raiz Connect"}
+        for h, nome in (("ginis.industria", "Gini's Salgateria e Doceria"), ("habitusmarmitas", "Habitus | Marmitas Congeladas"),
+                        ("soul.cozinha", "Soul Cozinha"), ("leal.salg", "Leal Salgados"), ("sumida", "Sumida Marmitas")):
+            texto = textos[h]
+            ids[h] = self._aquecido(h)
+            d = p.carregar(LOGIN); p._lead(d, ids[h])["nome"] = nome; p.salvar(LOGIN, d)
+            self._executar(ids[h], "dm_abertura", texto)
+            self.em(self.relogio + 400)
+        self.em(self.relogio + 3600)
+        caixa = {"principal": {"erro": "", "linhas": [
+            {"nome": "GINIS", "previa": "You: " + textos["ginis.industria"].replace("\n", " "), "quando": "2h", "nao_lida": False},
+            {"nome": "Habitus | Marmitas Congeladas Fit Salvador", "quando": "1h", "nao_lida": True,
+             "previa": "Olá, Tudo bem? É um prazer te receber aqui na Habitus! 🤩 Fico super feliz que você tenha nos encontrado"},
+            {"nome": "Soul Cozinha | Marmitas Congeladas", "previa": "Quanto custa o sistema?", "quando": "5m", "nao_lida": True},
+            {"nome": "Leal Salgados", "previa": "Reacted ❤️ to your message", "quando": "10m", "nao_lida": False},
+            {"nome": "Fulano Desconhecido", "previa": "oi, vi o post de vocês", "quando": "3h", "nao_lida": True},
+            {"nome": "Conversa Antiga", "previa": "valeu!", "quando": "3w", "nao_lida": False}]},
+                 "geral": {"erro": "", "linhas": []}, "pedidos": {"erro": "", "linhas": []}}
+        out = p.processar_direct(LOGIN, json.dumps(caixa))
+        eq([n["handle"] for n in out["novas"]], ["soul.cozinha"], f"só quem escreveu de verdade é resposta: {out}")
+        eq(p._lead(p.carregar(LOGIN), ids["soul.cozinha"])["etapa"], "respondeu", "virou respondeu")
+        eq(p._lead(p.carregar(LOGIN), ids["habitusmarmitas"])["etapa"], "abordado", "boas-vindas automática não é resposta")
+        eq(sorted(a["nome_na_caixa"] for a in out["abrir"]), ["Fulano Desconhecido", "Leal Salgados"],
+           f"reação de lead e quem não está no registro (recente) são abertos; conversa de 3 semanas, não: {out['abrir']}")
+        eq([x["handle"] for x in out["nao_achadas"]], ["sumida"], "lead em conversa que não está na lista: abrir pelo perfil")
+        ok(out["varredura"] and p.carregar(LOGIN)["varredura_em"] == self.relogio, "a lista lida registra a varredura")
+        ok("VARREDURA COMPLETA" not in p.resumo_contexto(LOGIN), "e o contexto não pede outra")
+        eq(p.carregar(LOGIN)["nomes_direct"].get("ginis"), ids["ginis.industria"],
+           "\"GINIS\" reconhecido pela nossa mensagem e guardado para quando ela responder")
+        caixa["principal"]["linhas"][0]["previa"] = "Oi! Como funciona?"
+        out2 = p.processar_direct(LOGIN, json.dumps(caixa))
+        eq([n["handle"] for n in out2["novas"]], ["ginis.industria"], f"a resposta da GINIS cai no lead certo: {out2}")
+        eq(out2["abrir"], [], "o que já mandou abrir não volta")
+        sem_lista = {"principal": {"erro": "lista de conversas não apareceu", "linhas": []}, "geral": {"linhas": []}, "pedidos": {"linhas": []}}
+        self.em(self.relogio + p.VARREDURA_H * 3600 + 60)
+        out3 = p.processar_direct(LOGIN, json.dumps(sem_lista))
+        ok(out3["erros"] and not out3["varredura"] and "VARREDURA COMPLETA" in p.resumo_contexto(LOGIN),
+           "sem a lista, a varredura não conta")
+
+    def t_falha_vai_ao_operador_nao_ao_matheus(self):
+        p = self.p
+        self.em(self.hora(10))
+        lid = self._aquecido("falha1")
+        self._executar(lid, "dm_abertura", DM_A)
+        p.registrar_falha(LOGIN, "conversa da @x não abriu pela busca")
+        linhas = (p.PASTA / f"{p._login(LOGIN)}_falhas.jsonl").read_text().splitlines()
+        ok(json.loads(linhas[-1])["texto"] == "conversa da @x não abriu pela busca", "vai para o registro do operador")
+        ctx = p.resumo_contexto(LOGIN)
+        ok("PRECISA DE VOCÊ só para o que só o Matheus resolve" in ctx and "Nunca desfaça um seguir" in ctx,
+           "o contexto de toda rodada diz quando chamar o Matheus")
 
     def t_robo_no_direct_nao_e_resposta(self):
         p = self.p

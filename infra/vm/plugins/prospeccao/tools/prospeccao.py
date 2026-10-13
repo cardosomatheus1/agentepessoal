@@ -549,8 +549,9 @@ class Prospeccao(Tool):
             erro = p.definir_conta(login, texto or conta_ativa)
             return r(erro or f"Prospecção configurada para @{p.conta(login)}.")
         if acao == "direct_script":
-            return r("Rode este script com `browser` action \"evaluate\" numa aba em https://www.instagram.com/ (conta @raiz.connect) e "
-                     "passe o JSON INTEIRO para `prospeccao` acao \"ler_direct\" com `dados` = o texto.\n\n" + p.SCRIPT_DIRECT)
+            return r("Abra https://www.instagram.com/direct/inbox/ (`browser` navigate), rode este script com `browser` action "
+                     "\"evaluate\" nessa aba e passe o JSON INTEIRO para `prospeccao` acao \"ler_direct\" com `dados` = o texto. A lista "
+                     "de conversas não aparece no texto da página (`content`): não conclua \"caixa vazia\" por ele.\n\n" + p.SCRIPT_DIRECT)
         if acao == "ler_direct":
             out = await asyncio.to_thread(p.processar_direct, login, kwargs.get("dados") or texto)
             for n in out["novas"]:
@@ -558,12 +559,34 @@ class Prospeccao(Tool):
                          "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu. Se preferir "
                          "conversar você mesmo, toque em 🙋 Deixa comigo.\n" + n["url"], p.botao_assumir(login, n["lead_id"]), tipo="urgente", ponte=ponte())
             if out["erros"] and not out["conversas"]:
-                return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Leia pela tela (skill, seção 2).")
-            resumo = (f"{out['conversas']} conversas lidas pela API; respostas novas de leads: "
+                await asyncio.to_thread(p.registrar_falha, login, "ler_direct: " + "; ".join(out["erros"]))
+                return r(f"Não consegui ler o Direct ({'; '.join(out['erros'])}). Abra a caixa pelo print (skill, seção 2) e siga a "
+                         "rodada; se nem assim, `caixa_lida` com o que conseguiu ver. Não é motivo para PRECISA DE VOCÊ.")
+            resumo = (f"{out['conversas']} conversas lidas na lista; respostas novas de leads: "
                       + (", ".join("@" + n["handle"] for n in out["novas"]) or "nenhuma"))
-            return r(json.dumps(out, ensure_ascii=False) + f"\nUse em `caixa_lida` → direct: \"{resumo}\". Para cada resposta nova, "
-                     "proponha a `resposta` pelo playbook (o revisor confere). O Matheus JÁ foi avisado; chame `etapa` só se a "
-                     "fala pede outra etapa (lead, demo, descartado).")
+            if "abrir" not in out:  # the old API shape
+                return r(json.dumps(out, ensure_ascii=False) + f"\nUse em `caixa_lida` → direct: \"{resumo}\". Para cada resposta nova, "
+                         "proponha a `resposta` pelo playbook (o revisor confere). O Matheus JÁ foi avisado; chame `etapa` só se a "
+                         "fala pede outra etapa (lead, demo, descartado).")
+            linhas = [resumo + (" (VARREDURA COMPLETA registrada: a lista mostra a última mensagem de cada conversa)" if out["varredura"] else "")]
+            for n in out["novas"]:
+                linhas.append(f"- RESPOSTA de @{n['handle']} («{n['texto'][:120]}»): o Matheus JÁ foi avisado. Abra a conversa clicando em "
+                              f"«{n['nome_na_caixa'][:50]}» na lista, leia tudo e proponha a `resposta` pelo playbook; `etapa` só se a fala "
+                              "pede outra (lead, demo, descartado).")
+            for a in out["abrir"]:
+                linhas.append(f"- ABRA «{a['nome_na_caixa'][:50]}» ({a['pasta']}, {a['quando']}: «{a['previa'][:100]}»): {a['por_que']}.")
+            if out["nao_achadas"]:
+                linhas.append("- Não estão na lista (abra pelo perfil → Mensagem; se não abrir, `falha` e siga): "
+                              + ", ".join("@" + x["handle"] for x in out["nao_achadas"]))
+            if out["robos"]:
+                linhas.append("- Resposta automática (não é resposta; nada a fazer): " + ", ".join(x[:40] for x in out["robos"]))
+            linhas.append(f"Depois, `caixa_lida` com direct: \"{resumo}\"" + (", varredura: true" if out["varredura"] else "")
+                          + " e as notificações.")
+            return r("\n".join(linhas))
+        if acao == "falha":
+            await asyncio.to_thread(p.registrar_falha, login, str(texto or kwargs.get("nota") or ""))
+            return r("Registrado para o operador (não vai ao Matheus). Siga a rodada; se não há mais nada a fazer, a resposta "
+                     "final é SEM NOVIDADE.")
         if acao == "caixa_lida":
             inter = kwargs.get("interagiram") or []
             inter = inter if isinstance(inter, list) else [h.strip() for h in str(inter).split(",") if h.strip()]
@@ -581,6 +604,6 @@ class Prospeccao(Tool):
         if acao == "metricas":
             return r(json.dumps(p.metricas(login, _numero(dias, 7)), ensure_ascii=False))
         return r("acao: playbook | contexto | registrar | rejeitar | propor | comentar | comentado | proxima | resultado | etapa | "
-                 "caixa_lida | fontes | fontes_instagram | conferir_estoque | estoque_conferido | buscar_script | avaliar_api | "
+                 "caixa_lida | direct_script | ler_direct | falha | fontes | fontes_instagram | conferir_estoque | estoque_conferido | buscar_script | avaliar_api | "
                  "perfis_script | avaliar_perfis | limite_consulta | liberar_consultas | cartao | assumir | devolver | editar | "
                  "apagada | importar_lista | variante | token_meta | hoje | metricas")

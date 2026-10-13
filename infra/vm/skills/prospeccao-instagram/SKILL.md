@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Como fazer a prospecção da Raiz Connect pela conta @raiz.connect no navegador: achar e avaliar leads, aquecer (seguir, curtir, comentar), mandar mensagens no Direct, ler e registrar respostas, sempre pela ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 5.2.0
+version: 5.3.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct"]
 trigger_patterns:
   - "prospec"
@@ -79,18 +79,26 @@ precisa dele (bloqueio, verificação, conta, erro), em até 3 linhas.
    conta nem entre em outra: outra conta ativa, tela de login, senha ou código → pare com "PRECISA DE VOCÊ: o
    navegador não está na @raiz.connect".
 
+## Quando chamar o Matheus
+
+"PRECISA DE VOCÊ" só para o que só ele resolve: conta errada, bloqueio, verificação, captcha, tela de login. Qualquer
+outro problema (página que não carrega, conversa que não abre, busca que não acha, script com erro, clique errado,
+seguir alguém por engano) não é dele: `prospeccao` acao "falha" com o que houve, siga o resto da rodada e termine com
+SEM NOVIDADE se nada mais mudou. Nunca desfaça um seguir por engano: seguir e deixar de seguir em seguida chama a
+atenção do Instagram.
+
 ## 2. Ler respostas (toda rodada de execução, antes de agir)
 
-1. **Direct:** o contador de não lidas diz SE há algo novo, não DE QUEM, e zera quando alguém lê pelo celular. Por isso:
-   - toda rodada, tire print de https://www.instagram.com/direct/inbox/: conversa em negrito ou com ponto azul é não
-     lida; abra também essas. Solicitações (https://www.instagram.com/direct/requests/) e notificações: na primeira
-     rodada de cada turno (9h08 e 14h08), na última (21h38), na VARREDURA COMPLETA e quando o contador do Direct ou do
-     coração estiver acima de zero;
-   - abra as conversas que o `contexto` lista em "Direct nesta rodada" **pela caixa de entrada**: em
-     https://www.instagram.com/direct/inbox/, clique no nome da pessoa na lista (pelo print, se a referência falhar).
-     Para ler, não precisa passar pelo perfil;
-   - contador acima de zero que você não explicou, ou o `contexto` pedindo **VARREDURA COMPLETA**: abra uma a uma as
-     conversas da lista do `contexto`. Depois, `caixa_lida` com varredura: true.
+1. **Direct:** a lista de conversas NÃO aparece no texto da página (`content`): "Primary vazio" por ele não quer dizer
+   nada (13/10: seis conversas na tela, uma delas resposta). Por isso, toda rodada:
+   - abra https://www.instagram.com/direct/inbox/, pegue o script com `prospeccao` acao "direct_script", rode com
+     `browser` action "evaluate" e passe o JSON para acao "ler_direct". Ele lê a lista de Principal, Geral e
+     Solicitações (a última mensagem de cada conversa), registra as respostas de leads (o Matheus é avisado por ela),
+     separa as automáticas e, quando o `contexto` pede **VARREDURA COMPLETA**, já a registra. Abra só o que ele
+     mandar abrir: clique no nome na lista (pelo print, se a referência falhar);
+   - script com erro: abra a caixa e leia pelo print (`browser` screenshot + `vision_load`), não pelo texto;
+   - notificações (https://www.instagram.com/accounts/activity/): na primeira rodada de cada turno (9h08 e 14h08), na
+     última (21h38), na VARREDURA COMPLETA e quando o coração estiver acima de zero.
 2. **É fala da pessoa** quando a ÚLTIMA coisa na conversa é dela: mensagem, áudio, figurinha, ou reação (❤️, 👍) à 1ª
    mensagem, ao lembrete ou a uma pergunta nossa. A reação não vira mensagem nova: se o texto da página não mostrar, olhe
    o print embaixo do nosso balão; nota "reagiu com <reação> a: <começo da nossa frase>". Reação a mensagem nossa que
@@ -114,7 +122,8 @@ precisa dele (bloqueio, verificação, conta, erro), em até 3 linhas.
    responde. Propaganda ou spam: só anote na `caixa_lida`.
 7. **`caixa_lida`** com `direct` (quantas conversas com mensagem nova e de quem), `notificacoes` (as primeiras linhas
    copiadas da página), `interagiram` (os @ do registro que seguiram de volta, curtiram ou comentaram) e `varredura`
-   (true só depois da varredura completa). Sem ela, a `proxima` não libera nada.
+   (true quando o `ler_direct` disser que a varredura ficou registrada). Sem ela, a `proxima` não libera nada. O que
+   não deu para ler vai na `caixa_lida` como está ("não abriu: @x"); não trava a rodada.
 
 ## 3. Executar (rodada de execução, uma ação por vez)
 

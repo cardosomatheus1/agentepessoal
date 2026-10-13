@@ -49,6 +49,7 @@ PEDIU_LINK = re.compile(r"n[aã]o (consegui|abriu|abre|achei|carrega)|(manda|man
 AGORA_NAO = re.compile(r"agora n[aã]o|sem tempo|depois (eu )?vejo|outra hora|mais pra frente|no momento n[aã]o|"
                        r"m[eê]s que vem|semana que vem|ocupad", re.I)
 ROBO = re.compile(r"manychat|automation powered|mensagem autom[aá]tica|resposta autom[aá]tica|j[aá] j[aá] (te )?respond|"
+                  r"prazer (em )?te receber aqui|feliz que voc[eê] (tenha )?nos encontr|"
                   r"entraremos em contato|recebemos sua mensagem|em breve (te )?(retornaremos|responderemos)|"
                   r"obrigad[oa] pelo contato|hor[aá]rio de atendimento", re.I)
 CONSULTAS_DIA = 30                 # profiles/searches read by script with our account, per day (blind review, item 1)
@@ -717,24 +718,47 @@ def descobrir_perfis(login: str, handles: list) -> list:
     return out
 
 
+# 13/10: the inbox API answers 404 and the inbox list is not in the page text the browser tool returns, so a round
+# saw "Primary vazio" with six conversations on screen (one of them a reply) and stopped the round asking Matheus.
+# This reads the list from the page itself: name, last message ("You: …" when it is ours), age, unread; then the
+# General and Requests tabs. Under 20 s (the evaluate limit is 30 s).
 SCRIPT_DIRECT = """(async () => {
-  const pegar = async (url) => {
-    try {
-      const r = await fetch(url, {headers: {'x-ig-app-id': '936619743392459'}, credentials: 'include'});
-      return r.ok ? await r.json() : {erro: 'http ' + r.status};
-    } catch (e) { return {erro: String(e).slice(0, 80)}; }
+  if (!/\\/direct\\//.test(location.pathname)) return JSON.stringify({erro: 'abra https://www.instagram.com/direct/inbox/ e rode de novo'});
+  const dormir = (ms) => new Promise(f => setTimeout(f, ms));
+  const pesado = (el) => !!el && parseInt(getComputedStyle(el).fontWeight, 10) >= 600;
+  const ler = async () => {
+    let lista = null;
+    for (let i = 0; i < 8 && !lista; i++) { lista = document.querySelector('[aria-label="Thread list"]'); if (!lista) await dormir(400); }
+    if (!lista) return {erro: 'lista de conversas não apareceu', linhas: []};
+    await dormir(800);
+    const rolador = [...lista.querySelectorAll('div')].find(d => d.scrollHeight > d.clientHeight + 20 && /auto|scroll/.test(getComputedStyle(d).overflowY)) || lista;
+    const vistas = new Map();
+    for (let volta = 0; volta < 4; volta++) {
+      for (const b of lista.querySelectorAll('[role="button"]')) {
+        let t = (b.innerText || '').split('\\n').map(x => x.trim()).filter(Boolean);
+        if (/^(active|ativo|ativa)( now| agora)?$/i.test(t[0] || '')) t = t.slice(1);
+        const ponto = t.indexOf('·');
+        if (ponto < 2 || ponto !== t.length - 2) continue;
+        const nome = t[0], previa = t.slice(1, ponto).join(' '), quando = t[t.length - 1];
+        const folhas = [...b.querySelectorAll('span')].filter(s => s.children.length === 0 && s.textContent.trim().length > 1);
+        const sNome = folhas.find(s => s.textContent.trim() === nome), sPrev = folhas.find(s => previa.startsWith(s.textContent.trim()));
+        vistas.set(nome + '|' + previa, {nome, previa: previa.slice(0, 600), quando, nao_lida: pesado(sNome) || pesado(sPrev)});
+      }
+      const antes = rolador.scrollTop; rolador.scrollTop += 700; await dormir(700);
+      if (rolador.scrollTop === antes) break;
+    }
+    return {erro: '', linhas: [...vistas.values()].slice(0, 60)};
   };
-  const resumir = (j) => {
-    const caixa = j.inbox || {};
-    return {erro: j.erro || '', threads: (caixa.threads || []).slice(0, 40).map(t => ({
-      usuarios: (t.users || []).map(u => u.username),
-      itens: (t.items || []).slice(0, 6).map(i => ({de_mim: String(i.user_id) === String(j.viewer ? j.viewer.pk : ''),
-        tipo: i.item_type, texto: (i.text || '').slice(0, 300), ts: Math.floor((i.timestamp || 0) / 1e6)}))}))};
+  const aba = async (rx) => {
+    const el = [...document.querySelectorAll('[role="tab"], a[href], div[role="button"]')].find(x => rx.test((x.innerText || '').trim()));
+    if (!el) return false;
+    el.click(); await dormir(1800); return true;
   };
-  const principal = await pegar('/api/v1/direct_v2/inbox/?persistentBadging=true&limit=40&thread_message_limit=6');
-  await new Promise(f => setTimeout(f, 1500));
-  const pedidos = await pegar('/api/v1/direct_v2/pending_inbox/?limit=40&thread_message_limit=6');
-  return JSON.stringify({principal: resumir(principal), pedidos: resumir(pedidos)});
+  const out = {principal: await ler()};
+  out.geral = await aba(/^(General|Geral)$/) ? await ler() : {erro: 'aba Geral não encontrada', linhas: []};
+  out.pedidos = await aba(/^(Requests|Solicita[cç][oõ]es)( \\(\\d+\\))?$/) ? await ler() : {erro: 'aba Solicitações não encontrada', linhas: []};
+  await aba(/^(Primary|Principal)$/);
+  return JSON.stringify(out);
 })()"""
 
 
@@ -742,6 +766,8 @@ def processar_direct(login: str, dados) -> dict:
     """Reads the Direct inbox JSON (from SCRIPT_DIRECT): every known lead whose newest message is theirs is marked
     "respondeu" with what they wrote (recorded once per message). Returns the new answers and a count for conferido."""
     j = json.loads(dados) if isinstance(dados, str) else (dados or {})
+    if any("linhas" in (j.get(k) or {}) for k in ("principal", "geral", "pedidos")):
+        return processar_caixa(login, j)
     d = carregar(login)
     por_handle = {l["handle"]: l for l in d["leads"]}
     novas, conversas, erros = [], 0, []
@@ -767,6 +793,112 @@ def processar_direct(login: str, dados) -> dict:
                     novas.append({"lead_id": lead["id"], "handle": lead["handle"], "nome": lead["nome"], "texto": texto,
                                   "pasta": pasta, "url": lead["url"]})
     return {"novas": novas, "conversas": conversas, "erros": erros}
+
+
+DE_NOS = re.compile(r"^(you|voc[eê])( sent|( enviou)|:)", re.I)
+SO_REACAO = re.compile(r"^(reacted|reagiu|liked a message|curtiu (uma|sua) mensagem)", re.I)
+CONVERSA = ("abordado", "lembrado", "respondeu", "lead", "demo", "teste", "interagiu")
+
+
+def _chave(texto: str) -> str:
+    t = "".join(c for c in unicodedata.normalize("NFD", str(texto or "")) if unicodedata.category(c) != "Mn").lower()
+    return re.sub(r"[^a-z0-9]", "", t)
+
+
+def _idade(quando: str) -> float | None:
+    """'2h', '1d', '3w', '5 min', 'now' → seconds (the Direct list shows only this)."""
+    q = (quando or "").strip().lower()
+    if q in ("now", "agora", "just now"):
+        return 0
+    m = re.match(r"^(\d+)\s*(s|m|min|h|d|w|sem|y|a)\b", q)
+    if not m:
+        return None
+    return int(m.group(1)) * {"s": 1, "m": 60, "min": 60, "h": 3600, "d": 86400, "w": 7 * 86400, "sem": 7 * 86400,
+                              "y": 365 * 86400, "a": 365 * 86400}[m.group(2)]
+
+
+def _lead_da_linha(d: dict, linha: dict) -> dict | None:
+    """Which lead a row of the Direct list is. The row shows the profile's display name, not the @ (13/10: "GINIS"
+    for "Gini's Salgateria e Doceria", "Buffet • Eventos…" for Giramundo), so: a name learned before; our own last
+    message ("You: …") matched to what we sent; then the name or the @ inside the row's name."""
+    mapa = d.get("nomes_direct") or {}
+    chave_nome = _chave(linha.get("nome"))
+    if mapa.get(chave_nome):
+        return _lead(d, mapa[chave_nome])
+    previa = str(linha.get("previa") or "")
+    if DE_NOS.match(previa):
+        nossa = _chave(previa.split(":", 1)[1] if ":" in previa[:12] else "")[:50]
+        if len(nossa) >= 20:
+            achados = [l for l in d["leads"] if any(h["tipo"] in TIPOS_DIRECT and _chave(h.get("texto"))[:50] == nossa
+                                                    for h in l["historico"])]
+            if len(achados) == 1:
+                return achados[0]
+    candidatos = []
+    for l in d["leads"]:
+        nome, arroba = _chave(l.get("nome")), _chave(l["handle"])
+        partes = {_chave(x) for x in re.split(r"[|•·\-–]", str(linha.get("nome") or ""))} - {""}
+        if (len(nome) >= 5 and (chave_nome == nome or chave_nome.startswith(nome) or nome in partes)) \
+                or (len(arroba) >= 6 and arroba in chave_nome):
+            candidatos.append(l)
+    return candidatos[0] if len(candidatos) == 1 else None
+
+
+@_transacao
+def processar_caixa(login: str, j: dict) -> dict:
+    """Reads the Direct list read off the page (SCRIPT_DIRECT): each row is one conversation with its last message.
+    A known lead whose last message is theirs is marked like processar_direct does; a reaction, and anyone outside the
+    register who wrote in the last 7 days, is listed for the round to open (once). Reading the Primary list is the full
+    check of every conversation: it records the sweep (VARREDURA COMPLETA) by itself."""
+    d = carregar(login)
+    novas, abrir, robos, erros, achados, conversas = [], [], [], [], set(), 0
+    vistas = d.get("caixa_vista") or {}
+    mapa = d.get("nomes_direct") or {}
+    for pasta in ("principal", "geral", "pedidos"):
+        caixa = j.get(pasta) or {}
+        if caixa.get("erro"):
+            erros.append(f"{pasta}: {caixa['erro']}")
+        for linha in caixa.get("linhas") or []:
+            conversas += 1
+            nome, previa = str(linha.get("nome") or "")[:120], str(linha.get("previa") or "")[:600]
+            lead = _lead_da_linha(d, linha)
+            if lead:
+                achados.add(lead["id"])
+                mapa[_chave(nome)] = lead["id"]
+            if DE_NOS.match(previa):
+                continue  # our message is the last one: nothing new from them
+            marca = _chave(nome)[:40] + ":" + hashlib.sha1(previa.encode()).hexdigest()[:10]
+            if ROBO.search(previa):
+                robos.append(nome)
+                continue
+            if lead and lead["etapa"] in ("cliente", "descartado"):
+                continue
+            if lead and not SO_REACAO.match(previa):
+                etapa = lead["etapa"] if lead["etapa"] in ("respondeu", "lead", "demo", "teste") else "respondeu"
+                r = mudar_etapa(login, lead["id"], etapa, previa, "direct")
+                d = carregar(login)
+                if r and r.get("novidade"):
+                    novas.append({"lead_id": lead["id"], "handle": lead["handle"], "nome": lead["nome"], "texto": previa,
+                                  "pasta": pasta, "url": lead["url"], "nome_na_caixa": nome})
+                continue
+            idade = _idade(linha.get("quando"))
+            if marca in vistas or (not lead and (idade is None or idade > 7 * 86400)):
+                continue
+            vistas[marca] = agora()
+            abrir.append({"nome_na_caixa": nome, "pasta": pasta, "previa": previa[:200], "quando": linha.get("quando", ""),
+                          "handle": lead["handle"] if lead else "",
+                          "por_que": "reação: veja a que mensagem nossa (skill, seção 2)" if lead
+                          else "fora do registro ou não reconhecida: abra e veja quem é (skill, seção 2, item 6)"})
+    principal = j.get("principal") or {}
+    if not principal.get("erro") and principal.get("linhas"):
+        d["varredura_em"] = agora()
+    nao_achadas = [l for l in d["leads"] if l["etapa"] in CONVERSA and l["id"] not in achados
+                   and any(h["tipo"] in TIPOS_DIRECT for h in l["historico"])]
+    d["caixa_vista"] = {k: v for k, v in vistas.items() if agora() - v < 30 * 86400}
+    d["nomes_direct"] = mapa
+    salvar(login, d)
+    return {"novas": novas, "abrir": abrir, "robos": robos, "conversas": conversas, "erros": erros,
+            "nao_achadas": [{"handle": l["handle"], "etapa": l["etapa"]} for l in nao_achadas[:15]],
+            "varredura": bool(not principal.get("erro") and principal.get("linhas"))}
 
 
 def montar_script(handles: list) -> str:
@@ -2074,6 +2206,17 @@ def conferido(login: str, direct: str, notificacoes: str, interagiram: list | No
     return ""
 
 
+def registrar_falha(login: str, texto: str) -> None:
+    """A round's operational problem (page that did not load, conversation that would not open, wrong click) goes to
+    the operator log, not to Matheus (13/10: "Td hora precisa de mim, essas coisas n devem acontecer")."""
+    texto = " ".join(str(texto or "").split())[:500]
+    if not texto:
+        return
+    PASTA.mkdir(parents=True, exist_ok=True)
+    with open(PASTA / f"{_login(login)}_falhas.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps({"em": agora(), "texto": texto}, ensure_ascii=False) + "\n")
+
+
 RESERVA = 20 * 60  # an action handed out to a round is that round's; with no result in this time it becomes "incerta"
 
 
@@ -2937,22 +3080,27 @@ def resumo_contexto(login: str) -> str:
         linhas += [f"- {a['tipo']}: «{a['texto'][:80]}»" for a in hoje_txt[-12:]]
         linhas += [f"- comentário: «{c[:80]}»" for c in comentarios_hoje[-6:]]
     conversas = [l for l in d["leads"] if l["etapa"] in ("abordado", "lembrado", "respondeu", "lead", "demo")]
+    ler_lista = ("abra https://www.instagram.com/direct/inbox/, rode o script de `prospeccao` acao \"direct_script\" "
+                 "(`browser` evaluate) e passe o resultado para `ler_direct`: ele lê a lista inteira (a lista não aparece no "
+                 "texto da página) e diz o que abrir")
     if conversas and varredura_devida(d):
-        linhas.append(f"\n## VARREDURA COMPLETA do Direct agora ({len(conversas)}) — abra cada uma (perfil → Mensagem), "
-                      "depois `caixa_lida` com varredura: true")
+        linhas.append(f"\n## VARREDURA COMPLETA do Direct agora ({len(conversas)}): {ler_lista}; com a lista lida, a varredura "
+                      "fica registrada. Abra só o que ele mandar abrir.")
         linhas += [f"- [{l['id']}] @{l['handle']} ({l['etapa']}); última nossa: {l['historico'][-1]['texto'][:80] if l['historico'] else ''}"
                    for l in conversas[:20]]
     elif conversas:
         proxima_v = dt.datetime.fromtimestamp((d.get("varredura_em") or 0) + VARREDURA_H * 3600, _tz()).strftime("%H:%M")
         recentes = [l for l in conversas if _interagiu_hoje(l)
                     or any(h["tipo"] in TIPOS_DIRECT and agora() - h["em"] < 72 * 3600 for h in l["historico"])]
-        linhas.append(f"\n## Direct nesta rodada (varredura completa a partir das {proxima_v}): veja o contador de não lidas "
-                      "e as solicitações"
-                      + (f"; abra (perfil → Mensagem) estas {len(recentes)}, as mais recentes:" if recentes else ".")
-                      + " Contador acima de zero sem você achar de quem é: faça a varredura completa agora.")
+        linhas.append(f"\n## Direct nesta rodada (varredura completa a partir das {proxima_v}): {ler_lista}"
+                      + (f"; confira que estas {len(recentes)}, as mais recentes, estão nela:" if recentes else "."))
         linhas += [f"- [{l['id']}] @{l['handle']} ({l['etapa']})" for l in recentes[:15]]
-        linhas.append(f"Todas as conversas em andamento ({len(conversas)}), para a varredura completa: "
+        linhas.append(f"Todas as conversas em andamento ({len(conversas)}): "
                       + ", ".join("@" + l["handle"] for l in conversas[:40]))
+    linhas.append("\nPRECISA DE VOCÊ só para o que só o Matheus resolve: conta errada, bloqueio, verificação, captcha. Página que "
+                  "não carrega, conversa que não abre, script que falha, clique errado: `prospeccao` acao \"falha\" com o que "
+                  "houve, siga o resto da rodada e responda SEM NOVIDADE se nada mais mudou. Nunca desfaça um seguir por engano "
+                  "(seguir e deixar de seguir em seguida chama a atenção do Instagram): registre em `falha` e siga.")
     conhecidos = sorted(l["handle"] for l in d["leads"])
     linhas.append(f"\n## Já conhecidos ({len(conhecidos)}) — não registre de novo\n" + (", ".join(conhecidos[-400:]) or "(nenhum)"))
     rej = d.get("rejeitados") or {}
