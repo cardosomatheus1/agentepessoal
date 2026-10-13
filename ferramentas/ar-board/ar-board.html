@@ -185,8 +185,8 @@ textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent);
     if (!r) return;
     const c = counts(r.id); const fim = (S.verdicts[r.id] || {}).terminada_em;
     $("doneText").textContent = fim
-      ? `Rodada terminada (${c.a} aprovados, ${c.x} rejeitados). Diga ao Claude "terminei" para ele ler.`
-      : `${c.d} de ${c.n} julgados. Pode terminar a qualquer momento; o que ficar sem veredito é ignorado.`;
+      ? `Rodada terminada (${c.a} aprovados, ${c.x} rejeitados).` + (r.avisar_sessao ? "" : ` Diga ao Claude "terminei" para ele ler.`)
+      : `${c.d} de ${c.n} julgados. Pode terminar a qualquer momento; o que ficar sem veredito é ignorado.` + (r.avisar_sessao ? " Ao terminar, o Claude é avisado sozinho." : "");
     $("finish").textContent = fim ? "Reabrir esta rodada" : "Terminei esta rodada";
     if (!has) return;
     S.idx = Math.max(0, Math.min(S.idx, list.length - 1));
@@ -263,7 +263,36 @@ textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent);
     const next = Object.assign({}, S.verdicts[r.id] || {}, { votos: votes(r.id) });
     if (fim) delete next.terminada_em; else next.terminada_em = Date.now();
     S.verdicts[r.id] = next; renderRounds(); renderCase();
-    await writeVerdicts(r.id);
+    const ok = await writeVerdicts(r.id);
+    if (ok && !fim) await avisar(r);
+  }
+
+  // "Terminei" reaches the Claude session that built the round (its id in the round's avisar_sessao), through the
+  // Claude Code Remote connector, so nobody has to go back to the chat to say it.
+  async function avisar(r) {
+    const c = counts(r.id);
+    if (!r.avisar_sessao) { $("doneText").textContent += " Esta rodada não tem conversa ligada: diga \"terminei\" ao Claude."; return; }
+    const mcp = window.claude && window.claude.use ? await window.claude.use("mcp") : null;
+    if (!mcp) { note("Salvo. Esta tela não consegue avisar o Claude: diga \"terminei\" na conversa.", true); return; }
+    note("Avisando o Claude…");
+    try {
+      await mcp.callTool("Claude Code Remote", "send_message", {
+        session_id: r.avisar_sessao,
+        message: `terminei a rodada ${r.id} do AR Board (${c.d} de ${c.n} julgados: ${c.a} aprovados, ${c.x} rejeitados, pelo quadro na web)`,
+      });
+      note("O Claude foi avisado e vai ler os vereditos.");
+      $("doneText").textContent = `Rodada terminada (${c.a} aprovados, ${c.x} rejeitados). O Claude já foi avisado.`;
+    } catch (e) {
+      const code = (e && e.code) || "erro";
+      const why = {
+        not_in_manifest: "você não liberou o aviso para esta página",
+        server_not_connected: "o conector Claude Code Remote não está ligado na sua conta",
+        needs_reauth: "o conector Claude Code Remote precisa ser reconectado em Configurações → Conectores",
+        tool_error: "a conversa não aceitou a mensagem (pode ter sido arquivada)",
+        server_unavailable: "não houve resposta a tempo; pode ter chegado mesmo assim",
+      }[code] || "falhou (" + code + ")";
+      note("Salvo, mas o aviso não foi: " + why + ". Diga \"terminei\" na conversa.", true);
+    }
   }
 
   function select(rid) {

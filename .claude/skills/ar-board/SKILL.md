@@ -21,11 +21,15 @@ agindo sozinho; o quadro julga amostras e o resultado vira critério e teste.
 2. Grave **um documento** em `rodadas/<id>` (id: `<agente>-<aaaa-mm-dd>-<assunto>`, só letras, números e `-`):
    ```json
    {"agente": "prospecção Raiz", "titulo": "…", "status": "aberta", "criada_em": <ms>,
+    "avisar_sessao": "<id desta sessão, session_…, pelo get_session sem argumentos>",
     "instrucao": "o que julgar e por quê, em 1-2 frases",
     "itens": [{"id": "<id estável do caso na origem>", "tipo": "…", "titulo": "…",
                "contexto": "onde/para quem/o que aconteceu", "texto": "a saída do agente",
                "midia": [{"url": "<url de asset do quadro>", "tipo": "imagem|video|link", "rotulo": "…"}]}]}
    ```
+   `avisar_sessao` é o que faz o "Terminei" do quadro na web chegar sozinho a esta conversa: a página manda
+   "terminei a rodada <id> do AR Board (…)" pelo conector Claude Code Remote (`send_message`, única ferramenta que
+   ela pode chamar). Sem o campo, ele precisa vir dizer "terminei".
    Imagem e vídeo só por asset do próprio quadro (`Artifact` publish com `url` do quadro e `asset: true`): a
    página não carrega mídia de outro site. Documento até 256 KiB; rodada maior vira duas.
 3. Copie a mesma rodada para `calibracao/.quadro/rodada.json` (fora do git), o mesmo documento com `"id"`. É o que
@@ -36,7 +40,10 @@ agindo sozinho; o quadro julga amostras e o resultado vira critério e teste.
 4. Mande ao Matheus o link do quadro e uma linha do que julgar. Ele julga no celular (botões, arrastar para o lado),
    no computador (A, R, ←, →, C para comentar) ou no painel do app.
 
-## 2. Ler quando ele disser "terminei"
+## 2. Ler quando chegar "terminei"
+
+Chega de três jeitos: o quadro na web manda sozinho (com `avisar_sessao`), o painel do app manda sozinho, ou ele
+escreve. A mensagem só dispara a leitura; o que vale são os vereditos guardados.
 
 1. Leia as duas telas e junte: `ArtifactData get` em `vereditos/<id>` (quadro da web) e
    `calibracao/.quadro/vereditos.json` (painel do app). Os dois têm `votos` = `{<id do caso>: {v: "A"|"R",
