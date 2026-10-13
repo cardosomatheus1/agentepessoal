@@ -19,14 +19,20 @@ DURACAO = timedelta(days=400)
 
 
 def _mod():
+    """helpers/usuarios.py, loaded again when the file changes: the web process outlives implantar.py, and a module
+    kept from before the deploy lacked the new functions (13/10: every login attempt became a 500)."""
     name = "login_usuarios_helpers"
-    if name not in sys.modules:
-        root = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
-        spec = importlib.util.spec_from_file_location(name, root / "helpers" / "usuarios.py")
+    root = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
+    arquivo = root / "helpers" / "usuarios.py"
+    mtime = arquivo.stat().st_mtime
+    m = sys.modules.get(name)
+    if m is None or getattr(m, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location(name, arquivo)
         m = importlib.util.module_from_spec(spec)
-        sys.modules[name] = m
         spec.loader.exec_module(m)
-    return sys.modules[name]
+        m._mtime = mtime
+        sys.modules[name] = m
+    return m
 
 
 def _pagina(erro: str = "", proximo: str = ""):

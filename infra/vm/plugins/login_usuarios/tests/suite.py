@@ -63,6 +63,23 @@ class Suite:
         ok(u.bloqueio_do_app(ext) is b, "a atual é mantida entre pedidos")
         b.falhou("1.2.3.4"); ok(u.bloqueio_do_app(ext).falhas.get("1.2.3.4"), "as falhas ficam guardadas")
 
+    def t_modulo_recarrega_depois_do_deploy(self):
+        # 13/10: the web process kept the helpers module from before the deploy (no bloqueio_do_app): every login 500
+        import ast, os, types
+        ext = next((RAIZ / "extensions").rglob("_10_varios_usuarios.py"))
+        arvore = ast.parse(ext.read_text(encoding="utf-8"))
+        fonte = ast.get_source_segment(ext.read_text(encoding="utf-8"), next(n for n in arvore.body if isinstance(n, ast.FunctionDef) and n.name == "_mod"))
+        g = {"sys": sys, "importlib": importlib, "Path": Path, "__file__": str(ext)}
+        exec(fonte, g)
+        velho = types.ModuleType("login_usuarios_helpers"); velho._mtime = -1
+        sys.modules["login_usuarios_helpers"] = velho
+        try:
+            m = g["_mod"]()
+            ok(m is not velho and hasattr(m, "bloqueio_do_app"), "o módulo antigo é trocado pelo do arquivo atual")
+            ok(g["_mod"]() is m, "sem mudança no arquivo, reaproveita o mesmo módulo")
+        finally:
+            sys.modules.pop("login_usuarios_helpers", None)
+
     def t_verificar_senha(self):
         u = self.u
         tmp = Path(tempfile.mkdtemp(prefix="login-teste-"))
