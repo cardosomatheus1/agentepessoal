@@ -1,0 +1,117 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* the whole Reel is one shot seen through a phone camera: footage full-bleed, viewfinder HUD, meme caption */
+#bgw{position:absolute;inset:0;overflow:hidden}
+#bg{position:absolute;left:-40px;top:-60px;width:1160px;height:2040px;object-fit:cover;transform-origin:50% 48%}
+#sombraT{position:absolute;left:0;right:0;top:0;height:640px;background:linear-gradient(rgba(0,0,0,.62),rgba(0,0,0,0))}
+#sombraB{position:absolute;left:0;right:0;bottom:0;height:620px;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.6))}
+#tinta{position:absolute;inset:0;background:var(--fundo);opacity:0}
+/* viewfinder (white over footage darkened by the black gradients) */
+.vf{position:absolute;width:86px;height:86px;border:0 solid #fff;opacity:.92}
+#vf1{left:96px;top:382px;border-left-width:8px;border-top-width:8px;border-top-left-radius:22px}
+#vf2{right:96px;top:382px;border-right-width:8px;border-top-width:8px;border-top-right-radius:22px}
+#vf3{left:96px;top:1394px;border-left-width:8px;border-bottom-width:8px;border-bottom-left-radius:22px}
+#vf4{right:176px;top:1394px;border-right-width:8px;border-bottom-width:8px;border-bottom-right-radius:22px}
+#rec{position:absolute;left:142px;top:420px;width:250px;height:50px;display:flex;align-items:center;gap:16px;color:#fff;font-size:36px;font-weight:900;letter-spacing:3px;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+#ponto{width:28px;height:28px;border-radius:50%;background:var(--ruim);flex:none}
+#pausa{display:none;width:28px;height:30px;flex:none;border-left:9px solid #fff;border-right:9px solid #fff}
+#tempo{position:absolute;right:142px;top:420px;width:280px;height:50px;text-align:right;color:#fff;font-size:36px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:1px;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+/* meme caption */
+#pov{position:absolute;left:120px;top:530px;font-size:62px;line-height:1.3;padding:.06em .5em;transform-origin:0 100%}
+#cap{position:absolute;left:120px;top:650px;width:780px;height:520px;font-size:100px;line-height:1.34;letter-spacing:-.01em;text-wrap:pretty;transform-origin:0 0}
+.hl{background:var(--texto);color:var(--fundo);padding:.04em .22em .08em;border-radius:.16em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+body.e-noite .hl{box-shadow:0 0 34px color-mix(in srgb,var(--destaque) 60%,transparent)}
+/* watermark over the photo: own pill so any logo reads on any footage */
+#marca:not(.selo){background:color-mix(in srgb,var(--fundo) 84%,transparent);padding:8px 26px;border-radius:999px}
+/* turn: freeze frame, dramatic zoom, speed lines, reaction slams */
+#linhas{position:absolute;inset:0;width:1080px;height:1920px;opacity:0}
+#rot{position:absolute;left:120px;top:690px;width:760px;height:120px;font-size:96px;color:var(--destaque);transform:rotate(-4deg);transform-origin:0 50%}
+#vir{position:absolute;left:110px;top:820px;width:790px;height:470px;font-size:124px;line-height:1.02;transform-origin:50% 30%}
+#barra{position:absolute;left:120px;top:1310px;height:22px;width:0;border-radius:11px;background:var(--destaque)}
+body.e-pop #vir{text-shadow:8px 8px 0 var(--fundo2)}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="full">
+ <div id="bgw"><img id="bg" alt=""></div>
+ <div id="sombraT"></div><div id="sombraB"></div><div id="tinta"></div>
+ <svg id="linhas" viewBox="0 0 1080 1920"></svg>
+ <div class="vf" id="vf1"></div><div class="vf" id="vf2"></div><div class="vf" id="vf3"></div><div class="vf" id="vf4"></div>
+ <div id="rec"><span id="ponto"></span><span id="pausa"></span><span class="t seg" id="recT" style="width:180px;height:50px;line-height:50px">REC</span></div>
+ <div id="tempo" class="t seg"></div>
+ <div id="pov" class="chip tit t seg">POV:</div>
+ <div id="cap" class="tit t seg"><span class="hl" id="capS"></span></div>
+ <div id="rot" class="mao t seg"></div>
+ <div id="vir" class="tit t seg ctr"></div>
+ <div id="barra"></div>
+</div></div>
+
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "POV": one first-person shot (the client's photo or video, or the footage bank as a fallback) seen through a
+// camera viewfinder, a meme caption on top, then the turn: freeze frame, stepped dramatic zoom, speed lines and the
+// reaction slamming in. Without a turn the joke closes on the caption alone.
+let D = {};
+Motor.molde({
+  id: 'pov', formatos: ['reel'],
+  montar(F, M, $m) {
+    const { $, cl } = $m;
+    const sit = F.situacao.replace(/^\s*pov\s*:?\s*/i, '');
+    if (!sit) $m.erro('situacao: escreva a situação sem só o "POV:"');
+    $('#capS').textContent = sit;
+    if (F.virada) { $('#vir').textContent = F.virada; $('#rot').textContent = F.rotulo || ''; }
+    else if (F.rotulo) $m.erro('rotulo só faz sentido com virada');
+    // radial speed lines for the turn
+    const NS = 'http://www.w3.org/2000/svg', g = $('#linhas');
+    for (let i = 0; i < 70; i++) {
+      const a = (i / 70) * Math.PI * 2 + $m.rnd(i) * 0.06, r0 = 430 + $m.rnd(i * 3) * 220, r1 = 1500, cx = 540, cy = 1020, w = 3 + $m.rnd(i * 7) * 9;
+      const l = document.createElementNS(NS, 'polygon'), dx = Math.cos(a), dy = Math.sin(a), nx = -dy, ny = dx;
+      l.setAttribute('points', `${cx + dx * r0},${cy + dy * r0} ${cx + dx * r1 + nx * w * 3},${cy + dy * r1 + ny * w * 3} ${cx + dx * r1 - nx * w * 3},${cy + dy * r1 - ny * w * 3}`);
+      l.setAttribute('fill', 'var(--texto)'); l.dataset.i = i; g.appendChild(l);
+    }
+    // reading time grows with the caption; the whole Reel stays in 7 to 12 s with the 3 s final
+    const ler = cl(2.6 + sit.length * 0.03, 3.4, 4.8);
+    D.vir = !!F.virada;
+    return { duracoes: D.vir ? [ler, cl(2.2 + F.virada.length * 0.03, 2.8, 3.6)] : [cl(ler + 0.8, 4.2, 5.6)] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eb, el, cl, ini, rnd } = $m;
+    const S1 = D.vir ? ini(1) : 1e9, fim = D.vir ? 1 : 0;
+    $m.cena('#c0', t, 0, fim, { trans: 'fade', ent: 0.25 });
+    const tf = Math.min(t, S1), cong = t >= S1;
+    $m.filmagem($('#bg'), F.fundo, tf);
+    // handheld camera; frozen after the turn, then the stepped zoom of the meme
+    const hx = Math.sin(tf * 1.7) * 7 + Math.sin(tf * 3.3) * 3, hy = Math.cos(tf * 1.25) * 6 + Math.sin(tf * 2.6) * 2, hr = Math.sin(tf * 0.9) * 0.5;
+    const z = cong ? 0.16 * eb(p(t, S1, 0.16)) + 0.16 * eb(p(t, S1 + 0.32, 0.16)) + 0.22 * eb(p(t, S1 + 0.64, 0.2)) : 0;
+    const sh = cong ? Math.exp(-(t - S1 - 0.64) * 3) * (t > S1 + 0.64 ? 1 : 0) : 0;
+    $('#bgw').style.transform = `translate(${hx + Math.sin(t * 71) * 18 * sh}px,${hy + Math.cos(t * 63) * 14 * sh}px) rotate(${hr}deg) scale(${1 + z})`;
+    $('#bg').style.filter = cong ? `saturate(${1 - 0.7 * eo(p(t, S1, 0.5))}) contrast(1.15)` : 'saturate(1.12) contrast(1.06)';
+    // HUD
+    const pisca = Math.floor(t * 2) % 2 === 0;
+    $('#ponto').style.display = cong ? 'none' : ''; $('#ponto').style.opacity = pisca ? 1 : 0.15;
+    $('#pausa').style.display = cong ? 'block' : 'none';
+    $('#recT').textContent = cong ? 'PAUSE' : 'REC';
+    const seg = Math.floor(tf), base = F.hora ? F.hora.split(':').map(Number) : null;
+    const pad = n => String(n).padStart(2, '0');
+    $('#tempo').textContent = base ? `${pad(base[0])}:${pad(base[1])}:${pad((7 + seg) % 60)}` : `00:00:${pad(seg)}`;
+    const hud = 1 - eo(p(t, S1 + 0.1, 0.3));
+    ['#vf1', '#vf2', '#vf3', '#vf4'].forEach(s => { $(s).style.opacity = 0.92 * hud; });
+    // caption pops like a meme: there from the start, readable at once
+    const c = eb(p(t, 0.05, 0.4)), pv = eb(p(t, 0.0, 0.35));
+    const sai = eo(p(t, S1, 0.22));
+    $('#pov').style.opacity = cl(pv * 3) * (1 - sai); $('#pov').style.transform = `scale(${0.6 + 0.4 * pv}) rotate(${-3 * (1 - pv)}deg)`;
+    $('#cap').style.opacity = cl(c * 3) * (1 - sai); $('#cap').style.transform = `translateY(${(1 - c) * 40}px) scale(${0.94 + 0.06 * c})`;
+    // turn
+    $('#tinta').style.opacity = cong ? 0.66 * eo(p(t, S1 + 0.05, 0.4)) : 0;
+    $('#linhas').style.opacity = cong ? 0.3 * eo(p(t, S1 + 0.6, 0.2)) : 0;
+    if (cong) $$('#linhas polygon').forEach(l => { const i = +l.dataset.i; l.style.opacity = (rnd(i + Math.floor(t * 14) * 3) > 0.45) ? 1 : 0.15; });
+    if (D.vir) {
+      const r = eo5(p(t, S1 + 0.55, 0.4)); $('#rot').style.opacity = r; $('#rot').style.transform = `rotate(-4deg) translateX(${(1 - r) * -60}px)`;
+      const v = p(t, S1 + 0.7, 0.35), vs = v === 0 ? 0 : 1 + 1.3 * Math.pow(1 - eo(v), 2);
+      $('#vir').style.opacity = v > 0 ? 1 : 0; $('#vir').style.transform = `scale(${vs}) rotate(${-2 * eo(v)}deg)`;
+      $('#barra').style.width = eo(p(t, S1 + 1.05, 0.4)) * 380 + 'px';
+    } else { $('#rot').style.opacity = 0; $('#vir').style.opacity = 0; }
+  },
+});
+</script></body></html>

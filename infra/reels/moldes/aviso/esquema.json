@@ -1,0 +1,87 @@
+{
+ "formatos": [
+  "story",
+  "reel"
+ ],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "tipo": {
+   "tipo": "escolha",
+   "opcoes": [
+    "feriado",
+    "ferias",
+    "horario",
+    "endereco",
+    "telefone",
+    "falta-produto",
+    "agenda-cheia",
+    "vaga"
+   ]
+  },
+  "titulo": {
+   "tipo": "texto",
+   "max": 14,
+   "obrigatorio": false,
+   "dica": "troca o título da placa (padrão pelo tipo: FECHADO, FÉRIAS, NOVO HORÁRIO, MUDAMOS, NÚMERO NOVO, EM FALTA, AGENDA CHEIA, VAGA ABERTA)"
+  },
+  "assunto": {
+   "tipo": "texto",
+   "max": 28,
+   "obrigatorio": false,
+   "dica": "linha pequena na placa: o feriado, o produto em falta, o serviço"
+  },
+  "data": {
+   "tipo": "data",
+   "dica": "dia do aviso (feriado, início das férias, a partir de quando vale); na vaga, o prazo de inscrição. O dia da semana é calculado"
+  },
+  "texto": {
+   "tipo": "texto",
+   "max": 100,
+   "min": 12,
+   "dica": "o que muda para o cliente"
+  },
+  "destaque": {
+   "tipo": "texto",
+   "max": 26,
+   "obrigatorio": false,
+   "dica": "a informação nova em destaque: telefone, rua e número, horário (8h às 14h). Dado do negócio: quando vier, a ficha precisa de _origem.destaque (o molde recusa sem ela)",
+   "real_opcional": true
+  },
+  "volta": {
+   "tipo": "data",
+   "obrigatorio": false,
+   "dica": "quando volta ao normal (férias, feriado, produto, agenda); depois da data"
+  },
+  "vaga": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "dica": "só no tipo vaga",
+   "campos": {
+    "funcao": {
+     "tipo": "texto",
+     "max": 28
+    },
+    "requisitos": {
+     "tipo": "lista",
+     "min": 3,
+     "max": 3,
+     "item": {
+      "tipo": "texto",
+      "max": 40
+     }
+    },
+    "como": {
+     "tipo": "texto",
+     "max": 56,
+     "dica": "como se candidatar: mande o currículo pelo direct"
+    }
+   }
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ }
+}

@@ -1,0 +1,190 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* one vertical chain of hanging plaques (sign, date tag, info cards) that the camera pans down */
+#mundo{position:absolute;left:0;top:0;width:1080px;height:3000px}
+body.f-reel #mundo{left:-50px}
+#prego{position:absolute;left:523px;top:403px;width:34px;height:34px;border-radius:50%;background:var(--texto);box-shadow:0 6px 14px rgba(0,0,0,.35);z-index:5}
+#prego:after{content:'';position:absolute;left:9px;top:7px;width:10px;height:8px;border-radius:50%;background:var(--fundo);opacity:.55}
+.pl{position:absolute;z-index:3}
+.pl svg.fio{position:absolute;left:0;overflow:visible;pointer-events:none}
+.pl svg.fio line{stroke:var(--texto);stroke-width:5;stroke-linecap:round;opacity:.75}
+.furo{position:absolute;top:22px;width:26px;height:26px;border-radius:50%;background:var(--fundo);box-shadow:inset 0 3px 6px rgba(0,0,0,.35);z-index:2}
+/* the sign */
+#p0{left:130px;top:590px;width:820px;height:400px;transform-origin:410px -170px}
+#p0 svg.fio{top:-170px;width:820px;height:170px}
+.lado{position:absolute;inset:0;border-radius:40px;background:var(--destaque);color:var(--sobre-destaque);box-shadow:var(--sombra);overflow:hidden}
+.lado:before{content:'';position:absolute;inset:16px;border-radius:28px;border:4px solid var(--sobre-destaque);opacity:.22}
+body.e-pop .lado{border:7px solid var(--texto);box-shadow:16px 16px 0 var(--texto)}
+body.e-papel .lado{border-radius:14px;box-shadow:0 18px 34px rgba(60,40,20,.28)}
+body.e-noite .lado{background:var(--fundo);color:var(--destaque);border:7px solid var(--destaque);box-shadow:0 0 0 2px var(--destaque),0 0 60px color-mix(in srgb,var(--destaque) 60%,transparent),inset 0 0 50px color-mix(in srgb,var(--destaque) 30%,transparent)}
+body.e-noite .lado:before{border-color:var(--destaque)}
+body.e-noite .lado .tit{text-shadow:0 0 24px color-mix(in srgb,var(--destaque) 80%,transparent)}
+.lado .ic{position:absolute;left:0;right:0;top:46px;text-align:center;font-size:104px;line-height:1}
+.lado .tt{position:absolute;left:50px;right:50px;top:168px;height:150px;font-size:132px;line-height:1.1;white-space:nowrap;text-align:center}
+.lado .sb{position:absolute;left:60px;right:60px;top:318px;height:56px;font-size:42px;font-weight:800;text-align:center;white-space:nowrap;opacity:.85}
+.lado.sem-sb .tt{top:196px}
+#frente .tt{top:186px;font-size:150px;height:170px}
+/* the date tag (calendar page) */
+#p1{left:280px;top:1060px;width:520px;height:360px;transform-origin:260px -70px}
+#p1 svg.fio,#p2 svg.fio,#p3 svg.fio{top:-70px;height:70px}
+#p1 svg.fio{width:520px}
+#p1 .cartao{position:absolute;inset:0;overflow:hidden}
+#p1 .faixa{position:absolute;left:0;right:0;top:0;height:92px;background:var(--texto);color:var(--fundo)}
+#p1 .faixa .t{position:absolute;left:30px;right:30px;top:24px;height:50px;font-size:38px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;text-align:center;white-space:nowrap}
+#p1 .dd{position:absolute;left:30px;right:30px;top:112px;height:168px;font-size:156px;line-height:1.08;text-align:center;white-space:nowrap}
+#p1 .ds{position:absolute;left:30px;right:30px;top:280px;height:62px;font-size:50px;font-weight:800;text-align:center;white-space:nowrap}
+/* info cards */
+#p2,#p3{left:110px;width:860px;transform-origin:430px -70px}
+#p2{top:1490px;height:600px}#p3{top:2120px;height:600px}
+#p2 svg.fio,#p3 svg.fio{width:860px}
+.info{position:absolute;inset:0;padding:54px 56px;display:flex;flex-direction:column;gap:28px;align-items:flex-start}
+.info>*{flex:none;width:100%}
+.info .tx{height:300px;font-size:60px;font-weight:800;line-height:1.2}
+.info .tx.so{height:372px}
+.info .dq{width:auto;max-width:100%;height:104px;padding:22px 36px;font-size:58px;line-height:60px;white-space:nowrap}
+.info .vt{height:96px;padding:0 30px;border-radius:999px;background:color-mix(in srgb,var(--destaque) 16%,transparent);border:3px solid color-mix(in srgb,var(--destaque) 55%,transparent);font-size:46px;font-weight:800;white-space:nowrap;display:flex;align-items:center;gap:18px}
+.info .vt .ico{color:var(--destaque);flex:none}
+.info .vt .t{flex:1;height:60px;white-space:nowrap}
+.info .cab{height:60px;font-size:46px;font-weight:800;letter-spacing:.02em}
+.req{display:flex;align-items:center;gap:26px;height:120px}
+.req .ck{flex:none;width:84px;height:84px;border-radius:50%;background:var(--bom);color:var(--sobre-bom);font-size:52px;display:flex;align-items:center;justify-content:center}
+.req .t{flex:1;height:120px;font-size:48px;font-weight:800;line-height:1.15;display:flex;align-items:center}
+.info .como{height:216px;font-size:66px;line-height:1.08}
+.info .tx2{height:160px;font-size:42px;font-weight:700;line-height:1.25}
+#janela{position:absolute;inset:0;-webkit-mask-image:linear-gradient(transparent 0,transparent 290px,#000 395px);mask-image:linear-gradient(transparent 0,transparent 290px,#000 395px)}
+body.f-reel #p2,body.f-reel #p3{left:140px;width:800px;transform-origin:400px -70px}
+body.f-reel #p2 svg.fio,body.f-reel #p3 svg.fio{width:800px}
+</style></head><body><div id="palco">
+<div class="cena" id="cA"><div class="cam full"><div id="janela"><div id="mundo">
+ <div id="prego"></div>
+ <div class="pl" id="p0"><svg class="fio"><line id="f0a"/><line id="f0b"/></svg>
+  <div class="lado" id="frente"><div class="furo" style="left:72px"></div><div class="furo" style="right:72px"></div><div class="ic" id="fIc"></div><div class="tt tit t seg" id="fTt"></div></div>
+  <div class="lado" id="verso"><div class="furo" style="left:72px"></div><div class="furo" style="right:72px"></div><div class="ic" id="vIc"></div><div class="tt tit t seg" id="vTt"></div><div class="sb t seg" id="vSb"></div></div>
+ </div>
+ <div class="pl" id="p1"><svg class="fio"><line/><line/></svg>
+  <div class="cartao"><div class="faixa"><div class="t seg" id="dLb"></div></div><div class="dd tit t seg" id="dDd"></div><div class="ds t t2 seg" id="dDs"></div></div>
+ </div>
+ <div class="pl" id="p2"><svg class="fio"><line/><line/></svg><div class="cartao info" id="i2"></div></div>
+ <div class="pl" id="p3"><svg class="fio"><line/><line/></svg><div class="cartao info" id="i3"></div></div>
+</div></div></div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Aviso": an animated door sign. A sign drops on a nail and flips (ABERTO to FECHADO, AVISO to the subject); the
+// camera pans down the chain to a calendar tag (date and weekday computed here) and to the card with what changes.
+// Job opening (vaga) adds two cards: three requirements and how to apply. Dates in the past are refused.
+const DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+const dt = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const ddmm = s => s.slice(8, 10) + '/' + s.slice(5, 7);
+const dia = s => DIAS[dt(s).getDay()], diaCurto = s => dia(s).replace('-feira', '');
+const TIPOS = {
+  feriado: { ic: 'calendario', tt: 'FECHADO', fr: 'ABERTO', fic: 'check', lb: 'fechado no dia', vt: 'Voltamos' },
+  ferias: { ic: 'brilho', tt: 'FÉRIAS', fr: 'ABERTO', fic: 'check', lb: 'a partir de', vt: 'Voltamos' },
+  horario: { ic: 'relogio', tt: 'NOVO HORÁRIO', lb: 'a partir de', vt: 'Até' },
+  endereco: { ic: 'local', tt: 'MUDAMOS', lb: 'a partir de', vt: 'Até' },
+  telefone: { ic: 'telefone', tt: 'NÚMERO NOVO', lb: 'a partir de', vt: 'Até' },
+  'falta-produto': { ic: 'caixa', tt: 'EM FALTA', lb: 'desde', vt: 'Volta' },
+  'agenda-cheia': { ic: 'cadeado', tt: 'AGENDA CHEIA', lb: 'lotada até', vt: 'Novas vagas' },
+  vaga: { ic: 'pessoa', tt: 'VAGA ABERTA', lb: 'inscrições até', vt: '' },
+};
+let D = {};
+function linhas(pl) { // strings from the hook above a plaque to its two holes
+  const w = pl.offsetWidth, ls = pl.querySelectorAll('svg.fio line'), hy = pl.id === 'p0' ? 0 : 0, top = pl.id === 'p0' ? 170 : 70;
+  [[w / 2, 0, 85, top + 35], [w / 2, 0, w - 85, top + 35]].forEach((c, i) => { if (!ls[i]) return; ['x1', 'y1', 'x2', 'y2'].forEach((a, k) => ls[i].setAttribute(a, c[k] + (k % 2 ? hy : 0))); });
+}
+Motor.molde({
+  id: 'aviso', formatos: ['story', 'reel'],
+  montar(F, M, $m) {
+    const { $ } = $m, T = TIPOS[F.tipo], vaga = F.tipo === 'vaga';
+    const hoje = F._hoje || iso(new Date());
+    if (vaga && !F.vaga) $m.erro('vaga de emprego precisa de função, 3 requisitos e como se candidatar (campo vaga)');
+    if (!vaga && F.vaga) $m.erro('o campo vaga só vale para o tipo vaga');
+    if (F.volta && F.volta <= F.data) $m.erro('a volta precisa ser depois da data do aviso');
+    if ((F.volta || F.data) < hoje) $m.erro('aviso de data que já passou (' + ddmm(F.volta || F.data) + ')');
+    if (vaga && F.volta) $m.erro('vaga não usa volta: o prazo de inscrição é a data');
+    // real data in an optional field: the validator only enforces real on required fields, so the template does it
+    if (F.destaque && !['dono', 'sistema'].includes((F._origem || {}).destaque)) $m.erro('destaque: dado real sem origem (_origem: dono ou sistema)');
+    // sign
+    $('#fIc').innerHTML = $m.icone(T.fic || 'megafone'); $('#fTt').textContent = T.fr || 'AVISO';
+    $('#vIc').innerHTML = $m.icone(T.ic); $('#vTt').textContent = (F.titulo || T.tt).toUpperCase();
+    const sb = vaga ? F.vaga.funcao : (F.assunto || '');
+    $('#vSb').textContent = sb; if (!sb) $('#verso').classList.add('sem-sb');
+    // date tag
+    $('#dLb').textContent = T.lb; $('#dDd').textContent = ddmm(F.data); $('#dDs').textContent = dia(F.data);
+    // info cards
+    const i2 = $('#i2'), i3 = $('#i3');
+    const el = (cls, txt, pai) => { const d = document.createElement('div'); d.className = cls; if (txt != null) d.textContent = txt; pai.appendChild(d); return d; };
+    if (!vaga) {
+      el('tx t seg rv', F.texto, i2);
+      if (F.destaque) el('dq chip t seg', F.destaque, i2);
+      if (F.volta) { const v = el('vt', null, i2); v.innerHTML = $m.icone(F.tipo === 'agenda-cheia' ? 'calendario' : 'seta'); el('t seg', `${T.vt} ${diaCurto(F.volta)}, ${ddmm(F.volta)}`, v); }
+      else if (F.tipo === 'horario' || F.tipo === 'endereco' || F.tipo === 'telefone') { const v = el('vt', null, i2); v.innerHTML = $m.icone('calendario'); el('t t2 seg', `Vale a partir de ${diaCurto(F.data)}`, v); }
+      if (!F.destaque && !i2.querySelector('.vt')) i2.querySelector('.tx').classList.add('so');
+    } else {
+      el('cab t t2 seg', 'O que pedimos', i2);
+      F.vaga.requisitos.forEach((r, k) => { const row = el('req', null, i2); row.dataset.k = k; const c = el('ck', null, row); c.innerHTML = $m.icone('check'); el('t seg', r, row); });
+      el('cab t t2 seg', 'Como se candidatar', i3);
+      el('como tit t seg rv', F.vaga.como, i3);
+      el('tx2 t t2 seg', F.texto, i3);
+      const v = el('vt', null, i3); v.innerHTML = $m.icone('relogio'); el('t seg', `Até ${diaCurto(F.data)}, ${ddmm(F.data)}`, v);
+    }
+    $('#nota').textContent = F.nota || '';
+    D = { vaga, n: vaga ? 4 : 3, reel: $m.FORMATO === 'reel' };
+    if (!vaga) $('#p3').style.display = 'none';
+    // card heights follow their content; the next plaque hangs 70 px below
+    [['#p2', i2], ['#p3', i3]].forEach(([s, c]) => { const k = [...c.children]; $(s).style.height = (108 + k.reduce((a, e) => a + e.offsetHeight, 0) + 28 * (k.length - 1)) + 'px'; });
+    $('#p3').style.top = ($('#p2').offsetTop + $('#p2').offsetHeight + 70) + 'px';
+    ['#p0', '#p1', '#p2', '#p3'].forEach(s => linhas($(s)));
+    // pan per scene: the newest plaque sits low in the free area, older ones above; plaques that leave the area dim
+    const yMax = D.reel ? 1480 : 1560, pls = ['#p0', '#p1', '#p2', '#p3'].slice(0, D.n).map(s => $(s));
+    const box = e => ({ top: e.offsetTop, bot: e.offsetTop + e.offsetHeight });
+    D.pan = [0]; for (let k = 1; k < D.n; k++) { const b = box(pls[k]), a = box(pls[k - 1]);
+      let y = Math.min(0, yMax - 70 - b.bot); if (a.top + y < 380) y = Math.min(0, (380 + yMax) / 2 - (b.top + b.bot) / 2); y = Math.max(y, 400 - b.top); D.pan.push(y); }
+    D.dim = D.pan.map(y => pls.map(e => { const b = box(e); return b.top + 15 + y < 372 ? 0 : b.bot - 15 + y > yMax ? 0.12 : 1; }));
+    D.pls = pls;
+    const extra = F.texto.length > 70 ? 0.4 : 0;
+    return { duracoes: vaga ? [1.6, 1.4, 2.8, 3.0 + extra] : [1.6, 1.4, 2.6 + extra] };
+  },
+  duracaoFinal: 2.4,
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, cl, lerp, ini, fim } = $m;
+    const N = D.n; $m.cena('#cA', t, 0, N - 1, { push: 0.02 });
+    // pan, with a pull up when the final scene arrives
+    let pan = 0; for (let k = 1; k < N; k++) pan = lerp(pan, D.pan[k], eio(p(t, ini(k), 0.6)));
+    const sai = eio(p(t, fim(N - 1) - 0.15, 0.55)); pan -= sai * 1900;
+    $('#mundo').style.transform = `translateY(${pan}px)`;
+    // the sign: drops, swings, flips
+    const dq = p(t, 0.05, 0.6), dy = (1 - eb(dq)) * -1150;
+    const sw = (a0, ts) => t < ts ? 0 : a0 * Math.exp(-2.4 * (t - ts)) * Math.sin(8 * (t - ts));
+    const ang = sw(9, 0.45) + sw(-5, 0.75) + 0.7 * Math.sin(t * 1.6);
+    const fq = p(t, 0.62, 0.34), sx = Math.max(0.02, Math.abs(Math.cos(fq * Math.PI)));
+    $('#p0').style.transform = `translateY(${dy}px) rotate(${ang}deg)`;
+    $('#frente').style.transform = $('#verso').style.transform = `scaleX(${sx}) scaleY(${1 + 0.04 * Math.sin(fq * Math.PI)})`;
+    $('#frente').style.visibility = fq < 0.5 ? 'visible' : 'hidden'; $('#verso').style.visibility = fq < 0.5 ? 'hidden' : 'visible';
+    $('#prego').style.opacity = eo(p(t, 0, 0.25));
+    // plaques below unfold on their own scene and swing a little
+    D.pls.forEach((e, k) => {
+      let dim = 1; for (let j = 1; j < N; j++) dim = lerp(dim, D.dim[j][k], eio(p(t, ini(j), 0.6)));
+      if (k === 0) { e.style.opacity = dim; return; }
+      const a = ini(k) + 0.15, u = eo5(p(t, a, 0.55));
+      e.style.opacity = cl(u * 3) * dim;
+      e.style.transform = `perspective(1400px) rotateX(${(1 - u) * -88}deg) rotate(${sw(4, a + 0.4) + 0.5 * Math.sin(t * 1.4 + k)}deg)`;
+    });
+    // contents
+    $m.entra('#dDd', t, ini(1) + 0.45, 0.5, 30, 0.2); $m.entra('#dDs', t, ini(1) + 0.65, 0.5, 20);
+    if (!D.vaga) {
+      $m.revela('#i2 .tx', t, ini(2) + 0.35, 0.05);
+      const dq2 = $('#i2 .dq'); if (dq2) { const q = eb(p(t, ini(2) + 0.9, 0.5)); dq2.style.opacity = cl(q * 3); dq2.style.transform = `scale(${0.6 + 0.4 * q}) rotate(${(1 - q) * -4}deg)`; }
+      const vt = $('#i2 .vt'); if (vt) $m.entra(vt, t, ini(2) + 1.2, 0.5, 24);
+    } else {
+      $$('#i2 .req').forEach(r => { const k = +r.dataset.k, q = $m.entra(r, t, ini(2) + 0.45 + k * 0.38, 0.5, 30);
+        const c = r.querySelector('.ck'), s = eb(p(t, ini(2) + 0.6 + k * 0.38, 0.45)); c.style.transform = `scale(${s})`; });
+      $m.revela('#i3 .como', t, ini(3) + 0.35, 0.06); $m.entra('#i3 .tx2', t, ini(3) + 1.0, 0.5, 20); $m.entra('#i3 .vt', t, ini(3) + 1.3, 0.5, 20);
+    }
+    $('#nota').style.opacity = t < fim(N - 1) ? 1 : 0;
+  },
+});
+</script></body></html>

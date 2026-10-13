@@ -1,0 +1,16 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "opcional",
+ "musica": "animada",
+ "campos": {
+  "nome": {"tipo": "texto", "max": 28, "dica": "nome do produto ou serviço novo"},
+  "fotos": {"tipo": "lista", "min": 1, "max": 3, "item": {"tipo": "foto"}, "dica": "a primeira é a principal (aparece por trás da cortina desde o começo)"},
+  "atributos": {"tipo": "lista", "min": 3, "max": 3, "item": {"tipo": "texto", "max": 28}},
+  "gancho": {"tipo": "texto", "max": 26, "obrigatorio": false, "dica": "frase da cortina; sem ela, 'Vem novidade aí'"},
+  "quando": {"tipo": "data", "obrigatorio": false, "dica": "dia em que chega (AAAA-MM-DD); o dia da semana é do código; data passada é recusada"},
+  "preco": {"tipo": "dinheiro", "obrigatorio": false, "real_se_tiver": true, "dica": "opcional; aparece na cena final; se vier, precisa de _origem.preco"},
+  "falas": {"tipo": "lista", "min": 5, "max": 5, "obrigatorio": false, "item": {"tipo": "texto", "max": 110},
+   "dica": "narração opcional, 5 falas: vem novidade, revelação, nome, atributos, chamada"}
+ },
+ "especiais": {"_hoje": "data de publicação (AAAA-MM-DD); sem ela, a data de hoje"}
+}

@@ -1,0 +1,134 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* one stage for the whole video: spotlight, the photo on a frame, the curtain in front */
+#palco .palcoL{position:absolute;inset:0}
+#luz{position:absolute;left:-200px;top:-200px;width:1480px;height:1900px;background:radial-gradient(ellipse 34% 46% at 50% 42%,color-mix(in srgb,var(--texto) 22%,transparent),transparent 70%);transform-origin:50% 0;pointer-events:none}
+#chao{position:absolute;left:140px;top:1390px;width:800px;height:110px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--destaque) 40%,transparent),transparent);opacity:.8}
+#quadro{position:absolute;left:150px;top:420px;width:780px;height:920px;transform-origin:50% 0}
+#moldura{position:absolute;inset:0;border-radius:40px;overflow:hidden;box-shadow:var(--sombra);border:12px solid var(--texto)}
+body.e-claro #moldura,body.e-papel #moldura{border-color:var(--cartao)}
+body.e-papel #moldura{border-radius:6px}
+#moldura img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#flash{position:absolute;inset:0;background:var(--texto);opacity:0;pointer-events:none}
+#novo{position:absolute;right:-70px;top:-60px;width:330px;height:150px;font-family:var(--ft),sans-serif;font-weight:900;font-size:104px;line-height:132px;text-align:center;color:var(--destaque);border:10px solid var(--destaque);border-radius:22px;background:color-mix(in srgb,var(--fundo) 88%,transparent);letter-spacing:.06em;opacity:0}
+body.e-pop #novo{background:var(--fundo)}
+/* curtain: two pleated halves */
+.cortina{position:absolute;top:-40px;width:600px;height:2000px;z-index:5;
+ background:repeating-linear-gradient(90deg,var(--destaque) 0 34px,color-mix(in srgb,var(--destaque) 62%,var(--fundo)) 60px,var(--destaque) 92px);box-shadow:var(--sombra)}
+.cortina:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--fundo) 35%,transparent),transparent 30%,transparent 75%,color-mix(in srgb,var(--fundo) 45%,transparent))}
+#cE{left:-30px;transform-origin:0 0}#cD{right:-30px;transform-origin:100% 0}
+#bando{position:absolute;left:-20px;right:-20px;top:0;height:250px;z-index:6;background:repeating-radial-gradient(circle at 60px 0,var(--destaque) 0 58px,color-mix(in srgb,var(--destaque) 55%,var(--fundo)) 60px 62px,transparent 63px) 0 120px/120px 130px repeat-x,var(--destaque);box-shadow:var(--sombra)}
+#vem{z-index:7;left:90px;width:820px;top:540px;height:340px;font-size:150px;line-height:1;color:var(--sobre-destaque)}
+#vemS{z-index:7;left:90px;width:820px;top:930px;height:70px;font-size:48px;font-weight:800;color:var(--sobre-destaque);opacity:.9}
+/* confetti */
+#confete{position:absolute;inset:0;z-index:8;pointer-events:none}
+#confete i{position:absolute;left:0;top:0;width:22px;height:34px;border-radius:4px}
+/* scene 2: name */
+#nome{left:90px;width:820px;top:1060px;height:250px;font-size:124px;line-height:1;text-align:center}
+#quando{position:absolute;left:90px;width:820px;top:1340px;text-align:center}
+#quando span{display:inline-block;font-size:46px;padding:16px 36px;white-space:nowrap}
+/* scene 3: attributes */
+#leque{position:absolute;left:0;right:0;top:390px;height:470px}
+#leque .ph{position:absolute;left:330px;top:10px;width:420px;height:440px;border-radius:30px;overflow:hidden;box-shadow:var(--sombra);border:10px solid var(--texto);transform-origin:50% 110%}
+body.e-claro #leque .ph,body.e-papel #leque .ph{border-color:var(--cartao)}
+#leque .ph img{width:100%;height:100%;object-fit:cover}
+#attrs{position:absolute;left:90px;width:820px;top:900px}
+.at{position:relative;height:166px;margin-bottom:22px;padding:0 30px 0 150px;display:flex;align-items:center}
+.at .n{position:absolute;left:24px;top:28px;width:110px;height:110px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:62px;display:flex;align-items:center;justify-content:center}
+.at .tx{width:100%;height:132px;font-size:56px;font-weight:800;line-height:1.12;display:flex;align-items:center}
+body.f-story #attrs{width:900px}body.f-story #vem,body.f-story #vemS{width:900px}body.f-story #nome,body.f-story #quando{width:900px}
+</style></head><body><div id="palco">
+
+<div class="cena" id="cAll"><div class="cam full">
+ <div id="luz"></div><div id="chao"></div>
+ <div id="quadro"><div id="moldura"><img id="foto0" alt=""><div id="flash"></div></div><div id="novo" class="t seg">NOVO</div></div>
+ <div class="ctr tit t seg rv" id="nome"></div>
+ <div id="quando"><span class="chip t seg" id="quandoT"></span></div>
+ <div id="leque"></div>
+ <div id="attrs"></div>
+ <div class="cortina" id="cE"></div><div class="cortina" id="cD"></div><div id="bando"></div>
+ <div class="ctr tit t seg rv" id="vem"></div>
+ <div class="ctr t seg" id="vemS"></div>
+ <div id="confete"></div>
+</div></div>
+
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Lançamento": something new revealed on a stage. Scenes (and falas): 0 closed curtain "vem novidade" with the photo
+// peeking through the gap (never hidden for more than ~2 s), 1 curtain opens under the spotlight with confetti,
+// 2 name + NOVO stamp (+ launch date, weekday by the code), 3 three attributes, 4 call (engine's final scene, with the
+// optional price as final_extra).
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const dia = s => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+const ddmm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+Motor.molde({
+  id: 'lancamento', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $, brl } = $m;
+    if (F.falas && F.falas.length !== 5) $m.erro('falas: 5 (vem novidade, revelação, nome, atributos, chamada)');
+    // optional price is business data: it needs its origin like any real field
+    if (F.preco != null && !['dono', 'sistema'].includes((F._origem || {}).preco)) $m.erro('preco: dado real sem origem (_origem: dono ou sistema)');
+    $('#foto0').src = $m.midia(F.fotos[0]);
+    $('#vem').textContent = F.gancho || 'Vem novidade aí';
+    $('#vemS').textContent = M.nome ? 'na ' + M.nome : '';
+    $('#nome').textContent = F.nome;
+    // launch date: weekday and "today" worked out by the code; a date already gone is not a launch
+    let q = '';
+    if (F.quando) {
+      const hoje = dia(F._hoje) || new Date(), h0 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()), d = dia(F.quando);
+      const n = Math.round((d - h0) / 864e5);
+      if (n < 0) $m.erro('a data do lançamento já passou: use o molde Produto em destaque');
+      q = n === 0 ? 'Já disponível hoje' : n === 1 ? 'Chega amanhã, ' + ddmm(d) : 'Chega ' + DIAS[d.getDay()] + ', ' + ddmm(d);
+    }
+    $('#quandoT').textContent = q; if (!q) $('#quando').style.display = 'none';
+    const fs = F.fotos.length > 1 ? F.fotos : [F.fotos[0]];
+    fs.forEach((f, k) => { const d = document.createElement('div'); d.className = 'ph'; d.dataset.k = k; d.dataset.n = fs.length; const i = document.createElement('img'); i.src = $m.midia(f); d.appendChild(i); $('#leque').appendChild(d); });
+    F.atributos.forEach((a, k) => { const d = document.createElement('div'); d.className = 'at cartao'; d.dataset.k = k;
+      d.innerHTML = '<div class="n tit"></div><div class="tx t seg"></div>'; d.querySelector('.n').textContent = k + 1; d.querySelector('.tx').textContent = a; $('#attrs').appendChild(d); });
+    // confetti pieces (deterministic)
+    const cores = ['var(--destaque)', 'var(--c2)', 'var(--texto)', 'var(--c1)'];
+    for (let i = 0; i < 46; i++) { const c = document.createElement('i'); c.style.background = cores[i % 4]; c.dataset.i = i; $('#confete').appendChild(c); }
+    if (F.preco != null) { const pr = brl(F.preco).replace(' ', ' '); F.final_extra = F.final_extra ? F.final_extra + ' · ' + pr : 'Lançamento por ' + pr; }
+    return { duracoes: [1.6, 2.0, 2.4, 3.4] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, rnd, lerp, ini } = $m;
+    const S1 = ini(1), S2 = ini(2), S3 = ini(3);
+    $m.cena('#cAll', t, 0, 3, { push: 0.02 });
+    // curtain: closed with a sliver of light, then opens (each half swings and gathers to its side)
+    const ab = eio(p(t, S1 + 0.05, 1.1)), sw = Math.sin(p(t, S1, 1.6) * Math.PI * 3) * (1 - p(t, S1, 1.6));
+    const gap = 26 + 30 * Math.sin(t * 3) * (1 - ab);
+    $('#cE').style.transform = `translateX(${-gap / 2 - ab * 640}px) skewX(${sw * 4}deg) scaleX(${1 - ab * 0.35})`;
+    $('#cD').style.transform = `translateX(${gap / 2 + ab * 640}px) skewX(${-sw * 4}deg) scaleX(${1 - ab * 0.35})`;
+    $('#bando').style.transform = `translateY(${-eio(p(t, S1 + 0.5, 0.8)) * 300}px)`;
+    // "vem novidade" sits on the curtain and leaves with it
+    $m.revela('#vem', t, 0.15, 0.1); $m.entra('#vemS', t, 0.7, 0.4, 30);
+    const vo = 1 - eo(p(t, S1, 0.3)); $('#vem').style.opacity = vo; $('#vemS').style.opacity = Math.min(vo, eo5(p(t, 0.7, 0.4)));
+    // spotlight sweeps then settles on the photo
+    const lz = 1 - eio(p(t, S1, 1.0)); $('#luz').style.transform = `rotate(${Math.sin(t * 2.2) * 16 * lz}deg)`; $('#luz').style.opacity = 0.5 + 0.5 * eo(p(t, S1, 0.6));
+    // photo: behind the curtain from the start, pops forward on the reveal, then climbs to make room for the name
+    const pop = eb(p(t, S1 + 0.35, 0.6)), sobe = eio(p(t, S2 - 0.05, 0.6)), sai = eio(p(t, S3 - 0.05, 0.5));
+    $('#quadro').style.transform = `translateY(${lerp(0, -40, sobe) - sai * 1400}px) scale(${lerp(0.9 + 0.1 * pop, 0.66, sobe)}) rotate(${lerp(0, -2, sobe)}deg)`;
+    $('#foto0').style.transform = `scale(${1.18 - 0.12 * p(t, 0, 8)})`;
+    $('#quadro').style.opacity = 1 - p(t, S3 + 0.1, 0.25);
+    $('#flash').style.opacity = 0.55 * (1 - eo(p(t, S1 + 0.4, 0.5))) * (t > S1 + 0.4 ? 1 : 0);
+    // confetti burst at the reveal, from the top of the frame, falling with gravity
+    const tc = t - (S1 + 0.45);
+    $$('#confete i').forEach(c => { const i = +c.dataset.i; if (tc < 0 || tc > 2.6) { c.style.opacity = 0; return; }
+      const a = -Math.PI / 2 + (rnd(i) - 0.5) * 2.4, v = 900 + rnd(i * 3) * 900;
+      const x = 540 + Math.cos(a) * v * tc, y = 760 + Math.sin(a) * v * tc + 1400 * tc * tc;
+      c.style.opacity = 1 - p(tc, 1.8, 0.8); c.style.transform = `translate(${x}px,${y}px) rotate(${tc * (300 + rnd(i * 5) * 700)}deg) scaleX(${Math.cos(tc * (6 + rnd(i) * 8))})`; });
+    // name and stamp
+    $m.revela('#nome', t, S2 + 0.25, 0.08); $('#nome').style.opacity = (t >= S2 ? 1 : 0) * (1 - eo(p(t, S3 - 0.1, 0.3)));
+    $m.carimbo('#novo', t, S2 + 0.85);
+    const qd = eb(p(t, S2 + 1.2, 0.5)); $('#quando').style.opacity = cl(qd * 2) * (1 - eo(p(t, S3 - 0.1, 0.3))); $('#quando').style.transform = `scale(${0.7 + 0.3 * qd})`;
+    // attributes: photos fan out on top, cards slide in one by one
+    $$('#leque .ph').forEach(d => { const k = +d.dataset.k, n = +d.dataset.n, q = eb(p(t, S3 + 0.1 + k * 0.12, 0.6)); const ang = n === 1 ? 0 : (k - (n - 1) / 2) * 16;
+      d.style.opacity = t >= S3 ? cl(q * 2) : 0; d.style.transform = `translateX(${(k - (n - 1) / 2) * 150 * q}px) rotate(${ang * q}deg) scale(${0.6 + 0.4 * q})`; d.style.zIndex = n - Math.abs(k - (n - 1) / 2) * 2; });
+    $$('#attrs .at').forEach(d => { const k = +d.dataset.k, q = eo5(p(t, S3 + 0.45 + k * 0.45, 0.55));
+      d.style.opacity = t >= S3 ? q : 0; d.style.translate = `${(1 - q) * 700}px 0`; });
+  },
+});
+</script></body></html>

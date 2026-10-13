@@ -1,0 +1,17 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "opcional",
+ "musica": "animada",
+ "campos": {
+  "produto": {"tipo": "texto", "max": 26, "dica": "Smash duplo, Troca de óleo, Bolo de pote"},
+  "foto": {"tipo": "foto"},
+  "preco_de": {"tipo": "dinheiro", "real": true, "dica": "preço praticado de verdade antes da oferta, confirmado pelo dono ou tirado do sistema"},
+  "preco_por": {"tipo": "dinheiro", "real": true, "dica": "preço da oferta; o desconto é calculado pelo código"},
+  "ate": {"tipo": "data", "real": true, "dica": "último dia da oferta (AAAA-MM-DD); o molde recusa prazo vencido e prazo de mais de 31 dias"},
+  "ate_hora": {"tipo": "hora", "obrigatorio": false, "dica": "hora do fim no último dia; sem ela, 23:59"},
+  "condicao": {"tipo": "texto", "max": 50, "obrigatorio": false, "dica": "Só no delivery, Pagamento no Pix; sem ela aparece a economia calculada"},
+  "falas": {"tipo": "lista", "min": 4, "max": 4, "obrigatorio": false, "item": {"tipo": "texto", "max": 120},
+   "dica": "narração opcional, 4 falas: produto, preço de e por, prazo, chamada; números iguais aos da ficha"}
+ },
+ "especiais": {"_hoje": "data de publicação (AAAA-MM-DD ou AAAA-MM-DDTHH:MM); sem ela, a data de hoje. O tempo que falta é contado a partir dela."}
+}

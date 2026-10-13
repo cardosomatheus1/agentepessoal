@@ -1,0 +1,6 @@
+{"_marca": "burger-noite", "_formato": "reel", "_hoje": "2026-10-13",
+ "nome": "Smash de costela", "fotos": ["fotos/lanche.jpg", "fotos/fritura.jpg", "fotos/embala.jpg"],
+ "atributos": ["Costela desfiada na hora", "Cheddar cremoso", "Pão brioche na chapa"],
+ "preco": 36.9, "gancho": "Tem coisa nova na chapa",
+ "falas": ["Tem coisa nova na chapa da Burger Noite.", "Olha só isso.", "Chegou o smash de costela!", "Costela desfiada na hora, cheddar cremoso e pão brioche na chapa.", "Peça pelo link da bio."],
+ "_origem": {"preco": "dono"}}

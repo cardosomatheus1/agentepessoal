@@ -1,0 +1,14 @@
+{
+ "formatos": ["reel"],
+ "voz": "nao",
+ "musica": "engracada",
+ "campos": {
+  "ramo": {"tipo": "escolha", "opcoes": ["comida", "saude", "estetica", "outro"], "dica": "em comida, saúde e estética a realidade nunca mostra sujeira nem falta de higiene"},
+  "expectativa": {"tipo": "texto", "max": 40, "min": 6, "dica": "o que o cliente imagina: vender bolo vai ser tão lindo"},
+  "imagem_expectativa": {"tipo": "filmagem", "dica": "foto bonita do próprio negócio (fotos/x.jpg), vídeo do cliente ou, na falta, filmagem do banco"},
+  "realidade": {"tipo": "texto", "max": 40, "min": 6, "dica": "a rotina de quem faz: 4 horas confeitando de madrugada"},
+  "imagem_realidade": {"tipo": "filmagem", "obrigatorio": false, "dica": "sem uma segunda imagem boa, deixe vazio: a realidade vira texto sobre fundo liso"},
+  "realidade_suja": {"tipo": "booleano", "obrigatorio": false, "dica": "obrigatório com imagem_realidade: a imagem mostra sujeira, bagunça ou falta de higiene? Em comida, saúde e estética o molde recusa"},
+  "detalhe": {"tipo": "texto", "max": 30, "obrigatorio": false, "dica": "comentário à mão embaixo da realidade: e ainda falta a decoração"}
+ }
+}

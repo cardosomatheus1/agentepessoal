@@ -1,0 +1,12 @@
+{
+ "formatos": ["reel"],
+ "voz": "nao",
+ "musica": "animada",
+ "campos": {
+  "situacao": {"tipo": "texto", "max": 70, "min": 12, "dica": "a situação sem o 'POV:' (o molde põe): você vende salgado e chega pedido de precinho às 23h"},
+  "virada": {"tipo": "texto", "max": 40, "obrigatorio": false, "dica": "a reação, curta. Deixe vazio quando a piada já fecha na situação"},
+  "rotulo": {"tipo": "texto", "max": 18, "obrigatorio": false, "dica": "quem reage, antes da virada: eu:, eu, 1 minuto depois:"},
+  "fundo": {"tipo": "filmagem", "dica": "de preferência foto (fotos/x.jpg) ou vídeo do próprio cliente; o banco de filmagens (salgado, forno…) só como reserva"},
+  "hora": {"tipo": "hora", "obrigatorio": false, "dica": "hora que aparece no visor da câmera, quando faz parte da piada (23:04)"}
+ }
+}

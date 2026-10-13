@@ -1,0 +1,9 @@
+{"_marca": "doces-da-lu", "_formato": "reel",
+ "pergunta": "Qual o preço mínimo de um cento de brigadeiro?",
+ "midia": "brigadeiro",
+ "opcoes": ["R$ 60", "R$ 85", "R$ 112"], "certa": "C",
+ "explicacao": "Abaixo disso alguém paga a conta: o ingrediente ou o seu tempo. E o lucro ainda vem em cima.",
+ "conta": [{"rotulo": "Ingredientes", "valor": 38}, {"rotulo": "Forminhas e caixa", "valor": 9},
+           {"rotulo": "Gás e luz", "valor": 5}, {"rotulo": "Seu trabalho", "valor": 20, "vezes": 3, "unidade": "h"}],
+ "total_rotulo": "Preço mínimo", "assunto": "dinheiro", "nota": "valores de exemplo", "chamada": "Comenta a sua letra",
+ "_origem": {"conta": "dono"}}

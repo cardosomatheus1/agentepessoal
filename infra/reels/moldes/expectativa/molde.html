@@ -1,0 +1,162 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* expectation: a dreamy framed picture, sparkles, handwriting */
+#lbE{position:absolute;left:290px;top:392px;width:500px;height:80px;line-height:80px;padding:0;font-size:44px;letter-spacing:6px;text-align:center}
+#quadro,#cacos .caco{position:absolute;left:110px;top:500px;width:860px;height:760px}
+#quadro{border-radius:44px;overflow:hidden;box-shadow:0 0 0 10px var(--cartao),0 0 90px color-mix(in srgb,var(--c2) 55%,transparent),var(--sombra)}
+body.e-pop #quadro{box-shadow:0 0 0 10px var(--texto),18px 18px 0 10px var(--texto)}
+#quadro img,.caco img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.25) brightness(1.06) contrast(.96)}
+#veu{position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.28),transparent 55%)}
+#brilhos{position:absolute;inset:0}
+#brilhos span{position:absolute;color:#fff;font-size:70px;filter:drop-shadow(0 0 12px rgba(255,255,255,.9))}
+#txE{position:absolute;left:110px;top:1284px;width:790px;height:166px;font-size:116px;line-height:.82;text-align:center}
+/* the cut: the frame cracks and shatters */
+#trinca{position:absolute;left:110px;top:500px;width:860px;height:760px;overflow:visible;z-index:6}
+#cacos{position:absolute;inset:0;z-index:5;pointer-events:none}
+.caco{overflow:hidden}
+#flash{position:absolute;inset:0;z-index:7;background:var(--texto);opacity:0;pointer-events:none}
+/* reality: raw full-bleed picture, stamp */
+#rw{position:absolute;inset:-40px;overflow:hidden}
+#rimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#rT{position:absolute;left:0;right:0;top:0;height:620px;background:linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,0))}
+#rB{position:absolute;left:0;right:0;bottom:0;height:1150px;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.55) 35%,rgba(0,0,0,.86))}
+#lbR{position:absolute;left:250px;top:420px;width:580px;height:118px;line-height:110px;text-align:center;font-size:76px;letter-spacing:4px;border-radius:16px;background:var(--ruim);color:var(--sobre-ruim);box-shadow:0 0 0 8px var(--ruim),0 0 0 14px var(--sobre-ruim);opacity:0}
+#txR{position:absolute;left:100px;top:1010px;width:800px;height:330px;font-size:104px;line-height:1.02;color:#fff}
+#detR{position:absolute;left:100px;top:1352px;width:800px;height:110px;font-size:86px;color:#fff;opacity:.92}
+/* watermark over the photo: own pill so any logo reads on any picture */
+#marca:not(.selo){background:color-mix(in srgb,var(--fundo) 84%,transparent);padding:8px 26px;border-radius:999px}
+/* reality without a picture: text on the plain background */
+body.liso #rw,body.liso #rT,body.liso #rB{display:none}
+body.liso #txR{color:var(--texto);left:110px;width:780px;top:660px;height:540px;font-size:136px;text-align:center;display:flex;align-items:center;justify-content:center}
+body.liso #detR{color:var(--texto2);left:110px;width:780px;top:1250px;text-align:center}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="lbE" class="chip tit t seg">EXPECTATIVA</div>
+ <div id="quadro"><img id="eimg" alt=""><div id="veu"></div><div id="brilhos"></div></div>
+ <div id="txE" class="mao t seg"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="full">
+ <div id="rw"><img id="rimg" alt=""></div><div id="rT"></div><div id="rB"></div>
+ <div id="txR" class="tit t seg"></div>
+ <div id="detR" class="mao t seg"></div>
+ <div id="lbR" class="tit t seg">REALIDADE</div>
+</div></div>
+
+<div id="cacos"></div>
+<svg id="trinca" viewBox="0 0 860 760"></svg>
+<div id="flash"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Expectativa x Realidade": the expectation is a dreamy framed picture with sparkles; on the beat the frame cracks,
+// shatters and falls away (the dry cut), revealing the raw reality full-bleed with a REALIDADE stamp. When there is
+// no good second picture the reality is text on the plain background. Food, health and beauty never show dirt.
+let D = {};
+const FW = 860, FH = 760;
+// shards: rays from an impact point to the frame border, each ray split by a ring
+function cacos($m) {
+  const ix = FW * 0.56, iy = FH * 0.44, n = 13, per = 2 * (FW + FH);
+  const s = (x, y) => y <= 0.5 ? x : x >= FW - 0.5 ? FW + y : y >= FH - 0.5 ? FW + FH + (FW - x) : 2 * FW + FH + (FH - y);
+  const cantos = [[0, 0, 0], [FW, 0, FW], [FW, FH, FW + FH], [0, FH, 2 * FW + FH]];
+  const raios = [];
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2 - Math.PI / 2 + ($m.rnd(k + 3) - 0.5) * 0.3, dx = Math.cos(a), dy = Math.sin(a);
+    const tt = Math.min(dx > 0 ? (FW - ix) / dx : dx < 0 ? -ix / dx : 1e9, dy > 0 ? (FH - iy) / dy : dy < 0 ? -iy / dy : 1e9);
+    const b = [ix + dx * tt, iy + dy * tt], f = 0.3 + $m.rnd(k * 7) * 0.25;
+    raios.push({ b, i: [ix + dx * tt * f, iy + dy * tt * f], s: s(b[0], b[1]) });
+  }
+  raios.sort((u, v) => u.s - v.s);
+  const pecas = [];
+  for (let k = 0; k < n; k++) {
+    const A = raios[k], B = raios[(k + 1) % n];
+    let sb = B.s; if (sb <= A.s) sb += per;
+    const meio = cantos.flatMap(c => [c, [c[0], c[1], c[2] + per]]).filter(c => c[2] > A.s && c[2] < sb).sort((u, v) => u[2] - v[2]).map(c => [c[0], c[1]]);
+    pecas.push({ pts: [[ix, iy], A.i, B.i], dentro: 1 });
+    pecas.push({ pts: [A.i, A.b, ...meio, B.b, B.i], dentro: 0 });
+  }
+  return { pecas, raios, ix, iy };
+}
+Motor.molde({
+  id: 'expectativa', formatos: ['reel'],
+  montar(F, M, $m) {
+    const { $, rnd } = $m;
+    if (F.realidade_suja && ['comida', 'saude', 'estetica'].includes(F.ramo))
+      $m.erro('em comida, saúde e estética a realidade não pode mostrar sujeira, bagunça ou falta de higiene: troque a imagem ou use a realidade só em texto');
+    if (!F.imagem_realidade && F.realidade_suja) $m.erro('realidade_suja só vale com imagem_realidade');
+    if (F.imagem_realidade && typeof F.realidade_suja !== 'boolean') $m.erro('realidade_suja: diga se a imagem da realidade mostra sujeira ou bagunça (true ou false)');
+    D.liso = !F.imagem_realidade;
+    if (D.liso) document.body.classList.add('liso');
+    $('#txE').textContent = F.expectativa; $('#txR').textContent = F.realidade; $('#detR').textContent = F.detalhe || '';
+    // sparkles
+    for (let i = 0; i < 9; i++) { const b = document.createElement('span'); b.innerHTML = $m.icone('brilho'); b.style.left = (40 + rnd(i * 5) * 740) + 'px'; b.style.top = (30 + rnd(i * 9 + 1) * 640) + 'px'; b.style.fontSize = (40 + rnd(i * 2) * 50) + 'px'; b.dataset.i = i; $('#brilhos').appendChild(b); }
+    // shards and the crack drawing
+    const C = D.C = cacos($m), NS = 'http://www.w3.org/2000/svg';
+    C.pecas.forEach((pc, k) => {
+      const d = document.createElement('div'); d.className = 'caco';
+      d.style.clipPath = 'polygon(' + pc.pts.map(q => `${q[0].toFixed(1)}px ${q[1].toFixed(1)}px`).join(',') + ')';
+      d.appendChild(document.createElement('img')); $('#cacos').appendChild(d);
+      const cx = pc.pts.reduce((a, q) => a + q[0], 0) / pc.pts.length, cy = pc.pts.reduce((a, q) => a + q[1], 0) / pc.pts.length;
+      const dx = cx - C.ix, dy = cy - C.iy, L = Math.hypot(dx, dy) || 1;
+      pc.ox = cx; pc.oy = cy; pc.vx = dx / L * (pc.dentro ? 700 : 380) * (0.7 + rnd(k) * 0.6); pc.vy = dy / L * (pc.dentro ? 600 : 300) - 500 - rnd(k * 3) * 300; pc.w = (rnd(k * 11) - 0.5) * 420;
+      d.style.transformOrigin = `${cx}px ${cy}px`; pc.el = d;
+    });
+    C.raios.forEach((r, k) => {
+      const l = document.createElementNS(NS, 'polyline'); const mx = (C.ix + r.b[0]) / 2 + (rnd(k) - 0.5) * 40, my = (C.iy + r.b[1]) / 2 + (rnd(k + 1) - 0.5) * 40;
+      l.setAttribute('points', `${C.ix},${C.iy} ${r.i[0]},${r.i[1]} ${mx},${my} ${r.b[0]},${r.b[1]}`); l.setAttribute('pathLength', 100); $('#trinca').appendChild(l);
+      const a = C.raios[(k + 1) % C.raios.length]; const g = document.createElementNS(NS, 'line');
+      Object.entries({ x1: r.i[0], y1: r.i[1], x2: a.i[0], y2: a.i[1], pathLength: 100 }).forEach(([u, v]) => g.setAttribute(u, v)); $('#trinca').appendChild(g);
+    });
+    $('#trinca').querySelectorAll('*').forEach(e => { e.setAttribute('fill', 'none'); e.setAttribute('stroke', '#fff'); e.setAttribute('stroke-width', 5); e.setAttribute('stroke-linecap', 'round'); e.setAttribute('stroke-dasharray', '100 100'); e.style.filter = 'drop-shadow(0 0 6px rgba(0,0,0,.6))'; });
+    return { duracoes: [3.4, D.liso ? 3.4 : 3.8] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eb, el, cl, ini, rnd } = $m;
+    const S1 = ini(1);
+    // expectation
+    $m.cena('#c0', t, 0, 0, { trans: 'fade', ent: 0.3, sobra: 0.02 });
+    const te = Math.min(t, S1);
+    $m.filmagem($('#eimg'), F.imagem_expectativa, te);
+    const qi = eo5(p(t, 0.05, 0.9));
+    $('#quadro').style.transform = `translateY(${(1 - qi) * 140 + Math.sin(te * 1.6) * 8}px) rotate(${(1 - qi) * -4 + Math.sin(te * 1.1) * 0.6}deg) scale(${0.9 + 0.1 * qi})`;
+    $('#quadro').style.opacity = cl(qi * 2);
+    $('#veu').style.opacity = 0.6 + 0.4 * Math.sin(te * 2);
+    $$('#brilhos span').forEach(b => { const i = +b.dataset.i, w = Math.max(0, Math.sin(te * 3 + i * 1.7)); b.style.opacity = w * eo(p(t, 0.5, 0.4)); b.style.transform = `scale(${0.4 + 0.8 * w}) rotate(${te * 40 + i * 20}deg)`; });
+    const lb = eb(p(t, 0.2, 0.5)); $('#lbE').style.opacity = cl(lb * 2); $('#lbE').style.transform = `scale(${0.7 + 0.3 * lb})`;
+    $m.entra('#txE', t, 0.6, 0.7, 40);
+    // crack in the last beat before the cut, then the frame shatters over the reality
+    const tc = S1 - 0.45, kr = eo(p(t, tc, 0.22));
+    const tr = $('#trinca'); tr.style.opacity = t >= tc && t < S1 ? 1 : 0;
+    tr.querySelectorAll('polyline').forEach((l, k) => l.setAttribute('stroke-dashoffset', 100 - 100 * kr));
+    tr.querySelectorAll('line').forEach(l => l.setAttribute('stroke-dashoffset', 100 - 100 * eo(p(t, tc + 0.18, 0.15))));
+    if (t >= tc && t < S1) { const k = 1 - p(t, tc, 0.25); $('#c0 .cam').style.translate = `${Math.sin(t * 90) * 14 * k}px ${Math.cos(t * 80) * 10 * k}px`; } else $('#c0 .cam').style.translate = '0 0';
+    const caindo = t >= S1 && t < S1 + 1.3;
+    $('#cacos').style.display = caindo ? 'block' : 'none';
+    if (caindo) {
+      const im = $('#eimg'), tau = t - S1;
+      D.C.pecas.forEach((pc, k) => {
+        const g = pc.el.firstChild; if (g.getAttribute('src') !== im.getAttribute('src')) g.setAttribute('src', im.getAttribute('src'));
+        g.style.scale = im.style.scale; g.style.translate = im.style.translate;
+        const x = pc.vx * tau, y = pc.vy * tau + 2900 * tau * tau;
+        pc.el.style.transform = `translate(${x}px,${y}px) rotate(${pc.w * tau}deg) scale(${1 - 0.15 * tau})`;
+        pc.el.style.opacity = 1 - p(tau, 0.8, 0.45);
+      });
+    }
+    $('#flash').style.opacity = t >= S1 ? 0.55 * (1 - p(t, S1, 0.16)) : 0;
+    // reality: hard cut
+    $m.cena('#c1', t, 1, 1, { trans: 'corte' });
+    const tr2 = t - S1;
+    if (!D.liso) {
+      $m.filmagem($('#rimg'), F.imagem_realidade, Math.max(0, tr2));
+      const sh = Math.exp(-tr2 * 4);
+      $('#rw').style.transform = `translate(${Math.sin(t * 2.1) * 8 + Math.sin(t * 61) * 16 * sh}px,${Math.cos(t * 1.7) * 6 + Math.cos(t * 57) * 12 * sh}px) rotate(${1.2 + Math.sin(t) * 0.4}deg) scale(${1.12 - 0.06 * eo(p(tr2, 0, 0.5))})`;
+      $('#rimg').style.filter = 'saturate(.75) contrast(1.18) brightness(.82)';
+    }
+    $m.carimbo('#lbR', t, S1 + 0.35);
+    $m.entra('#txR', t, S1 + 0.6, 0.45, 80);
+    $m.entra('#detR', t, S1 + 1.3, 0.5, 30);
+  },
+});
+</script></body></html>

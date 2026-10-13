@@ -1,0 +1,294 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* answer tiles, shared by video and carousel: letter badge + text; layers for the hop light, right and wrong */
+.op{position:absolute;left:0;right:0;height:150px;display:flex;align-items:center;gap:30px;padding:0 30px 0 20px}
+.op .luz{position:absolute;inset:-8px;border-radius:calc(var(--raio) + 6px);border:7px solid var(--destaque);opacity:0;box-shadow:0 0 40px color-mix(in srgb,var(--destaque) 60%,transparent)}
+.op .ok{position:absolute;inset:0;border-radius:inherit;background:var(--bom);opacity:0}
+.op .le{position:relative;flex:none;width:110px;height:110px;border-radius:30px;background:var(--destaque);color:var(--sobre-destaque)}
+.op .le>*{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.op .le b{font-family:var(--ft),sans-serif;font-weight:900;font-size:66px}
+.op .le .si,.op .le .no{font-size:70px;opacity:0}
+.op .le .si{background:var(--sobre-bom);color:var(--bom);border-radius:30px}
+.op .le .no{background:var(--ruim);color:var(--sobre-ruim);border-radius:30px}
+.op .tx{position:relative;flex:1;height:96px;font-family:var(--ft),sans-serif;font-weight:900;font-size:62px;line-height:96px;white-space:nowrap}
+body.e-pop .op .le{border:5px solid var(--texto)}
+/* static states (carousel answer slide) */
+.op.certa .ok{opacity:1}.op.certa .tx{color:var(--sobre-bom)}.op.certa .le .si{opacity:1}
+.op.errada{opacity:.45}.op.errada .le .no{opacity:1}
+
+/* scene 0: question */
+#tag0{position:absolute;left:90px;top:388px;height:66px;font-size:34px;letter-spacing:4px;padding:0 30px;line-height:66px;white-space:nowrap}
+#ph0{position:absolute;left:90px;top:490px;width:900px;height:450px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+#ph0 img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#qm{position:absolute;left:240px;width:600px;top:420px;height:560px;text-align:center;font-size:560px;line-height:560px;color:var(--destaque)}
+#qm2{position:absolute;left:640px;top:520px;width:260px;height:300px;text-align:center;font-size:260px;line-height:300px;color:var(--texto);opacity:.12}
+#perg{position:absolute;left:90px;width:810px;top:1000px;height:440px;font-size:80px;text-align:left}
+#perg.semfoto{top:990px}
+/* scenes 1..3: options, countdown, answer */
+#pmini{position:absolute;left:90px;width:900px;top:390px;height:220px;font-size:52px;font-weight:800;line-height:1.14}
+#ops{position:absolute;left:80px;width:830px;top:660px;height:500px}
+#ring{position:absolute;left:350px;top:400px;width:380px;height:380px}
+#ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+#ring .n{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:200px;line-height:1}
+#ring .chk{position:absolute;inset:30px;border-radius:50%;background:var(--bom);color:var(--sobre-bom);display:flex;align-items:center;justify-content:center;font-size:200px;opacity:0}
+#pausa,#resp{position:absolute;left:90px;width:900px;top:800px;height:100px;font-size:72px;text-align:center}
+#pausa2{position:absolute;left:90px;width:900px;top:880px;height:50px;font-size:34px;font-weight:700;text-align:center}
+/* scene 4: explanation and the receipt */
+#rh{position:absolute;left:90px;width:830px;top:390px;height:120px;display:flex;align-items:center;gap:28px}
+#rh .le{flex:none;width:110px;height:110px;border-radius:30px;background:var(--bom);color:var(--sobre-bom);display:flex;align-items:center;justify-content:center;font-family:var(--ft),sans-serif;font-weight:900;font-size:66px}
+#rh .tx{flex:1;height:110px;font-size:84px;line-height:110px;white-space:nowrap}
+#expl{position:absolute;left:90px;width:810px;top:530px;height:230px;font-size:46px;font-weight:700;line-height:1.22}
+#expl.solta{top:560px;height:560px;font-size:66px;line-height:1.15}
+#fonte{position:absolute;left:90px;width:810px;top:770px;height:44px;font-size:30px;font-weight:600;white-space:nowrap}
+#fonte.solta{top:1150px}
+.recibo{position:absolute;left:110px;width:780px;padding:36px 44px 46px;background:var(--cartao);border-radius:26px 26px 0 0;box-shadow:var(--sombra);
+  -webkit-mask:linear-gradient(#000,#000) top/100% calc(100% - 22px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/44px 22px repeat-x;
+  mask:linear-gradient(#000,#000) top/100% calc(100% - 22px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/44px 22px repeat-x}
+body.e-vidro .recibo,body.e-noite .recibo{background:color-mix(in srgb,var(--texto) 12%,var(--fundo));border:0}
+body.e-pop .recibo{background:var(--fundo2)}
+.recibo .cab{height:44px;font-size:30px;font-weight:800;letter-spacing:5px;color:var(--texto2);white-space:nowrap}
+.recibo .lin{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:16px 0 14px;border-bottom:3px dashed var(--borda)}
+.recibo .lin .r{flex:1;min-width:0}
+.recibo .lin .r .a{height:50px;font-size:40px;font-weight:800;white-space:nowrap}
+.recibo .lin .r .s{height:40px;font-size:30px;font-weight:600;white-space:nowrap}
+.recibo .lin .v{flex:none;width:250px;height:50px;text-align:right;font-family:var(--ft),sans-serif;font-weight:900;font-size:44px;white-space:nowrap}
+.recibo .tot{display:flex;justify-content:space-between;align-items:center;gap:20px;padding-top:22px;border-top:6px double var(--texto)}
+.recibo .tot .a{flex:1;height:56px;font-size:40px;font-weight:900;white-space:nowrap}
+.recibo .tot .v{flex:none;width:330px;height:84px;text-align:right;font-size:76px;line-height:84px;white-space:nowrap}
+.recibo .selo{position:absolute;right:-26px;bottom:-34px;width:150px;height:150px;border-radius:50%;background:var(--bom);color:var(--sobre-bom);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--ft),sans-serif;font-weight:900;font-size:64px;line-height:1;transform:rotate(-10deg);box-shadow:var(--sombra)}
+.recibo .selo small{font-family:var(--fb),sans-serif;font-size:22px;font-weight:800;letter-spacing:2px;margin-bottom:4px}
+#rec4{top:850px}
+#rec4.semfonte{top:800px}
+
+/* carousel */
+.slide .chipq{position:absolute;right:84px;top:58px;height:62px;line-height:62px;font-size:30px;letter-spacing:4px;padding:0 28px;white-space:nowrap}
+.slide .ph{position:absolute;left:84px;right:84px;top:150px;height:380px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.slide .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slide .pq{position:absolute;left:84px;width:912px;top:560px;height:250px;font-size:64px}
+.slide .pq.semfoto{top:170px;height:470px;font-size:96px;width:760px}
+.slide .qbg{position:absolute;right:40px;top:120px;width:380px;height:560px;text-align:center;font-size:520px;line-height:560px;color:var(--destaque);opacity:.9}
+.slide .ops{position:absolute;left:84px;right:84px;top:840px;height:340px}
+.slide .ops.semfoto{top:700px;height:420px}
+.slide .op{height:104px}.slide .op .le{width:80px;height:80px;border-radius:22px}.slide .op .le b{font-size:48px}.slide .op .le .si,.slide .op .le .no{font-size:50px;border-radius:22px}
+.slide .op .tx{height:72px;line-height:72px;font-size:48px}
+.slide .ops.semfoto .op{height:124px}
+.slide .pe{position:absolute;left:84px;right:84px;top:1196px;height:70px;font-size:50px;color:var(--destaque);white-space:nowrap}
+.slide .h1{position:absolute;left:84px;width:912px;top:170px;height:330px;font-size:112px}
+.slide .letras{position:absolute;left:84px;right:84px;top:560px;height:260px;display:flex;justify-content:center;gap:50px}
+.slide .letras div{position:relative;width:220px;height:220px;border-radius:50%;border:8px dashed var(--borda);display:flex;align-items:center;justify-content:center;font-family:var(--ft),sans-serif;font-weight:900;font-size:110px}
+.slide .letras div i{position:absolute;right:-6px;top:-6px;width:74px;height:74px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-style:normal;font-size:50px;display:flex;align-items:center;justify-content:center}
+.slide .sub{position:absolute;left:84px;width:912px;top:890px;height:150px;font-size:46px;font-weight:700;text-align:center}
+.slide .seta{position:absolute;left:0;right:0;top:1080px;text-align:center;font-size:120px;color:var(--destaque)}
+.slide .rt{position:absolute;left:84px;width:912px;top:150px;height:130px;font-size:100px;white-space:nowrap}
+.slide .ops3{position:absolute;left:84px;right:84px;top:320px;height:350px}
+.slide .ex{position:absolute;left:84px;width:912px;top:720px;height:400px;font-size:50px;font-weight:700;line-height:1.24}
+.slide .ex.comfonte{height:340px}
+.slide .fo{position:absolute;left:84px;width:912px;top:1090px;height:44px;font-size:30px;font-weight:600;white-space:nowrap}
+.slide .ct{position:absolute;left:84px;width:912px;top:150px;height:120px;font-size:96px;white-space:nowrap}
+.slide .recibo{left:140px;width:800px;top:320px}
+.slide .notac{position:absolute;left:84px;right:84px;top:1214px;height:40px;font-size:28px;font-weight:600;text-align:center}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="tag0" class="chip t seg"></div>
+ <div id="ph0"><img id="ph0i" alt=""></div>
+ <div id="qm" class="tit">?</div>
+ <div id="perg" class="tit t seg rv"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="pmini" class="t seg rv"></div>
+ <div id="ring"><svg viewBox="0 0 380 380"><circle cx="190" cy="190" r="164" fill="none" stroke="var(--borda)" stroke-width="26"/>
+   <circle id="arco" cx="190" cy="190" r="164" fill="none" stroke="var(--destaque)" stroke-width="26" stroke-linecap="round" stroke-dasharray="1030.4" stroke-dashoffset="0"/></svg>
+  <div class="n tit t seg" id="num">3</div><div class="chk" id="chk"></div></div>
+ <div id="pausa" class="tit t seg">Pausa e responde</div>
+ <div id="pausa2" class="t t2 seg">comenta a sua letra antes da resposta</div>
+ <div id="resp" class="tit t seg"></div>
+ <div id="ops"></div>
+</div></div>
+
+<div class="cena" id="c4"><div class="cam full">
+ <div id="rh"><div class="le" id="rhl"></div><div class="tx tit t seg" id="rht"></div></div>
+ <div id="expl" class="t seg rv"></div>
+ <div id="fonte" class="t t2 seg"></div>
+</div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Quiz A, B ou C": a question with three answers to comment on; the answer comes last and teaches. In the Reel a
+// "pause and answer" countdown comes before the answer. Numbers of the explanation live in `conta` (the code sums
+// them and checks that the right option is the total); the explanation text itself carries no digits.
+const LET = ['A', 'B', 'C'];
+let Q = {};
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+// "R$ 1.250,50" -> 1250.5 (first number in an option text)
+const valorDe = s => { const m = String(s).replace(/\s/g, '').match(/(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d+))?/); return m ? parseFloat(m[1].replace(/\./g, '') + (m[2] ? '.' + m[2] : '')) : null; };
+
+function checar(F, $m) {
+  const k = LET.indexOf(F.certa);
+  if (/\d/.test(F.explicacao)) $m.erro('explicacao: sem algarismos no texto; ponha os valores em "conta" para o código somar');
+  if (['saude', 'estetica', 'alimento'].includes(F.assunto) && !F.fonte) $m.erro('assunto de saúde, estética ou alimento precisa de fonte');
+  if (F.fonte && !['dono', 'sistema'].includes((F._origem || {}).fonte)) $m.erro('fonte: dado real sem origem (_origem: dono ou sistema)');
+  if (new Set(F.opcoes.map(o => o.trim().toLowerCase())).size < 3) $m.erro('as três opções precisam ser diferentes');
+  let total = null, dec = 0;
+  if (F.conta) {
+    total = Math.round(F.conta.reduce((s, l) => s + l.valor * (l.vezes ?? 1), 0) * 100) / 100;
+    const v = valorDe(F.opcoes[k]);
+    if (v == null || Math.abs(v - total) > 0.005) $m.erro(`a opção certa (${F.opcoes[k]}) tem de ser o resultado da conta (${$m.brl(total)})`);
+    F.opcoes.forEach((o, i) => { const w = valorDe(o); if (i !== k && w != null && Math.abs(w - total) < 0.005) $m.erro(`a opção ${LET[i]} também é o resultado da conta`); });
+    dec = F.conta.some(l => !Number.isInteger(Math.round(l.valor * (l.vezes ?? 1) * 100) / 100) || !Number.isInteger(l.valor)) ? 2 : 0;
+  }
+  return { k, total, dec };
+}
+
+function tile(txt, i, pai) {
+  const d = mk('div', 'op cartao', null, pai);
+  mk('div', 'ok', null, d); mk('div', 'luz', null, d);
+  const le = mk('div', 'le', null, d); const b = mk('b', 't', LET[i], le);
+  const si = mk('span', 'si'); si.innerHTML = Motor.icone('check'); le.appendChild(si);
+  const no = mk('span', 'no'); no.innerHTML = Motor.icone('x'); le.appendChild(no);
+  mk('div', 'tx t seg', txt, d);
+  return d;
+}
+
+// the receipt: each line value x times, double rule, total and the seal with the right letter
+function recibo(F, $m, pai) {
+  const din = v => $m.brl(v, Q.dec);
+  const r = mk('div', 'recibo', null, pai);
+  mk('div', 'cab t', 'A CONTA', r);
+  F.conta.forEach(l => {
+    const li = mk('div', 'lin', null, r), rr = mk('div', 'r', null, li);
+    mk('div', 'a t', l.rotulo, rr);
+    if (l.vezes != null && l.vezes !== 1) mk('div', 's t t2', `${$m.num(l.vezes, Number.isInteger(l.vezes) ? 0 : 1)}${l.unidade ? ' ' + l.unidade : 'x'} × ${$m.brl(l.valor, Number.isInteger(l.valor) ? 0 : 2)}`, rr);
+    const v = mk('div', 'v t', din(l.valor * (l.vezes ?? 1)), li); v.dataset.v = l.valor * (l.vezes ?? 1);
+  });
+  const tt = mk('div', 'tot', null, r); mk('div', 'a t', F.total_rotulo || 'Total', tt);
+  const tv = mk('div', 'v tit dest t seg', din(Q.total), tt); tv.dataset.v = Q.total;
+  const s = mk('div', 'selo', null, r); mk('small', null, 'LETRA', s); s.append(F.certa);
+  return r;
+}
+
+Motor.molde({
+  id: 'quiz', formatos: ['reel', 'carrossel'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    Q = checar(F, $m);
+    $('#tag0').innerHTML = $m.icone('lupa') + ' '; $('#tag0').append('QUIZ');
+    $('#perg').textContent = F.pergunta;
+    if (F.midia) { $('#qm').remove(); } else { $('#ph0').remove(); $('#perg').classList.add('semfoto'); $('#perg').style.top = '1000px'; }
+    $('#pmini').textContent = F.pergunta;
+    F.opcoes.forEach((o, i) => { const d = tile(o, i, $('#ops')); d.style.top = i * 174 + 'px'; });
+    $('#chk').innerHTML = $m.icone('check');
+    $('#resp').textContent = 'É a letra ' + F.certa;
+    $('#rhl').textContent = F.certa; $('#rht').textContent = F.opcoes[Q.k];
+    $('#expl').textContent = F.explicacao;
+    if (F.fonte) $('#fonte').textContent = 'Fonte: ' + F.fonte; else $('#fonte').remove();
+    if (F.conta) { const r = recibo(F, $m, $('#c4 .cam')); r.id = 'rec4'; if (!F.fonte) r.classList.add('semfonte'); }
+    else { $('#expl').classList.add('solta'); if ($('#fonte')) $('#fonte').classList.add('solta'); }
+    $('#nota').textContent = F.nota || '';
+    return { duracoes: [3.2, 3.0, 3.6, 2.6, F.conta ? 4.2 + F.conta.length * 0.5 : 4.6] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini } = $m;
+    const S = ini;
+    // 0: question
+    $m.cena('#c0', t, 0);
+    const tg = eb(p(t, 0.1, 0.5)); $('#tag0').style.opacity = cl(tg * 3); $('#tag0').style.transform = `scale(${tg})`;
+    if ($('#ph0')) { const q = eo5(p(t, 0.05, 0.9)); $('#ph0').style.opacity = q; $('#ph0').style.transform = `translateY(${(1 - q) * 80}px) rotate(${-2.5 + 1.5 * q}deg) scale(${1.08 - 0.08 * q})`; $m.filmagem($('#ph0i'), F.midia, t); }
+    if ($('#qm')) { const q = el(p(t, 0.1, 1.2)); $('#qm').style.opacity = cl(q * 2); $('#qm').style.transform = `translateY(${(1 - q) * -300 + Math.sin(t * 2.4) * 14}px) rotate(${(1 - q) * -40 + Math.sin(t * 1.7) * 5}deg)`; }
+    $m.revela('#perg', t, 0.45, 0.06);
+    // 1..3: options, countdown, answer (one stage so the tiles stay put)
+    $m.cena('#c1', t, 1, 3);
+    $m.revela('#pmini', t, S(1) + 0.05, 0.03);
+    const desce = eio(p(t, S(2) - 0.05, 0.6));
+    $('#pmini').style.opacity = 1 - desce; $('#pmini').style.transform = `translateY(${-desce * 60}px)`;
+    $('#ops').style.transform = `translateY(${desce * 290}px)`;
+    const tiles = $$('#ops .op');
+    // the light hops between tiles during the countdown, slows down and lands on the right one
+    const t0 = S(2) + 0.3, t1 = S(3) + 0.35;
+    let hop = -1;
+    if (t >= t0 && t < t1) { const u = (t - t0) / (t1 - t0); hop = Math.floor(u * 9 - u * u * 3) % 3; }
+    if (t >= t1) hop = Q.k;
+    const certo = eo(p(t, S(3) + 0.4, 0.35)), errado = p(t, S(3) + 0.55, 0.5);
+    tiles.forEach((d, j) => {
+      const q = eb(p(t, S(1) + 0.35 + j * 0.2, 0.6));
+      const lado = j % 2 ? 1 : -1;
+      let dx = (1 - q) * 900 * lado, s = 1, rot = 0, op = cl(q * 3);
+      if (j === Q.k) { s = 1 + 0.06 * Math.sin(Math.PI * cl(certo * 1.4)) + 0.03 * certo; }
+      else { dx += Math.sin(errado * 40) * 16 * (1 - errado) * (errado > 0); op *= 1 - 0.6 * eo(errado); rot = -2 * eo(errado) * lado; }
+      d.style.opacity = op; d.style.transform = `translateX(${dx}px) scale(${s}) rotate(${rot}deg)`;
+      d.querySelector('.luz').style.opacity = hop === j && t < S(3) + 0.9 ? 1 : 0;
+      const ok = j === Q.k ? certo : 0; d.querySelector('.ok').style.opacity = ok; d.querySelector('.tx').style.color = ok > 0.5 ? 'var(--sobre-bom)' : '';
+      d.querySelector('.si').style.opacity = ok;
+      const nx = j === Q.k ? 0 : eb(errado); d.querySelector('.no').style.opacity = cl(nx * 2); d.querySelector('.no').style.transform = `scale(${nx})`;
+    });
+    // countdown ring 3, 2, 1
+    const ri = eb(p(t, S(2) + 0.1, 0.55)), rs = S(2) + 0.4;
+    $('#ring').style.opacity = cl(ri * 3); $('#ring').style.transform = `scale(${ri})`;
+    const el3 = cl((t - rs) / 3);
+    $('#arco').setAttribute('stroke-dashoffset', (1030.4 * el3).toFixed(1));
+    const n = Math.max(1, 3 - Math.floor(Math.max(0, t - rs)));
+    $('#num').textContent = n; const tick = (t - rs) % 1; $('#num').style.transform = `scale(${t > rs ? 1 + 0.35 * Math.exp(-tick * 8) : 1})`;
+    const vira = eb(p(t, S(3) + 0.05, 0.5));
+    $('#num').style.opacity = 1 - cl(vira * 3); $('#chk').style.opacity = cl(vira * 3); $('#chk').style.transform = `scale(${vira}) rotate(${(1 - vira) * -90}deg)`;
+    $('#arco').style.stroke = t >= S(3) ? 'var(--bom)' : '';
+    const pz = eo5(p(t, S(2) + 0.35, 0.5)); $('#pausa').style.opacity = pz * (1 - cl(vira * 3)); $('#pausa').style.transform = `translateY(${(1 - pz) * 40}px)`;
+    $('#pausa2').style.opacity = eo5(p(t, S(2) + 0.6, 0.5)) * (1 - cl(vira * 3));
+    const rq = eb(p(t, S(3) + 0.25, 0.5)); $('#resp').style.opacity = cl(rq * 3); $('#resp').style.transform = `scale(${0.6 + 0.4 * rq})`;
+    // 4: explanation + receipt
+    $m.cena('#c4', t, 4);
+    const a = S(4), h = eb(p(t, a + 0.1, 0.55)); $('#rh').style.opacity = cl(h * 3); $('#rh').style.transform = `translateX(${(1 - h) * -120}px)`;
+    $m.revela('#expl', t, a + 0.45, 0.035);
+    if ($('#fonte')) $m.entra('#fonte', t, a + 1.2, 0.5, 20);
+    const r = $('#rec4');
+    if (r) {
+      const r0 = a + 1.0, rp = eo(p(t, r0, 0.7));
+      r.style.opacity = cl(rp * 4); r.style.clipPath = `inset(0 0 ${(1 - rp) * 100}% 0)`; r.style.transform = `translateY(${(1 - rp) * -60}px)`;
+      $$('.lin', r).forEach((li, j) => { const q = eo5(p(t, r0 + 0.5 + j * 0.45, 0.4)); li.style.opacity = q; li.style.transform = `translateX(${(1 - q) * 40}px)`;
+        const v = li.querySelector('.v'); $m.conta(v, t, r0 + 0.5 + j * 0.45, 0.5, +v.dataset.v, x => $m.brl(x, Q.dec)); });
+      const tz = r0 + 0.6 + F.conta.length * 0.45, tq = eo5(p(t, tz, 0.4));
+      $('.tot', r).style.opacity = tq; $m.conta($('.tot .v', r), t, tz, 0.9, Q.total, x => $m.brl(x, Q.dec));
+      const sq = p(t, tz + 1.0, 0.35), sb = sq === 0 ? 0 : 1 + 1.2 * Math.pow(1 - eo(sq), 2);
+      $('.selo', r).style.opacity = sq > 0 ? 1 : 0; $('.selo', r).style.transform = `scale(${sb}) rotate(-10deg)`;
+    }
+    $('#nota').style.opacity = F.conta && t > S(4) && t < S(5) ? 1 : 0;
+  },
+  slides(F, M, $m) {
+    Q = checar(F, $m);
+    const palco = $m.$('#palco'); $m.$$('.cena', palco).forEach(c => c.remove()); $m.$('#nota').remove();
+    const novo = () => mk('div', 'slide', null, palco);
+    // 1: question and options
+    const s1 = novo();
+    const tg = mk('div', 'chipq chip t seg', null, s1); tg.innerHTML = $m.icone('lupa') + ' '; tg.append('QUIZ');
+    if (F.midia) { const ph = mk('div', 'ph', null, s1); const im = mk('img', null, null, ph); $m.filmagem(im, F.midia, 0); }
+    else mk('div', 'qbg tit', '?', s1);
+    mk('div', 'pq tit t seg' + (F.midia ? '' : ' semfoto'), F.pergunta, s1);
+    const o1 = mk('div', 'ops' + (F.midia ? '' : ' semfoto'), null, s1);
+    F.opcoes.forEach((o, i) => { const d = tile(o, i, o1); d.style.top = i * (F.midia ? 120 : 140) + 'px'; });
+    mk('div', 'pe mao t seg', 'comenta a letra antes de arrastar →', s1);
+    // 2: comment before you swipe (keeps the answer out of the peek)
+    const s2 = novo();
+    mk('div', 'h1 tit t seg', 'Já comentou a sua letra?', s2);
+    const le = mk('div', 'letras', null, s2);
+    LET.forEach(l => { const d = mk('div', null, null, le); mk('span', 't', l, d); mk('i', null, '?', d); });
+    mk('div', 'sub t t2 seg', 'Pausa, escolhe e comenta. A resposta e a conta estão no próximo.', s2);
+    const se = mk('div', 'seta'); se.innerHTML = $m.icone('seta'); s2.appendChild(se);
+    // 3: answer
+    const s3 = novo();
+    mk('div', 'rt tit t seg', 'É a letra ' + F.certa, s3);
+    const o3 = mk('div', 'ops3', null, s3);
+    F.opcoes.forEach((o, i) => { const d = tile(o, i, o3); d.style.top = i * 120 + 'px'; d.classList.add(i === Q.k ? 'certa' : 'errada'); });
+    mk('div', 'ex t seg' + (F.fonte ? ' comfonte' : ''), F.explicacao, s3);
+    if (F.fonte) mk('div', 'fo t t2 seg', 'Fonte: ' + F.fonte, s3);
+    // 4: the receipt
+    if (F.conta) {
+      const s4 = novo(); mk('div', 'ct tit t seg', 'Fazendo a conta', s4);
+      recibo(F, $m, s4);
+      if (F.nota) mk('div', 'notac t t2', F.nota, s4);
+    }
+  },
+});
+</script></body></html>

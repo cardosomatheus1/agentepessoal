@@ -1,0 +1,9 @@
+{"_marca": "raiz", "_formato": "carrossel",
+ "pergunta": "Qual o preço mínimo de um bolo de 2 kg pra não trabalhar de graça?",
+ "midia": "fotos/bolo.jpg",
+ "opcoes": ["R$ 50", "R$ 90", "R$ 110"], "certa": "C",
+ "explicacao": "Abaixo disso, alguém paga a conta: o ingrediente ou as suas horas. E o lucro ainda nem entrou, ele começa daqui pra cima.",
+ "conta": [{"rotulo": "Ingredientes", "valor": 35}, {"rotulo": "Caixa e embalagem", "valor": 8},
+           {"rotulo": "Gás e luz", "valor": 7}, {"rotulo": "Seu trabalho", "valor": 15, "vezes": 4, "unidade": "h"}],
+ "total_rotulo": "Preço mínimo", "assunto": "dinheiro", "nota": "valores de exemplo",
+ "_origem": {"conta": "dono"}}
