@@ -1,6 +1,49 @@
-{"_marca": "raiz", "_formato": "carrossel", "ramo": "toda confeitaria",
+{
+ "_marca": "raiz",
+ "_formato": "carrossel",
+ "ramo": "toda confeitaria",
  "tipos": [
-  {"nome": "Um", "frase": "frase um aqui", "icone": "relogio"}, {"nome": "Dois", "frase": "frase dois aqui", "icone": "relogio"},
-  {"nome": "Três", "frase": "frase três aqui", "icone": "relogio"}, {"nome": "Quatro", "frase": "frase quatro aqui", "icone": "relogio"},
-  {"nome": "Cinco", "frase": "frase cinco aqui", "icone": "relogio"}, {"nome": "Seis", "frase": "frase seis aqui", "icone": "relogio"},
-  {"nome": "Sete", "frase": "frase sete aqui", "icone": "relogio"}]}
+  {
+   "nome": "Um",
+   "frase": "frase um aqui",
+   "icone": "relogio",
+   "foto": "fotos/burger_smash.jpg"
+  },
+  {
+   "nome": "Dois",
+   "frase": "frase dois aqui",
+   "icone": "relogio",
+   "foto": "fotos/burger_smash.jpg"
+  },
+  {
+   "nome": "Três",
+   "frase": "frase três aqui",
+   "icone": "relogio",
+   "foto": "fotos/burger_smash.jpg"
+  },
+  {
+   "nome": "Quatro",
+   "frase": "frase quatro aqui",
+   "icone": "relogio",
+   "foto": "fotos/burger_smash.jpg"
+  },
+  {
+   "nome": "Cinco",
+   "frase": "frase cinco aqui",
+   "icone": "relogio",
+   "foto": "fotos/burger_smash.jpg"
+  },
+  {
+   "nome": "Seis",
+   "frase": "frase seis aqui",
+   "icone": "relogio",
+   "foto": "fotos/burger_smash.jpg"
+  },
+  {
+   "nome": "Sete",
+   "frase": "frase sete aqui",
+   "icone": "relogio",
+   "foto": "fotos/burger_smash.jpg"
+  }
+ ]
+}

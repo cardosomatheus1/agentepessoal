@@ -30,6 +30,18 @@ body.e-noite .hl{box-shadow:0 0 34px color-mix(in srgb,var(--destaque) 60%,trans
 #vir{position:absolute;left:110px;top:820px;width:790px;height:470px;font-size:124px;line-height:1.02;transform-origin:50% 30%}
 #barra{position:absolute;left:120px;top:1310px;height:22px;width:0;border-radius:11px;background:var(--destaque)}
 body.e-pop #vir{text-shadow:8px 8px 0 var(--fundo2)}
+/* the solution: the camera finds the product, the brackets lock on it and the focus pulls sharp */
+#prod{position:absolute;left:200px;top:390px;width:680px;height:680px;border-radius:36px;overflow:hidden;box-shadow:var(--sombra)}
+#prod img{width:100%;height:100%;object-fit:cover}
+.mira{position:absolute;width:90px;height:90px;border:0 solid var(--texto)}
+#m1{border-left-width:10px;border-top-width:10px;border-top-left-radius:26px}
+#m2{border-right-width:10px;border-top-width:10px;border-top-right-radius:26px}
+#m3{border-left-width:10px;border-bottom-width:10px;border-bottom-left-radius:26px}
+#m4{border-right-width:10px;border-bottom-width:10px;border-bottom-right-radius:26px}
+#foco{position:absolute;left:200px;top:318px;height:56px;line-height:56px;padding:0 22px;font-size:32px;letter-spacing:3px;opacity:0}
+#preco{position:absolute;right:160px;top:985px;height:96px;line-height:96px;padding:0 34px;font-size:56px;transform:rotate(-6deg);opacity:0}
+#pnome{position:absolute;left:120px;top:1098px;width:780px;height:100px;font-size:80px;line-height:1.1;text-align:center}
+#sol{position:absolute;left:120px;top:1205px;width:780px;height:262px;font-size:60px;font-weight:700;line-height:1.16;text-align:center}
 </style></head><body><div id="palco">
 
 <div class="cena" id="c0"><div class="full">
@@ -46,12 +58,23 @@ body.e-pop #vir{text-shadow:8px 8px 0 var(--fundo2)}
  <div id="barra"></div>
 </div></div>
 
+<div class="cena" id="cs"><div class="full">
+ <div id="prod"><img id="pimg" alt=""></div>
+ <div class="mira" id="m1"></div><div class="mira" id="m2"></div><div class="mira" id="m3"></div><div class="mira" id="m4"></div>
+ <div id="foco" class="chip t seg">FOCO</div>
+ <div id="preco" class="chip tit t seg"></div>
+ <div id="pnome" class="tit t seg"></div>
+ <div id="sol" class="t seg rv"></div>
+</div></div>
+
 </div>
 <script src="../motor/motor.js"></script>
 <script>
 // "POV": one first-person shot (the client's photo or video, or the footage bank as a fallback) seen through a
-// camera viewfinder, a meme caption on top, then the turn: freeze frame, stepped dramatic zoom, speed lines and the
-// reaction slamming in. Without a turn the joke closes on the caption alone.
+// camera viewfinder, a meme caption on top, then (optional) the reaction: freeze frame, stepped dramatic zoom, speed
+// lines. Then the ad: the viewfinder finds the business's product, the brackets lock on its photo and the focus
+// pulls sharp, with the name, how it solves the situation, the optional price and the engine's call to action.
+const palavras = s => (s || '').trim().split(/\s+/).filter(Boolean).length;
 let D = {};
 Motor.molde({
   id: 'pov', formatos: ['reel'],
@@ -70,15 +93,23 @@ Motor.molde({
       l.setAttribute('points', `${cx + dx * r0},${cy + dy * r0} ${cx + dx * r1 + nx * w * 3},${cy + dy * r1 + ny * w * 3} ${cx + dx * r1 - nx * w * 3},${cy + dy * r1 - ny * w * 3}`);
       l.setAttribute('fill', 'var(--texto)'); l.dataset.i = i; g.appendChild(l);
     }
-    // reading time grows with the caption; the whole Reel stays in 7 to 12 s with the 3 s final
-    const ler = cl(2.6 + sit.length * 0.03, 3.4, 4.8);
+    $('#pimg').src = $m.midia(F.foto_produto);
+    $('#pnome').textContent = F.produto; $('#sol').textContent = F.solucao;
+    if (F.preco != null) $('#preco').textContent = $m.brl(F.preco); else $('#preco').remove();
+    // reading time (0.8 s + 0.25 s per new word, plus the animation) and 12 to 15 s with the 3 s final
     D.vir = !!F.virada;
-    return { duracoes: D.vir ? [ler, cl(2.2 + F.virada.length * 0.03, 2.8, 3.6)] : [cl(ler + 0.8, 4.2, 5.6)] };
+    const t0 = Math.max(3.4, 0.95 + 0.25 * (3 + palavras(sit)));
+    const t1 = D.vir ? Math.max(2.6, 1.0 + 0.25 * (1 + palavras(F.rotulo) + palavras(F.virada))) : 0;
+    let t2 = 1.5 + 0.25 * (1 + palavras(F.produto) + palavras(F.solucao) + (F.preco != null ? 2 : 0));
+    t2 = Math.max(t2, 12 - 3 - t0 - t1);
+    if (t0 + t1 + t2 + 3 > 16.05) $m.erro(`texto demais: o Reel ficaria com ${(t0 + t1 + t2 + 3).toFixed(1)} s (máximo 16); encurte a situação ou a solução`);
+    D.sol = D.vir ? 2 : 1;
+    return { duracoes: (D.vir ? [t0, t1, t2] : [t0, t2]).map(x => +x.toFixed(2)) };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eb, el, cl, ini, rnd } = $m;
     const S1 = D.vir ? ini(1) : 1e9, fim = D.vir ? 1 : 0;
-    $m.cena('#c0', t, 0, fim, { trans: 'fade', ent: 0.25 });
+    $m.cena('#c0', t, 0, fim, { trans: 'fade', ent: 0.25, sobra: 0.3 });
     const tf = Math.min(t, S1), cong = t >= S1;
     $m.filmagem($('#bg'), F.fundo, tf);
     // handheld camera; frozen after the turn, then the stepped zoom of the meme
@@ -112,6 +143,18 @@ Motor.molde({
       $('#vir').style.opacity = v > 0 ? 1 : 0; $('#vir').style.transform = `scale(${vs}) rotate(${-2 * eo(v)}deg)`;
       $('#barra').style.width = eo(p(t, S1 + 1.05, 0.4)) * 380 + 'px';
     } else { $('#rot').style.opacity = 0; $('#vir').style.opacity = 0; }
+    // the solution: viewfinder brackets travel from the screen corners to the product photo and lock on it
+    const A = ini(D.sol); $m.cena('#cs', t, D.sol, D.sol, { trans: 'fade', ent: 0.3 });
+    const lk = $m.eio(p(t, A + 0.1, 0.7)), tr = 1 - lk;
+    const de = [[96, 382], [898, 382], [96, 1394], [818, 1394]], para = [[180, 370], [810, 370], [180, 1000], [810, 1000]];
+    ['#m1', '#m2', '#m3', '#m4'].forEach((s, k) => { const e = $(s); e.style.left = $m.lerp(de[k][0], para[k][0], lk) + 'px'; e.style.top = $m.lerp(de[k][1], para[k][1], lk) + 'px';
+      e.style.borderColor = lk >= 1 ? 'var(--destaque)' : 'var(--texto)'; e.style.transform = `scale(${lk >= 1 ? 1 + 0.12 * Math.max(0, 1 - p(t, A + 0.8, 0.25)) : 1})`; });
+    const fz = p(t, A + 0.5, 0.6); $('#pimg').style.filter = `blur(${(1 - eo(fz)) * 26}px)`; $('#pimg').style.transform = `scale(${1.12 - 0.08 * eo(fz) + 0.04 * p(t, A, 6)})`;
+    $('#prod').style.opacity = eo(p(t, A, 0.3));
+    $('#foco').style.opacity = t > A + 0.8 ? 1 : 0; $('#foco').style.transform = `scale(${eb(p(t, A + 0.8, 0.3))})`;
+    if ($('#preco')) $m.carimbo('#preco', t, A + 1.1);
+    $m.entra('#pnome', t, A + 0.9, 0.45, 40);
+    $m.revela('#sol', t, A + 1.2, 0.05);
   },
 });
 </script></body></html>

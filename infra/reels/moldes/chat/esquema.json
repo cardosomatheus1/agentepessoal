@@ -1,15 +1,68 @@
 {
- "formatos": ["reel"],
+ "formatos": [
+  "reel"
+ ],
  "voz": "nao",
  "musica": "engracada",
  "campos": {
-  "mensagens": {"tipo": "lista", "min": 4, "max": 8, "dica": "conversa encenada, sem nome real; cliente e dono. Tudo precisa caber em 13 s de leitura (o molde avisa)", "item": {
-    "de": {"tipo": "escolha", "opcoes": ["cliente", "dono"]},
-    "texto": {"tipo": "texto", "max": 80, "min": 1}}},
-  "virada": {"tipo": "objeto", "campos": {
-    "de": {"tipo": "escolha", "opcoes": ["cliente", "dono"]},
-    "texto": {"tipo": "texto", "max": 60, "min": 2}}, "dica": "a última mensagem, a que fecha a piada"},
-  "assunto": {"tipo": "texto", "max": 22, "obrigatorio": false, "dica": "linha embaixo de 'Cliente' no topo do chat: encomenda de bolo"},
-  "hora": {"tipo": "hora", "obrigatorio": false, "dica": "hora no topo do celular, quando faz parte da piada"}
- }
+  "mensagens": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 7,
+   "dica": "conversa encenada, sem nome real; cliente e dono. O dono mostra o produto: pelo menos uma mensagem do dono com foto. Tudo precisa caber em 13 s de leitura (o molde avisa). Com a virada, 4 a 8 falas",
+   "item": {
+    "de": {
+     "tipo": "escolha",
+     "opcoes": [
+      "cliente",
+      "dono"
+     ]
+    },
+    "texto": {
+     "tipo": "texto",
+     "max": 80,
+     "min": 1
+    },
+    "foto": {
+     "tipo": "foto",
+     "obrigatorio": false,
+     "dica": "foto real do produto mandada no chat (registrada em midia/fotos/indice.json)"
+    }
+   }
+  },
+  "virada": {
+   "tipo": "objeto",
+   "campos": {
+    "de": {
+     "tipo": "escolha",
+     "opcoes": [
+      "cliente",
+      "dono"
+     ]
+    },
+    "texto": {
+     "tipo": "texto",
+     "max": 60,
+     "min": 2
+    },
+    "foto": {
+     "tipo": "foto",
+     "obrigatorio": false
+    }
+   },
+   "dica": "a última mensagem, a que fecha a piada"
+  },
+  "assunto": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "linha embaixo de 'Cliente' no topo do chat: encomenda de bolo"
+  },
+  "hora": {
+   "tipo": "hora",
+   "obrigatorio": false,
+   "dica": "hora no topo do celular, quando faz parte da piada"
+  }
+ },
+ "publico": "cliente_final"
 }

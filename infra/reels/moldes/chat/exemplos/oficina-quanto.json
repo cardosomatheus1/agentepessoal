@@ -2,7 +2,5 @@
  "mensagens": [
   {"de": "cliente", "texto": "Quanto fica pra arrumar o barulho?"},
   {"de": "dono", "texto": "Qual o carro?"},
-  {"de": "cliente", "texto": "Um prata"},
-  {"de": "dono", "texto": "E o barulho é onde?"},
-  {"de": "cliente", "texto": "Embaixo. Faz tec tec"}],
- "virada": {"de": "dono", "texto": "Traz ele aqui que o tec tec me conta"}}
+  {"de": "cliente", "texto": "Um prata. Faz tec tec embaixo"}],
+ "virada": {"de": "dono", "texto": "Traz ele aqui que o tec tec me conta", "foto": "fotos/oficina_interior.jpg"}}

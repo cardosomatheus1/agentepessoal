@@ -1,5 +1,27 @@
-{"_marca": "doces-da-lu", "_formato": "reel",
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
  "pares": [
-  {"foto_a": "fotos/brigadeiro.jpg", "nome_a": "Brigadeiro", "foto_b": "fotos/bolo.jpg", "nome_b": "Bolo de festa"},
-  {"foto_a": "fotos/acai.jpg", "nome_a": "Copo de açaí", "foto_b": "fotos/leite.jpg", "nome_b": "Doce de leite caseiro"},
-  {"foto_a": "fotos/confeita.jpg", "nome_a": "Bolo decorado", "foto_b": "fotos/freezer.jpg", "nome_b": "Sorvete artesanal"}]}
+  {
+   "categoria": "Bolos",
+   "foto_a": "fotos/doce_bolo_morango.jpg",
+   "nome_a": "Bolo de morango",
+   "foto_b": "fotos/bolo.jpg",
+   "nome_b": "Bolo de festa"
+  },
+  {
+   "categoria": "Docinhos",
+   "foto_a": "fotos/brigadeiro.jpg",
+   "nome_a": "Brigadeiro",
+   "foto_b": "fotos/doce_pao_de_mel.jpg",
+   "nome_b": "Pão de mel"
+  },
+  {
+   "categoria": "Sobremesas",
+   "foto_a": "fotos/doce_torta_limao.jpg",
+   "nome_a": "Torta de limão",
+   "foto_b": "fotos/doce_bolo_pote.jpg",
+   "nome_b": "Bolo de pote"
+  }
+ ]
+}

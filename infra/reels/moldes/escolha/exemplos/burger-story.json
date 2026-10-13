@@ -1,7 +1,28 @@
-{"_marca": "burger-noite", "_formato": "story",
+{
+ "_marca": "burger-noite",
+ "_formato": "story",
  "pares": [
-  {"foto_a": "fotos/lanche.jpg", "nome_a": "Smash duplo", "foto_b": "fotos/pizza.jpg", "nome_b": "Pizza brotinho"},
-  {"foto_a": "fotos/fritura.jpg", "nome_a": "Coxinha", "foto_b": "fotos/embala.jpg", "nome_b": "Batata frita"},
-  {"foto_a": "fotos/salgado.jpg", "nome_a": "Porção de salgado", "foto_b": "fotos/geral.jpg", "nome_b": "Prato executivo"},
-  {"foto_a": "fotos/forno.jpg", "nome_a": "Pizza de forno a lenha", "foto_b": "fotos/delivery.jpg", "nome_b": "Entrega em casa"}],
- "final": "Vota aqui embaixo"}
+  {
+   "categoria": "Lanches",
+   "foto_a": "fotos/burger_smash.jpg",
+   "nome_a": "Smash duplo",
+   "foto_b": "fotos/burger_costela.jpg",
+   "nome_b": "Costela desfiada"
+  },
+  {
+   "categoria": "Acompanhamentos",
+   "foto_a": "fotos/burger_batata.jpg",
+   "nome_a": "Batata rústica",
+   "foto_b": "fotos/burger_onion.jpg",
+   "nome_b": "Onion rings"
+  },
+  {
+   "categoria": "Milkshakes",
+   "foto_a": "fotos/burger_milkshake.jpg",
+   "nome_a": "Chocolate",
+   "foto_b": "fotos/burger_milkshake_morango.jpg",
+   "nome_b": "Morango"
+  }
+ ],
+ "final": "Vota aqui embaixo"
+}

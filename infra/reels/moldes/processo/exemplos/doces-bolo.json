@@ -1,8 +1,8 @@
-{"_marca": "doces-da-lu", "_formato": "reel", "titulo": "Do forno à festa",
+{"_marca": "doces-da-lu", "_formato": "reel", "produto": "Bolo de festa", "titulo": "Do forno à sua festa",
  "etapas": [
-  {"midia": "leite", "legenda": "o recheio"},
-  {"midia": "forno", "legenda": "a massa no forno"},
-  {"midia": "confeita", "legenda": "a cobertura"},
+  {"midia": "fotos/doce_assando.jpg", "legenda": "a massa no forno"},
+  {"midia": "fotos/leite.jpg", "legenda": "o recheio"},
+  {"midia": "fotos/doce_massa.jpg", "legenda": "a cobertura"},
+  {"midia": "fotos/confeita.jpg", "legenda": "a decoração"},
   {"midia": "fotos/bolo.jpg"}],
- "resultado": "Pronto!",
- "_origem": {"etapas": "dono"}}
+ "preco": 120, "_origem": {"etapas": "dono", "preco": "dono"}}

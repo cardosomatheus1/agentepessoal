@@ -1,0 +1,25 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "carrossel",
+ "ramo": "toda confeitaria",
+ "tipos": [
+  {
+   "nome": "O da encomenda pra já",
+   "frase": "Consegue um bolo de três andares pra amanhã?",
+   "icone": "relogio",
+   "foto": "fotos/doce_bolo_morango.jpg"
+  },
+  {
+   "nome": "A que manda referência",
+   "frase": "Olha esse do Pinterest, faz igual?",
+   "icone": "camera",
+   "foto": "fotos/doce_decorando.jpg"
+  },
+  {
+   "nome": "O fã do brigadeiro",
+   "frase": "Pode caprichar no granulado",
+   "icone": "bolo",
+   "foto": "fotos/doce_brigadeiros_caixa.jpg"
+  }
+ ]
+}

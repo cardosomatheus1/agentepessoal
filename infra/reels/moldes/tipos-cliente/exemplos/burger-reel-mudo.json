@@ -6,27 +6,26 @@
   {
    "nome": "O que tira tudo",
    "frase": "Sem cebola, sem tomate, sem molho e sem picles",
-   "icone": "garfo"
+   "icone": "garfo",
+   "foto": "fotos/burger_smash.jpg"
   },
   {
    "nome": "O indeciso",
    "frase": "Qual você mais gosta? Então me vê o outro",
-   "icone": "lupa"
+   "icone": "lupa",
+   "foto": "fotos/burger_milkshake.jpg"
   },
   {
    "nome": "O fotógrafo",
    "frase": "Espera, ninguém come antes da foto!",
-   "icone": "camera"
+   "icone": "camera",
+   "foto": "fotos/burger_costela.jpg"
   },
   {
    "nome": "O fiel do combo",
    "frase": "O de sempre, você já sabe",
-   "icone": "coracao"
-  },
-  {
-   "nome": "O que pede pra viagem",
-   "frase": "Pode separar o molho? Vou comer no carro",
-   "icone": "carro"
+   "icone": "coracao",
+   "foto": "fotos/burger_combo.jpg"
   }
  ]
 }

@@ -1,6 +1,18 @@
-{"_marca": "doces-da-lu", "_formato": "reel", "ramo": "comida",
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
+ "ramo": "comida",
  "expectativa": "vender bolo vai ser tão lindo",
  "imagem_expectativa": "fotos/bolo.jpg",
  "realidade": "4 horas confeitando de madrugada",
- "imagem_realidade": "relogio", "realidade_suja": false,
- "detalhe": "e ainda falta a decoração"}
+ "imagem_realidade": "relogio",
+ "realidade_suja": false,
+ "rotulo_final": "Pra sua festa",
+ "produto": "Bolo de morango",
+ "foto_produto": "fotos/doce_bolo_morango.jpg",
+ "mensagem": "Essa madrugada vira um bolo fresquinho pra sua festa",
+ "preco": 85,
+ "_origem": {
+  "preco": "dono"
+ }
+}

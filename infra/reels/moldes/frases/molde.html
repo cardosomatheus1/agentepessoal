@@ -29,7 +29,10 @@ body.e-noite .oco{-webkit-text-stroke-color:var(--destaque);filter:drop-shadow(0
 #fP{position:absolute;left:110px;top:380px;width:800px;height:230px;font-size:92px;line-height:1.02;text-align:center;display:flex;align-items:center;justify-content:center}
 #teclas{position:absolute;left:110px;top:650px;width:800px;display:flex;flex-wrap:wrap;justify-content:center;gap:22px}
 #teclas .tecla{width:160px;height:160px;font-size:96px}
-#fM{position:absolute;left:120px;top:1060px;width:780px;height:380px;font-size:56px;font-weight:700;line-height:1.22;text-align:center}
+#fFoto{position:absolute;left:170px;top:400px;width:740px;height:600px;border-radius:44px;overflow:hidden;box-shadow:var(--sombra)}
+#fFoto img{width:100%;height:100%;object-fit:cover}
+body.e-pop #fFoto{border:6px solid var(--texto);box-shadow:14px 14px 0 var(--texto)}
+#fM{position:absolute;left:120px;top:1050px;width:780px;height:400px;font-size:58px;font-weight:800;line-height:1.2;text-align:center}
 /* carousel */
 .slide .pe{position:absolute;left:84px;right:84px;bottom:56px;height:50px;font-size:32px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
 .slide .numS{position:absolute;left:84px;top:150px;width:640px;height:400px;font-size:400px;overflow:hidden}
@@ -44,7 +47,9 @@ body.e-noite .oco{-webkit-text-stroke-color:var(--destaque);filter:drop-shadow(0
 .slide.fecha .tt{position:absolute;left:84px;right:84px;top:150px;height:240px;font-size:96px;line-height:1.02;text-align:center;display:flex;align-items:center;justify-content:center}
 .slide.fecha .teclasS{position:absolute;left:84px;right:84px;top:430px;display:flex;flex-wrap:wrap;justify-content:center;gap:22px}
 .slide.fecha .tecla{width:150px;height:150px;font-size:90px}
-.slide.fecha .msg{position:absolute;left:110px;right:110px;top:830px;height:340px;font-size:52px;font-weight:700;line-height:1.24;text-align:center}
+.slide.fecha .fotoS{position:absolute;left:84px;top:810px;width:330px;height:400px;border-radius:30px;overflow:hidden;box-shadow:var(--sombra)}
+.slide.fecha .fotoS img{width:100%;height:100%;object-fit:cover}
+.slide.fecha .msg{position:absolute;left:450px;right:84px;top:810px;height:400px;font-size:46px;font-weight:700;line-height:1.24;display:flex;align-items:center}
 </style></head><body><div id="palco">
 
 <div class="cena" id="c0"><div class="cam full">
@@ -63,7 +68,12 @@ body.e-noite .oco{-webkit-text-stroke-color:var(--destaque);filter:drop-shadow(0
 <div class="cena" id="c2"><div class="cam full">
  <div id="fP" class="tit t seg"></div>
  <div id="teclas"></div>
- <div id="fM" class="t t2 seg rv"></div>
+ <div id="cm" class="chip t seg" style="position:absolute;left:290px;top:1060px;width:500px;height:90px;line-height:90px;padding:0;text-align:center;font-size:44px">comenta o número</div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full">
+ <div id="fFoto"><img alt=""></div>
+ <div id="fM" class="t seg rv"></div>
 </div></div>
 
 </div>
@@ -97,9 +107,12 @@ Motor.molde({
     F.frases.forEach((x, i) => { const k = document.createElement('div'); k.className = 'tecla'; k.textContent = i + 1; $('#teclas').appendChild(k); });
     if (n > 5) $m.$$('#teclas .tecla').forEach(k => { k.style.width = k.style.height = '140px'; k.style.fontSize = '84px'; });
     $('#fM').textContent = F.fechamento;
-    D.t = F.frases.map(x => +Math.min(2.5, Math.max(1.6, 1.25 + x.length * 0.02)).toFixed(2));
+    $('#fFoto img').src = $m.midia(F.foto_produto);
+    // reading time: 0.8 s + 0.25 s per new word (the counter counts) plus the entrance of each screen
+    const pal = x => (x || '').trim().split(/\s+/).filter(Boolean).length;
+    D.t = F.frases.map(x => +Math.max(1.6, 1.0 + 0.25 * (pal(x) + 1)).toFixed(2));
     D.a = []; let s = 0; D.t.forEach(x => { D.a.push(s); s += x; });
-    return { duracoes: [2.6, s, 4.2] };
+    return { duracoes: [+Math.max(2.6, 1.05 + 0.25 * (pal(F.pergunta) + 3)).toFixed(2), s, +(1.6 + 0.25 * (pal($('#fP').textContent) + 3)).toFixed(2), +(1.4 + 0.25 * pal(F.fechamento)).toFixed(2)] };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, el, cl, ini } = $m, n = F.frases.length;
@@ -126,7 +139,11 @@ Motor.molde({
     $m.entra('#fP', t, B + 0.1, 0.5, 40);
     $$('#teclas .tecla').forEach((k, j) => { const q = eb(p(t, B + 0.35 + j * 0.08, 0.45)); k.style.transform = `scale(${q})`; k.style.opacity = cl(q * 3);
       const tap = (Math.floor((t - B - 1.4) / 0.35) % n + n) % n; k.style.filter = t > B + 1.4 && tap === j ? 'brightness(1.25)' : ''; k.style.scale = t > B + 1.4 && tap === j ? '0.9' : '1'; });
-    $m.revela('#fM', t, B + 1.1, 0.05);
+    $m.entra('#cm', t, B + 0.9, 0.4, 20, 0.3);
+    const C = ini(3); $m.cena('#c3', t, 3);
+    const fo = eo5(p(t, C + 0.05, 0.6)); $('#fFoto').style.transform = `translateY(${(1 - fo) * 120}px) scale(${0.9 + 0.1 * fo}) rotate(${(1 - fo) * -3}deg)`; $('#fFoto').style.opacity = fo;
+    $('#fFoto img').style.transform = `scale(${1.04 + 0.05 * p(t, C, 6)})`;
+    $m.revela('#fM', t, C + 0.4, 0.05);
   },
   slides(F, M, $m) {
     const palco = $m.$('#palco'), n = F.frases.length; $m.$$('.cena', palco).forEach(c => c.remove());
@@ -152,6 +169,7 @@ Motor.molde({
     f.querySelector('.tt').textContent = (F.chamada_comentario || 'Qual você mais ouve?') + ' Comenta o número';
     F.frases.forEach((x, i) => { const k = document.createElement('div'); k.className = 'tecla'; k.textContent = i + 1; f.querySelector('.teclasS').appendChild(k); });
     f.querySelector('.msg').textContent = F.fechamento;
+    const fs = document.createElement('div'); fs.className = 'fotoS'; const im = document.createElement('img'); im.src = $m.midia(F.foto_produto); fs.appendChild(im); f.appendChild(fs);
     palco.appendChild(f);
   },
 });

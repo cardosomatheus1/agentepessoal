@@ -1,7 +1,33 @@
-{"_marca": "sem-logo", "_formato": "reel", "ramo": "todo ateliê de costura",
+{
+ "_marca": "sem-logo",
+ "_formato": "reel",
+ "ramo": "todo ateliê de costura",
  "tipos": [
-  {"nome": "A da festa amanhã", "frase": "Dá pra ajustar até amanhã cedo?", "icone": "relogio"},
-  {"nome": "O que perdeu o botão", "frase": "É só um botãozinho, rapidinho", "icone": "vestido"},
-  {"nome": "A que traz o tecido", "frase": "Comprei esse tecido lindo, faz um vestido?", "icone": "presente"}
+  {
+   "nome": "A da festa amanhã",
+   "frase": "Dá pra ajustar até amanhã cedo?",
+   "icone": "relogio",
+   "foto": "fotos/atelie_vestido.jpg"
+  },
+  {
+   "nome": "O que perdeu o botão",
+   "frase": "É só um botãozinho, rapidinho",
+   "icone": "vestido",
+   "foto": "fotos/atelie_aviamentos.jpg"
+  },
+  {
+   "nome": "A que traz o tecido",
+   "frase": "Comprei esse tecido lindo, faz um vestido?",
+   "icone": "presente",
+   "foto": "fotos/atelie_tecidos.jpg"
+  }
  ],
- "falas": ["Os três tipos de cliente de todo ateliê de costura.", "A da festa amanhã: dá pra ajustar até amanhã cedo?", "O que perdeu o botão: é só um botãozinho, rapidinho.", "A que traz o tecido: comprei esse tecido lindo, faz um vestido?", "E você, qual desses é? Comenta o número.", "Chama a gente no direct."]}
+ "falas": [
+  "Os três tipos de cliente de todo ateliê de costura.",
+  "A da festa amanhã: dá pra ajustar até amanhã cedo?",
+  "O que perdeu o botão: é só um botãozinho, rapidinho.",
+  "A que traz o tecido: comprei esse tecido lindo, faz um vestido?",
+  "E você, qual desses é? Comenta o número.",
+  "Chama a gente no direct."
+ ]
+}

@@ -1,6 +1,6 @@
 {"_marca": "burger-noite", "_formato": "reel", "hora": "20:02",
  "mensagens": [
-  {"de": "dono", "texto": "Pedido confirmado! Já vai pra chapa"},
+  {"de": "dono", "texto": "Seu smash já tá na chapa!", "foto": "fotos/burger_chapa.jpg"},
   {"de": "cliente", "texto": "Obaa"},
   {"de": "cliente", "texto": "Já saiu?"},
   {"de": "dono", "texto": "Faz 2 minutos que você pediu"}],

@@ -1,5 +1,28 @@
-{"_marca": "oficina-do-ze", "_formato": "reel", "titulo": "Qual serviço?",
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "titulo": "Qual serviço?",
  "pares": [
-  {"foto_a": "fotos/oficina_depois.jpg", "nome_a": "Roda polida", "foto_b": "fotos/oficina_interior.jpg", "nome_b": "Revisão completa"},
-  {"foto_a": "fotos/mecanico_maos.jpg", "nome_a": "Troca de óleo", "foto_b": "fotos/oficina_antes.jpg", "nome_b": "Freio novo"},
-  {"foto_a": "fotos/maquina.jpg", "nome_a": "Pagar no cartão", "foto_b": "fotos/relogio.jpg", "nome_b": "Sair na hora marcada"}]}
+  {
+   "categoria": "Rodas",
+   "foto_a": "fotos/oficina_depois.jpg",
+   "nome_a": "Polimento de roda",
+   "foto_b": "fotos/oficina_alinhamento.jpg",
+   "nome_b": "Alinhamento"
+  },
+  {
+   "categoria": "Manutenção",
+   "foto_a": "fotos/oficina_oleo.jpg",
+   "nome_a": "Troca de óleo",
+   "foto_b": "fotos/oficina_freio.jpg",
+   "nome_b": "Freio novo"
+  },
+  {
+   "categoria": "Cuidado do carro",
+   "foto_a": "fotos/oficina_ar.jpg",
+   "nome_a": "Ar gelando",
+   "foto_b": "fotos/oficina_pronto.jpg",
+   "nome_b": "Lavagem completa"
+  }
+ ]
+}

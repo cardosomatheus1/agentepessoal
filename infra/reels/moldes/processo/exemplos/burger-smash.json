@@ -1,0 +1,7 @@
+{"_marca": "burger-noite", "_formato": "reel", "produto": "Smash duplo",
+ "etapas": [
+  {"midia": "fotos/burger_blend.jpg", "legenda": "carne moída no dia"},
+  {"midia": "fotos/burger_chapa.jpg", "legenda": "smash na chapa"},
+  {"midia": "fotos/burger_montando.jpg", "legenda": "montagem"},
+  {"midia": "fotos/burger_smash.jpg"}],
+ "resultado": "Saindo!", "preco": 32, "_origem": {"etapas": "dono", "preco": "dono"}}

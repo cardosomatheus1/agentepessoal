@@ -1,15 +1,99 @@
 {
- "formatos": ["carrossel", "reel"],
+ "formatos": [
+  "carrossel",
+  "reel"
+ ],
  "voz": "opcional",
  "musica": "engracada",
  "campos": {
-  "ramo": {"tipo": "texto", "max": 30, "min": 4, "dica": "com o artigo, completa 'Os N tipos de cliente de ___': toda hamburgueria, todo salão, toda loja de roupa"},
-  "tipos": {"tipo": "lista", "min": 3, "max": 6, "dica": "3 a 6 (no Reel sem narração, até 5). Descreva o jeito, nunca deboche: nada de pão-duro, chato, caloteiro", "item": {
-    "nome": {"tipo": "texto", "max": 25, "min": 3, "dica": "O que tira tudo"},
-    "frase": {"tipo": "texto", "max": 60, "min": 6, "dica": "a frase típica dele, sem aspas: Tira a cebola, o tomate e o molho"},
-    "icone": {"tipo": "escolha", "opcoes": ["pessoa", "pessoas", "relogio", "lupa", "camera", "coracao", "fogo", "estrela", "chat", "balao", "carrinho", "dinheiro", "cartao", "calendario", "megafone", "presente", "brilho", "telefone", "moto", "casa", "xicara", "bolo", "garfo", "tesoura", "vestido", "carro", "chave", "haltere", "dente", "pata", "trofeu", "percentual", "etiqueta", "folha", "caixa", "alerta"]}}},
-  "pergunta": {"tipo": "texto", "max": 26, "obrigatorio": false, "dica": "padrão: Qual desses é você?"},
-  "falas": {"tipo": "lista", "min": 6, "max": 9, "obrigatorio": false, "item": {"tipo": "texto", "max": 150},
-    "dica": "narração opcional: uma fala para o título, uma por tipo, uma para a pergunta e a chamada no fim (número de tipos + 3)"}
- }
+  "ramo": {
+   "tipo": "texto",
+   "max": 30,
+   "min": 4,
+   "dica": "com o artigo, completa 'Os N tipos de cliente de ___': toda hamburgueria, todo salão, toda loja de roupa"
+  },
+  "tipos": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 6,
+   "dica": "3 a 6 (no Reel sem narração, até 4). Descreva o jeito, nunca deboche: nada de pão-duro, chato, caloteiro",
+   "item": {
+    "nome": {
+     "tipo": "texto",
+     "max": 25,
+     "min": 3,
+     "dica": "O que tira tudo"
+    },
+    "frase": {
+     "tipo": "texto",
+     "max": 60,
+     "min": 6,
+     "dica": "a frase típica dele, sem aspas: Tira a cebola, o tomate e o molho"
+    },
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do ramo que combina com o tipo (o serviço ou produto que ele pede), registrada em midia/fotos/indice.json"
+    },
+    "icone": {
+     "tipo": "escolha",
+     "opcoes": [
+      "pessoa",
+      "pessoas",
+      "relogio",
+      "lupa",
+      "camera",
+      "coracao",
+      "fogo",
+      "estrela",
+      "chat",
+      "balao",
+      "carrinho",
+      "dinheiro",
+      "cartao",
+      "calendario",
+      "megafone",
+      "presente",
+      "brilho",
+      "telefone",
+      "moto",
+      "casa",
+      "xicara",
+      "bolo",
+      "garfo",
+      "tesoura",
+      "vestido",
+      "carro",
+      "chave",
+      "haltere",
+      "dente",
+      "pata",
+      "trofeu",
+      "percentual",
+      "etiqueta",
+      "folha",
+      "caixa",
+      "alerta"
+     ]
+    }
+   }
+  },
+  "pergunta": {
+   "tipo": "texto",
+   "max": 26,
+   "obrigatorio": false,
+   "dica": "padrão: Qual desses é você?"
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 6,
+   "max": 9,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "max": 150
+   },
+   "dica": "narração opcional: uma fala para o título, uma por tipo, uma para a pergunta e a chamada no fim (número de tipos + 3)"
+  }
+ },
+ "publico": "cliente_final"
 }

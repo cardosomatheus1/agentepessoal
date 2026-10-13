@@ -27,23 +27,21 @@ body.f-story #capOu{top:990px}
 body.e-pop .ou{box-shadow:0 0 0 10px var(--texto),12px 12px 0 10px var(--texto)}
 body.e-noite .ou{box-shadow:0 0 0 8px var(--fundo),0 0 60px var(--destaque)}
 .par .ou{left:435px;top:calc(var(--y0) + var(--ph) / 2 - 105px)}
-.par .cont{position:absolute;left:390px;top:calc(var(--y0) - 46px);width:300px;height:72px;line-height:72px;padding:0;text-align:center;font-size:38px;z-index:3}
+.par .cont{position:absolute;left:290px;top:calc(var(--y0) - 46px);width:500px;height:72px;line-height:72px;padding:0;text-align:center;font-size:38px;z-index:3}
 #fimT{left:110px;top:410px;width:860px;height:300px;font-size:128px;line-height:1}
 #fimL{position:absolute;left:100px;top:760px;width:790px;display:flex;flex-direction:column;gap:22px}
-#fimL .lin{display:flex;align-items:center;gap:18px;height:120px}
+#fimL .lin{display:flex;align-items:center;justify-content:center;gap:18px;height:120px}
 #fimL .n{flex:none;width:60px;font-family:var(--ft);font-weight:900;font-size:60px;color:var(--destaque);text-align:center}
-#fimL .fa,#fimL .fb{flex:none;width:120px;height:120px;border-radius:30px;overflow:hidden}
+#fimL .fa,#fimL .fb{position:relative;flex:none;width:330px;height:120px;border-radius:30px;overflow:hidden}
+#fimL .fa b,#fimL .fb b{position:absolute;left:12px;bottom:10px;padding:2px 14px;border-radius:14px;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900;font-size:34px}
 #fimL img{width:100%;height:100%;object-fit:cover}
-#fimL .o{flex:none;width:64px;height:64px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900;font-size:28px;line-height:64px;text-align:center;margin:0 -30px;z-index:1}
-#fimL .tx{flex:1;min-width:0;height:110px;font-size:40px;font-weight:700;line-height:1.2;display:flex;flex-direction:column;justify-content:center;margin-left:18px;white-space:nowrap}
-#fimL .tx b{color:var(--destaque);font-weight:900}
+#fimL .o{flex:none;width:72px;height:72px;line-height:72px !important;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900;font-size:28px;line-height:64px;text-align:center;margin:0 -30px;z-index:1}
 #seta{position:absolute;left:485px;top:1150px;font-size:110px;color:var(--destaque);display:none}
 body.f-story #seta{display:block}
 body.f-story #fimT{height:220px}
 body.f-story #fimL{top:650px;gap:12px}
 body.f-story #fimL .lin{height:90px}
-body.f-story #fimL .fa,body.f-story #fimL .fb{width:90px;height:90px}
-body.f-story #fimL .tx{height:90px}
+body.f-story #fimL .fa,body.f-story #fimL .fb{width:300px}
 </style></head><body><div id="palco">
 
 <div class="cena" id="c0"><div class="cam full">
@@ -81,23 +79,25 @@ Motor.molde({
         '<div class="lado b"><img alt=""><div class="gr"></div><div class="lt">B</div><div class="nm tit t seg"></div></div><div class="ou">OU</div><div class="cont chip t seg"></div></div>';
       c.querySelector('.a img').src = midia(q.foto_a); c.querySelector('.b img').src = midia(q.foto_b);
       c.querySelector('.a .nm').textContent = q.nome_a; c.querySelector('.b .nm').textContent = q.nome_b;
-      c.querySelector('.cont').textContent = `${i + 1} de ${n}`;
+      c.querySelector(".cont").textContent = `${q.categoria} ${i + 1}/${n}`;
       fim.before(c);
     });
     $('#fimT').textContent = story ? (F.final || 'Vota na enquete') : (F.final || 'Conta nos comentários');
+    // closing: every pair again as two photos with their codes (1A, 1B…) to answer
     F.pares.forEach((q, i) => { const l = document.createElement('div'); l.className = 'lin';
-      l.innerHTML = '<div class="n"></div><div class="fa"><img alt=""></div><div class="o">ou</div><div class="fb"><img alt=""></div><div class="tx t seg"></div>';
+      l.innerHTML = '<div class="n"></div><div class="fa"><img alt=""><b></b></div><div class="o">ou</div><div class="fb"><img alt=""><b></b></div>';
       l.querySelector('.n').textContent = i + 1; l.querySelector('.fa img').src = midia(q.foto_a); l.querySelector('.fb img').src = midia(q.foto_b);
-      const h = Math.floor(Math.min(140, story ? (1150 - 650) / n - 12 : (1440 - 760) / n - 22));
-      l.style.height = h + 'px'; l.querySelector('.fa').style.width = l.querySelector('.fa').style.height = l.querySelector('.fb').style.width = l.querySelector('.fb').style.height = Math.min(h, 112) + 'px'; l.querySelector('.tx').style.height = h + 'px'; l.querySelector('.tx').style.fontSize = (h >= 110 ? 42 : 36) + 'px';
-      const tx = l.querySelector('.tx'); tx.replaceChildren(); [['A', q.nome_a], ['B', q.nome_b]].forEach(([k, v]) => { const d = document.createElement('div'); const b = document.createElement('b'); b.textContent = (story ? '' : i + 1) + k + ' '; d.append(b, v); tx.appendChild(d); });
+      l.querySelector('.fa b').textContent = (story ? '' : i + 1) + 'A'; l.querySelector('.fb b').textContent = (story ? '' : i + 1) + 'B';
+      const h = Math.floor(Math.min(180, story ? (1150 - 650) / n - 12 : (1440 - 760) / n - 22));
+      l.style.height = h + 'px'; l.querySelectorAll('.fa,.fb').forEach(e => { e.style.height = h + 'px'; });
       $('#fimL').appendChild(l); });
     $('#seta').innerHTML = icone('seta'); $('#seta').style.transform = 'rotate(90deg)';
-    const por = Math.min(2.6, Math.max(1.65, 8.4 / n));
-    const d = [n > 4 ? 1.6 : 1.9, ...F.pares.map(() => +por.toFixed(2)), n > 4 ? 2.4 : 2.6];
+    // reading time: 0.8 s + 0.25 s per new word, plus the entrance of each screen
+    const pal = x => (x || '').trim().split(/\s+/).filter(Boolean).length;
+    const d = [+(1.1 + 0.25 * (pal($('#capT').textContent) + pal($('#capS').textContent))).toFixed(2),
+      ...F.pares.map(q => +Math.max(2.0, 1.35 + 0.25 * (pal(q.categoria) + 1 + pal(q.nome_a) + pal(q.nome_b))).toFixed(2)),
+      +Math.max(2.4, 1.3 + 0.25 * pal($('#fimT').textContent)).toFixed(2)];
     D.ult = d.length - 1;
-    // render.py's contact sheet breaks on a last row of one picture (7 or 13 scenes with the final): split the close
-    if ((d.length + 1) % 6 === 1) d.splice(d.length - 1, 1, 1.3, 1.3);
     return { duracoes: d };
   },
   quadro(t, F, $m) {

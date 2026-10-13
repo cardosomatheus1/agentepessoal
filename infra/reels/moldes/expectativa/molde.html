@@ -3,7 +3,7 @@
 <style>
 /* expectation: a dreamy framed picture, sparkles, handwriting */
 #lbE{position:absolute;left:290px;top:392px;width:500px;height:80px;line-height:80px;padding:0;font-size:44px;letter-spacing:6px;text-align:center}
-#quadro,#cacos .caco{position:absolute;left:110px;top:500px;width:860px;height:760px}
+#quadro,#cacos .caco,#quadro2,#cacos2 .caco{position:absolute;left:110px;top:500px;width:860px;height:760px}
 #quadro{border-radius:44px;overflow:hidden;box-shadow:0 0 0 10px var(--cartao),0 0 90px color-mix(in srgb,var(--c2) 55%,transparent),var(--sombra)}
 body.e-pop #quadro{box-shadow:0 0 0 10px var(--texto),18px 18px 0 10px var(--texto)}
 #quadro img,.caco img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.25) brightness(1.06) contrast(.96)}
@@ -26,6 +26,15 @@ body.e-pop #quadro{box-shadow:0 0 0 10px var(--texto),18px 18px 0 10px var(--tex
 #detR{position:absolute;left:100px;top:1352px;width:800px;height:110px;font-size:86px;color:#fff;opacity:.92}
 /* watermark over the photo: own pill so any logo reads on any picture */
 #marca:not(.selo){background:color-mix(in srgb,var(--fundo) 84%,transparent);padding:8px 26px;border-radius:999px}
+/* the real thing: the shards fly back and assemble into the product photo, then the business's message */
+#cacos2{position:absolute;inset:0}
+#quadro2{border-radius:44px;overflow:hidden;opacity:0;box-shadow:0 0 0 10px var(--cartao),var(--sombra)}
+body.e-pop #quadro2{box-shadow:0 0 0 10px var(--texto),18px 18px 0 10px var(--texto)}
+#quadro2 img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#lbP{position:absolute;left:240px;top:392px;width:600px;height:80px;line-height:80px;padding:0;font-size:44px;letter-spacing:4px;text-align:center}
+#pnm{position:absolute;left:150px;top:1120px;max-width:600px;height:96px;line-height:96px;padding:0 34px;font-size:56px;white-space:nowrap;transform-origin:0 50%}
+#ppr{position:absolute;right:140px;top:1110px;height:104px;line-height:104px;padding:0 34px;font-size:60px;transform:rotate(-6deg);opacity:0;background:var(--texto);color:var(--fundo)}
+#msg{position:absolute;left:110px;top:1282px;width:790px;height:196px;font-size:56px;font-weight:800;line-height:1.14;text-align:center}
 /* reality without a picture: text on the plain background */
 body.liso #rw,body.liso #rT,body.liso #rB{display:none}
 body.liso #txR{color:var(--texto);left:110px;width:780px;top:660px;height:540px;font-size:136px;text-align:center;display:flex;align-items:center;justify-content:center}
@@ -45,6 +54,15 @@ body.liso #detR{color:var(--texto2);left:110px;width:780px;top:1250px;text-align
  <div id="lbR" class="tit t seg">REALIDADE</div>
 </div></div>
 
+<div class="cena" id="c2"><div class="full">
+ <div id="lbP" class="chip tit t seg"></div>
+ <div id="cacos2"></div>
+ <div id="quadro2"><img id="pimg" alt=""></div>
+ <div id="pnm" class="chip tit t seg"></div>
+ <div id="ppr" class="chip tit t seg"></div>
+ <div id="msg" class="t seg rv"></div>
+</div></div>
+
 <div id="cacos"></div>
 <svg id="trinca" viewBox="0 0 860 760"></svg>
 <div id="flash"></div>
@@ -54,6 +72,9 @@ body.liso #detR{color:var(--texto2);left:110px;width:780px;top:1250px;text-align
 // "Expectativa x Realidade": the expectation is a dreamy framed picture with sparkles; on the beat the frame cracks,
 // shatters and falls away (the dry cut), revealing the raw reality full-bleed with a REALIDADE stamp. When there is
 // no good second picture the reality is text on the plain background. Food, health and beauty never show dirt.
+// Then the ad: the shards fly back and assemble into the photo of the business's product, with what it does for
+// whoever buys, the optional price and the engine's call to action.
+const palavras = s => (s || '').trim().split(/\s+/).filter(Boolean).length;
 let D = {};
 const FW = 860, FH = 760;
 // shards: rays from an impact point to the frame border, each ray split by a ring
@@ -102,6 +123,7 @@ Motor.molde({
       const dx = cx - C.ix, dy = cy - C.iy, L = Math.hypot(dx, dy) || 1;
       pc.ox = cx; pc.oy = cy; pc.vx = dx / L * (pc.dentro ? 700 : 380) * (0.7 + rnd(k) * 0.6); pc.vy = dy / L * (pc.dentro ? 600 : 300) - 500 - rnd(k * 3) * 300; pc.w = (rnd(k * 11) - 0.5) * 420;
       d.style.transformOrigin = `${cx}px ${cy}px`; pc.el = d;
+      const d2 = d.cloneNode(false); const g2 = document.createElement('img'); g2.src = $m.midia(F.foto_produto); d2.appendChild(g2); $('#cacos2').appendChild(d2); pc.el2 = d2;
     });
     C.raios.forEach((r, k) => {
       const l = document.createElementNS(NS, 'polyline'); const mx = (C.ix + r.b[0]) / 2 + (rnd(k) - 0.5) * 40, my = (C.iy + r.b[1]) / 2 + (rnd(k + 1) - 0.5) * 40;
@@ -110,7 +132,17 @@ Motor.molde({
       Object.entries({ x1: r.i[0], y1: r.i[1], x2: a.i[0], y2: a.i[1], pathLength: 100 }).forEach(([u, v]) => g.setAttribute(u, v)); $('#trinca').appendChild(g);
     });
     $('#trinca').querySelectorAll('*').forEach(e => { e.setAttribute('fill', 'none'); e.setAttribute('stroke', '#fff'); e.setAttribute('stroke-width', 5); e.setAttribute('stroke-linecap', 'round'); e.setAttribute('stroke-dasharray', '100 100'); e.style.filter = 'drop-shadow(0 0 6px rgba(0,0,0,.6))'; });
-    return { duracoes: [3.4, D.liso ? 3.4 : 3.8] };
+    $('#pimg').src = $m.midia(F.foto_produto);
+    $('#lbP').textContent = (F.rotulo_final || 'Pra você').toUpperCase();
+    $('#pnm').textContent = F.produto; $('#msg').textContent = F.mensagem;
+    if (F.preco != null) $('#ppr').textContent = $m.brl(F.preco); else $('#ppr').remove();
+    // reading time: 0.8 s + 0.25 s per new word plus the time each animation takes before the text shows
+    const t0 = Math.max(2.8, 1.1 + 0.25 * (1 + palavras(F.expectativa)));
+    const t1 = Math.max(2.8, 1.25 + 0.25 * (1 + palavras(F.realidade) + palavras(F.detalhe)));
+    let t2 = 1.5 + 0.25 * (palavras(F.rotulo_final || 'Pra você') + palavras(F.produto) + palavras(F.mensagem) + (F.preco != null ? 2 : 0));
+    t2 = Math.max(t2, 12 - 3 - t0 - t1);
+    if (t0 + t1 + t2 + 3 > 16.05) $m.erro(`texto demais: o Reel ficaria com ${(t0 + t1 + t2 + 3).toFixed(1)} s (máximo 16); encurte a mensagem`);
+    return { duracoes: [t0, t1, t2].map(x => +x.toFixed(2)) };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eb, el, cl, ini, rnd } = $m;
@@ -146,7 +178,7 @@ Motor.molde({
     }
     $('#flash').style.opacity = t >= S1 ? 0.55 * (1 - p(t, S1, 0.16)) : 0;
     // reality: hard cut
-    $m.cena('#c1', t, 1, 1, { trans: 'corte' });
+    $m.cena('#c1', t, 1, 1, { trans: 'corte', sobra: 0.05 });
     const tr2 = t - S1;
     if (!D.liso) {
       $m.filmagem($('#rimg'), F.imagem_realidade, Math.max(0, tr2));
@@ -157,6 +189,19 @@ Motor.molde({
     $m.carimbo('#lbR', t, S1 + 0.35);
     $m.entra('#txR', t, S1 + 0.6, 0.45, 80);
     $m.entra('#detR', t, S1 + 1.3, 0.5, 30);
+    // the real thing: shards fly back in and assemble into the product photo
+    const S2 = ini(2); $m.cena('#c2', t, 2, 2, { trans: 'fade', ent: 0.2 });
+    const vem = eo5(p(t, S2 + 0.05, 0.85)), tau = 1.1 * (1 - vem);
+    D.C.pecas.forEach(pc => { const x = -pc.vx * tau * 0.8, y = 900 * tau + pc.vy * tau * 0.3;
+      pc.el2.style.transform = `translate(${x}px,${y}px) rotate(${-pc.w * tau}deg) scale(${1 + 0.1 * tau})`; pc.el2.style.opacity = cl(vem * 3); });
+    const pronto = t >= S2 + 0.9; $('#cacos2').style.display = pronto ? 'none' : 'block';
+    $('#quadro2').style.opacity = pronto ? 1 : 0;
+    $('#quadro2').style.transform = `scale(${pronto ? 1 + 0.05 * Math.max(0, 1 - p(t, S2 + 0.9, 0.3)) * Math.sin(Math.PI * p(t, S2 + 0.9, 0.3)) + 0.025 * p(t, S2 + 0.9, 6) : 1})`;
+    $('#pimg').style.transform = `scale(${1.04 + 0.05 * p(t, S2, 6)})`;
+    const lp = eb(p(t, S2 + 0.85, 0.45)); $('#lbP').style.opacity = cl(lp * 2); $('#lbP').style.transform = `scale(${0.7 + 0.3 * lp})`;
+    const nm = eb(p(t, S2 + 1.0, 0.4)); $('#pnm').style.opacity = cl(nm * 3); $('#pnm').style.transform = `scale(${Math.max(0, nm)})`;
+    if ($('#ppr')) $m.carimbo('#ppr', t, S2 + 1.25);
+    $m.revela('#msg', t, S2 + 1.2, 0.05);
   },
 });
 </script></body></html>

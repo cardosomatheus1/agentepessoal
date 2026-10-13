@@ -27,6 +27,7 @@ body.e-pop #tela{background:var(--fundo2)}
 .dono .bb{background:var(--destaque);color:var(--sobre-destaque);border-bottom-right-radius:10px;transform-origin:100% 100%}
 .bb.dig{display:flex;gap:12px;padding:28px 32px}
 .bb.dig i{width:18px;height:18px;border-radius:50%;background:currentColor;opacity:.6}
+.bb .fm{display:block;width:480px;height:360px;object-fit:cover;border-radius:26px;margin:-8px -14px 16px}
 .lin.virada .bb{font-size:60px;font-weight:900;font-family:var(--ft);max-width:640px;line-height:1.08;padding:28px 38px}
 #veu{position:absolute;inset:0;background:color-mix(in srgb,var(--fundo) 70%,transparent);opacity:0;pointer-events:none}
 #estouro{position:absolute;width:600px;height:600px;opacity:0;pointer-events:none}
@@ -57,13 +58,15 @@ Motor.molde({
     const { $, icone } = $m;
     const todas = [...F.mensagens, { ...F.virada, virada: true }];
     if (!F.mensagens.some(m => m.de === 'cliente') || !todas.some(m => m.de === 'dono')) $m.erro('mensagens: a conversa precisa ter o cliente e o dono');
+    // the post is an ad: the owner shows the product in the chat (a photo message)
+    if (!todas.some(m => m.foto && m.de === 'dono')) $m.erro('mensagens: a conversa precisa mostrar o produto; ponha foto numa mensagem do dono');
     $('#av').innerHTML = icone('pessoa'); $('#barraIn .bt').innerHTML = icone('seta');
     $('#hora').textContent = F.hora || '';
     // timeline: typing, then the message stays long enough to read (about 26 letters per second)
     let s = 0.5; D.m = [];
     todas.forEach((m, i) => {
       const dig = m.virada ? 0.9 : (m.de === 'cliente' ? 0.55 : 0.4) + Math.min(0.3, m.texto.length * 0.004);
-      const ler = m.virada ? 2.6 : 0.35 + m.texto.length / 26;
+      const ler = (m.virada ? 2.6 : 0.35 + m.texto.length / 26) + (m.foto ? 1.0 : 0);
       D.m.push({ ...m, d0: s, d1: s + dig }); s += dig + ler;
     });
     if (s > 13) $m.erro(`conversa longa demais: precisa de ${s.toFixed(1)} s e cabem 13 (mais 3 s do final); corte mensagens ou letras`);
@@ -72,7 +75,9 @@ Motor.molde({
       Object.entries({ x1: Math.cos(a) * r0, y1: Math.sin(a) * r0, x2: Math.cos(a) * r1, y2: Math.sin(a) * r1, stroke: 'var(--destaque)', 'stroke-width': 12, 'stroke-linecap': 'round' }).forEach(([u, v]) => l.setAttribute(u, v)); $('#estouro').appendChild(l); }
     D.m.forEach((m, i) => {
       const lin = document.createElement('div'); lin.className = 'lin ' + m.de + (m.virada ? ' virada' : '');
-      const bb = document.createElement('div'); bb.className = 'bb t seg'; bb.textContent = m.texto; lin.appendChild(bb);
+      const bb = document.createElement('div'); bb.className = 'bb t seg';
+      if (m.foto) { const im = document.createElement('img'); im.className = 'fm'; im.src = $m.midia(m.foto); bb.appendChild(im); }
+      bb.append(m.texto); lin.appendChild(bb);
       const dg = document.createElement('div'); dg.className = 'lin dig ' + m.de; dg.innerHTML = '<div class="bb dig"><i></i><i></i><i></i></div>';
       $('#lista').append(dg, lin); m.lin = lin; m.bb = bb; m.dg = dg;
     });
@@ -96,13 +101,14 @@ Motor.molde({
     });
     // messages scrolled above the window are hidden (the phone screen clips them)
     const topo = $('#msgs').getBoundingClientRect().top;
-    D.m.forEach(m => { if (m.lin.getBoundingClientRect().bottom < topo + 30) m.lin.style.visibility = 'hidden'; });
+    // a message leaving the top fades out while the screen clips it, so nothing hidden is left behind the header
+    D.m.forEach(m => { const r = m.lin.getBoundingClientRect(); m.sai = r.bottom < topo + 30 ? 0 : cl((r.top - (topo - 120)) / 120); if (!m.sai) m.lin.style.visibility = 'hidden'; });
     $('#status').textContent = digit ? 'digitando…' : (F.assunto || 'online');
     // the turn
     const v = D.m[D.m.length - 1], tv = v.d1;
     const vi = t >= tv ? eo(p(t, tv + 0.05, 0.3)) : 0;
     $('#veu').style.opacity = vi;
-    D.m.forEach(m => { if (m !== v) m.lin.style.opacity = 1 - 0.75 * vi; });
+    D.m.forEach(m => { if (m.foto) { m.lin.style.position = 'relative'; m.lin.style.zIndex = 2; } m.lin.style.opacity = m.sai * (m.foto || m === v ? 1 : 1 - 0.75 * vi); });
     v.lin.style.position = 'relative'; v.lin.style.zIndex = 2;
     const sh = t >= tv ? Math.exp(-(t - tv - 0.25) * 5) * (t > tv + 0.25 ? 1 : 0) : 0;
     const zz = t >= tv ? 0.05 * eo5(p(t, tv, 0.5)) : 0;

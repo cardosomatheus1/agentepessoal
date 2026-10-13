@@ -21,6 +21,8 @@
 #trilha .tb.ja{opacity:.55}
 #cab{position:absolute;top:0;width:8px;height:150px;margin-left:-4px;border-radius:4px;background:var(--destaque);box-shadow:0 0 0 3px rgba(0,0,0,.25)}
 #cab:before{content:'';position:absolute;left:-11px;top:-8px;width:30px;height:30px;border-radius:50%;background:var(--destaque)}
+#pnome{position:absolute;left:100px;top:1290px;width:800px;height:110px;font-size:88px;line-height:1.15;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.5);opacity:0}
+#ppreco{position:absolute;left:100px;top:1400px;height:86px;line-height:86px;padding:0 30px;font-size:58px;opacity:0}
 #pronto{position:absolute;left:96px;top:1150px;height:110px;line-height:110px;padding:0 44px;font-size:66px;letter-spacing:2px;opacity:0}
 /* watermark over the footage: own pill so any logo reads */
 #marca:not(.selo){background:color-mix(in srgb,var(--fundo) 84%,transparent);padding:8px 26px;border-radius:999px}
@@ -32,6 +34,8 @@
  <div id="tit" class="tit t seg rv"></div>
  <div id="leg" class="chip t seg"></div>
  <div id="pronto" class="chip tit t seg"></div>
+ <div id="pnome" class="tit t seg"></div>
+ <div id="ppreco" class="chip tit t seg"></div>
  <div id="trilha"><div id="cab"></div></div>
 </div></div>
 </div>
@@ -49,18 +53,21 @@ Motor.molde({
     const pad = k => String(k).padStart(2, '0');
     F.etapas.forEach((e, k) => { const d = document.createElement('div'); d.textContent = pad(k + 1); $('#cnW').appendChild(d); });
     $('#cnT').textContent = '/' + pad(n);
-    $('#tit').textContent = F.titulo || '';
+    $('#tit').textContent = F.titulo || `${F.produto}, do começo ao fim`;
+    $('#pnome').textContent = F.produto;
+    if (F.preco != null) $('#ppreco').textContent = $m.brl(F.preco); else $('#ppreco').remove();
     $('#pronto').textContent = F.resultado || 'Pronto!';
     // longest caption measured once
     $('#leg').textContent = F.etapas.reduce((a, e) => (e.legenda || '').length > a.length ? e.legenda : a, '');
     const W = 790, g = 12, w = (W - g * (n - 1)) / n;
     F.etapas.forEach((e, k) => { const b = document.createElement('div'); b.className = 'tb'; b.style.left = k * (w + g) + 'px'; b.style.width = w + 'px'; b.appendChild(document.createElement('img')); $('#trilha').insertBefore(b, $('#cab')); });
     D.w = w; D.g = g;
+    // reading time: 0.8 s + 0.25 s per new word (step number and caption; the title on the first step)
+    const pal = x => (x || '').trim().split(/\s+/).filter(Boolean).length;
     const passo = n <= 4 ? 1.6 : n === 5 ? 1.5 : 1.4;
-    const d = [...F.etapas.slice(0, -1).map((e, k) => k === 0 && F.titulo ? passo + 0.6 : passo), 3.4];
+    const d = [...F.etapas.slice(0, -1).map((e, k) => Math.max(passo, 0.95 + 0.25 * (1 + pal(e.legenda) + (k === 0 ? 1 + pal($('#tit').textContent) : 0)))),
+      Math.max(3.4, 1.7 + 0.25 * (1 + pal(F.resultado || 'Pronto!') + pal(F.produto) + (F.preco != null ? 2 : 0)))].map(x => +x.toFixed(2));
     D.st = []; let s = 0; d.forEach(x => { D.st.push(s); s += x; }); D.st.push(s);
-    // render.py's contact sheet breaks on a last row of one picture (7 or 13 scenes with the final): split the result
-    if ((d.length + 1) % 6 === 1) d.splice(d.length - 1, 1, 0.6, 2.8);
     return { duracoes: d };
   },
   quadro(t, F, $m) {
@@ -97,6 +104,11 @@ Motor.molde({
     // result label
     const pr = i === R && rec < 0 ? p(t, a + 0.95, 0.35) : 0;
     $m.carimbo('#pronto', t, i === R ? a + 0.95 : 1e9);
+    // the result is the ad: product name, optional price; the track gives way
+    const pn = i === R && rec < 0 ? eo5(p(t, a + 1.25, 0.5)) : 0;
+    $('#pnome').style.opacity = pn; $('#pnome').style.transform = `translateY(${(1 - pn) * 40}px)`;
+    if ($('#ppreco')) { const pp = i === R && rec < 0 ? eb(p(t, a + 1.5, 0.4)) : 0; $('#ppreco').style.opacity = cl(pp * 3); $('#ppreco').style.transform = `scale(${Math.max(0, pp)})`; }
+    $('#trilha').style.opacity = 1 - (i === R && rec < 0 ? eo(p(t, a + 1.0, 0.35)) : 0);
     // thumbnail track with the playhead
     $$('#trilha .tb').forEach((b, k) => { $m.filmagem(b.firstChild, F.etapas[k].midia, 0.5); b.classList.toggle('on', k === atual); b.classList.toggle('ja', k < atual);
       const ti = eb(p(t, 0.2 + k * 0.08, 0.4)); b.style.transform = `translateY(${(1 - ti) * 40}px) scale(${k === atual ? 1.08 : 1})`; b.style.opacity = cl(ti * 2) * (k < atual ? 0.55 : 1); });

@@ -1,4 +1,14 @@
-{"_marca": "sem-logo", "_formato": "reel",
+{
+ "_marca": "sem-logo",
+ "_formato": "reel",
  "pergunta": "Frases que toda costureira escuta",
- "frases": ["É só fazer a barra, é rapidinho", "Precisa pra amanhã cedo", "Dá pra apertar sem descosturar?", "Comprei um número menor, você dá um jeito?", "Quanto fica pra pregar um botão?"],
- "fechamento": "Ajuste bem feito tem medida, prova e tempo. Traz a sua peça que a gente cuida dela com calma."}
+ "frases": [
+  "É só fazer a barra, é rapidinho",
+  "Precisa pra amanhã cedo",
+  "Dá pra apertar sem descosturar?",
+  "Comprei um número menor, você dá um jeito?",
+  "Quanto fica pra pregar um botão?"
+ ],
+ "fechamento": "Ajuste bem feito tem medida, prova e tempo. Traz a sua peça que a gente cuida dela com calma.",
+ "foto_produto": "fotos/atelie_barra.jpg"
+}

@@ -5,27 +5,27 @@
  },
  "atelie_aviamentos.jpg": {
   "mostra": "linhas e botões",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "atelie_barra.jpg": {
   "mostra": "ajuste de barra de calça",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "atelie_maquina.jpg": {
   "mostra": "máquina de costura em uso",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "atelie_noiva.jpg": {
   "mostra": "vestido de noiva em prova",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "atelie_tecidos.jpg": {
   "mostra": "rolos de tecidos coloridos",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "atelie_vestido.jpg": {
   "mostra": "vestido no manequim em ajuste",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "bolo.jpg": {
   "mostra": "bolo de aniversário com vela",
@@ -37,51 +37,75 @@
  },
  "burger_batata.jpg": {
   "mostra": "batata rústica",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
+ },
+ "burger_blend.jpg": {
+  "mostra": "carne moída sendo bolada para o hambúrguer",
+  "origem": "gerada (gpt-image-2)"
  },
  "burger_chapa.jpg": {
   "mostra": "hambúrgueres na chapa",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "burger_combo.jpg": {
   "mostra": "combo hambúrguer, batata e refrigerante",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "burger_costela.jpg": {
   "mostra": "hambúrguer de costela desfiada",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "burger_fachada.jpg": {
   "mostra": "fachada da hamburgueria à noite",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "burger_milkshake.jpg": {
   "mostra": "milkshake",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
+ },
+ "burger_milkshake_morango.jpg": {
+  "mostra": "milkshake de morango",
+  "origem": "gerada (gpt-image-2)"
+ },
+ "burger_montando.jpg": {
+  "mostra": "hambúrguer sendo montado no pão",
+  "origem": "gerada (gpt-image-2)"
+ },
+ "burger_onion.jpg": {
+  "mostra": "porção de onion rings",
+  "origem": "gerada (gpt-image-2)"
  },
  "burger_smash.jpg": {
   "mostra": "smash burger duplo",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "cantina_coxinhas.jpg": {
   "mostra": "bandeja de coxinhas",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "cantina_feijoada.jpg": {
   "mostra": "feijoada",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "cantina_lasanha.jpg": {
   "mostra": "lasanha caseira",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "cantina_marmita.jpg": {
   "mostra": "marmita caseira",
   "origem": "gerada (stability.stable-image-core-v1:1)"
  },
+ "cantina_marmita_lasanha.jpg": {
+  "mostra": "marmita com lasanha caseira, pronta para entrega",
+  "origem": "gerada (gpt-image-2)"
+ },
+ "cantina_montando_lasanha.jpg": {
+  "mostra": "lasanha sendo montada em camadas, com molho de tomate, massa e queijo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
  "cantina_pizza.jpg": {
   "mostra": "pizza de forno a lenha",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "confeita.jpg": {
   "mostra": "confeitando bolo com bico de confeitar (creme rosa)",
@@ -90,6 +114,14 @@
  "delivery.jpg": {
   "mostra": "motoboy de entrega à noite",
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "doce_assando.jpg": {
+  "mostra": "bolo assando no forno",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_bolo_congelado.jpg": {
+  "mostra": "bolo de chocolate sobre plástico filme, pronto para embalar e congelar",
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_bolo_morango.jpg": {
   "mostra": "bolo de morango inteiro",
@@ -113,6 +145,18 @@
  },
  "doce_kit_festa.jpg": {
   "mostra": "kit festa: bolo e docinhos",
+  "origem": "gerada (gpt-image-2)"
+ },
+ "doce_massa.jpg": {
+  "mostra": "creme rosa sendo batido na tigela para a cobertura do bolo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_montando_morango.jpg": {
+  "mostra": "confeiteira montando bolo de morango, pondo morangos entre camadas de chantilly",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_morangos_bancada.jpg": {
+  "mostra": "morangos frescos e ingredientes de bolo na bancada",
   "origem": "gerada (stability.stable-image-core-v1:1)"
  },
  "doce_ovo_pascoa.jpg": {
@@ -187,12 +231,24 @@
   "mostra": "roda de carro limpa e polida (depois)",
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
  },
+ "oficina_entrega_chave.jpg": {
+  "mostra": "mecânico entregando a chave do carro pronto ao cliente",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
  "oficina_fachada.jpg": {
   "mostra": "fachada da oficina",
   "origem": "gerada (stability.stable-image-core-v1:1)"
  },
  "oficina_freio.jpg": {
   "mostra": "pastilhas de freio",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "oficina_frota.jpg": {
+  "mostra": "van de entrega de empresa na oficina para revisão",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "oficina_garagem_antiga.jpg": {
+  "mostra": "garagem pequena e antiga de oficina mecânica, com um fusca de capô aberto",
   "origem": "gerada (stability.stable-image-core-v1:1)"
  },
  "oficina_interior.jpg": {
@@ -203,13 +259,25 @@
   "mostra": "troca de óleo",
   "origem": "gerada (stability.stable-image-core-v1:1)"
  },
+ "oficina_pneu.jpg": {
+  "mostra": "calibrando o pneu do carro com calibrador",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
  "oficina_pronto.jpg": {
   "mostra": "carro pronto, limpo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "oficina_volante.jpg": {
+  "mostra": "motorista com as mãos no volante, parado no trânsito",
   "origem": "gerada (stability.stable-image-core-v1:1)"
  },
  "pizza.jpg": {
   "mostra": "pizza de pepperoni",
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "raiz_calculadora.jpg": {
+  "mostra": "celular na mão de uma confeiteira usando o app de calculadora de preço",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
  },
  "relogio.jpg": {
   "mostra": "relógio de parede",

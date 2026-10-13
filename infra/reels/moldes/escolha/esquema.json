@@ -1,13 +1,59 @@
 {
- "formatos": ["reel", "story"],
+ "formatos": [
+  "reel",
+  "story"
+ ],
  "voz": "nao",
  "musica": "animada",
  "campos": {
-  "pares": {"tipo": "lista", "min": 3, "max": 5, "dica": "3 a 5 pares de produtos do próprio negócio; as duas fotos de cada par com a mesma qualidade (o molde compara)", "item": {
-    "foto_a": {"tipo": "foto"}, "nome_a": {"tipo": "texto", "max": 25, "min": 2},
-    "foto_b": {"tipo": "foto"}, "nome_b": {"tipo": "texto", "max": 25, "min": 2}}},
-  "titulo": {"tipo": "texto", "max": 16, "obrigatorio": false, "dica": "padrão: Escolhe um"},
-  "subtitulo": {"tipo": "texto", "max": 34, "obrigatorio": false, "dica": "padrão: N rodadas, sem pensar muito"},
-  "final": {"tipo": "texto", "max": 26, "obrigatorio": false, "dica": "padrão: Conta nos comentários (Reel) ou Vota na enquete (story, que deixa a faixa de baixo livre para a enquete)"}
- }
+  "pares": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 5,
+   "dica": "3 a 5 pares de produtos do próprio negócio; os dois de cada par da MESMA categoria (dois lanches, duas sobremesas) e com fotos de mesma qualidade (o molde compara)",
+   "item": {
+    "categoria": {
+     "tipo": "texto",
+     "max": 16,
+     "min": 3,
+     "dica": "o que os dois do par são (a mesma coisa): Lanches, Sobremesas, Serviços de roda"
+    },
+    "foto_a": {
+     "tipo": "foto"
+    },
+    "nome_a": {
+     "tipo": "texto",
+     "max": 25,
+     "min": 2
+    },
+    "foto_b": {
+     "tipo": "foto"
+    },
+    "nome_b": {
+     "tipo": "texto",
+     "max": 25,
+     "min": 2
+    }
+   }
+  },
+  "titulo": {
+   "tipo": "texto",
+   "max": 16,
+   "obrigatorio": false,
+   "dica": "padrão: Escolhe um"
+  },
+  "subtitulo": {
+   "tipo": "texto",
+   "max": 34,
+   "obrigatorio": false,
+   "dica": "padrão: N rodadas, sem pensar muito"
+  },
+  "final": {
+   "tipo": "texto",
+   "max": 26,
+   "obrigatorio": false,
+   "dica": "padrão: Conta nos comentários (Reel) ou Vota na enquete (story, que deixa a faixa de baixo livre para a enquete)"
+  }
+ },
+ "publico": "cliente_final"
 }
