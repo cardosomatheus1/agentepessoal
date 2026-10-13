@@ -2282,7 +2282,7 @@ class Suite:
         d = p.carregar(LOGIN)
         d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
         for i in range(p.LIMITE_COMENTARIOS):  # comments already approved today
-            d["acoes"].append({"id": f"c{i}", "lead_id": "x", "tipo": "aquecer", "texto": "", "estado": "executada",
+            d["acoes"].append({"id": f"cm-{i}", "lead_id": "x", "tipo": "aquecer", "texto": "", "estado": "executada",
                                "criada": p.agora(), "comentario": {"estado": "publicado", "em": p.agora() - 60, "texto": "x"}})
         p.salvar(LOGIN, d)
         self._lead("teto1")
@@ -2293,7 +2293,7 @@ class Suite:
         r, m = p.comentar(LOGIN, a["id"], texto, f"\"Kit fit da semana\", {ontem}")
         ok(not r and "teto" in m and not m.startswith("REESCREVA"), f"o 11º comentário do dia não sai: {m}")
         d = p.carregar(LOGIN)
-        d["acoes"] = [x for x in d["acoes"] if not x["id"].startswith("c") or int(x["id"][1:]) < p.LIMITE_COMENTARIOS // 2]
+        d["acoes"] = [x for x in d["acoes"] if not x["id"].startswith("cm-") or int(x["id"][3:]) < p.LIMITE_COMENTARIOS // 2]
         d["bloqueios"] = [{"em": p.agora() - 86400}]
         p.salvar(LOGIN, d)
         r, m = p.comentar(LOGIN, a["id"], texto, f"\"Kit fit da semana\", {ontem}")

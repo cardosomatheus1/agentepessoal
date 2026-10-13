@@ -65,6 +65,20 @@ class Suite:
         return [s["tarefa"] for s in self.dr.destravar(tarefas, rodando or {}, lambda cid: (do_chat or {}).get(cid),
                                                         time.time(), "running", "error")]
 
+    def t_arquivar_so_conversas_paradas_e_soltas(self):
+        a = _carregar("limpeza_arquivar_teste", RAIZ / "helpers" / "arquivar.py")
+        agora = 1_800_000_000
+        velho, novo = agora - 8 * 86400, agora - 2 * 86400
+        itens = [{"id": "parada", "mtime": velho, "data": {}},
+                 {"id": "recente", "mtime": novo, "data": {}},
+                 {"id": "celular", "mtime": velho, "data": {"whatsapp_de": "matheus"}},
+                 {"id": "gatilhos", "mtime": velho, "data": {"gatilhos_de": "matheus"}},
+                 {"id": "rodada", "mtime": velho, "data": {}, "tem_tarefa": True},
+                 {"id": "rodando", "mtime": velho, "data": {}, "rodando": True}]
+        ok(a.escolher(itens, agora) == ["parada"], f"só a parada há 7+ dias e solta: {a.escolher(itens, agora)}")
+        ext = (RAIZ / "extensions" / "python" / "job_loop" / "_42_arquivar_conversas.py").read_text(encoding="utf-8")
+        ok(ext.index("copytree") < ext.index("AgentContext.remove"), "copia antes de tirar do agente")
+
     def t_rodada_rodando_nao_e_destravada(self):
         # 12/10: the search started at 9h23 (previous run the day before) and was put back to idle at 9h29, 9h32 and
         # 9h42; each time the scheduler started another copy in the same chat
