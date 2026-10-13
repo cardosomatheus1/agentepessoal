@@ -25,7 +25,23 @@ cego do catálogo).
 8. **Uma história com começo, meio e fim.** Bastidores ficou desconexo. [bastidores]
 9. **Logo é do negócio do post.** Logo da Raiz num post de açaí não. [produto-semana]
 
+## Rodada 2 (`moldes-2026-10-13-rodada2`): 28 aprovados, 2 rejeitados (pov, pergunta-cliente)
+
+10. **História com conclusão.** POV que corta da situação para o produto sem fechar a piada é "muito rápido, sem
+    conclusão": a reação (a piada) é obrigatória e o vídeo termina numa frase de conclusão sobre a foto do resultado.
+    [rodada2/pov]
+11. **Ligação entre o assunto e o produto.** Pergunta sobre entrega seguida de "que tal um smash?" fica sem nexo: o
+    produto é aquele de que a pergunta fala, ou entra uma ponte que liga a resposta ao produto. [rodada2/pergunta-cliente]
+12. **Não alongar o que é só informação.** Agenda mostrando horário livre por muito tempo cansa: no máximo 4 horários
+    por extenso, a grade é olhada de relance (não conta como leitura). [rodada2/agenda]
+13. **Molde que fala com o dono só com dor que o anunciante resolve.** Custo escondido de uma loja de embalagem não pode
+    listar taxa do app e gás (isso é conversa de ERP): os custos escondidos têm de ser os que o produto anunciado
+    corta. [rodada2/custo-escondido]
+
 ## Dúvidas para o Matheus
+
+- Expectativa: aprovado, mas "não sei se é tão vendável". Fica no catálogo com prioridade baixa na escolha do agente
+  (ele prefere moldes que mostram o produto desde o começo) até haver dado de alcance real.
 
 - Nenhuma por enquanto: os comentários são claros. A rodada de teste usou fotos genéricas do banco; as regras 1 e 2
   valem para os testes também (fotos de teste coerentes com a ficha).

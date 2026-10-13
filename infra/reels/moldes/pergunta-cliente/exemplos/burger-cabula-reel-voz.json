@@ -8,7 +8,7 @@
  "falas": [
   "Entrega no Cabula?",
   "Entrega sim! O Cabula está na nossa área, de terça a domingo, das seis às onze da noite. A taxa aparece no link antes de fechar o pedido.",
-  "Que tal um smash duplo, por trinta e dois reais?",
+  "Então pede do Cabula mesmo: o smash duplo chega quentinho, por trinta e dois reais.",
   "Peça pelo link da bio."
  ],
  "_origem": {
@@ -18,8 +18,9 @@
  "produto": {
   "foto": "fotos/burger_smash.jpg",
   "nome": "Smash duplo",
-  "detalhe": "Dois blends, cheddar e cebola na chapa",
+  "detalhe": "Em até 40 min na sua porta, com cheddar derretendo",
   "preco": 32,
   "convite": "peça o seu"
- }
+ },
+ "ponte": "Pedindo do Cabula, chega quentinho"
 }

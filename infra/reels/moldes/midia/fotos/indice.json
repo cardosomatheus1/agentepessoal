@@ -292,8 +292,8 @@
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
  },
  "salao_antes.jpg": {
-  "mostra": "cabelo ressecado e armado, de costas (antes)",
-  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+  "mostra": "cabelo longo ondulado, de costas, na cadeira do salão (não serve como 'antes' ruim: o modelo da AWS não faz cabelo estragado)",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
  },
  "salao_cachos.jpg": {
   "mostra": "cabelo cacheado finalizado",

@@ -1,5 +1,13 @@
-{"_marca": "studio-bella", "_formato": "reel",
- "situacao": "você chega no salão com a foto da atriz e o cabelo assim",
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "situacao": "você mostra a foto da atriz e pede igualzinho",
  "fundo": "fotos/salao_antes.jpg",
- "produto": "Mechas sob medida", "foto_produto": "fotos/salao_mechas.jpg",
- "solucao": "Avaliamos o seu fio e chegamos no tom da foto, sem judiar"}
+ "produto": "Mechas sob medida",
+ "foto_produto": "fotos/salao_mechas.jpg",
+ "solucao": "Avaliamos o seu fio e chegamos no tom da foto, sem judiar",
+ "rotulo": "a cabeleireira:",
+ "virada": "respira fundo e pega o pente",
+ "final": "Saiu igualzinho à foto. Sem judiar do fio.",
+ "foto_final": "fotos/salao_mechas.jpg"
+}

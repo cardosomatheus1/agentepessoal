@@ -34,6 +34,13 @@
    "obrigatorio": false,
    "dica": "trecho da resposta (igualzinho) que ganha marca-texto"
   },
+  "ponte": {
+   "tipo": "texto",
+   "min": 8,
+   "max": 40,
+   "obrigatorio": false,
+   "dica": "liga a resposta ao produto quando a pergunta não é sobre ele (entrega, horário, pagamento): No Cabula, chega quentinho. Sem ela o anúncio fica sem nexo (AR Board 13/10)"
+  },
   "falas": {
    "tipo": "lista",
    "min": 4,
@@ -43,7 +50,7 @@
     "tipo": "texto",
     "max": 200
    },
-   "dica": "narração opcional: a pergunta, a resposta, o produto, a chamada"
+   "dica": "narração opcional: a pergunta, a resposta, a ponte com o produto, a chamada"
   },
   "produto": {
    "tipo": "objeto",
@@ -74,7 +81,7 @@
      "dica": "frase curta antes do nome: peça o seu, agende já"
     }
    },
-   "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"
+   "dica": "fecho de anúncio: o produto ou serviço de que a pergunta fala (ou, com a ponte, o que a resposta torna possível), com foto real"
   }
  },
  "publico": "cliente_final"

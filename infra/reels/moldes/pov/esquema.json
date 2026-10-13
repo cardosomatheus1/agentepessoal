@@ -1,17 +1,69 @@
 {
- "formatos": ["reel"],
+ "formatos": [
+  "reel"
+ ],
  "voz": "nao",
  "musica": "animada",
  "publico": "cliente_final",
  "campos": {
-  "situacao": {"tipo": "texto", "max": 70, "min": 12, "dica": "a situação do cliente, sem o 'POV:' (o molde põe): bateu a fome às 23h e tudo perto de casa já fechou"},
-  "virada": {"tipo": "texto", "max": 40, "obrigatorio": false, "dica": "a reação, curta (opcional): abrindo o app sem esperança"},
-  "rotulo": {"tipo": "texto", "max": 18, "obrigatorio": false, "dica": "quem reage, antes da virada: eu:, eu, 1 minuto depois:"},
-  "fundo": {"tipo": "filmagem", "dica": "foto (fotos/x.jpg) ou vídeo do próprio cliente que mostre a situação; o banco de filmagens só como reserva"},
-  "hora": {"tipo": "hora", "obrigatorio": false, "dica": "hora no visor da câmera, quando faz parte da piada (23:04)"},
-  "produto": {"tipo": "texto", "max": 24, "min": 3, "dica": "o produto ou serviço que resolve: Smash duplo"},
-  "foto_produto": {"tipo": "foto", "dica": "foto real desse produto ou serviço (registrada em midia/fotos/indice.json)"},
-  "solucao": {"tipo": "texto", "max": 60, "min": 10, "dica": "como o negócio resolve, falando com o cliente: a chapa fica acesa até 1h e chega quentinho"},
-  "preco": {"tipo": "dinheiro", "real": true, "obrigatorio": false}
+  "situacao": {
+   "tipo": "texto",
+   "max": 70,
+   "min": 12,
+   "dica": "a situação do cliente, sem o 'POV:' (o molde põe): bateu a fome às 23h e tudo perto de casa já fechou"
+  },
+  "virada": {
+   "tipo": "texto",
+   "max": 40,
+   "min": 4,
+   "dica": "a reação, curta: é a piada (abrindo o app sem esperança)"
+  },
+  "rotulo": {
+   "tipo": "texto",
+   "max": 18,
+   "obrigatorio": false,
+   "dica": "quem reage, antes da virada: eu:, eu, 1 minuto depois:"
+  },
+  "fundo": {
+   "tipo": "filmagem",
+   "dica": "foto (fotos/x.jpg) ou vídeo do próprio cliente que mostre a situação; o banco de filmagens só como reserva"
+  },
+  "hora": {
+   "tipo": "hora",
+   "obrigatorio": false,
+   "dica": "hora no visor da câmera, quando faz parte da piada (23:04)"
+  },
+  "produto": {
+   "tipo": "texto",
+   "max": 24,
+   "min": 3,
+   "dica": "o produto ou serviço que resolve: Smash duplo"
+  },
+  "foto_produto": {
+   "tipo": "foto",
+   "dica": "foto real desse produto ou serviço (registrada em midia/fotos/indice.json)"
+  },
+  "solucao": {
+   "tipo": "texto",
+   "max": 60,
+   "min": 10,
+   "dica": "como o negócio resolve, falando com o cliente: a chapa fica acesa até 1h e chega quentinho"
+  },
+  "preco": {
+   "tipo": "dinheiro",
+   "real": true,
+   "obrigatorio": false
+  },
+  "final": {
+   "tipo": "texto",
+   "max": 50,
+   "min": 6,
+   "dica": "a conclusão da história, já com o problema resolvido (AR Board 13/10: 'sem conclusão'): saiu igualzinho à foto; em 35 min tava na porta"
+  },
+  "foto_final": {
+   "tipo": "foto",
+   "obrigatorio": false,
+   "dica": "foto do resultado (o depois); sem ela, usa a foto do produto"
+  }
  }
 }

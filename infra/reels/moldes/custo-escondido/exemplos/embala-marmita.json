@@ -7,8 +7,8 @@
  "custo_visivel": 11,
  "escondidos": [
   {
-   "nome": "Taxa do app",
-   "valor": 5.5,
+   "nome": "Pedido que vazou",
+   "valor": 2.2,
    "em_media": true
   },
   {
@@ -16,12 +16,12 @@
    "valor": 1.8
   },
   {
-   "nome": "Gás e luz",
-   "valor": 1.2,
+   "nome": "Reembolso no app",
+   "valor": 1.1,
    "em_media": true
   },
   {
-   "nome": "Sacola e talher",
+   "nome": "Filme e sacola",
    "valor": 0.9
   }
  ],
@@ -30,12 +30,12 @@
   "Marmita a vinte e dois reais. Quanto fica pra você?",
   "Comida: onze reais. Essa todo mundo lembra.",
   "Mas tem o que quase ninguém coloca na conta.",
-  "A taxa do app: uns cinco e cinquenta, em média.",
+  "O pedido que vazou e teve de ser refeito: uns dois e vinte, em média.",
   "Embalagem e tampa: um e oitenta.",
-  "Gás e luz: um e vinte, em média.",
-  "Sacola e talher: noventa centavos.",
-  "São nove e quarenta escondidos em cada marmita.",
-  "Na Embala Já, o kit delivery sai no atacado e a embalagem pesa menos na conta.",
+  "O reembolso no app: um e dez, em média.",
+  "Filme e sacola pra não vazar: noventa centavos.",
+  "São seis reais escondidos em cada marmita, e quase tudo é embalagem.",
+  "Na Embala Já, a marmita com tampa de pressão não vaza, e sai mais barata no atacado.",
   "Peça pelo WhatsApp."
  ],
  "_origem": {
@@ -45,8 +45,8 @@
  },
  "oferta": {
   "foto": "fotos/embala_delivery.jpg",
-  "nome": "Kit delivery no atacado",
-  "detalhe": "Marmita, tampa, sacola e talher",
+  "nome": "Marmita que não vaza",
+  "detalhe": "Tampa de pressão, preço de atacado",
   "convite": "para restaurantes"
  }
 }

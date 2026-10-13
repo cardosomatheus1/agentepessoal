@@ -46,7 +46,7 @@ body.e-noite .vg{box-shadow:0 0 34px color-mix(in srgb,var(--destaque) 60%,trans
 <div class="cena" id="c0"><div class="cam full">
  <div class="ctr tit t seg rv" id="cabT"></div>
  <div class="ctr t t2 seg" id="cabS"></div>
- <div id="cal" class="cartao"><div class="mes t dest seg" id="mes"></div><div id="cols"></div><div id="grade" data-leitura="nao"></div><div id="scan"></div></div>
+ <div id="cal" class="cartao"><div class="mes t dest seg" id="mes"></div><div id="cols" data-leitura="nao"></div><div id="grade" data-leitura="nao"></div><div id="scan"></div></div>
  <div class="ctr seg" id="conta"><span class="tit dest t" id="contaN"></span><span class="t" id="contaT"></span></div>
 </div></div>
 <div class="cena" id="c2"><div class="cam full">
@@ -80,8 +80,8 @@ function tempoDeLer($m, F, base) {
     $m.S = S; $m.N = S.length - 1;
     let antes = new Set(), mudou = false;
     d = d.map((x, i) => { $m.def.quadro(Math.max(S[i], S[i + 1] - 0.08), F, $m);
-      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').length; }); antes = agora;
-      const min = +(1.0 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
+      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').filter(w => /[\p{L}\d]/u.test(w)).length; }); agora.forEach(s => antes.add(s));
+      const min = +(0.8 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
     if (!mudou) break;
   }
   return d;
@@ -146,13 +146,14 @@ Motor.molde({
     const fem = un[0].startsWith('data');
     $('#c2T').textContent = fem ? 'Garanta a sua' : 'Garanta o seu';
     if (F.foto) $('#fotoS img').src = $m.midia(F.foto); else $('#fotoS').remove();
-    const mostra = livres.slice(0, nl > 6 ? 5 : 6);
+    // at most 4 free slots spelled out (AR Board 13/10, round 2: "muito tempo mostrando agenda livre"); the rest is "+N"
+    const mostra = livres.slice(0, nl > 4 ? 3 : 4);
     mostra.forEach(h => { const v = document.createElement('div'); v.className = 'vg';
       v.innerHTML = '<div class="a t"></div><div class="b tit t seg"></div>';
       const d = dt(h.data); v.querySelector('.a').textContent = h.hora ? `${DIAS[d.getDay()].slice(0, 3)} ${ddmm(h.data)}` : DIAS[d.getDay()];
       v.querySelector('.b').textContent = h.hora ? hh(h.hora) : ddmm(h.data);
       $('#lista').appendChild(v); });
-    if (nl > 6) { const v = document.createElement('div'); v.className = 'vg mais'; v.innerHTML = '<div class="b tit t seg"></div>'; v.querySelector('.b').textContent = '+' + (nl - 5); $('#lista').appendChild(v); }
+    if (nl > 4) { const v = document.createElement('div'); v.className = 'vg mais'; v.innerHTML = '<div class="b tit t seg"></div>'; v.querySelector('.b').textContent = '+' + (nl - 3); $('#lista').appendChild(v); }
     if (mostra.length === 1) $('#lista').style.gridTemplateColumns = '1fr';
     const linhas = Math.ceil($('#lista').children.length / 2);
     if (linhas <= 2) document.querySelectorAll('.vg').forEach(v => { v.style.height = '190px'; });

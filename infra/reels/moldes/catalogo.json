@@ -160,7 +160,9 @@
    "regras": [
     "Proibir sujeira e falta de higiene na imagem da realidade quando o ramo for comida, saúde ou estética. Permitir que a realidade seja só texto sobre fundo liso quando não houver uma segunda imagem boa."
    ],
-   "publico": "cliente_final"
+   "publico": "cliente_final",
+   "prioridade": "baixa",
+   "prioridade_motivo": "AR Board 13/10, rodada 2: aprovado, mas 'não sei se é tão vendável'; o agente prefere moldes que mostram o produto desde o começo"
   },
   {
    "id": "tipos-cliente",

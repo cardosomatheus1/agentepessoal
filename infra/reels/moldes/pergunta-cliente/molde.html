@@ -72,7 +72,7 @@ const OF = F => (F.produto && typeof F.produto === 'object' ? F.produto : F.ofer
 function vitrine(F, $m, pai, kick) {
   const P = OF(F), v = mk('div', 'vend', null, pai);
   const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
-  mk('div', 'pvk mao t seg', P.convite || kick, v);
+  mk('div', 'pvk mao t seg', F.ponte || P.convite || kick, v);  // the bridge from the answer to the product
   mk('div', 'pvn tit t seg' + ($m.FORMATO === 'carrossel' ? '' : ' rv'), P.nome, v);
   if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
   if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
@@ -82,7 +82,7 @@ function vitrine(F, $m, pai, kick) {
   if (d) d.style.top = (y0 + linhas * lh + 14) + 'px';
   return v;
 }
-const vitrineLer = (F, kick) => ler(OF(F).convite || kick, OF(F).nome, OF(F).detalhe, OF(F).preco != null ? 'R$ 0' : '');
+const vitrineLer = (F, kick) => ler(F.ponte || OF(F).convite || kick, OF(F).nome, OF(F).detalhe, OF(F).preco != null ? 'R$ 0' : '');
 function vitrineQuadro(v, F, $m, t, a) {
   const { p, eo5, eb, cl } = $m;
   const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.7)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`;
