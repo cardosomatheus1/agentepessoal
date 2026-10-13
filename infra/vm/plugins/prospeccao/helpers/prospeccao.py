@@ -1483,11 +1483,15 @@ def cotas(login: str) -> dict:
 # it is left to the reviewer.
 PEDE_RECEITA = re.compile(r"\b(mand\w*|envi[ae]\w*|compartilh\w*|pass(a|e|ar|em|arem))\b[^.!?\n]{0,20}"
                           r"\b(receita|ficha t[eé]cnica)", re.I)
+# AR Board 13/10 (Matheus, 5 of 13 cases): the dash "deixa com cara de IA". In code, for every text the agent writes.
+TRAVESSAO = re.compile("[\u2014\u2013]")
 
 
 def validar_texto(tipo: str, texto: str, d: dict, lid: str) -> str:
     """'' when the text may be proposed, else why not (playbook rules a model could slip on)."""
     t = (texto or "").strip()
+    if TRAVESSAO.search(t):
+        return "sem travessão (— ou –): deixa com cara de IA; use vírgula, ponto ou quebra de linha"
     if tipo == "aquecer":
         if t and (len(t) > 220 or LINK.search(t) or re.search(r"raiz", t, re.I)):
             return "comentário de aquecimento: até 220 caracteres, sem link e sem citar a Raiz"

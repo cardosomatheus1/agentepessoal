@@ -58,14 +58,14 @@ def caixa(desde):
 
 
 TEXTOS = [
-    "Oi, {n}! Vi o bolo de pote de ninho com morango de vocês, que capricho na camada. Vocês sabem quanto sobra em cada pote depois da embalagem? Faço essa conta de graça para vocês, se quiserem. — Matheus, da Raiz Connect",
-    "Oi, {n}! Acompanhei o cardápio fit da semana, gostei da opção de escondidinho de mandioca. Com a carne subindo, muita marmitaria vende com margem menor sem perceber. Calculo de graça o lucro de 1 marmita. Topa? — Matheus, da Raiz Connect",
-    "Oi, {n}! Que lindo o kit de salgados para festa com coxinha de costela. Vocês já sabem quanto lucram por cento de salgado depois do óleo e das embalagens? Se quiser, faço essa conta sem custo. — Matheus, da Raiz Connect",
-    "Oi, {n}! Vi que vocês abriram encomendas de congelados para o mês, a lasanha de berinjela parece ótima. Se quiserem, eu calculo de graça quanto sobra em cada uma. — Matheus, da Raiz Connect",
+    "Oi, {n}! Vi o bolo de pote de ninho com morango de vocês, que capricho na camada. Vocês sabem quanto sobra em cada pote depois da embalagem? Faço essa conta de graça para vocês, se quiserem.\nMatheus, da Raiz Connect",
+    "Oi, {n}! Acompanhei o cardápio fit da semana, gostei da opção de escondidinho de mandioca. Com a carne subindo, muita marmitaria vende com margem menor sem perceber. Calculo de graça o lucro de 1 marmita. Topa?\nMatheus, da Raiz Connect",
+    "Oi, {n}! Que lindo o kit de salgados para festa com coxinha de costela. Vocês já sabem quanto lucram por cento de salgado depois do óleo e das embalagens? Se quiser, faço essa conta sem custo.\nMatheus, da Raiz Connect",
+    "Oi, {n}! Vi que vocês abriram encomendas de congelados para o mês, a lasanha de berinjela parece ótima. Se quiserem, eu calculo de graça quanto sobra em cada uma.\nMatheus, da Raiz Connect",
 ]
 
-DM_A = ("Oi, Ana! Vi a marmita de frango com batata-doce de vocês — capricho no tempero. Vocês sabem quanto sobra de "
-        "verdade em cada marmita depois de embalagem e taxa do iFood? Se quiser, eu faço essa conta de graça. — Matheus, da Raiz Connect")
+DM_A = ("Oi, Ana! Vi a marmita de frango com batata-doce de vocês, capricho no tempero. Vocês sabem quanto sobra de "
+        "verdade em cada marmita depois de embalagem e taxa do iFood? Se quiser, eu faço essa conta de graça.\nMatheus, da Raiz Connect")
 
 
 class Suite:
@@ -249,7 +249,7 @@ class Suite:
             out = p.propor(LOGIN, [{"lead_id": a1, "tipo": "aquecer", "texto": "Que capricho nessa marmita de frango! Sai mais no almoço ou no jantar?",
                                     "base": "post de ontem: marmita de frango"},
                                    {"lead_id": a3, "tipo": "dm_abertura", "texto": DM_A},
-                                   {"lead_id": a2, "tipo": "resposta", "texto": "Oi, pessoal da Dois! Que bom que gostou. A calculadora grátis mostra quanto sobra em cada marmita: raizconnect.com.br/materiais/precificacao/calculadora — Matheus"}])
+                                   {"lead_id": a2, "tipo": "resposta", "texto": "Oi, pessoal da Dois! Que bom que gostou. A calculadora grátis mostra quanto sobra em cada marmita: raizconnect.com.br/materiais/precificacao/calculadora\nMatheus"}])
             eq(sorted(a["tipo"] for a in out["automaticas"]), ["aquecer", "dm_abertura", "resposta"], f"pré-aprovadas: {out}")
             eq(out["propostas"], [], "resposta também sai pelo revisor (11/10)")
             eq(len(chamadas), 1, "uma chamada ao revisor para o lote")
@@ -406,7 +406,7 @@ class Suite:
         eq(sum(1 for h in p._lead(p.carregar(LOGIN), lid)["historico"] if h["tipo"] == "etapa:respondeu"), 1, "registrada uma vez")
         eq(next(a for a in p.carregar(LOGIN)["acoes"] if a["id"] == dm["id"])["estado"], "cancelada",
            "a DM fria cancela: quem respondeu recebe resposta pessoal")
-        ok(p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi! Vi sua resposta lá no post: frango com batata-doce é campeão mesmo. Quer que eu calcule quanto sobra em cada uma? — Matheus"}])["propostas"],
+        ok(p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi! Vi sua resposta lá no post: frango com batata-doce é campeão mesmo. Quer que eu calcule quanto sobra em cada uma?\nMatheus"}])["propostas"],
            "resposta pessoal pode ser proposta")
         ok(p.mudar_etapa(LOGIN, lid, "respondeu", "E vocês fazem o cálculo como?", "direct")["novidade"], "mensagem nova é novidade")
         txt = p.resumo_hoje(LOGIN)
@@ -420,7 +420,7 @@ class Suite:
         ok(r and r["id"] == lid and r["novidade"], f"etapa pelo @ (11/10: zen.marmitas recusado): {r and r['id']}")
         ok(p.mudar_etapa(LOGIN, "https://www.instagram.com/arroba1/", "lead", "mandou a receita"), "etapa pela URL do perfil")
         prop = p.propor(LOGIN, [{"lead_id": "arroba1", "tipo": "resposta",
-                                 "texto": "Oi! Que bom que o rondelli entra. Quer que eu calcule quanto sobra em cada kit? — Matheus"}])
+                                 "texto": "Oi! Que bom que o rondelli entra. Quer que eu calcule quanto sobra em cada kit?\nMatheus"}])
         ok(prop["propostas"] and prop["propostas"][0]["lead_id"] == lid, f"proposta pelo @ guarda o id interno: {prop}")
         eq(p.mudar_etapa(LOGIN, "@naoexiste", "respondeu", "x"), None, "@ desconhecido continua recusado")
 
@@ -820,7 +820,7 @@ class Suite:
                                "executada_em": p.agora() + desloc, "criada": p.agora()})
         p.salvar(LOGIN, d)
         self.em(p.agora() + 700)
-        resp = "Oi, pessoal! Que bom que o rondelli entra no kit da semana. Quer testar a calculadora grátis? — Matheus, da Raiz Connect"
+        resp = "Oi, pessoal! Que bom que o rondelli entra no kit da semana. Quer testar a calculadora grátis?\nMatheus, da Raiz Connect"
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": resp}])
         ok(not r["propostas"] and "já respondemos" in r["recusadas"][0]["motivo"], f"enviada conta como respondida: {r['recusadas']}")
         eq(p.marcar_apagada(LOGIN, "x60", "x"), None, "só mensagem executada vira apagada")
@@ -906,7 +906,7 @@ class Suite:
         p = self.p
         d = p.carregar(LOGIN)
         lembrete = ("Oi, Ana! Passando só pra deixar uma coisa útil: fizemos uma calculadora grátis que mostra quanto sobra "
-                    "em cada marmita depois de insumo, embalagem e taxa do iFood: {link} — se preferir, me conta o preço de uma 🙂")
+                    "em cada marmita depois de insumo, embalagem e taxa do iFood: {link}, se preferir, me conta o preço de uma 🙂")
         # 12/10 blind review, item 6: the reminder offers the link ("quer que eu te mande?"), it never carries one
         ok("lembrete sem link" in p.validar_texto("dm_lembrete", lembrete.format(link=p.LINK_CALCULADORA), d, "x"),
            "calculadora no lembrete é barrada")
@@ -1138,8 +1138,18 @@ class Suite:
                 ok(motivo, f"{tipo} deveria barrar ({chave}): {texto[:50]}")
         eq(p.validar_texto("aquecer", "", d, "x"), "", "aquecer sem comentário é válido")
         eq(p.validar_texto("dm_abertura", DM_A, d, "x"), "", "abertura boa passa")
-        eq(p.validar_texto("resposta", "Fiz a conta: o CMV dessa marmita deu 41%, ou seja, sobra R$ 3,10 por unidade. — Matheus", d, "x"),
+        eq(p.validar_texto("resposta", "Fiz a conta: o CMV dessa marmita deu 41%, ou seja, sobra R$ 3,10 por unidade.\nMatheus", d, "x"),
            "", "resposta pode usar CMV (quem pediu o cálculo)")
+
+    def t_sem_travessao(self):
+        p = self.p
+        d = p.carregar(LOGIN)
+        # AR Board 13/10: o Matheus aprovou as mensagens, mas pediu tirar o travessão (cara de IA)
+        for tipo, texto in (("dm_abertura", DM_A.replace("de vocês, capricho", "de vocês — capricho")),
+                            ("aquecer", "Esse kit de 5 refeições é prático – qual sabor sai mais?"),
+                            ("resposta", "Oi, pessoal da Zen! Que bom que o rondelli entra — fico por aqui.")):
+            ok("travessão" in p.validar_texto(tipo, texto, d, "x"), f"{tipo} com travessão é barrado")
+        eq(p.validar_texto("dm_abertura", DM_A, d, "x"), "", "a mesma abertura sem travessão passa")
 
     def t_mesmo_texto_para_duas_pessoas_e_barrado(self):
         p = self.p
@@ -1189,7 +1199,7 @@ class Suite:
         self.em(self.relogio + 5 * 86400 + 60)
         eq(p.fechar_vencidos(LOGIN), 1, "fecha como sem_resposta")
         eq(p._lead(p.carregar(LOGIN), lid)["etapa"], "sem_resposta", "sem_resposta")
-        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, Ana! Voltando aqui sobre o cálculo da marmita de vocês. — Matheus"}])
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, Ana! Voltando aqui sobre o cálculo da marmita de vocês.\nMatheus"}])
         ok(r["recusadas"], "encerrado não recebe mais nada")
 
     def t_repor_aquecer_e_dias_de_calendario(self):
@@ -1346,24 +1356,24 @@ class Suite:
         self._revisor()  # never the real model in the suite
         lid = self._lead("fala1")
         p.mudar_etapa(LOGIN, lid, "respondeu", "entra sim!", "comentario")
-        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, pessoal da Fala! Que bom. A calculadora grátis: raizconnect.com.br/materiais/precificacao/calculadora — Matheus"}])
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, pessoal da Fala! Que bom. A calculadora grátis: raizconnect.com.br/materiais/precificacao/calculadora\nMatheus"}])
         ok(r["propostas"] or r.get("automaticas"), f"primeira resposta passa: {r}")
         d = p.carregar(LOGIN)
         a = next(x for x in d["acoes"] if x["lead_id"] == lid and x["tipo"] == "resposta")
         a.update({"estado": "executada", "executada_em": p.agora()})
         p.salvar(LOGIN, d)
         self.em(self.hora(11))
-        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi de novo, pessoal da Fala! Conseguiram ver a calculadora? — Matheus"}])
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi de novo, pessoal da Fala! Conseguiram ver a calculadora?\nMatheus"}])
         ok(r["recusadas"] and "já respondemos" in r["recusadas"][0]["motivo"], f"segunda resposta à mesma fala é barrada: {r}")
         self.em(self.hora(12))
         p.mudar_etapa(LOGIN, lid, "lead", "vou testar, obrigada!", "direct")
-        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Imagina, pessoal da Fala! Qualquer dúvida no uso, me chama 🙂 — Matheus"}])
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Imagina, pessoal da Fala! Qualquer dúvida no uso, me chama 🙂\nMatheus"}])
         ok(not r["recusadas"], f"fala nova libera nova resposta: {r}")
         d = p.carregar(LOGIN)
         a = [x for x in d["acoes"] if x["lead_id"] == lid and x["tipo"] == "resposta"][-1]
         a.update({"estado": "falhou", "executada_em": p.agora()})
         p.salvar(LOGIN, d)
-        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, pessoal da Fala! Tentando de novo por aqui 🙂 — Matheus"}])
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, pessoal da Fala! Tentando de novo por aqui 🙂\nMatheus"}])
         ok(r["recusadas"] and "já falhou" in r["recusadas"][0]["motivo"], f"resposta que falhou não vira ciclo: {r}")
         n1 = p.mudar_etapa(LOGIN, lid, "lead", "Respondeu no Direct: «vou testar, obrigada!»", "direct")
         eq(n1["novidade"], False, "a mesma fala descrita com outras palavras não avisa de novo")
@@ -1495,10 +1505,10 @@ class Suite:
     def t_resposta_e_descarte(self):
         p = self.p
         lid = self._lead()
-        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, Ana! Obrigado pela resposta, fico à disposição. — Matheus"}])
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Oi, Ana! Obrigado pela resposta, fico à disposição.\nMatheus"}])
         ok(r["recusadas"], "resposta só para quem escreveu")
         p.mudar_etapa(LOGIN, lid, "descartado", "disse que não tem interesse")
-        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Tranquilo, Ana! Obrigado pelo retorno e sucesso com as marmitas. — Matheus"}])
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Tranquilo, Ana! Obrigado pelo retorno e sucesso com as marmitas.\nMatheus"}])
         ok(r["propostas"], f"agradecer uma vez a quem disse não: {r['recusadas']}")
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "aquecer", "texto": ""}])
         ok(r["recusadas"], "descartado não volta a ser aquecido")
@@ -1513,7 +1523,7 @@ class Suite:
 
     def t_variantes_alternam(self):
         # since the second blind review: the variant is the one the tool says for each lead (stable, half and half),
-        # never the agent's choice — so the A/B comparison is not biased by which profiles get B
+        # never the agent's choice, so the A/B comparison is not biased by which profiles get B
         p = self.p
         vs, esperado = [], []
         for i in range(4):
@@ -1843,12 +1853,12 @@ class Suite:
         # the playbook forbids asking for the recipe; it is checked in code now, not left to the reviewer's mood
         p = self.p
         d = p.carregar(LOGIN)
-        for tipo, texto in (("dm_abertura", "Oi, pessoal! Vi o bolo de pote de vocês, que capricho. Me manda a receita que eu calculo o lucro. — Matheus, da Raiz Connect"),
+        for tipo, texto in (("dm_abertura", "Oi, pessoal! Vi o bolo de pote de vocês, que capricho. Me manda a receita que eu calculo o lucro.\nMatheus, da Raiz Connect"),
                             ("dm_lembrete", "Oi, Ana! O cálculo continua de pé: se mandarem a ficha técnica, faço a conta de graça 🙂")):
             ok("receita" in p.validar_texto(tipo, texto, d, "x"), f"{tipo} pedindo a receita é barrado: {texto[:60]}")
-        eq(p.validar_texto("dm_abertura", "Oi, pessoal! Vi a receita nova de brigadeiro no post, ficou linda. Calculo de graça quanto sobra em cada um. — Matheus, da Raiz Connect", d, "x"),
+        eq(p.validar_texto("dm_abertura", "Oi, pessoal! Vi a receita nova de brigadeiro no post, ficou linda. Calculo de graça quanto sobra em cada um.\nMatheus, da Raiz Connect", d, "x"),
            "", "citar a receita do post não é pedir")
-        eq(p.validar_texto("resposta", "Oi, Ana! Pode mandar a receita sim, que eu calculo. — Matheus", d, "x"), "",
+        eq(p.validar_texto("resposta", "Oi, Ana! Pode mandar a receita sim, que eu calculo.\nMatheus", d, "x"), "",
            "na resposta a quem ofereceu, quem julga é o revisor")
 
     def t_deixa_comigo_para_a_automacao(self):
@@ -1892,7 +1902,7 @@ class Suite:
         d = p.carregar(LOGIN)
         p._lead(d, lid)["etapa"] = "aquecido"
         p.salvar(LOGIN, d)
-        texto = "Oi, pessoal da Ana! Vi a marmita de frango de vocês. Fiz uma calculadora grátis que mostra quanto sobra em cada uma. — Matheus, da Raiz Connect"
+        texto = "Oi, pessoal da Ana! Vi a marmita de frango de vocês. Fiz uma calculadora grátis que mostra quanto sobra em cada uma.\nMatheus, da Raiz Connect"
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_abertura", "texto": texto, "variante": "A"}])
         ok(not r["propostas"] and "fixada" in r["recusadas"][0]["motivo"], f"a variante errada é recusada: {r['recusadas']}")
         r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "dm_abertura", "texto": texto}])
@@ -1934,7 +1944,7 @@ class Suite:
         eq(m["por_variante"]["B"]["taxa_resposta"], 100.0, "B: 100%")
 
     def t_cartao_lead(self):
-        """12/10 review §7 item 3: the hot lead's one-page card — both sides of the conversation, in order."""
+        """12/10 review §7 item 3: the hot lead's one-page card, both sides of the conversation, in order."""
         p = self.p
         self.em(self.hora(10))
         lid = self._aquecido("cartao1")
@@ -2301,7 +2311,7 @@ class Suite:
         p.revisor = None
 
     def t_scripts_com_a_conta_desligados(self):
-        """Blind reviews 2 and 3: searches and profile reads by script use the brand's own logged-in account — off unless
+        """Blind reviews 2 and 3: searches and profile reads by script use the brand's own logged-in account, off unless
         the person turns them on."""
         p = self.p
         ok(not p.scripts_conta(LOGIN), "desligados por padrão")
