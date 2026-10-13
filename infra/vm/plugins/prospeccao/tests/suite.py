@@ -1799,6 +1799,16 @@ class Suite:
             r = p.conferencia_livro(LOGIN, [{"tipo": "aquecer", "executada_em": antes},
                                             {"tipo": "dm_abertura", "executada_em": depois}], [])
             ok(r.startswith("📒 Conferido no livro: 1 mensagens"), f"o que saiu antes do livro existir não conta: {r}")
+            # 13/10: the day's first action is recorded a moment AFTER it ran; and comments made inside a visit count
+            ontem, agora_ = p.agora() - 86400 * 2, p.agora()
+            p.LIVRO_MODULO = Livro([{**base, "verbo": "dm", "em": ontem},
+                                    {**base, "verbo": "dm", "em": agora_ - 600}, {**base, "verbo": "dm", "em": agora_ - 300},
+                                    {**base, "verbo": "comentario", "em": agora_ - 200}])
+            dms = [{"tipo": "dm_abertura", "executada_em": agora_ - 602}, {"tipo": "dm_abertura", "executada_em": agora_ - 302}]
+            visita = {"tipo": "aquecer", "executada_em": agora_ - 205, "comentario": {"estado": "publicado", "feito_em": agora_ - 202}}
+            p.LIVRO_MODULO.linhas.append({**base, "verbo": "seguir_curtir", "em": agora_ - 204})
+            r = p.conferencia_livro(LOGIN, dms + [visita], [visita])
+            ok(r.startswith("📒 Conferido no livro") and "2 mensagens" in r and "1 comentários" in r, r)
         finally:
             p.LIVRO_MODULO = None
 

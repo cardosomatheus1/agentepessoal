@@ -2674,12 +2674,18 @@ def resumo_hoje(login: str) -> str:
         linhas.append("\n⚠️ *Não saíram:*\n" + "\n".join(itens[:5]))
     if esperando:
         linhas.append(f"\n✋ {len(esperando)} esperando o seu ✅ (o revisor não liberou sozinho)")
-    conferido = conferencia_livro(login, feitas, comentados)
+    # every comment published today, also the ones made inside today's visits (13/10: those were left out, "2 no livro × 0")
+    comentarios_hoje = [a for a in d["acoes"] if (a.get("comentario") or {}).get("estado") == "publicado"
+                        and de_hoje(a["comentario"].get("feito_em"))]
+    conferido = conferencia_livro(login, feitas, comentarios_hoje)
     if conferido:
         linhas.append("\n" + conferido)
     if agora() < d["bloqueio_ate"]:
         linhas.append("\n⛔ Pausado até " + dt.datetime.fromtimestamp(d["bloqueio_ate"], _tz()).strftime("%d/%m %H:%M"))
     return "\n".join(linhas)
+
+
+FOLGA_LIVRO = 120  # seconds between an action and its ledger record
 
 
 def conferencia_livro(login: str, feitas: list, comentados: list) -> str:
@@ -2692,10 +2698,12 @@ def conferencia_livro(login: str, feitas: list, comentados: list) -> str:
             return ""
         meia_noite = dt.datetime.fromtimestamp(agora(), _tz()).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
         linhas = [r for r in livro.do_periodo(login, meia_noite) if r["origem"] == "prospeccao"]
-        todas = livro.do_periodo(login, 0) if not linhas else linhas
+        todas = livro.do_periodo(login, 0)
         if not todas:
             return ""
-        inicio = max(meia_noite, min(r["em"] for r in todas))
+        # the ledger's very first record, not today's first: the record is written a moment after the action, so the
+        # day's first action came out "before the ledger" and was not counted (13/10: "mensagens 2 no livro × 1")
+        inicio = max(meia_noite, min(r["em"] for r in todas) - FOLGA_LIVRO)
     except Exception as exc:  # the ledger never breaks the summary
         print(f"prospeccao: conferência com o livro falhou: {exc}", flush=True)
         return ""
