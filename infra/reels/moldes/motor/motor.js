@@ -146,6 +146,8 @@ const Motor = {
         if (def.final !== false) Motor._final(palco);
       }
       await document.fonts.ready;
+      // fonts used only on later slides or scenes are not loaded yet: load them all before fitting text
+      await Promise.all([...document.fonts].map(f => f.load().catch(() => {})));
       await Promise.all($$('img').map(i => i.complete ? (i.decode ? i.decode().catch(() => {}) : 0) : new Promise(ok => { i.onload = i.onerror = ok; })));
       $$('.rv').forEach(Motor.palavras);
       Motor._caberTudo();
@@ -252,9 +254,15 @@ const Motor = {
   caber(e) {
     const min = +(e.dataset.min || MIN_FONTE[Motor.FORMATO]);
     let fs = parseFloat(getComputedStyle(e).fontSize), guard = 80;
-    const sobra = () => e.scrollHeight > e.clientHeight + 2 || e.scrollWidth > e.clientWidth + 2;
-    const fs0 = fs;
-    while (sobra() && fs > min && guard--) { fs = Math.max(min, fs - 2); e.style.fontSize = fs + 'px'; }
+    const excesso = () => Math.max(e.scrollHeight - e.clientHeight, e.scrollWidth - e.clientWidth);
+    const sobra = () => excesso() > 4;  // a few px of glyph overhang (Anton, italics) is not overflow
+    const fs0 = fs, x0 = excesso();
+    let passos = 0;
+    while (sobra() && fs > min && guard--) {
+      fs = Math.max(min, fs - 2); e.style.fontSize = fs + 'px';
+      // a box that grows with its text never stops overflowing: shrinking does not help, so undo it
+      if (++passos === 6 && excesso() >= x0) { fs = fs0; e.style.fontSize = ''; break; }
+    }
     if (fs < fs0 * 0.5) Motor.avisos.push(`texto encolheu de ${fs0}px para ${fs}px (caixa pequena demais?): ` + (e.id ? '#' + e.id : e.textContent.trim().slice(0, 30)));
   },
   _caberTudo() {
@@ -360,7 +368,7 @@ const Motor = {
     const nome = e => e.id ? '#' + e.id : (e.textContent || e.className).trim().slice(0, 40);
     for (const e of $$('.t')) {
       if (!Motor._visivel(e)) continue;
-      if (e.scrollHeight > e.clientHeight + 2 || e.scrollWidth > e.clientWidth + 2) prob.push('texto não cabe: ' + nome(e));
+      if (e.scrollHeight > e.clientHeight + 4 || e.scrollWidth > e.clientWidth + 4) prob.push('texto não cabe: ' + nome(e));
       const fs = parseFloat(getComputedStyle(e).fontSize); if (fs < (+e.dataset.min || minf) - 0.5) prob.push(`letra pequena (${fs}px): ` + nome(e));
       const r = e.getBoundingClientRect(); if (r.left < -1 || r.top < -1 || r.right > W + 1 || r.bottom > Motor.H + 1) prob.push('texto fora da tela: ' + nome(e));
     }
