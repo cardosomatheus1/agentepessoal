@@ -91,6 +91,12 @@ class Suite:
             ok(u.verificar("Ana ", "certa") is not None, "senha certa entra (login sem diferença de maiúscula/espaço)")
             ok(u.verificar("ana", "errada") is None, "senha errada não entra")
             ok(u.verificar("ninguem", "x") is None, "usuário que não existe não entra")
+            h2 = hashlib.pbkdf2_hmac("sha256", b"do-operador", bytes.fromhex("11" * 16), 1000).hex()
+            u.ARQUIVO.write_text(json.dumps({"usuarios": {"ana": {"nome": "Ana", "salt": sal, "hash": h, "iter": 1000,
+                                 "operador": {"salt": "11" * 16, "hash": h2, "iter": 1000}}}}))
+            ok(u.verificar("ana", "do-operador") is not None and u.verificar("ana", "certa") is not None,
+               "a senha dos scripts do operador entra como o mesmo login, e a da pessoa continua valendo")
+            ok(u.verificar("ana", "errada") is None, "e senha errada continua sem entrar")
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 

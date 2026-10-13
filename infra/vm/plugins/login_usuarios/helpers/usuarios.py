@@ -26,8 +26,15 @@ def verificar(login: str, senha: str) -> dict | None:
     if not u:
         hashlib.pbkdf2_hmac("sha256", b"x", b"y", 310000)  # same cost for unknown users
         return None
-    calc = hashlib.pbkdf2_hmac("sha256", (senha or "").encode(), bytes.fromhex(u["salt"]), int(u.get("iter", 310000)))
-    return u if hmac.compare_digest(calc.hex(), u["hash"]) else None
+    # "operador": a second password for the same login, only for the operator scripts (13/10: the scripts held a
+    # password that no longer matched and Matheus's own is his; this one lives only in SSM and is revoked alone)
+    for cred in (u, u.get("operador") or {}):
+        if not cred.get("hash"):
+            continue
+        calc = hashlib.pbkdf2_hmac("sha256", (senha or "").encode(), bytes.fromhex(cred["salt"]), int(cred.get("iter", 310000)))
+        if hmac.compare_digest(calc.hex(), cred["hash"]):
+            return u
+    return None
 
 
 def nomes() -> list[str]:
