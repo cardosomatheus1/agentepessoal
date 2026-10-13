@@ -112,3 +112,10 @@ def validar(esquema: dict, ficha: dict) -> list[str]:
     if "chamada" in ficha: _texto("chamada", ficha["chamada"], {"max": 32}, erros)
     if "final_extra" in ficha: _texto("final_extra", ficha["final_extra"], {"max": 70}, erros)
     return erros
+
+
+def palavras_novas(agora, vistos) -> int:
+    """Words a viewer must read in a scene: texts on screen not seen earlier in the video (one that was visible
+    before, hidden at the end of the last scene and back again is not new), counting only words with a letter or
+    digit ("·", "|", "+" are not words)."""
+    return sum(1 for x in set(agora) - set(vistos) for w in x.split() if re.search(r"\w", w))

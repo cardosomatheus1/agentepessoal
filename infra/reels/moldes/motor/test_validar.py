@@ -50,5 +50,12 @@ for esq in sorted(RAIZ.glob("*/esquema.json")):
     for f in sorted((esq.parent / "exemplos" / "recusadas").glob("*.json")):
         caso(f"{esq.parent.name}/recusadas/{f.name} é recusada", validar(e, json.loads(f.read_text())) != [])
 
+# reading time: only new texts, only words with a letter or digit
+from validar import palavras_novas  # noqa: E402
+caso("leitura: conta palavras novas", palavras_novas(["Bolo de pote", "R$ 12"], []) == 5)
+caso("leitura: ignora separador", palavras_novas(["Seg · Ter · Qua"], []) == 3)
+caso("leitura: texto já visto não conta", palavras_novas(["Bolo de pote", "Peça já"], ["Bolo de pote"]) == 2)
+caso("leitura: nada novo", palavras_novas(["a"], ["a"]) == 0)
+
 print(f"validar: {ok}/{ok + falhou}")
 sys.exit(1 if falhou else 0)

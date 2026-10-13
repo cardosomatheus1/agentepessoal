@@ -179,6 +179,14 @@
   "mostra": "embalando comida para entrega",
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
  },
+ "embala_delivery.jpg": {
+  "mostra": "marmitas de alumínio com comida sobre papel kraft, prontas para entrega",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "embala_potes.jpg": {
+  "mostra": "potes de plástico com tampa e colherzinhas para bolo de pote, empilhados no estoque da distribuidora",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
  "forno.jpg": {
   "mostra": "forno a lenha com pizza",
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"

@@ -14,7 +14,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "motor"))
-from validar import validar  # noqa: E402
+from validar import palavras_novas, validar  # noqa: E402
 
 FPS = 30
 CACHE_VOZ = Path(os.environ.get("MOLDES_CACHE", Path.home() / ".cache" / "moldes")) / "voz"
@@ -196,11 +196,11 @@ def main():
                     # a scene must last 0.8 s + 0.25 s per word that appeared in it (about 240 words a minute)
                     if not foto and not tempos and i < N - 1:
                         agora = set(pg.evaluate("Motor.textosVisiveis()"))
-                        palavras = sum(len(x.split()) for x in agora - antes)
+                        palavras = palavras_novas(agora, antes)
                         minimo = 0.8 + 0.25 * palavras
                         if S[i + 1] - S[i] < minimo - 0.05:
                             rel["problemas"].append({"cena": i + 1, "t": t, "msg": f"pouco tempo para ler: {palavras} palavras novas em {S[i + 1] - S[i]:.1f} s (mínimo {minimo:.1f} s)"})
-                        antes = agora
+                        antes |= agora
                 if foto:
                     img = saida / f"p{i + 1:02d}.jpg"; pg.screenshot(path=str(img), type="jpeg", quality=80); imgs.append(img)
             rel["duracao"] = info["DUR"]

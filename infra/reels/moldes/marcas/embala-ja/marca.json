@@ -1,0 +1,19 @@
+{
+ "nome": "Embala Já",
+ "perfil": "@embalaja",
+ "cores": [
+  "#c0823f",
+  "#1f3d2e"
+ ],
+ "fonte": "inter",
+ "estilo": "papel",
+ "logo_escuro": "logo_escuro.png",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Peça pelo WhatsApp",
+ "voz": {
+  "id": "Thiago",
+  "motor": "neural"
+ },
+ "ramo": "distribuidora de embalagens para confeitaria e delivery",
+ "_teste": "marca fictícia para testar os moldes que falam com o dono de outro negócio (conta-mudou, custo-escondido)"
+}

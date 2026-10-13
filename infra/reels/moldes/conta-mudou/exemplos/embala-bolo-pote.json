@@ -1,0 +1,38 @@
+{
+ "_marca": "embala-ja",
+ "_formato": "reel",
+ "produto": "bolo de pote",
+ "unidade": "pote",
+ "insumo": "leite condensado",
+ "preco": 12.0,
+ "custo_antes": 4.2,
+ "custo_hoje": 5.1,
+ "quando_antes": "janeiro",
+ "lote": 200,
+ "lote_texto": "Em 200 potes por mês",
+ "virada": "Dá pra cortar na embalagem.",
+ "virada_destaque": "Atacado.",
+ "filmagem": "fotos/doce_bolo_pote.jpg",
+ "falas": [
+  "O leite condensado subiu.",
+  "E o seu bolo de pote ainda sai a doze reais?",
+  "Em janeiro, cada pote custava quatro e vinte pra fazer.",
+  "Hoje custa cinco e dez.",
+  "O lucro por pote caiu de sete e oitenta pra seis e noventa.",
+  "Em duzentos potes por mês, são cento e oitenta reais a menos.",
+  "Dá pra cortar na embalagem. Atacado.",
+  "Na Embala Já, o kit pote, tampa e colher sai mais barato no atacado.",
+  "Peça pelo WhatsApp."
+ ],
+ "oferta": {
+  "foto": "fotos/embala_potes.jpg",
+  "nome": "Kit pote, tampa e colher",
+  "detalhe": "Preço de atacado a partir de 100 kits",
+  "convite": "para confeitarias"
+ },
+ "_origem": {
+  "preco": "dono",
+  "custo_antes": "dono",
+  "custo_hoje": "dono"
+ }
+}

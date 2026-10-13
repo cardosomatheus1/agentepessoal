@@ -1,0 +1,52 @@
+{
+ "_marca": "embala-ja",
+ "_formato": "reel",
+ "produto": "marmita",
+ "preco": 22,
+ "visivel_nome": "comida",
+ "custo_visivel": 11,
+ "escondidos": [
+  {
+   "nome": "Taxa do app",
+   "valor": 5.5,
+   "em_media": true
+  },
+  {
+   "nome": "Embalagem e tampa",
+   "valor": 1.8
+  },
+  {
+   "nome": "Gás e luz",
+   "valor": 1.2,
+   "em_media": true
+  },
+  {
+   "nome": "Sacola e talher",
+   "valor": 0.9
+  }
+ ],
+ "filmagem": "fotos/cantina_marmita.jpg",
+ "falas": [
+  "Marmita a vinte e dois reais. Quanto fica pra você?",
+  "Comida: onze reais. Essa todo mundo lembra.",
+  "Mas tem o que quase ninguém coloca na conta.",
+  "A taxa do app: uns cinco e cinquenta, em média.",
+  "Embalagem e tampa: um e oitenta.",
+  "Gás e luz: um e vinte, em média.",
+  "Sacola e talher: noventa centavos.",
+  "São nove e quarenta escondidos em cada marmita.",
+  "Na Embala Já, o kit delivery sai no atacado e a embalagem pesa menos na conta.",
+  "Peça pelo WhatsApp."
+ ],
+ "_origem": {
+  "preco": "dono",
+  "custo_visivel": "dono",
+  "escondidos": "dono"
+ },
+ "oferta": {
+  "foto": "fotos/embala_delivery.jpg",
+  "nome": "Kit delivery no atacado",
+  "detalhe": "Marmita, tampa, sacola e talher",
+  "convite": "para restaurantes"
+ }
+}
