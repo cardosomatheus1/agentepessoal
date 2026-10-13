@@ -77,5 +77,6 @@
    "max": 40,
    "obrigatorio": false
   }
- }
+ },
+ "publico": "cliente_final"
 }

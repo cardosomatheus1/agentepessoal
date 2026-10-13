@@ -46,7 +46,8 @@
   },
   "foto": {
    "tipo": "foto",
-   "obrigatorio": false
+   "obrigatorio": false,
+   "dica": "foto real do produto do marco ou do lugar (o bolo entregue, a fachada)"
   },
   "falas": {
    "tipo": "lista",
@@ -64,5 +65,6 @@
    "max": 40,
    "obrigatorio": false
   }
- }
+ },
+ "publico": "cliente_final"
 }

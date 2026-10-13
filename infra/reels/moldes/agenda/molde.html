@@ -29,7 +29,9 @@
 #contaT{font-size:46px;font-weight:800;height:60px;white-space:nowrap}
 /* scene 2: the free slots come forward */
 #c2T{left:80px;right:80px;top:390px;height:150px;font-size:136px;line-height:1.05;white-space:nowrap}
-#c2S{left:80px;right:80px;top:552px;height:56px;font-size:42px;font-weight:700;white-space:nowrap}
+#fotoS{position:absolute;left:80px;right:80px;top:390px;height:300px;border-radius:36px;overflow:hidden;box-shadow:var(--sombra)}
+#fotoS img{width:100%;height:100%;object-fit:cover}
+body.e-pop #fotoS{border:6px solid var(--texto)}
 #lista{position:absolute;left:80px;right:80px;top:650px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
 .vg{height:150px;border-radius:30px;background:var(--destaque);color:var(--sobre-destaque);display:flex;flex-direction:column;justify-content:center;padding:0 30px;box-shadow:var(--sombra)}
 body.e-pop .vg{border:5px solid var(--texto);box-shadow:10px 10px 0 var(--texto)}
@@ -49,7 +51,7 @@ body.e-noite .vg{box-shadow:0 0 34px color-mix(in srgb,var(--destaque) 60%,trans
 </div></div>
 <div class="cena" id="c2"><div class="cam full">
  <div class="ctr tit t seg rv" id="c2T"></div>
- <div class="ctr t t2 seg" id="c2S"></div>
+ <div id="fotoS"><img alt=""></div>
  <div id="lista"></div>
  <div id="cta"><span id="ctaIc"></span><div class="t seg rv" id="ctaT"></div></div>
 </div></div>
@@ -68,6 +70,22 @@ const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')
 const ddmm = s => s.slice(8, 10) + '/' + s.slice(5, 7);
 const hh = h => h.endsWith(':00') ? String(+h.slice(0, 2)) + 'h' : String(+h.slice(0, 2)) + 'h' + h.slice(3);
 let D = {};
+// reading time (engine check, AR Board 13/10): without narration a scene lasts at least 0.8 s + 0.25 s per new word.
+// The template measures what each scene really shows at its end and stretches the scene when it needs more time.
+function tempoDeLer($m, F, base) {
+  if (window.TEMPOS && window.TEMPOS.length > 1) return base;
+  let d = base.slice();
+  for (let it = 0; it < 5; it++) {
+    const S = [0]; d.forEach(x => S.push(+(S[S.length - 1] + x).toFixed(3))); S.push(S[S.length - 1] + 3);
+    $m.S = S; $m.N = S.length - 1;
+    let antes = new Set(), mudou = false;
+    d = d.map((x, i) => { $m.def.quadro(Math.max(S[i], S[i + 1] - 0.08), F, $m);
+      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').length; }); antes = agora;
+      const min = +(1.0 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
+    if (!mudou) break;
+  }
+  return d;
+}
 Motor.molde({
   id: 'agenda', formatos: ['story'],
   montar(F, M, $m) {
@@ -127,14 +145,14 @@ Motor.molde({
     // scene 2
     const fem = un[0].startsWith('data');
     $('#c2T').textContent = fem ? 'Garanta a sua' : 'Garanta o seu';
-    $('#c2S').textContent = nl === 1 ? (fem ? 'só sobrou esta data' : 'só sobrou este horário') : `${nl} ${un[1]}, ${fem ? 'confirmadas' : 'confirmados'} hoje`;
-    const mostra = livres.slice(0, nl > 8 ? 7 : 8);
+    if (F.foto) $('#fotoS img').src = $m.midia(F.foto); else $('#fotoS').remove();
+    const mostra = livres.slice(0, nl > 6 ? 5 : 6);
     mostra.forEach(h => { const v = document.createElement('div'); v.className = 'vg';
       v.innerHTML = '<div class="a t"></div><div class="b tit t seg"></div>';
-      const d = dt(h.data); v.querySelector('.a').textContent = `${DIAS[d.getDay()]}, ${ddmm(h.data)}`;
-      v.querySelector('.b').textContent = h.hora ? hh(h.hora) : String(d.getDate()) + ' de ' + MESES[d.getMonth()].slice(0, 3);
+      const d = dt(h.data); v.querySelector('.a').textContent = h.hora ? `${DIAS[d.getDay()].slice(0, 3)} ${ddmm(h.data)}` : DIAS[d.getDay()];
+      v.querySelector('.b').textContent = h.hora ? hh(h.hora) : ddmm(h.data);
       $('#lista').appendChild(v); });
-    if (nl > 8) { const v = document.createElement('div'); v.className = 'vg mais'; v.innerHTML = '<div class="b tit t seg"></div>'; v.querySelector('.b').textContent = '+' + (nl - 7); $('#lista').appendChild(v); }
+    if (nl > 6) { const v = document.createElement('div'); v.className = 'vg mais'; v.innerHTML = '<div class="b tit t seg"></div>'; v.querySelector('.b').textContent = '+' + (nl - 5); $('#lista').appendChild(v); }
     if (mostra.length === 1) $('#lista').style.gridTemplateColumns = '1fr';
     const linhas = Math.ceil($('#lista').children.length / 2);
     if (linhas <= 2) document.querySelectorAll('.vg').forEach(v => { v.style.height = '190px'; });
@@ -151,9 +169,11 @@ Motor.molde({
     let y = 370 + (1190 - (200 + D.calH + 24 + 110)) / 2;
     $('#cabT').style.top = y + 'px'; $('#cabS').style.top = (y + 108) + 'px'; $('#cal').style.top = (y + 200) + 'px'; $('#conta').style.top = (y + 200 + D.calH + 24) + 'px';
     const nv = $('#lista').children.length, lh = Math.ceil(nv / 2) * (parseInt($('.vg').style.height) || 150) + (Math.ceil(nv / 2) - 1) * 24;
-    y = 370 + (1190 - (262 + lh + 44 + 190)) / 2;
-    $('#c2T').style.top = y + 'px'; $('#c2S').style.top = (y + 162) + 'px'; $('#lista').style.top = (y + 262) + 'px'; $('#cta').style.top = (y + 262 + lh + 44) + 'px';
-    return { duracoes: [2.2, 3.4, 3.4] };
+    const fh = F.foto ? (lh > 400 ? 230 : 300) + 30 : 0; if (F.foto) $('#fotoS').style.height = (fh - 30) + 'px';
+    y = 370 + (1190 - (fh + 180 + lh + 44 + 190)) / 2;
+    if ($('#fotoS')) $('#fotoS').style.top = y + 'px';
+    $('#c2T').style.top = (y + fh) + 'px'; $('#lista').style.top = (y + fh + 180) + 'px'; $('#cta').style.top = (y + fh + 180 + lh + 44) + 'px';
+    return { duracoes: tempoDeLer($m, F, [2.2, 2.6, 3.0]) };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, el, cl, ini } = $m;
@@ -189,7 +209,7 @@ Motor.molde({
     $m.conta('#contaN', t, a1 + 1.7, 0.8, D.nl);
     // scene 2: free slots forward
     const a2 = ini(2); $m.cena('#c2', t, 2);
-    $m.revela('#c2T', t, a2 + 0.1); $m.entra('#c2S', t, a2 + 0.5, 0.5, 20);
+    $m.revela('#c2T', t, a2 + 0.25); if ($('#fotoS')) { const fq = eo5(p(t, a2 + 0.05, 0.6)); $('#fotoS').style.opacity = fq; $('#fotoS').style.transform = `scale(${0.9 + 0.1 * fq})`; $m.filmagem($('#fotoS img'), F.foto, t - a2); }
     $$('#lista .vg').forEach((v, i) => { const q = eb(p(t, a2 + 0.35 + i * 0.12, 0.55)); v.style.opacity = cl(q * 2); v.style.transform = `translateY(${(1 - q) * 160}px) rotate(${(1 - q) * (i % 2 ? 6 : -6)}deg)`; });
     const cq2 = eo5(p(t, a2 + 1.1, 0.6)); $('#cta').style.opacity = cq2; $('#cta').style.transform = `translateY(${(1 - cq2) * 80}px)`;
     $m.revela('#ctaT', t, a2 + 1.3, 0.05);

@@ -125,23 +125,23 @@
  },
  "doce_bolo_morango.jpg": {
   "mostra": "bolo de morango inteiro",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_bolo_pote.jpg": {
   "mostra": "bolo de pote",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_brigadeiros_caixa.jpg": {
   "mostra": "caixa de brigadeiros gourmet",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_decorando.jpg": {
   "mostra": "confeiteira decorando bolo",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_entrega_caixa.jpg": {
   "mostra": "encomenda de bolo na caixa",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_kit_festa.jpg": {
   "mostra": "kit festa: bolo e docinhos",
@@ -149,31 +149,31 @@
  },
  "doce_massa.jpg": {
   "mostra": "creme rosa sendo batido na tigela para a cobertura do bolo",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_montando_morango.jpg": {
   "mostra": "confeiteira montando bolo de morango, pondo morangos entre camadas de chantilly",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_morangos_bancada.jpg": {
   "mostra": "morangos frescos e ingredientes de bolo na bancada",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_ovo_pascoa.jpg": {
   "mostra": "ovo de páscoa artesanal",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_pao_de_mel.jpg": {
   "mostra": "pão de mel",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_torta_limao.jpg": {
   "mostra": "torta de limão",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_vitrine.jpg": {
   "mostra": "vitrine de doces",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "embala.jpg": {
   "mostra": "embalando comida para entrega",
@@ -217,7 +217,7 @@
  },
  "oficina_alinhamento.jpg": {
   "mostra": "alinhamento e balanceamento",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "oficina_antes.jpg": {
   "mostra": "roda de carro suja (antes)",
@@ -233,7 +233,7 @@
  },
  "oficina_entrega_chave.jpg": {
   "mostra": "mecânico entregando a chave do carro pronto ao cliente",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "oficina_fachada.jpg": {
   "mostra": "fachada da oficina",

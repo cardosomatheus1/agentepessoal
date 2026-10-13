@@ -68,6 +68,16 @@ with tempfile.TemporaryDirectory() as d, mock.patch.object(G, "FOTOS", Path(d)):
     idx = json.loads((Path(d) / "indice.json").read_text())
     caso("paralelo não perde registro", all(f"teste_p{i}.jpg" in idx for i in range(8)))
 
+    # and from separate processes (several builders or batches at once)
+    import subprocess
+    cod = ("import sys,json,base64,io;sys.path.insert(0,%r);import gerar_foto as G;from pathlib import Path;from PIL import Image;"
+           "G.FOTOS=Path(%r);b=io.BytesIO();Image.new('RGB',(64,64)).save(b,'PNG');"
+           "G._openai=lambda p,r:b.getvalue();[G.gerar(f'teste_q{sys.argv[1]}_{j}','q','x') for j in range(5)]") % (str(Path(G.__file__).parent), d)
+    ps = [subprocess.Popen([sys.executable, "-c", cod, str(i)]) for i in range(6)]
+    caso("processos terminam", all(p.wait() == 0 for p in ps))
+    idx = json.loads((Path(d) / "indice.json").read_text())
+    caso("processos não perdem registro", all(f"teste_q{i}_{j}.jpg" in idx for i in range(6) for j in range(5)))
+
 for args, nome in ((("n", "m", "p", "3:2"), "proporção desconhecida"), (("n", "m", "p", "1:1", 11, None, "gemini"), "fonte desconhecida")):
     try: G.gerar(*args); caso(nome, False)
     except ValueError: caso(nome, True)

@@ -140,9 +140,20 @@ const FORMAS = {
   neve: c => `<g stroke="${c}" stroke-width="2.2" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7"/></g>`,
   brilho: c => `<path d="M12 1l2.2 8.8L23 12l-8.8 2.2L12 23l-2.2-8.8L1 12l8.8-2.2z" fill="${c}"/>`,
 };
+// the date has to make sense for the business (AR Board 13/10: "Viagem de fim de ano numa oficina não pegou"):
+// dates that fit each kind of business, matched on the brand's "ramo"; an unknown ramo is not checked
+const RAMOS = [
+  [/doce|confeit|bolo|padar|hamburg|burger|lanch|pizz|comida|cantina|restaur|marmit|aça|salgad|caf/i, ['maes', 'pais', 'namorados', 'pascoa', 'carnaval', 'mulher', 'consumidor', 'sao-joao', 'avos', 'cliente', 'criancas', 'professores', 'black-friday', 'natal', 'ano-novo']],
+  [/sal[aã]o|beleza|est[eé]tica|cabel|unha|barbe/i, ['maes', 'pais', 'namorados', 'carnaval', 'mulher', 'consumidor', 'cliente', 'black-friday', 'natal', 'ano-novo']],
+  [/ateli|costur|roupa|moda|loja/i, ['maes', 'pais', 'namorados', 'carnaval', 'mulher', 'consumidor', 'sao-joao', 'cliente', 'criancas', 'black-friday', 'natal', 'ano-novo']],
+  [/oficina|mec[aâ]nic|carro|auto/i, ['pais', 'consumidor', 'cliente', 'black-friday']],
+  [/software|sistema|erp|aplicativo/i, ['consumidor', 'cliente', 'black-friday']],
+];
+function combina(ramo, data) { const r = RAMOS.find(([re]) => re.test(ramo || '')); return !r || r[1].includes(data); }
 let D = {};
 function calcular(F, $m) {
   const hoje = F._hoje || iso(new Date()), E = DATAS[F.data];
+  if (!combina(($m.M || {}).ramo, F.data)) $m.erro(`${E.nome} não combina com o ramo (${$m.M.ramo}): escolha uma data que faça sentido para quem compra deste negócio`);
   let y = +hoje.slice(0, 4), q = E.quando(y); if (iso(q) < hoje) q = E.quando(++y);
   const quando = iso(q);
   if (F.prazo < hoje) $m.erro(`prazo de encomenda vencido (${ddmm(F.prazo)}): o post não sai depois dele`);
@@ -173,6 +184,22 @@ function motivos(cont, mot, n, W, H, $m, foraDe) {
     h += `<svg viewBox="0 0 24 24" data-i="${i}" data-x="${x}" data-y="${y}" width="${s}" height="${s}" style="opacity:${0.35 + $m.rnd(i) * 0.5}">${FORMAS[mot](cores[i % 3])}</svg>`; }
   cont.innerHTML = h;
 }
+// reading time (engine check, AR Board 13/10): without narration a scene lasts at least 0.8 s + 0.25 s per new word.
+// The template measures what each scene really shows at its end and stretches the scene when it needs more time.
+function tempoDeLer($m, F, base) {
+  if (window.TEMPOS && window.TEMPOS.length > 1) return base;
+  let d = base.slice();
+  for (let it = 0; it < 5; it++) {
+    const S = [0]; d.forEach(x => S.push(+(S[S.length - 1] + x).toFixed(3))); S.push(S[S.length - 1] + 3);
+    $m.S = S; $m.N = S.length - 1;
+    let antes = new Set(), mudou = false;
+    d = d.map((x, i) => { $m.def.quadro(Math.max(S[i], S[i + 1] - 0.08), F, $m);
+      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').length; }); antes = agora;
+      const min = +(1.0 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
+    if (!mudou) break;
+  }
+  return d;
+}
 Motor.molde({
   id: 'data-especial', formatos: ['reel', 'story', 'carrossel'],
   montar(F, M, $m) {
@@ -182,21 +209,19 @@ Motor.molde({
     $m.filmagem($('#bg'), F.fundo || F.itens[0].foto, 0);
     $('#emb').innerHTML = $m.icone(C.E.ic); $('#tema').textContent = F.titulo || C.E.nome;
     const q = dt(C.quando); $('#quandoT').textContent = `${DIAS[q.getDay()]}, ${q.getDate()} de ${MESES[q.getMonth()]}`;
-    $('#c1T').textContent = F.subtitulo || 'Pra encomendar'; $('#c1S').textContent = 'feitos sob encomenda para a data';
-    if (F.descricao) $('#c1S').textContent = F.descricao;
+    $('#c1T').textContent = F.subtitulo || 'Pra encomendar'; $('#c1S').textContent = F.descricao || '';
     const n = F.itens.length, larg = reel ? 790 : 900, gap = 20, w = Math.floor((larg - gap * (n - 1)) / n), x0 = reel ? 90 : 90;
     F.itens.forEach((it, k) => { const c = cartaoItem(it, $m, w, n === 3 ? Math.round(w * 1.42) : Math.round(w * 1.12)); c.style.left = (x0 + k * (w + gap)) + 'px'; c.dataset.k = k; c.dataset.r = (k - (n - 1) / 2) * (n === 3 ? 4 : 3); $('#gcs').appendChild(c); });
     // calendar pages from today to the deadline (at most 8, evenly spaced)
     const tot = C.falta, np = Math.min(tot, 7), pags = [];
     for (let i = 0; i <= np; i++) { const d = dt(C.hoje); d.setDate(d.getDate() + Math.round(tot * i / Math.max(1, np))); pags.push(iso(d)); }
     D.pags = pags.reverse(); D.pags.forEach((s, i) => { const f = folha(s); f.dataset.i = i; f.style.zIndex = 10 + i; $('#fls').appendChild(f); });
-    $('#c2T').textContent = 'Encomendas até';
+    $('#c2T').textContent = F.prazo_titulo || 'Encomendas até';
     $('#falta').textContent = faltaTxt(C.falta);
-    $('#falta2').textContent = `para garantir o seu no ${C.E.nome}`.replace('no Páscoa', 'na Páscoa').replace('no Black', 'na Black');
     $('#pIc').innerHTML = $m.icone(F.icone || 'chat'); $('#pTx').textContent = F.como_pedir; $('#pAteT').textContent = 'pedidos ' + ateTxt(F.prazo);
     $('#nota').textContent = F.nota || '';
     if (reel) $$('#tema,#c1T,#c1S,#pTx').forEach(e => { e.style.right = '170px'; });
-    return { duracoes: [2.6, 3.3, 3.3, 2.4] };
+    return { duracoes: tempoDeLer($m, F, [2.6, 3.3, 3.3, 2.4]) };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, el, cl, ini, fim, rnd } = $m;
@@ -246,7 +271,7 @@ Motor.molde({
     const n = F.itens.length, w = n === 3 ? 290 : 420;
     F.itens.forEach((it, k) => { const c = cartaoItem(it, $m, w, n === 3 ? 380 : 480); c.style.transform = `rotate(${(k - (n - 1) / 2) * 3}deg)`; s2.querySelector('.row').appendChild(c); });
     const s3 = add('', '<div class="ctt tt2 t t2 seg"></div><div class="bl2"></div><div class="ctt fa tit t dest seg"></div><div class="ctt cp t seg"></div>');
-    s3.querySelector('.tt2').textContent = 'Encomendas até'; const f = folha(F.prazo); f.style.transform = 'rotate(-3deg)'; s3.querySelector('.bl2').appendChild(f);
+    s3.querySelector('.tt2').textContent = F.prazo_titulo || 'Encomendas até'; const f = folha(F.prazo); f.style.transform = 'rotate(-3deg)'; s3.querySelector('.bl2').appendChild(f);
     f.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 560 620" style="position:absolute;inset:-20px;width:540px;height:600px;overflow:visible"><path d="M 120 300 C 110 200, 230 150, 320 170 C 440 195, 470 320, 420 410 C 370 490, 200 500, 140 430 C 100 385, 110 330, 150 290" fill="none" stroke="var(--ruim)" stroke-width="12" stroke-linecap="round"/></svg>');
     s3.querySelector('.fa').textContent = faltaTxt(C.falta); s3.querySelector('.cp').textContent = F.como_pedir;
   },

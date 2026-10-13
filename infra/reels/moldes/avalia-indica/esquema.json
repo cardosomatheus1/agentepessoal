@@ -25,6 +25,11 @@
    "real": true,
    "dica": "o prêmio de verdade, confirmado pelo dono: um brigadeiro na próxima compra; 10% para você e para ela"
   },
+  "foto": {
+   "tipo": "foto",
+   "obrigatorio": false,
+   "dica": "foto real do prêmio (o brigadeiro, a batata) ou do serviço do desconto; sai de dentro do presente"
+  },
   "regra": {
    "tipo": "texto",
    "max": 60,
@@ -70,5 +75,6 @@
    "max": 40,
    "obrigatorio": false
   }
- }
+ },
+ "publico": "cliente_final"
 }

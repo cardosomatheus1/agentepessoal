@@ -24,6 +24,12 @@ body.f-reel .mv{left:-40px}
 #gk{left:110px;right:110px;top:390px;height:64px;font-size:48px;font-weight:800;white-space:nowrap}
 #gb{left:90px;right:90px;top:462px;height:250px;font-size:112px;line-height:1.02}
 #raios{position:absolute;left:240px;top:640px;width:600px;height:600px;border-radius:50%;background:repeating-conic-gradient(color-mix(in srgb,var(--destaque) 30%,transparent) 0 10deg,transparent 10deg 20deg);-webkit-mask-image:radial-gradient(circle,#000 20%,transparent 70%);mask-image:radial-gradient(circle,#000 20%,transparent 70%);opacity:0}
+#premio{position:absolute;left:375px;top:880px;width:330px;height:330px;border-radius:50%;overflow:hidden;border:10px solid var(--cartao);box-shadow:var(--sombra);opacity:0}
+#premio img{width:100%;height:100%;object-fit:cover}
+/* with the reward photo the box sits lower so the photo rises between the reward text and the box */
+body.com-premio #premio{left:400px;top:1010px;width:280px;height:280px}
+body.com-premio #caixa{top:1010px}body.com-premio #tampa{top:930px}body.com-premio #raios{top:700px}
+body.com-premio #regra{top:1330px;height:116px}body.com-premio #notas{top:1450px;font-size:56px}
 #caixa{position:absolute;left:330px;top:900px;width:420px;height:290px}
 #caixa .cp{position:absolute;inset:0;border-radius:18px;background:var(--destaque);box-shadow:var(--sombra)}
 #caixa .fi{position:absolute;left:175px;top:0;width:70px;height:100%;background:var(--sobre-destaque);opacity:.9}
@@ -73,6 +79,7 @@ body.f-reel #cup{width:800px}body.f-reel #cup .a{width:580px}body.f-reel #cup .b
  <div class="ctr t t2 seg" id="gk"></div>
  <div class="ctr tit t seg" id="gb"></div>
  <div id="raios"></div>
+ <div id="premio"><img alt=""></div>
  <div id="caixa"><div class="cp"></div><div class="fi"></div></div>
  <div id="tampa"><div class="la"></div><div class="lb"></div><div class="cp"></div><div class="fi"></div></div>
  <div class="ctr t seg rv" id="regra"></div>
@@ -97,6 +104,22 @@ body.f-reel #cup{width:800px}body.f-reel #cup .a{width:580px}body.f-reel #cup .b
 // the reward, three cards deal the steps, a coupon with the real link (or code) is cut along its perforation.
 let D = {};
 const QUALQUER = 'Vale para qualquer nota, boa ou ruim.';
+// reading time (engine check, AR Board 13/10): without narration a scene lasts at least 0.8 s + 0.25 s per new word.
+// The template measures what each scene really shows at its end and stretches the scene when it needs more time.
+function tempoDeLer($m, F, base) {
+  if (window.TEMPOS && window.TEMPOS.length > 1) return base;
+  let d = base.slice();
+  for (let it = 0; it < 5; it++) {
+    const S = [0]; d.forEach(x => S.push(+(S[S.length - 1] + x).toFixed(3))); S.push(S[S.length - 1] + 3);
+    $m.S = S; $m.N = S.length - 1;
+    let antes = new Set(), mudou = false;
+    d = d.map((x, i) => { $m.def.quadro(Math.max(S[i], S[i + 1] - 0.08), F, $m);
+      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').length; }); antes = agora;
+      const min = +(1.0 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
+    if (!mudou) break;
+  }
+  return d;
+}
 Motor.molde({
   id: 'avalia-indica', formatos: ['story', 'reel'],
   montar(F, M, $m) {
@@ -123,10 +146,11 @@ Motor.molde({
     $('#cVt').textContent = av ? 'qualquer nota vale o prêmio' : (F.validade || 'prêmio garantido pela loja');
     if (F.validade && av) $('#cVt').textContent = F.validade;
     $('#cup .b').innerHTML = $m.icone('presente'); $('#tes').innerHTML = $m.icone('tesoura');
-    $('#qn').textContent = av ? QUALQUER : '';
+    $('#qn').remove();
+    if (F.foto) { $('#premio img').src = $m.midia(F.foto); document.body.classList.add('com-premio'); } else $('#premio').remove();
     $('#nota').textContent = F.nota || '';
     if (D.reel) { $$('.ctr').forEach(e => { e.style.right = '170px'; e.style.left = '130px'; }); }
-    return { duracoes: [1.9, 2.5, 2.5, 2.1] };
+    return { duracoes: tempoDeLer($m, F, [1.9, 2.5, 2.5, 2.1]) };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, el, cl, ini } = $m;
@@ -149,6 +173,7 @@ Motor.molde({
     $('#tampa').style.transform = `translateY(${(1 - bq) * 300 - lq * 160 + lq * lq * 120}px) translateX(${lq * 760}px) rotate(${shk + lq * 75}deg)`;
     $('#caixa').style.rotate = shk * 0.5 + 'deg';
     const rq = eo(p(t, a1 + 0.62, 0.5)); $('#raios').style.opacity = rq * 0.9; $('#raios').style.transform = `scale(${0.4 + 0.8 * rq}) rotate(${(t - a1) * 25}deg)`;
+    if ($('#premio')) { const pq = eb(p(t, a1 + 0.65, 0.7)); $('#premio').style.opacity = cl(pq * 3); $('#premio').style.transform = `translateY(${-pq * 290}px) scale(${0.5 + 0.5 * pq})`; $m.filmagem($('#premio img'), F.foto, t - a1); }
     $m.entra('#gk', t, a1 + 0.75, 0.4, 30);
     const g = eb(p(t, a1 + 0.7, 0.55)); $('#gb').style.opacity = cl(g * 2); $('#gb').style.transform = `translateY(${(1 - g) * 380}px) scale(${0.4 + 0.6 * g})`;
     $m.revela('#regra', t, a1 + 0.95, 0.035);
@@ -165,8 +190,7 @@ Motor.molde({
     $('#tes').style.opacity = tq > 0 && tq < 1 ? 1 : 0; $('#tes').style.top = (cupT - 70 + tq * (cupH + 40)) + 'px';
     $('#tes').style.transform = `rotate(90deg) rotate(${Math.sin(t * 30) * 12}deg)`;
     const sp = eo(p(t, a3 + 1.45, 0.5)); $('#cup .b').style.transform = `translate(${sp * 30}px, ${sp * 16}px) rotate(${sp * 7}deg)`;
-    $m.entra('#qn', t, a3 + 1.1, 0.4, 20);
-    $('#nota').style.opacity = t < $m.fim(3) ? 1 : 0;
+        $('#nota').style.opacity = t < $m.fim(3) ? 1 : 0;
   },
 });
 </script></body></html>

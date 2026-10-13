@@ -26,7 +26,7 @@
     "natal",
     "ano-novo"
    ],
-   "dica": "a data do ano; o dia é calculado pelo molde (até 90 dias antes)"
+   "dica": "a data do ano; o dia é calculado pelo molde (até 90 dias antes). Tem de combinar com o ramo do negócio (Páscoa na doceria, Dia das Mães no salão, Dia dos Pais na hamburgueria; oficina só Dia dos Pais, Consumidor, Cliente e Black Friday): o molde recusa data que não combina com o ramo da marca"
   },
   "titulo": {
    "tipo": "texto",
@@ -70,6 +70,12 @@
    "real": true,
    "dica": "último dia para encomendar, confirmado pelo dono; o post não sai depois dele"
   },
+  "prazo_titulo": {
+   "tipo": "texto",
+   "max": 20,
+   "obrigatorio": false,
+   "dica": "título do prazo (padrão: Encomendas até; salão: Agende até)"
+  },
   "como_pedir": {
    "tipo": "texto",
    "max": 56
@@ -108,5 +114,11 @@
    "max": 40,
    "obrigatorio": false
   }
- }
+ },
+ "publico": "cliente_final",
+ "regras": [
+  "a data tem de combinar com o ramo do negócio (AR Board 13/10); o molde confere pelo ramo da marca",
+  "prazo real de encomenda; o post não sai depois dele",
+  "cada foto mostra exatamente o produto do item"
+ ]
 }

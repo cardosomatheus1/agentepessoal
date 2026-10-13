@@ -5,60 +5,34 @@
  ],
  "voz": "opcional",
  "musica": "leve",
+ "publico": "cliente_final",
  "campos": {
   "modo": {
    "tipo": "escolha",
    "opcoes": [
     "historia",
     "equipe"
-   ]
+   ],
+   "dica": "história: UMA história (de uma pessoa ou de um produto) com começo, meio e fim. Equipe: quem te atende"
   },
-  "titulo": {
+  "tema": {
    "tipo": "texto",
-   "max": 18,
+   "max": 44,
    "obrigatorio": false,
-   "dica": "modo equipe: padrão Quem te atende"
+   "dica": "título da história: Como nasce o nosso bolo de morango (no modo equipe, padrão Quem te atende)"
   },
-  "dono": {
+  "quem": {
    "tipo": "objeto",
    "obrigatorio": false,
-   "dica": "modo história",
+   "dica": "quem conta a história (história)",
    "campos": {
     "nome": {
      "tipo": "texto",
-     "max": 14,
-     "dica": "como o cliente chama: Lu, Seu Zé"
+     "max": 16
     },
     "funcao": {
      "tipo": "texto",
-     "max": 30
-    },
-    "foto": {
-     "tipo": "foto"
-    }
-   }
-  },
-  "fotos": {
-   "tipo": "lista",
-   "min": 3,
-   "max": 8,
-   "obrigatorio": false,
-   "dica": "modo história: fotos do próprio negócio, em ordem (começo, hoje, amanhã)",
-   "item": {
-    "foto": {
-     "tipo": "foto"
-    },
-    "legenda": {
-     "tipo": "texto",
-     "max": 40,
-     "obrigatorio": false
-    },
-    "ato": {
-     "tipo": "numero",
-     "min": 1,
-     "max": 3,
-     "obrigatorio": false,
-     "dica": "1 começo, 2 hoje, 3 amanhã; sem ele as fotos se dividem em ordem"
+     "max": 26
     }
    }
   },
@@ -67,7 +41,7 @@
    "min": 3,
    "max": 3,
    "obrigatorio": false,
-   "dica": "modo história: 3 frases da entrevista com o dono (começo, hoje, amanhã), com as palavras dele",
+   "dica": "história: começo, meio e fim, cada um com a frase da entrevista com o dono (palavras dele) e as fotos que mostram exatamente aquilo, em sequência",
    "item": {
     "frase": {
      "tipo": "texto",
@@ -75,9 +49,22 @@
      "min": 12,
      "real": true
     },
+    "fotos": {
+     "tipo": "lista",
+     "min": 1,
+     "max": 3,
+     "item": {
+      "tipo": "foto"
+     }
+    },
     "titulo": {
      "tipo": "texto",
-     "max": 14,
+     "max": 18,
+     "obrigatorio": false
+    },
+    "legenda": {
+     "tipo": "texto",
+     "max": 36,
      "obrigatorio": false
     }
    }
@@ -87,7 +74,7 @@
    "min": 2,
    "max": 4,
    "obrigatorio": false,
-   "dica": "modo equipe: quem te atende, com permissão de cada pessoa",
+   "dica": "modo equipe: cada pessoa com foto dela trabalhando, com permissão",
    "item": {
     "foto": {
      "tipo": "foto"
@@ -114,16 +101,58 @@
     }
    }
   },
+  "produto": {
+   "tipo": "objeto",
+   "dica": "onde a história termina: o produto ou serviço, com foto, e a chamada (o post é anúncio)",
+   "campos": {
+    "nome": {
+     "tipo": "texto",
+     "max": 30
+    },
+    "foto": {
+     "tipo": "foto"
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "obrigatorio": false,
+     "dica": "real: precisa de _origem.produto"
+    },
+    "chamada": {
+     "tipo": "texto",
+     "max": 30,
+     "dica": "Encomende pelo link da bio"
+    },
+    "icone": {
+     "tipo": "escolha",
+     "opcoes": [
+      "seta",
+      "link",
+      "chat",
+      "telefone",
+      "calendario",
+      "carrinho",
+      "moto"
+     ],
+     "obrigatorio": false
+    }
+   }
+  },
+  "produto_chamada": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "etiqueta sobre o produto (padrão: o fim da história)"
+  },
   "falas": {
    "tipo": "lista",
-   "min": 4,
-   "max": 6,
+   "min": 5,
+   "max": 7,
    "obrigatorio": false,
    "item": {
     "tipo": "texto",
     "max": 160
    },
-   "dica": "narração opcional. História: 5 (dono, começo, hoje, amanhã, chamada). Equipe: uma por pessoa mais abertura e chamada"
+   "dica": "narração opcional. História: 6 (abertura, começo, meio, fim, produto, chamada). Equipe: uma por pessoa mais 3"
   },
   "nota": {
    "tipo": "texto",

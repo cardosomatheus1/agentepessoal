@@ -25,6 +25,11 @@
    "obrigatorio": false,
    "dica": "Corte, escova e coloração"
   },
+  "foto": {
+   "tipo": "foto",
+   "obrigatorio": false,
+   "dica": "foto real do serviço que está sendo agendado (aparece no 'garanta o seu')"
+  },
   "horarios": {
    "tipo": "lista",
    "min": 2,
@@ -68,5 +73,6 @@
    "max": 40,
    "obrigatorio": false
   }
- }
+ },
+ "publico": "cliente_final"
 }

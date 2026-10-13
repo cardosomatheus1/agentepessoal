@@ -48,6 +48,11 @@
    "dica": "a informação nova em destaque: telefone, rua e número, horário (8h às 14h). Dado do negócio: quando vier, a ficha precisa de _origem.destaque (o molde recusa sem ela)",
    "real_opcional": true
   },
+  "foto": {
+   "tipo": "foto",
+   "obrigatorio": false,
+   "dica": "foto real do negócio ligada ao aviso: a fachada nova, o produto em falta, a equipe na vaga"
+  },
   "volta": {
    "tipo": "data",
    "obrigatorio": false,
@@ -83,5 +88,6 @@
    "max": 40,
    "obrigatorio": false
   }
- }
+ },
+ "publico": "cliente_final"
 }

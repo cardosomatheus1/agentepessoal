@@ -12,7 +12,7 @@ Two sources:
 
     gerar_foto.py <nome> "<o que mostra, em português>" "<prompt em inglês>" [--proporcao 1:1|4:5|9:16|16:9] [--fonte openai|aws]
 """
-import argparse, base64, io, json, os, sys, threading, urllib.request
+import argparse, base64, fcntl, io, json, os, sys, threading, urllib.request
 from pathlib import Path
 from PIL import Image
 
@@ -25,7 +25,7 @@ REGRAS_OPENAI = ("Realistic professional photo for the Instagram of a small Braz
                  "hands and faces. No text, letters, numbers, logos, brand names, names or writing anywhere in the image: "
                  "aprons, signs, boxes, cakes and packaging stay plain.")
 # gpt-image-2 sizes; the result is center-cropped to the asked proportion
-_TRAVA = threading.Lock()  # several photos at once (threads) share one index
+_TRAVA = threading.Lock()  # several photos at once share one index: this lock for threads, a file lock for processes
 TAMANHO = {"1:1": "1024x1024", "4:5": "1024x1536", "9:16": "1024x1536", "16:9": "1536x1024"}
 
 
@@ -82,7 +82,8 @@ def gerar(nome, mostra, prompt, proporcao="1:1", semente=11, br=None, fonte="ope
     FOTOS.mkdir(parents=True, exist_ok=True)
     im.save(FOTOS / f"{nome}.jpg", quality=86)
     idx_p = FOTOS / "indice.json"
-    with _TRAVA:
+    with _TRAVA, open(FOTOS / ".indice.trava", "w") as trava:
+        fcntl.flock(trava, fcntl.LOCK_EX)
         idx = json.loads(idx_p.read_text()) if idx_p.exists() else {}
         idx[f"{nome}.jpg"] = {"mostra": mostra, "origem": f"gerada ({FONTES[fonte][0]})"}
         tmp = idx_p.with_suffix(".tmp")
