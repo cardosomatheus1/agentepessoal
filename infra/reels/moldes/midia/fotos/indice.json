@@ -93,7 +93,7 @@
  },
  "cantina_marmita.jpg": {
   "mostra": "marmita caseira",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "cantina_marmita_lasanha.jpg": {
   "mostra": "marmita com lasanha caseira, pronta para entrega",
@@ -101,7 +101,7 @@
  },
  "cantina_montando_lasanha.jpg": {
   "mostra": "lasanha sendo montada em camadas, com molho de tomate, massa e queijo",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "cantina_pizza.jpg": {
   "mostra": "pizza de forno a lenha",
@@ -117,7 +117,7 @@
  },
  "doce_assando.jpg": {
   "mostra": "bolo assando no forno",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "doce_bolo_congelado.jpg": {
   "mostra": "bolo de chocolate sobre plástico filme, pronto para embalar e congelar",
@@ -225,7 +225,7 @@
  },
  "oficina_ar.jpg": {
   "mostra": "ar-condicionado do carro",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "oficina_depois.jpg": {
   "mostra": "roda de carro limpa e polida (depois)",
@@ -237,19 +237,19 @@
  },
  "oficina_fachada.jpg": {
   "mostra": "fachada da oficina",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "oficina_freio.jpg": {
   "mostra": "pastilhas de freio",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "oficina_frota.jpg": {
   "mostra": "van de entrega de empresa na oficina para revisão",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "oficina_garagem_antiga.jpg": {
   "mostra": "garagem pequena e antiga de oficina mecânica, com um fusca de capô aberto",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "oficina_interior.jpg": {
   "mostra": "interior da oficina com carro no elevador",
@@ -257,15 +257,15 @@
  },
  "oficina_oleo.jpg": {
   "mostra": "troca de óleo",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "oficina_pneu.jpg": {
   "mostra": "calibrando o pneu do carro com calibrador",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "oficina_pronto.jpg": {
   "mostra": "carro pronto, limpo",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "oficina_volante.jpg": {
   "mostra": "motorista com as mãos no volante, parado no trânsito",
@@ -277,7 +277,7 @@
  },
  "raiz_calculadora.jpg": {
   "mostra": "celular na mão de uma confeiteira usando o app de calculadora de preço",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "relogio.jpg": {
   "mostra": "relógio de parede",
@@ -289,19 +289,19 @@
  },
  "salao_cachos.jpg": {
   "mostra": "cabelo cacheado finalizado",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "salao_corte.jpg": {
   "mostra": "corte de cabelo",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "salao_depois.jpg": {
   "mostra": "cabelo liso e brilhante depois do tratamento",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "salao_escova.jpg": {
   "mostra": "escova sendo feita",
-  "origem": "gerada (stability.stable-image-core-v1:1)"
+  "origem": "gerada (gpt-image-2)"
  },
  "salao_interior.jpg": {
   "mostra": "interior do salão",
