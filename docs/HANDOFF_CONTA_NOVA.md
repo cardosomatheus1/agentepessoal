@@ -390,3 +390,16 @@ Depois rode a suíte da prospecção dentro do contêiner (seção "Agente: corr
 estado (VM, testes, prospecção).
 Responda sempre em português, curto.
 ```
+
+## raizconnect: be17cc9 em produção (13/10, 16:14–16:22 UTC, pela sessão do agente pessoal)
+
+- O site já ia para a AWS desde a virada (14:24 UTC; conferido com requisições marcadas nos logs da API e do web).
+- Com ordem do Matheus ("2"), a versão be17cc9 (TLS da SEFAZ com ICP-Brasil) entrou **direto no ECS**, sem Terraform,
+  porque o `producao.tfvars` só existe no ambiente da sessão da migração: definições `raiz-producao-api:11`,
+  `raiz-producao-web:7`, `raiz-producao-ops:8` (só a334ebc → be17cc9 na imagem e no SOURCE_COMMIT); serviços api e web
+  trocados com rollback automático; SSM `/raiz-producao/imagem/{api,web,ops}` = be17cc9 (web com `-producao`).
+- Conferido: "12 ok, 0 apply-fail"; `RELEASE_AUTORIZADO_NO_DEPLOY commit=be17cc95dd68`; Baileys reabriu com a sessão do
+  banco (sem QR); `build-info.json` do site = be17cc9; tarefa avulsa na VPC: SEFAZ-BA (homologação e produção), SP e
+  SVRS validam o TLS com a lista ICP-Brasil e recusam sem ela.
+- **Terraform:** o próximo apply de produção deve usar `imagem_commit=be17cc9` (o plan mostrará as definições
+  substituídas de novo, o que é inofensivo). Voltar: `update-service` para `api:10` e `web:6`.
