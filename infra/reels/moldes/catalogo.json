@@ -29,7 +29,9 @@
    "conta feita pelo código, nunca pela IA",
    "duração dentro do limite",
    "nada na área coberta pelo Instagram",
-   "molde com campo de dado real vazio não gera"
+   "molde com campo de dado real vazio não gera",
+   "tempo para ler: sem narração, cada cena dura 0,8 s + 0,25 s por palavra nova",
+   "foto da ficha registrada em midia/fotos/indice.json com o que mostra"
   ],
   "sem_dado_real_nao_gera": "Campo que pede dado do negócio (custo, preço 'de', horário livre, número de marco, depoimento, fonte) só aceita dado real informado pelo dono ou tirado do sistema. Faltou: o molde não gera e o agente escolhe outro molde, nunca chuta.",
   "honestidade": [
@@ -43,7 +45,10 @@
   ],
   "audio": "música CC0 do banco; narração (Polly) só onde o molde precisa, opcional nos demais, porque voz sintética cansa em tutorial",
   "rodizio": "o agente não usa três moldes de humor (pov, expectativa, conversa) seguidos",
-  "midia_do_cliente": "Fotos e vídeos do próprio negócio têm preferência em todo molde: todo campo de imagem de fundo (tipo filmagem) aceita uma foto do cliente (ganha zoom lento) ou um vídeo do cliente (motor/video_cliente.py); o banco de filmagens é só reserva. Foto que não carrega recusa o molde."
+  "midia_do_cliente": "Fotos e vídeos do próprio negócio têm preferência em todo molde: todo campo de imagem de fundo (tipo filmagem) aceita uma foto do cliente (ganha zoom lento) ou um vídeo do cliente (motor/video_cliente.py); o banco de filmagens é só reserva. Foto que não carrega recusa o molde.",
+  "publico": "cada molde diz para quem fala: cliente_final (quem compra do negócio) ou dono_de_negocio (quem vende para empresas, como a Raiz e o NEXOS). Para um negócio que vende ao público, o agente só usa moldes de cliente_final (AR Board 13/10).",
+  "imagem": "foto real do produto ou serviço em todo molde que mostra produto; cada foto tem registro do que mostra (midia/fotos/indice.json) e só entra onde o texto fala exatamente daquilo; logo e marca são do negócio do post (AR Board 13/10)",
+  "anuncio": "todo post divulga o negócio: termina levando ao produto ou serviço, com foto e chamada; piada sozinha não serve (AR Board 13/10)"
  },
  "estilos": [
   {
@@ -119,7 +124,8 @@
    ],
    "regras": [
     "Aceitar uma foto ou vídeo do próprio cliente como fundo principal e deixar o banco de filmagens só como reserva. Tirar a virada quando a piada já fecha na primeira frase."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "expectativa",
@@ -153,7 +159,8 @@
    ],
    "regras": [
     "Proibir sujeira e falta de higiene na imagem da realidade quando o ramo for comida, saúde ou estética. Permitir que a realidade seja só texto sobre fundo liso quando não houver uma segunda imagem boa."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "tipos-cliente",
@@ -187,7 +194,8 @@
    ],
    "regras": [
     "Trocar a ilustração por um ícone grande de um conjunto fixo ou por um emoji. Proibir tipo que deboche do cliente, como o pão-duro ou o chato."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "frases",
@@ -222,7 +230,8 @@
    ],
    "regras": [
     "Criar a versão Reel com cartões. Dar uma regra de tom: a frase pode ser engraçada, mas o fechamento não pode humilhar quem disse."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "chat",
@@ -255,7 +264,8 @@
    ],
    "regras": [
     "Usar um chat genérico, sem o visual nem a marca do WhatsApp. Pôr um selo pequeno de cena encenada e mudar o nome do molde para Conversa no celular."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "processo",
@@ -285,7 +295,8 @@
     "Carro da sujeira ao polimento",
     "Corte de cabelo do antes ao acabamento"
    ],
-   "regras": []
+   "regras": [],
+   "publico": "cliente_final"
   },
   {
    "id": "quiz",
@@ -323,7 +334,8 @@
    ],
    "regras": [
     "Pôr os números da explicação em campos próprios para o código fazer a conta. No Reel, incluir uma tela de 'pausa e responde' com a contagem antes da resposta. Proibir tema de saúde sem fonte, como calorias."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "time",
@@ -359,7 +371,8 @@
    ],
    "regras": [
     "No Reel, aumentar para 10 a 12 s, porque em 8 s não dá para ler dois argumentos. Bloquear temas de política, religião e saúde."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "mito",
@@ -395,7 +408,8 @@
    ],
    "regras": [
     "Exigir fonte quando o tema for saúde, estética, alimento ou dinheiro. Limitar a 3 itens no Reel para não ficar longo."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "escolha",
@@ -428,7 +442,8 @@
    ],
    "regras": [
     "No story, deixar um espaço vazio para o dono colocar a enquete nativa, que o código não consegue criar. Exigir que as duas fotos de cada par tenham a mesma qualidade."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "conta-mudou",
@@ -469,7 +484,8 @@
    ],
    "regras": [
     "Marcar como molde para quem vende para outros negócios. Para o cliente final, criar a variante 'por que o preço mudou'. Bloquear a geração quando faltar custo real."
-   ]
+   ],
+   "publico": "dono_de_negocio"
   },
   {
    "id": "custo-escondido",
@@ -508,7 +524,8 @@
    ],
    "regras": [
     "Absorver o pra-onde-vai como variante em rosca. Aceitar faixa ou estimativa marcada como 'em média' em vez de valor exato inventado."
-   ]
+   ],
+   "publico": "dono_de_negocio"
   },
   {
    "id": "passo-a-passo",
@@ -543,7 +560,8 @@
    ],
    "regras": [
     "Deixar a narração opcional, porque voz robótica em tutorial cansa. Absorver o checklist como modo sem ordem."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "faca-nao-faca",
@@ -576,7 +594,8 @@
    ],
    "regras": [
     "Garantir que o erro e o certo de cada par sejam sobre a mesma coisa. Evitar que o erro pareça crítica direta a um cliente."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "demonstracao",
@@ -611,7 +630,8 @@
    ],
    "regras": [
     "Aceitar gravação de tela real, além de prints. Para quem não tem ferramenta, o agente deve cair no como-pedir."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "pergunta-cliente",
@@ -645,7 +665,8 @@
    ],
    "regras": [
     "pergunta real; sem nome nem foto de quem perguntou"
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "oferta",
@@ -684,7 +705,8 @@
    ],
    "regras": [
     "Exigir que o preço 'de' tenha sido praticado de verdade, com o dono confirmando. O prazo é obrigatório e o post não pode sair depois dele. Nada de contagem que reinicia."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "lancamento",
@@ -721,7 +743,8 @@
    ],
    "regras": [
     "Não esconder a foto principal por mais de 2 s, porque no Reel a pessoa pula. Permitir preço opcional na cena final."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "combo",
@@ -757,7 +780,8 @@
    ],
    "regras": [
     "Somar os preços avulsos pelo código e bloquear a peça se o combo não for mais barato. Aceitar uma foto só do kit montado quando não houver foto de cada item."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "cardapio",
@@ -794,7 +818,8 @@
    ],
    "regras": [
     "Limitar a 4 a 6 itens por tela e dividir em várias telas. Criar uma área livre própria para story. Mudar o nome para Vitrine do dia, para servir também a quem não vende comida."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "depoimento",
@@ -833,7 +858,8 @@
    ],
    "regras": [
     "Mostrar estrelas só quando a fonte tiver nota, como o Google. Guardar a permissão do cliente junto da prova. Nunca editar o texto da fala."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "antes-depois",
@@ -869,7 +895,8 @@
    ],
    "regras": [
     "Bloquear ou pedir confirmação para clínica, odontologia e estética regulada, conforme a regra do conselho profissional. Conferir que as duas fotos são do mesmo ângulo e não foram editadas."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "como-pedir",
@@ -908,7 +935,8 @@
    ],
    "regras": [
     "Incluir as formas de pagamento e a área de entrega como campos opcionais."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "agenda",
@@ -942,7 +970,8 @@
    ],
    "regras": [
     "Fazer só em story. Os horários devem vir da agenda real ou de confirmação do dono no dia, nunca de um preenchimento antigo."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "data-especial",
@@ -979,7 +1008,8 @@
    ],
    "regras": [
     "prazo real; o post não sai depois dele"
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "produto-semana",
@@ -1015,7 +1045,8 @@
     "Pet shop: banho com hidratação",
     "Loja: bolsa de couro"
    ],
-   "regras": []
+   "regras": [],
+   "publico": "cliente_final"
   },
   {
    "id": "avalia-indica",
@@ -1052,7 +1083,8 @@
    ],
    "regras": [
     "benefício real e cumprido; sem comprar avaliação positiva (o benefício vale para qualquer nota)"
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "bastidores",
@@ -1085,7 +1117,8 @@
    ],
    "regras": [
     "Aceitar a partir de 3 fotos. Os 3 atos devem vir de uma entrevista curta com o dono, nunca de uma história inventada pela IA."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "aviso",
@@ -1122,7 +1155,8 @@
    ],
    "regras": [
     "Pôr a data e o dia da semana calculados pelo código. Incluir o tipo 'falta de produto' ou 'agenda cheia'."
-   ]
+   ],
+   "publico": "cliente_final"
   },
   {
    "id": "marco",
@@ -1157,7 +1191,8 @@
    ],
    "regras": [
     "Pedir a origem do número, como sistema ou contagem do dono. Proibir arredondar para cima."
-   ]
+   ],
+   "publico": "cliente_final"
   }
  ]
 }

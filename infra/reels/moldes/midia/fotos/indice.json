@@ -1,0 +1,258 @@
+{
+ "acai.jpg": {
+  "mostra": "tigela de açaí com banana e granola",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "atelie_aviamentos.jpg": {
+  "mostra": "linhas e botões",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "atelie_barra.jpg": {
+  "mostra": "ajuste de barra de calça",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "atelie_maquina.jpg": {
+  "mostra": "máquina de costura em uso",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "atelie_noiva.jpg": {
+  "mostra": "vestido de noiva em prova",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "atelie_tecidos.jpg": {
+  "mostra": "rolos de tecidos coloridos",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "atelie_vestido.jpg": {
+  "mostra": "vestido no manequim em ajuste",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "bolo.jpg": {
+  "mostra": "bolo de aniversário com vela",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "brigadeiro.jpg": {
+  "mostra": "brigadeiros em forminhas",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "burger_batata.jpg": {
+  "mostra": "batata rústica",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "burger_chapa.jpg": {
+  "mostra": "hambúrgueres na chapa",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "burger_combo.jpg": {
+  "mostra": "combo hambúrguer, batata e refrigerante",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "burger_costela.jpg": {
+  "mostra": "hambúrguer de costela desfiada",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "burger_fachada.jpg": {
+  "mostra": "fachada da hamburgueria à noite",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "burger_milkshake.jpg": {
+  "mostra": "milkshake",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "burger_smash.jpg": {
+  "mostra": "smash burger duplo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "cantina_coxinhas.jpg": {
+  "mostra": "bandeja de coxinhas",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "cantina_feijoada.jpg": {
+  "mostra": "feijoada",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "cantina_lasanha.jpg": {
+  "mostra": "lasanha caseira",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "cantina_marmita.jpg": {
+  "mostra": "marmita caseira",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "cantina_pizza.jpg": {
+  "mostra": "pizza de forno a lenha",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "confeita.jpg": {
+  "mostra": "confeitando bolo com bico de confeitar (creme rosa)",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "delivery.jpg": {
+  "mostra": "motoboy de entrega à noite",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "doce_bolo_morango.jpg": {
+  "mostra": "bolo de morango inteiro",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_bolo_pote.jpg": {
+  "mostra": "bolo de pote",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_brigadeiros_caixa.jpg": {
+  "mostra": "caixa de brigadeiros gourmet",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_decorando.jpg": {
+  "mostra": "confeiteira decorando bolo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_entrega_caixa.jpg": {
+  "mostra": "encomenda de bolo na caixa",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_kit_festa.jpg": {
+  "mostra": "kit festa: bolo e docinhos",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_ovo_pascoa.jpg": {
+  "mostra": "ovo de páscoa artesanal",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_pao_de_mel.jpg": {
+  "mostra": "pão de mel",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_torta_limao.jpg": {
+  "mostra": "torta de limão",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "doce_vitrine.jpg": {
+  "mostra": "vitrine de doces",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "embala.jpg": {
+  "mostra": "embalando comida para entrega",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "forno.jpg": {
+  "mostra": "forno a lenha com pizza",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "freezer.jpg": {
+  "mostra": "freezer com comida congelada",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "fritura.jpg": {
+  "mostra": "salgados fritando no óleo",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "gas.jpg": {
+  "mostra": "chama do fogão a gás",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "geral.jpg": {
+  "mostra": "brigadeiros em forminhas (filmagem)",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "lanche.jpg": {
+  "mostra": "hambúrguer com batata",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "leite.jpg": {
+  "mostra": "leite condensado escorrendo",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "maquina.jpg": {
+  "mostra": "maquininha de cartão",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "mecanico_maos.jpg": {
+  "mostra": "mãos de mecânico com chave no motor",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "oficina_alinhamento.jpg": {
+  "mostra": "alinhamento e balanceamento",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "oficina_antes.jpg": {
+  "mostra": "roda de carro suja (antes)",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "oficina_ar.jpg": {
+  "mostra": "ar-condicionado do carro",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "oficina_depois.jpg": {
+  "mostra": "roda de carro limpa e polida (depois)",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "oficina_fachada.jpg": {
+  "mostra": "fachada da oficina",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "oficina_freio.jpg": {
+  "mostra": "pastilhas de freio",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "oficina_interior.jpg": {
+  "mostra": "interior da oficina com carro no elevador",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "oficina_oleo.jpg": {
+  "mostra": "troca de óleo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "oficina_pronto.jpg": {
+  "mostra": "carro pronto, limpo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "pizza.jpg": {
+  "mostra": "pizza de pepperoni",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "relogio.jpg": {
+  "mostra": "relógio de parede",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "salao_antes.jpg": {
+  "mostra": "cabelo ressecado e armado, de costas (antes)",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "salao_cachos.jpg": {
+  "mostra": "cabelo cacheado finalizado",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "salao_corte.jpg": {
+  "mostra": "corte de cabelo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "salao_depois.jpg": {
+  "mostra": "cabelo liso e brilhante depois do tratamento",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "salao_escova.jpg": {
+  "mostra": "escova sendo feita",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "salao_interior.jpg": {
+  "mostra": "interior do salão",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "salao_mechas.jpg": {
+  "mostra": "mechas e coloração",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "salao_produtos.jpg": {
+  "mostra": "produtos de cabelo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "salao_unhas.jpg": {
+  "mostra": "manicure",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "salgado.jpg": {
+  "mostra": "coxinhas",
+  "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ }
+}

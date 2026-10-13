@@ -35,6 +35,20 @@ def carregar(molde, ficha_path, formato=None):
     else:
         marca = json.loads((marca_dir / "marca.json").read_text())
     formato = formato or ficha.get("_formato") or esquema.get("formatos", ["reel"])[0]
+    # every photo needs a record of what it shows (AR Board 13/10: "a imagem tem de ser do que o texto fala")
+    idx_p = RAIZ / "midia" / "fotos" / "indice.json"
+    indice = json.loads(idx_p.read_text()) if idx_p.exists() else {}
+    def _fotos(x):
+        if isinstance(x, str) and x.startswith("fotos/"):
+            yield x
+        elif isinstance(x, dict):
+            for k, v in x.items():
+                if not k.startswith("_"): yield from _fotos(v)
+        elif isinstance(x, list):
+            for v in x: yield from _fotos(v)
+    for f in _fotos(ficha):
+        if f.split("/", 1)[1] not in indice:
+            erros.append(f"{f}: foto sem registro do que mostra (midia/fotos/indice.json)")
     if formato not in esquema.get("formatos", []):
         erros.append(f"formato {formato} não é deste molde")
     return pasta, esquema, ficha, marca, marca_dir, formato, erros
@@ -173,10 +187,20 @@ def main():
             for i in range(N):
                 ini, fim = S[i], S[i + 1]
                 amostras += [(i, round(ini + (fim - ini) * 0.6, 3), True), (i, round(max(ini, fim - 0.08), 3), False)]
+            antes = set()
             for i, t, foto in amostras:
                 pg.evaluate(f"render({t})")
                 if not a.sem_conferir:
                     for x in pg.evaluate("Motor.conferir()"): rel["problemas"].append({"cena": i + 1, "t": t, "msg": x})
+                    # reading time (AR Board 13/10, 'como pedir': "rápido demais, nem deu pra ler"): without narration,
+                    # a scene must last 0.8 s + 0.25 s per word that appeared in it (about 240 words a minute)
+                    if not foto and not tempos and i < N - 1:
+                        agora = set(pg.evaluate("Motor.textosVisiveis()"))
+                        palavras = sum(len(x.split()) for x in agora - antes)
+                        minimo = 0.8 + 0.25 * palavras
+                        if S[i + 1] - S[i] < minimo - 0.05:
+                            rel["problemas"].append({"cena": i + 1, "t": t, "msg": f"pouco tempo para ler: {palavras} palavras novas em {S[i + 1] - S[i]:.1f} s (mínimo {minimo:.1f} s)"})
+                        antes = agora
                 if foto:
                     img = saida / f"p{i + 1:02d}.jpg"; pg.screenshot(path=str(img), type="jpeg", quality=80); imgs.append(img)
             rel["duracao"] = info["DUR"]

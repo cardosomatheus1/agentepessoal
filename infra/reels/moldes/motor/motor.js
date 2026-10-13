@@ -381,6 +381,8 @@ const Motor = {
     }
     return prob;
   },
+  // texts on screen now (for the reading-time check in render.py)
+  textosVisiveis() { return $$('.t').filter(Motor._visivel).map(e => e.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean); },
   mostrarArea() { const s = SEGURO[Motor.FORMATO], a = $('#area'); Object.assign(a.style, { display: 'block', left: s.x0 + 'px', top: s.y0 + 'px', width: (s.x1 - s.x0) + 'px', height: (s.y1 - s.y0) + 'px' });
     for (const z of s.fora) $('#palco').insertAdjacentHTML('beforeend', `<div style="position:absolute;z-index:999;left:${z.x0}px;top:${z.y0}px;width:${z.x1 - z.x0}px;height:${z.y1 - z.y0}px;background:rgba(255,0,170,.25)"></div>`); },
 };
