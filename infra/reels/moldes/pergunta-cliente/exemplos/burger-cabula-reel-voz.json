@@ -1,0 +1,8 @@
+{"_marca": "burger-noite", "_formato": "reel",
+ "pergunta": "Entrega no Cabula?", "canal": "comentario",
+ "resposta": "Entrega sim! O Cabula está na nossa área, de terça a domingo, das 18h às 23h. A taxa aparece no link antes de fechar o pedido.",
+ "destaque": "está na nossa área",
+ "falas": ["Entrega no Cabula?",
+  "Entrega sim! O Cabula está na nossa área, de terça a domingo, das seis às onze da noite. A taxa aparece no link antes de fechar o pedido.",
+  "Peça pelo link da bio."],
+ "_origem": {"pergunta": "sistema"}}

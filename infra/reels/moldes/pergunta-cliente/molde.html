@@ -1,0 +1,138 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* a comment thread: the client's question arrives as a comment card, the brand's reply comes under it */
+.av{position:absolute;left:34px;top:30px;width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.av.cli{background:color-mix(in srgb,var(--texto) 14%,var(--fundo));color:var(--texto2);font-size:58px}
+.av.mar{background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft),sans-serif;font-weight:900;font-size:54px}
+.av .ping{position:absolute;inset:-8px;border-radius:50%;border:6px solid var(--destaque);opacity:0}
+.cab{position:absolute;left:150px;right:34px;top:36px;height:84px}
+.cab .q{height:46px;font-size:36px;font-weight:800;white-space:nowrap}
+.cab .w{height:36px;font-size:30px;font-weight:600;white-space:nowrap}
+.cm{position:absolute;left:80px;width:830px;transform-origin:0 0}
+.cm .pq{position:absolute;left:40px;right:40px;top:150px;height:280px;font-size:66px;line-height:1.08}
+.cm .co{position:absolute;right:30px;top:34px;width:60px;height:60px;color:var(--ruim);font-size:52px}
+.rp{position:absolute;left:80px;width:830px;transform-origin:0 0}
+body.e-vidro .rp,body.e-noite .rp{background:linear-gradient(160deg,color-mix(in srgb,var(--destaque) 26%,transparent),color-mix(in srgb,var(--destaque) 10%,transparent))}
+.rp .rs{position:absolute;left:40px;right:40px;top:150px;bottom:40px;font-size:54px;font-weight:700;line-height:1.2}
+.rp .mk{color:var(--sobre-destaque)}
+.dig{position:absolute;left:150px;top:160px;display:flex;gap:16px}
+.dig i{width:26px;height:26px;border-radius:50%;background:var(--texto2)}
+#fio{position:absolute;left:142px;width:8px;border-radius:4px;background:var(--borda);transform-origin:50% 0}
+#k0{position:absolute;left:80px;width:830px;top:420px;height:66px;line-height:66px;font-size:32px;letter-spacing:3px;padding:0 28px;white-space:nowrap;display:inline-block;width:auto;max-width:830px}
+#m0{position:absolute;left:80px;width:830px;top:1180px;height:80px;font-size:60px;color:var(--destaque);white-space:nowrap}
+/* video positions */
+#cm0{top:540px;height:470px}
+#rp0{top:840px;height:560px}
+body.f-story #rp0{height:620px}
+/* carousel */
+.slide #k0{left:84px;top:150px}
+.slide .cm{left:84px;width:912px}
+.slide .cm.g{top:260px;height:620px}.slide .cm.g .pq{top:170px;height:400px;font-size:84px}
+.slide .cm.p{top:140px;height:330px}.slide .cm.p .pq{top:140px;height:150px;font-size:44px}
+.slide .rp{left:84px;width:912px;top:510px;height:690px}.slide .rp .rs{font-size:58px;top:160px}
+.slide .pe{position:absolute;left:84px;right:84px;top:1000px;height:80px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.slide #fio{top:470px;height:40px;left:148px}
+</style></head><body><div id="palco">
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="chip t seg"></div>
+ <div id="fio"></div>
+ <div class="cm cartao" id="cm0"><div class="av cli"><i class="ping"></i></div><div class="cab"><div class="q t seg">Pergunta de cliente</div><div class="w t t2 seg"></div></div>
+  <div class="co"></div><div class="pq tit t seg rv"></div></div>
+ <div id="m0" class="mao t seg">chega toda semana por aqui</div>
+ <div class="rp cartao" id="rp0"><div class="av mar"></div><div class="cab"><div class="q t seg"></div><div class="w t t2 seg">respondeu</div></div>
+  <div class="dig"><i></i><i></i><i></i></div><div class="rs t seg rv"></div></div>
+</div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Pergunta do cliente": one real question per post (no name, no photo of who asked), shown as the comment it came
+// in, and the business's answer revealed under it. Optional narration: question, answer, call to action.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+let L = {};
+const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
+function checar(F, $m) {
+  if (/@\w/.test(F.pergunta)) $m.erro('pergunta: sem @ nem nome de quem perguntou');
+  if (F.destaque && !F.resposta.includes(F.destaque)) $m.erro('destaque: tem de ser um trecho igualzinho da resposta');
+  const voz = window.TEMPOS && window.TEMPOS.length > 1;
+  if (voz && F.falas.length !== 3) $m.erro('falas: são 3 (pergunta, resposta, chamada)');
+}
+// fills question card, reply card and the header chip inside `raiz`
+function encher(F, M, $m, raiz) {
+  const q = s => raiz.querySelector(s);
+  if (q('#k0')) { q('#k0').innerHTML = $m.icone('balao') + ' '; q('#k0').append('PERGUNTA DE CLIENTE'); }
+  raiz.querySelectorAll('.av.cli').forEach(a => { a.insertAdjacentHTML('afterbegin', $m.icone('pessoa')); });
+  raiz.querySelectorAll('.cm .w').forEach(w => { w.textContent = F.canal === 'mensagem' ? 'perguntou por mensagem' : 'comentou no post'; });
+  raiz.querySelectorAll('.cm .co').forEach(c => { c.innerHTML = $m.icone('coracao'); });
+  raiz.querySelectorAll('.cm .pq').forEach(p => { p.textContent = F.pergunta; });
+  const rp = q('.rp');
+  if (rp) {
+    rp.querySelector('.av').textContent = (M.nome || '?').trim().charAt(0).toUpperCase();
+    rp.querySelector('.cab .q').textContent = M.nome || '';
+    const rs = rp.querySelector('.rs'); rs.textContent = '';
+    if (F.destaque) { const i = F.resposta.indexOf(F.destaque); rs.append(F.resposta.slice(0, i)); const m = mk('span', 'mk', F.destaque, rs); m.id = 'mkr'; rs.append(F.resposta.slice(i + F.destaque.length)); }
+    else rs.textContent = F.resposta;
+  }
+}
+Motor.molde({
+  id: 'pergunta-cliente', formatos: ['reel', 'story', 'carrossel'],
+  montar(F, M, $m) {
+    checar(F, $m); encher(F, M, $m, document);
+    // cards sized by the text they hold, so a short question is not lost in an empty box
+    const { $ } = $m, lq = Math.min(4, Math.max(1, Math.ceil(F.pergunta.length / 19))), lr = Math.min(6, Math.max(2, Math.ceil(F.resposta.length / 25)));
+    const hq = 150 + lq * 74 + 40, top = 560;
+    $('#cm0 .pq').style.height = (lq * 74) + 'px'; $('#cm0').style.top = top + 'px'; $('#cm0').style.height = hq + 'px';
+    $('#m0').style.top = (top + hq + 40) + 'px';
+    const fundoQ = top - 150 + hq * 0.78;
+    $('#fio').style.top = fundoQ + 'px'; $('#fio').style.height = '70px';
+    const hr = 150 + lr * 66 + 50; $('#rp0').style.top = (fundoQ + 64) + 'px'; $('#rp0').style.height = hr + 'px';
+    L = { hq, hr };
+    return { duracoes: [3.4, 1.8 + F.resposta.length / 22] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini } = $m;
+    const a1 = ini(1);
+    $m.cena('#c0', t, 0, 1, { push: 0.02 });
+    // the question arrives like a notification: drops from the top, pings, words come in
+    $m.entra('#k0', t, 0.05, 0.4, 20, 0.2);
+    const c = eb(p(t, 0.15, 0.7)), sobe = eio(p(t, a1, 0.7));
+    const cm = $('#cm0'); cm.style.opacity = cl(c * 2);
+    cm.style.transform = `translateY(${(1 - c) * -500 - sobe * 150}px) rotate(${(1 - c) * -4}deg) scale(${1 - 0.22 * sobe})`;
+    const pg = p(t, 0.75, 0.9); $('#cm0 .ping').style.opacity = pg > 0 && pg < 1 ? 1 - pg : 0; $('#cm0 .ping').style.transform = `scale(${1 + pg * 0.8})`;
+    $m.revela('#cm0 .pq', t, 0.5, 0.06);
+    const co = el(p(t, 1.6, 0.8)); $('#cm0 .co').style.transform = `scale(${co})`;
+    $m.entra('#m0', t, 1.9, 0.5, 20); $('#m0').style.opacity = eo5(p(t, 1.9, 0.5)) * (1 - eo(p(t, a1 - 0.2, 0.3)));
+    $('#k0').style.opacity = eo5(p(t, 0.05, 0.4)) * (1 - eo(p(t, a1, 0.3)));
+    // the reply hangs from a thread line, typing dots, then the answer word by word
+    const f = eio(p(t, a1 + 0.3, 0.4)); $('#fio').style.transform = `scaleY(${f})`;
+    const rq = eb(p(t, a1 + 0.5, 0.6)), rp = $('#rp0'); rp.style.opacity = t > a1 + 0.5 ? cl(rq * 2) : 0; rp.style.transform = `scale(${0.6 + 0.4 * rq})`;
+    rp.style.clipPath = `inset(0 0 ${((1 - eo5(p(t, a1 + 1.45, 0.5))) * (L.hr - 240)).toFixed(0)}px 0 round var(--raio))`;
+    const dg = t > a1 + 0.7 && t < a1 + 1.6; $('.dig', rp).style.opacity = dg ? 1 : 0;
+    $$('.dig i', rp).forEach((d, k) => { d.style.transform = `translateY(${Math.sin((t - a1) * 10 - k * 0.9) * -10}px)`; });
+    $('.rs', rp).style.opacity = t >= a1 + 1.6 ? 1 : 0; $m.revela($('.rs', rp), t, a1 + 1.6, 0.045);
+    if ($('#mkr')) $m.marcador('#mkr', t, a1 + 1.6 + F.resposta.split(/\s+/).length * 0.045 + 0.3);
+  },
+  slides(F, M, $m) {
+    checar(F, $m); fontes();
+    const palco = $m.$('#palco'), c0 = $m.$('#c0');
+    const s1 = mk('div', 'slide', null, palco), s2 = mk('div', 'slide', null, palco);
+    const cm = $m.$('#cm0'), rp = $m.$('#rp0');
+    s1.appendChild($m.$('#k0'));
+    s1.appendChild(cm); cm.classList.add('g'); cm.id = ''; cm.querySelector('.pq').classList.remove('rv');
+    const pe = mk('div', 'pe mao t seg', 'a resposta tá no próximo →', s1); pe.style.textAlign = 'right'; pe.style.top = '1000px';
+    const cm2 = cm.cloneNode(true); cm2.classList.replace('g', 'p'); s2.appendChild(cm2);
+    s2.appendChild($m.$('#fio'));
+    s2.appendChild(rp); rp.id = ''; rp.querySelector('.rs').classList.remove('rv'); rp.querySelector('.dig').remove();
+    c0.remove();
+    encher(F, M, $m, s1); encher(F, M, $m, s2);
+    // card heights follow the text
+    const lg = Math.min(5, Math.max(1, Math.ceil(F.pergunta.length / 16))), hg = 170 + lg * 90 + 50;
+    cm.style.height = hg + 'px'; cm.querySelector('.pq').style.height = (lg * 90) + 'px'; pe.style.top = (260 + hg + 60) + 'px';
+    const lp = Math.min(3, Math.max(1, Math.ceil(F.pergunta.length / 34))), hp = 140 + lp * 52 + 40;
+    cm2.style.height = hp + 'px'; cm2.querySelector('.pq').style.height = (lp * 52) + 'px';
+    const fio = $m.$('#fio', s2); fio.style.top = (140 + hp) + 'px'; fio.style.height = '50px';
+    const lr = Math.min(7, Math.max(2, Math.ceil(F.resposta.length / 26))), hr = 160 + lr * 70 + 50;
+    rp.style.top = (140 + hp + 50) + 'px'; rp.style.height = Math.min(hr, 1270 - (140 + hp + 50)) + 'px';
+  },
+});
+</script></body></html>
