@@ -1,0 +1,21 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "nome": "Dia de beleza",
+ "itens": [
+  {
+   "nome": "Penteado",
+   "preco": 180.0
+  },
+  {
+   "nome": "Maquiagem",
+   "preco": 220.0,
+   "foto": "fotos/salao_escova.jpg"
+  }
+ ],
+ "preco_combo": 350.0,
+ "_origem": {
+  "itens": "dono",
+  "preco_combo": "dono"
+ }
+}

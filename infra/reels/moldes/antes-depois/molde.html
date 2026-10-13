@@ -71,7 +71,9 @@ Motor.molde({
     const sv = document.createElement('div'); sv.textContent = F.servico; $('#servico').appendChild(sv);
     if (F.tempo) { $('#tempo').innerHTML = $m.icone('relogio') + ' '; $('#tempo').append(F.tempo); } else $('#info').style.display = 'none';
     $('#detalhe').textContent = F.detalhe || '';
-    return { duracoes: [1.4, 3.0, 2.4] };
+    // reading time: 0.8 s + 0.25 s per new word (plus a little air)
+    const ler = (...x) => 1.05 + 0.25 * x.join(' ').split(/\s+/).filter(Boolean).length;
+    return { duracoes: [1.2, 2.6, Math.max(2.4, 0.5 + ler(F.servico, F.tempo || '', F.detalhe || ''))] };
   },
   quadro(t, F, $m) {
     const { $, p, eo, eo5, eio, eb, cl, lerp, ini } = $m;

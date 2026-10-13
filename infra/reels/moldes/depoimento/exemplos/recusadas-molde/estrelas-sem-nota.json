@@ -1,4 +1,23 @@
-{"_marca": "oficina-do-ze", "_formato": "reel",
- "citacao": "Zé, obrigado pela honestidade.", "autor": "Carlos", "fonte": "mensagem", "estrelas": 5,
- "prova": "mensagem de 02/10/2026", "permissao": "respondeu pode postar sim em 03/10/2026",
- "_origem": {"citacao": "dono", "autor": "dono", "prova": "dono", "permissao": "dono", "estrelas": "dono"}}
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "produto": "Mechas iluminadas",
+ "foto": "fotos/salao_mechas.jpg",
+ "depoimentos": [
+  {
+   "citacao": "Saí me sentindo outra pessoa. A Bella escuta o que a gente quer de verdade.",
+   "autor": "Juliana",
+   "bairro": "Graça",
+   "fonte": "comentario",
+   "prova": "comentário no post de 05/10/2026, print em depoimentos/juliana.png",
+   "permissao": "autorizou por mensagem em 06/10/2026",
+   "estrelas": 5
+  }
+ ],
+ "resultado": "Mechas no tom que ela pediu, com hidratação",
+ "convite": "Agende suas mechas",
+ "_origem": {
+  "depoimentos": "dono",
+  "resultado": "dono"
+ }
+}

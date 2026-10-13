@@ -1,21 +1,148 @@
 {
- "formatos": ["reel", "story", "carrossel"],
+ "formatos": [
+  "reel",
+  "story",
+  "carrossel"
+ ],
  "voz": "opcional",
  "musica": "leve",
  "campos": {
-  "titulo": {"tipo": "texto", "max": 22, "obrigatorio": false, "dica": "sem ele, 'É fácil pedir'; ex.: É fácil agendar"},
-  "passos": {"tipo": "lista", "min": 3, "max": 3, "item": {
-    "texto": {"tipo": "texto", "max": 40},
-    "icone": {"tipo": "escolha", "obrigatorio": false, "opcoes": ["chat", "calendario", "moto", "carrinho", "cartao", "dinheiro", "local", "telefone", "link", "relogio", "check", "caixa", "presente", "bolo", "garfo", "tesoura", "pata", "carro", "pessoa", "casa", "camera", "lupa", "etiqueta", "chave"]}}},
-  "canal_tipo": {"tipo": "escolha", "opcoes": ["link", "telefone", "perfil", "site", "endereco"]},
-  "canal": {"tipo": "texto", "max": 34, "real": true, "dica": "o número, o @, o link ou o endereço, exatamente como o cliente usa"},
-  "canal_extra": {"tipo": "texto", "max": 50, "obrigatorio": false, "dica": "frase curta sob o canal: Responde em até 1 hora"},
-  "prazo": {"tipo": "texto", "max": 44, "obrigatorio": false, "dica": "Encomendas com 3 dias de antecedência"},
-  "pagamento": {"tipo": "lista", "min": 1, "max": 4, "obrigatorio": false, "item": {"tipo": "escolha", "opcoes": ["pix", "cartao", "dinheiro", "vale", "fiado"]}},
-  "area_entrega": {"tipo": "lista", "min": 1, "max": 6, "obrigatorio": false, "item": {"tipo": "texto", "max": 20}, "dica": "bairros ou raio (até 5 km)"},
-  "endereco": {"tipo": "texto", "max": 60, "obrigatorio": false},
-  "icone_capa": {"tipo": "escolha", "opcoes": ["carrinho", "calendario", "chat", "bolo", "moto", "tesoura", "carro", "pata", "presente"], "obrigatorio": false},
-  "falas": {"tipo": "lista", "min": 4, "max": 5, "obrigatorio": false, "item": {"tipo": "texto", "max": 140},
-   "dica": "narração opcional: 4 falas (é fácil pedir, passos, canal, chamada) ou 5 quando há prazo, pagamento, entrega ou endereço"}
+  "foto": {
+   "tipo": "foto",
+   "dica": "foto real do produto ou serviço que se pede (aparece na capa)"
+  },
+  "titulo": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "sem ele, 'É fácil pedir'; ex.: É fácil agendar"
+  },
+  "passos": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "item": {
+    "texto": {
+     "tipo": "texto",
+     "max": 40
+    },
+    "icone": {
+     "tipo": "escolha",
+     "obrigatorio": false,
+     "opcoes": [
+      "chat",
+      "calendario",
+      "moto",
+      "carrinho",
+      "cartao",
+      "dinheiro",
+      "local",
+      "telefone",
+      "link",
+      "relogio",
+      "check",
+      "caixa",
+      "presente",
+      "bolo",
+      "garfo",
+      "tesoura",
+      "pata",
+      "carro",
+      "pessoa",
+      "casa",
+      "camera",
+      "lupa",
+      "etiqueta",
+      "chave"
+     ]
+    }
+   }
+  },
+  "canal_tipo": {
+   "tipo": "escolha",
+   "opcoes": [
+    "link",
+    "telefone",
+    "perfil",
+    "site",
+    "endereco"
+   ]
+  },
+  "canal": {
+   "tipo": "texto",
+   "max": 34,
+   "real": true,
+   "dica": "o número, o @, o link ou o endereço, exatamente como o cliente usa"
+  },
+  "canal_extra": {
+   "tipo": "texto",
+   "max": 50,
+   "obrigatorio": false,
+   "dica": "frase curta sob o canal: Responde em até 1 hora"
+  },
+  "prazo": {
+   "tipo": "texto",
+   "max": 44,
+   "obrigatorio": false,
+   "dica": "Encomendas com 3 dias de antecedência"
+  },
+  "pagamento": {
+   "tipo": "lista",
+   "min": 1,
+   "max": 4,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "escolha",
+    "opcoes": [
+     "pix",
+     "cartao",
+     "dinheiro",
+     "vale",
+     "fiado"
+    ]
+   }
+  },
+  "area_entrega": {
+   "tipo": "lista",
+   "min": 1,
+   "max": 6,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "max": 20
+   },
+   "dica": "bairros ou raio (até 5 km)"
+  },
+  "endereco": {
+   "tipo": "texto",
+   "max": 60,
+   "obrigatorio": false
+  },
+  "icone_capa": {
+   "tipo": "escolha",
+   "opcoes": [
+    "carrinho",
+    "calendario",
+    "chat",
+    "bolo",
+    "moto",
+    "tesoura",
+    "carro",
+    "pata",
+    "presente"
+   ],
+   "obrigatorio": false
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 4,
+   "max": 5,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "max": 140
+   },
+   "dica": "narração opcional: 4 falas (é fácil pedir, passos, canal, chamada) ou 5 quando há prazo, pagamento, entrega ou endereço"
+  }
  }
 }

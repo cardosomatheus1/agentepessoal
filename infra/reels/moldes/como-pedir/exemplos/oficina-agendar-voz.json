@@ -1,8 +1,35 @@
-{"_marca": "oficina-do-ze", "_formato": "reel", "titulo": "É fácil agendar", "icone_capa": "carro",
- "passos": [{"texto": "Chame no número e diga o carro", "icone": "telefone"},
-            {"texto": "Escolha o dia e o horário", "icone": "calendario"},
-            {"texto": "Traga o carro e acompanhe o serviço", "icone": "chave"}],
- "canal_tipo": "telefone", "canal": "(71) 98877-1234", "canal_extra": "Segunda a sábado, das 8h às 18h",
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "_origem": {
+  "canal": "dono"
+ },
+ "foto": "fotos/oficina_interior.jpg",
+ "titulo": "É fácil agendar",
+ "icone_capa": "carro",
+ "passos": [
+  {
+   "texto": "Chame no número e diga o carro",
+   "icone": "telefone"
+  },
+  {
+   "texto": "Escolha o dia e o horário",
+   "icone": "calendario"
+  },
+  {
+   "texto": "Traga o carro e acompanhe o serviço",
+   "icone": "chave"
+  }
+ ],
+ "canal_tipo": "telefone",
+ "canal": "(71) 98877-1234",
+ "canal_extra": "Segunda a sábado, das 8h às 18h",
  "endereco": "Rua das Oficinas, 120, Cabula",
- "falas": ["Agendar na Oficina do Zé é fácil.", "Chame no número, escolha o dia e traga o carro.", "O número é setenta e um, nove oito oito sete sete, um dois três quatro.", "Estamos na Rua das Oficinas, cento e vinte, no Cabula.", "Agende pelo WhatsApp."],
- "_origem": {"canal": "dono"}}
+ "falas": [
+  "Agendar na Oficina do Zé é fácil.",
+  "Chame no número, escolha o dia e traga o carro.",
+  "O número é setenta e um, nove oito oito sete sete, um dois três quatro.",
+  "Estamos na Rua das Oficinas, cento e vinte, no Cabula.",
+  "Agende pelo WhatsApp."
+ ]
+}

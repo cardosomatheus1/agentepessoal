@@ -1,0 +1,37 @@
+{
+ "_marca": "cantina-da-vo",
+ "_formato": "reel",
+ "nome": "Lasanha da Vó",
+ "fotos": [
+  "fotos/cantina_lasanha.jpg"
+ ],
+ "atributos": [
+  {
+   "texto": "Queijo gratinado no forno",
+   "x": 40,
+   "y": 66
+  },
+  {
+   "texto": "Bordas douradas",
+   "x": 66,
+   "y": 77
+  },
+  {
+   "texto": "Assada na travessa",
+   "x": 25,
+   "y": 90
+  }
+ ],
+ "selo": "Toda quinta",
+ "preco": 42.0,
+ "unidade": "serve duas pessoas",
+ "falas": [
+  "A lasanha da Vó, toda quinta.",
+  "Queijo gratinado no forno, bordas douradas, assada na travessa.",
+  "Serve duas pessoas e sai por quarenta e dois reais.",
+  "Peça pelo link da bio."
+ ],
+ "_origem": {
+  "preco": "dono"
+ }
+}

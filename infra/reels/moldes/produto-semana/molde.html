@@ -35,16 +35,17 @@ body.f-story #nome,body.f-story #pNome,body.f-story #preco,body.f-story #unid{wi
 .slide #selo{left:84px;top:900px}
 .slide #nome{left:84px;width:912px;top:980px;height:250px;font-size:120px}
 .slide .prc{position:absolute;right:84px;top:880px;font-size:54px;padding:14px 34px;white-space:nowrap}
-.slide.det .cardF{position:absolute;left:84px;top:150px;width:912px;height:700px;border-radius:40px;overflow:hidden;box-shadow:var(--sombra)}
+.slide.det .cardF{position:absolute;left:84px;top:130px;width:912px;height:700px;border-radius:40px;overflow:hidden;box-shadow:var(--sombra)}
 .slide.det .cardF img.f{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.slide.det .tt{position:absolute;left:84px;right:84px;top:900px;height:80px;font-size:60px}
-.slide.det #attrs{left:84px;width:912px;top:1000px}
-.slide.det .at{height:80px;margin-bottom:8px}
+.slide.det .tt{position:absolute;left:84px;right:84px;top:990px;height:76px;font-size:56px}
+.slide.det #attrs{left:84px;width:912px;top:1070px}
+.slide.det .at{height:64px;margin-bottom:4px}
 .slide.det .at .tx{font-size:46px;height:64px;line-height:64px}
 .slide.det .at .n{width:64px;height:64px;font-size:38px}
 .slide .mini{position:absolute;width:250px;height:250px;margin:-125px 0 0 -125px;border-radius:50%;overflow:hidden;border:10px solid var(--texto);box-shadow:var(--sombra);background:var(--fundo2)}
 .slide .mini img{position:absolute;max-width:none}
-.slide .mini .n{position:absolute;right:10px;top:10px;width:60px;height:60px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:36px;display:flex;align-items:center;justify-content:center;z-index:2}
+.slide .mini .n{position:absolute;left:50%;margin-left:-30px;top:8px;width:60px;height:60px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:36px;display:flex;align-items:center;justify-content:center;z-index:2}
+.slide .fios{position:absolute;left:0;top:0;width:1080px;height:1350px;pointer-events:none}
 .slide .pino{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:var(--destaque);border:5px solid var(--texto)}
 </style></head><body><div id="palco">
 
@@ -76,7 +77,13 @@ const Z = 2.3, R = 150;
 let D = {};
 // card the photo becomes in scene 1 (reel/story)
 const CARD = { x: 60, y: 400, w: 960, h: 700 };
-function foco(F, k) { const a = F.atributos[k]; return [a.x != null ? a.x / 100 : FOCOS[k][0], a.y != null ? a.y / 100 : FOCOS[k][1]]; }
+// x/y of an attribute are a point of ITS photo (fotos[k % n]), in % of the photo; foco() turns it into a point of the
+// w x h box the photo fills with object-fit: cover (so the magnifier lands on the detail, not on the bowl next to it)
+function foco(F, k, img, w = CARD.w, h = CARD.h) {
+  const a = F.atributos[k], px = a.x != null ? a.x / 100 : FOCOS[k][0], py = a.y != null ? a.y / 100 : FOCOS[k][1];
+  const nw = (img && img.naturalWidth) || 1080, nh = (img && img.naturalHeight) || 1080, s = Math.max(w / nw, h / nh);
+  return [(px * nw * s + (w - nw * s) / 2) / w, (py * nh * s + (h - nh * s) / 2) / h];
+}
 // place a zoomed copy of img (object-fit: cover inside a w x h box) so point (fx,fy) of the box is at the loupe centre
 function zoom(lupaImg, src, w, h, fx, fy, r, z) {
   const nw = src.naturalWidth || 1280, nh = src.naturalHeight || 720, s = Math.max(w / nw, h / nh), ox = (w - nw * s) / 2, oy = (h - nh * s) / 2;
@@ -100,7 +107,11 @@ Motor.molde({
       $('#pNome').textContent = F.nome; $('#preco').textContent = brl(F.preco).replace(' ', ' '); $('#unid').textContent = F.unidade || '';
       if (!F.unidade) $('#unid').style.display = 'none';
     } else $('#cR').remove();
-    return { duracoes: D.temPreco ? [2.4, 4.2, 2.4] : [2.4, 4.2] };
+    // reading time: 0.8 s + 0.25 s per new word (plus a little air); the magnifier needs at least 1.3 s per detail
+    const ler = (...x) => 1.05 + 0.25 * x.join(' ').split(/\s+/).filter(Boolean).length;
+    const d = [Math.max(2.4, ler($('#selo').textContent, F.nome)), Math.max(4.6, 0.6 + ler(...F.atributos.map(a => a.texto)))];
+    if (D.temPreco) d.push(Math.max(2.4, ler(F.nome, $('#preco').textContent, F.unidade || '')));
+    return { duracoes: d };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini } = $m;
@@ -121,7 +132,7 @@ Motor.molde({
     q.style.maskImage = q.style.webkitMaskImage = fd > 0.001 ? mk : 'none';
     const img = $(`#quadro img.f[data-k="${fk}"]`);
     // hero push toward the first detail
-    const [f0x, f0y] = foco(F, 0), pz = t < S1 ? 1.05 + 0.25 * eio(p(t, 0, S1)) : 1;
+    const [f0x, f0y] = foco(F, 0, $('#quadro img.f[data-k="0"]'), 1080, 1160), pz = t < S1 ? 1.05 + 0.25 * eio(p(t, 0, S1)) : 1;
     img.style.transformOrigin = `${f0x * 100}% ${f0y * 100}%`; img.style.transform = `scale(${pz})`;
     $m.entra('#selo', t, 0.3, 0.4, 30); $m.revela('#nome', t, 0.5, 0.08);
     const hs = 1 - eo(p(t, S1 - 0.2, 0.3)); $('#selo').style.opacity = Math.min(hs, eo5(p(t, 0.3, 0.4))); $('#nome').style.opacity = hs;
@@ -130,9 +141,11 @@ Motor.molde({
     $('#lupa').style.opacity = vis ? eo(p(t, S1 + 0.45, 0.3)) : 0; $('#fio').style.opacity = vis ? 1 : 0;
     if (vis) {
       const ta = t - S1 - 0.5, kk = Math.min(2, Math.max(0, Math.floor(ta / step))), mv = eio(p(ta - kk * step, 0, 0.5));
-      const a = foco(F, Math.max(0, kk - (mv < 1 && kk > 0 ? 1 : 0))), b = foco(F, kk), m = kk === 0 ? 1 : mv;
+      const ka = Math.max(0, kk - (mv < 1 && kk > 0 ? 1 : 0)), fi = j => $(`#quadro img.f[data-k="${j % nf}"]`);
+      const a = foco(F, ka, fi(ka)), b = foco(F, kk, fi(kk)), m = kk === 0 ? 1 : mv;
       const fx = lerp(a[0], b[0], m), fy = lerp(a[1], b[1], m);
-      const lx = CARD.x + fx * CARD.w, ly = CARD.y + fy * CARD.h;
+      // the loupe stays inside the photo card (it never covers the list); it still magnifies the exact point
+      const lx = Math.min(CARD.x + CARD.w - 150, Math.max(CARD.x + 150, CARD.x + fx * CARD.w)), ly = Math.min(CARD.y + CARD.h - 150, Math.max(CARD.y + 150, CARD.y + fy * CARD.h));
       const pop = eb(p(t, S1 + 0.45, 0.5));
       $('#lupa').style.left = lx + 'px'; $('#lupa').style.top = ly + 'px'; $('#lupa').style.transform = `scale(${0.4 + 0.6 * pop})`;
       const li = $('#lupaImg'); if (li.getAttribute('src') !== img.getAttribute('src')) li.src = img.getAttribute('src');
@@ -168,20 +181,28 @@ Motor.molde({
     const s2 = document.createElement('div'); s2.className = 'slide det';
     s2.innerHTML = '<div class="cardF"><img class="f" alt=""></div><div class="tt tit t seg">Repara nos detalhes</div><div id="attrs"></div>';
     const fimg = s2.querySelector('.cardF img'); fimg.src = $m.midia(F.fotos[0]);
-    const W = 912, Hh = 700, X = 84, Y = 150;
+    const W = 912, Hh = 700, X = 84, Y = 130;
+    const nf = F.fotos.length, P = [];
+    // the three loupes sit in a row on the bottom edge of the photo, in the left-to-right order of their points, each
+    // tied to its point by a line, so they never pile up on one another
+    s2.insertAdjacentHTML('beforeend', '<svg class="fios" viewBox="0 0 1080 1350"></svg>');
+    const arruma = () => { if (P.filter(Boolean).length < F.atributos.length) return;
+      const ord = P.map((q, k) => [q[0], k]).sort((a, b) => a[0] - b[0]).map(x => x[1]), sv = s2.querySelector('.fios'); sv.innerHTML = '';
+      ord.forEach((k, j) => { const mx = X + W * (0.18 + 0.32 * j), my = Y + Hh - 30, mi = s2.querySelectorAll('.mini')[k];
+        mi.style.left = mx + 'px'; mi.style.top = my + 'px';
+        const l = document.createElementNS('http://www.w3.org/2000/svg', 'line'); Object.entries({ x1: P[k][0], y1: P[k][1], x2: mx, y2: my - 125, stroke: 'var(--texto)', 'stroke-width': 5, 'stroke-linecap': 'round' }).forEach(([a, b]) => l.setAttribute(a, b)); sv.appendChild(l); }); };
     F.atributos.forEach((a, k) => {
-      const [fx, fy] = foco(F, k), mi = document.createElement('div'); mi.className = 'mini'; const im = document.createElement('img'); im.src = $m.midia(F.fotos[0]); mi.appendChild(im);
+      const mi = document.createElement('div'); mi.className = 'mini'; const im = document.createElement('img'); im.src = $m.midia(F.fotos[k % nf]); mi.appendChild(im);
       const n = document.createElement('div'); n.className = 'n tit'; n.textContent = k + 1; mi.appendChild(n);
-      // the loupes sit beside their point so the three do not pile up
-      const lx = Math.min(X + W - 135, Math.max(X + 135, X + fx * W + (k === 1 ? 150 : -150))), ly = Math.min(Y + Hh - 135, Math.max(Y + 135, Y + fy * Hh - 60));
-      mi.style.left = lx + 'px'; mi.style.top = ly + 'px'; mi.dataset.fx = fx; mi.dataset.fy = fy; mi.dataset.k = k;
-      const pin = document.createElement('div'); pin.className = 'pino'; pin.style.left = X + fx * W + 'px'; pin.style.top = Y + fy * Hh + 'px';
+      const pin = document.createElement('div'); pin.className = 'pino'; if (k % nf) pin.style.display = 'none';
       s2.append(pin, mi);
+      // placed once the photo is loaded (the point depends on its size); the loupes sit beside their point
+      const go = () => { const [fx, fy] = foco(F, k, im, W, Hh); P[k] = [X + fx * W, Y + fy * Hh];
+        pin.style.left = P[k][0] + 'px'; pin.style.top = P[k][1] + 'px'; zoom(im, im, W, Hh, fx, fy, 115, Z); arruma(); };
+      if (im.complete && im.naturalWidth) go(); else im.addEventListener('load', go);
       const d = document.createElement('div'); d.className = 'at'; d.innerHTML = '<div class="n tit"></div><div class="tx t seg"></div>'; d.querySelector('.n').textContent = k + 1; d.querySelector('.tx').textContent = a.texto; s2.querySelector('#attrs').appendChild(d);
     });
     palco.appendChild(s2);
-    // zoomed copies need the natural size of the photos: placed once they load
-    s2.querySelectorAll('.mini img').forEach(im => { const go = () => { const mi = im.parentElement; zoom(im, im, W, Hh, +mi.dataset.fx, +mi.dataset.fy, 115, Z); }; if (im.complete) go(); else im.addEventListener('load', go); });
   },
 });
 </script></body></html>

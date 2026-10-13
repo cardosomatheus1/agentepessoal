@@ -1,0 +1,32 @@
+{
+ "_marca": "burger-noite",
+ "_formato": "story",
+ "produto": "Smash duplo",
+ "foto": "fotos/burger_smash.jpg",
+ "depoimentos": [
+  {
+   "citacao": "Melhor smash da cidade!",
+   "autor": "Rafa",
+   "fonte": "avaliacao",
+   "estrelas": 5,
+   "prova": "avaliação pública de 10/10/2026, id 8841",
+   "permissao": "autorizou pelo direct em 11/10/2026"
+  },
+  {
+   "citacao": "Chegou quentinho e muito rápido.",
+   "autor": "Bia",
+   "bairro": "Barra",
+   "fonte": "comentario",
+   "prova": "comentário no post de 08/10/2026, id 8790",
+   "permissao": "autorizou pelo direct em 09/10/2026"
+  }
+ ],
+ "resultado": "Smash duplo na sua casa em até 40 minutos",
+ "convite": "Peça o seu smash",
+ "preco": 32.0,
+ "_origem": {
+  "depoimentos": "sistema",
+  "resultado": "dono",
+  "preco": "sistema"
+ }
+}

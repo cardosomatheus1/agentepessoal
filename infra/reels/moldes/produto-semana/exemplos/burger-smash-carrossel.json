@@ -1,0 +1,29 @@
+{
+ "_marca": "burger-noite",
+ "_formato": "carrossel",
+ "nome": "Smash duplo",
+ "fotos": [
+  "fotos/burger_smash.jpg"
+ ],
+ "atributos": [
+  {
+   "texto": "Duas carnes de 90 g",
+   "x": 40,
+   "y": 65
+  },
+  {
+   "texto": "Cheddar derretido",
+   "x": 55,
+   "y": 58
+  },
+  {
+   "texto": "Pão brioche na chapa",
+   "x": 52,
+   "y": 42
+  }
+ ],
+ "preco": 32.0,
+ "_origem": {
+  "preco": "sistema"
+ }
+}

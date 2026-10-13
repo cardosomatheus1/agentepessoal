@@ -1,3 +1,18 @@
-{"_marca": "burger-noite", "_formato": "reel",
- "passos": [{"texto": "Abra o cardápio"}, {"texto": "Monte o pedido"}, {"texto": "Receba em casa"}],
- "canal_tipo": "link", "canal": "burgernoite.com.br"}
+{
+ "_marca": "burger-noite",
+ "_formato": "reel",
+ "foto": "fotos/burger_smash.jpg",
+ "passos": [
+  {
+   "texto": "Abra o cardápio"
+  },
+  {
+   "texto": "Monte o pedido"
+  },
+  {
+   "texto": "Receba em casa"
+  }
+ ],
+ "canal_tipo": "link",
+ "canal": "burgernoite.com.br"
+}

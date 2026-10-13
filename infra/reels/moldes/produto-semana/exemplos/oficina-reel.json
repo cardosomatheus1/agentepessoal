@@ -1,5 +1,0 @@
-{"_marca": "oficina-do-ze", "_formato": "reel",
- "nome": "Revisão completa", "fotos": ["fotos/oficina_interior.jpg", "fotos/mecanico_maos.jpg"],
- "atributos": [{"texto": "Elevador e ferramenta certa", "x": 78, "y": 45}, {"texto": "Aperto no torque certo", "x": 45, "y": 45}, {"texto": "Checklist de 40 itens", "x": 30, "y": 70}],
- "preco": 390.0, "unidade": "carro de passeio",
- "_origem": {"preco": "dono"}}

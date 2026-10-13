@@ -1,3 +1,24 @@
-{"_marca": "doces-da-lu", "_formato": "story",
- "passos": [{"texto": "Escolha"}, {"texto": "Mande a data"}, {"texto": "Pague"}, {"texto": "Receba"}],
- "canal_tipo": "link", "canal": "link na bio", "_origem": {"canal": "dono"}}
+{
+ "_marca": "doces-da-lu",
+ "_formato": "story",
+ "_origem": {
+  "canal": "dono"
+ },
+ "foto": "fotos/doce_entrega_caixa.jpg",
+ "passos": [
+  {
+   "texto": "Escolha"
+  },
+  {
+   "texto": "Mande a data"
+  },
+  {
+   "texto": "Pague"
+  },
+  {
+   "texto": "Receba"
+  }
+ ],
+ "canal_tipo": "link",
+ "canal": "link na bio"
+}

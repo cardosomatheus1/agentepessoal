@@ -25,7 +25,7 @@ body.e-noite #placa{box-shadow:0 0 0 2px var(--destaque),0 0 40px color-mix(in s
 #placa:before,#placa:after{content:'';position:absolute;top:-240px;width:6px;height:240px;background:var(--sobre-destaque);opacity:.8}
 #placa:before{left:120px}#placa:after{right:120px}
 #vem{z-index:8;left:160px;width:680px;top:570px;height:320px;font-size:140px;line-height:1;color:var(--texto)}
-#vemS{z-index:8;left:160px;width:680px;top:920px;height:70px;font-size:46px;font-weight:800;color:var(--destaque)}
+#vemS{z-index:8;left:160px;width:680px;top:900px;height:90px;font-size:76px;color:var(--destaque);letter-spacing:.2em}
 /* confetti */
 #confete{position:absolute;inset:0;z-index:8;pointer-events:none}
 #confete i{position:absolute;left:-15px;top:-22px;width:30px;height:44px;border-radius:5px}
@@ -55,7 +55,7 @@ body.f-story #attrs{width:900px}body.f-story #nome,body.f-story #quando{width:90
  <div class="cortina" id="cE"></div><div class="cortina" id="cD"></div><div id="bando"></div>
  <div id="placa"></div>
  <div class="ctr tit t seg rv" id="vem"></div>
- <div class="ctr t seg" id="vemS"></div>
+ <div class="ctr" id="vemS"></div>
  <div id="confete"></div>
 </div></div>
 
@@ -78,7 +78,7 @@ Motor.molde({
     if (F.preco != null && !['dono', 'sistema'].includes((F._origem || {}).preco)) $m.erro('preco: dado real sem origem (_origem: dono ou sistema)');
     $('#foto0').src = $m.midia(F.fotos[0]);
     $('#vem').textContent = F.gancho || 'Vem novidade aí';
-    $('#vemS').textContent = M.nome ? 'na ' + M.nome : '';
+    $('#vemS').innerHTML = $m.icone('brilho') + ' ' + $m.icone('presente') + ' ' + $m.icone('brilho');
     $('#nome').textContent = F.nome;
     // launch date: weekday and "today" worked out by the code; a date already gone is not a launch
     let q = '';
@@ -97,7 +97,9 @@ Motor.molde({
     const cores = ['var(--destaque)', 'var(--c2)', 'var(--texto)', 'var(--c1)'];
     for (let i = 0; i < 72; i++) { const c = document.createElement('i'); c.style.background = cores[i % 4]; c.dataset.i = i; $('#confete').appendChild(c); }
     if (F.preco != null) { const pr = brl(F.preco).replace(' ', ' '); F.final_extra = F.final_extra ? F.final_extra + ' · ' + pr : 'Lançamento por ' + pr; }
-    return { duracoes: [1.6, 2.0, 2.4, 3.4] };
+    // reading time: 0.8 s + 0.25 s per new word (plus a little air)
+    const ler = (...x) => 1.05 + 0.25 * x.join(' ').split(/\s+/).filter(Boolean).length;
+    return { duracoes: [Math.max(1.6, ler($('#vem').textContent)), 2.0, Math.max(2.4, ler(F.nome, 'NOVO', q)), Math.max(3.4, ler(...F.atributos))] };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, el, cl, rnd, lerp, ini } = $m;

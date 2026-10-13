@@ -77,7 +77,11 @@ Motor.molde({
     });
     $('#pedirIc').innerHTML = $m.icone(F.icone || 'carrinho');
     $('#pedirTx').textContent = F.como_pedir;
-    return { duracoes: [2.6, ...PAGS.map(pg => 1.6 + pg.length * 0.45), 2.8] };
+    // reading time (AR Board 13/10): 0.8 s + 0.25 s per new word on screen, plus a little air
+    const ler = (...x) => 1.05 + 0.25 * x.join(' ').split(/\s+/).filter(Boolean).length;
+    return { duracoes: [Math.max(2.6, ler(F.titulo, F.subtitulo || '')),
+      ...PAGS.map((pg, k) => Math.max(1.6 + pg.length * 0.45, ler(PAGS.length > 1 ? `${F.titulo} (${k + 1}/${PAGS.length})` : '', ...pg.map(i => i.nome + ' ' + $m.brl(i.preco))))),
+      Math.max(2.8, ler(F.como_pedir))] };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo5, eb, ini } = $m;

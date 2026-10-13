@@ -35,8 +35,13 @@ body.e-noite #frente{box-shadow:0 0 0 2px var(--destaque),0 0 50px color-mix(in 
 #tag .k{height:48px;font-size:38px;font-weight:800}
 #tag .v{height:140px;font-size:126px;line-height:1.1;white-space:nowrap}
 /* receipt */
-#impressora{position:absolute;left:110px;width:860px;top:400px;height:44px;border-radius:22px;background:var(--texto);opacity:.9}
-#cupomW{position:absolute;left:150px;width:780px;top:420px;height:1060px;overflow:hidden}
+#fotosR{position:absolute;left:0;right:0;top:385px;height:130px;display:flex;justify-content:center;gap:18px}
+#fotosR div{width:130px;height:130px;border-radius:50%;overflow:hidden;box-shadow:var(--sombra);border:6px solid var(--texto)}
+body.e-claro #fotosR div,body.e-papel #fotosR div{border-color:var(--cartao)}
+#fotosR img{width:100%;height:100%;object-fit:cover}
+#impressora{position:absolute;left:110px;width:860px;top:540px;height:44px;border-radius:22px;background:var(--texto);opacity:.9}
+#cupomW{position:absolute;left:150px;width:780px;top:560px;height:900px;overflow:hidden}
+#cR #cupom .tot{font-size:60px;height:86px}#cR #cupom .tot .a,#cR #cupom .tot .b{height:80px;line-height:80px}#cR #cupom .tot .b{width:330px}
 #cupom{position:absolute;left:0;top:0;width:780px;padding:46px 48px 40px;background:var(--texto);color:var(--fundo);font-family:var(--fb);box-shadow:var(--sombra)}
 body.e-claro #cupom,body.e-papel #cupom,body.e-pop #cupom{background:var(--cartao);color:var(--texto)}
 body.e-pop #cupom{border:5px solid var(--texto)}
@@ -94,6 +99,7 @@ body.f-story #grade,body.f-story #titulo{width:900px}
 </div></div>
 
 <div class="cena" id="cR"><div class="cam full">
+ <div id="fotosR"></div>
  <div id="impressora"></div>
  <div id="cupomW"><div id="cupom"></div></div>
  <div id="eco"><div class="k t seg">economia de</div><div class="v tit t seg" id="ecoV"></div><div class="p t seg" id="ecoP"></div></div>
@@ -110,10 +116,9 @@ const nb = s => s.replace(/ /g, ' ');
 const c2 = v => Math.round(v * 100) / 100;
 let D = {};
 function conta(F, $m) {
-  if (F.falas && F.falas.length !== 5) $m.erro('falas: 5 (itens, caixa, preço do combo, economia, chamada)');
+  if (F.falas && F.falas.length !== 4) $m.erro('falas: 4 (itens, caixa com o preço do combo, economia, chamada)');
   const soma = c2(F.itens.reduce((s, i) => s + i.preco, 0));
   if (F.preco_combo >= soma) $m.erro(`o combo (${$m.brl(F.preco_combo)}) não é mais barato que os itens separados (${$m.brl(soma)})`);
-  if (F.itens.some(i => !i.foto) && !F.foto_kit) $m.erro('item sem foto: mande a foto do kit montado (foto_kit)');
   const eco = c2(soma - F.preco_combo);
   return { soma, eco, pct: Math.floor(eco / soma * 100) };
 }
@@ -129,12 +134,10 @@ function cartao(it, $m, icone) {
   const pr = document.createElement('div'); pr.className = 'pr chip t seg'; pr.textContent = nb($m.brl(it.preco));
   tx.append(nm, pr); d.append(bola(it, $m, icone), tx); return d;
 }
-function cupom(F, $m, alvo) {
+function cupom(F, $m, alvo, completo) {
   const { brl } = $m, c = alvo; c.innerHTML = '';
-  const add = (cls, a, b) => { const l = document.createElement('div'); l.className = cls; if (b === undefined) { l.textContent = a; } else { const x = document.createElement('div'); x.className = 'a t'; x.textContent = a; const y = document.createElement('div'); y.className = 'b t'; y.textContent = b; l.append(x, y); } l.classList.add('t'); c.appendChild(l); return l; };
-  add('cab', 'COMPRANDO SEPARADO');
-  F.itens.forEach(i => add('ln', i.nome, nb(brl(i.preco))));
-  const dv = document.createElement('div'); dv.className = 'div'; c.appendChild(dv);
+  const add = (cls, a, b) => { const l = document.createElement('div'); l.className = cls; if (b === undefined) { l.textContent = a; } else { const x = document.createElement('div'); x.className = 'a t'; x.textContent = a; const y = document.createElement('div'); y.className = 'b t'; y.textContent = b; l.append(x, y); } if (b === undefined) l.classList.add('t'); c.appendChild(l); return l; };
+  if (completo) { add('cab', 'COMPRANDO SEPARADO'); F.itens.forEach(i => add('ln', i.nome, nb(brl(i.preco)))); const dv = document.createElement('div'); dv.className = 'div'; c.appendChild(dv); }
   const sp = add('ln tot riscado', 'Separado', nb(brl(D.soma))); const r = document.createElement('div'); r.id = 'risco'; sp.appendChild(r);
   add('ln tot', 'No combo', nb(brl(F.preco_combo)));
   // the lines do not shrink like headings: they keep a single size so the columns line up
@@ -160,13 +163,17 @@ Motor.molde({
     $('#rotulo').textContent = F.nome;
     $('#tagV').textContent = nb(brl(F.preco_combo));
     cupom(F, $m, $('#cupom'));
-    $('#ecoV').textContent = nb(brl(D.eco)); $('#ecoP').textContent = D.pct >= 1 ? D.pct + '% a menos que separado' : 'a menos que separado';
-    return { duracoes: [0.9 + n * 0.45, 2.4, 2.6, 3.0] };
+    F.itens.forEach(it => { const d = document.createElement('div'); const i = document.createElement('img'); i.src = $m.midia(it.foto); d.appendChild(i); $('#fotosR').appendChild(d); });
+    $('#ecoV').textContent = nb(brl(D.eco)); $('#ecoP').textContent = D.pct >= 1 ? D.pct + '% a menos' : 'a menos que separado';
+    // reading time: 0.8 s + 0.25 s per new word (plus a little air); the box scene holds the price tag for 2 s
+    const ler = (...x) => 1.05 + 0.25 * x.join(' ').split(/\s+/).filter(Boolean).length;
+    return { duracoes: [Math.max(0.9 + n * 0.45, ler(F.nome, ...F.itens.map(i => i.nome + ' ' + brl(i.preco)))), 0.15 + n * 0.18 + 1.5 + 1.7,
+      Math.max(3.0, ler(...$m.$$('#cupom .t, #eco .t').filter(e => !e.querySelector('.t')).map(e => e.textContent).filter(x => x !== nb(brl(F.preco_combo)))))] };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini } = $m;
-    const S1 = ini(1), S2 = ini(2), S3 = ini(3);
-    $m.cena('#cK', t, 0, 2);
+    const S1 = ini(1), S3 = ini(2), S2 = S1 + 0.15 + F.itens.length * 0.18 + 1.5;
+    $m.cena('#cK', t, 0, 1);
     // title: "monte o combo" while items arrive, the combo name takes over when the box is priced
     $('#titulo').style.opacity = eo(p(t, 0.05, 0.4)) * (1 - eo(p(t, S2 - 0.1, 0.3)));
     // 0: cards pop in one by one
@@ -194,11 +201,12 @@ Motor.molde({
     $('#tagW').style.opacity = t >= S2 + 0.35 ? 1 : 0;
     $('#tagW').style.transform = `translateY(${(1 - ti) * -300}px) rotate(${-18 * Math.exp(-tg * 3) * Math.cos(tg * 14)}deg)`;
     // 3: receipt prints out of the slot, the sum apart is struck, the saving is stamped
-    $m.cena('#cR', t, 3);
+    $m.cena('#cR', t, 2);
+    $$('#fotosR div').forEach((d, k) => { const q = eb(p(t, S3 + 0.05 + k * 0.08, 0.45)); d.style.opacity = cl(q * 2); d.style.transform = `scale(${0.5 + 0.5 * q})`; });
     const ch = $('#cupom').offsetHeight + 20, pr = eio(p(t, S3 + 0.2, 1.3));
     $('#cupom').style.transform = `translateY(${-ch + pr * ch}px)`;
     $('#risco').style.width = eo(p(t, S3 + 1.5, 0.3)) * 230 + 'px';
-    const ec = $('#eco'); const cy = Math.min(420 + ch + 10, 1480 - ec.offsetHeight); ec.style.top = cy + 'px';
+    const ec = $('#eco'); const cy = Math.min(560 + ch + 10, 1480 - ec.offsetHeight); ec.style.top = cy + 'px';
     const q = p(t, S3 + 1.85, 0.35), s = q === 0 ? 0 : 1 + 1.2 * Math.pow(1 - eo(q), 2);
     ec.style.opacity = q > 0 ? 1 : 0; ec.style.transform = `scale(${s}) rotate(-4deg)`;
   },
@@ -227,8 +235,8 @@ Motor.molde({
     palco.appendChild(s2);
     // 3 the receipt
     const s3 = document.createElement('div'); s3.className = 'slide cupom-s'; const pl = document.createElement('div'); pl.className = 'pilha'; pl.append(cup, eco); s3.appendChild(pl); palco.appendChild(s3);
-    cupom(F, $m, $m.$('#cupom', s3));
-    $m.$('#ecoV', s3).textContent = nb(brl(D.eco)); $m.$('#ecoP', s3).textContent = D.pct >= 1 ? D.pct + '% a menos que separado' : 'a menos que separado';
+    cupom(F, $m, $m.$('#cupom', s3), true);
+    $m.$('#ecoV', s3).textContent = nb(brl(D.eco)); $m.$('#ecoP', s3).textContent = D.pct >= 1 ? D.pct + '% a menos' : 'a menos que separado';
     $m.$('#risco', s3).style.width = '230px'; eco.style.transform = 'rotate(-4deg)';
   },
 });

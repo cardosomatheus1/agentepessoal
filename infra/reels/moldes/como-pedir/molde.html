@@ -2,8 +2,11 @@
 <link rel="stylesheet" href="../motor/motor.css">
 <style>
 /* scene 0: title */
-#capaIc{position:absolute;left:390px;top:470px;width:300px;height:300px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:170px;box-shadow:var(--sombra)}
-#capaT{left:90px;width:820px;top:840px;height:340px;font-size:150px;line-height:1}
+#capaF{position:absolute;left:320px;top:390px;width:440px;height:440px;border-radius:50%;overflow:hidden;box-shadow:var(--sombra);border:10px solid var(--texto)}
+body.e-claro #capaF,body.e-papel #capaF{border-color:var(--cartao)}
+#capaF img{width:100%;height:100%;object-fit:cover}
+#capaIc{position:absolute;left:650px;top:690px;width:170px;height:170px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:96px;box-shadow:var(--sombra)}
+#capaT{left:90px;width:820px;top:880px;height:300px;font-size:140px;line-height:1}
 #capaS{left:90px;width:820px;top:1200px;height:70px;font-size:50px;font-weight:800}
 #capaN{position:absolute;left:0;right:0;top:1300px;display:flex;justify-content:center;gap:26px}
 #capaN i{width:30px;height:30px;border-radius:50%;background:var(--destaque);opacity:.25}
@@ -43,7 +46,7 @@ body.f-story #capaT,body.f-story #capaS,body.f-story #canK,body.f-story #canS{wi
 body.f-story .ptx{width:620px}
 /* carousel */
 .slide .tt{position:absolute;left:84px;right:84px;top:140px;height:100px;font-size:80px;line-height:1.1}
-.slide #capaIc{left:390px;top:200px}
+.slide #capaF{left:340px;top:150px;width:400px;height:400px}.slide #capaIc{left:640px;top:420px;width:150px;height:150px;font-size:84px}
 .slide #capaT{left:84px;width:912px;top:560px;height:330px;font-size:150px}
 .slide #capaS{left:84px;width:912px;top:910px;height:70px}
 .slide #capaN{top:1020px}
@@ -56,6 +59,7 @@ body.f-story .ptx{width:620px}
 </style></head><body><div id="palco">
 
 <div class="cena" id="c0"><div class="cam full">
+ <div id="capaF"><img id="capaImg" alt=""></div>
  <div id="capaIc"></div>
  <div class="ctr tit t seg rv" id="capaT"></div>
  <div class="ctr t t2 seg" id="capaS"></div>
@@ -102,8 +106,9 @@ function extras(F) {
 function montarTudo(F, M, $m, alvo) {
   const { $ } = $m;
   $('#capaIc', alvo).innerHTML = $m.icone(F.icone_capa || 'carrinho');
+  $('#capaImg', alvo).src = $m.midia(F.foto);
   $('#capaT', alvo).textContent = F.titulo || 'É fácil pedir';
-  $('#capaS', alvo).textContent = 'em 3 passos';
+  $('#capaS', alvo).textContent = 'em 3 passos'; if ($m.FORMATO !== 'carrossel') $('#capaS', alvo).remove();
   // route
   const ys = NOS[$m.FORMATO], h = 210, cx = 205;
   let d = `M ${cx} ${ys[0] + h / 2}`;
@@ -140,14 +145,19 @@ Motor.molde({
     if (F.falas && F.falas.length !== cenas + 1) $m.erro(`falas: ${cenas + 1} (é fácil pedir, passos, canal${D.nEx ? ', detalhes' : ''}, chamada)`);
     if (!D.nEx) $m.$('#c3').remove();
     D.len = $m.$('#trilho').getTotalLength();
-    return { duracoes: D.nEx ? [1.6, 4.4, 2.6, 2.8] : [1.6, 4.4, 2.6] };
+    // reading time: 0.8 s + 0.25 s per new word (plus a little air); the steps get extra time for the route
+    const ler = (...x) => 1.05 + 0.25 * x.join(' ').split(/\s+/).filter(Boolean).length, txt = sel => $m.$$(sel).filter(e => e.textContent.trim()).map(e => e.textContent);
+    const d = [Math.max(1.8, ler(...txt('#c0 .t'))), Math.max(4.4, 0.4 + ler(...F.passos.map(x => x.texto))), Math.max(2.6, ler(...txt('#c2 .t')))];
+    if (D.nEx) d.push(Math.max(2.8, ler(...txt('#c3 .t').filter(x => !x.includes('\n')))));
+    return { duracoes: d };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, el, cl, ini } = $m;
     const S1 = ini(1), S2 = ini(2), S3 = ini(3), L1 = ini(2) - ini(1);
     // 0
     $m.cena('#c0', t, 0);
-    const ci = el(p(t, 0.05, 1.0)); $('#capaIc').style.transform = `scale(${ci}) rotate(${(1 - cl(ci)) * -40}deg)`; $('#capaIc').style.opacity = cl(ci * 3);
+    const cf = eb(p(t, 0, 0.6)); $('#capaF').style.opacity = cl(cf * 2); $('#capaF').style.transform = `scale(${0.7 + 0.3 * cf})`; $('#capaImg').style.transform = `scale(${1.15 - 0.1 * p(t, 0, 3)})`;
+    const ci = el(p(t, 0.35, 1.0)); $('#capaIc').style.transform = `scale(${ci}) rotate(${(1 - cl(ci)) * -40}deg)`; $('#capaIc').style.opacity = cl(ci * 3);
     $m.revela('#capaT', t, 0.35, 0.1); $m.entra('#capaS', t, 0.8, 0.4, 30);
     $$('#capaN i').forEach((d, k) => { const q = eb(p(t, 0.9 + k * 0.12, 0.4)); d.style.transform = `scale(${q})`; d.style.opacity = 0.25 + 0.75 * (t > 1.1 + k * 0.12 ? 1 : 0); });
     // 1: the dot runs the route; each node lights up when it arrives

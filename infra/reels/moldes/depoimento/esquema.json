@@ -1,17 +1,110 @@
 {
- "formatos": ["reel", "carrossel", "story"],
+ "formatos": [
+  "reel",
+  "carrossel",
+  "story"
+ ],
  "voz": "nao",
  "musica": "leve",
  "campos": {
-  "citacao": {"tipo": "texto", "max": 160, "min": 12, "real": true, "dica": "copiada da mensagem ou avaliação, sem mudar nenhuma palavra"},
-  "autor": {"tipo": "texto", "max": 16, "real": true, "dica": "só o primeiro nome, como a pessoa autorizou"},
-  "bairro": {"tipo": "texto", "max": 20, "obrigatorio": false},
-  "fonte": {"tipo": "escolha", "opcoes": ["avaliacao", "mensagem", "comentario", "email"], "dica": "de onde veio a fala; avaliacao = avaliação com nota"},
-  "estrelas": {"tipo": "numero", "min": 1, "max": 5, "obrigatorio": false, "real": true, "dica": "só com fonte avaliacao e a nota que a pessoa deu; precisa de _origem.estrelas"},
-  "data": {"tipo": "data", "obrigatorio": false, "dica": "quando a pessoa escreveu (vira mês/ano)"},
-  "prova": {"tipo": "texto", "max": 160, "min": 6, "real": true, "dica": "id da mensagem ou caminho do print guardado"},
-  "permissao": {"tipo": "texto", "max": 160, "min": 6, "real": true, "dica": "registro da autorização: quando, por onde e o que a pessoa disse"},
-  "destaque": {"tipo": "texto", "max": 40, "obrigatorio": false, "dica": "trecho exato da citação para o marca-texto"},
-  "foto": {"tipo": "foto", "obrigatorio": false, "dica": "foto do pedido ou do serviço (com permissão)"}
+  "produto": {
+   "tipo": "texto",
+   "max": 30,
+   "dica": "o produto ou serviço de que o cliente fala: Bolo de morango, Revisão do motor"
+  },
+  "foto": {
+   "tipo": "foto",
+   "dica": "foto real desse produto ou serviço"
+  },
+  "depoimentos": {
+   "tipo": "lista",
+   "min": 1,
+   "max": 2,
+   "dica": "1 fala; 2 só se forem curtas (o vídeo tem de caber em 18 s com tempo para ler)",
+   "item": {
+    "citacao": {
+     "tipo": "texto",
+     "max": 120,
+     "min": 12,
+     "real": true,
+     "dica": "copiada da mensagem ou avaliação, sem mudar nenhuma palavra"
+    },
+    "autor": {
+     "tipo": "texto",
+     "max": 16,
+     "real": true,
+     "dica": "só o primeiro nome, como a pessoa autorizou"
+    },
+    "bairro": {
+     "tipo": "texto",
+     "max": 20,
+     "obrigatorio": false
+    },
+    "fonte": {
+     "tipo": "escolha",
+     "opcoes": [
+      "avaliacao",
+      "mensagem",
+      "comentario",
+      "email"
+     ],
+     "dica": "avaliacao = avaliação com nota"
+    },
+    "estrelas": {
+     "tipo": "numero",
+     "min": 1,
+     "max": 5,
+     "obrigatorio": false,
+     "real": true,
+     "dica": "só com fonte avaliacao, a nota que a pessoa deu"
+    },
+    "data": {
+     "tipo": "data",
+     "obrigatorio": false
+    },
+    "prova": {
+     "tipo": "texto",
+     "max": 160,
+     "min": 6,
+     "real": true,
+     "dica": "id da mensagem ou caminho do print guardado"
+    },
+    "permissao": {
+     "tipo": "texto",
+     "max": 160,
+     "min": 6,
+     "real": true,
+     "dica": "registro da autorização: quando, por onde e o que a pessoa disse"
+    },
+    "destaque": {
+     "tipo": "texto",
+     "max": 40,
+     "obrigatorio": false,
+     "dica": "trecho exato da citação para o marca-texto"
+    }
+   }
+  },
+  "resultado": {
+   "tipo": "texto",
+   "max": 70,
+   "min": 10,
+   "real": true,
+   "dica": "o que o cliente recebeu, dito pelo dono: Bolo para 40 pessoas entregue no horário da festa"
+  },
+  "foto_resultado": {
+   "tipo": "foto",
+   "obrigatorio": false,
+   "dica": "foto do resultado (sem ela, a foto do produto)"
+  },
+  "convite": {
+   "tipo": "texto",
+   "max": 34,
+   "dica": "chamada para o produto: Encomende o seu bolo de morango"
+  },
+  "preco": {
+   "tipo": "dinheiro",
+   "obrigatorio": false,
+   "real": true
+  }
  }
 }

@@ -1,5 +1,31 @@
-{"_marca": "doces-da-lu", "_formato": "story",
- "nome": "Bolo de morango", "fotos": ["fotos/bolo.jpg", "fotos/confeita.jpg"],
- "atributos": [{"texto": "Chantilly feito na hora", "x": 40, "y": 42}, {"texto": "Confeitado à mão", "x": 55, "y": 45}, {"texto": "Massa de baunilha", "x": 50, "y": 80}],
- "selo": "Destaque da semana", "preco": 85.0, "unidade": "inteiro, 1,5 kg",
- "_origem": {"preco": "dono"}}
+{
+ "_marca": "doces-da-lu",
+ "_formato": "story",
+ "nome": "Bolo de morango",
+ "fotos": [
+  "fotos/doce_bolo_morango.jpg"
+ ],
+ "atributos": [
+  {
+   "texto": "Morangos frescos no topo",
+   "x": 46,
+   "y": 67
+  },
+  {
+   "texto": "Chantilly batido na hora",
+   "x": 50,
+   "y": 73
+  },
+  {
+   "texto": "Morangos também na base",
+   "x": 40,
+   "y": 83
+  }
+ ],
+ "selo": "Destaque da semana",
+ "preco": 85.0,
+ "unidade": "inteiro, 1,5 kg",
+ "_origem": {
+  "preco": "dono"
+ }
+}

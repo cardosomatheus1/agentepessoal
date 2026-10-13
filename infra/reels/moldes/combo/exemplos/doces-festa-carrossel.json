@@ -1,7 +1,29 @@
-{"_marca": "doces-da-lu", "_formato": "carrossel",
+{
+ "_marca": "doces-da-lu",
+ "_formato": "carrossel",
  "nome": "Kit festa",
- "itens": [{"nome": "Bolo de morango", "preco": 85.0, "foto": "fotos/bolo.jpg"},
-           {"nome": "Cento de brigadeiro", "preco": 120.0, "foto": "fotos/brigadeiro.jpg"},
-           {"nome": "Pudim inteiro", "preco": 55.0, "foto": "fotos/leite.jpg"}],
- "preco_combo": 229.0, "chamada": "Encomende pelo link",
- "_origem": {"itens": "dono", "preco_combo": "dono"}}
+ "itens": [
+  {
+   "nome": "Bolo de morango",
+   "preco": 85.0,
+   "foto": "fotos/doce_bolo_morango.jpg"
+  },
+  {
+   "nome": "Caixa de brigadeiros",
+   "preco": 60.0,
+   "foto": "fotos/doce_brigadeiros_caixa.jpg"
+  },
+  {
+   "nome": "12 pães de mel",
+   "preco": 48.0,
+   "foto": "fotos/doce_pao_de_mel.jpg"
+  }
+ ],
+ "preco_combo": 169.0,
+ "foto_kit": "fotos/doce_kit_festa.jpg",
+ "chamada": "Encomende pelo link",
+ "_origem": {
+  "itens": "dono",
+  "preco_combo": "dono"
+ }
+}

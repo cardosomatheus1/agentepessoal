@@ -1,8 +1,32 @@
-{"_marca": "burger-noite", "_formato": "reel",
- "nome": "Combo família",
- "itens": [{"nome": "2 Smash duplo", "preco": 64.0, "foto": "fotos/lanche.jpg"},
-           {"nome": "Batata rústica G", "preco": 24.0, "foto": "fotos/embala.jpg"},
-           {"nome": "6 coxinhas", "preco": 18.0, "foto": "fotos/salgado.jpg"},
-           {"nome": "Pizza brotinho", "preco": 29.0, "foto": "fotos/pizza.jpg"}],
- "preco_combo": 109.9,
- "_origem": {"itens": "sistema", "preco_combo": "dono"}}
+{
+ "_marca": "burger-noite",
+ "_formato": "reel",
+ "nome": "Combo da noite",
+ "itens": [
+  {
+   "nome": "2 Smash duplo",
+   "preco": 64.0,
+   "foto": "fotos/burger_smash.jpg"
+  },
+  {
+   "nome": "Batata rústica G",
+   "preco": 24.0,
+   "foto": "fotos/burger_batata.jpg"
+  },
+  {
+   "nome": "Onion rings",
+   "preco": 19.0,
+   "foto": "fotos/burger_onion.jpg"
+  },
+  {
+   "nome": "2 Milkshakes",
+   "preco": 36.0,
+   "foto": "fotos/burger_milkshake.jpg"
+  }
+ ],
+ "preco_combo": 119.9,
+ "_origem": {
+  "itens": "sistema",
+  "preco_combo": "dono"
+ }
+}

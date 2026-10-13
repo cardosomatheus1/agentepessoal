@@ -1,4 +1,16 @@
-{"_marca": "studio-bella", "_formato": "story", "_hoje": "2026-10-13",
- "nome": "Mechas iluminadas", "fotos": ["fotos/salao_antes.jpg"],
- "atributos": ["Tom pensado para a sua pele", "Hidratação inclusa", "Avaliação antes do serviço"],
- "quando": "2026-10-13", "gancho": "Novidade no salão"}
+{
+ "_marca": "studio-bella",
+ "_formato": "story",
+ "_hoje": "2026-10-13",
+ "nome": "Mechas iluminadas",
+ "fotos": [
+  "fotos/salao_mechas.jpg"
+ ],
+ "atributos": [
+  "Tom pensado para a sua pele",
+  "Hidratação inclusa",
+  "Avaliação antes do serviço"
+ ],
+ "quando": "2026-10-13",
+ "gancho": "Novidade no salão"
+}

@@ -1,9 +1,44 @@
-{"_marca": "doces-da-lu", "_formato": "carrossel", "titulo": "Hoje tem", "subtitulo": "Feitos hoje de manhã, até acabar",
- "itens": [{"foto": "fotos/bolo.jpg", "nome": "Bolo de morango", "preco": 85},
-           {"foto": "fotos/brigadeiro.jpg", "nome": "Brigadeiro (cento)", "preco": 120},
-           {"foto": "fotos/confeita.jpg", "nome": "Bolo decorado", "preco": 160, "esgotado": true},
-           {"foto": "fotos/acai.jpg", "nome": "Copo da felicidade", "preco": 18},
-           {"foto": "fotos/leite.jpg", "nome": "Pudim inteiro", "preco": 55},
-           {"foto": "fotos/forno.jpg", "nome": "Pão de mel", "preco": 6}],
- "como_pedir": "Peça pelo link da bio até as 17h", "chamada": "Encomende pelo link",
- "_origem": {"itens": "dono"}}
+{
+ "_marca": "doces-da-lu",
+ "_formato": "carrossel",
+ "titulo": "Hoje tem",
+ "subtitulo": "Feitos hoje de manhã, até acabar",
+ "itens": [
+  {
+   "foto": "fotos/doce_bolo_morango.jpg",
+   "nome": "Bolo de morango",
+   "preco": 85
+  },
+  {
+   "foto": "fotos/doce_brigadeiros_caixa.jpg",
+   "nome": "Caixa de brigadeiros",
+   "preco": 60
+  },
+  {
+   "foto": "fotos/doce_decorando.jpg",
+   "nome": "Bolo de rosas",
+   "preco": 160,
+   "esgotado": true
+  },
+  {
+   "foto": "fotos/doce_bolo_pote.jpg",
+   "nome": "Bolo de pote",
+   "preco": 14
+  },
+  {
+   "foto": "fotos/doce_torta_limao.jpg",
+   "nome": "Torta de limão",
+   "preco": 12
+  },
+  {
+   "foto": "fotos/doce_pao_de_mel.jpg",
+   "nome": "Pão de mel",
+   "preco": 6
+  }
+ ],
+ "como_pedir": "Peça pelo link da bio até as 17h",
+ "chamada": "Encomende pelo link",
+ "_origem": {
+  "itens": "dono"
+ }
+}

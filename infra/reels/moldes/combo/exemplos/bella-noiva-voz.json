@@ -1,8 +1,0 @@
-{"_marca": "studio-bella", "_formato": "reel",
- "nome": "Dia da noiva",
- "itens": [{"nome": "Penteado", "preco": 180.0},
-           {"nome": "Maquiagem", "preco": 220.0},
-           {"nome": "Manicure e pedicure", "preco": 70.0}],
- "preco_combo": 399.0, "foto_kit": "fotos/salao_antes.jpg", "icone": "brilho",
- "falas": ["Penteado, maquiagem, manicure e pedicure.", "Tudo junto no mesmo dia.", "O Dia da noiva sai por trezentos e noventa e nove reais.", "Separado seriam quatrocentos e setenta. Você economiza setenta e um reais.", "Agende seu horário pelo direct."],
- "_origem": {"itens": "dono", "preco_combo": "dono"}}

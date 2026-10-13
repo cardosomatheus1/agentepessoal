@@ -1,3 +1,9 @@
-{"_marca": "studio-bella", "_formato": "reel",
- "antes": "fotos/salao_antes.jpg", "depois": "fotos/oficina_depois.jpg",
- "servico": "Harmonização facial", "area": "estetica", "fotos_reais": "sim"}
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "antes": "fotos/salao_antes.jpg",
+ "depois": "fotos/salao_depois.jpg",
+ "servico": "Harmonização facial",
+ "area": "estetica",
+ "fotos_reais": "sim"
+}

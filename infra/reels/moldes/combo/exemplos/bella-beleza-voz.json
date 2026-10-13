@@ -1,0 +1,33 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "nome": "Dia de beleza",
+ "itens": [
+  {
+   "nome": "Corte",
+   "preco": 90.0,
+   "foto": "fotos/salao_corte.jpg"
+  },
+  {
+   "nome": "Escova",
+   "preco": 70.0,
+   "foto": "fotos/salao_escova.jpg"
+  },
+  {
+   "nome": "Manicure",
+   "preco": 40.0,
+   "foto": "fotos/salao_unhas.jpg"
+  }
+ ],
+ "preco_combo": 169.0,
+ "falas": [
+  "Corte por noventa, escova por setenta e manicure por quarenta reais.",
+  "No Dia de beleza vem tudo junto, por cento e sessenta e nove reais.",
+  "Separado seriam duzentos reais. Você economiza trinta e um.",
+  "Agende seu horário pelo direct."
+ ],
+ "_origem": {
+  "itens": "dono",
+  "preco_combo": "dono"
+ }
+}

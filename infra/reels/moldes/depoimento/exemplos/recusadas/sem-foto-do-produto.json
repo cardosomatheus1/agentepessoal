@@ -1,0 +1,21 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "produto": "Mechas iluminadas",
+ "depoimentos": [
+  {
+   "citacao": "Saí me sentindo outra pessoa. A Bella escuta o que a gente quer de verdade.",
+   "autor": "Juliana",
+   "bairro": "Graça",
+   "fonte": "comentario",
+   "prova": "comentário no post de 05/10/2026, print em depoimentos/juliana.png",
+   "permissao": "autorizou por mensagem em 06/10/2026"
+  }
+ ],
+ "resultado": "Mechas no tom que ela pediu, com hidratação",
+ "convite": "Agende suas mechas",
+ "_origem": {
+  "depoimentos": "dono",
+  "resultado": "dono"
+ }
+}
