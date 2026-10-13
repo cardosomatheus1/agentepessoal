@@ -8,8 +8,8 @@
 #capaT{left:90px;right:90px;top:1170px;height:200px;font-size:150px;line-height:1}
 #capaS{left:120px;right:160px;top:1370px;height:60px;font-size:42px;font-weight:700}
 body.f-reel #capaT{left:130px;right:190px;font-size:120px}body.f-reel #capaS{left:150px;right:200px}
-.pag .tt{position:absolute;left:90px;right:90px;top:380px;height:80px;font-size:60px;text-align:center}
-.grade{position:absolute;left:90px;right:90px;top:480px;display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.pag .tt{position:absolute;left:90px;right:90px;top:400px;height:80px;font-size:60px;text-align:center}
+.grade{position:absolute;left:90px;right:90px;top:500px;display:grid;grid-template-columns:1fr 1fr;gap:28px}
 .item{position:relative;height:300px;border-radius:30px;overflow:hidden}
 .item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .item .rot{position:absolute;left:0;right:0;bottom:0;padding:16px 20px 14px;background:linear-gradient(transparent,rgba(0,0,0,.78))}
@@ -71,7 +71,7 @@ Motor.molde({
       c.innerHTML = '<div class="cam full"><div class="tt tit t seg"></div><div class="grade"></div></div>';
       c.querySelector('.tt').textContent = PAGS.length > 1 ? `${F.titulo} (${k + 1}/${PAGS.length})` : F.titulo;
       pg.forEach(it => c.querySelector('.grade').appendChild(cartao(it, $m)));
-      const linhas = Math.ceil(pg.length / 2), h = Math.min(440, Math.floor((($m.FORMATO === 'story' ? 1080 : 960) - 28 * (linhas - 1)) / linhas));
+      const linhas = Math.ceil(pg.length / 2), h = Math.min(440, Math.floor((($m.FORMATO === 'story' ? 1060 : 940) - 28 * (linhas - 1)) / linhas));
       c.querySelectorAll('.item').forEach(d => { d.style.height = h + 'px'; });
       pedir.before(c);
     });
