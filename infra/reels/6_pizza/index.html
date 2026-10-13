@@ -1,0 +1,119 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../base/base.css">
+<style>
+body{background:#f6efe4;color:#2a1a12}
+#bg{position:absolute;inset:0;background-image:radial-gradient(#e7dccb 3px,transparent 3px);background-size:48px 48px}
+#lg{position:absolute;left:350px;top:50px;width:380px;height:150px;background:#111;border-radius:40px;display:flex;align-items:center;justify-content:center}
+#lg img{width:300px}
+#svg{position:absolute;left:0;top:0;width:1080px;height:1920px}
+#q{position:absolute;left:0;right:0;top:1420px;text-align:center;font-size:80px;font-weight:900;line-height:1.1}
+#q span{color:#d7392b}
+.col{position:absolute;top:300px;width:440px;text-align:center}
+#ca{left:70px}#cb{left:570px}
+.col .k{display:inline-block;font-size:40px;font-weight:900;letter-spacing:4px;padding:14px 34px;border-radius:40px;color:#fff}
+#ca .k{background:#2a1a12}#cb .k{background:#d7392b}
+.col .pr{font-family:D;font-size:150px;font-weight:900;margin-top:30px}
+.col .barra{position:relative;height:110px;margin:440px 10px 0;border-radius:20px;overflow:hidden;background:#e7dccb}
+.col .c{position:absolute;left:0;top:0;bottom:0;background:#2a1a12;color:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;white-space:nowrap;overflow:hidden}
+.col .l{position:absolute;top:0;bottom:0;background:#2e8b3a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;white-space:nowrap;overflow:hidden}
+.col .lu{font-family:D;font-size:110px;font-weight:900;color:#2e8b3a;margin-top:30px}
+.col .lt{font-size:40px;font-weight:700}
+#menos{position:absolute;left:0;right:0;top:1620px;text-align:center;font-size:62px;font-weight:900;color:#d7392b}
+#bal{position:absolute;left:0;right:0;top:250px;text-align:center}
+#bal .t{font-size:66px;font-weight:900;line-height:1.15}
+#bal .t span{color:#d7392b}
+#bres{position:absolute;left:0;right:0;top:1500px;text-align:center}
+#bres .n{font-family:D;font-size:150px;font-weight:900;color:#d7392b;line-height:1}
+#bres .s{font-size:50px;font-weight:700}
+#cta{top:380px}
+#caixa{display:inline-block;width:820px;background:#c9935a;border-radius:30px;padding:60px 40px;box-shadow:0 30px 80px #0004;color:#2a1a12;position:relative}
+#caixa:before{content:'';position:absolute;inset:24px;border:6px dashed #9c6a35;border-radius:20px}
+#cta .k{font-size:54px;font-weight:800;position:relative}
+#cta .t{font-family:D;font-size:130px;font-weight:900;line-height:1;margin:24px 0 40px;position:relative;color:#fff;text-shadow:0 6px 0 #9c6a35}
+#cta .b{display:inline-block;background:#d7392b;color:#fff;font-size:62px;font-weight:900;padding:36px 80px;border-radius:90px;position:relative}
+#cta .lg2{display:inline-flex;margin-top:80px;background:#111;border-radius:40px;padding:36px 60px}
+#cta .lg2 img{width:460px}
+#cta .h{font-size:48px;font-weight:800;margin-top:20px}
+.nota{color:#2a1a12}
+</style></head><body>
+<div id="bg"></div>
+<div id="lg"><img src="../base/logo.png"></div>
+<svg id="svg" viewBox="0 0 1080 1920"><g id="g0"></g><g id="gbal"></g></svg>
+<div id="q">2 pizzas por <span>R$ 70</span><br>Promoção boa pra quem?</div>
+<div class="col" id="ca"><div class="k">AVULSA</div><div class="pr">R$ 45</div><div class="barra"><div class="c" id="ac">R$ 20</div><div class="l" id="al">R$ 25</div></div><div class="lu" id="alu">R$ 25</div><div class="lt">de lucro por pizza</div></div>
+<div class="col" id="cb"><div class="k">NO COMBO</div><div class="pr">R$ 35</div><div class="barra"><div class="c" id="bc">R$ 20</div><div class="l" id="bl">R$ 15</div></div><div class="lu" id="blu">R$ 15</div><div class="lt">de lucro por pizza</div></div>
+<div id="menos">40% menos lucro em cada pizza</div>
+<div id="bal"><div class="t">Pra ganhar os mesmos <span>R$ 50</span><br>de 2 pizzas avulsas…</div></div>
+<div id="bres"><div class="n" id="bn">1 pizza</div><div class="s" id="bs">no combo</div></div>
+<div id="cta" class="abs"><div id="caixa"><div class="k">Desconto bom é desconto calculado</div><div class="t">Calculadora<br>grátis</div><div class="b">Link na bio</div></div><br><div class="lg2"><img src="../base/logo.png"></div><div class="h">@raiz.connect</div></div>
+<div class="nota" id="nota">valores de exemplo</div>
+<script src="../base/lib.js"></script><script src="tempos.js"></script>
+<script>
+const NS='http://www.w3.org/2000/svg';
+function el(tag,at,pai){const e=document.createElementNS(NS,tag);for(const k in at)e.setAttribute(k,at[k]);pai.appendChild(e);return e}
+function pizza(pai,r){const g=el('g',{},pai);el('circle',{cx:0,cy:0,r:r,fill:'#e8a54b'},g);el('circle',{cx:0,cy:0,r:r*0.86,fill:'#d7392b'},g);
+ for(let i=0;i<9;i++){const a=i*2.4,d=r*(0.25+0.45*((i*37)%10)/10);el('circle',{cx:d*Math.cos(a),cy:d*Math.sin(a),r:r*0.16,fill:'#ffd77a'},g)}
+ for(let i=0;i<7;i++){const a=i*0.9+0.4,d=r*(0.2+0.5*((i*53)%10)/10);el('circle',{cx:d*Math.cos(a),cy:d*Math.sin(a),r:r*0.11,fill:'#8e1d14'},g)}
+ for(let i=0;i<4;i++){const a=i*Math.PI/4;el('line',{x1:-r*0.86*Math.cos(a),y1:-r*0.86*Math.sin(a),x2:r*0.86*Math.cos(a),y2:r*0.86*Math.sin(a),stroke:'#b02a1e','stroke-width':4},g)}
+ return g}
+// cena 0: duas pizzas + selo
+const p1=pizza($('g0'),200),p2=pizza($('g0'),200);
+const selo=el('g',{},$('g0'));let pts='';for(let i=0;i<24;i++){const r=i%2?150:185,a=i*Math.PI/12;pts+=`${r*Math.cos(a)},${r*Math.sin(a)} `}
+el('polygon',{points:pts,fill:'#ffd400'},selo);const st=el('text',{x:0,y:-8,'text-anchor':'middle','font-family':'I','font-weight':900,'font-size':58,fill:'#2a1a12'},selo);st.textContent='2 POR';
+const st2=el('text',{x:0,y:60,'text-anchor':'middle','font-family':'I','font-weight':900,'font-size':70,fill:'#d7392b'},selo);st2.textContent='R$ 70';
+// pizzas das colunas
+const pa=pizza($('g0'),150),pb=pizza($('g0'),150);
+// balança
+const B=$('gbal');const PX=540,PY=820;
+el('rect',{x:PX-22,y:PY,width:44,height:520,rx:14,fill:'#2a1a12'},B);el('rect',{x:PX-160,y:PY+500,width:320,height:40,rx:20,fill:'#2a1a12'},B);
+const viga=el('g',{},B);el('rect',{x:-360,y:-14,width:720,height:28,rx:14,fill:'#2a1a12'},viga);el('circle',{cx:0,cy:0,r:30,fill:'#d7392b'},viga);
+const prato=[0,1].map(i=>{const g=el('g',{},B);el('line',{x1:-120,y1:0,x2:0,y2:-200,stroke:'#2a1a12','stroke-width':6},g);el('line',{x1:120,y1:0,x2:0,y2:-200,stroke:'#2a1a12','stroke-width':6},g);el('path',{d:'M-150 0 L150 0 L115 40 L-115 40 Z',fill:'#2a1a12'},g);return g});
+const esq=[0,1].map(i=>{const g=pizza(prato[0],64);return g});
+const dir=[0,1,2,3].map(i=>{const g=pizza(prato[1],64);return g});
+const tl=el('text',{x:0,y:110,'text-anchor':'middle','font-family':'I','font-weight':800,'font-size':34,fill:'#2a1a12'},prato[0]);tl.textContent='2 avulsas · R$ 50';
+const tr=el('text',{x:0,y:110,'text-anchor':'middle','font-family':'I','font-weight':800,'font-size':34,fill:'#d7392b'},prato[1]);
+window.render=function(t){
+  // cena 0
+  const a0=vis(t,0);const i1=eo(p(t,0.1,0.6));
+  p1.setAttribute('transform',`translate(${lerp(-300,280,i1)} 820) rotate(${(1-i1)*-200})`);
+  p2.setAttribute('transform',`translate(${lerp(1380,800,i1)} 820) rotate(${(1-i1)*200})`);
+  const sq=eb(p(t,0.7,0.5));selo.setAttribute('transform',`translate(540 820) scale(${sq}) rotate(${t*20})`);
+  [p1,p2,selo].forEach(x=>x.style.opacity=1-a0.o);
+  const qi=eo(p(t,1.4,0.4));$('q').style.opacity=qi*(1-a0.o);$('q').style.transform=`translateY(${(1-qi)*50}px)`;
+  // colunas
+  const ca=eo(p(t,S[1],0.5)),co=p(t,S[5]-0.3,0.3);set($('ca'),ca*(1-co),(1-ca)*80);
+  pa.setAttribute('transform',`translate(290 ${lerp(1400,800,ca)}) rotate(${t*8})`);pa.style.opacity=ca*(1-co);
+  const cb=eo(p(t,S[4],0.5));set($('cb'),cb*(1-co),(1-cb)*80);
+  pb.setAttribute('transform',`translate(790 ${lerp(1400,800,cb)}) rotate(${-t*8})`);pb.style.opacity=cb*(1-co);
+  const W=420;const c1=eo(p(t,S[2],0.6));$('ac').style.width=(W*20/45*c1)+'px';
+  const l1=eo(p(t,S[3],0.6));$('al').style.left=(W*20/45)+'px';$('al').style.width=(W*25/45*l1)+'px';
+  const lu1=eb(p(t,S[3]+0.3,0.5));$('alu').style.opacity=cl(lu1*2);$('alu').style.transform=`scale(${lu1})`;
+  $('ca').querySelector('.lt').style.opacity=cl(lu1*2);
+  const c2=eo(p(t,S[4]+0.6,0.6));$('bc').style.width=(W*20/35*c2)+'px';
+  const l2=eo(p(t,S[4]+1.6,0.6));$('bl').style.left=(W*20/35)+'px';$('bl').style.width=(W*15/35*l2)+'px';
+  const lu2=eb(p(t,S[4]+2.2,0.5));$('blu').style.opacity=cl(lu2*2);$('blu').style.transform=`scale(${lu2})`;$('cb').querySelector('.lt').style.opacity=cl(lu2*2);
+  $('blu').style.color='#d7392b';
+  const mn=eo(p(t,S[4]+3.2,0.4));$('menos').style.opacity=mn*(1-co);
+  // balança
+  const bv=vis(t,5);$('gbal').style.opacity=bv.v;$('bal').style.opacity=bv.v;
+  let n=0;for(let k=0;k<4;k++){if(t>S[5]+1.0+k*0.9)n=k+1}
+  const add=k=>eb(p(t,S[5]+1.0+k*0.9,0.4));
+  let peso=0;for(let k=0;k<4;k++)peso+=15*eo(p(t,S[5]+1.0+k*0.9,0.4));
+  const ang=cl((peso-50)/50,-1,1)*14*(t>S[5]?1:0);
+  viga.setAttribute('transform',`translate(${PX} ${PY}) rotate(${ang})`);
+  const rad=ang*Math.PI/180;
+  const pos=s=>[PX+s*330*Math.cos(rad),PY+s*330*Math.sin(rad)];
+  const [lx,ly]=pos(-1),[rx,ry]=pos(1);
+  prato[0].setAttribute('transform',`translate(${lx} ${ly+200})`);prato[1].setAttribute('transform',`translate(${rx} ${ry+200})`);
+  esq.forEach((g,k)=>g.setAttribute('transform',`translate(${(k-0.5)*130} -60)`));
+  dir.forEach((g,k)=>{const q=add(k);g.setAttribute('transform',`translate(${(k%2-0.5)*130} ${-60-Math.floor(k/2)*110-(1-q)*300}) scale(${q})`);g.style.opacity=cl(q*3)});
+  tr.textContent=`${n} no combo · R$ ${n*15}`;
+  $('bn').textContent=n<1?'':n+(n>1?' pizzas':' pizza');$('bs').textContent=n>=4?'no combo pra empatar (e passar)':'no combo';
+  $('bres').style.opacity=bv.v*(n>0?1:0);$('bn').style.color=n>=4?'#2e8b3a':'#d7392b';
+  // cta
+  const ci=eo(p(t,S[6],0.5));set($('cta'),ci,(1-ci)*100);
+  const pu=t>S[6]+0.8?(Math.sin((t-S[6])*5)+1)/2:0;$('cta').querySelector('.b').style.transform=`scale(${1+0.05*pu})`;
+  $('lg').style.opacity=1-ci;$('nota').style.opacity=(t>S[1]&&t<S[6])?0.75:0;
+};
+render(0);
+</script></body></html>

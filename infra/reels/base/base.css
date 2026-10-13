@@ -1,0 +1,10 @@
+@font-face{font-family:I;src:url(../base/fonts/Inter-Medium.otf);font-weight:500}
+@font-face{font-family:I;src:url(../base/fonts/Inter-Bold.otf);font-weight:700}
+@font-face{font-family:I;src:url(../base/fonts/Inter-ExtraBold.otf);font-weight:800}
+@font-face{font-family:I;src:url(../base/fonts/Inter-Black.otf);font-weight:900}
+@font-face{font-family:D;src:url(../base/fonts/InterDisplay-Black.otf);font-weight:900}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;font-family:I,sans-serif;color:#fff}
+.abs{position:absolute;left:0;right:0;text-align:center}
+.logo{position:absolute;left:390px;top:60px;width:300px}
+.nota{position:absolute;left:0;right:0;bottom:110px;text-align:center;font-size:30px;font-weight:500;opacity:.75}

@@ -1,0 +1,82 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../base/base.css">
+<style>
+body{background:#14100b}
+#bg{position:absolute;inset:0;background:linear-gradient(180deg,#1d150c,#0e0b07)}
+#topo{position:absolute;left:0;right:0;top:250px;text-align:center}
+#topo .a{font-size:52px;font-weight:700;color:#f6d7a3}
+#topo .b{font-family:D;font-size:150px;font-weight:900;color:#f2a93b;line-height:1.05}
+#grade{position:absolute;left:140px;top:560px;width:800px;height:800px}
+.cx{position:absolute;width:56px;height:64px;border-radius:50% 50% 46% 46% / 62% 62% 38% 38%;background:radial-gradient(circle at 40% 35%,#ffcf73,#d98a1f 70%);box-shadow:0 6px 0 #8a5410}
+#chip{position:absolute;left:0;right:0;top:1400px;text-align:center}
+#chip span{display:inline-block;font-size:56px;font-weight:800;padding:26px 54px;border-radius:70px;color:#14100b}
+#fica{position:absolute;left:0;right:0;top:1560px;text-align:center;font-size:46px;font-weight:700;color:#f6d7a3}
+#fica b{font-family:D;font-size:80px;color:#5fd35d;font-weight:900}
+#lupa{position:absolute;left:0;right:0;top:600px;text-align:center}
+#lupa .t{font-size:96px;font-weight:900;color:#fff;line-height:1.15}
+#lupa .u{display:inline-block;height:14px;background:#f2a93b;border-radius:7px}
+#oc{position:absolute;left:0;right:0;top:420px;text-align:center}
+#oc .n{font-family:D;font-size:330px;font-weight:900;color:#ff6b4a;line-height:1}
+#oc .t{font-size:66px;font-weight:800;color:#f6d7a3;line-height:1.25}
+#cta{top:430px}
+#cta .k{font-size:58px;font-weight:700;color:#f6d7a3}
+#cta .t{font-family:D;font-size:140px;font-weight:900;color:#f2a93b;line-height:1;margin:20px 0 50px}
+#cta .b{display:inline-block;background:#f2a93b;color:#14100b;font-size:64px;font-weight:900;padding:40px 80px;border-radius:90px}
+#cta img{display:block;width:560px;margin:90px auto 10px}
+#cta .h{font-size:48px;font-weight:700;color:#f6d7a3}
+.nota{color:#f6d7a3}
+</style></head><body>
+<div id="bg"></div>
+<img class="logo" id="logo" src="../base/logo.png">
+<div id="topo"><div class="a">Cento de salgado a</div><div class="b">R$ 90</div></div>
+<div id="grade"></div>
+<div id="chip"><span id="chips"></span></div>
+<div id="fica">fica com você: <b id="ficav"></b></div>
+<div id="lupa"><div class="t">o que quase<br>ninguém coloca<br>na conta</div><div class="u" id="sub"></div></div>
+<div id="oc"><div class="n">R$ 18</div><div class="t">escondidos em<br>cada cento</div></div>
+<div id="cta" class="abs"><div class="k">Coloque tudo na conta</div><div class="t">Calculadora<br>grátis</div><div class="b">Link na bio</div><img src="../base/logo.png"><div class="h">@raiz.connect</div></div>
+<div class="nota" id="nota">valores de exemplo · cada salgado = R$ 0,90</div>
+<script src="../base/lib.js"></script><script src="tempos.js"></script>
+<script>
+// grupos: [cena, nome, valor, cor, qtd ícones]
+const G=[[1,'massa e recheio',32,'#8a7a66',36],[3,'óleo da fritura',6,'#ffd84a',7],[4,'gás',4,'#5ab4ff',4],[5,'embalagem',5,'#c58cff',6],[6,'quebra e sobra',3,'#ff6b4a',3]];
+let h='';for(let i=0;i<100;i++){const x=(i%10)*80+12,y=Math.floor(i/10)*80+8;h+=`<div class="cx" id="c${i}" style="left:${x}px;top:${y}px"></div>`}
+$('grade').innerHTML=h;
+// índice inicial de cada grupo (preenche de baixo pra cima, da direita)
+let ini=0;const faixa=G.map(g=>{const r=[ini,ini+g[4]];ini+=g[4];return r});
+const ordem=[...Array(100).keys()].reverse();
+window.render=function(t){
+  const topoV=1-p(t,S[2]-0.3,0.3)*(t<S[3]?1:0);
+  const emGrade=t<S[7]+0.3;
+  // topo
+  const ti=eo(p(t,0,0.4));set($('topo'),ti*(t<S[2]||t>=S[3]?1:1-p(t,S[2]-0.25,0.25))*(1-p(t,S[7]-0.25,0.25)),(1-ti)*60);
+  // grade
+  const gv=(t<S[2]?1:t<S[3]?1-p(t,S[2]-0.25,0.25)+p(t,S[3]-0.25,0.25):1)*(1-p(t,S[7]-0.25,0.25));
+  $('grade').style.opacity=cl(gv);
+  for(let i=0;i<100;i++){const e=$('c'+i);const q=eb(p(t,0.3+(i%10+Math.floor(i/10))*0.03,0.35));
+    let cor=null,sc=q,rot=0;
+    const pos=ordem.indexOf(i);
+    G.forEach((g,k)=>{const [a,b]=faixa[k];if(pos>=a&&pos<b){const h2=p(t,S[g[0]]+0.3+(pos-a)*0.03,0.25);if(h2>0){cor=g[3];sc=q*(1-0.25*eo(h2));rot=h2*0}}});
+    e.style.background=cor?cor:'';e.style.boxShadow=cor?'none':'';e.style.transform=`scale(${sc}) rotate(${rot}deg)`;
+    // na cena 7, ocultos piscam
+    if(t>=S[7]&&pos>=36&&pos<56){e.style.transform=`scale(${sc*(1+0.12*Math.sin(t*10))})`}
+  }
+  // chip
+  let gi=-1;G.forEach((g,k)=>{if(t>=S[g[0]]&&t<S[g[0]+1])gi=k});
+  if(gi>=0){const g=G[gi];$('chips').textContent=g[1]+' · '+brl0(g[2]);$('chips').style.background=g[3];const ci=eb(p(t,S[g[0]],0.4));$('chip').style.opacity=cl(ci*2);$('chip').style.transform=`scale(${ci})`}else{$('chip').style.opacity=0}
+  // fica
+  let fica=90;G.forEach(g=>{fica-=g[2]*eo(p(t,S[g[0]]+0.3,0.8))});
+  $('ficav').textContent=brl0(fica);$('fica').style.opacity=(t>S[1]&&t<S[7]-0.2&&!(t>=S[2]&&t<S[3]))?1:0;
+  // lupa
+  const l=vis(t,2);set($('lupa'),l.v,(1-l.i)*60);$('sub').style.width=(eo(p(t,S[2]+0.6,0.6))*620)+'px';
+  // 18 escondidos
+  const o=vis(t,7);const oq=eb(p(t,S[7],0.5));$('oc').style.opacity=o.v;$('oc').style.transform=`scale(${0.5+0.5*oq})`;
+  $('grade').style.top=(t>=S[7]-0.3? 560+360*eo(p(t,S[7]-0.3,0.5)) : 560)+'px';
+  if(t>=S[7]-0.3&&t<S[8]){$('grade').style.opacity=1-p(t,S[8]-0.25,0.25);$('grade').style.transform=`scale(${1-0.25*eo(p(t,S[7]-0.3,0.5))})`}else{$('grade').style.transform=''}
+  // cta
+  const ci=eo(p(t,S[8],0.5));set($('cta'),ci,(1-ci)*100);
+  const pu=t>S[8]+0.8?(Math.sin((t-S[8])*5)+1)/2:0;$('cta').querySelector('.b').style.transform=`scale(${1+0.05*pu})`;
+  $('logo').style.opacity=1-ci;$('nota').style.opacity=(t>S[1]&&t<S[8])?0.75:0;
+};
+render(0);
+</script></body></html>

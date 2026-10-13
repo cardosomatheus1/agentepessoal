@@ -1,0 +1,103 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../base/base.css">
+<style>
+body{background:#47b346}
+#bg{position:absolute;inset:0}
+#lg{position:absolute;left:350px;top:50px;width:380px;height:150px;background:#0a0a0a;border-radius:40px;display:flex;align-items:center;justify-content:center}
+#lg img{width:300px}
+.w{position:absolute;left:0;right:0;text-align:center;font-family:D;font-weight:900;line-height:.95;white-space:nowrap}
+#svg{position:absolute;left:0;top:0;width:1080px;height:1920px}
+#rot{position:absolute;left:0;right:0;top:330px;text-align:center}
+#rot .a{font-size:64px;font-weight:800;color:#f1dcff}
+#rot .b{font-family:D;font-size:150px;font-weight:900;color:#fff;line-height:1}
+#info{position:absolute;left:0;right:0;top:1320px;text-align:center;font-family:D;font-weight:900;font-size:110px}
+#info .s{display:block;font-family:I;font-size:52px;font-weight:700;color:#f1dcff}
+.tg{position:absolute;font-size:50px;font-weight:900;color:#0a0a0a;background:#ffd400;padding:18px 34px;border-radius:16px;white-space:nowrap}
+#cta{top:420px}
+#cta .k{font-size:64px;font-weight:800;color:#0a0a0a}
+#cta .t{font-family:D;font-size:160px;font-weight:900;color:#0a0a0a;line-height:.95;margin:30px 0 50px}
+#cta .b{display:inline-block;background:#0a0a0a;color:#47b346;font-size:66px;font-weight:900;padding:42px 84px;border-radius:90px}
+#cta .lg2{display:inline-flex;margin-top:90px;background:#0a0a0a;border-radius:40px;padding:36px 60px}
+#cta .lg2 img{width:460px}
+#cta .h{font-size:48px;font-weight:800;color:#0a0a0a;margin-top:20px}
+.nota{color:#fff}
+</style></head><body>
+<div id="bg"></div>
+<div id="lg"><img src="../base/logo.png"></div>
+<div class="w" id="w0" style="top:560px;font-size:190px;color:#0a0a0a">Cobrar</div>
+<div class="w" id="w1" style="top:740px;font-size:230px;color:#fff">barato</div>
+<div class="w" id="w2" style="top:960px;font-size:120px;color:#0a0a0a">não é</div>
+<div class="w" id="w3" style="top:1090px;font-size:150px;color:#0a0a0a">estratégia.</div>
+<div class="w" id="w4" style="top:520px;font-size:150px;color:#fff">É</div>
+<div class="w" id="w5" style="top:700px;font-size:190px;color:#fff">PREJUÍZO</div>
+<div class="w" id="w6" style="top:900px;font-size:150px;color:#c27cff">parcelado.</div>
+<div id="parc"></div>
+<svg id="svg" viewBox="0 0 1080 1920">
+ <defs><clipPath id="cp"><path id="cup" d="M330 640 L750 640 L690 1220 L390 1220 Z"/></clipPath></defs>
+ <g id="copo">
+  <path d="M330 640 L750 640 L690 1220 L390 1220 Z" fill="#ffffff22"/>
+  <g clip-path="url(#cp)"><rect id="liq" x="300" width="480" fill="#5a1a7a"/><rect id="sob" x="300" width="480" fill="#47b346"/>
+   <g id="bolhas"></g></g>
+  <path d="M330 640 L750 640 L690 1220 L390 1220 Z" fill="none" stroke="#fff" stroke-width="10" stroke-linejoin="round"/>
+  <rect x="310" y="610" width="460" height="40" rx="20" fill="#fff"/>
+  <text id="tl" x="540" text-anchor="middle" font-family="I" font-weight="900" font-size="52" fill="#fff"></text>
+  <text id="ts" x="540" text-anchor="middle" font-family="I" font-weight="900" font-size="48" fill="#0a2a0e"></text>
+ </g>
+</svg>
+<div id="rot"><div class="a">Açaí 500 ml</div><div class="b">R$ 12</div></div>
+<div id="info"></div>
+<div class="tg" id="g0" style="left:60px;top:1330px">taxa da maquininha</div>
+<div class="tg" id="g1" style="left:560px;top:1460px">luz do freezer</div>
+<div class="tg" id="g2" style="left:330px;top:1590px">a sua hora</div>
+<div class="w" id="w7" style="top:620px;font-size:180px;color:#fff">Quase</div>
+<div class="w" id="w8" style="top:800px;font-size:180px;color:#fff">nada</div>
+<div class="w" id="w9" style="top:1000px;font-size:96px;color:#47b346">fica com você.</div>
+<div id="cta" class="abs"><div class="k">Preço certo começa na conta</div><div class="t">Calculadora<br>grátis</div><div class="b">Link na bio</div><br><div class="lg2"><img src="../base/logo.png"></div><div class="h">@raiz.connect</div></div>
+<div class="nota" id="nota">valores de exemplo</div>
+<script src="../base/lib.js"></script><script src="tempos.js"></script>
+<script>
+const NS='http://www.w3.org/2000/svg';
+for(let i=0;i<14;i++){const c=document.createElementNS(NS,'circle');c.setAttribute('r',6+i%4*3);c.setAttribute('fill','#ffffff33');c.id='b'+i;$('bolhas').appendChild(c)}
+let ph='';for(let i=0;i<12;i++){ph+=`<div class="w pc" style="top:${1180+Math.floor(i/4)*120}px;left:${80+(i%4)*240}px;right:auto;font-size:80px;color:#c27cff">${i+1}x</div>`}
+$('parc').innerHTML=ph;
+function slam(e,t0,o=1){const q=p(t0,0,0.18);e.style.opacity=(q>0?1:0)*o;e.style.transform=`scale(${lerp(2.4,1,eo(q))})`}
+const TOP=640,BOT=1220,H=BOT-TOP;
+window.render=function(t){
+  // fundo por cena
+  const cor=t<S[1]?'#47b346':t<S[2]?'#0a0a0a':t<S[6]?'#3b1450':t<S[7]?'#0a0a0a':'#47b346';
+  const fl=Math.max(...[1,2,6,7].map(k=>t>=S[k]?1-p(t,S[k],0.12):0));
+  $('bg').style.background=cor;$('bg').style.boxShadow=`inset 0 0 0 2000px rgba(255,255,255,${fl*0.5})`;
+  // cena 0
+  const o0=t<S[1]?1:0;[0,0.35,0.8,1.2].forEach((d,k)=>slam($('w'+k),t-d,o0));
+  $('w1').style.transform+=` rotate(-3deg)`;
+  // cena 1
+  const o1=t>=S[1]&&t<S[2]?1:0;[0,0.25,0.75].forEach((d,k)=>slam($('w'+(4+k)),t-S[1]-d,o1));
+  document.querySelectorAll('.pc').forEach((e,i)=>{const q=p(t,S[1]+0.9+i*0.05,0.12);e.style.opacity=o1*(q>0?0.25+0.75*((i*7+Math.floor(t*12))%5===0):0);e.style.transform=`scale(${lerp(1.8,1,eo(q))})`});
+  // copo cenas 2-5
+  const cv=t>=S[2]&&t<S[6];const ci=eb(p(t,S[2],0.5));
+  $('copo').style.opacity=cv?1:0;$('copo').style.transformOrigin='540px 930px';$('copo').style.transform=`scale(${cv?ci:1})`;
+  $('rot').style.opacity=cv?eo(p(t,S[2]+0.2,0.4)):0;
+  const lv=eio(p(t,S[3]+0.2,1.4))*9.5/12;
+  $('liq').setAttribute('y',BOT-H*lv);$('liq').setAttribute('height',H*lv);
+  // sobra: aparece na cena 4, encolhe na 5
+  let sv=eo(p(t,S[4],0.5))*2.5/12;
+  const corte=[0,1,2].reduce((a,k)=>a+eio(p(t,S[5]+0.3+k*1.0,0.5)),0);
+  sv*=1-0.28*corte;
+  const ys=BOT-H*lv-H*sv;$('sob').setAttribute('y',ys);$('sob').setAttribute('height',H*sv);
+  $('tl').setAttribute('y',BOT-H*lv/2+18);$('tl').textContent=t>S[3]?brl(9.5*eio(p(t,S[3]+0.2,1.4))):'';
+  $('ts').setAttribute('y',ys+H*sv/2+17);$('ts').textContent=(t>S[4]+0.3&&t<S[5]+0.3)?brl(2.5):'';
+  for(let i=0;i<14;i++){const b=$('b'+i);const yy=BOT-((t*90+i*53)%(H*lv+1));b.setAttribute('cx',360+(i*67)%360);b.setAttribute('cy',yy)}
+  // info
+  let inf='';if(t>=S[3]&&t<S[4])inf='<span style="color:#c27cff">'+brl(9.5)+'</span><span class="s">açaí, complementos, copo e colher</span>';
+  else if(t>=S[4]&&t<S[5])inf='<span style="color:#47b346">sobram '+brl(2.5)+'</span>';
+  $('info').innerHTML=inf;$('info').style.opacity=inf?1:0;
+  [0,1,2].forEach(k=>{const q=eb(p(t,S[5]+0.3+k*1.0,0.35));const e=$('g'+k);e.style.opacity=(t>=S[5]&&t<S[6])?cl(q*3):0;e.style.transform=`scale(${q}) rotate(${[-4,3,-2][k]}deg)`});
+  // cena 6
+  const o6=t>=S[6]&&t<S[7]?1:0;[0,0.3,0.7].forEach((d,k)=>slam($('w'+(7+k)),t-S[6]-d,o6));
+  // cta
+  const c=eo(p(t,S[7],0.4));set($('cta'),t>=S[7]?c:0,(1-c)*100);
+  const pu=t>S[7]+0.8?(Math.sin((t-S[7])*5)+1)/2:0;$('cta').querySelector('.b').style.transform=`scale(${1+0.05*pu})`;
+  $('lg').style.opacity=t>=S[7]?0:1;$('nota').style.opacity=(t>S[2]&&t<S[6])?0.75:0;
+};
+render(0);
+</script></body></html>

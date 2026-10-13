@@ -1,0 +1,99 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../base/base.css">
+<style>
+body{background:#120808}
+#bg{position:absolute;inset:0;background:radial-gradient(900px 1200px at 50% 50%,#3a120a,#0d0505 70%)}
+#ph{position:absolute;left:210px;top:250px;width:660px;height:1300px;border-radius:80px;background:#0b0b0b;padding:18px;box-shadow:0 50px 140px #000c,0 0 0 4px #333 inset;transform-origin:50% 50%}
+#tela{position:relative;width:100%;height:100%;border-radius:64px;background:#f7f4ef;overflow:hidden;color:#1a1a1a}
+#sb{display:flex;justify-content:space-between;padding:26px 46px 0;font-size:28px;font-weight:700}
+#hd{padding:30px 46px 0;font-size:46px;font-weight:900}
+#fica{padding:6px 46px;font-size:32px;font-weight:700;color:#777}
+#fica b{color:#1f9d3a;font-size:40px}
+#notif{position:absolute;left:26px;right:26px;top:80px;background:#fff;border-radius:34px;padding:28px 30px;display:flex;gap:24px;align-items:center;box-shadow:0 20px 50px #0003}
+#notif .ic{width:86px;height:86px;border-radius:24px;background:#ff4d2e;display:flex;align-items:center;justify-content:center;color:#fff;font-size:52px;font-weight:900;flex:none}
+#notif .a{font-size:31px;font-weight:900;white-space:nowrap}
+#notif .b{font-size:28px;font-weight:500;color:#555;margin-top:4px}
+#quanto{position:absolute;left:0;right:0;top:330px;text-align:center}
+#quanto .n{font-family:D;font-size:118px;font-weight:900;white-space:nowrap}
+#quanto .t{font-size:52px;font-weight:800;color:#ff4d2e}
+.seg{position:absolute;left:390px;width:300px;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;color:#fff;border-radius:18px;transform-origin:50% 50%}
+#cap{position:absolute;left:0;right:0;top:1580px;text-align:center;font-family:D;font-size:88px;font-weight:900;white-space:nowrap;line-height:1.1}
+#sobram{position:absolute;left:0;right:0;top:1600px;text-align:center;font-family:D;font-size:120px;font-weight:900;color:#5fd35d}
+#comp{position:absolute;left:0;right:0;top:300px;height:1300px}
+#comp .tt{position:absolute;left:0;right:0;top:0;text-align:center;font-size:62px;font-weight:800;color:#fff}
+.cb{position:absolute;bottom:200px;width:300px;border-radius:24px 24px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:24px;font-family:D;font-size:64px;font-weight:900;color:#0d2b12}
+.cl{position:absolute;bottom:120px;width:300px;text-align:center;font-size:48px;font-weight:800;color:#fff}
+#c1{left:170px;background:#5fd35d}#c2{left:610px;background:#5fd35d}
+#cl1{left:170px}#cl2{left:610px}
+#comp .ft{position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:54px;font-weight:800;color:#ffb39f}
+#calc{position:absolute;inset:0;background:#0f1a12;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;opacity:0}
+#calc .k{font-size:44px;font-weight:700;color:#cfe9d6;text-align:center}
+#calc .t{font-family:D;font-size:100px;font-weight:900;color:#47b346;line-height:1;margin:24px 0 50px;text-align:center}
+#calc .b{background:#47b346;color:#07210f;font-size:54px;font-weight:900;padding:34px 70px;border-radius:80px}
+#calc img{width:420px;margin-top:70px}
+#ctah{position:absolute;left:0;right:0;top:1610px;text-align:center;font-size:54px;font-weight:800;color:#fff;opacity:0}
+.nota{color:#ffb39f;bottom:50px}
+</style></head><body>
+<div id="bg"></div>
+<img class="logo" id="logo" src="../base/logo.png">
+<div id="ph"><div id="tela">
+ <div id="sb"><span>12:41</span><span>5G ▮▮▮</span></div>
+ <div id="hd">Pedidos de hoje</div>
+ <div id="fica">fica com você: <b id="ficav">R$ 30,00</b></div>
+ <div id="quanto"><div class="n">R$ 30,00</div><div class="t">quanto disso é seu?</div></div>
+ <div id="notif"><div class="ic">!</div><div><div class="a">Novo pedido · R$ 30,00</div><div class="b">1 X-burguer + batata · app de entrega</div></div></div>
+ <div id="calc"><div class="k">Preço do app ≠ preço do balcão</div><div class="t">Calculadora<br>grátis</div><div class="b">Link na bio</div><img src="../base/logo.png"></div>
+</div></div>
+<div id="segs"></div>
+<div id="cap"></div><div id="sobram">Sobram R$ 9,00</div>
+<div id="comp"><div class="tt">O mesmo lanche</div>
+ <div class="cb" id="c1">R$ 9</div><div class="cb" id="c2">R$ 16,50</div>
+ <div class="cl" id="cl1">no app</div><div class="cl" id="cl2">no balcão</div>
+ <div class="ft">o preço do app tem que ser outro</div></div>
+<div id="ctah">@raiz.connect</div>
+<div class="nota" id="nota">valores de exemplo · taxa de exemplo 25%</div>
+<script src="../base/lib.js"></script><script src="tempos.js"></script>
+<script>
+const K=28, BASE=1440; // px por real; base da barra
+// de baixo pra cima
+const SG=[['sobra',9,'#1f9d3a',null],['embalagem e sachês',2.5,'#8a8a8a',4],['pão, carne, queijo, batata',11,'#e0453a',3],['taxa do app',7.5,'#ff8a1f',2]];
+let y=BASE,h='';SG.forEach((s,i)=>{const hh=s[1]*K;y-=hh;h+=`<div class="seg" id="g${i}" style="top:${y}px;height:${hh-6}px;background:${s[2]}">${brl(s[1])}</div>`;s.push(y)});
+$('segs').innerHTML=h;
+window.render=function(t){
+  // celular
+  const pi=eo(p(t,0,0.5));const po=eo(p(t,S[6]-0.3,0.5));const pv=t>=S[7]?eo(p(t,S[7]-0.2,0.5)):0;
+  const back=t>=S[7];
+  $('ph').style.opacity=back?pv:(1-po);
+  $('ph').style.transform=back?`scale(${0.9+0.1*pv})`:`translateY(${(1-pi)*200}px) scale(${1-0.2*po})`;
+  // notificação
+  const ni=eb(p(t,0.3,0.5)),nu=eo(p(t,S[1],0.4));
+  $('notif').style.transform=`translateY(${(1-ni)*-250+nu*0}px)`;$('notif').style.opacity=t<S[2]?1:1-p(t,S[2],0.3);
+  // quanto
+  const q=vis(t,1);set($('quanto'),q.v,(1-q.i)*40);
+  // barra
+  const bi=eo(p(t,S[2]-0.3,0.5));
+  let fica=30,cap=null;
+  SG.forEach((s,i)=>{const e=$('g'+i);let o=bi*(1-po),tx=0,ty=0,r=0;
+    if(s[3]!==null){const c=S[s[3]];const k=p(t,c+0.6,1.1);const k2=eio(k);
+      tx=k2*(i%2?-420:420);ty=k*k*900-Math.sin(k*Math.PI)*120;r=k2*(i%2?-30:30);o*=1-p(t,c+1.3,0.4);fica-=s[1]*eo(p(t,c+0.6,0.6));
+      if(t>=c&&t<S[s[3]+1]){cap=['− '+brl(s[1])+'<br><span style="font-size:44px;font-weight:700;color:#fff">'+s[0]+'</span>',s[2],eo(p(t,c,0.3))*(1-p(t,S[s[3]+1]-0.25,0.25))]}
+    }
+    if(i===0&&t>=S[5]){const g=0.5+0.5*Math.sin((t-S[5])*8);e.style.boxShadow=`0 0 ${30+30*g}px #5fd35d`}
+    e.style.opacity=o;e.style.transform=`translate(${tx}px,${ty}px) rotate(${r}deg)`});
+  $('ficav').textContent=brl(fica);
+  if(cap){$('cap').innerHTML=cap[0];$('cap').style.color=cap[1]==='#8a8a8a'?'#cfcfcf':cap[1];$('cap').style.opacity=cap[2];$('cap').style.transform=`translateY(${(1-cap[2])*30}px)`}else{$('cap').style.opacity=0}
+  // sobram
+  const so=vis(t,5);const sq=eb(p(t,S[5],0.5));$('sobram').style.opacity=so.v;$('sobram').style.transform=`scale(${0.6+0.4*sq})`;
+  // comparação
+  const cv=vis(t,6);$('comp').style.opacity=cv.v;
+  const h1=eo(p(t,S[6]+0.2,0.7))*9*55,h2=eo(p(t,S[6]+0.9,0.9))*16.5*55;
+  $('c1').style.height=h1+'px';$('c2').style.height=h2+'px';
+  $('comp').querySelector('.ft').style.opacity=eo(p(t,S[6]+2.2,0.4));
+  // cta
+  $('calc').style.opacity=back?1:0;$('ctah').style.opacity=back?eo(p(t,S[7]+0.4,0.4)):0;
+  $('quanto').style.display=back?'none':'';$('notif').style.display=back?'none':'';
+  const pu=back&&t>S[7]+0.8?(Math.sin((t-S[7])*5)+1)/2:0;$('calc').querySelector('.b').style.transform=`scale(${1+0.05*pu})`;
+  $('logo').style.opacity=1;$('nota').style.opacity=(t>S[2]&&t<S[7])?0.75:0;
+};
+render(0);
+</script></body></html>

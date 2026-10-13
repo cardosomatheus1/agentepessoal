@@ -1,0 +1,108 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../base/base.css">
+<style>
+body{background:#1d1430}
+#bg{position:absolute;inset:0;background:radial-gradient(1000px 1000px at 50% 45%,#35245a,#150e24 70%)}
+#tit{position:absolute;left:0;right:0;top:250px;text-align:center}
+#tit .a{font-size:54px;font-weight:700;color:#e9dcff}
+#tit .b{font-family:D;font-size:140px;font-weight:900;color:#ff8fb1;line-height:1.05}
+#svg{position:absolute;left:0;top:0;width:1080px;height:1920px}
+#leg{position:absolute;left:150px;right:150px;top:1250px}
+.it{display:flex;justify-content:space-between;align-items:center;font-size:50px;font-weight:700;color:#e9dcff;padding:14px 0;opacity:0}
+.it i{display:inline-block;width:34px;height:34px;border-radius:10px;margin-right:22px;vertical-align:-4px}
+#sobra{position:absolute;left:0;right:0;top:1250px;text-align:center}
+#sobra .n{font-family:D;font-size:200px;font-weight:900;color:#5fd35d;line-height:1}
+#sobra .t{font-size:60px;font-weight:700;color:#e9dcff}
+#horas{position:absolute;left:0;right:0;top:1260px;text-align:center}
+#horas .n{font-family:D;font-size:190px;font-weight:900;color:#fff;line-height:1}
+#horas .t{font-size:56px;font-weight:700;color:#e9dcff}
+#conta{position:absolute;left:0;right:0;top:1230px;text-align:center}
+#conta .l{font-size:58px;font-weight:700;color:#e9dcff;line-height:1.5}
+#conta .l b{font-weight:900}
+#conta .r{font-family:D;font-size:210px;font-weight:900;color:#ff5a5f;line-height:1.05}
+#cta{top:430px}
+#cta .k{font-size:62px;font-weight:800;color:#fff;line-height:1.2}
+#cta .t{font-family:D;font-size:140px;font-weight:900;color:#ff8fb1;line-height:1;margin:40px 0 50px}
+#cta .b{display:inline-block;background:#ff8fb1;color:#1d1430;font-size:64px;font-weight:900;padding:40px 80px;border-radius:90px}
+#cta img{display:block;width:560px;margin:80px auto 10px}
+#cta .h{font-size:48px;font-weight:700;color:#e9dcff}
+.nota{color:#e9dcff}
+</style></head><body>
+<div id="bg"></div>
+<svg id="svg" viewBox="0 0 1080 1920"><g id="conf"></g><g id="bolo"></g></svg>
+<img class="logo" id="logo" src="../base/logo.png">
+<div id="tit"><div class="a" id="tita">Bolo de aniversário</div><div class="b" id="titb">R$ 120</div></div>
+<div id="leg">
+ <div class="it" id="i0"><span><i style="background:#ff8fb1"></i>ingredientes</span><span>R$ 45</span></div>
+ <div class="it" id="i1"><span><i style="background:#8fd3ff"></i>caixa e embalagem</span><span>R$ 8</span></div>
+ <div class="it" id="i2"><span><i style="background:#ffd166"></i>gás e luz</span><span>R$ 7</span></div>
+</div>
+<div id="sobra"><div class="n">R$ 70</div><div class="t">de sobra. Parece ótimo!</div></div>
+<div id="horas"><div class="n" id="hn">0h</div><div class="t">de trabalho</div></div>
+<div id="conta"><div class="l">sobra <b>R$ 70</b> − seu trabalho <b>R$ 75</b></div><div class="r">-R$ 5</div></div>
+<div id="cta" class="abs"><div class="k">Você paga todo mundo,<br>menos você?</div><div class="t">Calculadora<br>grátis</div><div class="b">Link na bio</div><img src="../base/logo.png"><div class="h">@raiz.connect</div></div>
+<div class="nota" id="nota">valores de exemplo</div>
+<script src="../base/lib.js"></script><script src="tempos.js"></script>
+<script>
+const CX=540,CY=830,R=330;
+const NS='http://www.w3.org/2000/svg';
+function el(tag,at,pai){const e=document.createElementNS(NS,tag);for(const k in at)e.setAttribute(k,at[k]);(pai||$('bolo')).appendChild(e);return e}
+function arco(a0,a1,r=R){ // graus, 0 = topo, horário
+  const P=a=>[CX+r*Math.sin(a*Math.PI/180),CY-r*Math.cos(a*Math.PI/180)];
+  if(a1-a0<0.01)return '';const [x0,y0]=P(a0),[x1,y1]=P(a1);const g=a1-a0>180?1:0;
+  return `M${CX},${CY} L${x0},${y0} A${r},${r} 0 ${g} 1 ${x1},${y1} Z`}
+const prato=el('circle',{cx:CX,cy:CY,r:R+40,fill:'#2a1d45',stroke:'#4b3a73','stroke-width':6});
+const base=el('circle',{cx:CX,cy:CY,r:R,fill:'#fff1dc'});
+const fat=[['#ff8fb1',45],['#8fd3ff',8],['#ffd166',7]].map(([c])=>el('path',{fill:c}));
+const glace=el('circle',{cx:CX,cy:CY,r:R-14,fill:'none',stroke:'#ff8fb1','stroke-width':22,'stroke-dasharray':'2 44','stroke-linecap':'round'});
+const horasG=el('path',{fill:'#b48cff55'});
+const ticks=[];for(let i=0;i<12;i++){const a=i*30*Math.PI/180;ticks.push(el('line',{x1:CX+(R-60)*Math.sin(a),y1:CY-(R-60)*Math.cos(a),x2:CX+(R-20)*Math.sin(a),y2:CY-(R-20)*Math.cos(a),stroke:'#1d1430','stroke-width':i%3?8:14,'stroke-linecap':'round'}))}
+const moedas=[];for(let i=0;i<5;i++){const a=(i*30+15)*Math.PI/180;const g=el('g',{});el('circle',{cx:CX+(R-100)*Math.sin(a),cy:CY-(R-100)*Math.cos(a),r:46,fill:'#ffd166',stroke:'#c99a2e','stroke-width':6},g);const tx=el('text',{x:CX+(R-100)*Math.sin(a),y:CY-(R-100)*Math.cos(a)+10,'text-anchor':'middle','font-size':30,'font-weight':900,'font-family':'I',fill:'#5a3d00'},g);tx.textContent='R$15';moedas.push(g)}
+const hh=el('line',{x1:CX,y1:CY,stroke:'#1d1430','stroke-width':22,'stroke-linecap':'round'});
+const mh=el('line',{x1:CX,y1:CY,stroke:'#1d1430','stroke-width':12,'stroke-linecap':'round'});
+const miolo=el('circle',{cx:CX,cy:CY,r:20,fill:'#ff8fb1'});
+const vela=el('g',{});el('rect',{x:CX-14,y:CY-170,width:28,height:140,rx:8,fill:'#8fd3ff'},vela);const chama=el('ellipse',{cx:CX,cy:CY-200,rx:18,ry:32,fill:'#ffb02e'},vela);
+// confete
+const cores=['#ff8fb1','#8fd3ff','#ffd166','#5fd35d','#b48cff'];const conf=[];
+for(let i=0;i<70;i++){conf.push(el('rect',{width:18,height:30,rx:4,fill:cores[i%5]},$('conf')))}
+window.render=function(t){
+  // título
+  const ti=eo(p(t,0,0.4)),to=p(t,S[8]-0.3,0.3);set($('tit'),ti*(1-to),(1-ti)*50);
+  if(t<S[5]){$('tita').textContent='Bolo de aniversário';$('titb').textContent='R$ 120';$('titb').style.color='#ff8fb1'}
+  else if(t<S[7]){$('tita').textContent='Mas foram';$('titb').textContent='5 horas';$('titb').style.color='#b48cff'}
+  else {$('tita').textContent='Ou seja:';$('titb').textContent='prejuízo';$('titb').style.color='#ff5a5f'}
+  // bolo
+  const bi=eb(p(t,0.2,0.6)),bo=p(t,S[8]-0.3,0.3);$('bolo').style.opacity=cl(bi*2)*(1-bo);
+  $('bolo').style.transformOrigin=`${CX}px ${CY}px`;$('bolo').style.transform=`scale(${0.5+0.5*bi})`;
+  // fatias
+  const vals=[45,8,7];let a=0;const fade=1-p(t,S[5],0.6);
+  fat.forEach((f,k)=>{const q=eo(p(t,S[k+1]+0.2,0.7));const ang=vals[k]/120*360*q;f.setAttribute('d',arco(a,a+ang));f.style.opacity=fade;a+=ang});
+  glace.style.opacity=1-p(t,S[5],0.5);vela.style.opacity=1-p(t,S[1],0.4);
+  chama.setAttribute('ry',32+5*Math.sin(t*20));
+  // relógio
+  const rv=eo(p(t,S[5],0.5));ticks.forEach(x=>x.style.opacity=rv);hh.style.opacity=rv;mh.style.opacity=rv;miolo.style.opacity=rv;
+  const hp=eio(p(t,S[5]+0.4,1.8));const ah=hp*150*Math.PI/180,am=hp*5*360*Math.PI/180;
+  hh.setAttribute('x2',CX+170*Math.sin(ah));hh.setAttribute('y2',CY-170*Math.cos(ah));
+  mh.setAttribute('x2',CX+250*Math.sin(am));mh.setAttribute('y2',CY-250*Math.cos(am));
+  horasG.setAttribute('d',t>S[5]?arco(0,hp*150,R-6):'');horasG.style.opacity=1-p(t,S[8]-0.3,0.3);
+  // moedas
+  moedas.forEach((m,i)=>{const q=eb(p(t,S[6]+0.3+i*0.35,0.4));m.style.opacity=cl(q*2);m.style.transformOrigin=`${CX}px ${CY}px`;
+    const a=(i*30+15)*Math.PI/180;const x=CX+(R-100)*Math.sin(a),y=CY-(R-100)*Math.cos(a);m.setAttribute('transform',`translate(${x*(1-q)} ${y*(1-q)}) scale(${q})`)});
+  // legenda
+  [0,1,2].forEach(k=>{const e=$('i'+k);const q=eo(p(t,S[k+1],0.4));e.style.opacity=q*(1-p(t,S[4]-0.25,0.25));e.style.transform=`translateX(${(1-q)*80}px)`});
+  // sobra + confete
+  const s=vis(t,4);const sq=eb(p(t,S[4],0.5));$('sobra').style.opacity=s.v;$('sobra').style.transform=`scale(${0.6+0.4*sq})`;
+  conf.forEach((c,i)=>{const tt=t-S[4]-i*0.01;const on=t>S[4]&&t<S[5]+0.3;const x=(i*157)%1080,y=-60+tt*(500+(i%7)*90);c.setAttribute('x',x);c.setAttribute('y',y);c.setAttribute('transform',`rotate(${tt*200+i*40} ${x+9} ${y+15})`);c.style.opacity=on?1-p(t,S[5],0.3):0});
+  // horas
+  const hv=vis(t,5,6);$('horas').style.opacity=hv.v;$('hn').textContent=(t<S[6]?Math.round(hp*5)+'h':'5h × R$ 15 = R$ 75');
+  $('hn').style.fontSize=t<S[6]?'190px':'84px';$('hn').style.color=t<S[6]?'#fff':'#ffd166';
+  $('horas').querySelector('.t').textContent=t<S[6]?'de trabalho':'deveriam ser seus';
+  // conta
+  const cv=vis(t,7);$('conta').style.opacity=cv.v;const rq=eb(p(t,S[7]+1.2,0.5));$('conta').querySelector('.r').style.opacity=cl(rq*2);$('conta').querySelector('.r').style.transform=`scale(${0.5+0.5*rq})`;
+  // cta
+  const ci=eo(p(t,S[8],0.5));set($('cta'),ci,(1-ci)*100);
+  const pu=t>S[8]+0.8?(Math.sin((t-S[8])*5)+1)/2:0;$('cta').querySelector('.b').style.transform=`scale(${1+0.05*pu})`;
+  $('logo').style.opacity=1-ci;$('nota').style.opacity=(t>S[1]&&t<S[8])?0.75:0;
+};
+render(0);
+</script></body></html>

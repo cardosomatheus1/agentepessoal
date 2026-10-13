@@ -7,31 +7,31 @@ Feito aplicando os prompts do @erickcastilio.ia ao nosso nicho.
 
 Os números dos exemplos são de conta pronta para ilustrar. Antes de gravar, troque pelos preços reais da sua região.
 
-## As 7 ideias
+## Os 7 Reels feitos (motion, fontes em `infra/reels/`)
 
-| # | Dor do público | Gancho (primeiros 3 s) | Formato | O que a pessoa leva | Chamada |
-|---|---|---|---|---|---|
-| 1 | Não sabe quanto custa uma marmita | "Essa marmita de R$ 18 dá lucro ou prejuízo? Vamos fazer a conta." | Tela dividida: marmita + conta aparecendo item a item | Ver o custo real de 1 unidade | "Faça a sua na calculadora grátis, link na bio" |
-| 2 | Esquece gás, embalagem e taxa | "3 custos que quase ninguém coloca no preço da marmita" | Lista rápida, um custo por cena | Checklist do que entra no custo | "Salve para conferir no próximo reajuste" |
-| 3 | Taxa do app come o lucro | "Vendeu R$ 30 no iFood. Quanto sobrou de verdade?" | Conta na tela, valor encolhendo | Entender o preço mínimo no app | "Calcule o seu preço de app na calculadora da bio" |
-| 4 | Insumo subiu e não reajustou | "O leite subiu. Seu brigadeiro continua no mesmo preço?" | Antes e depois do custo | Quando e quanto reajustar | "Mande para quem faz doce" |
-| 5 | Medo de cobrar caro | "Cobrar barato não é estratégia, é prejuízo parcelado" | Fala direta para a câmera, 20 s | Mudar a cabeça sobre preço | "Comente PREÇO que eu te mando a calculadora" |
-| 6 | Kit e combo sem lucro | "Kit de 10 marmitas com desconto: quanto você perde em cada uma?" | Conta comparando unitário x kit | Desconto que ainda dá lucro | "Teste o seu kit na calculadora" |
-| 7 | Não sabe o próprio salário | "Você paga todo mundo, menos você?" | Bastidor + texto na tela | Colocar o próprio trabalho no preço | "Teste o sistema 15 dias, link na bio" |
+| # | Ramo | Ideia visual | Dor | Chamada |
+|---|---|---|---|---|
+| 1 | Marmita | Nota de custos + barra preço/custo/taxa | Não sabe o custo real | Calculadora grátis |
+| 2 | Brigadeiro | Etiqueta balançando + gráfico do insumo subindo | Insumo subiu, preço não | Preço certo pro doce |
+| 3 | Cento de salgado | Grade de 100 salgados "comida" pelos custos | Custos escondidos (óleo, gás, quebra) | Coloque tudo na conta |
+| 4 | Bolo de aniversário | Bolo visto de cima vira gráfico e depois relógio | O próprio trabalho fora do preço | Você paga todo mundo, menos você? |
+| 5 | Lanche no app | Celular com o pedido; o dinheiro sai em pedaços | Preço do app igual ao do balcão | Calcule os dois |
+| 6 | Pizza em combo | Comparação lado a lado + balança | Desconto sem conta | Simule o seu combo |
+| 7 | Açaí | Manifesto tipográfico, cortes secos | Cobrar barato | Preço certo começa na conta |
 
-## Plano de testes (1 Reel por dia)
+## Ordem sugerida (1 por dia) e o que medir
 
-| Dia | Reel | Hipótese | Métrica principal |
-|---|---|---|---|
-| 1 | Ideia 1 | Conta ao vivo prende mais que dica solta | Retenção nos 3 s |
-| 2 | Ideia 3 | Taxa do app é a dor mais forte | Compartilhamentos |
-| 3 | Ideia 5 | Fala direta gera comentário | Comentários "PREÇO" |
-| 4 | Ideia 2 | Lista é salva | Salvamentos |
-| 5 | Ideia 4 | Gancho de insumo do momento traz confeitaria | Visitas ao perfil |
-| 6 | Ideia 6 | Kit atrai marmitaria fit | Cliques no link da bio |
-| 7 | Ideia 7 | Emoção (salário) gera envio | Envios por Direct |
+| Dia | Reel | Métrica principal |
+|---|---|---|
+| 1 | 7 Açaí (manifesto, gancho forte) | Retenção nos 3 s |
+| 2 | 5 Lanche no app | Compartilhamentos |
+| 3 | 2 Brigadeiro | Salvamentos |
+| 4 | 3 Salgado | Comentários |
+| 5 | 4 Bolo | Envios por Direct |
+| 6 | 6 Pizza | Cliques no link da bio |
+| 7 | 1 Marmita | Visitas ao perfil |
 
-No 8º dia: repetir o formato e o gancho que mais ganharam e trocar só o produto (marmita → bolo → salgado).
+No 8º dia: repetir o formato que mais ganhou com outro ramo.
 
 ## Regras para não parecer robô
 - Nada de "comente para receber" com resposta automática em massa. O comentário "PREÇO" é respondido pela prospecção normal, um a um, e conta na cota.
