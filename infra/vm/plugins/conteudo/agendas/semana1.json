@@ -1,0 +1,20 @@
+[
+ {"id": "s1-pov", "data": "2026-10-13", "hora": "11:45", "tipo": "REELS", "arquivos": ["conteudo/semana1/1_pov.mp4"],
+  "legenda": "POV: você vende salgado e o cliente chega às 23h pedindo o precinho.\n\nMarca aquela amiga que vende comida e já passou por isso.\n\nE antes de dar o próximo desconto, faz a conta: a calculadora de preço da Raiz é grátis e está no link da bio.\n\n#salgadosparafesta #coxinha #vendercomida #empreendedorismo #docesesalgados"},
+ {"id": "s1-frases", "data": "2026-10-14", "hora": "11:45", "tipo": "CARROSSEL",
+  "arquivos": ["conteudo/semana1/2_frases/1.jpg","conteudo/semana1/2_frases/2.jpg","conteudo/semana1/2_frases/3.jpg","conteudo/semana1/2_frases/4.jpg","conteudo/semana1/2_frases/5.jpg","conteudo/semana1/2_frases/6.jpg","conteudo/semana1/2_frases/7.jpg","conteudo/semana1/2_frases/8.jpg","conteudo/semana1/2_frases/9.jpg"],
+  "legenda": "Qual dessas frases você mais ouve? Comenta o número.\n\nA número 7 é a que mais dói, né?\n\nPreço certo não é caro: é o preço que paga o seu trabalho. Se quiser conferir o seu, a calculadora grátis está no link da bio.\n\n#confeiteira #salgadeira #marmitaria #docesartesanais #vendercomida"},
+ {"id": "s1-brigadeiro", "data": "2026-10-15", "hora": "11:45", "tipo": "REELS", "arquivos": ["conteudo/semana1/3_brigadeiro.mp4"],
+  "legenda": "O leite condensado subiu. E o seu brigadeiro, continua no mesmo preço?\n\nNo exemplo do vídeo, o custo de cada brigadeiro foi de R$ 0,80 para R$ 1,10. Vendendo a R$ 2,00, o lucro por unidade caiu de R$ 1,20 para R$ 0,90: são R$ 30 a menos em cada cento.\n\nReajustar não é ganância. É conta. Faz a sua na calculadora grátis do link da bio.\n\nValores de exemplo.\n\n#brigadeiro #brigadeirogourmet #docesgourmet #confeitaria #precificacao"},
+ {"id": "s1-quiz", "data": "2026-10-16", "hora": "11:45", "tipo": "CARROSSEL",
+  "arquivos": ["conteudo/semana1/4_quiz/1.jpg","conteudo/semana1/4_quiz/2.jpg","conteudo/semana1/4_quiz/3.jpg","conteudo/semana1/4_quiz/4.jpg"],
+  "legenda": "Quiz: qual o preço mínimo desse bolo pra você não trabalhar de graça? A, B ou C?\n\nComenta a sua resposta antes de ver a resposta.\n\nValores de exemplo. Pra fazer essa conta com os seus números, a calculadora grátis está no link da bio.\n\n#bolodeaniversario #confeitaria #bolosdecorados #boloartesanal #precificacao"},
+ {"id": "s1-expectativa", "data": "2026-10-17", "hora": "11:45", "tipo": "REELS", "arquivos": ["conteudo/semana1/5_expectativa.mp4"],
+  "legenda": "Expectativa x realidade de quem vende bolo.\n\nManda pra uma confeiteira que vai entender.\n\n#confeitaria #confeiteira #bolodeaniversario #vidadeconfeiteira #empreendedorismo"},
+ {"id": "s1-polemica", "data": "2026-10-18", "hora": "11:45", "tipo": "CARROSSEL",
+  "arquivos": ["conteudo/semana1/6_polemica/1.jpg","conteudo/semana1/6_polemica/2.jpg","conteudo/semana1/6_polemica/3.jpg","conteudo/semana1/6_polemica/4.jpg"],
+  "legenda": "Taxa de entrega: cobrar à parte ou embutir no preço? Time A ou time B?\n\nComenta o seu time e o porquê. Seja qual for a escolha, a entrega tem custo e precisa estar na conta.\n\n#delivery #marmitaria #hamburgueria #docesparafesta #empreendedorismo"},
+ {"id": "s1-mito", "data": "2026-10-19", "hora": "11:45", "tipo": "CARROSSEL",
+  "arquivos": ["conteudo/semana1/7_mito/1.jpg","conteudo/semana1/7_mito/2.jpg","conteudo/semana1/7_mito/3.jpg","conteudo/semana1/7_mito/4.jpg","conteudo/semana1/7_mito/5.jpg","conteudo/semana1/7_mito/6.jpg"],
+  "legenda": "Mito ou verdade? 4 coisas que muita gente que vende comida acredita sobre preço.\n\nQual delas você já acreditou? Comenta o número.\n\nPra tirar a dúvida da número 4 com os seus produtos, a calculadora grátis está no link da bio.\n\n#precificacao #empreendedorismo #confeitaria #marmitaria #salgados"}
+]
