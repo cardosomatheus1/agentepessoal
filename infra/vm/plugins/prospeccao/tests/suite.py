@@ -1236,6 +1236,11 @@ class Suite:
         c, motivo = p.proxima(LOGIN, "raizconnect")
         ok(not c and motivo.startswith("espaçamento"), f"logo depois de uma ação: espaçamento ({motivo})")
         ok(p.aviso_sem_acao(motivo).startswith("ESPERE"), "espaçamento manda esperar, não encerrar a rodada")
+        # 13/10 09h23: the time shown cut the seconds; at the minute shown it was still too early and the agent stopped
+        hh, mm = map(int, re.search(r"(\d\d):(\d\d)", motivo).groups())
+        mostrado = dt.datetime.fromtimestamp(self.relogio, p._tz()).replace(hour=hh, minute=mm, second=0, microsecond=0).timestamp()
+        ult = p._ultima_acao(p.carregar(LOGIN))
+        ok(mostrado >= ult + p._espera(ult) and mostrado - (ult + p._espera(ult)) < 60, "o horário mostrado é o minuto seguinte à liberação, nunca antes")
         self.em(self.relogio + 4 * 60)
         c, motivo = p.proxima(LOGIN, "raizconnect")
         ok(c and c["tipo"] == "aquecer", f"depois da espera, repõe o seguinte ({motivo})")

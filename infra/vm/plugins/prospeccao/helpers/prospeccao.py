@@ -10,6 +10,7 @@ import datetime as dt
 import fcntl
 import functools
 import hashlib
+import math
 import json
 import os
 import re
@@ -2128,7 +2129,7 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
         return None, "nenhuma ação aprovada esperando"
     ultima = _ultima_acao(d)  # a catch-up comment also counts for the spacing
     if ultima and agora() - ultima < _espera(ultima):
-        return None, f"espaçamento: próxima a partir de {dt.datetime.fromtimestamp(ultima + _espera(ultima), _tz()).strftime('%H:%M')}"
+        return None, f"espaçamento: próxima a partir de {_hm_liberada(ultima + _espera(ultima))}"
     pico = False
     # replies go first (someone is waiting), then the rest in approval order
     for a in sorted((x for x in d["acoes"] if x["estado"] == "aprovada"), key=lambda x: (x["tipo"] != "resposta", x.get("decidida", 0))):
@@ -2246,7 +2247,7 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
         if not HORARIO[0] <= h < HORARIO[1]:
             motivo = f"fora do horário ({HORARIO[0]}h–{HORARIO[1]}h)"
         elif ultima and agora() - ultima < _espera(ultima):
-            motivo = "espaçamento: próxima a partir de " + dt.datetime.fromtimestamp(ultima + _espera(ultima), _tz()).strftime("%H:%M")
+            motivo = "espaçamento: próxima a partir de " + _hm_liberada(ultima + _espera(ultima))
     if motivo:
         return False, motivo
     teto = LIMITE_COMENTARIOS // 2 if bloqueio_recente(d) else LIMITE_COMENTARIOS
@@ -2318,6 +2319,12 @@ def sem_comentario(login: str) -> list[dict]:
                 and _dias_desde(a.get("executada_em") or 0) <= DIAS_COMENTARIO and lead.get("etapa") not in FINAIS):
             out.append({"acao_id": a["id"], "handle": lead.get("handle"), "url": lead.get("url"), "executada_em": a["executada_em"]})
     return sorted(out, key=lambda x: -x["executada_em"])
+
+
+def _hm_liberada(ts: float) -> str:
+    """HH:MM of a release time rounded UP to the minute: shown "09:23" for 09:23:45, the agent came back at 09:23:10,
+    got "09:23" again and took it as stuck (13/10 09h23). Rounded up, the time shown is never before the real release."""
+    return dt.datetime.fromtimestamp(math.ceil(ts / 60) * 60, _tz()).strftime("%H:%M")
 
 
 def _espera(ultima: float) -> float:
