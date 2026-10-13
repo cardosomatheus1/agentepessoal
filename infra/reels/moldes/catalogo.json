@@ -42,7 +42,8 @@
    "sem política, religião ou saúde sem fonte"
   ],
   "audio": "música CC0 do banco; narração (Polly) só onde o molde precisa, opcional nos demais, porque voz sintética cansa em tutorial",
-  "rodizio": "o agente não usa três moldes de humor (pov, expectativa, conversa) seguidos"
+  "rodizio": "o agente não usa três moldes de humor (pov, expectativa, conversa) seguidos",
+  "midia_do_cliente": "Fotos e vídeos do próprio negócio têm preferência em todo molde: todo campo de imagem de fundo (tipo filmagem) aceita uma foto do cliente (ganha zoom lento) ou um vídeo do cliente (motor/video_cliente.py); o banco de filmagens é só reserva. Foto que não carrega recusa o molde."
  },
  "estilos": [
   {

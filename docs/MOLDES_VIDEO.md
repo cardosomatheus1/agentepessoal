@@ -28,6 +28,10 @@ A tabela no fim deste arquivo sai dele.
   gráfico, chat, cartões, tela dividida, foto com zoom, filmagem, celular, carimbo, contagem, cena final). Construir
   um molde novo é combinar blocos, não começar do zero.
 
+- **Mídia do próprio negócio primeiro**: em todo molde, o lugar de imagem de fundo aceita foto ou vídeo que o cliente
+  mandar (a foto ganha zoom lento; o vídeo vira quadros com `motor/video_cliente.py`). O banco de filmagens feitas por IA
+  é só reserva para quem não mandou nada.
+
 ## 2. Como o agente usa
 
 1. Parte do objetivo (atrair, engajar, ensinar, vender, avisar) e do que o negócio tem (fotos, números, novidade).

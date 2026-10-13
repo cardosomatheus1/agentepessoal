@@ -76,7 +76,7 @@ conforme o estilo, o ajuste de tamanho do texto e a conferência.
 | `carimbo(el, t, t0)` | carimbo batendo (MITO, ESGOTADO, NOVO) |
 | `marcador(el, t, t0)` | marca-texto atrás de um `<span class="mk">` |
 | `brilho(btn, t, t0)` | brilho passando (botão com `<i>` dentro) |
-| `filmagem(img, nome, t)` | quadro da filmagem do banco (`midia/filmagem/<nome>`) |
+| `filmagem(img, valor, t)` | fundo em movimento: nome do banco ou de um vídeo do cliente (`midia/filmagem/<nome>`, feito por `motor/video_cliente.py`) **ou** caminho de foto do cliente (`fotos/x.jpg`), que ganha zoom lento. Use sempre esta função para fundo: assim todo molde aceita a mídia do próprio negócio |
 | `midia(caminho)` | caminho de foto da ficha (`fotos/x.jpg` → `midia/fotos/x.jpg`) |
 | `icone(nome)` | ícone SVG (lista em `motor.js`, objeto `P`: check, x, estrela, relogio, calendario, local, telefone, chat, carrinho, moto, cartao, dinheiro, presente, coracao, fogo, etiqueta, caixa, camera, tesoura, chave, bolo, xicara, pata, casa, pessoa, pessoas, megafone, brilho, seta, info, alerta, cadeado, folha, link, grafico, percentual, trofeu, balao, lupa, mais, menos, carro, haltere, dente, vestido, garfo) |
 | `brl(v[, casas])`, `num(v[, casas])` | dinheiro e número em pt-BR |

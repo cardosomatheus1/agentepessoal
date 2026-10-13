@@ -150,6 +150,8 @@ const Motor = {
       $$('.rv').forEach(Motor.palavras);
       Motor._caberTudo();
       if (Motor.FORMATO !== 'carrossel') await window.render(0);
+      // a photo of the ficha that did not load (wrong path) refuses the template instead of rendering a hole
+      for (const i of $$('img')) if (i.getAttribute('src') && i.complete && !i.naturalWidth) Motor.erro('foto não encontrada: ' + i.getAttribute('src').split('/').slice(-2).join('/'));
       window.MOTOR_PRONTO = true;
     } catch (e) { Motor.erros.push('erro no molde: ' + (e && e.stack || e)); window.MOTOR_PRONTO = true; }
   },
@@ -229,7 +231,15 @@ const Motor = {
   brilho(btn, t, t0) { const i = btn && btn.querySelector('i'); if (!i) return; const k = ((t - t0) % 2.2) / 2.2; i.style.left = (-20 + k * 140) + '%'; },
 
   // footage frames: midia/filmagem/<nome>/q0001.jpg…, ping-pong loop
+  // background footage: a name in the footage bank (midia/filmagem/<nome>, also the client's own videos turned into
+  // frames by video_cliente.py) or a photo path (the client's photo), which gets a slow zoom so it is not frozen
   filmagem(img, nome, t, fps = 30) {
+    if (/\.(jpe?g|png|webp)$/i.test(nome || '')) {
+      const src = Motor.midia(nome);
+      if (img.getAttribute('src') !== src) { img.setAttribute('src', src); Motor._espera.push(img.decode().catch(() => {})); }
+      const k = (t % 14) / 14; img.style.scale = String(1.04 + 0.1 * k); img.style.translate = `${-18 * k}px ${-10 * k}px`;
+      return;
+    }
     const n = (window.FILMAGENS || {})[nome] || 0; if (!n) { Motor.erro('filmagem não encontrada: ' + nome); return; }
     const k = Math.floor(t * fps), per = 2 * (n - 1); let i = k % per; if (i >= n) i = per - i;
     const src = Motor.midia(`filmagem/${nome}/q${String(i + 1).padStart(4, '0')}.jpg`);
