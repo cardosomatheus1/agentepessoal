@@ -103,7 +103,7 @@
    "formatos": [
     "reel"
    ],
-   "duracao": "7 a 12 s",
+   "duracao": "13 a 15 s",
    "voz": "não (música)",
    "midia": "filmagem do banco ou foto",
    "cenas": [
@@ -137,7 +137,7 @@
    "formatos": [
     "reel"
    ],
-   "duracao": "8 a 12 s",
+   "duracao": "14 a 16 s",
    "voz": "não (música)",
    "midia": "2 filmagens ou 2 fotos",
    "cenas": [
@@ -173,7 +173,7 @@
     "carrossel",
     "reel"
    ],
-   "duracao": "12 a 18 s",
+   "duracao": "24 s",
    "voz": "opcional",
    "midia": "nenhuma (ícone grande de um conjunto fixo)",
    "cenas": [
@@ -208,7 +208,7 @@
     "carrossel",
     "reel"
    ],
-   "duracao": "6 a 9 telas",
+   "duracao": "29 a 35 s",
    "voz": "não",
    "midia": "nenhuma",
    "cenas": [
@@ -243,7 +243,7 @@
    "formatos": [
     "reel"
    ],
-   "duracao": "10 a 15 s",
+   "duracao": "14 s",
    "voz": "não (som de mensagem + música)",
    "midia": "nenhuma",
    "cenas": [
@@ -277,7 +277,7 @@
    "formatos": [
     "reel"
    ],
-   "duracao": "8 a 15 s",
+   "duracao": "13 a 15 s",
    "voz": "não (música)",
    "midia": "4 a 6 fotos ou trechos do próprio cliente",
    "cenas": [
@@ -309,7 +309,7 @@
     "carrossel",
     "reel"
    ],
-   "duracao": "4 a 5 telas",
+   "duracao": "21 a 46 s",
    "voz": "não",
    "midia": "1 foto opcional",
    "cenas": [
@@ -348,7 +348,7 @@
     "carrossel",
     "reel"
    ],
-   "duracao": "4 telas ou 10 a 12 s",
+   "duracao": "19 a 36 s",
    "voz": "não",
    "midia": "1 foto opcional",
    "cenas": [
@@ -385,7 +385,7 @@
     "carrossel",
     "reel"
    ],
-   "duracao": "5 a 7 telas",
+   "duracao": "32 a 44 s",
    "voz": "opcional",
    "midia": "nenhuma",
    "cenas": [
@@ -422,7 +422,7 @@
     "reel",
     "story"
    ],
-   "duracao": "8 a 15 s",
+   "duracao": "16 a 18 s",
    "voz": "não (música)",
    "midia": "fotos dos produtos",
    "cenas": [
@@ -455,7 +455,7 @@
    "formatos": [
     "reel"
    ],
-   "duracao": "25 a 35 s",
+   "duracao": "25 a 33 s",
    "voz": "sim",
    "midia": "filmagem do banco",
    "cenas": [
@@ -497,7 +497,7 @@
    "formatos": [
     "reel"
    ],
-   "duracao": "25 a 35 s",
+   "duracao": "28 a 38 s",
    "voz": "sim",
    "midia": "filmagem do banco",
    "cenas": [
@@ -538,7 +538,7 @@
     "reel",
     "carrossel"
    ],
-   "duracao": "20 a 40 s",
+   "duracao": "33 a 40 s",
    "voz": "opcional",
    "midia": "fotos ou filmagem opcional",
    "cenas": [
@@ -574,7 +574,7 @@
     "carrossel",
     "reel"
    ],
-   "duracao": "4 a 6 telas",
+   "duracao": "29 a 45 s",
    "voz": "opcional",
    "midia": "fotos opcionais",
    "cenas": [
@@ -607,7 +607,7 @@
    "formatos": [
     "reel"
    ],
-   "duracao": "15 a 25 s",
+   "duracao": "17 a 23 s",
    "voz": "sim",
    "midia": "prints ou gravação da tela",
    "cenas": [
@@ -645,7 +645,7 @@
     "story",
     "carrossel"
    ],
-   "duracao": "8 a 15 s",
+   "duracao": "16 a 24 s",
    "voz": "opcional",
    "midia": "nenhuma",
    "cenas": [
@@ -679,7 +679,7 @@
     "reel",
     "story"
    ],
-   "duracao": "8 a 12 s",
+   "duracao": "12 a 13 s",
    "voz": "opcional",
    "midia": "foto do produto",
    "cenas": [
@@ -719,7 +719,7 @@
     "reel",
     "story"
    ],
-   "duracao": "10 a 15 s",
+   "duracao": "13 a 14 s",
    "voz": "opcional",
    "midia": "1 a 3 fotos",
    "cenas": [
@@ -757,7 +757,7 @@
     "reel",
     "carrossel"
    ],
-   "duracao": "10 a 15 s",
+   "duracao": "17 a 18 s",
    "voz": "opcional",
    "midia": "fotos dos itens",
    "cenas": [
@@ -795,7 +795,7 @@
     "reel",
     "carrossel"
    ],
-   "duracao": "8 a 15 s",
+   "duracao": "15 a 19 s",
    "voz": "não (música)",
    "midia": "fotos dos produtos",
    "cenas": [
@@ -833,7 +833,7 @@
     "carrossel",
     "story"
    ],
-   "duracao": "8 a 12 s",
+   "duracao": "15 a 18 s",
    "voz": "não",
    "midia": "print ou foto (com permissão)",
    "cenas": [
@@ -872,7 +872,7 @@
     "reel",
     "carrossel"
    ],
-   "duracao": "6 a 10 s",
+   "duracao": "11 a 12 s",
    "voz": "não (música)",
    "midia": "2 fotos do mesmo ângulo",
    "cenas": [
@@ -910,7 +910,7 @@
     "story",
     "carrossel"
    ],
-   "duracao": "10 a 15 s",
+   "duracao": "13 a 18 s",
    "voz": "opcional",
    "midia": "nenhuma",
    "cenas": [
@@ -948,7 +948,7 @@
    "formatos": [
     "story"
    ],
-   "duracao": "8 a 12 s",
+   "duracao": "15 a 20 s",
    "voz": "não",
    "midia": "nenhuma",
    "cenas": [
@@ -985,7 +985,7 @@
     "carrossel",
     "story"
    ],
-   "duracao": "10 a 15 s",
+   "duracao": "17 a 19 s",
    "voz": "opcional",
    "midia": "2 ou 3 fotos",
    "cenas": [
@@ -1023,7 +1023,7 @@
     "carrossel",
     "story"
    ],
-   "duracao": "8 a 12 s",
+   "duracao": "13 a 15 s",
    "voz": "opcional",
    "midia": "1 a 3 fotos",
    "cenas": [
@@ -1059,7 +1059,7 @@
     "story",
     "reel"
    ],
-   "duracao": "8 a 12 s",
+   "duracao": "20 a 22 s",
    "voz": "não",
    "midia": "nenhuma",
    "cenas": [
@@ -1097,7 +1097,7 @@
     "reel",
     "carrossel"
    ],
-   "duracao": "15 a 30 s",
+   "duracao": "20 a 32 s",
    "voz": "opcional",
    "midia": "3 a 8 fotos do cliente",
    "cenas": [
@@ -1131,7 +1131,7 @@
     "story",
     "reel"
    ],
-   "duracao": "5 a 8 s",
+   "duracao": "12 a 20 s",
    "voz": "não",
    "midia": "nenhuma",
    "cenas": [
@@ -1169,7 +1169,7 @@
     "reel",
     "carrossel"
    ],
-   "duracao": "8 a 12 s",
+   "duracao": "13 a 14 s",
    "voz": "opcional",
    "midia": "1 foto opcional",
    "cenas": [
@@ -1194,5 +1194,6 @@
    ],
    "publico": "cliente_final"
   }
- ]
+ ],
+ "nota_duracao": "Durações medidas nas fichas de teste da rodada 2 (13/10), já com o tempo mínimo de leitura: 0,8 s + 0,25 s por palavra nova em cada cena sem narração."
 }

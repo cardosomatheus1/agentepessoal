@@ -143,7 +143,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 1. POV (`pov`)
 
 - **Quando usar:** Situação engraçada do dia a dia do ramo para a pessoa se ver e mandar para um amigo.
-- **Formato:** reel · 7 a 12 s · voz: não (música) · mídia: filmagem do banco ou foto
+- **Formato:** reel · 13 a 15 s · voz: não (música) · mídia: filmagem do banco ou foto
 - **Cenas:** frase 'POV: …' grande sobre a filmagem → virada com a reação (texto curto) → final
 - **Ficha:** situacao (até 70 letras); virada (até 40 letras); musica (do banco CC0)
 - **Exemplos:** Salgados: cliente pedindo precinho às 23h; Salão: cliente que mostra foto da atriz e pede igual; Oficina: 'só um barulhinho' que era o motor
@@ -152,7 +152,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 2. Expectativa x Realidade (`expectativa`)
 
 - **Quando usar:** Contraste bem-humorado entre o que o cliente imagina e o que é a rotina de quem faz.
-- **Formato:** reel · 8 a 12 s · voz: não (música) · mídia: 2 filmagens ou 2 fotos
+- **Formato:** reel · 14 a 16 s · voz: não (música) · mídia: 2 filmagens ou 2 fotos
 - **Cenas:** EXPECTATIVA com imagem bonita → corte seco na batida → REALIDADE com a bagunça → final
 - **Ficha:** expectativa (até 40 letras); realidade (até 40 letras); imagens (2)
 - **Exemplos:** Confeitaria: bolo de vitrine x cozinha às 3h; Personal: treino de foto x aluno faltando; Restaurante: salão cheio x pia lotada
@@ -161,7 +161,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 3. Os tipos de cliente (`tipos-cliente`)
 
 - **Quando usar:** Retrato divertido dos perfis de cliente que todo negócio tem.
-- **Formato:** carrossel, reel · 12 a 18 s · voz: opcional · mídia: nenhuma (ícone grande de um conjunto fixo)
+- **Formato:** carrossel, reel · 24 s · voz: opcional · mídia: nenhuma (ícone grande de um conjunto fixo)
 - **Cenas:** título 'Os N tipos de cliente de todo ___' → um cartão por tipo: nome + frase típica + ilustração → pergunta 'qual você é?' → final
 - **Ficha:** ramo (até 30 letras); tipos (3 a 6: nome até 25 letras, frase até 60)
 - **Exemplos:** Hamburgueria: o que tira tudo do lanche; Clínica de estética: a que já leu tudo no TikTok; Loja de roupa: o que prova 12 e leva 1
@@ -170,7 +170,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 4. Frases que você mais ouve (`frases`)
 
 - **Quando usar:** Frases típicas que o dono escuta, numeradas, pedindo para comentar o número. Inclui o antigo 'coisas que só quem ___ entende'.
-- **Formato:** carrossel, reel · 6 a 9 telas · voz: não · mídia: nenhuma
+- **Formato:** carrossel, reel · 29 a 35 s · voz: não · mídia: nenhuma
 - **Cenas:** capa com a pergunta → uma frase por tela em balão de fala (no Reel, cartões trocando na batida) → fechamento com a mensagem do negócio → final
 - **Ficha:** pergunta (até 60 letras); frases (5 a 8, até 70 letras cada); fechamento (até 120 letras)
 - **Exemplos:** Salgadeira: 'faz por 50 o cento?'; Fotógrafo: 'é só tirar umas fotinhas'; Marmitaria: 'tem como mandar mais arroz?'
@@ -179,7 +179,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 5. Conversa no celular (`chat`)
 
 - **Quando usar:** Conversa encenada entre cliente e dono, com virada no fim (claramente encenada, sem nome real).
-- **Formato:** reel · 10 a 15 s · voz: não (som de mensagem + música) · mídia: nenhuma
+- **Formato:** reel · 14 s · voz: não (som de mensagem + música) · mídia: nenhuma
 - **Cenas:** celular com a conversa → mensagens chegando com 'digitando…' → virada (resposta do dono ou do cliente) → final
 - **Ficha:** mensagens (4 a 8 falas alternadas, até 80 letras cada); virada (até 60 letras)
 - **Exemplos:** Confeitaria: bolo de 3 andares para amanhã; Mecânico: 'quanto fica?' sem dizer o carro; Delivery: 'já saiu?' 2 minutos depois do pedido
@@ -188,7 +188,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 6. Do começo ao fim (`processo`)
 
 - **Quando usar:** Mostra como o produto ou serviço é feito, em cortes rápidos.
-- **Formato:** reel · 8 a 15 s · voz: não (música) · mídia: 4 a 6 fotos ou trechos do próprio cliente
+- **Formato:** reel · 13 a 15 s · voz: não (música) · mídia: 4 a 6 fotos ou trechos do próprio cliente
 - **Cenas:** cortes rápidos na batida, do começo ao resultado → legenda mínima → final
 - **Ficha:** midias (4 a 6 do cliente, em ordem); legendas (opcionais, até 25 letras)
 - **Exemplos:** Bolo do recheio à decoração; Carro da sujeira ao polimento; Corte de cabelo do antes ao acabamento
@@ -196,7 +196,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 7. Quiz A, B ou C (`quiz`)
 
 - **Quando usar:** Pergunta com três respostas para comentar; a resposta certa vem no fim e ensina algo.
-- **Formato:** carrossel, reel · 4 a 5 telas · voz: não · mídia: 1 foto opcional
+- **Formato:** carrossel, reel · 21 a 46 s · voz: não · mídia: 1 foto opcional
 - **Cenas:** pergunta com foto → opções A, B e C → 'comenta antes de passar' → resposta com a conta explicada → final
 - **Ficha:** pergunta (até 80 letras); opcoes (3, até 20 letras); certa (A, B ou C); explicacao (até 140 letras (números conferidos pelo código)); numeros (valores da explicação em campos próprios (o código faz a conta))
 - **Exemplos:** Confeitaria: preço mínimo do bolo; Academia: quantas calorias tem o açaí; Imobiliária: quanto custa o condomínio de verdade
@@ -205,7 +205,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 8. Time A ou Time B (`time`)
 
 - **Quando usar:** Tema que divide opinião no ramo para cada um defender o seu lado nos comentários.
-- **Formato:** carrossel, reel · 4 telas ou 10 a 12 s · voz: não · mídia: 1 foto opcional
+- **Formato:** carrossel, reel · 19 a 36 s · voz: não · mídia: 1 foto opcional
 - **Cenas:** tela dividida: lado A x lado B → argumento de cada lado → 'comenta o seu time' → fechamento neutro do negócio
 - **Ficha:** tema (até 60 letras); lado_a (até 30); lado_b (até 30); argumentos (1 por lado, até 80)
 - **Exemplos:** Delivery: taxa à parte ou embutida; Pizzaria: borda recheada sim ou não; Salão: escova ou secar natural
@@ -214,7 +214,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 9. Mito ou verdade (`mito`)
 
 - **Quando usar:** Crenças comuns do ramo, cada uma com carimbo MITO ou VERDADE e a explicação.
-- **Formato:** carrossel, reel · 5 a 7 telas · voz: opcional · mídia: nenhuma
+- **Formato:** carrossel, reel · 32 a 44 s · voz: opcional · mídia: nenhuma
 - **Cenas:** capa → afirmação → carimbo MITO/VERDADE batendo → explicação curta → repete por item → final
 - **Ficha:** tema (até 50 letras); itens (3 a 5 no carrossel, até 3 no Reel: afirmação até 70, veredito, explicação até 120, fonte quando saúde, alimento ou dinheiro)
 - **Exemplos:** Confeitaria: 'preço alto espanta cliente'; Clínica: 'protetor só no verão'; Mecânico: 'gasolina aditivada limpa o motor'
@@ -223,7 +223,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 10. Isso ou aquilo (`escolha`)
 
 - **Quando usar:** Pares de produtos do próprio negócio para o cliente escolher; mostra o cardápio sem parecer anúncio.
-- **Formato:** reel, story · 8 a 15 s · voz: não (música) · mídia: fotos dos produtos
+- **Formato:** reel, story · 16 a 18 s · voz: não (música) · mídia: fotos dos produtos
 - **Cenas:** título 'Escolhe um' → 3 a 5 pares de fotos lado a lado com 'ou' → 'conta nos comentários' → final
 - **Ficha:** pares (3 a 5 pares de produtos (foto + nome até 25 letras))
 - **Exemplos:** Doceria: brigadeiro ou beijinho; Lanchonete: coxinha ou kibe; Loja: tênis branco ou preto
@@ -232,7 +232,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 11. A conta mudou (`conta-mudou`)
 
 - **Quando usar:** Um custo subiu e o preço não acompanhou: mostra o antes e o depois do lucro. Variante para o cliente final: 'por que o preço mudou'.
-- **Formato:** reel · 25 a 35 s · voz: sim · mídia: filmagem do banco
+- **Formato:** reel · 25 a 33 s · voz: sim · mídia: filmagem do banco
 - **Cenas:** gancho com o insumo que subiu → preço atual na etiqueta → gráfico do custo subindo → lucro antes x depois → efeito num lote (cento, mês) → frase de virada → final
 - **Ficha:** produto (até 25 letras); insumo (até 25); preco (R$); custo_antes (R$); custo_hoje (R$); lote (quantidade (ex.: 100)); falas (6 a 8, geradas e conferidas)
 - **Exemplos:** Brigadeiro e o leite condensado; Lava-jato e o produto de limpeza; Marmita e o arroz
@@ -241,7 +241,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 12. Custo escondido (`custo-escondido`)
 
 - **Quando usar:** Custos que o dono esquece de pôr no preço, somando até o total que some do bolso.
-- **Formato:** reel · 25 a 35 s · voz: sim · mídia: filmagem do banco
+- **Formato:** reel · 28 a 38 s · voz: sim · mídia: filmagem do banco
 - **Cenas:** gancho: preço de venda → custo que todo mundo lembra → 'mas tem o que ninguém coloca' → iceberg: custos escondidos aparecendo embaixo d'água → total escondido → final → variante rosca: como cada R$ 100 se divide (antigo 'pra onde vai cada real')
 - **Ficha:** produto (até 25); preco (R$); custo_visivel (R$); escondidos (3 a 6: nome até 25 + R$ real ou 'em média' marcado); falas (geradas)
 - **Exemplos:** Cento de salgado: óleo, gás, embalagem, perdas; Corte de cabelo: produto, luz, toalha, comissão; Frete: pedágio, desgaste, tempo parado
@@ -250,7 +250,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 13. Passo a passo (`passo-a-passo`)
 
 - **Quando usar:** Tutorial curto de algo útil para o cliente (ou para o dono). Modo 'lista para salvar' (prancheta com caixinhas, antigo checklist) quando não há ordem.
-- **Formato:** reel, carrossel · 20 a 40 s · voz: opcional · mídia: fotos ou filmagem opcional
+- **Formato:** reel, carrossel · 33 a 40 s · voz: opcional · mídia: fotos ou filmagem opcional
 - **Cenas:** promessa ('como fazer X em N passos') → linha do tempo vertical com cada passo acendendo → resultado → final
 - **Ficha:** objetivo (até 60); passos (3 a 6, até 70 letras cada); resultado (até 60)
 - **Exemplos:** Confeitaria: congelar bolo sem estragar; Pet shop: escovar o dente do cachorro; Contador: emitir nota como MEI
@@ -259,7 +259,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 14. Não faça x Faça (`faca-nao-faca`)
 
 - **Quando usar:** Erros comuns e o jeito certo, lado a lado.
-- **Formato:** carrossel, reel · 4 a 6 telas · voz: opcional · mídia: fotos opcionais
+- **Formato:** carrossel, reel · 29 a 45 s · voz: opcional · mídia: fotos opcionais
 - **Cenas:** capa 'erros que custam caro' → par vermelho X / verde ✓ por erro → final
 - **Ficha:** tema (até 50); pares (3 a 5: erro até 60 + certo até 60)
 - **Exemplos:** Delivery: embalagem que vaza; Salão: lavar o cabelo depois da progressiva; Loja virtual: foto com fundo bagunçado
@@ -268,7 +268,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 15. Demonstração no celular (`demonstracao`)
 
 - **Quando usar:** Mostra o app, site, cardápio digital ou ferramenta funcionando.
-- **Formato:** reel · 15 a 25 s · voz: sim · mídia: prints ou gravação da tela
+- **Formato:** reel · 17 a 23 s · voz: sim · mídia: prints ou gravação da tela
 - **Cenas:** problema → celular entrando na tela → toques e telas mudando → resultado → final
 - **Ficha:** problema (até 60); telas (2 a 5 prints com legenda até 40); resultado (até 60)
 - **Exemplos:** Raiz: calculadora de preço; Restaurante: pedir pelo cardápio digital; Clínica: agendar pelo link
@@ -277,7 +277,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 16. Pergunta do cliente (`pergunta-cliente`)
 
 - **Quando usar:** Responde uma dúvida ou objeção frequente (entrega no bairro, aceita cartão, por que custa isso).
-- **Formato:** reel, story, carrossel · 8 a 15 s · voz: opcional · mídia: nenhuma
+- **Formato:** reel, story, carrossel · 16 a 24 s · voz: opcional · mídia: nenhuma
 - **Cenas:** a pergunta aparece como comentário recebido → resposta revelada → final
 - **Ficha:** pergunta (até 90 letras (real, vinda de mensagem ou comentário)); resposta (até 160)
 - **Exemplos:** Entrega no Cabula?; Faz bolo sem lactose?; Por que o orçamento é por avaliação?
@@ -286,7 +286,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 17. Oferta relâmpago (`oferta`)
 
 - **Quando usar:** Promoção com preço e prazo.
-- **Formato:** reel, story · 8 a 12 s · voz: opcional · mídia: foto do produto
+- **Formato:** reel, story · 12 a 13 s · voz: opcional · mídia: foto do produto
 - **Cenas:** produto entrando → preço antigo riscado → preço novo batendo → prazo com contagem → final com a chamada
 - **Ficha:** produto (até 30); foto (1); preco_de (R$); preco_por (R$); ate (data/hora); condicao (até 60)
 - **Exemplos:** Pizzaria: segunda em dobro; Loja: 20% até domingo; Estética: pacote de 3 sessões
@@ -295,7 +295,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 18. Lançamento (`lancamento`)
 
 - **Quando usar:** Produto ou serviço novo revelado com suspense.
-- **Formato:** reel, story · 10 a 15 s · voz: opcional · mídia: 1 a 3 fotos
+- **Formato:** reel, story · 13 a 14 s · voz: opcional · mídia: 1 a 3 fotos
 - **Cenas:** 'vem novidade' → revelação (cortina ou zoom) → nome + carimbo NOVO → 3 atributos → final
 - **Ficha:** nome (até 30); fotos (1 a 3); atributos (3, até 30 letras); quando (opcional)
 - **Exemplos:** Doceria: bolo de pote de pistache; Barbearia: corte + barba com toalha quente; Loja: coleção de verão
@@ -304,7 +304,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 19. Combo ou kit (`combo`)
 
 - **Quando usar:** Itens que se juntam num kit, com a economia em relação a comprar separado.
-- **Formato:** reel, carrossel · 10 a 15 s · voz: opcional · mídia: fotos dos itens
+- **Formato:** reel, carrossel · 17 a 18 s · voz: opcional · mídia: fotos dos itens
 - **Cenas:** itens entrando um a um com preço → itens voando para dentro da caixa → preço do combo → 'economia de R$ X' → final
 - **Ficha:** nome (até 30); itens (2 a 6: nome + preço avulso + foto); preco_combo (R$)
 - **Exemplos:** Hamburgueria: combo família; Kit festa: bolo + 100 docinhos; Salão: dia da noiva
@@ -313,7 +313,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 20. Vitrine do dia (`cardapio`)
 
 - **Quando usar:** O que tem hoje, com foto e preço, para decidir rápido.
-- **Formato:** story, reel, carrossel · 8 a 15 s · voz: não (música) · mídia: fotos dos produtos
+- **Formato:** story, reel, carrossel · 15 a 19 s · voz: não (música) · mídia: fotos dos produtos
 - **Cenas:** 'hoje tem' → grade de produtos rolando com nome e preço → carimbo ESGOTADO onde faltar → como pedir → final
 - **Ficha:** itens (4 a 6 por tela (até 3 telas): foto + nome até 25 + preço); esgotados (opcional); como_pedir (até 50)
 - **Exemplos:** Marmitaria: pratos do dia; Padaria: fornada da tarde; Brechó: peças novas
@@ -322,7 +322,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 21. Depoimento de cliente (`depoimento`)
 
 - **Quando usar:** Fala real de um cliente, com permissão; nunca inventada.
-- **Formato:** reel, carrossel, story · 8 a 12 s · voz: não · mídia: print ou foto (com permissão)
+- **Formato:** reel, carrossel, story · 15 a 18 s · voz: não · mídia: print ou foto (com permissão)
 - **Cenas:** aspas grandes → citação revelada palavra por palavra → nota em estrelas → nome ou primeiro nome + bairro → final
 - **Ficha:** citacao (até 160 letras, copiada de mensagem real); autor (primeiro nome); estrelas (só se a fonte tiver nota (ex.: Google)); prova (id da mensagem ou print guardado); permissao (registro da permissão do cliente)
 - **Exemplos:** Confeitaria: avaliação do Google; Oficina: mensagem de agradecimento; Personal: aluno contando o resultado
@@ -331,7 +331,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 22. Antes e depois (`antes-depois`)
 
 - **Quando usar:** Resultado visual de um serviço: uma barra desliza revelando o depois.
-- **Formato:** reel, carrossel · 6 a 10 s · voz: não (música) · mídia: 2 fotos do mesmo ângulo
+- **Formato:** reel, carrossel · 11 a 12 s · voz: não (música) · mídia: 2 fotos do mesmo ângulo
 - **Cenas:** foto ANTES → barra deslizando revela DEPOIS → nome do serviço + tempo → final
 - **Ficha:** antes (foto); depois (foto); servico (até 30); detalhe (até 40)
 - **Exemplos:** Salão: coloração; Estética automotiva: polimento; Reforma: banheiro
@@ -340,7 +340,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 23. Como pedir (`como-pedir`)
 
 - **Quando usar:** Explica em 3 passos como comprar, agendar ou encomendar. Também mostra onde atende: bairros de entrega, endereço ou evento.
-- **Formato:** reel, story, carrossel · 10 a 15 s · voz: opcional · mídia: nenhuma
+- **Formato:** reel, story, carrossel · 13 a 18 s · voz: opcional · mídia: nenhuma
 - **Cenas:** 'é fácil pedir' → 3 passos com ícones grandes → canal (link, WhatsApp, endereço) em destaque → final
 - **Ficha:** passos (3, até 40 letras); canal (link, número ou endereço); prazo (opcional); pagamento (opcional); area_entrega (bairros ou raio, opcional); endereco (opcional (antigo 'onde estamos'))
 - **Exemplos:** Encomenda de bolo com 3 dias; Agendamento de banho e tosa; Pedido de marmita da semana
@@ -349,7 +349,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 24. Agenda aberta (`agenda`)
 
 - **Quando usar:** Mostra horários ou datas livres para quem vende por agendamento.
-- **Formato:** story · 8 a 12 s · voz: não · mídia: nenhuma
+- **Formato:** story · 15 a 20 s · voz: não · mídia: nenhuma
 - **Cenas:** calendário da semana → horários livres acendendo, ocupados riscados → 'garanta o seu' → final
 - **Ficha:** periodo (semana ou mês); livres (lista de datas/horas); como_agendar (até 50)
 - **Exemplos:** Salão: sábado com 2 vagas; Fotógrafo: datas de dezembro; Clínica: avaliações da semana
@@ -358,7 +358,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 25. Data especial (`data-especial`)
 
 - **Quando usar:** Dia das Mães, Páscoa, Natal, Black Friday: o que o negócio oferece e até quando encomendar.
-- **Formato:** reel, carrossel, story · 10 a 15 s · voz: opcional · mídia: 2 ou 3 fotos
+- **Formato:** reel, carrossel, story · 17 a 19 s · voz: opcional · mídia: 2 ou 3 fotos
 - **Cenas:** tema da data com o visual da época → 2 ou 3 produtos ou serviços → prazo para encomendar contado pelo código → como pedir → final
 - **Ficha:** data (da lista de datas do ano); itens (2 ou 3: foto + nome + preço opcional); prazo (data real de encomenda)
 - **Exemplos:** Confeitaria: ovos de Páscoa até 5/4; Floricultura: Dia das Mães; Barbearia: Dia dos Pais com combo
@@ -367,7 +367,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 26. Produto em destaque (`produto-semana`)
 
 - **Quando usar:** Destaca algo que já existe, sem promoção nem novidade.
-- **Formato:** reel, carrossel, story · 8 a 12 s · voz: opcional · mídia: 1 a 3 fotos
+- **Formato:** reel, carrossel, story · 13 a 15 s · voz: opcional · mídia: 1 a 3 fotos
 - **Cenas:** foto com zoom nos detalhes → 3 atributos → preço opcional → chamada → final
 - **Ficha:** nome (até 30); fotos (1 a 3); atributos (3, até 30 letras); preco (opcional)
 - **Exemplos:** Doceria: torta de limão; Pet shop: banho com hidratação; Loja: bolsa de couro
@@ -375,7 +375,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 27. Avalia ou indica (`avalia-indica`)
 
 - **Quando usar:** Pede avaliação no Google ou indicação, com benefício claro.
-- **Formato:** story, reel · 8 a 12 s · voz: não · mídia: nenhuma
+- **Formato:** story, reel · 20 a 22 s · voz: não · mídia: nenhuma
 - **Cenas:** o pedido → o benefício → 3 passos → link ou código → final
 - **Ficha:** tipo (avaliação ou indicação); beneficio (até 60 (regra clara do prêmio)); passos (3, até 40); link (link real)
 - **Exemplos:** Avalia no Google e ganha um brigadeiro; Indica uma amiga e as duas ganham 10%; Avalie a oficina e concorra a uma lavagem
@@ -384,7 +384,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 28. Bastidores e história (`bastidores`)
 
 - **Quando usar:** Quem faz, como faz e por que começou, com fotos do próprio negócio. Modo equipe: quem te atende (foto, nome, função, frase da pessoa, com permissão).
-- **Formato:** reel, carrossel · 15 a 30 s · voz: opcional · mídia: 3 a 8 fotos do cliente
+- **Formato:** reel, carrossel · 20 a 32 s · voz: opcional · mídia: 3 a 8 fotos do cliente
 - **Cenas:** foto do dono com o nome → fotos com zoom lento e legendas curtas (3 atos: começo, hoje, amanhã) → final
 - **Ficha:** fotos (4 a 8 com legenda até 50); atos (3 frases tiradas de uma entrevista curta com o dono, nunca inventadas)
 - **Exemplos:** Confeitaria que começou na cozinha de casa; Oficina de pai para filho; Loja que nasceu no Instagram
@@ -393,7 +393,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 29. Aviso (`aviso`)
 
 - **Quando usar:** Horário especial, feriado, férias, mudança de endereço ou de telefone.
-- **Formato:** story, reel · 5 a 8 s · voz: não · mídia: nenhuma
+- **Formato:** story, reel · 12 a 20 s · voz: não · mídia: nenhuma
 - **Cenas:** ícone do tipo de aviso → data em destaque → o que muda → final
 - **Ficha:** tipo (feriado, férias, horário, endereço, telefone, falta de produto, agenda cheia, vaga de emprego); data (data (dia da semana calculado pelo código)); texto (até 100); volta (opcional); vaga (se vaga: função, 3 requisitos, como se candidatar, prazo)
 - **Exemplos:** Fechado no feriado de 15/11; Novo endereço a partir de segunda; Horário estendido no Natal
@@ -402,7 +402,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 ### 30. Marco e agradecimento (`marco`)
 
 - **Quando usar:** Comemora um número ou data e agradece aos clientes.
-- **Formato:** reel, carrossel · 8 a 12 s · voz: opcional · mídia: 1 foto opcional
+- **Formato:** reel, carrossel · 13 a 14 s · voz: opcional · mídia: 1 foto opcional
 - **Cenas:** número contando até o marco → confete → obrigado + foto → final
 - **Ficha:** numero (valor real); o_que (até 40 (pedidos, anos, clientes)); obrigado (até 100)
 - **Exemplos:** 1.000 bolos entregues; 5 anos de oficina; 10 mil seguidores
