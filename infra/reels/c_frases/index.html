@@ -1,0 +1,67 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:B;src:url(../base/gf/brico.woff2)}
+@font-face{font-family:H;src:url(../base/gf/caveat.woff2)}
+@font-face{font-family:I;src:url(../base/fonts/Inter-Bold.otf);font-weight:700}
+@font-face{font-family:I;src:url(../base/fonts/Inter-Black.otf);font-weight:900}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1080px;height:1350px;overflow:hidden;font-family:I;background:#fff3e3}
+.slide{position:absolute;inset:0;overflow:hidden;background:#fff3e3;display:none}
+.blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55}
+.grao{position:absolute;inset:0;background:url(../base/grao.png);opacity:.06;mix-blend-mode:multiply}
+.top{position:absolute;left:70px;right:70px;top:60px;display:flex;justify-content:space-between;align-items:center;font-size:30px;font-weight:900;color:#1b1410}
+.marca{display:flex;align-items:center;gap:14px}
+.marca .b{background:#111;border-radius:22px;padding:10px 18px}.marca img{width:150px;display:block}
+.bat{display:flex;align-items:center;gap:12px;font-size:28px}
+.bat .c{width:96px;height:44px;border:5px solid #1b1410;border-radius:12px;padding:4px;position:relative}
+.bat .c:after{content:'';position:absolute;right:-14px;top:10px;width:8px;height:16px;background:#1b1410;border-radius:0 4px 4px 0}
+.bat .f{height:100%;border-radius:5px}
+.n{position:absolute;left:70px;top:190px;font-family:B;font-size:200px;line-height:.8;color:transparent;-webkit-text-stroke:4px #1b1410;opacity:.9}
+.bolha{position:absolute;left:70px;right:110px;top:430px;background:#fff;border-radius:56px 56px 56px 14px;padding:56px 60px;box-shadow:0 30px 70px rgba(60,30,10,.18),0 4px 0 rgba(0,0,0,.04);font-family:B;font-size:96px;line-height:1.02;color:#1b1410;letter-spacing:-2px}
+.bolha small{display:block;font-family:I;font-size:28px;font-weight:700;color:#8b7d70;margin-top:22px;letter-spacing:0}
+.resp{position:absolute;right:70px;left:200px;bottom:300px;text-align:right}
+.resp span{display:inline-block;background:#1b1410;color:#fff3e3;font-family:H;font-size:76px;line-height:1.05;padding:24px 40px;border-radius:44px 44px 14px 44px;transform:rotate(-2deg);box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.emo{position:absolute;font-size:150px;transform:rotate(12deg)}
+.pe{position:absolute;left:70px;bottom:70px;font-size:28px;font-weight:700;color:#8b7d70}
+.seta{position:absolute;right:70px;bottom:62px;font-size:34px;font-weight:900;color:#1b1410;background:#ffd66b;padding:16px 30px;border-radius:40px}
+/* capa */
+.capa h1{position:absolute;left:70px;right:70px;top:250px;font-family:B;font-size:138px;line-height:.92;letter-spacing:-4px;color:#1b1410}
+.capa h1 em{font-style:normal;background:#8fe08d;padding:0 14px;border-radius:18px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.capa .dor{position:absolute;right:80px;top:960px;font-family:H;font-size:84px;color:#e5486a;transform:rotate(-6deg)}
+/* final */
+.fim h2{position:absolute;left:70px;right:70px;top:230px;font-family:B;font-size:120px;line-height:.95;letter-spacing:-3px;color:#1b1410}
+.fim .nums{position:absolute;left:70px;right:70px;top:560px;display:flex;flex-wrap:wrap;gap:18px}
+.fim .nums b{width:118px;height:118px;border-radius:30px;background:#fff;box-shadow:0 14px 30px rgba(60,30,10,.15);display:flex;align-items:center;justify-content:center;font-family:B;font-size:64px;color:#1b1410}
+.fim .msg{position:absolute;left:70px;right:70px;top:800px;font-size:44px;font-weight:700;line-height:1.3;color:#3d332b}
+.fim .msg b{font-weight:900;color:#1b1410}
+.fim .cta{position:absolute;left:70px;right:70px;bottom:110px;background:#111;border-radius:40px;padding:36px 44px;display:flex;align-items:center;justify-content:space-between;color:#fff}
+.fim .cta img{width:230px}.fim .cta div{font-size:34px;font-weight:900;text-align:right;line-height:1.25}.fim .cta div span{color:#8fe08d}
+</style></head><body>
+<div id="raiz"></div>
+<script>
+const F=[
+ ["Faz um precinho?","o “precinho” é o meu lucro, amiga","🙃",90],
+ ["Minha tia faz mais barato.","então encomenda com a tia ué","👵",75],
+ ["Pago semana que vem, pode ser?","a semana que vem nunca chega","📆",60],
+ ["É só um bolinho simples.","simples é o bolo. o trabalho não.","🎂",45],
+ ["Consegue pra hoje à tarde?","claro, deixa eu parar o tempo aqui","⏰",30],
+ ["Me manda o cardápio!","visualizou às 14:02","👀",15],
+ ["No mercado é mais barato.","e no mercado vem feito com carinho?","🛒",3],
+];
+const cor=v=>v>60?'#3fbf4a':v>30?'#f2b33d':'#e5486a';
+const blobs=(a,b,c)=>`<div class="blob" style="width:620px;height:620px;left:-160px;top:-120px;background:${a}"></div><div class="blob" style="width:560px;height:560px;right:-180px;top:520px;background:${b}"></div><div class="blob" style="width:520px;height:520px;left:180px;bottom:-260px;background:${c}"></div>`;
+const topo=v=>`<div class="top"><div class="marca"><div class="b"><img src="../base/logo.png"></div></div><div class="bat">paciência ${v}%<div class="c"><div class="f" style="width:${v}%;background:${cor(v)}"></div></div></div></div>`;
+const pal=[['#ffb3c7','#ffd66b','#8fe08d'],['#ffd66b','#8fe08d','#ffb3c7'],['#8fe08d','#ffb3c7','#bde3ff'],['#bde3ff','#ffd66b','#ffb3c7'],['#ffb3c7','#bde3ff','#ffd66b'],['#ffd66b','#ffb3c7','#bde3ff'],['#ff9a9a','#ffb3c7','#ffd66b']];
+let h=`<div class="slide capa">${blobs('#ffb3c7','#8fe08d','#ffd66b')}<div class="grao"></div>${topo(100)}
+<h1>7 frases que <em>todo mundo</em> que vende comida já ouviu</h1><div class="dor">a 7 dói…</div>
+<div class="emo" style="left:80px;top:900px;transform:rotate(-10deg)">🥲</div><div class="pe">@raiz.connect</div><div class="seta">arrasta →</div></div>`;
+F.forEach((f,i)=>{const [a,b,c]=pal[i];h+=`<div class="slide">${blobs(a,b,c)}<div class="grao"></div>${topo(f[3])}
+<div class="n">${i+1}</div><div class="emo" style="right:90px;top:250px">${f[2]}</div>
+<div class="bolha">“${f[0]}”<small>cliente, ${['ontem','toda semana','sempre','agorinha','hoje 11h','há 3 dias','todo santo dia'][i]}</small></div>
+<div class="resp"><span>${f[1]}</span></div><div class="pe">${i+1}/7 · @raiz.connect</div>${i<6?'<div class="seta">→</div>':''}</div>`});
+h+=`<div class="slide fim">${blobs('#8fe08d','#ffd66b','#ffb3c7')}<div class="grao"></div>${topo(0)}
+<h2>Qual você mais ouve? Comenta o número 👇</h2><div class="nums">${[1,2,3,4,5,6,7].map(n=>`<b>${n}</b>`).join('')}</div>
+<div class="msg">Preço certo não é caro: é o preço que <b>paga o seu trabalho</b>. Faz a conta do seu antes de dar o “precinho”.</div>
+<div class="cta"><img src="../base/logo.png"><div>Calculadora grátis<br><span>link na bio</span></div></div></div>`;
+document.getElementById('raiz').innerHTML=h;
+</script></body></html>

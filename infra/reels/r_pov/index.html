@@ -1,0 +1,79 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../base/kit.css">
+<style>
+@font-face{font-family:B;src:url(../base/gf/brico.woff2)}
+@font-face{font-family:H;src:url(../base/gf/caveat.woff2)}
+body{background:#0b141a}
+#cap{position:absolute;left:0;right:0;top:0;height:330px;background:#fff;display:flex;align-items:center;justify-content:center;padding:40px 60px;z-index:20}
+#cap div{font-family:B;font-size:66px;line-height:1.02;color:#111;text-align:center;letter-spacing:-1.5px}
+#chat{position:absolute;left:0;right:0;top:330px;bottom:0;background:#efe7dd;overflow:hidden}
+#chat:before{content:'';position:absolute;inset:0;background-image:radial-gradient(#d9cfc2 2px,transparent 2px);background-size:36px 36px;opacity:.7}
+#hd{position:absolute;left:0;right:0;top:0;height:150px;background:#f7f3ee;display:flex;align-items:center;gap:26px;padding:0 40px;box-shadow:0 2px 12px rgba(0,0,0,.08);z-index:5}
+#hd .av{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#ffb3c7,#ffd66b);display:flex;align-items:center;justify-content:center;font-size:52px}
+#hd .nm{font-size:44px;font-weight:800;color:#111}
+#hd .st{font-size:32px;font-weight:500;color:#1f9d55;margin-top:4px}
+#lista{position:absolute;left:0;right:0;top:150px;bottom:150px;display:flex;flex-direction:column;justify-content:flex-end;gap:22px;padding:30px 40px}
+.b{max-width:860px;padding:28px 36px 22px;border-radius:34px;font-size:56px;font-weight:500;line-height:1.2;color:#111;box-shadow:0 3px 0 rgba(0,0,0,.06);transform-origin:0 100%;position:relative}
+.b small{display:block;text-align:right;font-size:26px;color:#8a8a8a;margin-top:6px}
+.c{align-self:flex-start;background:#fff;border-top-left-radius:8px}
+.m{align-self:flex-end;background:#d4f8c9;border-top-right-radius:8px;transform-origin:100% 100%}
+.m.big{font-size:130px;padding:14px 40px}
+.dig{align-self:flex-start;background:#fff;border-radius:34px;padding:30px 36px;display:flex;gap:12px}
+.dig i{width:18px;height:18px;border-radius:50%;background:#9a9a9a;display:block}
+#bar{position:absolute;left:0;right:0;bottom:0;height:150px;background:#f7f3ee;display:flex;align-items:center;padding:0 34px;gap:24px}
+#bar .in{flex:1;height:96px;border-radius:48px;background:#fff;display:flex;align-items:center;padding:0 36px;font-size:40px;color:#9a9a9a}
+#bar .mic{width:96px;height:96px;border-radius:50%;background:#1f9d55}
+#corte{position:absolute;inset:0;opacity:0;z-index:30;background:#000}
+#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.2) contrast(1.1) brightness(.55)}
+#eu{position:absolute;left:0;right:0;top:330px;text-align:center;font-family:H;font-size:110px;color:#fff;text-shadow:0 6px 30px #000}
+#calc{position:absolute;left:150px;right:150px;top:700px;background:#1c1c1e;border-radius:60px;padding:50px 50px 60px;box-shadow:0 40px 120px #000c;border:2px solid #333}
+#calc .l{font-size:40px;font-weight:700;color:#9a9a9a;text-align:right}
+#calc .v{white-space:nowrap;font-family:D;font-size:140px;color:#fff;text-align:right;line-height:1;margin-top:10px;font-variant-numeric:tabular-nums}
+#calc .k{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:40px}
+#calc .k b{height:120px;border-radius:60px;background:#333;display:flex;align-items:center;justify-content:center;font-size:48px;color:#fff}
+#calc .k b.o{background:#ff9f0a}
+#caveira{position:absolute;left:0;right:0;top:1500px;text-align:center;font-size:200px}
+#fim{position:absolute;inset:0;opacity:0;z-index:40;background:#fff3e3;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 80px}
+#fim .t{font-family:B;font-size:110px;line-height:.98;letter-spacing:-3px;color:#111}
+#fim .t em{font-style:normal;background:#8fe08d;padding:0 14px;border-radius:16px}
+#fim .s{font-size:44px;font-weight:700;color:#5a4d40;margin-top:50px;line-height:1.3}
+#fim .lg{margin-top:80px;background:#111;border-radius:36px;padding:26px 40px}
+#fim .lg img{width:340px;display:block}
+</style></head><body>
+<div id="cap"><div>POV: você vende salgado e chega mensagem às 23h 🫠</div></div>
+<div id="chat"><div id="hd"><div class="av">🙂</div><div><div class="nm">Cliente (festa sábado)</div><div class="st" id="st">online</div></div></div>
+ <div id="lista"></div>
+ <div id="bar"><div class="in">Mensagem</div><div class="mic"></div></div></div>
+<div id="corte"><img id="vid"><div id="eu">eu fazendo a conta depois:</div>
+ <div id="calc"><div class="l" id="cl">o que sobrou</div><div class="v" id="cv">R$ 90,00</div><div class="k">${''}</div></div><div id="caveira">💀</div></div>
+<div id="fim"><div class="t">Marca quem <em>já passou</em> por isso 👇</div><div class="s">e faz a conta antes de dar o “precinho”:<br>calculadora grátis no link da bio</div><div class="lg"><img src="../base/logo.png"></div></div>
+<div id="grao"></div>
+<script src="../base/kit.js"></script><script src="tempos.js"></script>
+<script>
+const M=[[1.1,'c','oii, quanto tá o cento de coxinha?','23:04'],[1.9,'m','R$ 90 😊','23:04'],[3.1,'c','nossaaa 😳 faz 60?','23:05'],[4.3,'c','é pra festa da minha sobrinha','23:05'],
+ [5.4,'c','se eu pegar 2 centos faz 100?','23:06'],[6.6,'c','ah, e entrega né? é pertinho 🙏','23:06'],[7.8,'c','e pago semana que vem, pode ser?','23:07'],[8.7,'m big','😐','23:07']];
+const DIG=[0.5,2.5,3.8,4.9,6.1,7.3];
+let h='';M.forEach((m,i)=>{h+=`<div class="b ${m[1]}" id="m${i}">${m[2]}<small>${m[3]}${m[1].startsWith('m')?' ✓✓':''}</small></div>`});h+='<div class="dig" id="dig"><i></i><i></i><i></i></div>';
+$('lista').innerHTML=h;
+$('calc').querySelector('.k').innerHTML=['C','±','%','÷','7','8','9','×','4','5','6','−'].map(x=>`<b class="${'÷×−'.includes(x)?'o':''}">${x}</b>`).join('');
+window.render=async function(t){
+  fx(t);const esp=[];
+  $('cap').style.transform=`translateY(${(1-eo5(p(t,0,0.4)))*-330}px)`;
+  M.forEach((m,i)=>{const e=$('m'+i);const on=t>=m[0];e.style.display=on?'':'none';const q=el(p(t,m[0],0.5));e.style.transform=`scale(${on?Math.max(q,0):0})`});
+  // digitando: visível se estiver numa janela antes de mensagem do cliente
+  let d=false;DIG.forEach(a=>{const prox=M.find(m=>m[0]>a);if(t>=a&&t<prox[0])d=true});
+  $('dig').style.display=d?'':'none';$$('#dig i').forEach((x,k)=>x.style.transform=`translateY(${Math.sin(t*12-k*0.9)*8}px)`);
+  $('st').textContent=d?'digitando…':'online';
+  // tremida antes do corte
+  const sh=p(t,8.7,0.6)*(t<9.3?1:0);$('chat').style.transform=`translate(${Math.sin(t*90)*14*sh}px,${Math.cos(t*70)*10*sh}px)`;
+  // corte
+  const c=t>=9.3;$('corte').style.opacity=c?1:0;
+  if(c){esp.push(quadro($('vid'),'x_fritura',358,t-9.3));const z=1+0.08*p(t,9.3,3.3);$('vid').style.transform=`scale(${z})`;
+    const k=eio(p(t,9.9,1.4));const v=90*(1-k);$('cv').textContent=brl(v);$('cv').style.color=k>0.99?'#ff453a':'#fff';
+    const ci=eo5(p(t,9.45,0.5));$('calc').style.transform=`translateY(${(1-ci)*300}px) rotate(${(1-ci)*-8+ (k>0.99?Math.sin(t*60)*1.5*(1-p(t,11.3,0.5)):0)}deg)`;
+    $('eu').style.opacity=eo(p(t,9.4,0.3));const cv=el(p(t,11.35,0.8));$('caveira').style.transform=`scale(${Math.max(cv,0)})`;}
+  const f=eo5(p(t,12.7,0.45));$('fim').style.opacity=f;$('fim').style.transform=`scale(${1.1-0.1*f})`;
+  await Promise.all(esp);
+};
+render(0);
+</script></body></html>

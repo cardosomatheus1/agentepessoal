@@ -1,0 +1,54 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:B;src:url(../base/gf/brico.woff2)}
+@font-face{font-family:A;src:url(../base/gf/anton.woff2)}
+@font-face{font-family:H;src:url(../base/gf/caveat.woff2)}
+@font-face{font-family:I;src:url(../base/fonts/Inter-Bold.otf);font-weight:700}
+@font-face{font-family:I;src:url(../base/fonts/Inter-Black.otf);font-weight:900}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1080px;height:1350px;overflow:hidden;font-family:I;color:#fff;background:#111}
+.slide{position:absolute;inset:0;overflow:hidden;display:none}
+.grao{position:absolute;inset:0;background:url(../base/grao.png);opacity:.09;mix-blend-mode:overlay;z-index:9}
+.marca{position:absolute;left:70px;top:60px;background:#000a;border:1px solid #fff2;border-radius:22px;padding:10px 18px;z-index:10}.marca img{width:150px;display:block}
+.pe{position:absolute;left:70px;right:70px;bottom:56px;display:flex;justify-content:space-between;font-size:30px;font-weight:700;z-index:10}
+.A{background:#ff5d3a}.Bt{background:#2f6bff}
+.ttl{font-family:A;font-size:150px;line-height:.9;text-transform:uppercase;letter-spacing:1px}
+.args{display:flex;flex-direction:column;gap:30px}
+.arg{display:flex;gap:28px;align-items:flex-start;font-size:50px;font-weight:700;line-height:1.2}
+.arg i{flex:none;font-style:normal;width:80px;height:80px;border-radius:24px;background:#fff;color:#111;display:flex;align-items:center;justify-content:center;font-family:A;font-size:50px}
+</style></head><body>
+<!-- 1: capa -->
+<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
+ <img src="moto.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.4) saturate(1.2)">
+ <div style="position:absolute;left:0;right:0;top:0;bottom:0;background:linear-gradient(180deg,#0000 30%,#000c)"></div>
+ <div style="position:absolute;left:70px;right:70px;top:230px;font-family:H;font-size:70px;color:#ffd66b;transform:rotate(-3deg)">a briga do século:</div>
+ <div class="ttl" style="position:absolute;left:70px;right:70px;top:330px">Taxa de entrega</div>
+ <div style="position:absolute;left:70px;right:70px;top:640px;display:flex;flex-direction:column;gap:26px">
+  <div class="A" style="border-radius:36px;padding:34px 40px;font-size:60px;font-weight:900;transform:rotate(-1.5deg)">A · cobrar à parte</div>
+  <div style="text-align:center;font-family:A;font-size:80px">VS</div>
+  <div class="Bt" style="border-radius:36px;padding:34px 40px;font-size:60px;font-weight:900;transform:rotate(1.5deg)">B · embutir no preço</div></div>
+ <div class="pe"><span style="font-family:H;font-size:46px;color:#ffd66b">escolhe o seu time →</span><span>1/4</span></div></div>
+<!-- 2: time A -->
+<div class="slide A"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
+ <div class="ttl" style="position:absolute;left:70px;right:70px;top:200px">Time A<br><span style="font-size:90px">cobrar à parte</span></div>
+ <div class="args" style="position:absolute;left:70px;right:70px;top:560px">
+  <div class="arg"><i>1</i>O produto continua com o mesmo preço da vitrine.</div>
+  <div class="arg"><i>2</i>Quem vem buscar não paga a entrega de quem pede.</div>
+  <div class="arg"><i>3</i>Dá pra cobrar mais de quem mora longe.</div></div>
+ <div class="pe"><span>“a entrega é um serviço”</span><span>2/4 →</span></div></div>
+<!-- 3: time B -->
+<div class="slide Bt"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
+ <div class="ttl" style="position:absolute;left:70px;right:70px;top:200px">Time B<br><span style="font-size:90px">embutir no preço</span></div>
+ <div class="args" style="position:absolute;left:70px;right:70px;top:560px">
+  <div class="arg"><i>1</i>Cliente odeia ver taxa aparecendo no final.</div>
+  <div class="arg"><i>2</i>“Entrega grátis” chama atenção no cardápio.</div>
+  <div class="arg"><i>3</i>Um preço só: menos conversa, menos desistência.</div></div>
+ <div class="pe"><span>“ninguém gosta de surpresa”</span><span>3/4 →</span></div></div>
+<!-- 4: voto -->
+<div class="slide" style="background:#fff3e3;color:#111"><div class="grao" style="mix-blend-mode:multiply;opacity:.06"></div><div class="marca"><img src="../base/logo.png"></div>
+ <div style="position:absolute;left:70px;right:70px;top:220px;font-family:B;font-size:120px;line-height:.95;letter-spacing:-3px">E você, é time <span style="color:#ff5d3a">A</span> ou <span style="color:#2f6bff">B</span>? Comenta 👇</div>
+ <div style="position:absolute;left:70px;right:70px;top:640px;font-size:46px;font-weight:700;line-height:1.35;color:#4a3f35">Seja qual for o seu time: <b style="color:#111">a entrega custa</b> (moto, gasolina, embalagem, tempo). Se ela não está na taxa, tem que estar no preço.</div>
+ <div style="position:absolute;left:70px;right:70px;bottom:130px;background:#111;color:#fff;border-radius:40px;padding:36px 44px;display:flex;align-items:center;justify-content:space-between">
+  <img src="../base/logo.png" style="width:240px"><div style="font-size:36px;font-weight:900;text-align:right;line-height:1.25">Faz as duas contas<br><span style="color:#8fe08d">calculadora grátis · link na bio</span></div></div>
+ <div class="pe" style="color:#7a6d60"><span>@raiz.connect</span><span>4/4</span></div></div>
+</body></html>

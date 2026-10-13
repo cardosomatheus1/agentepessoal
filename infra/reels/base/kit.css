@@ -1,0 +1,25 @@
+@font-face{font-family:I;src:url(fonts/Inter-Medium.otf);font-weight:500}
+@font-face{font-family:I;src:url(fonts/Inter-Bold.otf);font-weight:700}
+@font-face{font-family:I;src:url(fonts/Inter-ExtraBold.otf);font-weight:800}
+@font-face{font-family:I;src:url(fonts/Inter-Black.otf);font-weight:900}
+@font-face{font-family:D;src:url(fonts/InterDisplay-Black.otf);font-weight:900}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;font-family:I,sans-serif;color:#fff;background:#000}
+.cena{position:absolute;inset:0;overflow:hidden;opacity:0}
+.cam{position:absolute;inset:0;transform-origin:50% 45%}
+.full{position:absolute;inset:0}
+.ctr{position:absolute;left:0;right:0;text-align:center}
+.ww{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .04em .08em}
+.wi{display:inline-block;will-change:transform}
+.glass{background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.05));border:1.5px solid rgba(255,255,255,.22);box-shadow:0 30px 80px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.35);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);border-radius:44px}
+.grad{background-clip:text;-webkit-background-clip:text;color:transparent}
+.mk{position:relative;display:inline-block;z-index:0}
+.mk:before{content:'';position:absolute;left:-.12em;right:-.12em;top:.12em;bottom:.02em;z-index:-1;border-radius:.12em;background:var(--mk,#47b346);transform-origin:0 50%;transform:scaleX(var(--k,0)) skewX(-8deg)}
+#grao{position:absolute;inset:-50%;background:url(grao.png);opacity:.075;mix-blend-mode:overlay;pointer-events:none;z-index:90}
+#vinheta{position:absolute;inset:0;background:radial-gradient(ellipse 75% 60% at 50% 45%,transparent 55%,rgba(0,0,0,.55));pointer-events:none;z-index:89}
+#marca{position:absolute;left:50%;top:56px;transform:translateX(-50%);z-index:80;padding:16px 30px;border-radius:30px;background:rgba(0,0,0,.35);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.12)}
+#marca img{display:block;width:210px}
+.nota{position:absolute;left:0;right:0;bottom:70px;text-align:center;font-size:28px;font-weight:500;color:rgba(255,255,255,.6);z-index:85;letter-spacing:.5px}
+.bok{position:absolute;border-radius:50%;pointer-events:none}
+.btn{position:relative;display:inline-block;overflow:hidden;font-size:62px;font-weight:900;padding:40px 88px;border-radius:100px}
+.btn i{position:absolute;top:0;bottom:0;width:120px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);transform:skewX(-20deg)}

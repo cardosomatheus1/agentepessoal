@@ -9,3 +9,8 @@ As fontes Inter ficam em `base/fonts/` (copie de `/usr/share/fonts/opentype/inte
 
 Os valores são de exemplo e aparecem como "valores de exemplo" na tela.
 Sem o Chromium do Playwright instalado, aponte `CHROME=/caminho/do/chrome`.
+
+Visual v2: `base/kit.css` + `base/kit.js` (vidro, texto por palavra, transição em círculo, granulação, quadros de filmagem).
+Filmagens (AWS Nova Reel) ficam fora do git: `base/frames.sh video.mp4 <pasta>` gera `<pasta>/v/q0001.jpg…`.
+Carrosséis (`c_*`): `python3 base/carrossel.py c_frases` gera slide1.png… (1080x1350).
+`r_pov`: Reel sem voz (o áudio em alta entra na hora de postar).
