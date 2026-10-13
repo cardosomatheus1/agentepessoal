@@ -88,7 +88,7 @@ Not run on purpose:
 | 1 | **"Entrar com Google" doesn't work** ("origin is not allowed"). This isn't from the migration; the domain is the same. | Matheus | Google Cloud Console → Credentials → login client ID → *Authorized JavaScript origins*: add `https://raizconnect.com.br` and `https://app.raizconnect.com.br` |
 | 2 | Obsolete branch `fix/pipeline-pasta-dos-artefatos` | Matheus | delete it on GitHub (erp-saas → Branches). PR #57 already made the same fix. This session cannot delete branches |
 | 3 | Approval email doesn't arrive | Matheus | confirm the subscription in the "AWS Notifications" email at sejaorbyte@gmail.com |
-| 4 | ~~Pipeline waiting for approval (`bb8a36f`, PR #55)~~ | done | rejected on 13/10 at 22:30 UTC: approving it would have taken production back to before PR #56 |
+| 4 | ~~Pipeline waiting for approval (`bb8a36f`, PR #55)~~ | done | rejected on 13/10 at 21:10 UTC: approving it would have taken production back to before PR #56 |
 | 5 | Test company: the cash register opened at 01:10 UTC (R$ 200.00, user Caio Mendonça) is still open. Its two sales are from the migration session's customer-journey test (R$ 16.00 at 19:51 UTC and R$ 87.35 at 19:59 UTC, both cash) | Matheus | leave it or close it (no impact: test company) |
 | 6 | Final NF-e test | Matheus | issue an NF-e in homologation with the real A1 certificate |
 | 7 | Hetzner | later | keep it stopped for 1 to 2 weeks, take a last backup and shut it down |
