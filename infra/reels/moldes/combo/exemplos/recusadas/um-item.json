@@ -1,0 +1,3 @@
+{"_marca": "doces-da-lu", "_formato": "carrossel", "nome": "Kit festa",
+ "itens": [{"nome": "Bolo de morango", "preco": 85.0, "foto": "fotos/bolo.jpg"}],
+ "preco_combo": 80.0, "_origem": {"itens": "dono", "preco_combo": "dono"}}

@@ -1,0 +1,7 @@
+{"_marca": "doces-da-lu", "_formato": "carrossel",
+ "nome": "Kit festa",
+ "itens": [{"nome": "Bolo de morango", "preco": 85.0, "foto": "fotos/bolo.jpg"},
+           {"nome": "Cento de brigadeiro", "preco": 120.0, "foto": "fotos/brigadeiro.jpg"},
+           {"nome": "Pudim inteiro", "preco": 55.0, "foto": "fotos/leite.jpg"}],
+ "preco_combo": 229.0, "chamada": "Encomende pelo link",
+ "_origem": {"itens": "dono", "preco_combo": "dono"}}

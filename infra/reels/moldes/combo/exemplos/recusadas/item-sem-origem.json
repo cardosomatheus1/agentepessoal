@@ -1,0 +1,3 @@
+{"_marca": "burger-noite", "_formato": "reel", "nome": "Combo família",
+ "itens": [{"nome": "2 Smash duplo", "preco": 64.0, "foto": "fotos/lanche.jpg"}, {"nome": "Batata rústica G", "preco": 24.0, "foto": "fotos/embala.jpg"}],
+ "preco_combo": 79.9, "_origem": {"preco_combo": "dono"}}

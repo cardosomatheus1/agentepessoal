@@ -60,10 +60,11 @@ body.e-pop .recibo{background:var(--fundo2)}
 .recibo .tot .a{flex:1;height:56px;font-size:40px;font-weight:900;white-space:nowrap}
 .recibo .tot .v{flex:none;width:330px;height:84px;text-align:right;font-size:76px;line-height:84px;white-space:nowrap}
 .recW .selo{position:absolute;right:-34px;top:-46px;z-index:2;width:150px;height:150px;border-radius:50%;background:var(--bom);color:var(--sobre-bom);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--ft),sans-serif;font-weight:900;font-size:64px;line-height:1;transform:rotate(-10deg);box-shadow:var(--sombra)}
+.recibo .nt{height:42px;margin-top:14px;font-size:30px;font-weight:600;text-align:center;white-space:nowrap}
 .recW .selo small{font-family:var(--fb),sans-serif;font-size:22px;font-weight:800;letter-spacing:2px;margin-bottom:4px}
-#rec4{top:850px}
-#c4 .recibo .lin{padding:20px 0 16px}#c4 .recibo .lin .r .a{height:56px;font-size:44px}#c4 .recibo .lin .r .s{height:42px;font-size:32px}#c4 .recibo .lin .v{height:56px;font-size:48px}#c4 .recibo .tot .v{height:96px;line-height:96px;font-size:86px}
-#rec4.semfonte{top:800px}
+#rec4{top:830px}
+#c4 .recibo .lin{padding:14px 0 12px}#c4 .recibo .lin .r .a{height:56px;font-size:44px}#c4 .recibo .lin .r .s{height:38px;font-size:30px}#c4 .recibo .lin .v{height:56px;font-size:48px}#c4 .recibo .tot .v{height:96px;line-height:96px;font-size:86px}
+#rec4.semfonte{top:790px}
 
 /* carousel */
 .slide .chipq{position:absolute;right:84px;top:58px;height:62px;line-height:62px;font-size:30px;letter-spacing:4px;padding:0 28px;white-space:nowrap}
@@ -129,6 +130,9 @@ body.e-pop .recibo{background:var(--fundo2)}
 // "Quiz A, B ou C": a question with three answers to comment on; the answer comes last and teaches. In the Reel a
 // "pause and answer" countdown comes before the answer. Numbers of the explanation live in `conta` (the code sums
 // them and checks that the right option is the total); the explanation text itself carries no digits.
+// work around: in a carousel only the first slide is displayed when the engine waits for fonts, so faces used only
+// on later slides are not loaded yet when text is fitted; ask for every face up front
+const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
 const LET = ['A', 'B', 'C'];
 let Q = {};
 const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
@@ -175,6 +179,7 @@ function recibo(F, $m, pai) {
   });
   const tt = mk('div', 'tot', null, r); mk('div', 'a t', F.total_rotulo || 'Total', tt);
   const tv = mk('div', 'v tit dest t seg', din(Q.total), tt); tv.dataset.v = Q.total;
+  if (F.nota) mk('div', 'nt t t2', F.nota, r);
   const s = mk('div', 'selo', null, w); mk('small', null, 'LETRA', s); s.append(F.certa);
   return w;
 }
@@ -255,7 +260,7 @@ Motor.molde({
     const r = $('#rec4');
     if (r) {
       const r0 = a + 1.0, rp = eo(p(t, r0, 0.7));
-      r.style.opacity = cl(rp * 4); r.style.clipPath = `inset(0 0 ${(1 - rp) * 100}% 0)`; r.style.transform = `translateY(${(1 - rp) * -60}px)`;
+      r.style.opacity = cl(rp * 4); r.style.clipPath = rp < 1 ? `inset(-80px -80px ${(1 - rp) * 100}% -80px)` : 'none'; r.style.transform = `translateY(${(1 - rp) * -60}px)`;
       $$('.lin', r).forEach((li, j) => { const q = eo5(p(t, r0 + 0.5 + j * 0.3, 0.4)); li.style.opacity = q; li.style.transform = `translateX(${(1 - q) * 40}px)`;
         const v = li.querySelector('.v'); $m.conta(v, t, r0 + 0.5 + j * 0.3, 0.5, +v.dataset.v, x => $m.brl(x, Q.dec)); });
       const tz = r0 + 0.5 + F.conta.length * 0.3, tq = eo5(p(t, tz, 0.4));
@@ -263,10 +268,10 @@ Motor.molde({
       const sq = p(t, tz + 0.9, 0.35), sb = sq === 0 ? 0 : 1 + 1.2 * Math.pow(1 - eo(sq), 2);
       $('.selo', r).style.opacity = sq > 0 ? 1 : 0; $('.selo', r).style.transform = `scale(${sb}) rotate(-10deg)`;
     }
-    $('#nota').style.opacity = F.conta && t > S(4) && t < S(5) ? 1 : 0;
+    $('#nota').style.opacity = 0;
   },
   slides(F, M, $m) {
-    Q = checar(F, $m);
+    Q = checar(F, $m); fontes();
     const palco = $m.$('#palco'); $m.$$('.cena', palco).forEach(c => c.remove()); $m.$('#nota').remove();
     const novo = () => mk('div', 'slide', null, palco);
     // 1: question and options
@@ -297,7 +302,6 @@ Motor.molde({
       const s4 = novo(); mk('div', 'ct tit t seg', 'Fazendo a conta', s4);
       recibo(F, $m, s4);
       mk('div', 'salva mao t seg', 'salva pra fazer com os seus números', s4);
-      if (F.nota) mk('div', 'notac t t2', F.nota, s4);
     }
   },
 });

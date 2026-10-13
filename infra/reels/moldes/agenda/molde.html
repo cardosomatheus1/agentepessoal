@@ -11,7 +11,7 @@
 .col .cab{height:118px;border-radius:24px;background:color-mix(in srgb,var(--texto) 7%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .col .cab .ds{height:40px;font-size:30px;font-weight:900;letter-spacing:.06em;width:100%;text-align:center;white-space:nowrap}
 .col .cab .dn{height:62px;font-size:56px;line-height:62px;width:100%;text-align:center;white-space:nowrap}
-.sl{position:relative;height:86px;border-radius:20px;border:3px solid var(--borda);display:flex;align-items:center;justify-content:center}
+.sl{position:relative;flex:none;height:86px;border-radius:20px;border:3px solid var(--borda);display:flex;align-items:center;justify-content:center}
 .sl .t{width:100%;height:44px;font-size:34px;font-weight:800;text-align:center;white-space:nowrap;line-height:44px}
 .sl .risco{position:absolute;left:10%;top:50%;width:80%;height:6px;margin-top:-3px;border-radius:3px;background:var(--ruim);transform-origin:0 50%;transform:rotate(-14deg) scaleX(0)}
 .sl.livre{border-color:var(--destaque)}
@@ -37,9 +37,9 @@ body.e-noite .vg{box-shadow:0 0 34px color-mix(in srgb,var(--destaque) 60%,trans
 .vg .a{height:44px;font-size:34px;font-weight:800;white-space:nowrap;opacity:.85}
 .vg .b{height:74px;font-size:66px;line-height:74px;white-space:nowrap}
 .vg.mais{background:transparent;color:var(--texto);border:3px dashed var(--borda);box-shadow:none;align-items:center}
-#cta{position:absolute;left:80px;right:80px;top:1300px;height:200px;border-radius:40px;padding:0 44px;display:flex;align-items:center;gap:30px;background:var(--texto);color:var(--fundo)}
+#cta{position:absolute;left:80px;right:80px;top:1300px;height:190px;border-radius:40px;padding:0 44px;display:flex;align-items:center;gap:30px;background:var(--texto);color:var(--fundo)}
 #cta .ico{flex:none;font-size:84px}
-#ctaT{flex:1;height:150px;font-size:54px;font-weight:900;line-height:1.12;display:flex;align-items:center}
+#ctaT{flex:1;height:126px;font-size:54px;font-weight:900;line-height:1.12}
 </style></head><body><div id="palco">
 <div class="cena" id="c0"><div class="cam full">
  <div class="ctr tit t seg rv" id="cabT"></div>
@@ -71,7 +71,7 @@ let D = {};
 Motor.molde({
   id: 'agenda', formatos: ['story'],
   montar(F, M, $m) {
-    const { $ } = $m, hoje = F._hoje || iso(new Date()), sem = F.periodo === 'semana';
+    const { $, $$ } = $m, hoje = F._hoje || iso(new Date()), sem = F.periodo === 'semana';
     if (F.confirmado_em !== hoje) $m.erro('horários confirmados em ' + ddmm(F.confirmado_em) + ': a agenda tem de ser lida ou confirmada hoje');
     const H = F.horarios.slice().sort((a, b) => (a.data + (a.hora || '')).localeCompare(b.data + (b.hora || '')));
     if (H.some(h => h.data < hoje)) $m.erro('há horário em data que já passou');
@@ -125,9 +125,9 @@ Motor.molde({
     $('#contaN').textContent = nl; $('#contaT').textContent = nl === 1 ? un[0] : un[1];
     D.nl = nl;
     // scene 2
-    $('#c2T').textContent = nl === 1 ? 'Garanta a sua' : 'Garanta o seu';
-    if (nl === 1 && un[0].startsWith('horário')) $('#c2T').textContent = 'Garanta o seu';
-    $('#c2S').textContent = nl === 1 ? 'só sobrou esta vaga' : `${nl} vagas de verdade, sem repetir`;
+    const fem = un[0].startsWith('data');
+    $('#c2T').textContent = fem ? 'Garanta a sua' : 'Garanta o seu';
+    $('#c2S').textContent = nl === 1 ? (fem ? 'só sobrou esta data' : 'só sobrou este horário') : `${nl} ${un[1]}, ${fem ? 'confirmadas' : 'confirmados'} hoje`;
     const mostra = livres.slice(0, nl > 8 ? 7 : 8);
     mostra.forEach(h => { const v = document.createElement('div'); v.className = 'vg';
       v.innerHTML = '<div class="a t"></div><div class="b tit t seg"></div>';
@@ -140,6 +140,19 @@ Motor.molde({
     if (linhas <= 2) document.querySelectorAll('.vg').forEach(v => { v.style.height = '190px'; });
     $('#ctaIc').innerHTML = $m.icone(F.icone || 'chat'); $('#ctaT').textContent = F.como_agendar;
     $('#nota').textContent = F.nota || '';
+    // sizes follow the content; each scene's block is centered in the free area (370 to 1560)
+    if (sem) {
+      const nc = $$('.col').length, big = nc <= 5;
+      if (big) $$('.sl').forEach(e => { e.style.height = '100px'; e.querySelector('.t').style.fontSize = '42px'; });
+      const rows = Math.max(...$$('.col').map(c => c.querySelectorAll('.sl').length)), sh = big ? 100 : 86;
+      D.calH = 96 + 118 + rows * (sh + 14) + 30;
+    } else D.calH = 100 + $('#grade').scrollHeight + 34;
+    $('#cal').style.height = D.calH + 'px';
+    let y = 370 + (1190 - (200 + D.calH + 24 + 110)) / 2;
+    $('#cabT').style.top = y + 'px'; $('#cabS').style.top = (y + 108) + 'px'; $('#cal').style.top = (y + 200) + 'px'; $('#conta').style.top = (y + 200 + D.calH + 24) + 'px';
+    const nv = $('#lista').children.length, lh = Math.ceil(nv / 2) * (parseInt($('.vg').style.height) || 150) + (Math.ceil(nv / 2) - 1) * 24;
+    y = 370 + (1190 - (262 + lh + 44 + 190)) / 2;
+    $('#c2T').style.top = y + 'px'; $('#c2S').style.top = (y + 162) + 'px'; $('#lista').style.top = (y + 262) + 'px'; $('#cta').style.top = (y + 262 + lh + 44) + 'px';
     return { duracoes: [2.2, 3.4, 3.4] };
   },
   quadro(t, F, $m) {
@@ -149,7 +162,7 @@ Motor.molde({
     $m.revela('#cabT', t, 0.1); $m.entra('#cabS', t, 0.45, 0.5, 24);
     const ci = eo5(p(t, 0.2, 0.7)); $('#cal').style.opacity = ci; $('#cal').style.transform = `translateY(${(1 - ci) * 140}px) scale(${0.94 + 0.06 * ci})`;
     $m.entra('#mes', t, 0.5, 0.4, 16);
-    const a1 = ini(1), calH = 820;
+    const a1 = ini(1), calH = D.calH;
     const sc = p(t, a1 + 0.1, 1.5); $('#scan').style.top = (-140 + sc * (calH + 140)) + 'px'; $('#scan').style.opacity = sc > 0 && sc < 1 ? 1 : 0;
     const passou = y => t > a1 + 0.1 + (y + 140) / (calH + 140) * 1.5 - 0.1;
     if (D.sem) {

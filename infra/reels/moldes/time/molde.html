@@ -1,0 +1,220 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* team colors: A is the brand highlight, B the opposite of the background (a light card where that would be too dark) */
+:root{--ta:var(--destaque);--sa:var(--sobre-destaque);--tb:var(--texto);--sb:var(--fundo)}
+body.e-pop{--tb:var(--fundo2);--sb:var(--texto)}
+body.e-papel{--tb:var(--cartao);--sb:var(--texto)}
+.pa,.pb{position:absolute;inset:0}
+.pa{background:var(--ta);color:var(--sa);clip-path:polygon(0 0,60% 0,36% 100%,0 100%)}
+.pb{background:var(--tb);color:var(--sb);clip-path:polygon(64% 0,100% 0,100% 100%,40% 100%)}
+body.e-papel .pb{background:repeating-linear-gradient(0deg,rgba(90,60,30,.05) 0 2px,transparent 2px 7px),var(--cartao)}
+.lab{font-size:34px;font-weight:900;letter-spacing:5px;height:46px;white-space:nowrap}
+.vs{position:absolute;width:210px;height:210px;border-radius:50%;background:var(--fundo);border:10px solid var(--texto);color:var(--texto);display:flex;align-items:center;justify-content:center;font-family:var(--ft),sans-serif;font-weight:900;font-size:92px;letter-spacing:-2px;z-index:3}
+.onda{position:absolute;width:210px;height:210px;border-radius:50%;border:8px solid var(--texto);opacity:0;z-index:2}
+/* scene 0: theme + diagonal split */
+#topo{position:absolute;left:0;top:0;width:1080px;height:780px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+#topo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#topo:after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.72))}
+#kick{position:absolute;left:90px;width:900px;top:372px;height:70px;font-size:56px;color:var(--destaque);white-space:nowrap}
+#tema{position:absolute;left:90px;width:900px;top:450px;height:240px;font-size:80px}
+.foto #tema,.foto #kick{color:#fff}
+#split{position:absolute;left:0;top:720px;width:1080px;height:760px}
+#ta0{position:absolute;left:70px;top:44px;width:440px;height:290px}
+#ta0 .ld,#tb0 .ld{height:240px;font-size:62px;margin-top:8px}
+#tb0{position:absolute;left:556px;top:470px;width:344px;height:280px;text-align:right}
+#vs0{left:435px;top:275px}#onda0{left:435px;top:275px}
+/* scenes 1, 2: one team takes the whole screen */
+.tela{position:absolute;inset:0}
+.tela .big{position:absolute;left:90px;width:900px;top:390px;height:170px;font-size:160px;line-height:1;white-space:nowrap}
+.tela .ld{position:absolute;left:90px;width:900px;top:590px;height:250px;font-size:90px}
+.tela .arg{position:absolute;left:80px;width:830px;top:900px;height:480px;padding:56px 54px 40px;border-radius:var(--raio);border:4px solid currentColor;background:color-mix(in srgb,currentColor 9%,transparent)}
+.tela .arg .q{position:absolute;left:44px;top:-70px;font-family:var(--ft),sans-serif;font-weight:900;font-size:200px;line-height:1;height:150px}
+.tela .arg .tx{position:relative;height:380px;font-size:58px;font-weight:800;line-height:1.2}
+#c1 .tela{background:var(--ta);color:var(--sa)}
+#c2 .tela{background:var(--tb);color:var(--sb)}
+body.e-papel #c2 .tela{background:repeating-linear-gradient(0deg,rgba(90,60,30,.05) 0 2px,transparent 2px 7px),var(--cartao)}
+#c2 .big,#c2 .ld{text-align:right}
+/* scene 3: comment your team (tug of war) */
+#t3{position:absolute;left:90px;width:900px;top:390px;height:250px;font-size:100px;text-align:center}
+.cartA,.cartB{position:absolute;top:680px;width:400px;height:300px;border-radius:var(--raio);padding:20px 30px;text-align:center}
+.cartA{left:80px;background:var(--ta);color:var(--sa)}
+.cartB{left:510px;background:var(--tb);color:var(--sb)}
+body.e-pop .cartA,body.e-pop .cartB{border:6px solid var(--texto);box-shadow:12px 12px 0 var(--texto)}
+body.e-papel .cartB{box-shadow:var(--sombra)}
+.cartA .l,.cartB .l{height:150px;font-family:var(--ft),sans-serif;font-weight:900;font-size:150px;line-height:150px}
+.cartA .d,.cartB .d{height:100px;font-size:40px;font-weight:800;line-height:1.15}
+#corda{position:absolute;left:80px;width:830px;top:1080px;height:40px;border-radius:20px;overflow:hidden;display:flex}
+#corda i{flex:1}#corda i:first-child{background:var(--ta)}#corda i:last-child{background:var(--tb)}
+body.e-pop #corda,body.e-papel #corda{border:4px solid var(--texto)}
+#no{position:absolute;left:450px;top:1045px;width:110px;height:110px;border-radius:50%;background:var(--fundo);border:10px solid var(--texto)}
+#c3s{position:absolute;left:90px;width:820px;top:1200px;height:80px;font-size:62px;color:var(--destaque);text-align:center;white-space:nowrap}
+/* scene 4: neutral close, the two colors meet */
+.bola{position:absolute;top:410px;width:260px;height:260px;border-radius:50%;mix-blend-mode:normal}
+#bA{background:var(--ta);left:270px}#bB{background:var(--tb);left:550px;opacity:.92}
+body.e-pop #bB,body.e-papel #bB{border:6px solid var(--texto)}
+#fech{position:absolute;left:90px;width:820px;top:760px;height:560px;font-size:70px;text-align:center}
+
+/* carousel */
+.slide .kick{position:absolute;left:84px;width:912px;top:150px;height:64px;font-size:54px;color:var(--destaque);white-space:nowrap}
+.slide .tm{position:absolute;left:84px;width:912px;top:220px;height:230px;font-size:86px}
+.slide .banner{position:absolute;left:0;top:0;width:1080px;height:500px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 75%,transparent);mask-image:linear-gradient(#000 75%,transparent)}
+.slide .banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slide .banner:after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.72))}
+.slide.foto .kick,.slide.foto .tm{color:#fff}
+.slide .split{position:absolute;left:0;top:490px;width:1080px;height:680px}
+.slide .split .ta{position:absolute;left:84px;top:36px;width:420px;height:270px}
+.slide .split .tb{position:absolute;left:560px;top:390px;width:436px;height:260px;text-align:right}
+.slide .split .ld{height:216px;font-size:58px;margin-top:8px}
+.slide .split .vs{left:435px;top:235px}
+.slide .pe{position:absolute;left:84px;right:84px;top:1196px;height:70px;font-size:52px;color:var(--destaque);white-space:nowrap}
+.slide .tela .big{top:150px;font-size:140px;height:150px;width:912px;left:84px}
+.slide .tela .ld{top:320px;height:230px;font-size:84px;width:912px;left:84px}
+.slide .tela .arg{top:660px;left:84px;width:912px;height:470px}
+.slide .tela .arg .tx{height:370px;font-size:56px}
+.slide .tela .pe2{position:absolute;left:84px;right:84px;top:1196px;height:60px;font-size:50px;white-space:nowrap}
+.slide .t4{position:absolute;left:84px;width:912px;top:150px;height:250px;font-size:96px}
+.slide .cartA,.slide .cartB{top:440px;width:440px;height:270px}
+.slide .cartA{left:84px}.slide .cartB{left:556px}
+.slide .cartA .l,.slide .cartB .l{height:130px;font-size:130px;line-height:130px}
+.slide .corda{position:absolute;left:84px;width:912px;top:760px;height:36px;border-radius:18px;overflow:hidden;display:flex}
+.slide .corda i{flex:1}.slide .corda i:first-child{background:var(--ta)}.slide .corda i:last-child{background:var(--tb)}
+body.e-pop .slide .corda,body.e-papel .slide .corda{border:4px solid var(--texto)}
+.slide .no{position:absolute;left:490px;top:728px;width:100px;height:100px;border-radius:50%;background:var(--fundo);border:10px solid var(--texto)}
+.slide .f4{position:absolute;left:84px;width:912px;top:870px;height:300px;font-size:52px;font-weight:700;line-height:1.25}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="topo"><img id="topoi" alt=""></div>
+ <div id="kick" class="mao t seg">qual é o seu time?</div>
+ <div id="tema" class="tit t seg rv"></div>
+ <div id="split">
+  <div class="pa" id="pa0"><div id="ta0"><div class="lab t seg">TIME A</div><div class="ld tit t seg"></div></div></div>
+  <div class="pb" id="pb0"><div id="tb0"><div class="lab t seg">TIME B</div><div class="ld tit t seg"></div></div></div>
+  <div class="onda" id="onda0"></div><div class="vs" id="vs0">VS</div>
+ </div>
+</div></div>
+
+<div class="cena" id="c1"><div class="tela">
+ <div class="big tit t seg">TIME A</div><div class="ld tit t seg rv"></div>
+ <div class="arg"><div class="q">“</div><div class="tx t seg rv"></div></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="tela">
+ <div class="big tit t seg">TIME B</div><div class="ld tit t seg rv"></div>
+ <div class="arg"><div class="q">“</div><div class="tx t seg rv"></div></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full">
+ <div id="t3" class="tit t seg rv">Comenta o seu time</div>
+ <div class="cartA" id="cA"><div class="l t">A</div><div class="d t seg"></div></div>
+ <div class="cartB" id="cB"><div class="l t">B</div><div class="d t seg"></div></div>
+ <div id="corda"><i></i><i></i></div><div id="no"></div>
+ <div id="c3s" class="mao t seg">A ou B? Defende aqui embaixo</div>
+</div></div>
+
+<div class="cena" id="c4"><div class="cam full">
+ <div class="bola" id="bA"></div><div class="bola" id="bB"></div>
+ <div id="fech" class="tit t seg rv"></div>
+</div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Time A ou Time B": a topic that splits opinion in the trade; the split screen asks the viewer to pick a side and
+// defend it in the comments. Opinion, not data: topics about politics, religion or health are refused.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
+const PROIBIDO = /\b(politic\w*|eleic\w*|eleitor\w*|partido\w*|president\w*|governo\w*|deputad\w*|senador\w*|prefeit\w*|vereador\w*|esquerdist\w*|direitist\w*|lula|bolsonar\w*|religi\w*|igreja\w*|deus|jesus|biblia|pastor|padre|evangel\w*|catolic\w*|espirit\w*|umbanda|candomble|macumba|vacina\w*|remedio\w*|doenc\w*|cancer|diabet\w*|dieta\w*|emagrec\w*|engord\w*|calori\w*|medic\w*|saude|cura)\b/;
+function checar(F, $m) {
+  const tudo = [F.tema, F.lado_a, F.lado_b, F.argumento_a, F.argumento_b, F.fechamento].join(' ').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const m = tudo.match(PROIBIDO); if (m) $m.erro(`tema proibido neste molde (política, religião ou saúde): "${m[0]}"`);
+  if (F.lado_a.trim().toLowerCase() === F.lado_b.trim().toLowerCase()) $m.erro('os dois lados precisam ser diferentes');
+}
+const ler = s => 1.2 + s.length / 26;
+Motor.molde({
+  id: 'time', formatos: ['reel', 'carrossel'], duracaoFinal: 2.6,
+  montar(F, M, $m) {
+    const { $ } = $m; checar(F, $m);
+    if (F.midia) $('#c0').classList.add('foto'); else $('#topo').remove();
+    $('#tema').textContent = F.tema;
+    $('#ta0 .ld').textContent = F.lado_a; $('#tb0 .ld').textContent = F.lado_b;
+    $('#c1 .ld').textContent = F.lado_a; $('#c1 .tx').textContent = F.argumento_a;
+    $('#c2 .ld').textContent = F.lado_b; $('#c2 .tx').textContent = F.argumento_b;
+    $('#cA .d').textContent = F.lado_a; $('#cB .d').textContent = F.lado_b;
+    $('#fech').textContent = F.fechamento;
+    return { duracoes: [2.6, ler(F.argumento_a), ler(F.argumento_b), 2.0, 0.6 + ler(F.fechamento)] };
+  },
+  quadro(t, F, $m) {
+    const { $, p, eo, eo5, eio, eb, el, cl, lerp, ini, fim } = $m;
+    // 0: theme, the two halves crash in from the sides, VS slams on the seam
+    $m.cena('#c0', t, 0);
+    if ($('#topo')) $m.filmagem($('#topoi'), F.midia, t);
+    $m.entra('#kick', t, 0.05, 0.5, 30);
+    $m.revela('#tema', t, 0.15, 0.06);
+    const qa = eo5(p(t, 0.35, 0.6)), qb = eo5(p(t, 0.5, 0.6));
+    $('#pa0').style.transform = `translateX(${(1 - qa) * -1100}px)`; $('#pb0').style.transform = `translateX(${(1 - qb) * 1100}px)`;
+    const v = p(t, 1.0, 0.32), vs = v === 0 ? 0 : 1 + 2.2 * Math.pow(1 - eo(v), 2);
+    $('#vs0').style.opacity = v > 0 ? 1 : 0; $('#vs0').style.transform = `scale(${vs}) rotate(${(1 - eo(v)) * -30 + Math.sin(t * 3) * 3}deg)`;
+    const o = p(t, 1.3, 0.7); $('#onda0').style.opacity = o > 0 && o < 1 ? 0.8 * (1 - o) : 0; $('#onda0').style.transform = `scale(${1 + 2.2 * eo(o)})`;
+    const sh = t > 1.3 && t < 1.7 ? Math.sin((t - 1.3) * 70) * 14 * (1 - (t - 1.3) / 0.4) : 0;
+    $('#split').style.transform = `translate(${sh}px, ${sh * 0.4}px)`;
+    // 1, 2: one team wipes over the whole screen along the seam angle
+    [[1, '#c1', 1], [2, '#c2', -1]].forEach(([i, sel, lado]) => {
+      const a = ini(i); $m.cena(sel, t, i, i, { trans: 'nenhuma' });
+      const w = eio(p(t, a, 0.55)), e = $(sel);
+      if (lado > 0) { const x = lerp(-40, 140, w); e.style.clipPath = `polygon(0 0,${x}% 0,${x - 24}% 100%,0 100%)`; }
+      else { const x = lerp(140, -40, w); e.style.clipPath = `polygon(${x}% 0,100% 0,100% 100%,${x - 24}% 100%)`; }
+      const big = e.querySelector('.big'), bq = eo5(p(t, a + 0.25, 0.6)); big.style.transform = `translateX(${(1 - bq) * -200 * lado}px)`; big.style.opacity = bq;
+      $m.revela(e.querySelector('.ld'), t, a + 0.4, 0.07);
+      const ag = e.querySelector('.arg'), aq = eb(p(t, a + 0.75, 0.6)); ag.style.opacity = cl(aq * 2); ag.style.transform = `translateY(${(1 - aq) * 160}px) rotate(${(1 - aq) * 4 * lado}deg)`;
+      $m.revela(e.querySelector('.tx'), t, a + 1.0, 0.04);
+    });
+    // 3: comment your team, the knot of the rope pulls both ways
+    const a3 = ini(3); $m.cena('#c3', t, 3);
+    $m.revela('#t3', t, a3 + 0.05, 0.08);
+    const ca = eb(p(t, a3 + 0.25, 0.55)), cb = eb(p(t, a3 + 0.4, 0.55));
+    $('#cA').style.transform = `translateY(${(1 - ca) * 300}px) rotate(${-4 * ca}deg)`; $('#cA').style.opacity = cl(ca * 2);
+    $('#cB').style.transform = `translateY(${(1 - cb) * 300}px) rotate(${4 * cb}deg)`; $('#cB').style.opacity = cl(cb * 2);
+    const ci = eo5(p(t, a3 + 0.5, 0.5)); $('#corda').style.opacity = ci; $('#no').style.opacity = ci;
+    const puxa = Math.sin((t - a3) * 5.2) * 170 * Math.min(1, (t - a3) / 0.8);
+    $('#no').style.transform = `translateX(${puxa}px) scale(${0.6 + 0.4 * ci})`;
+    $('#corda i:first-child').style.flex = String(1 + puxa / 415); $('#corda i:last-child').style.flex = String(1 - puxa / 415);
+    $m.entra('#c3s', t, a3 + 0.8, 0.5, 30);
+    // 4: neutral close, the two colors overlap
+    const a4 = ini(4); $m.cena('#c4', t, 4);
+    const j = eio(p(t, a4 + 0.2, 0.9)), bi = eb(p(t, a4 + 0.05, 0.5));
+    $('#bA').style.transform = `translateX(${lerp(-200, 0, j)}px) scale(${bi})`; $('#bB').style.transform = `translateX(${lerp(200, 0, j)}px) scale(${bi})`;
+    $m.revela('#fech', t, a4 + 0.6, 0.05);
+  },
+  slides(F, M, $m) {
+    checar(F, $m); fontes();
+    const palco = $m.$('#palco'); $m.$$('.cena', palco).forEach(c => c.remove());
+    const novo = () => mk('div', 'slide', null, palco);
+    // 1: theme and split
+    const s1 = novo();
+    if (F.midia) { s1.classList.add('foto'); const b = mk('div', 'banner', null, s1); $m.filmagem(mk('img', null, null, b), F.midia, 0); }
+    mk('div', 'kick mao t seg', 'qual é o seu time?', s1); mk('div', 'tm tit t seg', F.tema, s1);
+    const sp = mk('div', 'split', null, s1);
+    const pa = mk('div', 'pa', null, sp), ta = mk('div', 'ta', null, pa); mk('div', 'lab t seg', 'TIME A', ta); mk('div', 'ld tit t seg', F.lado_a, ta);
+    const pb = mk('div', 'pb', null, sp), tb = mk('div', 'tb', null, pb); mk('div', 'lab t seg', 'TIME B', tb); mk('div', 'ld tit t seg', F.lado_b, tb);
+    mk('div', 'vs', 'VS', sp);
+    mk('div', 'pe mao t seg', 'escolhe o seu time e arrasta →', s1);
+    // 2, 3: each team
+    [['A', F.lado_a, F.argumento_a, 'c1'], ['B', F.lado_b, F.argumento_b, 'c2']].forEach(([l, ld, ar, id]) => {
+      const s = novo(); s.id = id; const tl = mk('div', 'tela', null, s);
+      mk('div', 'big tit t seg', 'TIME ' + l, tl); mk('div', 'ld tit t seg', ld, tl);
+      const ag = mk('div', 'arg', null, tl); mk('div', 'q', '“', ag); mk('div', 'tx t seg', ar, ag);
+      mk('div', 'pe2 mao t seg', l === 'A' ? 'e o time B? arrasta →' : 'agora escolhe →', tl);
+      if (l === 'B') tl.querySelector('.pe2').style.textAlign = 'right';
+    });
+    // 4: vote and neutral close
+    const s4 = novo();
+    mk('div', 't4 tit t seg', 'E você, é time A ou time B?', s4);
+    const ca = mk('div', 'cartA', null, s4); mk('div', 'l t', 'A', ca); mk('div', 'd t seg', F.lado_a, ca); ca.style.transform = 'rotate(-3deg)';
+    const cb = mk('div', 'cartB', null, s4); mk('div', 'l t', 'B', cb); mk('div', 'd t seg', F.lado_b, cb); cb.style.transform = 'rotate(3deg)';
+    const co = mk('div', 'corda', null, s4); mk('i', null, null, co); mk('i', null, null, co); mk('div', 'no', null, s4);
+    mk('div', 'f4 t t2 seg', F.fechamento, s4);
+    mk('div', 'pe mao t seg', 'comenta o seu time aqui embaixo', s4);
+  },
+});
+</script></body></html>

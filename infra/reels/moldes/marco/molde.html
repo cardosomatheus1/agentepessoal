@@ -1,0 +1,183 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* a mechanical counter (odometer) rolls to the real number, confetti bursts, then the thank-you with a photo */
+#odoW{position:absolute;left:0;right:0;top:720px;display:flex;justify-content:center;transform-origin:50% 50%}
+#odo{display:flex;align-items:flex-end;gap:var(--gap)}
+.tl{position:relative;width:var(--tw);height:var(--th);border-radius:calc(var(--tw) * .16);background:var(--texto);overflow:hidden;box-shadow:var(--sombra)}
+.tl:after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.28),transparent 22%,transparent 50%,rgba(255,255,255,.06) 50.5%,transparent 78%,rgba(0,0,0,.28))}
+.tl i{position:absolute;left:0;right:0;top:50%;height:3px;margin-top:-1px;background:var(--fundo);opacity:.35;z-index:2}
+.rolo{position:absolute;left:0;right:0;top:0;text-align:center;color:var(--fundo);font-family:var(--ft),sans-serif;font-weight:900;font-size:var(--fs);line-height:var(--th)}
+.rolo:before{content:"0\A 1\A 2\A 3\A 4\A 5\A 6\A 7\A 8\A 9\A 0";white-space:pre}
+.sep{width:calc(var(--tw) * .26);height:calc(var(--tw) * .26);border-radius:50%;background:var(--destaque);margin-bottom:calc(var(--tw) * .12)}
+body.e-noite .tl{background:var(--fundo2);box-shadow:0 0 0 3px var(--destaque),0 0 40px color-mix(in srgb,var(--destaque) 55%,transparent)}
+body.e-noite .rolo{color:var(--texto);text-shadow:0 0 24px color-mix(in srgb,var(--destaque) 80%,transparent)}
+body.e-pop .tl{border:6px solid var(--texto);background:var(--fundo2);box-shadow:10px 10px 0 var(--texto)}
+body.e-pop .rolo{color:var(--texto)}
+body.e-papel .tl{border-radius:12px}
+#kick{left:120px;right:120px;top:560px;height:70px;font-size:50px;font-weight:800;white-space:nowrap}
+#mais{left:120px;right:120px;top:630px;height:70px;font-size:54px;font-weight:900;white-space:nowrap}
+#oque{left:90px;right:90px;top:1110px;height:240px;font-size:100px;line-height:1.05}
+body.f-reel #oque{left:110px;right:190px}
+#aro{position:absolute;left:540px;top:900px;width:10px;height:10px;border-radius:50%;border:10px solid var(--destaque);opacity:0}
+#conf{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6}
+#conf b{position:absolute;left:0;top:0;display:block}
+/* scene 2: thank you */
+#selo{position:absolute;left:90px;top:400px;height:96px;display:flex;align-items:center;gap:18px;padding:0 36px;border-radius:999px;background:var(--destaque);color:var(--sobre-destaque)}
+#seloN{font-size:56px;height:70px;line-height:70px;white-space:nowrap}
+#seloT{font-size:38px;font-weight:800;height:50px;line-height:50px;white-space:nowrap;max-width:560px}
+#pola{position:absolute;left:400px;top:530px;width:500px;height:510px;padding:26px 26px 0;background:var(--cartao);border-radius:14px;box-shadow:0 30px 70px rgba(0,0,0,.35);transform-origin:50% 0}
+body.e-vidro #pola,body.e-noite #pola{background:#f4f1ea}
+#pola .ph{width:100%;height:410px;overflow:hidden;border-radius:6px;background:var(--fundo2)}
+#pola img{width:100%;height:100%;object-fit:cover}
+#pola .cor{position:absolute;left:50%;top:-30px;margin-left:-26px;width:52px;height:52px;border-radius:50%;background:var(--destaque);box-shadow:0 6px 12px rgba(0,0,0,.3)}
+#cor2{position:absolute;left:90px;top:620px;font-size:240px;color:var(--destaque);line-height:1}
+#obg,#obgT{position:absolute}
+#obg{left:90px;right:90px;top:1190px;height:286px;font-size:60px;line-height:1.14;text-align:left}
+body.f-reel #obg{right:190px}
+body.sem-foto #obg{top:900px;height:420px;font-size:84px}
+#obgT{left:90px;right:90px;top:1078px;height:96px;font-size:92px;white-space:nowrap;text-align:left}
+body.sem-foto #obgT{top:780px}
+/* carousel */
+.slide .odoS{position:absolute;left:84px;right:84px;top:420px;display:flex;justify-content:center}
+.slide .kk{position:absolute;left:84px;right:84px;top:290px;height:64px;font-size:46px;font-weight:800;text-align:center;white-space:nowrap}
+.slide .mm{position:absolute;left:84px;right:84px;top:356px;height:64px;font-size:50px;font-weight:900;text-align:center;white-space:nowrap}
+.slide .oq{position:absolute;left:84px;right:84px;top:880px;height:220px;font-size:92px;line-height:1.05;text-align:center}
+.slide .pe{position:absolute;left:84px;right:84px;bottom:70px;height:50px;font-size:34px;font-weight:700;text-align:right}
+.slide .cf{position:absolute;inset:0;pointer-events:none}
+.slide .cf b{position:absolute;display:block}
+.slide.s2 .ph2{position:absolute;left:84px;top:150px;width:912px;height:700px;border-radius:30px;overflow:hidden;box-shadow:var(--sombra)}
+.slide.s2 .ph2 img{width:100%;height:100%;object-fit:cover}
+.slide.s2 .ot{position:absolute;left:84px;right:84px;top:900px;height:96px;font-size:84px;white-space:nowrap}
+.slide.s2 .ob{position:absolute;left:84px;right:84px;top:1010px;height:220px;font-size:52px;font-weight:700;line-height:1.2}
+.slide.s2.sem-foto .ot{top:470px;font-size:130px;height:150px}
+.slide.s2.sem-foto .ob{top:660px;height:480px;font-size:76px;line-height:1.12}
+.slide.s2 .cz{position:absolute;left:84px;top:290px;font-size:150px;color:var(--destaque)}
+</style></head><body><div id="palco">
+<div class="cena" id="c0"><div class="cam full">
+ <div class="ctr t t2 seg" id="kick"></div>
+ <div class="ctr t dest seg" id="mais"></div>
+ <div id="aro"></div>
+ <div id="odoW"><div id="odo" class="seg"></div></div>
+ <div class="ctr tit t seg rv" id="oque"></div>
+ <div id="conf"></div>
+</div></div>
+<div class="cena" id="c2"><div class="cam full">
+ <div id="selo" class="seg"><span class="tit t" id="seloN"></span><span class="t" id="seloT"></span></div>
+ <div id="pola"><div class="cor"></div><div class="ph"><img id="foto" alt=""></div></div>
+ <div id="cor2"></div>
+ <div class="tit t seg rv" id="obgT"></div>
+ <div class="t seg rv" id="obg"></div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Marco e agradecimento": the real number (with its origin) rolls in on an odometer; "mais de" only rounds DOWN
+// (2 significant digits), never up. Confetti on the hit, then the thank-you with the client's photo.
+let D = {};
+function exibido(F, $m) {
+  const n = F.numero; if (!Number.isInteger(n) || n < 1) $m.erro('número do marco precisa ser inteiro e positivo');
+  if (F.exibir !== 'mais de') return { v: n, mais: false };
+  const k = Math.pow(10, Math.max(0, String(n).length - 2)), v = Math.floor(n / k) * k;
+  if (v === n) return { v: n, mais: false };
+  if (v > n) $m.erro('arredondou para cima');
+  return { v, mais: true };
+}
+function odometro(cont, v, larg, $m) {
+  const s = $m.num(v), nd = s.replace(/\D/g, '').length, ns = s.length - nd;
+  const tw = Math.min(nd === 1 ? 270 : 200, Math.floor((larg - ns * 60 - (s.length - 1) * 14) / nd));
+  cont.style.setProperty('--tw', tw + 'px'); cont.style.setProperty('--th', Math.round(tw * 1.42) + 'px'); cont.style.setProperty('--fs', Math.round(tw * 1.12) + 'px'); cont.style.setProperty('--gap', Math.round(tw * 0.08) + 'px');
+  const rolos = []; let pos = nd - 1;
+  [...s].forEach(c => {
+    if (/\d/.test(c)) { const tl = document.createElement('div'); tl.className = 'tl'; const r = document.createElement('div'); r.className = 'rolo'; r.dataset.k = pos--; tl.append(r, document.createElement('i')); cont.appendChild(tl); rolos.push(r); }
+    else { const sp = document.createElement('div'); sp.className = 'sep'; cont.appendChild(sp); }
+  });
+  return { rolos, th: Math.round(tw * 1.42) };
+}
+// odometer position of each wheel for the value v (smooth carry like a real counter)
+function rolar(O, v, giro) {
+  O.rolos.forEach(r => { const k = +r.dataset.k, x = v / Math.pow(10, k);
+    let pos = k === 0 ? (x + giro) % 10 : Math.floor(x) % 10 + Math.max(0, (x % 1) * 10 - 9);
+    r.style.transform = `translateY(${-pos * O.th}px)`; });
+}
+function confete(cont, n, $m, W, H) {
+  const cores = ['var(--destaque)', 'var(--c2)', 'var(--c1)', 'var(--texto)'];
+  for (let i = 0; i < n; i++) { const b = document.createElement('b'); const r = $m.rnd(i * 3.1), q = $m.rnd(i * 7.7);
+    const w = 14 + r * 18; b.style.width = w + 'px'; b.style.height = (q > 0.66 ? w : w * 0.45) + 'px'; if (q > 0.66) b.style.borderRadius = '50%';
+    b.style.background = cores[i % 4]; b.dataset.i = i; cont.appendChild(b); }
+}
+Motor.molde({
+  id: 'marco', formatos: ['reel', 'carrossel'],
+  montar(F, M, $m) {
+    const { $ } = $m, E = exibido(F, $m);
+    if (F.falas && F.falas.length !== 4) $m.erro('falas: 4 (número, comemoração, obrigado, chamada)');
+    D = { E, reel: $m.FORMATO === 'reel' };
+    D.O = odometro($('#odo'), E.v, D.reel ? 820 : 900, $m);
+    $('#kick').textContent = F.quando || 'chegamos a';
+    $('#mais').textContent = E.mais ? 'mais de' : '';
+    if (!E.mais) { $('#mais').remove(); $('#kick').style.top = '600px'; }
+    $('#oque').textContent = F.o_que;
+    $('#odoW').style.top = (920 - D.O.th / 2) + 'px';
+    if (D.reel) $('#odoW').style.paddingRight = '80px';
+    confete($('#conf'), 110, $m);
+    $('#seloN').textContent = (E.mais ? '+' : '') + $m.num(E.v); $('#seloT').textContent = F.o_que;
+    $('#obgT').textContent = 'Obrigado!';
+    if (F.obrigado_titulo) $('#obgT').textContent = F.obrigado_titulo;
+    $('#obg').textContent = F.obrigado;
+    if (F.foto) $('#foto').dataset.ok = 1; else { document.body.classList.add('sem-foto'); $('#pola').remove(); $('#cor2').innerHTML = $m.icone('coracao'); }
+    $('#nota').textContent = F.nota || '';
+    return { duracoes: [3.0, 2.4, 3.6] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, rnd, ini } = $m;
+    $m.cena('#c0', t, 0, 1, { push: 0.03 });
+    $m.entra('#kick', t, 0.1, 0.5, 30); if ($('#mais')) $m.entra('#mais', t, 0.3, 0.5, 30);
+    const oi = eo5(p(t, 0.15, 0.6)); $('#odoW').style.opacity = oi;
+    // count: fast start, slow landing on the exact value
+    const cq = eo5(p(t, 0.35, 2.4)), v = D.E.v * cq, giro = D.E.v < 100 ? 20 * (1 - cq) : 0;
+    rolar(D.O, cq >= 1 ? D.E.v : v, giro);
+    const a1 = ini(1), hit = el(p(t, a1, 0.9));
+    $('#odoW').style.transform = `translateY(${(1 - oi) * 80 - 120 * eio(p(t, a1, 0.6))}px) scale(${1 + 0.12 * Math.sin(Math.PI * p(t, a1, 0.35))})`;
+    const ar = p(t, a1, 0.9); $('#aro').style.opacity = ar > 0 && ar < 1 ? 1 - ar : 0; const R = 60 + ar * 900; Object.assign($('#aro').style, { width: R + 'px', height: R + 'px', marginLeft: -R / 2 + 'px', marginTop: (-R / 2 - 120) + 'px' });
+    const kq = 1 - eo(p(t, a1, 0.4)); $('#kick').style.opacity = Math.min(+$('#kick').style.opacity, kq); if ($('#mais')) $('#mais').style.transform = `translateY(${-120 * eio(p(t, a1, 0.6))}px)`;
+    if ($('#mais')) $('#mais').style.top = '630px';
+    $('#oque').style.opacity = t > a1 ? 1 : 0; $('#oque').style.transform = `translateY(${-120 * eio(p(t, a1, 0.6))}px)`; $m.revela('#oque', t, a1 + 0.25, 0.08);
+    // confetti: burst from the counter, then gravity and flutter
+    const tc = t - a1, H = 1920;
+    $$('#conf b').forEach(b => { const i = +b.dataset.i, ang = -Math.PI / 2 + (rnd(i) - 0.5) * 2.6, sp = 900 + rnd(i * 5) * 1500;
+      if (tc < 0 || tc > 3.6) { b.style.opacity = 0; return; }
+      const x = 540 + Math.cos(ang) * sp * (1 - Math.exp(-tc * 2.2)) / 2.2 + Math.sin(tc * 3 + i) * 30;
+      const y = 800 + Math.sin(ang) * sp * (1 - Math.exp(-tc * 2.2)) / 2.2 + 260 * tc * tc;
+      b.style.opacity = y > H + 40 ? 0 : 1; b.style.transform = `translate(${x}px,${y}px) rotate(${tc * (200 + rnd(i * 2) * 500)}deg) scaleY(${Math.cos(tc * (6 + rnd(i * 9) * 8))})`; });
+    // scene 2: thank you
+    const a2 = ini(2); $m.cena('#c2', t, 2);
+    const sq = eb(p(t, a2 + 0.1, 0.55)); $('#selo').style.opacity = cl(sq * 2); $('#selo').style.transform = `scale(${0.6 + 0.4 * sq})`;
+    if ($('#pola')) { const pq = eo5(p(t, a2 + 0.2, 0.9)); $('#pola').style.opacity = cl(pq * 2);
+      $('#pola').style.transform = `translateY(${(1 - pq) * -500}px) rotate(${4 + (1 - pq) * 14 + 1.5 * Math.sin((t - a2) * 2.4) * Math.exp(-(t - a2))}deg)`;
+      $m.filmagem($('#foto'), F.foto, t); }
+    else { const hq = el(p(t, a2 + 0.2, 1)); $('#cor2').style.transform = `scale(${hq}) rotate(${-10 + 10 * hq}deg)`; $('#cor2').style.opacity = cl(hq * 3); }
+    $m.revela('#obgT', t, a2 + 0.5); $m.revela('#obg', t, a2 + 0.9, 0.05);
+    $('#nota').style.opacity = t < $m.fim(2) ? 1 : 0;
+  },
+  slides(F, M, $m) {
+    const { $$ } = $m, E = exibido(F, $m), palco = $m.$('#palco'); $$('.cena', palco).forEach(c => c.remove());
+    const s1 = document.createElement('div'); s1.className = 'slide';
+    s1.innerHTML = '<div class="cf"></div><div class="kk t t2 seg"></div><div class="mm t dest seg"></div><div class="odoS seg"></div><div class="oq tit t seg"></div><div class="pe t t2"></div>';
+    s1.querySelector('.kk').textContent = F.quando || 'chegamos a'; s1.querySelector('.mm').textContent = E.mais ? 'mais de' : '';
+    const O = odometro(s1.querySelector('.odoS'), E.v, 900, $m); rolar(O, E.v, 0);
+    s1.querySelector('.odoS').style.top = (660 - O.th / 2) + 'px';
+    s1.querySelector('.oq').textContent = F.o_que; s1.querySelector('.pe').textContent = 'arrasta';
+    const cf = s1.querySelector('.cf'), cores = ['var(--destaque)', 'var(--c2)', 'var(--c1)', 'var(--texto)'];
+    for (let i = 0; i < 46; i++) { const b = document.createElement('b'), r = $m.rnd(i * 3.1), w = 14 + r * 18, x = $m.rnd(i * 11.3) * 1080, y = $m.rnd(i * 5.9) * 1350;
+      if (y > 260 && y < 1130 && x > 40 && x < 1040) continue;
+      Object.assign(b.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: ($m.rnd(i) > .6 ? w : w * .45) + 'px', background: cores[i % 4], borderRadius: $m.rnd(i) > .6 ? '50%' : '3px', transform: `rotate(${$m.rnd(i * 2) * 360}deg)` }); cf.appendChild(b); }
+    palco.appendChild(s1);
+    const s2 = document.createElement('div'); s2.className = 'slide s2' + (F.foto ? '' : ' sem-foto');
+    s2.innerHTML = (F.foto ? '<div class="ph2"><img alt=""></div>' : '<div class="cz"></div>') + '<div class="ot tit t seg"></div><div class="ob t seg"></div>';
+    if (F.foto) s2.querySelector('img').src = $m.midia(F.foto); else s2.querySelector('.cz').innerHTML = $m.icone('coracao');
+    s2.querySelector('.ot').textContent = F.obrigado_titulo || 'Obrigado!'; s2.querySelector('.ob').textContent = F.obrigado;
+    palco.appendChild(s2);
+  },
+});
+</script></body></html>

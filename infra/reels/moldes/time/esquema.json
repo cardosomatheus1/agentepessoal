@@ -1,0 +1,14 @@
+{
+ "formatos": ["reel", "carrossel"],
+ "voz": "nao",
+ "musica": "engracada",
+ "campos": {
+  "tema": {"tipo": "texto", "min": 6, "max": 60, "dica": "Taxa de entrega"},
+  "lado_a": {"tipo": "texto", "min": 2, "max": 30, "dica": "cobrar à parte"},
+  "lado_b": {"tipo": "texto", "min": 2, "max": 30, "dica": "embutir no preço"},
+  "argumento_a": {"tipo": "texto", "min": 10, "max": 80, "dica": "o melhor argumento de quem é do time A"},
+  "argumento_b": {"tipo": "texto", "min": 10, "max": 80, "dica": "o melhor argumento de quem é do time B"},
+  "fechamento": {"tipo": "texto", "min": 10, "max": 100, "dica": "mensagem neutra do negócio, sem dar razão a um lado"},
+  "midia": {"tipo": "filmagem", "obrigatorio": false, "dica": "foto do cliente (fotos/x.jpg), vídeo do cliente ou nome do banco"}
+ }
+}

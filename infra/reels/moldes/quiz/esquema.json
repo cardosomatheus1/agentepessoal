@@ -1,21 +1,98 @@
 {
- "formatos": ["reel", "carrossel"],
+ "formatos": [
+  "reel",
+  "carrossel"
+ ],
  "voz": "nao",
  "musica": "animada",
  "campos": {
-  "pergunta": {"tipo": "texto", "min": 12, "max": 80, "dica": "Qual o preço mínimo de um bolo de 2 kg?"},
-  "midia": {"tipo": "filmagem", "obrigatorio": false, "dica": "foto do cliente (fotos/x.jpg), vídeo do cliente ou nome do banco de filmagens"},
-  "opcoes": {"tipo": "lista", "min": 3, "max": 3, "item": {"tipo": "texto", "min": 1, "max": 20}, "dica": "A, B e C nessa ordem"},
-  "certa": {"tipo": "escolha", "opcoes": ["A", "B", "C"]},
-  "explicacao": {"tipo": "texto", "min": 20, "max": 140, "dica": "sem algarismos: os valores vão em conta, que o código soma"},
-  "conta": {"tipo": "lista", "min": 2, "max": 5, "obrigatorio": false, "item": {
-    "rotulo": {"tipo": "texto", "max": 22},
-    "valor": {"tipo": "dinheiro", "real": true},
-    "vezes": {"tipo": "numero", "min": 0.01, "max": 100000, "obrigatorio": false},
-    "unidade": {"tipo": "texto", "max": 8, "obrigatorio": false, "dica": "o que conta em vezes: h, kg, un"}},
-   "dica": "linhas somadas pelo código (valor x vezes); o total tem de ser a opção certa"},
-  "total_rotulo": {"tipo": "texto", "max": 22, "obrigatorio": false, "dica": "Preço mínimo"},
-  "assunto": {"tipo": "escolha", "opcoes": ["negocio", "dinheiro", "alimento", "saude", "estetica"], "dica": "alimento, saúde e estética exigem fonte"},
-  "fonte": {"tipo": "texto", "max": 60, "obrigatorio": false, "dica": "dado real: precisa de _origem.fonte"}
+  "pergunta": {
+   "tipo": "texto",
+   "min": 12,
+   "max": 80,
+   "dica": "Qual o preço mínimo de um bolo de 2 kg?"
+  },
+  "midia": {
+   "tipo": "filmagem",
+   "obrigatorio": false,
+   "dica": "foto do cliente (fotos/x.jpg), vídeo do cliente ou nome do banco de filmagens"
+  },
+  "opcoes": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "item": {
+    "tipo": "texto",
+    "min": 1,
+    "max": 20
+   },
+   "dica": "A, B e C nessa ordem"
+  },
+  "certa": {
+   "tipo": "escolha",
+   "opcoes": [
+    "A",
+    "B",
+    "C"
+   ]
+  },
+  "explicacao": {
+   "tipo": "texto",
+   "min": 20,
+   "max": 140,
+   "dica": "sem algarismos: os valores vão em conta, que o código soma"
+  },
+  "conta": {
+   "tipo": "lista",
+   "min": 2,
+   "max": 4,
+   "obrigatorio": false,
+   "item": {
+    "rotulo": {
+     "tipo": "texto",
+     "max": 22
+    },
+    "valor": {
+     "tipo": "dinheiro",
+     "real": true
+    },
+    "vezes": {
+     "tipo": "numero",
+     "min": 0.01,
+     "max": 100000,
+     "obrigatorio": false
+    },
+    "unidade": {
+     "tipo": "texto",
+     "max": 8,
+     "obrigatorio": false,
+     "dica": "o que conta em vezes: h, kg, un"
+    }
+   },
+   "dica": "linhas somadas pelo código (valor x vezes); o total tem de ser a opção certa"
+  },
+  "total_rotulo": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "Preço mínimo"
+  },
+  "assunto": {
+   "tipo": "escolha",
+   "opcoes": [
+    "negocio",
+    "dinheiro",
+    "alimento",
+    "saude",
+    "estetica"
+   ],
+   "dica": "alimento, saúde e estética exigem fonte"
+  },
+  "fonte": {
+   "tipo": "texto",
+   "max": 60,
+   "obrigatorio": false,
+   "dica": "dado real: precisa de _origem.fonte"
+  }
  }
 }

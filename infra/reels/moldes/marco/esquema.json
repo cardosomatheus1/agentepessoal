@@ -1,0 +1,68 @@
+{
+ "formatos": [
+  "reel",
+  "carrossel"
+ ],
+ "voz": "opcional",
+ "musica": "animada",
+ "campos": {
+  "numero": {
+   "tipo": "numero",
+   "min": 1,
+   "max": 100000000,
+   "real": true,
+   "dica": "o número exato, do sistema ou da contagem do dono"
+  },
+  "exibir": {
+   "tipo": "escolha",
+   "opcoes": [
+    "exato",
+    "mais de"
+   ],
+   "obrigatorio": false,
+   "dica": "mais de: arredonda só para baixo (1.247 vira mais de 1.200)"
+  },
+  "o_que": {
+   "tipo": "texto",
+   "max": 34,
+   "dica": "bolos entregues, anos de oficina, clientes atendidas"
+  },
+  "quando": {
+   "tipo": "texto",
+   "max": 26,
+   "obrigatorio": false,
+   "dica": "frase antes do número: em 6 anos, já são"
+  },
+  "obrigado_titulo": {
+   "tipo": "texto",
+   "max": 14,
+   "obrigatorio": false,
+   "dica": "padrão: Obrigado!"
+  },
+  "obrigado": {
+   "tipo": "texto",
+   "max": 100,
+   "min": 10
+  },
+  "foto": {
+   "tipo": "foto",
+   "obrigatorio": false
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 4,
+   "max": 4,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "max": 150
+   },
+   "dica": "narração opcional, 4 falas: número, comemoração, obrigado, chamada; o número dito igual ao da ficha"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ }
+}

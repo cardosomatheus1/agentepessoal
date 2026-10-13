@@ -1,0 +1,17 @@
+{
+ "formatos": ["reel", "carrossel"],
+ "voz": "opcional",
+ "musica": "animada",
+ "campos": {
+  "nome": {"tipo": "texto", "max": 22, "dica": "Combo família, Kit festa, Dia da noiva"},
+  "itens": {"tipo": "lista", "min": 2, "max": 6, "item": {
+    "nome": {"tipo": "texto", "max": 20},
+    "preco": {"tipo": "dinheiro", "real": true, "dica": "preço avulso de verdade"},
+    "foto": {"tipo": "foto", "obrigatorio": false}}},
+  "preco_combo": {"tipo": "dinheiro", "real": true, "dica": "a soma dos avulsos e a economia são do código; combo que não for mais barato é recusado"},
+  "foto_kit": {"tipo": "foto", "obrigatorio": false, "dica": "foto do kit montado; obrigatória quando algum item não tem foto"},
+  "icone": {"tipo": "escolha", "opcoes": ["caixa", "presente", "garfo", "bolo", "tesoura", "brilho", "carro", "coracao"], "obrigatorio": false, "dica": "ícone dos itens sem foto"},
+  "falas": {"tipo": "lista", "min": 5, "max": 5, "obrigatorio": false, "item": {"tipo": "texto", "max": 120},
+   "dica": "narração opcional, 5 falas: itens, caixa, preço do combo, economia, chamada; números iguais aos que o código calcula"}
+ }
+}
