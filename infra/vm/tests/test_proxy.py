@@ -110,6 +110,23 @@ def main() -> int:
         estado["token_ok"] = False
         p._token.update(value="", at=0.0)
         ok(chamar("/health")[0] == 503, "sem conseguir a chave, a saúde diz que não está bem")
+        # links for post files (13/10: the agent container has no AWS credentials)
+        class S3Falso:
+            def head_object(self, Bucket, Key):
+                if "falta" in Key:
+                    raise RuntimeError("404")
+
+            def generate_presigned_url(self, op, Params, ExpiresIn):
+                return f"https://s3/{Params['Bucket']}/{Params['Key']}?{op}&{ExpiresIn}"
+        p.BUCKET, p._s3["client"] = "balde", S3Falso()
+        r = p.link_conteudo("conteudo/semana1/pov.mp4")
+        ok(r.get("url") == "https://s3/balde/conteudo/semana1/pov.mp4?get_object&3600", f"link de 1 h para ler ({r})")
+        for ruim in ("entrada/chats/x/y.mp4", "conteudo/../segredo", "conteudo/", ""):
+            ok("error" in p.link_conteudo(ruim), f"fora de conteudo/ é recusado: {ruim!r}")
+        ok("não encontrado" in p.link_conteudo("conteudo/falta.mp4").get("error", ""), "arquivo que não existe")
+        req = urllib.request.Request(f"{base}/arquivos/conteudo", data=b'{"chave": "conteudo/a.mp4"}', method="POST")
+        with urllib.request.urlopen(req, timeout=5) as r:
+            ok(json.loads(r.read())["url"].endswith("conteudo/a.mp4?get_object&3600"), "rota /arquivos/conteudo")
     finally:
         servidor.shutdown()
     for f in falhas:

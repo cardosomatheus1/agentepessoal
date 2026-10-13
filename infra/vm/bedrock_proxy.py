@@ -3,7 +3,7 @@
 - /openai/...   -> Bedrock's OpenAI-compatible endpoint (bedrock-mantle), short-term token from the VM role
 - /bedrock/...  -> Bedrock runtime (Converse API, for the Claude models), same token
 - /typesafe/... -> TypeSafe (Jev), API key read from SSM /agentepessoal/typesafe-api-key
-- /arquivos/...  -> big-file uploads into a chat: presigned S3 PUT (from the VM role) and
+- /arquivos/...  -> big-file uploads into a chat: presigned S3 PUT (from the VM role), GET links for post files and
                     an on-demand run of entrada.sh, which moves the file into the chat's anexos/
 
 Agent Zero only reads its API key at startup, while Bedrock short-term API keys
@@ -116,6 +116,27 @@ def pull(wait: float) -> bool:
             _pull["thread"] = t
     t.join(wait)
     return not t.is_alive()
+
+
+def link_conteudo(chave: str) -> dict:
+    """1-hour GET link for a @raiz.connect post file under conteudo/ in the bucket, for Meta to fetch: the agent
+    container has no AWS credentials of its own (13/10: s1-pov failed with "Unable to locate credentials")."""
+    if not BUCKET:
+        return {"error": "bucket não configurado"}
+    chave = str(chave or "")
+    if not chave.startswith("conteudo/") or ".." in chave or chave.endswith("/") or len(chave) > 300:
+        return {"error": "só arquivos de conteudo/"}
+    if "client" not in _s3:
+        import boto3
+        from botocore.config import Config
+
+        _s3["client"] = boto3.client("s3", region_name=REGION,
+                                     config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}))
+    try:
+        _s3["client"].head_object(Bucket=BUCKET, Key=chave)
+    except Exception:
+        return {"error": f"arquivo não encontrado: {chave}"}
+    return {"url": _s3["client"].generate_presigned_url("get_object", Params={"Bucket": BUCKET, "Key": chave}, ExpiresIn=3600)}
 
 
 VIDEOS = Path("/opt/a0/usr/workdir/videos")  # /a0/usr/workdir/videos inside the agent container
@@ -324,6 +345,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if self.path == "/arquivos/pegasus":
                 mark_activity()
                 out = pegasus(data.get("arquivo", ""), data.get("prompt", ""))
+                return self._reply(400 if "error" in out else 200, out)
+            if self.path == "/arquivos/conteudo":
+                out = link_conteudo(data.get("chave", ""))
                 return self._reply(400 if "error" in out else 200, out)
             if self.path == "/arquivos/voz":
                 out = voz(data.get("texto", ""))

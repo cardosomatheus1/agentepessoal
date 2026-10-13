@@ -19,6 +19,7 @@ PASTA = Path(os.environ.get("CONTEUDO_PASTA", "/a0/usr/conteudo"))
 BUCKET = "agentepessoal-backup-964862484412"
 PREFIXO = "conteudo/"
 GRAPH = "https://graph.facebook.com/v25.0"
+PROXY = "http://host.docker.internal:8787"  # host proxy: the only holder of AWS credentials
 FUSO = "America/Sao_Paulo"
 TIPOS = ("REELS", "CARROSSEL")
 MAX_LEGENDA, MAX_HASHTAGS, MAX_CARROSSEL = 2200, 30, 10
@@ -160,6 +161,25 @@ def agendar(itens: list, agora: float | None = None) -> dict:
     return {"ok": True, "agendados": [n["id"] for n in novos]}
 
 
+def tentar_de_novo(item_id: str) -> dict:
+    """falhou → pendente, only by the operator (AUTOR "operador: <why>") after the cause is fixed. The job loop then
+    publishes it on its next pass if it is still that post's day and nothing else went out that day."""
+    if not str(AUTOR["quem"]).startswith("operador:"):
+        return {"ok": False, "erro": "só o operador manda tentar de novo (AUTOR['quem'] = 'operador: <motivo>')"}
+    with _exclusivo():
+        d = carregar()
+        alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
+        if not alvo:
+            return {"ok": False, "erro": f"{item_id}: não existe"}
+        try:
+            _mudar(alvo, "pendente", erro_anterior=alvo.get("erro", ""))
+        except TransicaoInvalida as exc:
+            return {"ok": False, "erro": str(exc)}
+        alvo.pop("erro", None)
+        _gravar(d)
+    return {"ok": True, "id": item_id, "data": alvo["data"], "hora": alvo["hora"]}
+
+
 def devido(agora: float | None = None) -> dict | None:
     """Today's post when its hour has come, unless something was already published or attempted today."""
     agora = time.time() if agora is None else agora
@@ -205,9 +225,25 @@ class Api:
         return self._pedir("GET", caminho, params)
 
     def url(self, chave: str) -> str:
-        import boto3
-        return boto3.client("s3", region_name="us-east-1").generate_presigned_url(
-            "get_object", Params={"Bucket": BUCKET, "Key": chave}, ExpiresIn=3600)
+        """Short-lived S3 link from the host proxy, which holds the VM's AWS identity: the agent container has
+        none (13/10: s1-pov failed with "Unable to locate credentials")."""
+        import urllib.error
+        import urllib.request
+        req = urllib.request.Request(f"{PROXY}/arquivos/conteudo", data=json.dumps({"chave": chave}).encode(),
+                                     headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                out = json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            try:
+                out = json.loads(e.read())
+            except Exception:
+                out = {"error": f"http {e.code}"}
+        except OSError as e:
+            out = {"error": f"proxy fora do ar ({e})"}
+        if not out.get("url"):
+            raise RuntimeError(f"link do arquivo {chave}: {out.get('error', 'sem resposta')}")
+        return out["url"]
 
 
 def _ok(r: dict, etapa: str) -> dict:

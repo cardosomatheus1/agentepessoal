@@ -131,6 +131,55 @@ class Suite:
         ok(avisos and avisos[0].startswith("pendente:") and "Nada foi publicado" in avisos[0], "avisa com pendente:")
         ok(c.devido(_ts(c, "2026-10-14", "12:30")) is None, "não tenta de novo sozinho")
 
+    def t_tentar_de_novo_so_pelo_operador(self):
+        c = _modulo()
+        c.agendar([ITEM], _ts(c, "2026-10-13", "10:00"))
+        c.rodar(ApiFalsa(falhar_em="IG1/media"), lambda t: None, _ts(c, "2026-10-14", "11:50"), dormir=lambda s: None)
+        ok(not c.tentar_de_novo("seg-pov")["ok"], "o agente sozinho não manda tentar de novo")
+        c.AUTOR["quem"] = "operador: link do S3 pelo proxy"
+        r = c.tentar_de_novo("seg-pov")
+        ok(r["ok"], r)
+        it = c.carregar()["itens"][0]
+        ok(it["estado"] == "pendente" and "erro" not in it and "permissão negada" in it["erro_anterior"], it)
+        ok(c.devido(_ts(c, "2026-10-14", "12:30"))["id"] == "seg-pov", "volta a ser o post do dia")
+        r = c.rodar(ApiFalsa(), lambda t: None, _ts(c, "2026-10-14", "12:31"), dormir=lambda s: None)
+        ok(r["estado"] == "publicada", r)
+        ok(not c.tentar_de_novo("seg-pov")["ok"], "publicada não volta para a fila")
+        ok(not c.tentar_de_novo("nao-existe")["ok"], "id desconhecido")
+
+    def t_link_do_arquivo_pelo_proxy(self):
+        """13/10: the container has no AWS credentials; the link comes from the host proxy."""
+        import io
+        import json
+        import urllib.error
+        import urllib.request
+        c = _modulo()
+        api, pedidos, orig = c.Api("tok", "IG1"), [], urllib.request.urlopen
+
+        class Resp(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        def falso(req, timeout=None):
+            pedidos.append((req.full_url, json.loads(req.data)))
+            if "falta" in json.loads(req.data)["chave"]:
+                raise urllib.error.HTTPError(req.full_url, 400, "x", {}, io.BytesIO(json.dumps({"error": "arquivo não encontrado"}).encode()))
+            return Resp(b'{"url": "https://s3/assinado"}')
+        urllib.request.urlopen = falso
+        try:
+            ok(api.url("conteudo/semana1/pov.mp4") == "https://s3/assinado", "devolve o link do proxy")
+            ok(pedidos[0] == ("http://host.docker.internal:8787/arquivos/conteudo", {"chave": "conteudo/semana1/pov.mp4"}), pedidos)
+            try:
+                api.url("conteudo/falta.mp4")
+                ok(False, "arquivo que não existe deve dar erro")
+            except RuntimeError as exc:
+                ok("não encontrado" in str(exc), str(exc))
+        finally:
+            urllib.request.urlopen = orig
+
     def t_video_recusado_pela_meta(self):
         c = _modulo()
         c.agendar([ITEM], _ts(c, "2026-10-13", "10:00"))
