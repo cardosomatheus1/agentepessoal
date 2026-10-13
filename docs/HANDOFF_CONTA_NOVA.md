@@ -176,6 +176,7 @@ comando (a máquina não lê o bucket S3).
 | Script | Para quê |
 |---|---|
 | `vmcmd.py '<comando>'` | Roda um comando na VM do agente por SSM (até ~10 min) |
+| `A0_SENHA=$(aws ssm get-parameter --region us-east-1 --name /agentepessoal/operador-senha --with-decryption --query Parameter.Value --output text)` | Senha dos scripts do operador (login `matheus`, credencial "operador" só por hash na VM; a do Matheus é outra e não muda). Revogar: `python3 /opt/agentepessoal/usuarios.py --sem-operador matheus` na VM |
 | `mandar_msg.py <arquivo> [chat]` | Manda uma mensagem ao agente como `matheus` (chat novo se não passar o id) |
 | `rodar_testes.py [so\|LIMPAR]` | Suíte do plugin `auxiliar` |
 | `rodar_testes_pro.py` | Suíte do plugin `prospeccao` (59 testes; roda em outro processo, nunca dentro do agente) |

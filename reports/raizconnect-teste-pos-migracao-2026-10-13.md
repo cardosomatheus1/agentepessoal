@@ -3,6 +3,8 @@
 **Bottom line:** the system works on AWS. No bug caused by the migration showed up. One finding from the migration session needs action: Cloudflare blocks traffic coming from AWS IPs, webhooks included (pending item 10).
 
 > **Updated on 13/10, evening**, with the migration session's check: production version, pipeline, test data and the Cloudflare finding. The tests in section 2 ran on `e5a2db2`.
+>
+> **Second update (13/10, 22:00 UTC)**: items 3, 9, 11 and 12 resolved; status of each one in section 3.
 
 - **Site:** https://raizconnect.com.br, https://app.raizconnect.com.br, https://api.raizconnect.com.br
 - **Version in production:** `b6cfd32` (PR #56), API and site, applied by Terraform; the SSM parameters point to it. The tests below ran on `e5a2db2` (PR #54).
@@ -85,15 +87,15 @@ Not run on purpose:
 
 | # | What | Who | How |
 |---|---|---|---|
-| 1 | **"Entrar com Google" doesn't work** ("origin is not allowed"). This isn't from the migration; the domain is the same. | Matheus | Google Cloud Console → Credentials → login client ID → *Authorized JavaScript origins*: add `https://raizconnect.com.br` and `https://app.raizconnect.com.br` |
+| 1 | **"Entrar com Google" doesn't work** ("origin is not allowed"). This isn't from the migration: the site in production uses the same client ID as on Hetzner (checked). The Google project (number 633645602971) belongs to another Google account; `falhanosistema1111` has no access to it | Matheus, with the Google account that owns the project | Google Cloud Console → Credentials → login client ID → *Authorized JavaScript origins*: add `https://raizconnect.com.br` and `https://app.raizconnect.com.br` |
 | 2 | Obsolete branch `fix/pipeline-pasta-dos-artefatos` | Matheus | delete it on GitHub (erp-saas → Branches). PR #57 already made the same fix. This session cannot delete branches |
-| 3 | Approval email doesn't arrive | Matheus | confirm the subscription in the "AWS Notifications" email at sejaorbyte@gmail.com |
+| 3 | ~~Alerts and approval emails don't arrive~~ | done | `falhanosistema1111@gmail.com` subscribed and confirmed on 13/10. `sejaorbyte@gmail.com` stays pending; it is no longer needed |
 | 4 | ~~Pipeline waiting for approval (`bb8a36f`, PR #55)~~ | done | rejected on 13/10 at 21:10 UTC: approving it would have taken production back to before PR #56 |
 | 5 | Test company: the cash register opened at 01:10 UTC (R$ 200.00, user Caio Mendonça) is still open. Its two sales are from the migration session's customer-journey test (R$ 16.00 at 19:51 UTC and R$ 87.35 at 19:59 UTC, both cash) | Matheus | leave it or close it (no impact: test company) |
-| 6 | Final NF-e test | Matheus | issue an NF-e in homologation with the real A1 certificate |
-| 7 | Hetzner | later | keep it stopped for 1 to 2 weeks, take a last backup and shut it down |
+| 6 | Final NF-e test | Matheus | the test company has no certificate ("Certificado digital não configurado"). Upload the A1 (.pfx + password) under Fiscal → Configurações; then the NF-e in homologation can be issued |
+| 7 | Hetzner | later | keep it stopped for 1 to 2 weeks, take a last backup and shut it down. Check-in scheduled for 24/10; it asks Matheus before shutting anything down |
 | 8 | ~~Image for the next Terraform apply~~ | done | the next apply uses `b6cfd32`, the version SSM points to. The be17cc9 swap made straight in ECS has already been overwritten |
-| 9 | Agent password in SSM (`/agentepessoal/password`) | Matheus | it doesn't match the `matheus` login on the panel; update it if automation should be able to send messages to the agent |
-| 10 | **Cloudflare blocks traffic from AWS IPs** with a 403 bot challenge. Users are fine; webhooks sent from AWS (Stripe, fiscal) and any call leaving AWS are not | Matheus / migration session | Cloudflare: an exception rule that skips the bot challenge for the webhook routes (or turn off Bot Fight Mode); then resend a test Stripe webhook and check for a 2xx |
-| 11 | Pipeline fails when the commit's image is already in ECR (tags cannot be overwritten) | migration session | in the build, skip the push when the tag already exists |
-| 12 | E2E tests that are out of date: `07-caixa-flow` (looks for "Caixa Aberto"; the screen shows "Aberto desde…") and `44-abc-custos` (waits for the data after it has arrived) | migration session | fix them on its branch, without touching production (it offered; recommended) |
+| 9 | ~~Agent password for automation~~ | done | the `matheus` login now also accepts a separate automation password, kept only in SSM (`/agentepessoal/operador-senha`). Matheus's own password did not change. To revoke it: `usuarios.py --sem-operador matheus` |
+| 10 | **Cloudflare blocks traffic from AWS IPs** with a 403 bot challenge (confirmed from an EC2: `/health`, `/api/webhooks/stripe` and the site all get `cf-mitigated: challenge`). Users are fine; webhooks sent from AWS (Stripe, fiscal) are not | Matheus (no Cloudflare access from here) | Cloudflare → Security → Bots: turn off **Bot Fight Mode** (on the free plan, a WAF rule cannot skip it). If the plan has Super Bot Fight Mode, a rule that skips it for `/api/v1/webhooks/*`, `/api/v1/subscription/webhook` and `/api/v1/restaurant/webhooks/*` is enough. Then resend a test Stripe webhook and check for a 2xx |
+| 11 | ~~Pipeline fails when the image is already in ECR~~ | not a defect | the build in production already skips an image that exists. The `b6cfd32` run failed because the image was pushed by hand during that same build |
+| 12 | ~~E2E tests out of date (`07-caixa-flow`, `44-abc-custos`)~~ | PR #58 | fixed and run against production: 6/6. In 44 there was a second cause: the test company had no expense without a category, so the test now seeds that one line when it is missing (R$ 500, "Despesa sem categoria (E2E)") |
