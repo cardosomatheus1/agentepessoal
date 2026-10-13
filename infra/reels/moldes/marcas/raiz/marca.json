@@ -1,0 +1,18 @@
+{
+ "nome": "Raiz Connect",
+ "perfil": "@raiz.connect",
+ "cores": [
+  "#47b346",
+  "#f7b98f"
+ ],
+ "fonte": "inter",
+ "estilo": "vidro",
+ "logo_escuro": "logo_escuro.png",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Calculadora grátis na bio",
+ "voz": {
+  "id": "Camila",
+  "motor": "generative"
+ },
+ "ramo": "software de preço para quem vende comida"
+}

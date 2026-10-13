@@ -1,0 +1,9 @@
+{"_marca": "doces-da-lu", "_formato": "carrossel", "titulo": "Hoje tem", "subtitulo": "Feitos hoje de manhã, até acabar",
+ "itens": [{"foto": "fotos/bolo.jpg", "nome": "Bolo de morango", "preco": 85},
+           {"foto": "fotos/brigadeiro.jpg", "nome": "Brigadeiro (cento)", "preco": 120},
+           {"foto": "fotos/confeita.jpg", "nome": "Bolo decorado", "preco": 160, "esgotado": true},
+           {"foto": "fotos/acai.jpg", "nome": "Copo da felicidade", "preco": 18},
+           {"foto": "fotos/leite.jpg", "nome": "Pudim inteiro", "preco": 55},
+           {"foto": "fotos/forno.jpg", "nome": "Pão de mel", "preco": 6}],
+ "como_pedir": "Peça pelo link da bio até as 17h", "chamada": "Encomende pelo link",
+ "_origem": {"itens": "dono"}}

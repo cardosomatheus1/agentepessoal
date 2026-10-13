@@ -1,0 +1,19 @@
+{
+ "nome": "Oficina do Zé",
+ "perfil": "@oficinadoze",
+ "cores": [
+  "#f2a900",
+  "#1f2a44"
+ ],
+ "fonte": "anton",
+ "estilo": "pop",
+ "logo_escuro": "logo_escuro.png",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Agende pelo WhatsApp",
+ "voz": {
+  "id": "Thiago",
+  "motor": "neural"
+ },
+ "ramo": "oficina mecânica",
+ "_teste": "marca fictícia para testar os moldes"
+}

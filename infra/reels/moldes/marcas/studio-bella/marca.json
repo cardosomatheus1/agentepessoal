@@ -1,0 +1,18 @@
+{
+ "nome": "Studio Bella",
+ "perfil": "@studiobella",
+ "cores": [
+  "#9a5fb4",
+  "#f3d6e4"
+ ],
+ "fonte": "bricolage",
+ "estilo": "papel",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Agende seu horário",
+ "voz": {
+  "id": "Camila",
+  "motor": "generative"
+ },
+ "ramo": "salão de beleza",
+ "_teste": "marca fictícia; só tem logo para fundo claro"
+}

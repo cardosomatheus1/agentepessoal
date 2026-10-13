@@ -35,6 +35,7 @@ jobs:
           python3 infra/vm/tests/test_despertar.py
           python3 infra/vm/tests/test_gasto.py
           python3 infra/control/tests/test_telegram.py
+          python3 infra/reels/moldes/motor/test_validar.py
       - name: Sintaxe
         run: |
           for f in infra/vm/*.sh; do bash -n "$f"; done

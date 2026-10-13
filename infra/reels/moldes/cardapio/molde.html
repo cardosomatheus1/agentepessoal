@@ -1,0 +1,113 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* video (reel/story): cover, then pages of up to 6 products, then how to order */
+#capaFotos{position:absolute;left:0;right:0;top:380px;height:760px}
+#capaFotos .ph{position:absolute;width:430px;height:540px;border-radius:36px;overflow:hidden;box-shadow:var(--sombra);border:8px solid var(--cartao)}
+#capaFotos .ph img{width:100%;height:100%;object-fit:cover}
+#capaT{left:90px;right:90px;top:1170px;height:200px;font-size:150px;line-height:1}
+#capaS{left:120px;right:160px;top:1370px;height:60px;font-size:42px;font-weight:700}
+body.f-reel #capaT{left:130px;right:190px;font-size:120px}body.f-reel #capaS{left:150px;right:200px}
+.pag .tt{position:absolute;left:90px;right:90px;top:380px;height:80px;font-size:60px;text-align:center}
+.grade{position:absolute;left:90px;right:90px;top:480px;display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.item{position:relative;height:300px;border-radius:30px;overflow:hidden}
+.item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.item .rot{position:absolute;left:0;right:0;bottom:0;padding:16px 20px 14px;background:linear-gradient(transparent,rgba(0,0,0,.78))}
+.item .nm{color:#fff;font-size:34px;font-weight:800;height:44px;white-space:nowrap}
+.item .pr{display:inline-block;margin-top:6px;font-size:32px;padding:6px 16px}
+.item .esg{position:absolute;left:50%;top:38%;margin-left:-150px;width:300px;text-align:center;font-family:var(--ft);font-weight:900;font-size:46px;padding:10px 0;border:6px solid var(--ruim);color:var(--ruim);background:rgba(255,255,255,.9);border-radius:14px;opacity:0}
+.item.fora img{filter:grayscale(1) brightness(.7)}
+#pedir{left:120px;right:160px;top:620px;height:520px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;text-align:center}
+#pedir .ic{font-size:150px;color:var(--destaque)}
+#pedir .tx{font-size:68px;line-height:1.1;height:240px;width:100%}
+/* carousel slides (1080x1350) */
+.slide .tt{position:absolute;left:84px;right:84px;top:150px;height:90px;font-size:68px}
+.slide .grade{top:260px;left:84px;right:84px;gap:24px}
+.slide .item{height:300px}
+.slide.capa .tit{position:absolute;left:84px;right:84px;top:780px;height:250px;font-size:140px;line-height:.98}
+.slide.capa .sub{position:absolute;left:84px;right:84px;top:1060px;height:110px;font-size:44px;font-weight:700}
+.slide.capa .fotos{position:absolute;left:84px;right:84px;top:150px;height:580px;display:grid;grid-template-columns:1.3fr 1fr;grid-template-rows:1fr 1fr;gap:20px}
+.slide.capa .fotos div{border-radius:30px;overflow:hidden}.slide.capa .fotos div:first-child{grid-row:span 2}
+.slide.capa .fotos img{width:100%;height:100%;object-fit:cover}
+.slide .pe{position:absolute;left:84px;right:84px;bottom:70px;height:50px;font-size:34px;font-weight:700;display:flex;justify-content:space-between}
+</style></head><body><div id="palco">
+<div class="cena" id="capa"><div class="cam full">
+ <div id="capaFotos"></div>
+ <div class="ctr tit t seg rv" id="capaT"></div>
+ <div class="ctr t t2 seg" id="capaS"></div>
+</div></div>
+<div class="cena" id="pedirC"><div class="cam full">
+ <div class="ctr seg" id="pedir"><div class="ic" id="pedirIc"></div><div class="tx tit t rv" id="pedirTx"></div></div>
+</div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Vitrine do dia": what there is today, with photo and price, sold-out items stamped. Pages of up to 6 products.
+let PAGS = [];
+const paginas = itens => { const n = Math.ceil(itens.length / 6), por = Math.ceil(itens.length / n), r = []; for (let i = 0; i < itens.length; i += por) r.push(itens.slice(i, i + por)); return r; };
+function cartao(it, $m) {
+  const d = document.createElement('div'); d.className = 'item' + (it.esgotado ? ' fora' : '');
+  const img = document.createElement('img'); img.src = $m.midia(it.foto); img.alt = it.nome; d.appendChild(img);
+  const rot = document.createElement('div'); rot.className = 'rot';
+  const nm = document.createElement('div'); nm.className = 'nm t seg'; nm.textContent = it.nome; nm.dataset.min = 26;
+  const pr = document.createElement('div'); pr.className = 'pr chip'; pr.textContent = $m.brl(it.preco);
+  rot.append(nm, pr); d.appendChild(rot);
+  if (it.esgotado) { const e = document.createElement('div'); e.className = 'esg'; e.textContent = 'ESGOTADO'; d.appendChild(e); }
+  return d;
+}
+Motor.molde({
+  id: 'cardapio', formatos: ['story', 'reel', 'carrossel'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    PAGS = paginas(F.itens);
+    if (F.itens.every(i => i.esgotado)) $m.erro('todos os itens esgotados: use o molde Aviso');
+    $('#capaT').textContent = F.titulo; $('#capaS').textContent = F.subtitulo || '';
+    const pos = [[70, 60, -6], [560, 0, 5], [330, 200, -1]];
+    F.itens.filter(i => !i.esgotado).slice(0, 3).forEach((it, k) => { const d = document.createElement('div'); d.className = 'ph'; d.style.left = pos[k][0] + 'px'; d.style.top = pos[k][1] + 'px'; d.dataset.r = pos[k][2];
+      const img = document.createElement('img'); img.src = $m.midia(it.foto); d.appendChild(img); $('#capaFotos').appendChild(d); });
+    const pedir = $('#pedirC');
+    PAGS.forEach((pg, k) => {
+      const c = document.createElement('div'); c.className = 'cena pag'; c.id = 'pag' + k;
+      c.innerHTML = '<div class="cam full"><div class="tt tit t seg"></div><div class="grade"></div></div>';
+      c.querySelector('.tt').textContent = PAGS.length > 1 ? `${F.titulo} (${k + 1}/${PAGS.length})` : F.titulo;
+      pg.forEach(it => c.querySelector('.grade').appendChild(cartao(it, $m)));
+      const linhas = Math.ceil(pg.length / 2), h = Math.min(440, Math.floor((($m.FORMATO === 'story' ? 1080 : 960) - 28 * (linhas - 1)) / linhas));
+      c.querySelectorAll('.item').forEach(d => { d.style.height = h + 'px'; });
+      pedir.before(c);
+    });
+    $('#pedirIc').innerHTML = $m.icone(F.icone || 'carrinho');
+    $('#pedirTx').textContent = F.como_pedir;
+    return { duracoes: [2.6, ...PAGS.map(pg => 1.6 + pg.length * 0.45), 2.8] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo5, eb, ini } = $m;
+    $m.cena('#capa', t, 0);
+    $$('#capaFotos .ph').forEach((d, k) => { const q = eb(p(t, 0.1 + k * 0.18, 0.6)); d.style.opacity = Math.min(1, q * 2); d.style.transform = `translateY(${(1 - q) * 200}px) rotate(${(+d.dataset.r) * q}deg) scale(${0.8 + 0.2 * q})`; });
+    $m.revela('#capaT', t, 0.5); $m.entra('#capaS', t, 1.0);
+    PAGS.forEach((pg, k) => {
+      const i = 1 + k, a = ini(i); $m.cena('#pag' + k, t, i);
+      $$('#pag' + k + ' .item').forEach((d, j) => { const q = eb(p(t, a + 0.3 + j * 0.3, 0.55)); d.style.opacity = Math.min(1, q * 2); d.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.85 + 0.15 * q})`;
+        const e = d.querySelector('.esg'); if (e) $m.carimbo(e, t, a + 0.9 + j * 0.3); });
+    });
+    const ip = PAGS.length + 1; $m.cena('#pedirC', t, ip); $m.entra('#pedirIc', t, ini(ip) + 0.1, 0.5, 40, 0.4); $m.revela('#pedirTx', t, ini(ip) + 0.3);
+  },
+  slides(F, M, $m) {
+    PAGS = paginas(F.itens);
+    const palco = $m.$('#palco'); $m.$$('.cena', palco).forEach(c => c.remove());
+    const capa = document.createElement('div'); capa.className = 'slide capa';
+    capa.innerHTML = '<div class="fotos"></div><div class="tit t seg"></div><div class="sub t t2 seg"></div><div class="pe t2"><span></span><span></span></div>';
+    F.itens.filter(i => !i.esgotado).slice(0, 3).forEach(it => { const d = document.createElement('div'); const img = document.createElement('img'); img.src = $m.midia(it.foto); d.appendChild(img); capa.querySelector('.fotos').appendChild(d); });
+    capa.querySelector('.tit').textContent = F.titulo; capa.querySelector('.sub').textContent = F.subtitulo || '';
+    capa.querySelector('.pe span:last-child').textContent = 'arrasta';
+    palco.appendChild(capa);
+    PAGS.forEach((pg, k) => {
+      const s = document.createElement('div'); s.className = 'slide';
+      s.innerHTML = '<div class="tt tit t seg"></div><div class="grade"></div><div class="pe t2"><span class="t"></span><span></span></div>';
+      s.querySelector('.tt').textContent = PAGS.length > 1 ? `${F.titulo} (${k + 1}/${PAGS.length})` : F.titulo;
+      pg.forEach(it => { const c = cartao(it, $m); const e = c.querySelector('.esg'); if (e) { e.style.opacity = 1; e.style.transform = 'rotate(-8deg)'; } s.querySelector('.grade').appendChild(c); });
+      s.querySelector('.pe span').textContent = F.como_pedir;
+      palco.appendChild(s);
+    });
+  },
+});
+</script></body></html>

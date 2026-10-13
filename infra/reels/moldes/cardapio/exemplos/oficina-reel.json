@@ -1,0 +1,10 @@
+{"_marca": "oficina-do-ze", "_formato": "reel", "titulo": "Serviços da semana",
+ "itens": [{"foto": "fotos/oficina_depois.jpg", "nome": "Limpeza de rodas", "preco": 80},
+           {"foto": "fotos/mecanico_maos.jpg", "nome": "Troca de óleo", "preco": 150},
+           {"foto": "fotos/oficina_interior.jpg", "nome": "Revisão completa", "preco": 390},
+           {"foto": "fotos/maquina.jpg", "nome": "Alinhamento", "preco": 90},
+           {"foto": "fotos/oficina_antes.jpg", "nome": "Freio dianteiro", "preco": 220},
+           {"foto": "fotos/geral.jpg", "nome": "Diagnóstico", "preco": 60},
+           {"foto": "fotos/gas.jpg", "nome": "Ar-condicionado", "preco": 180}],
+ "como_pedir": "Agende pelo WhatsApp, atendemos sábado", "icone": "calendario",
+ "_origem": {"itens": "dono"}}

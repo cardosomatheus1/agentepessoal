@@ -1,0 +1,187 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* scene 0+1: footage hero, then the price tag */
+#heroBox{position:absolute;left:0;top:0;width:1080px;height:1180px;overflow:hidden}
+#hero{position:absolute;left:-420px;top:0;width:1920px;height:1180px;object-fit:cover;filter:saturate(1.1) contrast(1.05) brightness(.9)}
+#heroFade{position:absolute;left:0;right:0;top:640px;height:560px;background:linear-gradient(transparent,var(--fundo) 92%)}
+#h0a{left:150px;right:170px;top:960px;height:180px;font-size:72px;font-weight:800;line-height:1.1}
+#h0b{left:60px;right:60px;top:1150px;height:300px;font-size:280px;line-height:1}
+#chip0{position:absolute;left:90px;top:1460px;font-size:36px}
+#tagw{position:absolute;left:0;right:0;top:330px;perspective:1600px}
+#tag{position:relative;margin:0 auto;width:760px;padding:64px 40px 54px;text-align:center;transform-origin:50% 0}
+#tag .fu{position:absolute;left:50%;top:24px;width:34px;height:34px;margin-left:-17px;border-radius:50%;background:var(--fundo)}
+#tag .k{font-size:40px;font-weight:800;letter-spacing:3px;height:52px}
+#tag .v{font-size:160px;height:180px;line-height:1.05;white-space:nowrap}
+#tag .u{font-size:36px;font-weight:700;height:48px}
+#q1{left:180px;right:200px;top:960px;height:240px;font-size:80px;line-height:1.08}
+/* scene 2+3: chart */
+#gcard{position:absolute;left:70px;top:380px;width:940px;height:990px;padding:50px 46px}
+#gcard .tt{font-size:46px;font-weight:800;height:60px}
+#gcard .st{font-size:32px;font-weight:500;height:44px;margin-top:6px}
+#graf{position:absolute;left:20px;top:170px;width:900px;height:760px;overflow:visible}
+#bolha{position:absolute;padding:16px 28px;border-radius:24px;font-family:var(--ft);font-weight:900;font-size:66px;white-space:nowrap;background:var(--destaque);color:var(--sobre-destaque)}
+#legL{left:160px;right:160px;top:1392px;height:80px;font-size:56px;font-weight:800}
+/* scene 4 */
+#c4k{left:90px;right:90px;top:430px;height:80px;font-size:54px;font-weight:700}
+#velho{position:absolute;left:0;right:0;top:530px;text-align:center;font-family:var(--ft);font-weight:900;font-size:200px;opacity:.45;height:230px}
+#risco{position:absolute;left:220px;top:640px;height:18px;width:0;background:var(--ruim);border-radius:9px;transform:rotate(-4deg)}
+#novo{position:absolute;left:150px;right:170px;top:770px;height:260px;text-align:center;font-size:210px;line-height:1.15;white-space:nowrap}
+#pct{position:absolute;left:600px;top:1140px;font-size:58px;font-weight:900;padding:16px 34px;border-radius:24px;background:var(--ruim);color:var(--sobre-ruim)}
+#c4s{left:190px;right:210px;top:1320px;height:70px;font-size:44px;font-weight:700}
+/* scene 5: batch */
+#c5t{left:90px;right:90px;top:380px;height:84px;font-size:58px;font-weight:800}
+#grid{position:absolute;left:200px;top:490px;width:680px;height:680px}
+#grid i{position:absolute;width:52px;height:52px;border-radius:50%;background:var(--destaque)}
+#grid i.perdido{background:var(--ruim)}
+#menos{position:absolute;left:170px;right:190px;top:1180px;height:200px;text-align:center;font-size:200px;line-height:1.1;color:var(--ruim);white-space:nowrap}
+#c5s{left:190px;right:210px;top:1390px;height:64px;font-size:44px;font-weight:700;white-space:nowrap}
+/* scene 6 */
+#c6a{left:80px;right:80px;top:560px;height:260px;font-size:112px;line-height:1.02}
+#c6b{left:160px;right:160px;top:900px;height:260px;font-size:190px;line-height:1.15}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="heroBox"><img id="hero" alt=""><div id="heroFade"></div></div>
+ <div class="ctr t seg rv" id="h0a"></div>
+ <div class="ctr tit grad t seg" id="h0b"></div>
+ <div class="chip" id="chip0"></div>
+ <div id="tagw"><div id="tag" class="cartao"><div class="fu"></div><div class="k t t2"></div><div class="v tit grad t seg"></div><div class="u t t2"></div></div></div>
+ <div class="ctr tit t seg rv" id="q1"></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="gcard" class="cartao"><div class="tt t seg"></div><div class="st t t2"></div>
+  <svg id="graf" viewBox="0 0 900 800">
+   <g id="grade"></g>
+   <path id="area" fill="var(--destaque)" opacity=".18"/>
+   <line id="lpreco" x1="40" x2="860" stroke="var(--texto)" stroke-width="5" stroke-dasharray="20 16" opacity=".85"/>
+   <g id="gpreco"><rect id="rpreco" height="64" rx="32" fill="var(--texto)"/><text id="tpreco" text-anchor="middle" font-family="I" font-weight="900" font-size="32" fill="var(--fundo)"></text></g>
+   <path id="linha" fill="none" stroke="var(--destaque)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+   <circle id="ponto" r="18" fill="var(--texto)" stroke="var(--destaque)" stroke-width="8"/>
+   <g id="meses"></g>
+  </svg>
+  <div id="bolha"></div>
+ </div>
+ <div class="ctr t seg" id="legL"></div>
+</div></div>
+
+<div class="cena" id="c4"><div class="cam full">
+ <div class="ctr t t2 seg rv" id="c4k"></div>
+ <div id="velho"></div><div id="risco"></div>
+ <div id="novo" class="tit grad t seg"></div>
+ <div id="pct"></div>
+ <div class="ctr t t2 seg rv" id="c4s"></div>
+</div></div>
+
+<div class="cena" id="c5"><div class="cam full">
+ <div class="ctr t seg rv" id="c5t"></div>
+ <div id="grid"></div>
+ <div id="menos" class="tit t seg"></div>
+ <div class="ctr t t2 seg rv" id="c5s"></div>
+</div></div>
+
+<div class="cena" id="c6"><div class="cam full">
+ <div class="ctr tit t seg rv" id="c6a"></div>
+ <div class="ctr tit t seg" id="c6b"><span class="mk" id="mk6"></span></div>
+</div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "A conta mudou": an input got more expensive and the price stayed; shows the profit before and after.
+// Scenes follow the 8 lines of narration (falas): 0 hook, 1 price tag, 2 cost then, 3 cost now, 4 profit,
+// 5 batch loss, 6 turn, 7 call to action (engine's final scene). Every number comes from the ficha.
+let D = {};
+Motor.molde({
+  id: 'conta-mudou', formatos: ['reel'],
+  montar(F, M, $m) {
+    const { $, brl } = $m;
+    const lucroA = F.preco - F.custo_antes, lucroH = F.preco - F.custo_hoje;
+    if (F.custo_hoje <= F.custo_antes) $m.erro('o custo de hoje precisa ser maior que o de antes');
+    if (lucroA <= 0) $m.erro('o preço precisa ser maior que o custo de antes');
+    D = { lucroA, lucroH, pct: Math.round((lucroH - lucroA) / lucroA * 100), perda: (F.custo_hoje - F.custo_antes) * F.lote };
+    $('#h0a').textContent = 'O ' + F.insumo; $('#h0b').textContent = 'subiu';
+    $('#chip0').innerHTML = $m.icone('seta') + ' '; $('#chip0').append('insumo mais caro');
+    $('#tag .k').textContent = F.produto.toUpperCase();
+    $('#tag .v').textContent = brl(F.preco);
+    $('#tag .u').textContent = 'por ' + F.unidade;
+    $('#q1').textContent = 'E continua custando o mesmo?';
+    $('#gcard .tt').textContent = 'Custo de cada ' + F.unidade;
+    $('#gcard .st').textContent = F.quando_antes + ' até hoje';
+    $('#c4k').textContent = 'seu lucro por ' + F.unidade;
+    $('#velho').textContent = brl(lucroA); $('#novo').textContent = brl(lucroH);
+    $('#pct').textContent = '−' + Math.abs(D.pct) + '%';
+    $('#c4s').textContent = 'mesmo trabalho, menos dinheiro';
+    $('#c5t').textContent = F.lote_texto;
+    $('#menos').textContent = '−' + brl(D.perda, 0);
+    $('#c5s').textContent = 'a menos no seu bolso';
+    $('#c6a').textContent = F.virada; $('#mk6').textContent = F.virada_destaque;
+    $('#nota').textContent = F.nota || '';
+    // chart
+    const X0 = 60, X1 = 840, vmax = F.preco * 1.1, Y = v => 740 - v / vmax * 680;
+    D.X0 = X0; D.X1 = X1; D.Y = Y;
+    const NS = 'http://www.w3.org/2000/svg';
+    for (let k = 1; k <= 4; k++) { const l = document.createElementNS(NS, 'line'); const y = Y(vmax * k / 4); Object.entries({ x1: 40, x2: 860, y1: y, y2: y, stroke: 'var(--texto)', opacity: .08, 'stroke-width': 2 }).forEach(([a, b]) => l.setAttribute(a, b)); $('#grade').appendChild(l); }
+    const yp = Y(F.preco); $('#lpreco').setAttribute('y1', yp); $('#lpreco').setAttribute('y2', yp);
+    $('#tpreco').textContent = 'seu preço ' + brl(F.preco);
+    const w = 400; $('#rpreco').setAttribute('x', 850 - w); $('#rpreco').setAttribute('width', w); $('#rpreco').setAttribute('y', yp - 92);
+    $('#tpreco').setAttribute('x', 850 - w / 2); $('#tpreco').setAttribute('y', yp - 48);
+    [F.quando_antes, '', '', '', '', 'hoje'].forEach((s, i) => { if (!s) return; const t = document.createElementNS(NS, 'text'); Object.entries({ x: X0 + i * (X1 - X0) / 5, y: 790, 'text-anchor': 'middle', 'font-family': 'I', 'font-size': 32, 'font-weight': 700, fill: 'var(--texto2)' }).forEach(([a, b]) => t.setAttribute(a, b)); t.textContent = s; $('#meses').appendChild(t); });
+    // batch: 100 dots, the share of profit lost turns red
+    const g = $('#grid'), perdidos = Math.round(100 * (lucroA - lucroH) / lucroA);
+    for (let i = 0; i < 100; i++) { const d = document.createElement('i'); d.style.left = (i % 10) * 68 + 'px'; d.style.top = Math.floor(i / 10) * 68 + 'px'; d.dataset.i = i; if (i >= 100 - perdidos) d.dataset.perde = 1; g.appendChild(d); }
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, brl, ini, fim } = $m;
+    const S = i => ini.call($m, i);
+    // 0+1 hero and tag
+    $m.cena('#c0', t, 0, 1);
+    $m.filmagem($('#hero'), F.filmagem, t);
+    const hk = eio(p(t, S(1) - 0.2, 0.8));
+    $('#heroBox').style.transform = `translateY(${-hk * 330}px) scale(${1 + 0.1 * hk})`; $('#hero').style.filter = `saturate(1.1) brightness(${0.9 - 0.45 * hk}) blur(${hk * 6}px)`;
+    $m.revela('#h0a', t, 0.05);
+    const sb = eo5(p(t, 0.35, 0.6)); $('#h0b').style.transform = `translateY(${(1 - sb) * 160}px) scale(${0.85 + 0.15 * sb})`;
+    const out0 = eo(p(t, S(1) - 0.25, 0.4));
+    $('#h0a').style.opacity = 1 - out0; $('#h0b').style.opacity = sb * (1 - out0);
+    $('#chip0').style.opacity = eo(p(t, 1.0, 0.3)) * (1 - out0);
+    const ti = eo5(p(t, S(1) + 0.1, 0.8)), sw = p(t, S(1) + 0.3, 3.5);
+    $('#tagw').style.opacity = ti;
+    $('#tag').style.transform = `translateY(${(1 - ti) * -700}px) rotateX(${(1 - ti) * 40}deg) rotateZ(${10 * Math.exp(-sw * 2.5) * Math.sin(sw * 16)}deg)`;
+    $('#q1').style.opacity = t > S(1) ? 1 : 0; $m.revela('#q1', t, S(1) + 0.5);
+    // 2+3 chart: line grows from cost then to cost now
+    $m.cena('#c2', t, 2, 3);
+    const gi = eo(p(t, S(2) + 0.2, 0.6)); $('#gcard').style.transform = `translateY(${(1 - gi) * 120}px)`; $('#gcard').style.opacity = gi;
+    const k = eio(p(t, S(3), 1.8)), k0 = eo(p(t, S(2) + 0.6, 0.6));
+    const pts = []; const n = 24; for (let i = 0; i <= n; i++) { const x = i / n; if (x > k) break; pts.push([D.X0 + x * (D.X1 - D.X0), D.Y(F.custo_antes + (F.custo_hoje - F.custo_antes) * (x * x * 0.4 + x * 0.6))]); }
+    const vx = Math.max(k, 0.0001), last = [D.X0 + vx * (D.X1 - D.X0), D.Y(F.custo_antes + (F.custo_hoje - F.custo_antes) * (vx * vx * 0.4 + vx * 0.6))]; pts.push(last);
+    const d = pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
+    $('#linha').setAttribute('d', d); $('#linha').style.opacity = k0;
+    $('#area').setAttribute('d', d + `L${last[0]} 740 L${D.X0} 740Z`); $('#area').style.opacity = k0;
+    $('#ponto').setAttribute('cx', last[0]); $('#ponto').setAttribute('cy', last[1]); $('#ponto').style.opacity = k0;
+    const v = F.custo_antes + (F.custo_hoje - F.custo_antes) * k, b = $('#bolha'); b.textContent = brl(v);
+    b.style.left = Math.min(46 + 20 + last[0] - b.offsetWidth / 2, 940 - 30 - b.offsetWidth) + 'px'; b.style.top = (190 + last[1] - 130) + 'px'; b.style.opacity = k0;
+    $('#legL').textContent = k < 0.98 ? 'Antes: ' + brl(F.custo_antes) : 'Hoje: ' + brl(F.custo_hoje);
+    $('#legL').style.opacity = eo(p(t, S(2) + 0.8, 0.4));
+    // 4 profit
+    $m.cena('#c4', t, 4);
+    $m.revela('#c4k', t, S(4) + 0.2);
+    const vi = eo(p(t, S(4) + 0.3, 0.5)); $('#velho').style.opacity = .45 * vi;
+    $('#risco').style.width = eo(p(t, S(4) + 1.0, 0.45)) * 640 + 'px';
+    const nv = eb(p(t, S(4) + 1.5, 0.6)); $('#novo').style.opacity = cl(nv * 2); $('#novo').style.transform = `translateY(${(1 - nv) * 120}px) scale(${0.7 + 0.3 * nv})`;
+    const pc = el(p(t, S(4) + 2.1, 0.9)); $('#pct').style.opacity = cl(pc * 3); $('#pct').style.transform = `scale(${pc}) rotate(-6deg)`;
+    $m.revela('#c4s', t, S(4) + 2.4);
+    // 5 batch
+    $m.cena('#c5', t, 5); $m.revela('#c5t', t, S(5) + 0.15);
+    $$('#grid i').forEach(e => { const i = +e.dataset.i, r = Math.floor(i / 10), c = i % 10; const q = eb(p(t, S(5) + 0.25 + (r + c) * 0.035, 0.45));
+      e.classList.toggle('perdido', !!e.dataset.perde && t > S(5) + 1.6 + (r + c) * 0.02); e.style.transform = `scale(${q})`; });
+    const mq = eo5(p(t, S(5) + 1.7, 0.9)); $('#menos').textContent = '−' + brl(D.perda * mq, 0); $('#menos').style.opacity = cl(mq * 4);
+    $m.revela('#c5s', t, S(5) + 2.2);
+    // 6 turn
+    $m.cena('#c6', t, 6); $m.revela('#c6a', t, S(6) + 0.1, 0.09);
+    const m6 = eo5(p(t, S(6) + 1.15, 0.5)); $('#c6b').style.opacity = cl(m6 * 3); $('#c6b').style.transform = `scale(${1.6 - 0.6 * m6})`; $m.marcador('#mk6', t, S(6) + 1.4);
+    $('#nota').style.opacity = (t > S(2) && t < S(7)) ? 1 : 0;
+  },
+});
+</script></body></html>

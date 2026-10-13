@@ -1,0 +1,14 @@
+{
+ "formatos": ["story", "reel", "carrossel"],
+ "voz": "nao",
+ "musica": "animada",
+ "campos": {
+  "titulo": {"tipo": "texto", "max": 22, "dica": "Hoje tem, Fornada da tarde, Serviços da semana"},
+  "subtitulo": {"tipo": "texto", "max": 44, "obrigatorio": false},
+  "itens": {"tipo": "lista", "min": 3, "max": 18, "item": {
+     "foto": {"tipo": "foto"}, "nome": {"tipo": "texto", "max": 22},
+     "preco": {"tipo": "dinheiro", "real": true}, "esgotado": {"tipo": "booleano", "obrigatorio": false}}},
+  "como_pedir": {"tipo": "texto", "max": 50},
+  "icone": {"tipo": "escolha", "opcoes": ["carrinho", "moto", "chat", "telefone", "calendario", "local"], "obrigatorio": false}
+ }
+}

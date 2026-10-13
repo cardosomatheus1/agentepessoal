@@ -1,0 +1,19 @@
+{
+ "nome": "Doces da Lu",
+ "perfil": "@docesdalu",
+ "cores": [
+  "#e2557a",
+  "#ffc6a8"
+ ],
+ "fonte": "bricolage",
+ "estilo": "claro",
+ "logo_escuro": "logo_escuro.png",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Encomende pelo link",
+ "voz": {
+  "id": "Camila",
+  "motor": "generative"
+ },
+ "ramo": "confeitaria",
+ "_teste": "marca fictícia para testar os moldes"
+}

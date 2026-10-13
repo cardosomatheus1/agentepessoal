@@ -1,0 +1,76 @@
+{
+ "formatos": [
+  "reel"
+ ],
+ "voz": "sim",
+ "musica": null,
+ "campos": {
+  "produto": {
+   "tipo": "texto",
+   "max": 22
+  },
+  "unidade": {
+   "tipo": "texto",
+   "max": 14,
+   "dica": "unidade, fatia, lavagem, marmita"
+  },
+  "insumo": {
+   "tipo": "texto",
+   "max": 24,
+   "dica": "o que subiu: leite condensado, arroz, produto de limpeza"
+  },
+  "preco": {
+   "tipo": "dinheiro",
+   "real": true
+  },
+  "custo_antes": {
+   "tipo": "dinheiro",
+   "real": true
+  },
+  "custo_hoje": {
+   "tipo": "dinheiro",
+   "real": true
+  },
+  "quando_antes": {
+   "tipo": "texto",
+   "max": 12,
+   "dica": "mês ou ano em que o custo era o de antes: janeiro, março, 2025"
+  },
+  "lote": {
+   "tipo": "numero",
+   "min": 2,
+   "max": 100000
+  },
+  "lote_texto": {
+   "tipo": "texto",
+   "max": 34,
+   "dica": "Num cento de brigadeiros"
+  },
+  "virada": {
+   "tipo": "texto",
+   "max": 34
+  },
+  "virada_destaque": {
+   "tipo": "texto",
+   "max": 12
+  },
+  "filmagem": {
+   "tipo": "filmagem"
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 8,
+   "max": 8,
+   "item": {
+    "tipo": "texto",
+    "max": 150
+   },
+   "dica": "8 falas na ordem das cenas: gancho, preço, custo antes, custo hoje, lucro, lote, virada, chamada; os números iguais aos da ficha"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ }
+}

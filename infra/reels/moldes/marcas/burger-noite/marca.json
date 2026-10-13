@@ -1,0 +1,18 @@
+{
+ "nome": "Burger Noite",
+ "perfil": "@burgernoite",
+ "cores": [
+  "#ff3d6e",
+  "#3de0ff"
+ ],
+ "fonte": "anton",
+ "estilo": "noite",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Peça pelo link da bio",
+ "voz": {
+  "id": "Thiago",
+  "motor": "neural"
+ },
+ "ramo": "hamburgueria",
+ "_teste": "marca fictícia; logo só para fundo claro, vai sobre selo no escuro"
+}

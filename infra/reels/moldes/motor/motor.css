@@ -1,0 +1,93 @@
+/* Shared base of every template. Colors come only from the tokens below, which motor.js fills from the brand
+   (marca) and the style (estilo); a template never writes a literal color, so any brand and style works. */
+@font-face{font-family:I;src:url(fontes/Inter-Medium.otf);font-weight:500}
+@font-face{font-family:I;src:url(fontes/Inter-Bold.otf);font-weight:700}
+@font-face{font-family:I;src:url(fontes/Inter-ExtraBold.otf);font-weight:800}
+@font-face{font-family:I;src:url(fontes/Inter-Black.otf);font-weight:900}
+@font-face{font-family:D;src:url(fontes/InterDisplay-Black.otf);font-weight:900}
+@font-face{font-family:D;src:url(fontes/InterDisplay-ExtraBold.otf);font-weight:800}
+@font-face{font-family:B;src:url(fontes/brico.woff2)}
+@font-face{font-family:A;src:url(fontes/anton.woff2)}
+@font-face{font-family:H;src:url(fontes/caveat.woff2)}
+
+:root{
+  --W:1080px;--H:1920px;
+  --fundo:#101014;--fundo2:#1b1b22;--texto:#fff;--texto2:rgba(255,255,255,.72);
+  --c1:#47b346;--c2:#f7b98f;--destaque:#47b346;--sobre-destaque:#0b0b0f;
+  --cartao:rgba(255,255,255,.1);--borda:rgba(255,255,255,.2);--sombra:0 30px 80px rgba(0,0,0,.45);
+  --bom:#3ecf6a;--ruim:#ff5d5d;--sobre-bom:#06210f;--sobre-ruim:#2a0606;
+  --ft:D;--fb:I;--raio:44px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:var(--W);height:var(--H);overflow:hidden;background:var(--fundo);color:var(--texto);font-family:var(--fb),sans-serif}
+body.f-carrossel{--H:1350px}
+
+/* stage and scenes */
+#palco{position:absolute;left:0;top:0;width:var(--W);height:var(--H);overflow:hidden}
+.cena{position:absolute;inset:0;overflow:hidden;opacity:0}
+.cam{position:absolute;inset:0;transform-origin:50% 45%}
+.full{position:absolute;inset:0}
+.ctr{position:absolute;left:0;right:0;text-align:center}
+.slide{position:absolute;inset:0;overflow:hidden;display:none}
+
+/* text: .t is measured by the check (must fit its box); .tit uses the brand title font */
+.tit{font-family:var(--ft),sans-serif;font-weight:900;line-height:1.02;letter-spacing:-.02em;text-wrap:balance}
+.t{overflow:hidden}
+.t2{color:var(--texto2)}
+.mao{font-family:H,cursive;font-weight:400;letter-spacing:0}
+.dest{color:var(--destaque)}
+.chip{display:inline-block;padding:.32em .8em;border-radius:999px;background:var(--destaque);color:var(--sobre-destaque);font-weight:900}
+.grad{background-image:linear-gradient(100deg,var(--destaque),var(--c2));background-clip:text;-webkit-background-clip:text;color:transparent;padding-bottom:.16em}
+/* word reveal */
+.ww{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .04em .12em;margin-bottom:-.12em}
+.wi{display:inline-block;will-change:transform}
+/* highlight marker behind a word */
+.mk{position:relative;display:inline-block;z-index:0;color:var(--sobre-destaque)}
+.mk:before{content:'';position:absolute;left:-.12em;right:-.12em;top:.1em;bottom:.02em;z-index:-1;border-radius:.12em;background:var(--destaque);transform-origin:0 50%;transform:scaleX(var(--k,1)) skewX(-8deg)}
+
+/* card: its look changes with the style */
+.cartao{background:var(--cartao);border:1.5px solid var(--borda);box-shadow:var(--sombra);border-radius:var(--raio)}
+body.e-vidro .cartao{background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.05));backdrop-filter:blur(26px)}
+body.e-pop .cartao{border:6px solid var(--texto);box-shadow:14px 14px 0 var(--texto);border-radius:28px}
+body.e-papel .cartao{border-radius:10px;transform:rotate(-.6deg);box-shadow:0 14px 30px rgba(60,40,20,.25)}
+body.e-noite .cartao{box-shadow:0 0 0 2px var(--destaque),0 0 40px color-mix(in srgb,var(--destaque) 45%,transparent)}
+body.e-noite .tit{text-shadow:0 0 30px color-mix(in srgb,var(--destaque) 55%,transparent)}
+
+/* background layer (one per stage, drawn by motor.js according to the style) */
+#fundo{position:absolute;inset:0;z-index:0;background:var(--fundo)}
+#fundo .bok{position:absolute;border-radius:50%}
+#fundo .forma{position:absolute}
+#grao{position:absolute;inset:-50%;background:url(grao.png);opacity:.07;mix-blend-mode:overlay;pointer-events:none;z-index:90}
+body.e-claro #grao{opacity:.035}
+#vinheta{position:absolute;inset:0;pointer-events:none;z-index:89;background:radial-gradient(ellipse 75% 60% at 50% 45%,transparent 55%,rgba(0,0,0,.45))}
+body.e-claro #vinheta,body.e-papel #vinheta,body.e-pop #vinheta{display:none}
+
+/* brand: small watermark under the top band Instagram covers, big logo in the final scene */
+#marca{position:absolute;z-index:80;display:flex;align-items:center;justify-content:center}
+#marca img{display:block;height:72px;width:auto;max-width:380px}
+#marca .nome{font-family:var(--ft);font-weight:900;font-size:34px;color:var(--texto)}
+#marca.selo,.final .logo.selo{padding:14px 26px;border-radius:999px;background:var(--selo,#fff)}
+body.f-reel #marca,body.f-story #marca{left:50%;top:258px;transform:translateX(-50%)}
+body.f-carrossel #marca{left:84px;top:64px}
+#marca img.p{height:46px}
+
+.final{position:absolute;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:42px;opacity:0;text-align:center;padding:0 90px}
+.final .logo img{display:block;max-width:620px;max-height:300px;width:auto;height:auto}
+.final .logo .nome{font-family:var(--ft);font-weight:900;font-size:110px;line-height:1}
+.final .perfil{font-size:52px;font-weight:800;color:var(--texto2)}
+.final .chamada span{display:inline-block;max-width:820px}
+.final .chamada{font-size:60px;max-width:900px;font-weight:900;padding:34px 70px;border-radius:999px;background:var(--destaque);color:var(--sobre-destaque);position:relative;overflow:hidden}
+.final .chamada i{position:absolute;top:0;bottom:0;width:120px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-20deg)}
+.final .extra{font-size:44px;font-weight:700;color:var(--texto2);max-width:860px}
+body.f-carrossel .final{gap:34px}
+
+/* notes and icons */
+.nota{position:absolute;left:0;right:0;text-align:center;font-size:28px;font-weight:500;color:var(--texto2);z-index:85}
+body.f-reel .nota,body.f-story .nota{bottom:440px}
+body.f-carrossel .nota{bottom:40px}
+.ico{display:inline-block;width:1em;height:1em;vertical-align:-.14em}
+.ico svg{width:100%;height:100%;display:block}
+.selo-ia{position:absolute;right:180px;top:258px;z-index:85;font-size:24px;font-weight:700;padding:8px 16px;border-radius:12px;background:rgba(0,0,0,.45);color:#fff}
+
+/* debug: draws the safe area (render.py --area) */
+#area{position:absolute;z-index:999;border:4px dashed #ff00aa;pointer-events:none;display:none}
