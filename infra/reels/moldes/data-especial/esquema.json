@@ -1,0 +1,112 @@
+{
+ "formatos": [
+  "reel",
+  "story",
+  "carrossel"
+ ],
+ "voz": "opcional",
+ "musica": "leve",
+ "campos": {
+  "data": {
+   "tipo": "escolha",
+   "opcoes": [
+    "maes",
+    "pais",
+    "namorados",
+    "pascoa",
+    "carnaval",
+    "mulher",
+    "consumidor",
+    "sao-joao",
+    "avos",
+    "cliente",
+    "criancas",
+    "professores",
+    "black-friday",
+    "natal",
+    "ano-novo"
+   ],
+   "dica": "a data do ano; o dia é calculado pelo molde (até 90 dias antes)"
+  },
+  "titulo": {
+   "tipo": "texto",
+   "max": 20,
+   "obrigatorio": false,
+   "dica": "troca o nome da data no título: Natal da Vó"
+  },
+  "subtitulo": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "título dos produtos (padrão: Pra encomendar)"
+  },
+  "descricao": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false,
+   "dica": "linha sob o título dos produtos"
+  },
+  "itens": {
+   "tipo": "lista",
+   "min": 2,
+   "max": 3,
+   "item": {
+    "foto": {
+     "tipo": "foto"
+    },
+    "nome": {
+     "tipo": "texto",
+     "max": 26
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    }
+   }
+  },
+  "prazo": {
+   "tipo": "data",
+   "real": true,
+   "dica": "último dia para encomendar, confirmado pelo dono; o post não sai depois dele"
+  },
+  "como_pedir": {
+   "tipo": "texto",
+   "max": 56
+  },
+  "icone": {
+   "tipo": "escolha",
+   "opcoes": [
+    "chat",
+    "telefone",
+    "link",
+    "calendario",
+    "moto",
+    "carrinho",
+    "local"
+   ],
+   "obrigatorio": false
+  },
+  "fundo": {
+   "tipo": "filmagem",
+   "obrigatorio": false,
+   "dica": "fundo da abertura: filmagem do banco, vídeo do cliente ou foto (padrão: a foto do primeiro produto)"
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 5,
+   "max": 5,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "max": 150
+   },
+   "dica": "narração opcional: data, produtos, prazo, como pedir, chamada"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ }
+}

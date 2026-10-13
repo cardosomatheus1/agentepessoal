@@ -1,0 +1,197 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* scene 0: title */
+#capaIc{position:absolute;left:390px;top:470px;width:300px;height:300px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:170px;box-shadow:var(--sombra)}
+#capaT{left:90px;width:820px;top:840px;height:340px;font-size:150px;line-height:1}
+#capaS{left:90px;width:820px;top:1200px;height:70px;font-size:50px;font-weight:800}
+#capaN{position:absolute;left:0;right:0;top:1300px;display:flex;justify-content:center;gap:26px}
+#capaN i{width:30px;height:30px;border-radius:50%;background:var(--destaque);opacity:.25}
+/* scene 1: the route */
+#rota{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:visible}
+.no{position:absolute;left:100px;width:210px;height:210px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:110px;background:var(--fundo2);color:var(--texto2);border:6px solid var(--borda);box-shadow:var(--sombra)}
+.no .num{position:absolute;right:-8px;top:-8px;width:72px;height:72px;border-radius:50%;background:var(--texto);color:var(--fundo);font-family:var(--ft),sans-serif;font-weight:900;font-size:44px;display:flex;align-items:center;justify-content:center}
+.no.on{background:var(--destaque);color:var(--sobre-destaque);border-color:var(--destaque)}
+body.e-pop .no{border:6px solid var(--texto);box-shadow:8px 8px 0 var(--texto)}
+.ptx{position:absolute;left:345px;width:525px;height:210px;font-size:58px;font-weight:800;line-height:1.12;display:flex;align-items:center}
+#bola{position:absolute;left:-30px;top:-30px;width:60px;height:60px;border-radius:50%;background:var(--destaque);box-shadow:0 0 0 12px color-mix(in srgb,var(--destaque) 30%,transparent);z-index:3;color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:36px}
+/* scene 2: the channel */
+#canK{left:90px;width:820px;top:420px;height:90px;font-size:66px;font-weight:800}
+#canCard{position:absolute;left:90px;width:820px;top:560px;height:560px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;padding:40px}
+#canIc{width:220px;height:220px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:120px;position:relative}
+#ripple{position:absolute;inset:0;border-radius:50%;border:8px solid var(--destaque)}
+#canV{width:720px;height:170px;font-size:84px;line-height:1.05;text-align:center;display:flex;align-items:center;justify-content:center}
+#canS{left:90px;width:820px;top:1160px;height:130px;font-size:48px;font-weight:700;line-height:1.2}
+/* scene 3: extras */
+#extras{position:absolute;left:90px;width:820px;top:410px;height:1060px;display:flex;flex-direction:column;justify-content:center;gap:30px}
+.ex{display:flex;gap:28px;align-items:flex-start;padding:30px 34px}
+.ex .ic{flex:none;width:124px;height:124px;border-radius:32px;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:74px}
+.ex .cx{flex:1;min-width:0}
+.ex .k{height:52px;font-size:40px;font-weight:700}
+.ex .v{font-size:54px;font-weight:800;line-height:1.15;height:126px}
+.ex .chips{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px}
+.ex .chips span{font-size:42px;padding:8px 26px;border-radius:999px;background:var(--fundo2);border:2px solid var(--borda);font-weight:800;white-space:nowrap;height:70px;max-width:620px}
+/* one or two details: each one gets a big centered card so the screen is not empty */
+.ex.grande{flex-direction:column;align-items:center;text-align:center;gap:24px;padding:48px 40px}
+.ex.grande .ic{width:180px;height:180px;border-radius:50%;font-size:104px}
+.ex.grande .cx{width:100%}
+.ex.grande .k{font-size:46px;height:60px}
+.ex.grande .v{font-size:68px;height:170px;line-height:1.2}
+.ex.grande .chips{justify-content:center}
+.slide .ex.grande .v{height:170px}
+body.f-story #capaT,body.f-story #capaS,body.f-story #canK,body.f-story #canS{width:900px}body.f-story #canCard,body.f-story #extras{width:900px}
+body.f-story .ptx{width:620px}
+/* carousel */
+.slide .tt{position:absolute;left:84px;right:84px;top:140px;height:100px;font-size:80px;line-height:1.1}
+.slide #capaIc{left:390px;top:200px}
+.slide #capaT{left:84px;width:912px;top:560px;height:330px;font-size:150px}
+.slide #capaS{left:84px;width:912px;top:910px;height:70px}
+.slide #capaN{top:1020px}
+.slide .pe{position:absolute;left:84px;right:84px;bottom:76px;height:50px;font-size:34px;font-weight:700;text-align:right}
+.slide .ptx{left:340px;width:640px}
+.slide #canK{left:84px;width:912px;top:150px}
+.slide #canCard{left:84px;width:912px;top:290px;height:640px}
+.slide #canS{left:84px;width:912px;top:970px;height:130px}
+.slide #extras{left:84px;width:912px;top:140px;height:1120px;gap:24px}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="capaIc"></div>
+ <div class="ctr tit t seg rv" id="capaT"></div>
+ <div class="ctr t t2 seg" id="capaS"></div>
+ <div id="capaN"><i></i><i></i><i></i></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full" id="cam1">
+ <svg id="rota" viewBox="0 0 1080 1920"><path id="trilho" fill="none" stroke="var(--texto)" stroke-opacity=".18" stroke-width="12" stroke-linecap="round" stroke-dasharray="2 26"/><path id="trilhoOn" fill="none" stroke="var(--destaque)" stroke-width="12" stroke-linecap="round"/></svg>
+ <div id="nos"></div>
+ <div id="bola"></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full" id="cam2">
+ <div class="ctr t seg rv" id="canK"></div>
+ <div id="canCard" class="cartao"><div id="canIc"><div id="ripple"></div></div><div class="tit t seg" id="canV"></div></div>
+ <div class="ctr t t2 seg rv" id="canS"></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full" id="cam3">
+ <div id="extras"></div>
+</div></div>
+
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Como pedir": three steps on a route with big icons, the channel in the spotlight, then the practical details
+// (deadline, payment, delivery area, address) when the ficha has them. Scenes (and falas): 0 "é fácil pedir",
+// 1 the dot travels the route lighting each step, 2 the channel with a tap ripple, 3 details (only if any),
+// last: call (engine's final scene).
+const CANAL = { link: ['Pelo link', 'link'], telefone: ['Chama no número', 'telefone'], perfil: ['Chama no direct', 'chat'], site: ['No nosso site', 'link'], endereco: ['Venha até a gente', 'local'] };
+const PAG = { pix: 'Pix', cartao: 'Cartão', dinheiro: 'Dinheiro', vale: 'Vale-refeição', fiado: 'Na conta' };
+const ICO_PADRAO = ['chat', 'calendario', 'moto'];
+// route nodes: y of each step, the path snakes between them on the left
+const NOS = { reel: [430, 790, 1150], story: [450, 820, 1190], carrossel: [290, 590, 890] };
+let D = {};
+function extras(F) {
+  const r = [];
+  if (F.prazo) r.push({ ic: 'relogio', k: 'Prazo', v: F.prazo });
+  if (F.pagamento && F.pagamento.length) r.push({ ic: 'cartao', k: 'Pagamento', chips: F.pagamento.map(x => PAG[x]) });
+  if (F.area_entrega && F.area_entrega.length) r.push({ ic: 'moto', k: 'Entregamos em', chips: F.area_entrega });
+  if (F.endereco && F.canal_tipo !== 'endereco') r.push({ ic: 'local', k: 'Endereço', v: F.endereco });
+  return r;
+}
+function montarTudo(F, M, $m, alvo) {
+  const { $ } = $m;
+  $('#capaIc', alvo).innerHTML = $m.icone(F.icone_capa || 'carrinho');
+  $('#capaT', alvo).textContent = F.titulo || 'É fácil pedir';
+  $('#capaS', alvo).textContent = 'em 3 passos';
+  // route
+  const ys = NOS[$m.FORMATO], h = 210, cx = 205;
+  let d = `M ${cx} ${ys[0] + h / 2}`;
+  for (let i = 1; i < 3; i++) { const y0 = ys[i - 1] + h / 2, y1 = ys[i] + h / 2, m = (y0 + y1) / 2; d += ` C ${cx - 150} ${m - 60}, ${cx + 150} ${m + 60}, ${cx} ${y1}`; }
+  $('#trilho', alvo).setAttribute('d', d); $('#trilhoOn', alvo).setAttribute('d', d);
+  F.passos.forEach((ps, i) => {
+    const n = document.createElement('div'); n.className = 'no'; n.style.top = ys[i] + 'px'; n.dataset.i = i;
+    n.innerHTML = $m.icone(ps.icone || ICO_PADRAO[i]) + '<div class="num"></div>'; n.querySelector('.num').textContent = i + 1;
+    const tx = document.createElement('div'); tx.className = 'ptx t seg rv'; tx.style.top = ys[i] + 'px'; tx.dataset.i = i; const tin = document.createElement('div'); tin.textContent = ps.texto; tx.appendChild(tin);
+    $('#nos', alvo).append(n, tx);
+  });
+  // channel
+  const [k, ic] = CANAL[F.canal_tipo];
+  $('#canK', alvo).textContent = k;
+  $('#canIc', alvo).insertAdjacentHTML('beforeend', $m.icone(ic));
+  $('#canV', alvo).textContent = F.canal;
+  $('#canS', alvo).textContent = F.canal_extra || ''; if (!F.canal_extra) $('#canS', alvo).style.display = 'none';
+  // details
+  const ex = extras(F);
+  ex.forEach((e, j) => { const r = document.createElement('div'); r.className = 'ex cartao'; r.dataset.j = j;
+    r.innerHTML = '<div class="ic">' + $m.icone(e.ic) + '</div><div class="cx"><div class="k t t2 seg"></div></div>';
+    r.querySelector('.k').textContent = e.k;
+    if (e.v) { const v = document.createElement('div'); v.className = 'v t seg'; v.textContent = e.v; r.querySelector('.cx').appendChild(v); }
+    else { const c = document.createElement('div'); c.className = 'chips'; e.chips.forEach(x => { const s = document.createElement('span'); s.className = 't seg'; s.textContent = x; c.appendChild(s); }); r.querySelector('.cx').appendChild(c); }
+    if (ex.length <= 2) r.classList.add('grande');
+    $('#extras', alvo).appendChild(r); });
+  return ex.length;
+}
+Motor.molde({
+  id: 'como-pedir', formatos: ['reel', 'story', 'carrossel'],
+  montar(F, M, $m) {
+    D.nEx = montarTudo(F, M, $m, document);
+    const cenas = D.nEx ? 4 : 3;
+    if (F.falas && F.falas.length !== cenas + 1) $m.erro(`falas: ${cenas + 1} (é fácil pedir, passos, canal${D.nEx ? ', detalhes' : ''}, chamada)`);
+    if (!D.nEx) $m.$('#c3').remove();
+    D.len = $m.$('#trilho').getTotalLength();
+    return { duracoes: D.nEx ? [1.6, 4.4, 2.6, 2.8] : [1.6, 4.4, 2.6] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, ini } = $m;
+    const S1 = ini(1), S2 = ini(2), S3 = ini(3), L1 = ini(2) - ini(1);
+    // 0
+    $m.cena('#c0', t, 0);
+    const ci = el(p(t, 0.05, 1.0)); $('#capaIc').style.transform = `scale(${ci}) rotate(${(1 - cl(ci)) * -40}deg)`; $('#capaIc').style.opacity = cl(ci * 3);
+    $m.revela('#capaT', t, 0.35, 0.1); $m.entra('#capaS', t, 0.8, 0.4, 30);
+    $$('#capaN i').forEach((d, k) => { const q = eb(p(t, 0.9 + k * 0.12, 0.4)); d.style.transform = `scale(${q})`; d.style.opacity = 0.25 + 0.75 * (t > 1.1 + k * 0.12 ? 1 : 0); });
+    // 1: the dot runs the route; each node lights up when it arrives
+    $m.cena('#c1', t, 1);
+    const tr = $('#trilho'), on = $('#trilhoOn'), seg = Math.max(0.9, (L1 - 0.8) / 3);
+    // the dot reaches node i at S1 + 0.3 + i*seg, then travels to the next
+    let f = 0; for (let i = 0; i < 3; i++) { const a = S1 + 0.3 + i * seg; if (t >= a) f = i / 2; if (i < 2 && t > a + 0.35) f = i / 2 + eio(p(t, a + 0.35, seg - 0.45)) / 2; }
+    const L = D.len, pt = tr.getPointAtLength(f * L);
+    on.setAttribute('stroke-dasharray', `${f * L} ${L}`);
+    $('#bola').style.transform = `translate(${pt.x}px,${pt.y}px)`; $('#bola').style.opacity = t >= S1 + 0.2 ? 1 : 0;
+    $$('#nos .no').forEach(n => { const i = +n.dataset.i, a = S1 + 0.3 + i * seg, q = eb(p(t, S1 + 0.05 + i * 0.12, 0.5));
+      n.classList.toggle('on', t >= a); const pop = t >= a ? 1 + 0.18 * Math.sin(p(t, a, 0.35) * Math.PI) : 1;
+      n.style.opacity = cl(q * 2); n.style.transform = `scale(${(0.6 + 0.4 * q) * pop})`; });
+    $$('#nos .ptx').forEach(x => { const i = +x.dataset.i, a = S1 + 0.3 + i * seg; $m.revela(x, t, a + 0.05, 0.06); x.style.opacity = t >= a ? 1 : 0.0; });
+    // 2: channel, with a tap ripple on the icon
+    $m.cena('#c2', t, 2);
+    $m.revela('#canK', t, S2 + 0.1);
+    const cc = eo5(p(t, S2 + 0.2, 0.6)); $('#canCard').style.opacity = cc; $('#canCard').style.transform = `translateY(${(1 - cc) * 120}px)`;
+    const tap = p(t, S2 + 0.9, 0.9); $('#ripple').style.transform = `scale(${1 + tap * 0.9})`; $('#ripple').style.opacity = tap > 0 && tap < 1 ? 1 - tap : 0;
+    $('#canIc').style.transform = `scale(${1 - 0.1 * Math.sin(p(t, S2 + 0.85, 0.25) * Math.PI)})`;
+    const cv = eb(p(t, S2 + 0.5, 0.5)); $('#canV').style.transform = `scale(${0.8 + 0.2 * cv})`; $('#canV').style.opacity = cl(cv * 2);
+    $m.revela('#canS', t, S2 + 1.1);
+    // 3: details enter one by one
+    if (D.nEx) { $m.cena('#c3', t, 3);
+      $$('#extras .ex').forEach(r => { const j = +r.dataset.j, q = eo5(p(t, S3 + 0.15 + j * 0.3, 0.55)); r.style.opacity = q; r.style.transform = `translateX(${(1 - q) * -200}px)`;
+        $$('.chips span', r).forEach((s, k) => { const qq = eb(p(t, S3 + 0.4 + j * 0.3 + k * 0.08, 0.4)); s.style.transform = `scale(${qq})`; s.style.opacity = cl(qq * 2); }); }); }
+  },
+  slides(F, M, $m) {
+    const palco = $m.$('#palco');
+    const pega = id => { const s = document.createElement('div'); s.className = 'slide'; [...$m.$(id + ' .cam').children].forEach(c => s.appendChild(c)); return s; };
+    const s0 = pega('#c0'), s1 = pega('#c1'), s2 = pega('#c2'), s3 = $m.$('#extras');
+    $m.$$('.cena', palco).forEach(c => c.remove());
+    s0.insertAdjacentHTML('beforeend', '<div class="pe t2 t">arrasta</div>');
+    s1.insertAdjacentHTML('afterbegin', '<div class="tt tit t seg"></div>'); s1.querySelector('.tt').textContent = 'Como pedir';
+    s1.querySelector('#bola').remove();
+    const s3s = document.createElement('div'); s3s.className = 'slide'; s3s.appendChild(s3);
+    palco.append(s0, s1, s2, s3s);
+    const n = montarTudo(F, M, $m, palco);
+    // carousel: the route fully lit, the channel and the details on one slide
+    $m.$$('.no', s1).forEach(x => x.classList.add('on'));
+    s1.querySelector('#trilhoOn').setAttribute('stroke-dasharray', 'none');
+    s1.querySelector('#rota').setAttribute('viewBox', '0 0 1080 1350'); s1.querySelector('#rota').style.height = '1350px';
+    $m.$('#ripple', s2).style.opacity = 0;
+    if (!n) s3s.remove();
+  },
+});
+</script></body></html>

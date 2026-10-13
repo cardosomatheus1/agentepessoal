@@ -1,0 +1,13 @@
+{"_marca": "studio-bella", "_formato": "carrossel",
+ "tema": "Cuidados com cabelo e pele", "assunto": "estetica",
+ "itens": [
+  {"afirmacao": "Protetor solar é só pro verão.", "veredito": "mito",
+   "explicacao": "O sol aparece o ano todo, até em dia nublado. O protetor faz parte do cuidado diário.",
+   "fonte": "Sociedade Brasileira de Dermatologia"},
+  {"afirmacao": "Cortar as pontas faz o cabelo crescer mais rápido.", "veredito": "mito",
+   "explicacao": "O crescimento vem da raiz. Cortar as pontas tira o que está danificado e o fio parece mais saudável.",
+   "fonte": "Sociedade Brasileira de Dermatologia"},
+  {"afirmacao": "Água muito quente resseca os fios.", "veredito": "verdade",
+   "explicacao": "Ela tira a oleosidade natural que protege o fio. Para lavar, a água morna é a melhor escolha.",
+   "fonte": "Sociedade Brasileira de Dermatologia"}],
+ "_origem": {"itens": "dono"}}

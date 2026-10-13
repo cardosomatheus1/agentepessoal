@@ -1,0 +1,17 @@
+{
+ "formatos": ["reel", "carrossel", "story"],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "citacao": {"tipo": "texto", "max": 160, "min": 12, "real": true, "dica": "copiada da mensagem ou avaliação, sem mudar nenhuma palavra"},
+  "autor": {"tipo": "texto", "max": 16, "real": true, "dica": "só o primeiro nome, como a pessoa autorizou"},
+  "bairro": {"tipo": "texto", "max": 20, "obrigatorio": false},
+  "fonte": {"tipo": "escolha", "opcoes": ["avaliacao", "mensagem", "comentario", "email"], "dica": "de onde veio a fala; avaliacao = avaliação com nota"},
+  "estrelas": {"tipo": "numero", "min": 1, "max": 5, "obrigatorio": false, "real_se_tiver": true, "dica": "só com fonte avaliacao e a nota que a pessoa deu; precisa de _origem.estrelas"},
+  "data": {"tipo": "data", "obrigatorio": false, "dica": "quando a pessoa escreveu (vira mês/ano)"},
+  "prova": {"tipo": "texto", "max": 160, "min": 6, "real": true, "dica": "id da mensagem ou caminho do print guardado"},
+  "permissao": {"tipo": "texto", "max": 160, "min": 6, "real": true, "dica": "registro da autorização: quando, por onde e o que a pessoa disse"},
+  "destaque": {"tipo": "texto", "max": 40, "obrigatorio": false, "dica": "trecho exato da citação para o marca-texto"},
+  "foto": {"tipo": "foto", "obrigatorio": false, "dica": "foto do pedido ou do serviço (com permissão)"}
+ }
+}

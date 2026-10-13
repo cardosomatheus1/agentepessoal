@@ -1,0 +1,161 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* the rubber stamp: double border, rough ink (svg filter), color by verdict */
+.carimbo{position:absolute;padding:14px 44px 8px;border:12px solid currentColor;border-radius:22px;font-family:var(--ft),sans-serif;font-weight:900;letter-spacing:.05em;line-height:1.05;white-space:nowrap;filter:url(#tinta);background:color-mix(in srgb,currentColor 8%,transparent)}
+.carimbo:before{content:'';position:absolute;inset:7px;border:4px solid currentColor;border-radius:12px}
+.mito{color:var(--ruim)}.verdade{color:var(--bom)}.depende{color:var(--destaque)}
+.gota{position:absolute;border-radius:50%;background:currentColor}
+/* capa */
+#m0{left:150px;top:420px;font-size:190px;transform:rotate(-7deg)}
+#ou{position:absolute;left:290px;width:500px;top:668px;height:110px;text-align:center;font-size:110px;line-height:110px}
+#v0{left:170px;top:800px;font-size:142px;transform:rotate(4deg)}
+#tema0{position:absolute;left:90px;width:820px;top:1120px;height:230px;font-size:74px;text-align:center}
+#chuta{position:absolute;left:90px;width:820px;top:1380px;height:76px;font-size:60px;color:var(--destaque);text-align:center;white-space:nowrap}
+/* one claim: number, case card with the quote, stamp, explanation, source */
+.it .num{position:absolute;left:90px;top:388px;height:136px;display:flex;align-items:baseline;gap:12px}
+.it .num b{font-family:var(--ft),sans-serif;font-weight:900;font-size:136px;line-height:136px;color:var(--destaque)}
+.it .num span{font-size:52px;font-weight:800;color:var(--texto2)}
+.it .card{position:absolute;left:90px;width:820px;top:550px;height:430px}
+.it .card .aspas{position:absolute;left:44px;top:-64px;font-family:D,sans-serif;font-weight:900;font-size:240px;line-height:1;color:var(--destaque)}
+.it .card .af{position:absolute;left:60px;top:84px;width:700px;height:300px;font-size:70px}
+.it .card .dv{position:absolute;right:-24px;top:-30px;width:110px;height:110px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-family:var(--ft),sans-serif;font-weight:900;font-size:76px}
+.cw{position:absolute;left:610px;top:990px;width:0;height:0;display:flex;align-items:center;justify-content:center}
+.cw .carimbo{position:relative;flex:none;font-size:120px;z-index:1}
+body.anton .carimbo{padding:20px 44px 14px}body.anton .cw .carimbo{font-size:140px}body.anton #m0{font-size:220px}body.anton #v0{font-size:180px}
+body.e-pop .carimbo{background:color-mix(in srgb,var(--cartao) 92%,transparent);border-width:14px}
+.it .ex,.it .fo,.it .num{z-index:2}
+.cw .gotas{position:absolute;left:0;top:0;width:0;height:0}
+.it .duv{position:absolute;left:90px;width:820px;top:1050px;height:80px;font-size:62px;text-align:center;color:var(--texto2);white-space:nowrap}
+.it .ex{position:absolute;left:90px;width:790px;top:1120px;height:280px;font-size:48px;font-weight:700;line-height:1.22}
+.it .fo{position:absolute;left:90px;width:790px;top:1412px;height:44px;font-size:30px;font-weight:600;white-space:nowrap}
+.it .ex.cf{height:270px}
+
+/* carousel */
+.slide .k0{position:absolute;left:84px;width:912px;top:150px;height:70px;font-size:56px;color:var(--destaque);white-space:nowrap}
+.slide #m0{left:110px;top:250px;font-size:170px}
+.slide #ou{top:470px;height:100px;font-size:96px;line-height:100px}
+.slide #v0{left:150px;top:580px;font-size:128px}
+.slide .tm{position:absolute;left:84px;width:912px;top:830px;height:230px;font-size:72px}
+.slide .pe{position:absolute;left:84px;right:84px;top:1190px;height:70px;font-size:54px;color:var(--destaque);white-space:nowrap}
+.slide .num{top:140px;height:120px}.slide .num b{font-size:116px;line-height:120px}
+.slide .card{left:84px;width:912px;top:300px;height:400px}
+.slide .card .af{left:60px;top:80px;width:790px;height:270px;font-size:64px}
+.slide .card .dv{display:none}
+.slide .cw{left:690px;top:700px}.slide .cw .carimbo{font-size:100px}body.anton .slide .cw .carimbo{font-size:124px}
+.slide .ex{left:84px;width:912px;top:820px;height:320px;font-size:48px}
+.slide .ex.cf{height:260px}
+.slide .fo{left:84px;width:912px;top:1110px;height:44px;font-size:30px}
+.slide .pg{position:absolute;right:84px;top:1214px;height:44px;font-size:32px;font-weight:800;color:var(--texto2)}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+ <filter id="tinta" x="-10%" y="-10%" width="120%" height="120%">
+  <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="4" result="n"/>
+  <feColorMatrix in="n" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 1.75" result="m"/>
+  <feComposite in="SourceGraphic" in2="m" operator="in" result="s"/>
+  <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="9" result="w"/>
+  <feDisplacementMap in="s" in2="w" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+ </filter></defs></svg>
+<div id="palco">
+<div class="cena" id="c0"><div class="cam full">
+ <div class="carimbo mito" id="m0"><span class="t seg">MITO</span></div>
+ <div id="ou" class="mao t">ou</div>
+ <div class="carimbo verdade" id="v0"><span class="t seg">VERDADE</span></div>
+ <div id="tema0" class="tit t seg rv"></div>
+ <div id="chuta" class="mao t seg">chuta antes do carimbo</div>
+</div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Mito ou verdade": common beliefs of the trade, each one gets a MITO / VERDADE / DEPENDE stamp and a short
+// explanation. The stamp hitting the card is the moment of the video. A source is required for every item when the
+// subject is money, food, health or aesthetics. Optional narration: 1 line for the cover, 2 per item, 1 call.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
+const VER = { mito: 'MITO', verdade: 'VERDADE', depende: 'DEPENDE' };
+const dois = n => String(n).padStart(2, '0');
+function checar(F, $m) {
+  const n = F.itens.length;
+  if ($m.FORMATO === 'carrossel' && n < 3) $m.erro('no carrossel são 3 a 5 itens');
+  if ($m.FORMATO !== 'carrossel' && n > 3) $m.erro('no Reel são no máximo 3 itens, para não ficar longo');
+  if (['dinheiro', 'alimento', 'saude', 'estetica'].includes(F.assunto)) F.itens.forEach((it, i) => { if (!it.fonte) $m.erro(`itens[${i + 1}].fonte: assunto de ${F.assunto} exige fonte em cada item`); });
+  const voz = window.TEMPOS && window.TEMPOS.length > 1;
+  if (voz && F.falas.length !== 2 + 2 * n) $m.erro(`falas: são ${2 + 2 * n} (capa, afirmação e veredito de cada item, chamada); vieram ${F.falas.length}`);
+}
+// one claim block (video scene or carousel slide)
+function bloco(F, it, i, pai, $m) {
+  const n = mk('div', 'num', null, pai); mk('b', 't seg', dois(i + 1), n); mk('span', 't', '/' + dois(F.itens.length), n);
+  const c = mk('div', 'card cartao', null, pai); mk('div', 'aspas', '“', c); mk('div', 'af tit t seg rv', it.afirmacao, c); mk('div', 'dv', '?', c);
+  const cw = mk('div', 'cw', null, pai);
+  const g = mk('div', 'gotas ' + it.veredito, null, cw);
+  const s = mk('div', 'carimbo ' + it.veredito, null, cw); mk('span', 't seg', VER[it.veredito], s);
+  for (let k = 0; k < 11; k++) { const d = mk('i', 'gota', null, g); const r = 5 + $m.rnd(i * 31 + k) * 11; d.style.width = d.style.height = r + 'px'; d.dataset.k = k; }
+  mk('div', 'ex t seg rv' + (it.fonte ? ' cf' : ''), it.explicacao, pai);
+  if (it.fonte) mk('div', 'fo t t2 seg', 'Fonte: ' + it.fonte, pai);
+  return { c, s, g };
+}
+const ler = s => s.length / 28;
+let IT = [];
+Motor.molde({
+  id: 'mito', formatos: ['reel', 'carrossel'],
+  montar(F, M, $m) {
+    const { $ } = $m; checar(F, $m); if (M.fonte === 'anton') document.body.classList.add('anton');
+    $('#tema0').textContent = F.tema;
+    const palco = $('#palco');
+    F.itens.forEach((it, i) => {
+      const sc = mk('div', 'cena it', null, palco); sc.id = 'it' + i; const cam = mk('div', 'cam full', null, sc);
+      const b = bloco(F, it, i, cam, $m); mk('div', 'duv mao t', 'mito ou verdade?', cam);
+      IT.push(Object.assign(b, { sc }));
+    });
+    const d = [2.8]; F.itens.forEach(it => d.push(1.3 + ler(it.afirmacao), 1.8 + ler(it.explicacao) + (it.fonte ? 0.4 : 0)));
+    return { duracoes: d };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini, rnd } = $m;
+    // stamp physics: falls from big and tilted, hits, a short squash
+    const bate = (e, t0, rot) => { const q = p(t, t0, 0.3); const s = q === 0 ? 0 : (q < 1 ? lerp(2.6, 1, eo(q) * eo(q)) : 1 - 0.06 * Math.sin(Math.PI * cl((t - t0 - 0.3) / 0.18))); e.style.opacity = q > 0 ? cl(q * 4) : 0; e.style.transform = `scale(${s}) rotate(${rot + (1 - eo(q)) * -18}deg)`; return q; };
+    // 0: cover, the two stamps hit one after the other
+    $m.cena('#c0', t, 0);
+    bate($('#m0'), 0.25, -7); bate($('#v0'), 0.8, 4);
+    $('#ou').style.opacity = eo(p(t, 0.6, 0.4));
+    $m.revela('#tema0', t, 1.15, 0.06); $m.entra('#chuta', t, 1.7, 0.5, 20);
+    // items: claim, then the verdict stamp
+    IT.forEach((b, i) => {
+      const a = ini(1 + 2 * i), v = ini(2 + 2 * i);
+      $m.cena(b.sc, t, 1 + 2 * i, 2 + 2 * i);
+      const sc = b.sc;
+      const nq = eo5(p(t, a + 0.05, 0.5)); $('.num', sc).style.opacity = nq; $('.num', sc).style.transform = `translateX(${(1 - nq) * -80}px)`;
+      const cq = eb(p(t, a + 0.1, 0.6));
+      const imp = v + 0.45, dt = t - imp, tre = dt > 0 && dt < 0.4 ? Math.sin(dt * 90) * 18 * (1 - dt / 0.4) : 0;
+      b.c.style.opacity = cl(cq * 2); b.c.style.transform = `translateY(${(1 - cq) * 140 + tre * 0.5}px) translateX(${tre}px) rotate(${(1 - cq) * -3}deg)`;
+      $m.revela($('.af', sc), t, a + 0.3, 0.05);
+      const dv = $('.dv', sc), dq = eb(p(t, a + 0.7, 0.4)); dv.style.transform = `scale(${dq * (1 + 0.08 * Math.sin(t * 7))})`; dv.style.opacity = cl(dq * 2) * (1 - eo(p(t, v + 0.1, 0.2)));
+      const du = $('.duv', sc); du.style.opacity = eo(p(t, a + 1.0, 0.4)) * (1 - eo(p(t, v, 0.25)));
+      bate(b.s, v + 0.15, -9);
+      // ink drops fly out at impact and stay
+      $$('.gota', b.g).forEach(d => { const k = +d.dataset.k, ang = rnd(k * 7 + i) * Math.PI * 2, dist = 210 + rnd(k * 3 + i * 5) * 120, q = eo5(p(t, imp, 0.35));
+        d.style.opacity = t >= imp ? 0.7 : 0; d.style.transform = `translate(${Math.cos(ang) * dist * q * 1.3}px, ${Math.sin(ang) * dist * q * 0.45}px)`; });
+      sc.querySelector('.cam').style.translate = dt > 0 && dt < 0.3 ? `0 ${Math.sin(dt * 60) * 8 * (1 - dt / 0.3)}px` : '0 0';
+      $m.revela($('.ex', sc), t, v + 0.75, 0.035);
+      const fo = $('.fo', sc); if (fo) $m.entra(fo, t, v + 1.4, 0.5, 20);
+    });
+  },
+  slides(F, M, $m) {
+    checar(F, $m); fontes(); if (M.fonte === 'anton') document.body.classList.add('anton');
+    const { $ } = $m, palco = $('#palco'), c0 = $('#c0');
+    const capa = mk('div', 'slide', null, palco);
+    mk('div', 'k0 mao t seg', 'você acredita nisso?', capa);
+    ['#m0', '#ou', '#v0'].forEach(s => capa.appendChild($(s)));
+    mk('div', 'tm tit t seg', F.tema, capa);
+    mk('div', 'pe mao t seg', 'chuta antes de arrastar →', capa);
+    c0.remove();
+    const tot = F.itens.length + 2;
+    F.itens.forEach((it, i) => {
+      const s = mk('div', 'slide it', null, palco); const b = bloco(F, it, i, s, $m);
+      b.s.style.transform = 'rotate(-9deg)';
+      b.g.querySelectorAll('.gota').forEach(d => { const k = +d.dataset.k, ang = $m.rnd(k * 7 + i) * Math.PI * 2, dist = 210 + $m.rnd(k * 3 + i * 5) * 120; d.style.opacity = .7; d.style.transform = `translate(${Math.cos(ang) * dist * 1.3}px, ${Math.sin(ang) * dist * 0.45}px)`; });
+      mk('div', 'pg t', `${i + 2}/${tot}`, s);
+    });
+  },
+});
+</script></body></html>

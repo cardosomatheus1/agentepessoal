@@ -1,0 +1,11 @@
+{
+ "formatos": ["carrossel", "reel"],
+ "voz": "nao",
+ "musica": "animada",
+ "campos": {
+  "pergunta": {"tipo": "texto", "max": 60, "min": 10, "dica": "capa: Frases que toda confeiteira já ouviu / Coisas que só quem tem oficina entende"},
+  "frases": {"tipo": "lista", "min": 5, "max": 8, "item": {"tipo": "texto", "max": 70, "min": 4}, "dica": "5 a 8 frases típicas, sem aspas (o molde põe); no carrossel até 6. Pode ser engraçada, sem nome de ninguém"},
+  "chamada_comentario": {"tipo": "texto", "max": 30, "obrigatorio": false, "dica": "padrão: Qual você mais ouve?"},
+  "fechamento": {"tipo": "texto", "max": 120, "min": 20, "dica": "a mensagem do negócio no fim; leve, nunca humilha quem disse a frase"}
+ }
+}

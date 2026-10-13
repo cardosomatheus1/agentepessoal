@@ -1,0 +1,7 @@
+{"_marca": "doces-da-lu", "_formato": "reel", "assunto": "encomenda de bolo", "hora": "21:47",
+ "mensagens": [
+  {"de": "cliente", "texto": "Oi! Você faz bolo de 3 andares?"},
+  {"de": "dono", "texto": "Faço sim! Pra quando?"},
+  {"de": "cliente", "texto": "Pra amanhã"},
+  {"de": "cliente", "texto": "De manhã cedo, tá?"}],
+ "virada": {"de": "dono", "texto": "Só se eu dormir dentro do forno"}}

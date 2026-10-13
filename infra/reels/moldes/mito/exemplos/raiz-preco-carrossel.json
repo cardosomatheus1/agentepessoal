@@ -1,0 +1,11 @@
+{"_marca": "raiz", "_formato": "carrossel",
+ "tema": "O que quem vende comida acredita sobre preço", "assunto": "negocio",
+ "itens": [
+  {"afirmacao": "Se eu aumentar o preço, perco todos os meus clientes.", "veredito": "mito",
+   "explicacao": "Alguns podem sair. Mas se cada venda passa a dar lucro, vender um pouco menos pode render mais."},
+  {"afirmacao": "Preço no aplicativo pode ser o mesmo do balcão.", "veredito": "mito",
+   "explicacao": "O aplicativo fica com uma parte de cada venda. Com o mesmo preço, você ganha menos em cada pedido de lá."},
+  {"afirmacao": "Uma embalagem caprichada ajuda a cobrar mais.", "veredito": "verdade",
+   "explicacao": "Apresentação conta no valor que o cliente enxerga. Só lembra: a embalagem também é custo e entra no preço."},
+  {"afirmacao": "Eu sei o meu lucro de cabeça.", "veredito": "depende",
+   "explicacao": "Dá pra ter uma ideia. Saber mesmo, só com a conta de cada produto: ingrediente, embalagem, gás e o seu tempo."}]}

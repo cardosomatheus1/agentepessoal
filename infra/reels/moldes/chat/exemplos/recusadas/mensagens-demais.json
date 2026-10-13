@@ -1,0 +1,3 @@
+{"_marca": "burger-noite", "_formato": "reel",
+ "mensagens": [{"de": "cliente", "texto": "a"}, {"de": "dono", "texto": "b"}, {"de": "cliente", "texto": "c"}, {"de": "dono", "texto": "d"}, {"de": "cliente", "texto": "e"}, {"de": "dono", "texto": "f"}, {"de": "cliente", "texto": "g"}, {"de": "dono", "texto": "h"}, {"de": "cliente", "texto": "i"}],
+ "virada": {"de": "cliente", "texto": "Então já tá chegando né?"}}

@@ -1,0 +1,6 @@
+{"_marca": "burger-noite", "_formato": "reel",
+ "passos": [{"texto": "Abra o cardápio pelo link da bio", "icone": "link"},
+            {"texto": "Monte o seu pedido", "icone": "carrinho"},
+            {"texto": "Receba quentinho em casa", "icone": "moto"}],
+ "canal_tipo": "link", "canal": "burgernoite.com.br",
+ "_origem": {"canal": "sistema"}}

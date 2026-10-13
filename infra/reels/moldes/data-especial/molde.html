@@ -1,0 +1,254 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* the season's motif floating, a fan of gift photos, a tear-off desk calendar flipping to the real order deadline */
+#motivo{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+#motivo svg{position:absolute;left:0;top:0;overflow:visible}
+#bgBox{position:absolute;left:0;top:0;width:1080px;height:1300px;overflow:hidden;opacity:.5}
+#bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(6px) saturate(1.1)}
+#bgFade{position:absolute;inset:0;background:linear-gradient(color-mix(in srgb,var(--fundo) 35%,transparent),var(--fundo) 96%)}
+/* scene 0 */
+#emb{position:absolute;left:430px;top:450px;width:220px;height:220px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:130px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 18px color-mix(in srgb,var(--destaque) 25%,transparent),var(--sombra)}
+#tema{left:80px;right:80px;top:720px;height:320px;font-size:150px;line-height:.98}
+#quando{position:absolute;left:0;right:0;top:1080px;text-align:center}
+#quando .chip{font-size:46px;height:auto}
+#quando .t{display:inline-block;max-width:860px;white-space:nowrap}
+body.f-reel #emb{left:390px}body.f-reel #tema{right:170px}
+/* scene 1: fan of gift cards */
+#c1T{left:80px;right:80px;top:390px;height:110px;font-size:92px;white-space:nowrap}
+#c1S{left:80px;right:80px;top:500px;height:56px;font-size:40px;font-weight:700;white-space:nowrap}
+.gc{position:absolute;top:610px;padding:16px 16px 18px;background:var(--cartao);border-radius:22px;box-shadow:var(--sombra);transform-origin:50% 120%}
+body.e-vidro .gc,body.e-noite .gc{background:color-mix(in srgb,var(--fundo2) 85%,var(--texto) 15%);border:1.5px solid var(--borda)}
+body.e-pop .gc{border:6px solid var(--texto);box-shadow:10px 10px 0 var(--texto)}
+.gc .ph{position:relative;width:100%;border-radius:12px;overflow:hidden}
+.gc .ph img{width:100%;height:100%;object-fit:cover}
+.gc .fita{position:absolute;right:-16px;top:22px;width:150px;height:44px;background:var(--destaque);transform:rotate(38deg);transform-origin:100% 0;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+.gc .nm{margin-top:14px;height:84px;font-size:36px;font-weight:800;line-height:1.15}
+.gc .pr{margin-top:8px;font-size:34px;padding:8px 18px;white-space:nowrap;max-width:100%}
+/* scene 2: tear-off calendar */
+#c2T{left:80px;right:80px;top:390px;height:84px;font-size:62px;font-weight:800;white-space:nowrap}
+#bloco{position:absolute;left:260px;top:520px;width:560px;height:620px}
+body.f-reel #bloco{left:220px}
+#bloco .base{position:absolute;left:10px;right:-10px;top:14px;bottom:-14px;border-radius:30px;background:var(--texto);opacity:.18}
+.fl{position:absolute;inset:0;border-radius:30px;background:var(--cartao);box-shadow:var(--sombra);overflow:hidden;transform-origin:50% 0;backface-visibility:hidden}
+body.e-vidro .fl,body.e-noite .fl{background:#f6f4ef;color:#17151a}
+body.e-pop .fl{border:6px solid var(--texto)}
+.fl .mb{height:130px;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center}
+.fl .mb .t{width:100%;height:70px;font-size:56px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;text-align:center;white-space:nowrap}
+.fl .dn{height:330px;margin-top:20px;font-size:300px;line-height:330px;text-align:center}
+.fl .ds{height:70px;margin-top:6px;font-size:52px;font-weight:800;text-align:center;opacity:.75;white-space:nowrap}
+#aneis{position:absolute;left:40px;right:40px;top:-22px;display:flex;justify-content:space-between;z-index:30}
+#aneis i{width:16px;height:48px;border-radius:8px;border:5px solid var(--texto);opacity:.75}
+#circ{position:absolute;left:0;top:0;width:560px;height:620px;overflow:visible;z-index:31;pointer-events:none}
+#circ path{fill:none;stroke:var(--ruim);stroke-width:12;stroke-linecap:round}
+#falta{left:80px;right:80px;top:1190px;height:150px;font-size:136px;line-height:1.05;white-space:nowrap}
+#falta2{left:80px;right:80px;top:1350px;height:60px;font-size:42px;font-weight:700;white-space:nowrap}
+body.f-reel #falta,body.f-reel #falta2,body.f-reel #c2T{left:120px;right:200px}
+/* scene 3 */
+#pIc{position:absolute;left:0;right:0;top:560px;text-align:center;font-size:170px;color:var(--destaque)}
+#pTx{left:110px;right:110px;top:800px;height:330px;font-size:84px;line-height:1.08}
+#pAte{position:absolute;left:0;right:0;top:1180px;text-align:center}
+#pAte .chip{font-size:48px}
+#pAte .t{display:inline-block;white-space:nowrap}
+body.f-reel #pTx{right:170px}
+/* carousel */
+.slide .ctt{position:absolute;left:84px;right:84px;text-align:center}
+.slide .emb2{position:absolute;left:465px;top:170px;width:150px;height:150px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:90px;display:flex;align-items:center;justify-content:center}
+.slide .tm{top:360px;height:300px;font-size:140px;line-height:.98}
+.slide .qd{top:690px;height:70px;font-size:48px;font-weight:800;white-space:nowrap}
+.slide .fts{position:absolute;left:84px;right:84px;top:800px;height:360px;display:flex;gap:20px}
+.slide .fts div{flex:1;border-radius:26px;overflow:hidden}.slide .fts img{width:100%;height:100%;object-fit:cover}
+.slide .pe{position:absolute;left:84px;right:84px;bottom:66px;height:50px;font-size:34px;font-weight:700;text-align:right}
+.slide .tt{top:150px;height:96px;font-size:76px;white-space:nowrap}
+.slide .row{position:absolute;left:84px;right:84px;top:290px;display:flex;gap:24px;justify-content:center}
+.slide .row .gc{position:relative;top:auto;flex:1;max-width:440px}
+.slide .bl2{position:absolute;left:290px;top:300px;width:500px;height:560px}
+.slide .bl2 .fl{position:absolute}
+.slide .bl2 .fl .dn{font-size:260px;height:290px;line-height:290px}
+.slide .tt2{top:170px;height:80px;font-size:56px;font-weight:800;white-space:nowrap}
+.slide .fa{top:900px;height:130px;font-size:116px;white-space:nowrap}
+.slide .cp{top:1060px;height:150px;font-size:50px;font-weight:800;line-height:1.15}
+</style></head><body><div id="palco">
+<div id="motivo"></div>
+<div class="cena" id="c0"><div class="cam full">
+ <div id="bgBox"><img id="bg" alt=""><div id="bgFade"></div></div>
+ <div id="emb"></div>
+ <div class="ctr tit t seg rv" id="tema"></div>
+ <div id="quando"><span class="chip t seg" id="quandoT"></span></div>
+</div></div>
+<div class="cena" id="c1"><div class="cam full">
+ <div class="ctr tit t seg rv" id="c1T"></div>
+ <div class="ctr t t2 seg" id="c1S"></div>
+ <div id="gcs"></div>
+</div></div>
+<div class="cena" id="c2"><div class="cam full">
+ <div class="ctr t t2 seg" id="c2T"></div>
+ <div id="bloco"><div class="base"></div><div id="fls"></div><div id="aneis"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <svg id="circ" viewBox="0 0 560 620"><path id="circP" d="M 120 300 C 110 200, 230 150, 320 170 C 440 195, 470 320, 420 410 C 370 490, 200 500, 140 430 C 100 385, 110 330, 150 290"/></svg></div>
+ <div class="ctr tit t dest seg" id="falta"></div>
+ <div class="ctr t t2 seg" id="falta2"></div>
+</div></div>
+<div class="cena" id="c3"><div class="cam full">
+ <div id="pIc"></div>
+ <div class="ctr tit t seg rv" id="pTx"></div>
+ <div id="pAte"><span class="chip t seg" id="pAteT"></span></div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Data especial": the business calendar of the year. The template knows each date (Easter by computus, Mother's
+// Day on the 2nd Sunday of May, Black Friday after the 4th Thursday of November...), refuses a deadline that has
+// passed (reference: ficha._hoje, default today) or that falls after the date, and counts the days left.
+const DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const dt = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const ddmm = s => s.slice(8, 10) + '/' + s.slice(5, 7);
+const dias = (a, b) => Math.round((dt(b) - dt(a)) / 864e5);
+const nDomingo = (y, m, n) => { const d = new Date(y, m, 1); return new Date(y, m, 1 + (7 - d.getDay()) % 7 + 7 * (n - 1)); };
+function pascoa(y) { const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
+  h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1; return new Date(y, mes - 1, dia); }
+const DATAS = {
+  maes: { nome: 'Dia das Mães', ic: 'coracao', mot: 'coracao', quando: y => nDomingo(y, 4, 2) },
+  pais: { nome: 'Dia dos Pais', ic: 'presente', mot: 'estrela', quando: y => nDomingo(y, 7, 2) },
+  namorados: { nome: 'Dia dos Namorados', ic: 'coracao', mot: 'coracao', quando: y => new Date(y, 5, 12) },
+  pascoa: { nome: 'Páscoa', ic: 'presente', mot: 'ovo', quando: pascoa },
+  carnaval: { nome: 'Carnaval', ic: 'brilho', mot: 'confete', quando: y => { const p = pascoa(y); return new Date(y, p.getMonth(), p.getDate() - 47); } },
+  mulher: { nome: 'Dia da Mulher', ic: 'coracao', mot: 'folha', quando: y => new Date(y, 2, 8) },
+  consumidor: { nome: 'Dia do Consumidor', ic: 'etiqueta', mot: 'etiqueta', quando: y => new Date(y, 2, 15) },
+  'sao-joao': { nome: 'São João', ic: 'fogo', mot: 'bandeira', quando: y => new Date(y, 5, 24) },
+  avos: { nome: 'Dia dos Avós', ic: 'coracao', mot: 'coracao', quando: y => new Date(y, 6, 26) },
+  cliente: { nome: 'Dia do Cliente', ic: 'estrela', mot: 'estrela', quando: y => new Date(y, 8, 15) },
+  criancas: { nome: 'Dia das Crianças', ic: 'brilho', mot: 'balao', quando: y => new Date(y, 9, 12) },
+  professores: { nome: 'Dia dos Professores', ic: 'estrela', mot: 'estrela', quando: y => new Date(y, 9, 15) },
+  'black-friday': { nome: 'Black Friday', ic: 'etiqueta', mot: 'etiqueta', quando: y => { const d = new Date(y, 10, 1), q = 1 + (4 - d.getDay() + 7) % 7 + 21; return new Date(y, 10, q + 1); } },
+  natal: { nome: 'Natal', ic: 'estrela', mot: 'neve', quando: y => new Date(y, 11, 25) },
+  'ano-novo': { nome: 'Ano Novo', ic: 'brilho', mot: 'brilho', quando: y => new Date(y, 11, 31) },
+};
+// motif shapes (24x24 boxes) in the brand colors
+const FORMAS = {
+  coracao: c => `<path d="M12 21s-8-5-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 10c0 6-8 11-8 11z" fill="${c}"/>`,
+  estrela: c => `<path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 17l-5.9 3.2 1.3-6.6L2.5 9l6.6-.8z" fill="${c}"/>`,
+  ovo: c => `<ellipse cx="12" cy="12.5" rx="7.5" ry="10" fill="${c}"/><path d="M5 10q3.5-2 7 0t7 0M4.6 14.5q3.7 2 7.4 0t7.4 0" stroke="var(--fundo)" stroke-width="1.6" fill="none" opacity=".6"/>`,
+  confete: c => `<rect x="7" y="3" width="10" height="18" rx="2" fill="${c}"/>`,
+  folha: c => `<path d="M5 19C5 10 10 5 20 4c0 10-5 15-15 15z" fill="${c}"/>`,
+  etiqueta: c => `<path d="M3 12V4h8l10 10-8 8z" fill="${c}"/><circle cx="7.5" cy="8.5" r="1.6" fill="var(--fundo)"/>`,
+  bandeira: c => `<path d="M2 3h20l-10 18z" fill="${c}"/>`,
+  balao: c => `<ellipse cx="12" cy="9" rx="7" ry="8.5" fill="${c}"/><path d="M12 17.5q-2 3 1 6" stroke="${c}" stroke-width="1.2" fill="none"/>`,
+  neve: c => `<g stroke="${c}" stroke-width="2.2" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7"/></g>`,
+  brilho: c => `<path d="M12 1l2.2 8.8L23 12l-8.8 2.2L12 23l-2.2-8.8L1 12l8.8-2.2z" fill="${c}"/>`,
+};
+let D = {};
+function calcular(F, $m) {
+  const hoje = F._hoje || iso(new Date()), E = DATAS[F.data];
+  let y = +hoje.slice(0, 4), q = E.quando(y); if (iso(q) < hoje) q = E.quando(++y);
+  const quando = iso(q);
+  if (F.prazo < hoje) $m.erro(`prazo de encomenda vencido (${ddmm(F.prazo)}): o post não sai depois dele`);
+  if (F.prazo > quando) $m.erro(`o prazo (${ddmm(F.prazo)}) é depois da data (${ddmm(quando)})`);
+  if (dias(hoje, quando) > 90) $m.erro(`${E.nome} só em ${ddmm(quando)}: cedo demais para este post`);
+  const ps = (F.itens || []).filter(i => i.preco != null); if (ps.some(i => !(i.preco > 0))) $m.erro('preço precisa ser maior que zero');
+  return { hoje, E, quando, falta: dias(hoje, F.prazo) };
+}
+const faltaTxt = n => n === 0 ? 'último dia: hoje' : n === 1 ? 'falta 1 dia' : `faltam ${n} dias`;
+const ateTxt = s => `até ${DIAS[dt(s).getDay()].replace('-feira', '')}, ${ddmm(s)}`;
+function folha(s) {
+  const d = dt(s), f = document.createElement('div'); f.className = 'fl';
+  f.innerHTML = '<div class="mb"><div class="t"></div></div><div class="dn tit t"></div><div class="ds t"></div>';
+  f.querySelector('.mb .t').textContent = MESES[d.getMonth()]; f.querySelector('.dn').textContent = d.getDate(); f.querySelector('.ds').textContent = DIAS[d.getDay()];
+  return f;
+}
+function cartaoItem(it, $m, w, h) {
+  const c = document.createElement('div'); c.className = 'gc'; c.style.width = w + 'px';
+  c.innerHTML = '<div class="ph"><img alt=""><i class="fita"></i></div><div class="nm t seg"></div>';
+  c.querySelector('.ph').style.height = h + 'px'; c.querySelector('img').src = $m.midia(it.foto); c.querySelector('.nm').textContent = it.nome;
+  if (it.preco != null) { const p = document.createElement('span'); p.className = 'pr chip t seg'; p.textContent = $m.brl(it.preco); c.appendChild(p); }
+  return c;
+}
+function motivos(cont, mot, n, W, H, $m, foraDe) {
+  const cores = ['var(--destaque)', 'var(--c2)', 'var(--c1)'];
+  let h = ''; for (let i = 0; i < n; i++) { const s = 40 + $m.rnd(i * 2.3) * 70; let x = $m.rnd(i * 4.1) * W, y = $m.rnd(i * 7.9) * H;
+    if (foraDe && foraDe(x, y)) continue;
+    h += `<svg viewBox="0 0 24 24" data-i="${i}" data-x="${x}" data-y="${y}" width="${s}" height="${s}" style="opacity:${0.35 + $m.rnd(i) * 0.5}">${FORMAS[mot](cores[i % 3])}</svg>`; }
+  cont.innerHTML = h;
+}
+Motor.molde({
+  id: 'data-especial', formatos: ['reel', 'story', 'carrossel'],
+  montar(F, M, $m) {
+    const { $, $$ } = $m, C = D = calcular(F, $m), reel = $m.FORMATO === 'reel';
+    if (F.falas && F.falas.length !== 5) $m.erro('falas: 5 (data, produtos, prazo, como pedir, chamada)');
+    motivos($('#motivo'), C.E.mot, 34, 1080, 1920, $m);
+    $m.filmagem($('#bg'), F.fundo || F.itens[0].foto, 0);
+    $('#emb').innerHTML = $m.icone(C.E.ic); $('#tema').textContent = F.titulo || C.E.nome;
+    const q = dt(C.quando); $('#quandoT').textContent = `${DIAS[q.getDay()]}, ${q.getDate()} de ${MESES[q.getMonth()]}`;
+    $('#c1T').textContent = F.subtitulo || 'Pra encomendar'; $('#c1S').textContent = 'feitos sob encomenda para a data';
+    if (F.descricao) $('#c1S').textContent = F.descricao;
+    const n = F.itens.length, larg = reel ? 790 : 900, gap = 20, w = Math.floor((larg - gap * (n - 1)) / n), x0 = reel ? 90 : 90;
+    F.itens.forEach((it, k) => { const c = cartaoItem(it, $m, w, n === 3 ? Math.round(w * 1.42) : Math.round(w * 1.12)); c.style.left = (x0 + k * (w + gap)) + 'px'; c.dataset.k = k; c.dataset.r = (k - (n - 1) / 2) * (n === 3 ? 4 : 3); $('#gcs').appendChild(c); });
+    // calendar pages from today to the deadline (at most 8, evenly spaced)
+    const tot = C.falta, np = Math.min(tot, 7), pags = [];
+    for (let i = 0; i <= np; i++) { const d = dt(C.hoje); d.setDate(d.getDate() + Math.round(tot * i / Math.max(1, np))); pags.push(iso(d)); }
+    D.pags = pags.reverse(); D.pags.forEach((s, i) => { const f = folha(s); f.dataset.i = i; f.style.zIndex = 10 + i; $('#fls').appendChild(f); });
+    $('#c2T').textContent = 'Encomendas até';
+    $('#falta').textContent = faltaTxt(C.falta);
+    $('#falta2').textContent = `para garantir o seu no ${C.E.nome}`.replace('no Páscoa', 'na Páscoa').replace('no Black', 'na Black');
+    $('#pIc').innerHTML = $m.icone(F.icone || 'chat'); $('#pTx').textContent = F.como_pedir; $('#pAteT').textContent = 'pedidos ' + ateTxt(F.prazo);
+    $('#nota').textContent = F.nota || '';
+    if (reel) $$('#tema,#c1T,#c1S,#pTx').forEach(e => { e.style.right = '170px'; });
+    return { duracoes: [2.6, 3.3, 3.3, 2.4] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, ini, fim, rnd } = $m;
+    // floating motif, strongest on the theme scene
+    const forte = 1 - 0.65 * eio(p(t, ini(1), 0.6)), fimV = 1 - p(t, fim(3) - 0.2, 0.5);
+    $('#motivo').style.opacity = forte * fimV;
+    $$('#motivo svg').forEach(s => { const i = +s.dataset.i, x = +s.dataset.x + Math.sin(t * (0.6 + rnd(i) * 0.8) + i) * 30, y0 = +s.dataset.y;
+      const y = ((y0 + t * (40 + rnd(i * 3) * 70)) % 2050) - 100; s.style.transform = `translate(${x}px,${y}px) rotate(${Math.sin(t + i) * 25}deg)`; });
+    // 0: theme
+    $m.cena('#c0', t, 0); $m.filmagem($('#bg'), F.fundo || F.itens[0].foto, t);
+    const e0 = el(p(t, 0.1, 1.0)); $('#emb').style.transform = `scale(${e0}) rotate(${(1 - e0) * -40}deg)`; $('#emb').style.opacity = cl(e0 * 3);
+    $m.revela('#tema', t, 0.35, 0.1); const qc = eb(p(t, 1.1, 0.5)); $('#quando').style.opacity = cl(qc * 2); $('#quando').style.transform = `scale(${0.6 + 0.4 * qc})`;
+    // 1: fan of cards
+    const a1 = ini(1); $m.cena('#c1', t, 1); $m.revela('#c1T', t, a1 + 0.1); $m.entra('#c1S', t, a1 + 0.45, 0.5, 20);
+    $$('.gc').forEach(c => { const k = +c.dataset.k, q = eo5(p(t, a1 + 0.35 + k * 0.22, 0.75)), r = +c.dataset.r;
+      c.style.opacity = cl(q * 2); c.style.transform = `translateY(${(1 - q) * 700 + Math.abs(r) * 6}px) rotate(${r * q + (1 - q) * r * 4}deg)`; });
+    // 2: pages tear off until the deadline
+    const a2 = ini(2); $m.cena('#c2', t, 2); $m.entra('#c2T', t, a2 + 0.1, 0.4, 20);
+    const bq = eo5(p(t, a2 + 0.05, 0.5)); $('#bloco').style.opacity = bq; $('#bloco').style.transform = `translateY(${(1 - bq) * 140}px)`;
+    const np = D.pags.length - 1, passo = Math.min(0.22, 1.0 / Math.max(1, np));
+    $$('.fl').forEach(f => { const i = +f.dataset.i; if (i === 0) return; const k = np - i, q = eio(p(t, a2 + 0.35 + k * passo, passo * 1.4));
+      f.style.transform = `perspective(1600px) translateY(${-q * 260}px) rotateX(${q * 110}deg) rotate(${q * (k % 2 ? 12 : -12)}deg)`; f.style.opacity = 1 - p(t, a2 + 0.35 + k * passo + passo * 0.8, passo * 0.6);
+      f.style.visibility = q >= 1 ? 'hidden' : 'visible'; });
+    const lan = a2 + 0.35 + np * passo + 0.1, cq = eio(p(t, lan, 0.6)), P = $('#circP'), L = P.getTotalLength();
+    P.style.strokeDasharray = L; P.style.strokeDashoffset = L * (1 - cq); P.style.opacity = cq > 0 ? 1 : 0;
+    const fq = eb(p(t, lan + 0.25, 0.5)); $('#falta').style.opacity = cl(fq * 2); $('#falta').style.transform = `scale(${0.5 + 0.5 * fq})`;
+    $m.entra('#falta2', t, lan + 0.5, 0.4, 20);
+    // 3: how to order
+    const a3 = ini(3); $m.cena('#c3', t, 3);
+    const iq = el(p(t, a3 + 0.05, 0.9)); $('#pIc').style.transform = `scale(${iq})`; $('#pIc').style.opacity = cl(iq * 3);
+    $m.revela('#pTx', t, a3 + 0.3, 0.06); const aq = eb(p(t, a3 + 0.9, 0.5)); $('#pAte').style.opacity = cl(aq * 2); $('#pAte').style.transform = `scale(${0.6 + 0.4 * aq})`;
+    $('#nota').style.opacity = t < fim(3) ? 1 : 0;
+  },
+  slides(F, M, $m) {
+    const { $$ } = $m, C = calcular(F, $m), palco = $m.$('#palco');
+    $$('.cena', palco).forEach(c => c.remove()); $m.$('#motivo').remove();
+    const add = (cls, html) => { const s = document.createElement('div'); s.className = 'slide ' + cls; s.innerHTML = '<div class="mt" style="position:absolute;inset:0"></div>' + html; palco.appendChild(s);
+      motivos(s.querySelector('.mt'), C.E.mot, 30, 1080, 1350, $m, (x, y) => (x > 40 && x < 1040 && y > 130 && y < 1200) || (y < 140 && x < 520));
+      s.querySelectorAll('.mt svg').forEach(v => { v.style.transform = `translate(${v.dataset.x}px,${v.dataset.y}px) rotate(${$m.rnd(+v.dataset.i) * 60 - 30}deg)`; }); return s; };
+    const q = dt(C.quando);
+    const s1 = add('capa', '<div class="emb2"></div><div class="ctt tm tit t seg"></div><div class="ctt qd t dest seg"></div><div class="fts"></div><div class="pe t2">arrasta</div>');
+    s1.querySelector('.emb2').innerHTML = $m.icone(C.E.ic); s1.querySelector('.tm').textContent = F.titulo || C.E.nome;
+    s1.querySelector('.qd').textContent = `${DIAS[q.getDay()]}, ${q.getDate()} de ${MESES[q.getMonth()]}`;
+    F.itens.forEach(it => { const d = document.createElement('div'); d.innerHTML = '<img alt="">'; d.querySelector('img').src = $m.midia(it.foto); s1.querySelector('.fts').appendChild(d); });
+    const s2 = add('', '<div class="ctt tt tit t seg"></div><div class="row"></div>');
+    s2.querySelector('.tt').textContent = F.subtitulo || 'Pra encomendar';
+    const n = F.itens.length, w = n === 3 ? 290 : 420;
+    F.itens.forEach((it, k) => { const c = cartaoItem(it, $m, w, n === 3 ? 380 : 480); c.style.transform = `rotate(${(k - (n - 1) / 2) * 3}deg)`; s2.querySelector('.row').appendChild(c); });
+    const s3 = add('', '<div class="ctt tt2 t t2 seg"></div><div class="bl2"></div><div class="ctt fa tit t dest seg"></div><div class="ctt cp t seg"></div>');
+    s3.querySelector('.tt2').textContent = 'Encomendas até'; const f = folha(F.prazo); f.style.transform = 'rotate(-3deg)'; s3.querySelector('.bl2').appendChild(f);
+    f.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 560 620" style="position:absolute;inset:-20px;width:540px;height:600px;overflow:visible"><path d="M 120 300 C 110 200, 230 150, 320 170 C 440 195, 470 320, 420 410 C 370 490, 200 500, 140 430 C 100 385, 110 330, 150 290" fill="none" stroke="var(--ruim)" stroke-width="12" stroke-linecap="round"/></svg>');
+    s3.querySelector('.fa').textContent = faltaTxt(C.falta); s3.querySelector('.cp').textContent = F.como_pedir;
+  },
+});
+</script></body></html>

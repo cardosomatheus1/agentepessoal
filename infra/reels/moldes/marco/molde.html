@@ -35,7 +35,7 @@ body.e-vidro #pola,body.e-noite #pola{background:#f4f1ea}
 #obg,#obgT{position:absolute}
 #obg{left:90px;right:90px;top:1190px;height:286px;font-size:60px;line-height:1.14;text-align:left}
 body.f-reel #obg{right:190px}
-body.sem-foto #obg{top:900px;height:420px;font-size:84px}
+body.sem-foto #obg{top:900px;height:560px;font-size:84px}
 #obgT{left:90px;right:90px;top:1078px;height:96px;font-size:92px;white-space:nowrap;text-align:left}
 body.sem-foto #obgT{top:780px}
 /* carousel */
@@ -170,7 +170,7 @@ Motor.molde({
     s1.querySelector('.oq').textContent = F.o_que; s1.querySelector('.pe').textContent = 'arrasta';
     const cf = s1.querySelector('.cf'), cores = ['var(--destaque)', 'var(--c2)', 'var(--c1)', 'var(--texto)'];
     for (let i = 0; i < 46; i++) { const b = document.createElement('b'), r = $m.rnd(i * 3.1), w = 14 + r * 18, x = $m.rnd(i * 11.3) * 1080, y = $m.rnd(i * 5.9) * 1350;
-      if (y > 260 && y < 1130 && x > 40 && x < 1040) continue;
+      if ((y > 260 && y < 1130 && x > 40 && x < 1040) || (y < 140 && x < 480)) continue;
       Object.assign(b.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: ($m.rnd(i) > .6 ? w : w * .45) + 'px', background: cores[i % 4], borderRadius: $m.rnd(i) > .6 ? '50%' : '3px', transform: `rotate(${$m.rnd(i * 2) * 360}deg)` }); cf.appendChild(b); }
     palco.appendChild(s1);
     const s2 = document.createElement('div'); s2.className = 'slide s2' + (F.foto ? '' : ' sem-foto');

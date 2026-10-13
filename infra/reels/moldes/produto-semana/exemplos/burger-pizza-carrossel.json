@@ -1,0 +1,5 @@
+{"_marca": "burger-noite", "_formato": "carrossel",
+ "nome": "Pizza de pepperoni", "fotos": ["fotos/pizza.jpg"],
+ "atributos": [{"texto": "Pepperoni crocante", "x": 30, "y": 30}, {"texto": "Muçarela que estica", "x": 70, "y": 45}, {"texto": "Massa de fermentação lenta", "x": 45, "y": 82}],
+ "preco": 49.9, "unidade": "a grande",
+ "_origem": {"preco": "sistema"}}

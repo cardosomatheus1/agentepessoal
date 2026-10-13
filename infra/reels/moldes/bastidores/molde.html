@@ -1,0 +1,198 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* documentary: the business's own photos full screen with slow camera moves, a chapter line (começo, hoje, amanhã)
+   and the owner's own words as subtitles. Text sits on photos darkened by a black gradient, so it is white. */
+#tela{position:absolute;inset:0;overflow:hidden;background:var(--fundo)}
+.fr{position:absolute;inset:0;overflow:hidden;opacity:0}
+.fr .pan{position:absolute;left:-60px;top:-60px;width:1200px;height:2040px}
+.fr img{width:100%;height:100%;object-fit:cover}
+#somb{position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,0) 26%,rgba(0,0,0,0) 40%,rgba(0,0,0,.62) 58%,rgba(0,0,0,.88) 82%)}
+.bra{color:#fff}
+/* chapter line */
+#linha{position:absolute;left:110px;right:190px;top:384px;height:86px;opacity:0}
+#linha .tr{position:absolute;left:14px;right:14px;top:16px;height:6px;border-radius:3px;background:rgba(255,255,255,.3)}
+#linha .ench{position:absolute;left:14px;top:16px;height:6px;border-radius:3px;background:var(--destaque);width:0}
+#linha .no{position:absolute;top:0;width:38px;height:38px;margin-left:-19px;border-radius:50%;background:rgba(0,0,0,.6);border:5px solid rgba(255,255,255,.55)}
+#linha .no.on{background:var(--destaque);border-color:#fff}
+#linha .lb{position:absolute;top:46px;width:200px;margin-left:-100px;height:40px;font-size:30px;font-weight:800;text-align:center;color:#fff;white-space:nowrap}
+/* owner / person intro */
+#tag0{position:absolute;left:90px;top:968px;font-size:38px}
+#nome{position:absolute;left:84px;right:180px;top:1030px;height:190px;font-size:170px;line-height:1.1;white-space:nowrap}
+#func{position:absolute;left:90px;right:180px;top:1236px;height:60px;font-size:46px;font-weight:700;white-space:nowrap}
+/* act subtitles */
+#capT{position:absolute;left:90px;top:900px;font-size:40px}
+#aspas{position:absolute;left:78px;top:960px;font-family:var(--ft);font-size:200px;line-height:1;color:var(--destaque);opacity:0}
+#frase{position:absolute;left:90px;right:180px;top:1010px;height:300px;font-size:64px;font-weight:800;line-height:1.14}
+#leg{position:absolute;left:90px;right:180px;top:1350px;height:52px;font-size:36px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:14px;opacity:.9}
+#leg .ico{flex:none;color:var(--destaque)}
+#leg .t{flex:1;height:52px;line-height:52px;white-space:nowrap}
+#c0t{position:absolute;left:90px;right:180px;top:1300px;height:60px;font-size:40px;font-weight:600;white-space:nowrap;opacity:.85}
+/* team intro grid */
+#time{position:absolute;left:90px;right:170px;top:560px;display:grid;grid-template-columns:1fr 1fr;gap:22px}
+#time div{height:340px;border-radius:30px;overflow:hidden;border:5px solid #fff;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+#time img{width:100%;height:100%;object-fit:cover}
+#timeT{position:absolute;left:90px;right:170px;top:400px;height:130px;font-size:116px;line-height:1.05;white-space:nowrap}
+/* carousel */
+.slide .bgf{position:absolute;inset:0}.slide .bgf img{width:100%;height:100%;object-fit:cover}
+.slide .sm{position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,0) 30%,rgba(0,0,0,.25) 50%,rgba(0,0,0,.85) 85%)}
+.slide .nm{position:absolute;left:84px;right:84px;top:900px;height:170px;font-size:150px;line-height:1.1;white-space:nowrap}
+.slide .fn{position:absolute;left:84px;right:84px;top:1080px;height:60px;font-size:44px;font-weight:700;white-space:nowrap}
+.slide .tg{position:absolute;left:84px;top:830px;font-size:34px}
+.slide .pe{position:absolute;left:84px;right:84px;bottom:64px;height:50px;font-size:34px;font-weight:700;text-align:right}
+.slide .col{position:absolute;left:84px;right:84px;top:140px;height:640px;display:grid;gap:16px}
+.slide .col div{position:relative;border-radius:24px;overflow:hidden}.slide .col img{width:100%;height:100%;object-fit:cover}
+.slide .col span{position:absolute;left:14px;right:14px;bottom:12px;height:40px;font-size:27px;font-weight:700;color:#fff;white-space:nowrap;text-shadow:0 2px 8px rgba(0,0,0,.8)}
+.slide .col div:after{content:'';position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(transparent,rgba(0,0,0,.65))}
+.slide .col span{z-index:2}
+.slide .ch{position:absolute;left:84px;top:820px;font-size:36px}
+.slide .qq{position:absolute;left:84px;right:84px;top:900px;height:330px;font-size:58px;font-weight:800;line-height:1.16}
+.slide .ql{font-family:var(--ft);color:var(--destaque)}
+.slide.pess .ph{position:absolute;left:84px;top:140px;width:520px;height:640px;border-radius:30px;overflow:hidden;box-shadow:var(--sombra)}
+.slide.pess .ph img{width:100%;height:100%;object-fit:cover}
+.slide.pess .nm2{position:absolute;left:640px;right:84px;top:520px;height:150px;font-size:110px;line-height:1.2;color:var(--destaque);white-space:nowrap}
+.slide.pess .fn2{position:absolute;left:640px;right:84px;top:680px;height:100px;font-size:38px;font-weight:700;line-height:1.2}
+</style></head><body><div id="palco">
+<div class="cena" id="cV"><div class="cam full">
+ <div id="tela"></div><div id="somb"></div>
+ <div id="linha"><i class="tr"></i><i class="ench"></i></div>
+ <div class="chip t seg" id="tag0"></div>
+ <div class="mao bra t seg" id="nome"></div>
+ <div class="bra t seg" id="func"></div>
+ <div class="tit bra t seg" id="timeT"></div><div id="time"></div>
+ <div class="chip t seg" id="capT"></div>
+ <div id="aspas">“</div>
+ <div class="bra t seg rv" id="frase"></div>
+ <div class="bra" id="leg"><span id="legIc"></span><div class="t seg" id="legT"></div></div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Bastidores e história": who makes it, how and why it started, with the business's own photos (3 to 8). The
+// three acts (começo, hoje, amanhã) are sentences from a short interview with the owner (real, with origin),
+// never written by the AI. Team mode: who serves you (photo, name, role, the person's own sentence, with permission).
+const ATOS = ['O começo', 'Hoje', 'Amanhã'];
+let D = {};
+function plano(F, $m) {
+  const eq = F.modo === 'equipe';
+  if (eq) {
+    if (!F.equipe) $m.erro('modo equipe precisa da lista equipe');
+    if (F.atos || F.fotos || F.dono) $m.erro('modo equipe usa só a lista equipe');
+    return { eq, pess: F.equipe || [] };
+  }
+  if (!F.dono || !F.atos || !F.fotos) $m.erro('modo história precisa de dono, fotos (3 a 8) e atos (3 frases da entrevista)');
+  if (F.equipe) $m.erro('a lista equipe é só do modo equipe');
+  const fotos = F.fotos || [], grupos = [[], [], []];
+  if (fotos.some(f => f.ato)) fotos.forEach(f => grupos[(f.ato || 1) - 1].push(f));
+  else fotos.forEach((f, i) => grupos[Math.min(2, Math.floor(i * 3 / fotos.length))].push(f));
+  if (fotos.length && grupos.some(g => !g.length)) $m.erro('cada ato precisa de pelo menos uma foto');
+  return { eq, grupos };
+}
+function quadroFoto(src, $m) { const d = document.createElement('div'); d.className = 'fr'; d.innerHTML = '<div class="pan"><img alt=""></div>'; d.querySelector('img').src = $m.midia(src); d.dataset.src = src; $m.$('#tela').appendChild(d); return d; }
+Motor.molde({
+  id: 'bastidores', formatos: ['reel', 'carrossel'],
+  montar(F, M, $m) {
+    const { $ } = $m, P = D = plano(F, $m);
+    D.cenas = []; D.fr = [];
+    if (P.eq) {
+      if (F.falas && F.falas.length !== P.pess.length + 2) $m.erro(`falas: ${P.pess.length + 2} (abertura, uma por pessoa, chamada)`);
+      $('#timeT').textContent = F.titulo || 'Quem te atende';
+      P.pess.forEach(pp => { const d = document.createElement('div'); d.innerHTML = '<img alt="">'; d.querySelector('img').src = $m.midia(pp.foto); $('#time').appendChild(d); });
+      if (P.pess.length === 3) $('#time').lastChild.style.gridColumn = 'span 2';
+      D.cenas.push({ tipo: 'time', fotos: [] });
+      P.pess.forEach(pp => D.cenas.push({ tipo: 'pessoa', p: pp, fotos: [quadroFoto(pp.foto, $m)] }));
+      $('#linha').remove();
+    } else {
+      if (F.falas && F.falas.length !== 5) $m.erro('falas: 5 (dono, começo, hoje, amanhã, chamada)');
+      D.cenas.push({ tipo: 'dono', fotos: [quadroFoto(F.dono.foto, $m)] });
+      P.grupos.forEach((g, k) => D.cenas.push({ tipo: 'ato', k, ato: F.atos[k], fotos: g.map(f => quadroFoto(f.foto, $m)), legs: g.map(f => f.legenda || '') }));
+      ATOS.forEach((a, k) => { const n = document.createElement('i'); n.className = 'no'; n.style.left = (14 + k * 50) + '%'; $('#linha').appendChild(n);
+        const l = document.createElement('div'); l.className = 'lb t seg'; l.textContent = (F.atos[k] && F.atos[k].titulo) || a; l.style.left = (14 + k * 50) + '%'; $('#linha').appendChild(l); });
+      $('#linha .tr').style.left = '14%'; $('#linha .tr').style.right = (100 - 14 - 100) + '%';
+      $('#time').remove(); $('#timeT').remove();
+    }
+    $('#tag0').textContent = P.eq ? 'quem te atende' : 'nossa história';
+    // longest texts first so the fitting measures the biggest
+    const nomes = P.eq ? P.pess.map(x => x.nome) : [F.dono.nome], funcs = P.eq ? P.pess.map(x => x.funcao) : [F.dono.funcao];
+    const frases = P.eq ? P.pess.map(x => x.frase) : F.atos.map(a => a.frase), legs = P.eq ? [] : F.fotos.map(f => f.legenda || '');
+    const maior = a => a.reduce((x, y) => (y.length > x.length ? y : x), '');
+    $('#nome').textContent = maior(nomes); $('#func').textContent = maior(funcs); $('#frase').textContent = maior(frases); $('#legT').textContent = maior(legs);
+    D.textos = { nomes, funcs };
+    $('#legIc').innerHTML = $m.icone('camera'); $('#capT').textContent = 'O começo';
+    $('#nota').textContent = F.nota || '';
+    if (P.eq) return { duracoes: [2.8, ...P.pess.map(() => 4.8)] };
+    return { duracoes: [3.2, ...D.cenas.slice(1).map(c => Math.max(4.4, 1.2 + c.fotos.length * 2.3))] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, cl, ini, fim, N } = $m;
+    $m.cena('#cV', t, 0, D.cenas.length - 1, { push: 0 });
+    // photos: each one its own slot inside its scene, crossfade, slow push and drift (alternating direction)
+    let ativa = null;
+    D.cenas.forEach((c, i) => { const a = ini(i) + (c.tipo === 'ato' ? 0 : 0), b = fim(i), n = c.fotos.length;
+      c.fotos.forEach((fr, j) => { const s = a + (b - a) * j / n, e = a + (b - a) * (j + 1) / n, last = i === D.cenas.length - 1 && j === n - 1;
+        const vis = t >= s - 0.45 && (t < e + 0.05 || last);
+        fr.style.opacity = vis ? (j === 0 && i === 0 ? 1 : eo(p(t, s - 0.45, 0.5))) : 0; fr.style.zIndex = i * 10 + j;
+        if (vis) { const q = p(t, s - 0.45, e - s + 0.9), dir = (i + j) % 2 ? 1 : -1; fr.querySelector('.pan').style.transform = `translate(${dir * (30 - 60 * q)}px, ${-20 * q}px)`;
+          $m.filmagem(fr.querySelector('img'), fr.dataset.src, Math.max(0, t - s + 0.45)); }
+        if (t >= s && t < e) ativa = { c, j, s, e }; }); });
+    const S = ativa ? ativa.c : D.cenas[0], k = D.cenas.indexOf(S), a = ini(k);
+    const out = 1 - eo(p(t, fim(D.cenas.length - 1) - 0.1, 0.4));
+    // scene 0: owner (or the team)
+    const intro = k === 0;
+    if (D.eq) {
+      $('#timeT').style.opacity = intro ? eo(p(t, 0.15, 0.5)) : 0;
+      $$('#time div').forEach((d, j) => { const q = eb(p(t, 0.3 + j * 0.15, 0.55)); d.style.opacity = intro ? cl(q * 2) : 0; d.style.transform = `translateY(${(1 - q) * 120}px) rotate(${(j % 2 ? 3 : -3) * q}deg)`; });
+      $('#tela').style.filter = intro ? 'blur(18px) brightness(.55)' : 'none';
+    }
+    const pessoa = S.tipo === 'pessoa', dono = S.tipo === 'dono';
+    $('#tag0').style.opacity = (dono || pessoa) ? eo(p(t, a + 0.2, 0.4)) * out : 0;
+    if (pessoa) $('#tag0').textContent = S.p.funcao; else if (dono) $('#tag0').textContent = 'nossa história';
+    $('#nome').style.opacity = (dono || pessoa) ? out : 0; $('#nome').textContent = dono ? F.dono.nome : pessoa ? S.p.nome : '';
+    const wq = eo5(p(t, a + 0.35, 0.9)); $('#nome').style.clipPath = `inset(-20% ${(1 - wq) * 100}% -20% 0)`;
+    $('#func').style.opacity = dono ? eo(p(t, a + 0.9, 0.5)) * out : 0; $('#func').textContent = dono ? F.dono.funcao : '';
+    // acts and person sentences as subtitles
+    const temFrase = S.tipo === 'ato' || pessoa;
+    $('#capT').style.opacity = S.tipo === 'ato' ? eo(p(t, a + 0.1, 0.4)) * out : 0;
+    if (S.tipo === 'ato') $('#capT').textContent = `${S.k + 1}. ${(S.ato && S.ato.titulo) || ATOS[S.k]}`;
+    $('#aspas').style.opacity = temFrase ? 0.9 * eo(p(t, a + 0.25, 0.4)) * out : 0;
+    $('#aspas').style.top = pessoa ? '1150px' : '960px'; $('#frase').style.top = pessoa ? '1200px' : '1010px';
+    $('#frase').style.height = pessoa ? '260px' : '300px';
+    if ($('#frase').dataset.k !== String(k)) { $('#frase').dataset.k = k; $('#frase').dataset.pal = ''; $('#frase').textContent = temFrase ? (pessoa ? S.p.frase : S.ato.frase) : ''; }
+    $('#frase').style.opacity = temFrase ? out : 0; if (temFrase) $m.revela('#frase', t, a + 0.45, 0.045);
+    const leg = S.tipo === 'ato' && ativa ? S.legs[ativa.j] : '';
+    $('#legT').textContent = leg; $('#leg').style.opacity = leg ? eo(p(t, ativa.s + 0.3, 0.4)) * out * 0.9 : 0;
+    // chapter line
+    if (!D.eq) { const lq = eo(p(t, ini(1) - 0.2, 0.5)); $('#linha').style.opacity = lq * out;
+      const pr = k === 0 ? 0 : cl((k - 1) / 2 + 0.5 * p(t, a, 0.8) * (k < 3 ? 1 : 0)); $('#linha .ench').style.width = `calc(${pr * 72}%)`; $('#linha .ench').style.left = '14%';
+      $$('#linha .no').forEach((n, j) => n.classList.toggle('on', k >= j + 1)); }
+    $('#nota').style.opacity = t < fim(D.cenas.length - 1) ? 1 : 0;
+  },
+  slides(F, M, $m) {
+    const { $$ } = $m, P = plano(F, $m), palco = $m.$('#palco'); $$('.cena', palco).forEach(c => c.remove());
+    const add = (cls, html) => { const s = document.createElement('div'); s.className = 'slide ' + cls; s.innerHTML = html; palco.appendChild(s); return s; };
+    const img = (s, sel, src) => { s.querySelector(sel).src = $m.midia(src); };
+    if (P.eq) {
+      const s = add('', '<div class="tt tit t seg" style="position:absolute;left:84px;right:84px;top:150px;height:120px;font-size:100px;white-space:nowrap"></div><div class="col"></div><div class="pe t t2">arrasta</div>');
+      s.querySelector('.tt').textContent = F.titulo || 'Quem te atende'; const c = s.querySelector('.col'); c.style.top = '300px'; c.style.height = '880px';
+      c.style.gridTemplateColumns = P.pess.length > 1 ? '1fr 1fr' : '1fr';
+      P.pess.forEach((pp, j) => { const d = document.createElement('div'); d.innerHTML = '<img alt=""><span class="t seg"></span>'; d.querySelector('img').src = $m.midia(pp.foto); d.querySelector('span').textContent = pp.nome; if (P.pess.length === 3 && j === 2) d.style.gridColumn = 'span 2'; c.appendChild(d); });
+      P.pess.forEach(pp => { const s2 = add('pess', '<div class="ph"><img alt=""></div><div class="nm2 mao t seg"></div><div class="fn2 t t2 seg"></div><div class="ch chip t seg"></div><div class="qq t seg"></div>');
+        img(s2, 'img', pp.foto); s2.querySelector('.nm2').textContent = pp.nome; s2.querySelector('.fn2').textContent = pp.funcao; s2.querySelector('.ch').textContent = 'nas palavras dela'; s2.querySelector('.ch').textContent = 'com a palavra';
+        s2.querySelector('.qq').innerHTML = '<span class="ql">“</span>'; s2.querySelector('.qq').append(pp.frase); });
+      return;
+    }
+    const s1 = add('', '<div class="bgf"><img alt=""></div><div class="sm"></div><div class="tg chip t seg"></div><div class="nm mao bra t seg"></div><div class="fn bra t seg"></div><div class="pe bra t">arrasta</div>');
+    img(s1, 'img', F.dono.foto); s1.querySelector('.tg').textContent = 'nossa história'; s1.querySelector('.nm').textContent = F.dono.nome; s1.querySelector('.fn').textContent = F.dono.funcao;
+    P.grupos.forEach((g, k) => {
+      const s = add('', '<div class="col"></div><div class="ch chip t seg"></div><div class="qq t seg"></div>');
+      const c = s.querySelector('.col'), n = g.length;
+      c.style.gridTemplateColumns = n === 1 ? '1fr' : n === 2 ? '1fr 1fr' : '1.3fr 1fr'; if (n >= 3) c.style.gridTemplateRows = '1fr 1fr';
+      g.slice(0, 3).forEach((f, j) => { const d = document.createElement('div'); d.innerHTML = '<img alt=""><span class="t seg"></span>'; d.querySelector('img').src = $m.midia(f.foto); d.querySelector('span').textContent = f.legenda || '';
+        if (n >= 3 && j === 0) d.style.gridRow = 'span 2'; c.appendChild(d); });
+      s.querySelector('.ch').textContent = `${k + 1}. ${(F.atos[k] && F.atos[k].titulo) || ATOS[k]}`;
+      s.querySelector('.qq').innerHTML = '<span class="ql">“</span>'; s.querySelector('.qq').append(F.atos[k].frase);
+    });
+  },
+});
+</script></body></html>

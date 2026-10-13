@@ -1,0 +1,116 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* the comparison frame: "antes" below, "depois" on top clipped by the sliding bar */
+#quadro{position:absolute;left:60px;top:400px;width:960px;height:960px;transform-origin:50% 0}
+.comp{position:absolute;inset:0;border-radius:44px;overflow:hidden;box-shadow:var(--sombra);background:var(--fundo2)}
+body.e-papel .comp{border-radius:8px}
+body.e-pop .comp{border:8px solid var(--texto);box-shadow:16px 16px 0 var(--texto)}
+body.e-noite .comp{box-shadow:0 0 0 3px var(--destaque),0 0 50px color-mix(in srgb,var(--destaque) 45%,transparent)}
+.comp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.comp .dep{position:absolute;inset:0;overflow:hidden}
+.comp .barra{position:absolute;top:0;bottom:0;width:10px;margin-left:-5px;background:#fff;box-shadow:0 0 24px rgba(0,0,0,.5)}
+.comp .pega{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;gap:4px;color:#17151a;font-size:46px}
+.comp .pega .ico:first-child{transform:scaleX(-1)}
+.comp .rot{position:absolute;top:30px;font-family:var(--ft),sans-serif;font-weight:900;font-size:46px;letter-spacing:.08em;padding:10px 26px;border-radius:999px;background:rgba(0,0,0,.62);color:#fff;white-space:nowrap}
+.comp .rot.a{left:30px}.comp .rot.d{right:30px;background:var(--destaque);color:var(--sobre-destaque)}
+#servico{left:90px;width:820px;top:1064px;height:200px;font-size:100px;line-height:1}
+#info{position:absolute;left:90px;width:820px;top:1276px;height:80px;display:flex;justify-content:center;align-items:center;gap:20px}
+#tempo{font-size:44px;padding:12px 32px;white-space:nowrap;max-width:420px}
+#detalhe{left:90px;width:820px;top:1368px;height:110px;font-size:44px;font-weight:700;line-height:1.2}
+body.f-story #servico,body.f-story #info,body.f-story #detalhe{width:900px}
+/* carousel */
+.slide .comp{left:84px;top:150px;width:912px;height:912px}
+.slide .comp .rot{top:30px;font-size:52px}
+.slide .lg{position:absolute;left:84px;right:84px;top:1090px;height:110px;font-size:84px;line-height:1.1}
+.slide .sub{position:absolute;left:84px;right:84px;top:1200px;height:60px;font-size:40px;font-weight:700}
+.slide.fim .comp{left:174px;top:150px;width:732px;height:732px}
+.slide.fim .lg{top:900px;height:210px;font-size:92px;line-height:1.04;display:flex;align-items:center;justify-content:center}
+.slide.fim .inf{position:absolute;left:84px;right:84px;top:1124px;height:70px;text-align:center}
+.slide.fim .inf > span{display:inline-block;font-size:40px;padding:10px 30px;white-space:nowrap}
+.slide.fim .sub{top:1206px}
+</style></head><body><div id="palco">
+
+<div class="cena" id="cA"><div class="cam full">
+ <div id="quadro"></div>
+ <div class="ctr tit t seg rv" id="servico"></div>
+ <div id="info"><span class="chip t seg" id="tempo"></span></div>
+ <div class="ctr t t2 seg rv" id="detalhe"></div>
+</div></div>
+
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Antes e depois": two real photos of the same angle; a bar slides across revealing the result. Scenes: 0 the
+// "antes" photo, 1 the bar sweeps and settles in the middle, 2 service + time + detail, 3 call (engine's final scene).
+// Regulated areas (health, aesthetics, dentistry) only with the confirmation that the professional council allows it.
+const REGULADA = ['estetica', 'saude', 'odontologia'];
+const RAMO_REGULADO = /(cl[ií]nica|est[eé]tica|odonto|dent|harmoniza|dermat|fisio|nutri|m[eé]dic|biomed|enferm|psic)/i;
+function conferir(F, M, $m) {
+  const reg = REGULADA.includes(F.area) || RAMO_REGULADO.test(M.ramo || '');
+  if (reg && F.confirmacao_conselho !== true) $m.erro('antes e depois em saúde, estética ou odontologia só com confirmação de que o conselho da profissão permite (confirmacao_conselho: true)');
+  if (F.antes === F.depois) $m.erro('antes e depois com a mesma foto');
+}
+function comp($m, F) {
+  const c = document.createElement('div'); c.className = 'comp';
+  c.innerHTML = '<img class="ant" alt=""><div class="dep"><img alt=""></div><div class="rot a">ANTES</div><div class="rot d">DEPOIS</div><div class="barra"><div class="pega">' + $m.icone('seta') + $m.icone('seta') + '</div></div>';
+  c.querySelector('.ant').src = $m.midia(F.antes); c.querySelector('.dep img').src = $m.midia(F.depois);
+  return c;
+}
+// x: position of the bar, 0..1 from the left; "depois" shows to the right of it
+function barra(c, x) {
+  c.querySelector('.dep').style.clipPath = `inset(0 0 0 ${x * 100}%)`; c.querySelector('.barra').style.left = x * 100 + '%';
+}
+Motor.molde({
+  id: 'antes-depois', formatos: ['reel', 'carrossel'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    conferir(F, M, $m);
+    $('#quadro').appendChild(comp($m, F));
+    $('#servico').textContent = F.servico;
+    if (F.tempo) { $('#tempo').innerHTML = $m.icone('relogio') + ' '; $('#tempo').append(F.tempo); } else $('#info').style.display = 'none';
+    $('#detalhe').textContent = F.detalhe || '';
+    return { duracoes: [1.4, 3.0, 2.4] };
+  },
+  quadro(t, F, $m) {
+    const { $, p, eo, eo5, eio, eb, cl, lerp, ini } = $m;
+    const S1 = ini(1), S2 = ini(2);
+    $m.cena('#cA', t, 0, 2, { push: 0.02 });
+    const c = $('#quadro .comp');
+    // 0: "antes" alone, slow push in; the bar waits at the right edge
+    const en = eo5(p(t, 0, 0.6)), enc = eio(p(t, S2, 0.7));
+    $('#quadro').style.transform = `translateY(${(1 - en) * 80 - enc * 0}px) scale(${lerp(1, 0.66, enc)})`; $('#quadro').style.opacity = en;
+    c.querySelector('.ant').style.transform = c.querySelector('.dep img').style.transform = `scale(${1.06 - 0.06 * p(t, 0, 4)})`;
+    // 1: sweep right to left revealing "depois", come back to the middle and settle with a little overshoot
+    let x = 1;
+    if (t >= S1) {
+      const a = eio(p(t, S1 + 0.1, 1.3)), b = eb(p(t, S1 + 1.6, 0.8));
+      x = a < 1 ? 1 - 0.97 * a : lerp(0.03, 0.5, b);
+    }
+    barra(c, x);
+    c.querySelector('.barra').style.opacity = eo(p(t, 0.9, 0.3));
+    c.querySelector('.rot.a').style.opacity = eo(p(t, 0.3, 0.3));
+    c.querySelector('.rot.d').style.opacity = cl((1 - x) * 4) * eo(p(t, S1 + 0.4, 0.3));
+    const pg = c.querySelector('.pega'); pg.style.transform = `scale(${1 + 0.12 * Math.sin(p(t, S1, 2.6) * Math.PI * 4) * (t > S1 && t < S2 ? 1 : 0)})`;
+    // 2: what was done
+    $m.revela('#servico', t, S2 + 0.35); $('#servico').style.opacity = t >= S2 ? 1 : 0;
+    const ti = eb(p(t, S2 + 0.8, 0.5)); $('#info').style.opacity = cl(ti * 2); $('#info').style.transform = `scale(${0.7 + 0.3 * ti})`;
+    $m.revela('#detalhe', t, S2 + 1.0); $('#detalhe').style.opacity = t >= S2 ? 1 : 0;
+  },
+  slides(F, M, $m) {
+    conferir(F, M, $m);
+    const palco = $m.$('#palco'); $m.$$('.cena', palco).forEach(c => c.remove());
+    // 1 antes (bar parked at the right), 2 depois (bar at the left), 3 side by side with the service
+    const mk = (x, cls, lg, sub) => { const s = document.createElement('div'); s.className = 'slide ' + cls; const c = comp($m, F); barra(c, x); s.appendChild(c);
+      if (x >= 1) { c.querySelector('.rot.d').style.display = 'none'; c.querySelector('.barra').style.display = 'none'; }
+      if (x <= 0) { c.querySelector('.rot.a').style.display = 'none'; c.querySelector('.barra').style.display = 'none'; }
+      const l = document.createElement('div'); l.className = 'lg tit t seg ctr'; l.textContent = lg; s.appendChild(l);
+      if (sub) { const u = document.createElement('div'); u.className = 'sub t t2 seg ctr'; u.textContent = sub; s.appendChild(u); }
+      palco.appendChild(s); return s; };
+    mk(1, 'ini', F.servico, 'arrasta para ver o depois');
+    mk(0, '', 'Depois', 'mesmo ângulo, foto sem edição');
+    const s3 = mk(0.5, 'fim', F.servico, F.detalhe || '');
+    if (F.tempo) { const i = document.createElement('div'); i.className = 'inf'; const sp = document.createElement('span'); sp.className = 'chip t seg'; sp.innerHTML = $m.icone('relogio') + ' '; sp.append(F.tempo); i.appendChild(sp); s3.appendChild(i); }
+  },
+});
+</script></body></html>

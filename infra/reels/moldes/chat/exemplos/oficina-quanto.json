@@ -1,0 +1,8 @@
+{"_marca": "oficina-do-ze", "_formato": "reel", "assunto": "orçamento",
+ "mensagens": [
+  {"de": "cliente", "texto": "Quanto fica pra arrumar o barulho?"},
+  {"de": "dono", "texto": "Qual o carro?"},
+  {"de": "cliente", "texto": "Um prata"},
+  {"de": "dono", "texto": "E o barulho é onde?"},
+  {"de": "cliente", "texto": "Embaixo. Faz tec tec"}],
+ "virada": {"de": "dono", "texto": "Traz ele aqui que o tec tec me conta"}}

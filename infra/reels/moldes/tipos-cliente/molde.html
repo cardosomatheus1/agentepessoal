@@ -93,11 +93,14 @@ Motor.molde({
     $('#perg').textContent = F.pergunta || 'Qual desses é você?';
     D.cartas = F.tipos.map((x, i) => { const c = carta(x, i, n, $m); $('#mesa').appendChild(c); return c; });
     const por1 = Math.min(2.6, 10.2 / n);
-    return { duracoes: [2.6, ...F.tipos.map(x => +Math.min(por1 + 0.4, Math.max(por1 - 0.3, por1 + (x.frase.length - 40) * 0.012)).toFixed(2)), 2.6] };
+    const d = [2.6, ...F.tipos.map(x => +Math.min(por1 + 0.4, Math.max(por1 - 0.3, por1 + (x.frase.length - 40) * 0.012)).toFixed(2)), 2.6];
+    // render.py's contact sheet breaks on a last row of one picture (7 or 13 scenes with the final): split the question
+    if ((d.length + 1) % 6 === 1) d.splice(d.length - 1, 1, 1.3, 1.3);
+    return { duracoes: d };
   },
   quadro(t, F, $m) {
     const { $, p, eo, eo5, eio, eb, cl, lerp, ini, rnd } = $m, n = F.tipos.length, Q = n + 1;
-    $m.cena('#mesaC', t, 0, Q);
+    $m.cena('#mesaC', t, 0, $m.N - 2);
     // title and the deck
     const ti = eo5(p(t, 0.1, 0.6)), to = eo(p(t, ini(1) - 0.2, 0.3));
     $('#tit').style.opacity = ti * (1 - to); $('#tit').style.transform = `translateY(${(1 - ti) * 50}px)`;

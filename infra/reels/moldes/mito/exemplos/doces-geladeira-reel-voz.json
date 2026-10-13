@@ -1,0 +1,16 @@
+{"_marca": "doces-da-lu", "_formato": "reel",
+ "tema": "Bolo e geladeira", "assunto": "alimento",
+ "itens": [
+  {"afirmacao": "Pode descongelar o bolo em cima da pia.", "veredito": "mito",
+   "explicacao": "O certo é descongelar na geladeira, para a massa e o recheio não ficarem em temperatura de risco.",
+   "fonte": "Anvisa, cartilha de boas práticas"},
+  {"afirmacao": "Recheio com creme precisa ficar na geladeira.", "veredito": "verdade",
+   "explicacao": "Creme, chantilly e fruta estragam rápido fora do frio. Fora da geladeira, só na hora de servir.",
+   "fonte": "Anvisa, cartilha de boas práticas"}],
+ "falas": ["Mito ou verdade: bolo e geladeira.",
+  "Pode descongelar o bolo em cima da pia?",
+  "Mito. O certo é descongelar na geladeira, pra massa e o recheio não ficarem em temperatura de risco.",
+  "Recheio com creme precisa ficar na geladeira?",
+  "Verdade. Creme, chantilly e fruta estragam rápido fora do frio. Fora da geladeira, só na hora de servir.",
+  "Encomende o seu bolo pelo link da bio."],
+ "_origem": {"itens": "dono"}}

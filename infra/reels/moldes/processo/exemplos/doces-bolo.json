@@ -1,0 +1,8 @@
+{"_marca": "doces-da-lu", "_formato": "reel", "titulo": "Do forno à festa",
+ "etapas": [
+  {"midia": "leite", "legenda": "o recheio"},
+  {"midia": "forno", "legenda": "a massa no forno"},
+  {"midia": "confeita", "legenda": "a cobertura"},
+  {"midia": "fotos/bolo.jpg"}],
+ "resultado": "Pronto!",
+ "_origem": {"etapas": "dono"}}

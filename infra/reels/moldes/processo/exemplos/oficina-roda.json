@@ -1,0 +1,9 @@
+{"_marca": "oficina-do-ze", "_formato": "reel", "titulo": "Da roda suja ao brilho",
+ "etapas": [
+  {"midia": "fotos/oficina_antes.jpg", "legenda": "chegou assim"},
+  {"midia": "fotos/oficina_interior.jpg", "legenda": "no elevador"},
+  {"midia": "fotos/mecanico_maos.jpg", "legenda": "desmonta e limpa"},
+  {"midia": "maquina", "legenda": "acerta a conta"},
+  {"midia": "fotos/oficina_depois.jpg"}],
+ "resultado": "Novinha",
+ "_origem": {"etapas": "dono"}}

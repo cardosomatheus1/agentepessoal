@@ -20,17 +20,17 @@ body.e-papel .pb{background:repeating-linear-gradient(0deg,rgba(90,60,30,.05) 0 
 #tema{position:absolute;left:90px;width:900px;top:450px;height:240px;font-size:80px}
 .foto #tema,.foto #kick{color:#fff}
 #split{position:absolute;left:0;top:720px;width:1080px;height:760px}
-#ta0{position:absolute;left:70px;top:44px;width:440px;height:290px}
+#ta0{position:absolute;left:86px;top:44px;width:430px;height:290px}
 #ta0 .ld,#tb0 .ld{height:240px;font-size:62px;margin-top:8px}
-#tb0{position:absolute;left:556px;top:470px;width:344px;height:280px;text-align:right}
+#tb0{position:absolute;left:556px;top:470px;width:330px;height:280px;text-align:right}
 #vs0{left:435px;top:275px}#onda0{left:435px;top:275px}
 /* scenes 1, 2: one team takes the whole screen */
 .tela{position:absolute;inset:0}
 .tela .big{position:absolute;left:90px;width:900px;top:390px;height:170px;font-size:160px;line-height:1;white-space:nowrap}
 .tela .ld{position:absolute;left:90px;width:900px;top:590px;height:250px;font-size:90px}
-.tela .arg{position:absolute;left:80px;width:830px;top:900px;height:480px;padding:56px 54px 40px;border-radius:var(--raio);border:4px solid currentColor;background:color-mix(in srgb,currentColor 9%,transparent)}
-.tela .arg .q{position:absolute;left:44px;top:-70px;font-family:var(--ft),sans-serif;font-weight:900;font-size:200px;line-height:1;height:150px}
-.tela .arg .tx{position:relative;height:380px;font-size:58px;font-weight:800;line-height:1.2}
+.tela .arg{position:absolute;left:80px;width:830px;top:920px;padding:60px 54px 50px;border-radius:var(--raio);border:4px solid currentColor;background:color-mix(in srgb,currentColor 9%,transparent)}
+.tela .arg .q{position:absolute;left:44px;top:-70px;font-family:D,sans-serif;font-weight:900;font-size:200px;line-height:1;height:150px}
+.tela .arg .tx{position:relative;height:290px;font-size:60px;font-weight:800;line-height:1.2}
 #c1 .tela{background:var(--ta);color:var(--sa)}
 #c2 .tela{background:var(--tb);color:var(--sb)}
 body.e-papel #c2 .tela{background:repeating-linear-gradient(0deg,rgba(90,60,30,.05) 0 2px,transparent 2px 7px),var(--cartao)}
@@ -51,9 +51,9 @@ body.e-pop #corda,body.e-papel #corda{border:4px solid var(--texto)}
 #c3s{position:absolute;left:90px;width:820px;top:1200px;height:80px;font-size:62px;color:var(--destaque);text-align:center;white-space:nowrap}
 /* scene 4: neutral close, the two colors meet */
 .bola{position:absolute;top:410px;width:260px;height:260px;border-radius:50%;mix-blend-mode:normal}
-#bA{background:var(--ta);left:270px}#bB{background:var(--tb);left:550px;opacity:.92}
+#bA{background:var(--ta);left:310px}#bB{background:var(--tb);left:510px;opacity:.9}
 body.e-pop #bB,body.e-papel #bB{border:6px solid var(--texto)}
-#fech{position:absolute;left:90px;width:820px;top:760px;height:560px;font-size:70px;text-align:center}
+#fech{position:absolute;left:90px;width:820px;top:760px;height:560px;font-size:70px;line-height:1.12;text-align:center}
 
 /* carousel */
 .slide .kick{position:absolute;left:84px;width:912px;top:150px;height:64px;font-size:54px;color:var(--destaque);white-space:nowrap}
@@ -70,8 +70,8 @@ body.e-pop #bB,body.e-papel #bB{border:6px solid var(--texto)}
 .slide .pe{position:absolute;left:84px;right:84px;top:1196px;height:70px;font-size:52px;color:var(--destaque);white-space:nowrap}
 .slide .tela .big{top:150px;font-size:140px;height:150px;width:912px;left:84px}
 .slide .tela .ld{top:320px;height:230px;font-size:84px;width:912px;left:84px}
-.slide .tela .arg{top:660px;left:84px;width:912px;height:470px}
-.slide .tela .arg .tx{height:370px;font-size:56px}
+.slide .tela .arg{top:660px;left:84px;width:912px}
+.slide .tela .arg .tx{height:340px;font-size:60px}
 .slide .tela .pe2{position:absolute;left:84px;right:84px;top:1196px;height:60px;font-size:50px;white-space:nowrap}
 .slide .t4{position:absolute;left:84px;width:912px;top:150px;height:250px;font-size:96px}
 .slide .cartA,.slide .cartB{top:440px;width:440px;height:270px}
@@ -147,7 +147,7 @@ Motor.molde({
   quadro(t, F, $m) {
     const { $, p, eo, eo5, eio, eb, el, cl, lerp, ini, fim } = $m;
     // 0: theme, the two halves crash in from the sides, VS slams on the seam
-    $m.cena('#c0', t, 0);
+    $m.cena('#c0', t, 0, 0, { push: 0.02 });
     if ($('#topo')) $m.filmagem($('#topoi'), F.midia, t);
     $m.entra('#kick', t, 0.05, 0.5, 30);
     $m.revela('#tema', t, 0.15, 0.06);
@@ -155,7 +155,7 @@ Motor.molde({
     $('#pa0').style.transform = `translateX(${(1 - qa) * -1100}px)`; $('#pb0').style.transform = `translateX(${(1 - qb) * 1100}px)`;
     const v = p(t, 1.0, 0.32), vs = v === 0 ? 0 : 1 + 2.2 * Math.pow(1 - eo(v), 2);
     $('#vs0').style.opacity = v > 0 ? 1 : 0; $('#vs0').style.transform = `scale(${vs}) rotate(${(1 - eo(v)) * -30 + Math.sin(t * 3) * 3}deg)`;
-    const o = p(t, 1.3, 0.7); $('#onda0').style.opacity = o > 0 && o < 1 ? 0.8 * (1 - o) : 0; $('#onda0').style.transform = `scale(${1 + 2.2 * eo(o)})`;
+    const o = p(t, 1.1, 0.45); $('#onda0').style.opacity = o > 0 && o < 1 ? 0.7 * (1 - o) : 0; $('#onda0').style.transform = `scale(${1 + 2.6 * eo(o)})`;
     const sh = t > 1.3 && t < 1.7 ? Math.sin((t - 1.3) * 70) * 14 * (1 - (t - 1.3) / 0.4) : 0;
     $('#split').style.transform = `translate(${sh}px, ${sh * 0.4}px)`;
     // 1, 2: one team wipes over the whole screen along the seam angle
@@ -185,6 +185,8 @@ Motor.molde({
     const j = eio(p(t, a4 + 0.2, 0.9)), bi = eb(p(t, a4 + 0.05, 0.5));
     $('#bA').style.transform = `translateX(${lerp(-200, 0, j)}px) scale(${bi})`; $('#bB').style.transform = `translateX(${lerp(200, 0, j)}px) scale(${bi})`;
     $m.revela('#fech', t, a4 + 0.6, 0.05);
+    // a white page under the dark vignette looks dirty: lift the vignette while team B fills the screen
+    const vn = $('#vinheta'); if (vn) vn.style.opacity = 1 - eio(p(t, ini(2), 0.4)) + eio(p(t, ini(3), 0.4));
   },
   slides(F, M, $m) {
     checar(F, $m); fontes();

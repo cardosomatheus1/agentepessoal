@@ -1,0 +1,10 @@
+{"_marca": "raiz", "_formato": "reel",
+ "etapas": [
+  {"midia": "embala", "legenda": "massa e recheio"},
+  {"midia": "fritura", "legenda": "fritura"},
+  {"midia": "salgado", "legenda": "escorrendo"},
+  {"midia": "gas", "legenda": "o tempero"},
+  {"midia": "delivery", "legenda": "saiu pra entrega"},
+  {"midia": "fotos/salgado.jpg"}],
+ "resultado": "Na mesa",
+ "_origem": {"etapas": "dono"}}

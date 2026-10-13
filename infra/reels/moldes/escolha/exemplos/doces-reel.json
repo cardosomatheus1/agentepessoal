@@ -1,0 +1,5 @@
+{"_marca": "doces-da-lu", "_formato": "reel",
+ "pares": [
+  {"foto_a": "fotos/brigadeiro.jpg", "nome_a": "Brigadeiro", "foto_b": "fotos/bolo.jpg", "nome_b": "Bolo de festa"},
+  {"foto_a": "fotos/acai.jpg", "nome_a": "Copo de açaí", "foto_b": "fotos/leite.jpg", "nome_b": "Doce de leite caseiro"},
+  {"foto_a": "fotos/confeita.jpg", "nome_a": "Bolo decorado", "foto_b": "fotos/freezer.jpg", "nome_b": "Sorvete artesanal"}]}

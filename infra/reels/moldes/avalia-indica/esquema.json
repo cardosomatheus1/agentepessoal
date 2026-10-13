@@ -1,0 +1,74 @@
+{
+ "formatos": [
+  "story",
+  "reel"
+ ],
+ "voz": "nao",
+ "musica": "animada",
+ "campos": {
+  "tipo": {
+   "tipo": "escolha",
+   "opcoes": [
+    "avaliacao",
+    "indicacao"
+   ]
+  },
+  "pedido": {
+   "tipo": "texto",
+   "max": 34,
+   "obrigatorio": false,
+   "dica": "padrão: Conta pra gente como foi? / Indica a gente pra alguém?"
+  },
+  "beneficio": {
+   "tipo": "texto",
+   "max": 40,
+   "real": true,
+   "dica": "o prêmio de verdade, confirmado pelo dono: um brigadeiro na próxima compra; 10% para você e para ela"
+  },
+  "regra": {
+   "tipo": "texto",
+   "max": 60,
+   "obrigatorio": false,
+   "dica": "obrigatória na indicação (quando e para quem vale). Na avaliação o molde já diz que vale para qualquer nota"
+  },
+  "quem": {
+   "tipo": "texto",
+   "max": 18,
+   "obrigatorio": false,
+   "dica": "indicação: quem é indicado (sua amiga, um vizinho)"
+  },
+  "passos": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "item": {
+    "tipo": "texto",
+    "max": 40
+   }
+  },
+  "link": {
+   "tipo": "texto",
+   "max": 36,
+   "real": true,
+   "dica": "link real para avaliar ou indicar"
+  },
+  "codigo": {
+   "tipo": "texto",
+   "max": 12,
+   "obrigatorio": false,
+   "real_opcional": true,
+   "dica": "cupom de indicação; dado do negócio, precisa de _origem.codigo"
+  },
+  "validade": {
+   "tipo": "texto",
+   "max": 34,
+   "obrigatorio": false,
+   "dica": "use até 30/11"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ }
+}

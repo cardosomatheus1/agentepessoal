@@ -1,0 +1,117 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* a generic phone chat (no messaging-app look): brand colors, no ticks, no wallpaper */
+#cel{position:absolute;left:140px;top:356px;width:760px;height:1320px;border-radius:96px;background:var(--texto);padding:16px;box-shadow:var(--sombra);transform-origin:50% 6%}
+body.e-pop #cel{box-shadow:18px 18px 0 var(--fundo2)}
+body.e-noite #cel{box-shadow:0 0 0 3px var(--destaque),0 0 60px color-mix(in srgb,var(--destaque) 45%,transparent)}
+#tela{position:absolute;inset:16px;border-radius:80px;overflow:hidden;background:color-mix(in srgb,var(--fundo) 94%,var(--c1))}
+body.e-claro #tela,body.e-papel #tela{background:color-mix(in srgb,var(--fundo) 85%,#fff)}
+body.e-pop #tela{background:var(--fundo2)}
+#barra{position:absolute;left:64px;right:64px;top:24px;height:50px;display:flex;justify-content:space-between;align-items:center}
+#hora{width:130px;height:44px;font-size:32px;font-weight:800;line-height:44px}
+#bat{width:56px;height:26px;border:4px solid var(--texto);border-radius:8px;padding:3px;opacity:.8}
+#bat i{display:block;height:100%;width:70%;background:var(--texto);border-radius:3px}
+#cab{position:absolute;left:0;right:0;top:78px;height:124px;display:flex;align-items:center;gap:20px;padding:0 34px;border-bottom:2px solid var(--borda)}
+#av{flex:none;width:84px;height:84px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:48px}
+#cabT{flex:1;min-width:0}
+#nome{height:46px;font-size:40px;font-weight:900;line-height:46px}
+#status{height:40px;font-size:30px;font-weight:600;line-height:40px;white-space:nowrap}
+#selo{flex:none;height:48px;line-height:42px;padding:0 18px;border-radius:14px;font-size:30px;font-weight:800;border:3px solid var(--texto2);color:var(--texto2);white-space:nowrap}
+#msgs{position:absolute;left:0;right:0;top:204px;height:880px;overflow:hidden}
+#lista{position:absolute;left:26px;right:26px;bottom:18px;display:flex;flex-direction:column;justify-content:flex-end}
+.lin{display:flex;overflow:hidden;flex:none}
+.lin.dono{justify-content:flex-end}
+.bb{max-width:570px;margin:10px 0;padding:22px 32px;border-radius:38px;font-size:47px;font-weight:600;line-height:1.2;transform-origin:0 100%;align-self:flex-end}
+.cliente .bb{background:color-mix(in srgb,var(--texto) 11%,transparent);color:var(--texto);border-bottom-left-radius:10px}
+.dono .bb{background:var(--destaque);color:var(--sobre-destaque);border-bottom-right-radius:10px;transform-origin:100% 100%}
+.bb.dig{display:flex;gap:12px;padding:28px 32px}
+.bb.dig i{width:18px;height:18px;border-radius:50%;background:currentColor;opacity:.6}
+.lin.virada .bb{font-size:60px;font-weight:900;font-family:var(--ft);max-width:640px;line-height:1.08;padding:28px 38px}
+#veu{position:absolute;inset:0;background:color-mix(in srgb,var(--fundo) 70%,transparent);opacity:0;pointer-events:none}
+#estouro{position:absolute;width:600px;height:600px;opacity:0;pointer-events:none}
+#barraIn{position:absolute;left:26px;right:26px;bottom:0;top:1090px;display:flex;align-items:flex-start;gap:16px;padding-top:14px}
+#barraIn .in{flex:1;height:86px;border-radius:43px;background:color-mix(in srgb,var(--texto) 8%,transparent);font-size:34px;line-height:86px;padding:0 34px}
+#barraIn .bt{flex:none;width:86px;height:86px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:44px}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="full">
+ <div id="cel"><div id="tela">
+  <div id="barra"><div id="hora" class="t"></div><div id="selo" class="t seg">cena encenada</div><div id="bat"><i></i></div></div>
+  <div id="cab"><div id="av"></div><div id="cabT"><div id="nome" class="t seg">Cliente</div><div id="status" class="t t2 seg"></div></div></div>
+  <div id="msgs"><div id="lista"></div><div id="veu"></div><svg id="estouro" viewBox="-300 -300 600 600"></svg></div>
+  <div id="barraIn"><div class="in t t2">Mensagem</div><div class="bt"></div></div>
+ </div></div>
+</div></div>
+
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Conversa no celular": a staged conversation inside a generic phone (brand colors, "cena encenada" seal, no
+// messaging-app look). Messages arrive after "digitando…", the list scrolls, and the turn lands big: the rest dims,
+// the phone jolts and a burst marks the punchline. Music only.
+let D = {};
+Motor.molde({
+  id: 'chat', formatos: ['reel'],
+  montar(F, M, $m) {
+    const { $, icone } = $m;
+    const todas = [...F.mensagens, { ...F.virada, virada: true }];
+    if (!F.mensagens.some(m => m.de === 'cliente') || !todas.some(m => m.de === 'dono')) $m.erro('mensagens: a conversa precisa ter o cliente e o dono');
+    $('#av').innerHTML = icone('pessoa'); $('#barraIn .bt').innerHTML = icone('seta');
+    $('#hora').textContent = F.hora || '';
+    // timeline: typing, then the message stays long enough to read (about 26 letters per second)
+    let s = 0.5; D.m = [];
+    todas.forEach((m, i) => {
+      const dig = m.virada ? 0.9 : (m.de === 'cliente' ? 0.55 : 0.4) + Math.min(0.3, m.texto.length * 0.004);
+      const ler = m.virada ? 2.6 : 0.35 + m.texto.length / 26;
+      D.m.push({ ...m, d0: s, d1: s + dig }); s += dig + ler;
+    });
+    if (s > 13) $m.erro(`conversa longa demais: precisa de ${s.toFixed(1)} s e cabem 13 (mais 3 s do final); corte mensagens ou letras`);
+    const NS = 'http://www.w3.org/2000/svg';
+    for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2, l = document.createElementNS(NS, 'line'); const r0 = 190, r1 = 250 + (k % 2) * 40;
+      Object.entries({ x1: Math.cos(a) * r0, y1: Math.sin(a) * r0, x2: Math.cos(a) * r1, y2: Math.sin(a) * r1, stroke: 'var(--destaque)', 'stroke-width': 12, 'stroke-linecap': 'round' }).forEach(([u, v]) => l.setAttribute(u, v)); $('#estouro').appendChild(l); }
+    D.m.forEach((m, i) => {
+      const lin = document.createElement('div'); lin.className = 'lin ' + m.de + (m.virada ? ' virada' : '');
+      const bb = document.createElement('div'); bb.className = 'bb t seg'; bb.textContent = m.texto; lin.appendChild(bb);
+      const dg = document.createElement('div'); dg.className = 'lin dig ' + m.de; dg.innerHTML = '<div class="bb dig"><i></i><i></i><i></i></div>';
+      $('#lista').append(dg, lin); m.lin = lin; m.bb = bb; m.dg = dg;
+    });
+    D.fim = s;
+    return { duracoes: [+s.toFixed(2)] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eb, el, cl } = $m;
+    $m.cena('#c0', t, 0, 0, { trans: 'fade', ent: 0.35 });
+    const ci = eo5(p(t, 0, 0.7));
+    let digit = false;
+    D.m.forEach((m, i) => {
+      if (!m.h) { m.h = m.lin.scrollHeight; m.hd = m.dg.scrollHeight; }
+      const tdig = t >= m.d0 && t < m.d1; if (tdig && m.de === 'cliente') digit = true;
+      const gd = tdig ? eo(p(t, m.d0, 0.18)) : 0;
+      m.dg.style.height = m.hd * gd + 'px'; m.dg.style.opacity = gd;
+      m.dg.querySelectorAll('i').forEach((d, k) => { d.style.transform = `translateY(${Math.sin(t * 13 - k * 0.9) * 7}px)`; });
+      const g = eo(p(t, m.d1, 0.15)); m.lin.style.height = m.h * g + 'px';
+      const pop = el(p(t, m.d1, m.virada ? 0.9 : 0.55)) + (m.virada ? 0.12 * Math.sin(Math.PI * p(t, m.d1 + 0.5, 0.6)) : 0); m.bb.style.transform = `scale(${t >= m.d1 ? Math.max(0, pop) : 0})`;
+      m.lin.style.visibility = t >= m.d1 ? 'visible' : 'hidden';
+    });
+    // messages scrolled above the window are hidden (the phone screen clips them)
+    const topo = $('#msgs').getBoundingClientRect().top;
+    D.m.forEach(m => { if (m.lin.getBoundingClientRect().bottom < topo + 30) m.lin.style.visibility = 'hidden'; });
+    $('#status').textContent = digit ? 'digitando…' : (F.assunto || 'online');
+    // the turn
+    const v = D.m[D.m.length - 1], tv = v.d1;
+    const vi = t >= tv ? eo(p(t, tv + 0.05, 0.3)) : 0;
+    $('#veu').style.opacity = vi;
+    D.m.forEach(m => { if (m !== v) m.lin.style.opacity = 1 - 0.75 * vi; });
+    v.lin.style.position = 'relative'; v.lin.style.zIndex = 2;
+    const sh = t >= tv ? Math.exp(-(t - tv - 0.25) * 5) * (t > tv + 0.25 ? 1 : 0) : 0;
+    const zz = t >= tv ? 0.05 * eo5(p(t, tv, 0.5)) : 0;
+    $('#cel').style.transform = `translateY(${(1 - ci) * 300 + Math.sin(t * 1.3) * 6}px) rotate(${(1 - ci) * 6 + Math.sin(t * 0.8) * 0.4 + Math.sin(t * 70) * 1.6 * sh}deg) scale(${1 + zz})`;
+    const es = $('#estouro');
+    if (t >= tv) { const r = v.bb.getBoundingClientRect(), base = $('#msgs').getBoundingClientRect(), k = eo5(p(t, tv + 0.25, 0.5)), sc = (base.width / 760) || 1;
+      es.style.left = ((r.left + r.right) / 2 - base.left) / sc - 300 + 'px'; es.style.top = ((r.top + r.bottom) / 2 - base.top) / sc - 300 + 'px';
+      es.style.opacity = (1 - p(t, tv + 0.75, 0.4)) * (k > 0 ? 1 : 0); es.style.transform = `scale(${0.6 + 0.9 * k}, ${(0.6 + 0.9 * k) * 0.55})`; }
+    else es.style.opacity = 0;
+  },
+});
+</script></body></html>

@@ -1,0 +1,9 @@
+{"_marca": "oficina-do-ze", "_formato": "reel",
+ "tema": "Crenças sobre o seu carro", "assunto": "negocio",
+ "itens": [
+  {"afirmacao": "Gasolina aditivada limpa o motor sozinha.", "veredito": "depende",
+   "explicacao": "Ela ajuda a manter limpo, mas não faz milagre em motor que já está sujo. Aí precisa de limpeza."},
+  {"afirmacao": "Carro novo não precisa de revisão.", "veredito": "mito",
+   "explicacao": "A revisão no prazo do manual evita desgaste e mantém a garantia de fábrica valendo."},
+  {"afirmacao": "Calibrar o pneu economiza combustível.", "veredito": "verdade",
+   "explicacao": "Pneu murcho aumenta o atrito com o chão e o motor faz mais força pra andar."}]}

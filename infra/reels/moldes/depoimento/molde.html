@@ -1,0 +1,125 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* one card for the whole video: giant quote mark, the words of the client, stars, a handwritten signature */
+#aspas{position:absolute;left:70px;top:330px;width:300px;height:300px;font-family:var(--ft),serif;font-weight:900;font-size:440px;line-height:1;color:var(--destaque);transform-origin:30% 60%;z-index:3}
+body.e-noite #aspas{text-shadow:0 0 40px color-mix(in srgb,var(--destaque) 70%,transparent)}
+#card{position:absolute;left:90px;width:820px;top:520px;height:580px;padding:70px 56px 50px;z-index:2}
+#cit{width:708px;height:460px;font-size:66px;font-weight:800;line-height:1.2;display:flex;align-items:center;letter-spacing:-.01em}
+#cit > div{width:100%}
+#cit .mk{color:inherit;display:inline;background-image:linear-gradient(color-mix(in srgb,var(--destaque) 38%,transparent),color-mix(in srgb,var(--destaque) 38%,transparent));background-repeat:no-repeat;background-position:0 85%;background-size:calc(var(--k,1) * 100%) 72%;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:0 .08em}
+#cit .mk:before{display:none}
+#foto{position:absolute;left:740px;top:380px;width:220px;height:220px;border-radius:50%;overflow:hidden;border:10px solid var(--cartao);box-shadow:var(--sombra);z-index:3}
+body.e-vidro #foto,body.e-noite #foto{border-color:var(--texto)}
+#foto img{width:100%;height:100%;object-fit:cover}
+#estrelas{position:absolute;left:90px;width:820px;top:1128px;height:96px;display:flex;justify-content:center;gap:16px}
+#estrelas .st{position:relative;width:88px;height:88px;font-size:88px;line-height:1}
+#estrelas .st .ico{position:absolute;left:0;top:0;color:var(--texto);opacity:.16}
+#estrelas .st .on{position:absolute;left:0;top:0;color:var(--destaque)}
+#estrelas .st .on .ico{opacity:1;color:var(--destaque)}
+#assina{position:absolute;left:90px;width:820px;top:1222px;height:120px;display:flex;align-items:baseline;justify-content:center;gap:22px}
+#autor{height:120px;font-size:112px;line-height:120px;white-space:nowrap;color:var(--texto);max-width:520px}
+#bairro{height:56px;font-size:42px;font-weight:700;white-space:nowrap;max-width:340px}
+#fonteW{position:absolute;left:90px;width:820px;top:1350px;text-align:center}
+#fonte{display:inline-block;font-size:34px;padding:12px 30px;white-space:nowrap;max-width:820px}
+#perm{position:absolute;left:90px;width:820px;top:1424px;height:40px;font-size:30px;font-weight:500;text-align:center;white-space:nowrap}
+#traco{position:absolute;left:340px;top:1334px;width:400px;height:6px;border-radius:3px;background:var(--destaque);transform-origin:0 50%}
+body.f-story #card{width:900px;left:90px}body.f-story #cit{width:788px}
+body.f-story #estrelas,body.f-story #assina,body.f-story #fonteW,body.f-story #perm{width:900px}
+body.f-story #traco{left:380px}
+/* carousel: everything on one slide */
+body.f-carrossel #aspas{left:70px;top:118px;width:260px;height:260px;font-size:380px}
+body.f-carrossel #card{left:84px;width:912px;top:300px;height:620px;padding:80px 60px 50px}
+body.f-carrossel #cit{width:792px;height:490px;font-size:64px}
+body.f-carrossel #foto{left:776px;top:150px;width:200px;height:200px}
+body.f-carrossel #estrelas{left:84px;width:912px;top:948px}
+body.f-carrossel #assina{left:84px;width:912px;top:1042px}
+body.f-carrossel #traco{left:380px;top:1154px}
+body.f-carrossel #fonteW{left:84px;width:912px;top:1172px}
+body.f-carrossel #perm{left:84px;width:912px;top:1234px}
+</style></head><body><div id="palco">
+
+<div class="cena" id="cD"><div class="cam full" id="cam">
+ <div id="card" class="cartao"><div class="t seg rv" id="cit"></div></div>
+ <div id="aspas">“</div>
+ <div id="foto"><img id="fotoImg" alt=""></div>
+ <div id="estrelas"></div>
+ <div id="assina"><div class="mao t seg" id="autor"></div><div class="t t2 seg" id="bairro"></div></div>
+ <div id="traco"></div>
+ <div id="fonteW"><span class="chip t seg" id="fonte"></span></div>
+ <div class="t t2 seg" id="perm">depoimento real, publicado com autorização</div>
+</div></div>
+
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Depoimento de cliente": a real sentence of a client, copied word for word (never edited), with the proof and the
+// permission kept in the ficha. Stars only when the source has a rating. Scenes: 0 giant quote mark, 1 the words
+// revealed one by one (optional highlight must be an exact piece of the sentence), 2 stars + handwritten first name,
+// neighbourhood and source, 3 call (engine's final scene).
+const FONTES = { avaliacao: 'avaliação de cliente', mensagem: 'mensagem de cliente', comentario: 'comentário de cliente', email: 'e-mail de cliente' };
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+let D = {};
+function montarTudo(F, M, $m) {
+  const { $ } = $m;
+  // honesty: stars only from a source that has a rating, and only the real one
+  if (F.estrelas != null) {
+    if (F.fonte !== 'avaliacao') $m.erro('estrelas só quando a fonte tem nota (fonte: avaliacao)');
+    if (!Number.isInteger(F.estrelas)) $m.erro('estrelas: número inteiro de 1 a 5, igual ao da avaliação');
+    if (!['dono', 'sistema'].includes((F._origem || {}).estrelas)) $m.erro('estrelas: dado real sem origem (_origem: dono ou sistema)');
+  }
+  const cit = F.citacao;
+  // the text is shown exactly as the client wrote it; a highlight has to be a piece of it, never a rewrite
+  const k = F.destaque ? cit.indexOf(F.destaque) : -1;
+  if (F.destaque && k < 0) $m.erro('destaque: precisa ser um trecho exato da citação');
+  const c = document.createElement('div'); $('#cit').textContent = ''; $('#cit').appendChild(c);
+  if (k >= 0) { const mk = document.createElement('span'); mk.className = 'mk'; mk.id = 'mk'; mk.textContent = F.destaque; c.append(cit.slice(0, k), mk, cit.slice(k + F.destaque.length)); }
+  else c.textContent = cit;
+  if (F.foto) $('#fotoImg').src = $m.midia(F.foto); else $('#foto').style.display = 'none';
+  const n = F.estrelas || 0;
+  for (let i = 0; i < (n ? 5 : 0); i++) { const s = document.createElement('div'); s.className = 'st'; s.innerHTML = $m.icone('estrela') + (i < n ? '<div class="on">' + $m.icone('estrela') + '</div>' : ''); s.dataset.i = i; $('#estrelas').appendChild(s); }
+  if (!n) $('#estrelas').style.display = 'none';
+  $('#autor').textContent = F.autor;
+  if (F.bairro) { $('#bairro').innerHTML = $m.icone('local') + ' '; $('#bairro').append(F.bairro); } else $('#bairro').style.display = 'none';
+  let fonte = FONTES[F.fonte];
+  if (F.data) { const m = /^(\d{4})-(\d{2})/.exec(F.data); fonte += ' · ' + MESES[+m[2] - 1] + '/' + m[1]; }
+  $('#fonte').textContent = (n ? n + ' de 5 · ' : '') + fonte;
+  // without stars the signature block moves up to keep the composition tight
+  if (!n) { const up = $m.FORMATO === 'carrossel' ? 60 : 70; ['#assina', '#traco', '#fonteW', '#perm'].forEach(s => { const e = $(s); e.style.top = (parseFloat(getComputedStyle(e).top) - up) + 'px'; }); }
+  D.palavras = cit.split(/\s+/).length;
+}
+Motor.molde({
+  id: 'depoimento', formatos: ['reel', 'carrossel', 'story'],
+  montar(F, M, $m) {
+    montarTudo(F, M, $m);
+    return { duracoes: [1.2, Math.min(5.0, Math.max(3.0, 1.6 + D.palavras * 0.11)), 2.6] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eb, el, cl, ini } = $m;
+    const S1 = ini(1), S2 = ini(2);
+    $m.cena('#cD', t, 0, 2, { push: 0.03 });
+    // 0: the quote mark falls and bounces, the card unfolds behind it
+    const a = el(p(t, 0.05, 1.0)); $('#aspas').style.transform = `translateY(${(1 - cl(a)) * -500}px) scale(${0.4 + 0.6 * a}) rotate(${(1 - cl(a)) * -30}deg)`; $('#aspas').style.opacity = cl(a * 3);
+    const cq = eo5(p(t, 0.35, 0.7)); $('#card').style.opacity = cq; $('#card').style.transform = `scaleY(${0.3 + 0.7 * cq})`; $('#card').style.transformOrigin = '50% 0';
+    const fo = eb(p(t, 0.7, 0.5)); $('#foto').style.opacity = cl(fo * 2); $('#foto').style.transform = `scale(${0.5 + 0.5 * fo}) rotate(${(1 - fo) * 20}deg)`;
+    // 1: word by word; the quote mark breathes
+    $m.revela('#cit', t, S1 + 0.1, Math.min(0.09, 2.4 / D.palavras), 0.5);
+    $('#cit').style.opacity = t >= S1 ? 1 : 0;
+    if ($('#mk')) $m.marcador('#mk', t, S1 + 0.1 + Math.min(0.09, 2.4 / D.palavras) * D.palavras + 0.3);
+    // 2: stars fill one after the other, the name is written by hand, the source drops in
+    $$('#estrelas .st').forEach(s => { const i = +s.dataset.i, q = el(p(t, S2 + 0.1 + i * 0.14, 0.7)); s.style.opacity = t >= S2 ? cl(q * 3) : 0; s.style.transform = `scale(${q}) rotate(${(1 - cl(q)) * -90}deg)`; });
+    const w = eo(p(t, S2 + 0.75, 0.8)); $('#autor').style.clipPath = `inset(-20% ${100 - w * 100}% -20% -5%)`; $('#autor').style.opacity = t >= S2 + 0.75 ? 1 : 0;
+    $('#traco').style.transform = `scaleX(${eo(p(t, S2 + 1.3, 0.4))})`;
+    $m.entra('#bairro', t, S2 + 1.2, 0.4, 20);
+    $m.entra('#fonteW', t, S2 + 1.45, 0.4, 30);
+    $m.entra('#perm', t, S2 + 1.6, 0.4, 20);
+  },
+  slides(F, M, $m) {
+    // carousel: the same card as one finished slide (the engine adds the final slide)
+    const palco = $m.$('#palco'), cam = $m.$('#cam');
+    const s = document.createElement('div'); s.className = 'slide'; [...cam.children].forEach(c => s.appendChild(c));
+    $m.$$('.cena', palco).forEach(c => c.remove()); palco.appendChild(s);
+    montarTudo(F, M, $m);
+  },
+});
+</script></body></html>

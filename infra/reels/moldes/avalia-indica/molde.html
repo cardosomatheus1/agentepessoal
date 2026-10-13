@@ -1,0 +1,172 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* the ask, a gift box that opens on the reward, three dealt cards with the steps, a coupon cut along its perforation */
+.mv{position:absolute;left:0;top:0;width:1080px;height:1920px}
+body.f-reel .mv{left:-40px}
+/* scene 0: the ask */
+#pd{left:110px;right:110px;top:400px;height:300px;font-size:110px;line-height:1.02}
+#rev{position:absolute;left:150px;top:780px;width:780px;height:560px;padding:50px}
+#rev .av{position:absolute;left:50px;top:50px;width:110px;height:110px;border-radius:50%;background:color-mix(in srgb,var(--destaque) 22%,transparent);color:var(--destaque);font-size:70px;display:flex;align-items:center;justify-content:center}
+#rev .ln{position:absolute;left:190px;height:24px;border-radius:12px;background:var(--texto);opacity:.14}
+#rev .es{position:absolute;left:50px;top:210px;display:flex;gap:22px;font-size:96px;color:var(--texto)}
+#rev .es .ico{opacity:.22}
+#rev .cx{position:absolute;left:50px;right:50px;top:350px;height:150px;border-radius:24px;border:3px solid var(--borda);padding:26px 30px}
+#rev .cx .t{height:50px;font-size:40px;font-weight:700;white-space:nowrap}
+#rev .cur{display:inline-block;width:5px;height:46px;margin-left:4px;vertical-align:-8px;background:var(--destaque)}
+#gente{position:absolute;left:150px;top:830px;width:780px;height:460px}
+#gente .p{position:absolute;top:80px;width:250px;height:250px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:150px;display:flex;align-items:center;justify-content:center;box-shadow:var(--sombra)}
+#gente .p.b{background:var(--texto);color:var(--fundo)}
+#gente>svg{position:absolute;left:0;top:0;width:780px;height:460px;overflow:visible}
+#gente .cz{position:absolute;left:360px;top:160px;width:70px;height:70px;font-size:70px;color:var(--destaque)}
+#gente .rp{position:absolute;top:360px;width:250px;height:50px;font-size:38px;font-weight:800;text-align:center;white-space:nowrap}
+/* scene 1: gift */
+#gk{left:110px;right:110px;top:390px;height:64px;font-size:48px;font-weight:800;white-space:nowrap}
+#gb{left:90px;right:90px;top:462px;height:250px;font-size:112px;line-height:1.02}
+#raios{position:absolute;left:240px;top:640px;width:600px;height:600px;border-radius:50%;background:repeating-conic-gradient(color-mix(in srgb,var(--destaque) 30%,transparent) 0 10deg,transparent 10deg 20deg);-webkit-mask-image:radial-gradient(circle,#000 20%,transparent 70%);mask-image:radial-gradient(circle,#000 20%,transparent 70%);opacity:0}
+#caixa{position:absolute;left:330px;top:900px;width:420px;height:290px}
+#caixa .cp{position:absolute;inset:0;border-radius:18px;background:var(--destaque);box-shadow:var(--sombra)}
+#caixa .fi{position:absolute;left:175px;top:0;width:70px;height:100%;background:var(--sobre-destaque);opacity:.9}
+#tampa{position:absolute;left:310px;top:820px;width:460px;height:96px;transform-origin:20px 96px}
+#tampa .cp{position:absolute;inset:0;border-radius:18px;background:var(--destaque);filter:brightness(1.08);box-shadow:0 10px 24px rgba(0,0,0,.25)}
+#tampa .fi{position:absolute;left:195px;top:0;width:70px;height:100%;background:var(--sobre-destaque);opacity:.9}
+#tampa .la,#tampa .lb{position:absolute;top:-74px;width:110px;height:80px;border:20px solid var(--sobre-destaque);border-radius:50% 50% 10% 50%;opacity:.9}
+#tampa .la{left:120px;transform:rotate(-18deg)}#tampa .lb{left:228px;transform:scaleX(-1) rotate(-18deg)}
+body.e-pop #caixa .cp,body.e-pop #tampa .cp{border:6px solid var(--texto)}
+#regra{left:110px;right:110px;top:1240px;height:120px;font-size:46px;font-weight:800;line-height:1.2}
+#notas{position:absolute;left:0;right:0;top:1380px;display:flex;justify-content:center;gap:18px;font-size:70px;color:var(--destaque)}
+#notas .ico{opacity:.25}
+/* scene 2: steps dealt as cards */
+#pt{left:110px;right:110px;top:390px;height:110px;font-size:96px;white-space:nowrap}
+.pc{position:absolute;left:110px;width:860px;height:250px;padding:0 50px 0 190px;display:flex;align-items:center}
+.pc .nu{position:absolute;left:40px;top:50%;margin-top:-62px;width:124px;height:124px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900;font-size:76px;display:flex;align-items:center;justify-content:center}
+.pc .t{width:100%;height:150px;font-size:56px;font-weight:800;line-height:1.15;display:flex;align-items:center}
+body.f-reel .pc{width:800px}
+/* scene 3: coupon */
+#ck{left:110px;right:110px;top:400px;height:120px;font-size:100px;white-space:nowrap}
+#cup{position:absolute;left:100px;top:620px;width:880px;height:480px}
+#cup .a,#cup .b{position:absolute;top:0;bottom:0;background:var(--destaque);color:var(--sobre-destaque);box-shadow:var(--sombra)}
+#cup .a{left:0;width:640px;border-radius:36px 0 0 36px;padding:56px 50px}
+#cup .b{left:640px;width:240px;border-radius:0 36px 36px 0;display:flex;align-items:center;justify-content:center;font-size:130px}
+#cup .b:before{content:'';position:absolute;left:0;top:30px;bottom:30px;border-left:6px dashed var(--sobre-destaque);opacity:.5}
+#cup .n1,#cup .n2{position:absolute;left:610px;width:60px;height:60px;border-radius:50%;background:var(--fundo);z-index:2}
+#cup .n1{top:-30px}#cup .n2{bottom:-30px}
+#cup .lb{height:50px;font-size:38px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.8;white-space:nowrap}
+#cup .cd{height:150px;margin-top:20px;font-size:120px;line-height:150px;white-space:nowrap}
+#cup .lk{height:96px;margin-top:40px;font-size:66px;line-height:96px;white-space:nowrap}
+#cup .lk2{height:56px;margin-top:20px;font-size:40px;font-weight:700;white-space:nowrap;opacity:.85}
+#cup .vt{position:absolute;left:50px;right:40px;bottom:50px;height:52px;font-size:36px;font-weight:800;white-space:nowrap}
+#tes{position:absolute;left:640px;top:560px;font-size:110px;color:var(--texto);margin-left:-55px;z-index:4}
+body.f-reel #tes{left:580px}
+body.f-reel #cup{width:800px}body.f-reel #cup .a{width:580px}body.f-reel #cup .b{left:580px;width:220px}body.f-reel #cup .n1,body.f-reel #cup .n2{left:550px}
+#qn{left:110px;right:110px;top:1170px;height:120px;font-size:44px;font-weight:700;line-height:1.25}
+</style></head><body><div id="palco">
+<div class="cena" id="c0"><div class="cam full"><div class="mv">
+ <div class="ctr tit t seg rv" id="pd"></div>
+ <div id="rev" class="cartao"><div class="av"></div><i class="ln" style="top:70px;width:300px"></i><i class="ln" style="top:116px;width:200px"></i>
+  <div class="es"></div><div class="cx"><div class="t t2 seg"><span id="digita"></span><span class="cur"></span></div></div></div>
+ <div id="gente"><svg><path id="laco" fill="none" stroke="var(--destaque)" stroke-width="8" stroke-dasharray="4 22" stroke-linecap="round"/></svg>
+  <div class="p a" style="left:0"></div><div class="p b" style="right:0"></div><div class="cz"></div>
+  <div class="rp t seg" style="left:0">você</div><div class="rp t seg" style="right:0" id="rpB"></div></div>
+</div></div></div>
+<div class="cena" id="c1"><div class="cam full"><div class="mv">
+ <div class="ctr t t2 seg" id="gk"></div>
+ <div class="ctr tit t seg" id="gb"></div>
+ <div id="raios"></div>
+ <div id="caixa"><div class="cp"></div><div class="fi"></div></div>
+ <div id="tampa"><div class="la"></div><div class="lb"></div><div class="cp"></div><div class="fi"></div></div>
+ <div class="ctr t seg rv" id="regra"></div>
+ <div id="notas"></div>
+</div></div></div>
+<div class="cena" id="c2"><div class="cam full"><div class="mv">
+ <div class="ctr tit t seg rv" id="pt"></div>
+ <div id="pcs"></div>
+</div></div></div>
+<div class="cena" id="c3"><div class="cam full"><div class="mv">
+ <div class="ctr tit t seg rv" id="ck"></div>
+ <div id="cup"><div class="a"><div class="lb t" id="cLb"></div><div id="cMain"></div><div class="vt t" id="cVt"></div></div><div class="b"></div><i class="n1"></i><i class="n2"></i></div>
+ <div id="tes"></div>
+ <div class="ctr t t2 seg" id="qn"></div>
+</div></div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Avalia ou indica": asks for a review or a referral with a clear reward. A review reward holds for ANY rating
+// (fixed text of the template, never editable), so the template never buys good reviews. The gift box opens on
+// the reward, three cards deal the steps, a coupon with the real link (or code) is cut along its perforation.
+let D = {};
+const QUALQUER = 'Vale para qualquer nota, boa ou ruim.';
+Motor.molde({
+  id: 'avalia-indica', formatos: ['story', 'reel'],
+  montar(F, M, $m) {
+    const { $, $$ } = $m, av = F.tipo === 'avaliacao';
+    if (!av && !F.regra) $m.erro('indicação precisa da regra do prêmio (quando e para quem vale)');
+    if (F.codigo && !['dono', 'sistema'].includes((F._origem || {}).codigo)) $m.erro('codigo: dado real sem origem (_origem: dono ou sistema)');
+    if (av && /\b(5|cinco) estrelas|nota (m[aá]xima|10|dez)|avalia[çc][aã]o positiva|elogi/i.test([F.beneficio, F.regra, F.pedido].join(' '))) $m.erro('avaliação: o prêmio não pode depender de nota boa');
+    D = { av, reel: $m.FORMATO === 'reel' };
+    $('#pd').textContent = F.pedido || (av ? 'Conta pra gente como foi?' : 'Indica a gente pra alguém?');
+    if (av) { $('#gente').remove(); $('#rev .av').innerHTML = $m.icone('pessoa'); $('#rev .es').innerHTML = $m.icone('estrela').repeat(5); $('#digita').dataset.txt = 'Escreva sua opinião sincera'; }
+    else { $('#rev').remove(); $$('#gente .p')[0].innerHTML = $m.icone('pessoa'); $$('#gente .p')[1].innerHTML = $m.icone('pessoas'); $('#gente .cz').innerHTML = $m.icone('coracao'); $('#rpB').textContent = F.quem || 'quem você indicar'; $('#laco').setAttribute('d', 'M 250 205 C 330 80, 450 80, 530 205'); }
+    $('#gk').textContent = av ? 'Avaliou, ganhou:' : 'Indicou, ganhou:';
+    $('#gb').textContent = F.beneficio;
+    $('#regra').textContent = av ? QUALQUER + (F.regra ? ' ' + F.regra : '') : F.regra;
+    if (av) $('#notas').innerHTML = $m.icone('estrela').repeat(5); else $('#notas').remove();
+    $('#pt').textContent = 'É assim:';
+    F.passos.forEach((s, i) => { const c = document.createElement('div'); c.className = 'pc cartao'; c.dataset.i = i;
+      c.innerHTML = '<div class="nu"></div><div class="t seg"></div>'; c.querySelector('.nu').textContent = i + 1; c.querySelector('.t').textContent = s;
+      c.style.top = (540 + i * 290) + 'px'; $('#pcs').appendChild(c); });
+    $('#ck').textContent = F.codigo ? 'Use o código' : (av ? 'Avalie aqui' : 'Mande este link');
+    $('#cLb').textContent = F.codigo ? 'código' : 'link';
+    const mk = (cls, txt) => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; $('#cMain').appendChild(d); };
+    if (F.codigo) { mk('cd tit t seg', F.codigo); mk('lk2 t seg', F.link); } else mk('lk tit t seg', F.link);
+    $('#cVt').textContent = av ? 'qualquer nota vale o prêmio' : (F.validade || 'prêmio garantido pela loja');
+    if (F.validade && av) $('#cVt').textContent = F.validade;
+    $('#cup .b').innerHTML = $m.icone('presente'); $('#tes').innerHTML = $m.icone('tesoura');
+    $('#qn').textContent = av ? QUALQUER : '';
+    $('#nota').textContent = F.nota || '';
+    if (D.reel) { $$('.ctr').forEach(e => { e.style.right = '170px'; e.style.left = '130px'; }); }
+    return { duracoes: [1.9, 2.5, 2.5, 2.1] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, ini } = $m;
+    // 0: the ask
+    $m.cena('#c0', t, 0); $m.revela('#pd', t, 0.1);
+    if (D.av) { const q = eo5(p(t, 0.35, 0.6)); $('#rev').style.opacity = q; $('#rev').style.transform = `translateY(${(1 - q) * 120}px) rotate(${(1 - q) * -4}deg)`;
+      $$('#rev .es .ico').forEach((s, i) => { s.style.transform = `scale(${0.6 + 0.4 * eb(p(t, 0.6 + i * 0.07, 0.4))})`; });
+      const tx = $('#digita').dataset.txt, n = Math.floor(cl((t - 0.9) / 0.8) * tx.length); $('#digita').textContent = tx.slice(0, n);
+      $('#rev .cur').style.opacity = Math.floor(t * 3) % 2 ? 1 : 0.15; }
+    else { const L = $('#laco'), tot = 420, q = eio(p(t, 0.6, 0.8)); L.style.strokeDashoffset = 0; L.style.opacity = q > 0 ? 1 : 0; L.setAttribute('stroke-dasharray', `4 22`); L.style.clipPath = `inset(0 ${(1 - q) * 100}% 0 0)`;
+      $$('#gente .p').forEach((e, i) => { const k = eb(p(t, 0.3 + i * 0.2, 0.5)); e.style.transform = `scale(${k})`; });
+      $$('#gente .rp').forEach((e, i) => $m.entra(e, t, 0.6 + i * 0.2, 0.4, 20));
+      const h = el(p(t, 1.3, 0.7)); $('#gente .cz').style.transform = `translateY(${-40 * Math.sin(Math.PI * p(t, 1.3, 0.6))}px) scale(${h})`; }
+    // 1: the gift opens
+    const a1 = ini(1); $m.cena('#c1', t, 1);
+    const bq = eb(p(t, a1 + 0.05, 0.45)); $('#caixa').style.transform = `translateY(${(1 - bq) * 300}px)`; $('#caixa').style.opacity = cl(bq * 2);
+    const sh = p(t, a1 + 0.3, 0.3), shk = Math.sin(sh * Math.PI * 6) * (1 - sh) * 4;
+    const lq = eo(p(t, a1 + 0.58, 0.5));
+    $('#tampa').style.opacity = cl(bq * 2);
+    $('#tampa').style.transform = `translateY(${(1 - bq) * 300 - lq * 160 + lq * lq * 120}px) translateX(${lq * 760}px) rotate(${shk + lq * 75}deg)`;
+    $('#caixa').style.rotate = shk * 0.5 + 'deg';
+    const rq = eo(p(t, a1 + 0.62, 0.5)); $('#raios').style.opacity = rq * 0.9; $('#raios').style.transform = `scale(${0.4 + 0.8 * rq}) rotate(${(t - a1) * 25}deg)`;
+    $m.entra('#gk', t, a1 + 0.75, 0.4, 30);
+    const g = eb(p(t, a1 + 0.7, 0.55)); $('#gb').style.opacity = cl(g * 2); $('#gb').style.transform = `translateY(${(1 - g) * 380}px) scale(${0.4 + 0.6 * g})`;
+    $m.revela('#regra', t, a1 + 0.95, 0.035);
+    if (D.av) { const k = Math.floor(cl((t - a1 - 1.1) / 0.2, 0, 20)) % 5; $$('#notas .ico').forEach((s, i) => { s.style.opacity = t > a1 + 1.1 && i <= k ? 1 : 0.25; });
+      $('#notas').style.opacity = eo(p(t, a1 + 1.05, 0.3)); }
+    // 2: steps dealt
+    const a2 = ini(2); $m.cena('#c2', t, 2); $m.revela('#pt', t, a2 + 0.05);
+    $$('.pc').forEach(c => { const i = +c.dataset.i, q = eo5(p(t, a2 + 0.25 + i * 0.3, 0.6)); c.style.opacity = cl(q * 2);
+      c.style.transform = `translate(${(1 - q) * 900}px, ${(1 - q) * -60}px) rotate(${(1 - q) * 18 + (i - 1) * 1.2 * q}deg)`; });
+    // 3: coupon cut
+    const a3 = ini(3); $m.cena('#c3', t, 3); $m.revela('#ck', t, a3 + 0.05);
+    const cq = eb(p(t, a3 + 0.15, 0.55)); $('#cup').style.opacity = cl(cq * 2); $('#cup').style.transform = `scale(${0.7 + 0.3 * cq}) rotate(${(1 - cq) * -6}deg)`;
+    const tq = eio(p(t, a3 + 0.75, 0.7)), cupT = 620, cupH = 480;
+    $('#tes').style.opacity = tq > 0 && tq < 1 ? 1 : 0; $('#tes').style.top = (cupT - 70 + tq * (cupH + 40)) + 'px';
+    $('#tes').style.transform = `rotate(90deg) rotate(${Math.sin(t * 30) * 12}deg)`;
+    const sp = eo(p(t, a3 + 1.45, 0.5)); $('#cup .b').style.transform = `translate(${sp * 30}px, ${sp * 16}px) rotate(${sp * 7}deg)`;
+    $m.entra('#qn', t, a3 + 1.1, 0.4, 20);
+    $('#nota').style.opacity = t < $m.fim(3) ? 1 : 0;
+  },
+});
+</script></body></html>

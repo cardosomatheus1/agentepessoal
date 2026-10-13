@@ -1,0 +1,8 @@
+{"_marca": "doces-da-lu", "_formato": "story", "titulo": "É fácil encomendar", "icone_capa": "bolo",
+ "passos": [{"texto": "Escolha o sabor no cardápio do link", "icone": "bolo"},
+            {"texto": "Mande a data e o tamanho da festa", "icone": "calendario"},
+            {"texto": "Pague o sinal no Pix e pronto", "icone": "check"}],
+ "canal_tipo": "link", "canal": "link na bio", "canal_extra": "Respondemos em até 1 hora",
+ "prazo": "Encomendas com 3 dias de antecedência", "pagamento": ["pix", "cartao", "dinheiro"],
+ "area_entrega": ["Pituba", "Itaigara", "Caminho das Árvores", "Rio Vermelho"],
+ "_origem": {"canal": "dono"}}

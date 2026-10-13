@@ -1,0 +1,158 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* speech balloons and big outlined numbers: every phrase is a balloon, every balloon has its number */
+.balao{position:absolute;border-radius:64px 64px 64px 14px;background:var(--cartao);border:1.5px solid var(--borda);box-shadow:var(--sombra)}
+body.e-vidro .balao{background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(255,255,255,.06));backdrop-filter:blur(26px)}
+body.e-pop .balao{border:6px solid var(--texto);box-shadow:14px 14px 0 var(--texto);border-radius:56px 56px 56px 8px}
+body.e-papel .balao{box-shadow:0 14px 30px rgba(60,40,20,.25)}
+body.e-noite .balao{box-shadow:0 0 0 2px var(--destaque),0 0 40px color-mix(in srgb,var(--destaque) 45%,transparent)}
+.balao .q{position:absolute;right:50px;top:-54px;font-family:var(--ft);font-weight:900;font-size:180px;line-height:1;color:var(--destaque)}
+.quem{position:absolute;width:96px;height:96px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:56px}
+.oco{font-family:var(--ft);font-weight:900;color:transparent;-webkit-text-stroke:6px var(--texto);line-height:1;letter-spacing:-.04em}
+body.e-noite .oco{-webkit-text-stroke-color:var(--destaque);filter:drop-shadow(0 0 18px color-mix(in srgb,var(--destaque) 60%,transparent))}
+.tecla{display:flex;align-items:center;justify-content:center;border-radius:30px;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900}
+/* video */
+#capB{left:100px;top:470px;width:820px;height:720px}
+#capT{position:absolute;left:70px;top:90px;width:680px;height:470px;font-size:104px;line-height:1.02;display:flex;align-items:center}
+#capC{position:absolute;left:70px;top:590px;font-size:40px}
+#capQ{left:110px;top:1222px}
+#numW{position:absolute;left:110px;top:380px;width:620px;height:430px;overflow:hidden}
+#numW .oco{position:absolute;left:0;top:0;font-size:430px;height:430px;white-space:nowrap}
+#de{position:absolute;left:700px;top:700px;width:220px;height:70px;font-size:48px;font-weight:800;text-align:right}
+#bal{left:100px;top:820px;width:810px;height:500px;transform-origin:0 100%}
+#balT{position:absolute;left:60px;top:70px;width:690px;height:370px;font-size:76px;line-height:1.08;display:flex;align-items:center}
+#quem{left:100px;top:1340px}
+#pontos{position:absolute;left:226px;top:1372px;display:flex;gap:14px}
+#pontos i{width:22px;height:22px;border-radius:50%;background:var(--texto);opacity:.22}
+#pontos i.on{background:var(--destaque);opacity:1}
+#fP{position:absolute;left:110px;top:380px;width:800px;height:230px;font-size:92px;line-height:1.02;text-align:center;display:flex;align-items:center;justify-content:center}
+#teclas{position:absolute;left:110px;top:650px;width:800px;display:flex;flex-wrap:wrap;justify-content:center;gap:22px}
+#teclas .tecla{width:160px;height:160px;font-size:96px}
+#fM{position:absolute;left:120px;top:1060px;width:780px;height:380px;font-size:56px;font-weight:700;line-height:1.22;text-align:center}
+/* carousel */
+.slide .pe{position:absolute;left:84px;right:84px;bottom:56px;height:50px;font-size:32px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.slide .numS{position:absolute;left:84px;top:150px;width:640px;height:400px;font-size:400px;overflow:hidden}
+.slide .bS{left:84px;top:520px;width:912px;height:560px}
+.slide .bS .tx{position:absolute;left:60px;top:70px;width:792px;height:430px;font-size:100px;line-height:1.06;display:flex;align-items:center}
+.slide .quemS{left:84px;top:1104px}
+.slide .ouv{position:absolute;left:200px;top:1124px;width:700px;height:56px;font-size:36px;font-weight:700}
+.slide.capa .bS{top:200px;height:820px}
+.slide.capa .bS .tx{top:90px;height:560px;font-size:118px;line-height:1}
+.slide.capa .chipS{position:absolute;left:60px;top:680px;font-size:40px}
+.slide.capa .quemS{top:1044px}
+.slide.fecha .tt{position:absolute;left:84px;right:84px;top:150px;height:240px;font-size:96px;line-height:1.02;text-align:center;display:flex;align-items:center;justify-content:center}
+.slide.fecha .teclasS{position:absolute;left:84px;right:84px;top:430px;display:flex;flex-wrap:wrap;justify-content:center;gap:22px}
+.slide.fecha .tecla{width:150px;height:150px;font-size:90px}
+.slide.fecha .msg{position:absolute;left:110px;right:110px;top:830px;height:340px;font-size:52px;font-weight:700;line-height:1.24;text-align:center}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full">
+ <div class="balao" id="capB"><div class="q">“</div><div id="capT" class="tit t seg"></div><div id="capC" class="chip t seg">comenta o número</div></div>
+ <div class="quem" id="capQ"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="full">
+ <div id="numW"></div>
+ <div id="de" class="t t2 seg"></div>
+ <div class="balao" id="bal"><div class="q">“</div><div id="balT" class="tit t seg"></div></div>
+ <div class="quem" id="quem"></div>
+ <div id="pontos"></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="fP" class="tit t seg"></div>
+ <div id="teclas"></div>
+ <div id="fM" class="t t2 seg rv"></div>
+</div></div>
+
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Frases que você mais ouve": numbered phrases the owner hears, each in a speech balloon, with a giant outlined
+// number that rolls to the next one on the beat; closes with number keys to comment and the business message.
+let D = {};
+const HUMILHA = /p[aã]o[\s-]*dur|\bchat[oa]s?\b|m[aã]o[\s-]+de[\s-]+vaca|calote|folgad|sem[\s-]+no[cç][aã]o|\bburr|idiot|rid[ií]cul|pidão|pidona|sovina|muquiran|mesquinh|vergonha/i;
+function regras(F, $m) {
+  if (HUMILHA.test(F.fechamento)) $m.erro('fechamento: pode ser leve, mas não pode humilhar quem disse a frase');
+  const v = F.frases.map(x => x.trim().toLowerCase()); if (new Set(v).size < v.length) $m.erro('frases: há frase repetida');
+}
+// the phrase in quotes (the ficha comes without them)
+const aspas = s => s.replace(/^["“”']+|["“”']+$/g, '');
+Motor.molde({
+  id: 'frases', formatos: ['carrossel', 'reel'],
+  montar(F, M, $m) {
+    const { $, icone } = $m, n = F.frases.length;
+    regras(F, $m);
+    $('#capT').textContent = F.pergunta;
+    $('#capQ').innerHTML = icone('pessoa'); $('#quem').innerHTML = icone('pessoa');
+    // number strip: every number stacked, the strip rolls
+    const w = $('#numW'); F.frases.forEach((x, i) => { const d = document.createElement('div'); d.className = 'oco'; d.textContent = i + 1; d.style.top = i * 430 + 'px'; w.appendChild(d); });
+    for (let i = 0; i < n; i++) $('#pontos').appendChild(document.createElement('i'));
+    // longest phrase goes in first so the fitting measures the worst case; the frame swaps the text later
+    const longa = F.frases.reduce((a, b) => b.length > a.length ? b : a);
+    $('#balT').textContent = aspas(longa);
+    $('#de').textContent = `${n}/${n}`;
+    $('#fP').textContent = F.chamada_comentario || 'Qual você mais ouve?';
+    F.frases.forEach((x, i) => { const k = document.createElement('div'); k.className = 'tecla'; k.textContent = i + 1; $('#teclas').appendChild(k); });
+    if (n > 5) $m.$$('#teclas .tecla').forEach(k => { k.style.width = k.style.height = '140px'; k.style.fontSize = '84px'; });
+    $('#fM').textContent = F.fechamento;
+    D.t = F.frases.map(x => +Math.min(2.5, Math.max(1.6, 1.25 + x.length * 0.02)).toFixed(2));
+    D.a = []; let s = 0; D.t.forEach(x => { D.a.push(s); s += x; });
+    return { duracoes: [2.6, s, 4.2] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, ini } = $m, n = F.frases.length;
+    // cover: the question inside a giant balloon
+    $m.cena('#c0', t, 0, 0, { sobra: 0.02 });
+    const cb = el(p(t, 0.05, 0.9)); $('#capB').style.transform = `scale(${Math.max(0, cb)})`; $('#capB').style.transformOrigin = '0 100%';
+    $('#capQ').style.transform = `scale(${eb(p(t, 0, 0.4))})`;
+    $m.entra('#capC', t, 0.9, 0.4, 20, 0.3);
+    // phrases
+    const A = ini(1); $m.cena('#c1', t, 1, 1, { sobra: 0.02 });
+    const tt = t - A; let i = 0; D.a.forEach((a, k) => { if (tt >= a) i = k; });
+    const ai = D.a[i];
+    if ($('#balT').dataset.i !== String(i)) { $('#balT').textContent = aspas(F.frases[i]); $('#balT').dataset.i = i; }
+    const pop = el(p(tt, ai, 0.6)), sai = i < n - 1 ? eo(p(tt, ai + D.t[i] - 0.14, 0.14)) : 0;
+    $('#bal').style.transform = `scale(${Math.max(0, pop) * (1 - sai)}) rotate(${(i % 2 ? 1.5 : -1.5)}deg)`;
+    $('#quem').style.transform = `scale(${1 + 0.18 * Math.max(0, 1 - p(tt, ai, 0.3)) * (tt >= ai ? 1 : 0)})`;
+    // number strip rolls to i
+    const roll = eio(p(tt, ai, 0.35)), y = -(i - 1 + roll) * 430;
+    $('#numW').querySelectorAll('.oco').forEach((d, k) => { d.style.transform = `translateY(${i === 0 ? (1 - eo5(p(tt, 0, 0.5))) * 430 : y}px)`; d.style.opacity = Math.abs(k - i) <= 1 ? 1 : 0; });
+    $('#de').textContent = `${i + 1}/${n}`;
+    $$('#pontos i').forEach((d, k) => d.classList.toggle('on', k <= i));
+    // closing: keys to comment, then the message
+    const B = ini(2); $m.cena('#c2', t, 2);
+    $m.entra('#fP', t, B + 0.1, 0.5, 40);
+    $$('#teclas .tecla').forEach((k, j) => { const q = eb(p(t, B + 0.35 + j * 0.08, 0.45)); k.style.transform = `scale(${q})`; k.style.opacity = cl(q * 3);
+      const tap = (Math.floor((t - B - 1.4) / 0.35) % n + n) % n; k.style.filter = t > B + 1.4 && tap === j ? 'brightness(1.25)' : ''; k.style.scale = t > B + 1.4 && tap === j ? '0.9' : '1'; });
+    $m.revela('#fM', t, B + 1.1, 0.05);
+  },
+  slides(F, M, $m) {
+    const palco = $m.$('#palco'), n = F.frases.length; $m.$$('.cena', palco).forEach(c => c.remove());
+    regras(F, $m);
+    if (n > 6) $m.erro('no carrossel cabem até 6 frases (capa + frases + fechamento + final = até 9 telas); use o Reel para 7 ou 8');
+    const bal = (cls, txt) => { const b = document.createElement('div'); b.className = 'balao bS'; b.innerHTML = '<div class="q">“</div><div class="tx tit t seg"></div>'; b.querySelector('.tx').textContent = txt; return b; };
+    const quem = () => { const q = document.createElement('div'); q.className = 'quem quemS'; q.innerHTML = $m.icone('pessoa'); return q; };
+    const capa = document.createElement('div'); capa.className = 'slide capa';
+    const b0 = bal('', F.pergunta); const ch = document.createElement('div'); ch.className = 'chipS chip t seg'; ch.textContent = 'comenta o número no fim'; b0.appendChild(ch);
+    capa.append(b0, quem()); capa.insertAdjacentHTML('beforeend', '<div class="pe t2"><span></span><span>arrasta</span></div>');
+    palco.appendChild(capa);
+    F.frases.forEach((x, i) => {
+      const s = document.createElement('div'); s.className = 'slide';
+      s.innerHTML = '<div class="numS oco"></div><div class="ouv t t2"></div><div class="pe t2"><span class="t"></span><span></span></div>';
+      s.querySelector('.numS').textContent = i + 1;
+      s.querySelector('.ouv').textContent = 'quem nunca ouviu?';
+      s.querySelector('.pe span').textContent = `${i + 1}/${n}`; s.querySelector('.pe span:last-child').textContent = 'arrasta';
+      const b = bal('', aspas(x)); b.style.transform = `rotate(${i % 2 ? 1 : -1}deg)`;
+      s.append(b, quem()); palco.appendChild(s);
+    });
+    const f = document.createElement('div'); f.className = 'slide fecha';
+    f.innerHTML = '<div class="tt tit t seg"></div><div class="teclasS"></div><div class="msg t seg"></div>';
+    f.querySelector('.tt').textContent = (F.chamada_comentario || 'Qual você mais ouve?') + ' Comenta o número';
+    F.frases.forEach((x, i) => { const k = document.createElement('div'); k.className = 'tecla'; k.textContent = i + 1; f.querySelector('.teclasS').appendChild(k); });
+    f.querySelector('.msg').textContent = F.fechamento;
+    palco.appendChild(f);
+  },
+});
+</script></body></html>

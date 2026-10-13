@@ -1,0 +1,16 @@
+{
+ "formatos": ["reel", "carrossel"],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "antes": {"tipo": "foto", "dica": "foto real do cliente, antes do serviço"},
+  "depois": {"tipo": "foto", "dica": "foto real do mesmo ângulo, depois do serviço"},
+  "servico": {"tipo": "texto", "max": 28, "dica": "Polimento, Coloração, Reforma do banheiro"},
+  "tempo": {"tipo": "texto", "max": 20, "obrigatorio": false, "dica": "em 3 horas, em 2 dias"},
+  "detalhe": {"tipo": "texto", "max": 44, "obrigatorio": false},
+  "area": {"tipo": "escolha", "opcoes": ["automotivo", "reforma", "limpeza", "cabelo", "unhas", "pet", "costura", "estetica", "saude", "odontologia", "outro"],
+   "dica": "estetica, saude e odontologia (ou marca de clínica) exigem confirmacao_conselho"},
+  "fotos_reais": {"tipo": "escolha", "opcoes": ["sim"], "dica": "o dono confirma: as duas fotos são dele, do mesmo ângulo e sem edição"},
+  "confirmacao_conselho": {"tipo": "booleano", "obrigatorio": false, "dica": "true só se o conselho da profissão permite antes e depois (obrigatório em área regulada)"}
+ }
+}

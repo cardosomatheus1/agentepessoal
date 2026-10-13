@@ -1,0 +1,182 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* the photo lives in one frame for scenes 0-1: full bleed hero, then a card with the magnifier over it */
+#quadro{position:absolute;left:0;top:0;width:1080px;height:1160px;overflow:hidden}
+#quadro img.f{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
+#veu{position:absolute;left:0;right:0;bottom:0;height:520px;background:linear-gradient(transparent,var(--fundo) 88%)}
+#selo{position:absolute;left:90px;top:1000px;font-size:38px;padding:10px 28px;white-space:nowrap}
+#nome{left:90px;width:820px;top:1080px;height:260px;font-size:126px;line-height:1;text-align:left}
+#lupa{position:absolute;left:0;top:0;width:300px;height:300px;margin:-150px 0 0 -150px;z-index:5}
+#lupa .vid{position:absolute;inset:0;border-radius:50%;overflow:hidden;border:12px solid var(--texto);box-shadow:var(--sombra),inset 0 0 30px rgba(0,0,0,.35);background:var(--fundo2)}
+body.e-noite #lupa .vid{border-color:var(--destaque);box-shadow:0 0 40px color-mix(in srgb,var(--destaque) 60%,transparent)}
+#lupa .vid img{position:absolute;left:0;top:0;max-width:none}
+#lupa .cabo{position:absolute;left:252px;top:252px;width:44px;height:150px;border-radius:22px;background:var(--texto);transform-origin:22px 0;transform:rotate(-45deg)}
+#lupa .brilho{position:absolute;left:40px;top:34px;width:90px;height:44px;border-radius:50%;background:rgba(255,255,255,.35);transform:rotate(-30deg)}
+#fio{position:absolute;inset:0;z-index:4;overflow:visible;pointer-events:none}
+#attrs{position:absolute;left:90px;width:800px;top:1170px}
+.at{display:flex;align-items:center;gap:22px;height:96px;margin-bottom:10px}
+.at .n{flex:none;width:72px;height:72px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:42px;display:flex;align-items:center;justify-content:center}
+.at .tx{flex:1;height:72px;font-size:50px;font-weight:800;line-height:72px;white-space:nowrap}
+/* scene 2: price */
+#thumbs{position:absolute;left:0;right:0;top:420px;height:320px;display:flex;justify-content:center;gap:28px}
+#thumbs div{width:300px;height:300px;border-radius:50%;overflow:hidden;box-shadow:var(--sombra);border:10px solid var(--cartao)}
+body.e-vidro #thumbs div,body.e-noite #thumbs div{border-color:var(--texto)}
+#thumbs img{width:100%;height:100%;object-fit:cover}
+#pNome{left:90px;width:820px;top:800px;height:130px;font-size:64px;font-weight:800;line-height:1.05}
+#preco{left:90px;width:820px;top:950px;height:230px;font-size:210px;line-height:1.08;white-space:nowrap}
+#unid{left:90px;width:820px;top:1190px;height:70px;font-size:50px;font-weight:700}
+#pLinha{position:absolute;left:340px;top:1172px;width:400px;height:12px;border-radius:6px;background:var(--destaque);transform-origin:50% 50%}
+body.f-story #nome,body.f-story #pNome,body.f-story #preco,body.f-story #unid{width:900px}body.f-story #attrs{width:900px}
+/* carousel */
+.slide #quadro{height:1350px}
+.slide #veu{height:620px}
+.slide #selo{left:84px;top:900px}
+.slide #nome{left:84px;width:912px;top:980px;height:250px;font-size:120px}
+.slide .prc{position:absolute;right:84px;top:880px;font-size:54px;padding:14px 34px;white-space:nowrap}
+.slide.det .cardF{position:absolute;left:84px;top:150px;width:912px;height:700px;border-radius:40px;overflow:hidden;box-shadow:var(--sombra)}
+.slide.det .cardF img.f{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slide.det .tt{position:absolute;left:84px;right:84px;top:900px;height:80px;font-size:60px}
+.slide.det #attrs{left:84px;width:912px;top:1000px}
+.slide.det .at{height:80px;margin-bottom:8px}
+.slide.det .at .tx{font-size:46px;height:64px;line-height:64px}
+.slide.det .at .n{width:64px;height:64px;font-size:38px}
+.slide .mini{position:absolute;width:250px;height:250px;margin:-125px 0 0 -125px;border-radius:50%;overflow:hidden;border:10px solid var(--texto);box-shadow:var(--sombra);background:var(--fundo2)}
+.slide .mini img{position:absolute;max-width:none}
+.slide .mini .n{position:absolute;right:10px;top:10px;width:60px;height:60px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:36px;display:flex;align-items:center;justify-content:center;z-index:2}
+.slide .pino{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:var(--destaque);border:5px solid var(--texto)}
+</style></head><body><div id="palco">
+
+<div class="cena" id="cP"><div class="cam full">
+ <div id="quadro"><div id="veu"></div></div>
+ <div class="chip t seg" id="selo"></div>
+ <div class="ctr tit t seg rv" id="nome"></div>
+ <svg id="fio" viewBox="0 0 1080 1920"><path id="fioP" fill="none" stroke="var(--destaque)" stroke-width="6" stroke-linecap="round"/><circle id="fioC" r="12" fill="var(--destaque)"/></svg>
+ <div id="lupa"><div class="vid"><img id="lupaImg" alt=""><div class="brilho"></div></div><div class="cabo"></div></div>
+ <div id="attrs"></div>
+</div></div>
+
+<div class="cena" id="cR"><div class="cam full">
+ <div id="thumbs"></div>
+ <div class="ctr t seg rv" id="pNome"></div>
+ <div class="ctr tit t seg" id="preco"></div>
+ <div id="pLinha"></div>
+ <div class="ctr t t2 seg" id="unid"></div>
+</div></div>
+
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Produto em destaque": something that already exists, shown up close. Scenes (and falas): 0 full-bleed photo with
+// a slow push and the name, 1 the photo becomes a card and a magnifier visits a detail for each attribute (a line
+// ties it to the attribute), 2 the price (only when the ficha has one), last: call (engine's final scene).
+const FOCOS = [[0.32, 0.38], [0.66, 0.55], [0.45, 0.72]];
+const Z = 2.3, R = 150;
+let D = {};
+// card the photo becomes in scene 1 (reel/story)
+const CARD = { x: 60, y: 400, w: 960, h: 700 };
+function foco(F, k) { const a = F.atributos[k]; return [a.x != null ? a.x / 100 : FOCOS[k][0], a.y != null ? a.y / 100 : FOCOS[k][1]]; }
+// place a zoomed copy of img (object-fit: cover inside a w x h box) so point (fx,fy) of the box is at the loupe centre
+function zoom(lupaImg, src, w, h, fx, fy, r, z) {
+  const nw = src.naturalWidth || 1280, nh = src.naturalHeight || 720, s = Math.max(w / nw, h / nh), ox = (w - nw * s) / 2, oy = (h - nh * s) / 2;
+  lupaImg.style.width = nw * s * z + 'px'; lupaImg.style.height = nh * s * z + 'px';
+  lupaImg.style.left = r - (fx * w - ox) * z + 'px'; lupaImg.style.top = r - (fy * h - oy) * z + 'px';
+}
+Motor.molde({
+  id: 'produto-semana', formatos: ['reel', 'carrossel', 'story'],
+  montar(F, M, $m) {
+    const { $, brl } = $m;
+    if (F.preco != null && !['dono', 'sistema'].includes((F._origem || {}).preco)) $m.erro('preco: dado real sem origem (_origem: dono ou sistema)');
+    D.temPreco = F.preco != null;
+    if (F.falas && F.falas.length !== (D.temPreco ? 4 : 3)) $m.erro(`falas: ${D.temPreco ? 4 : 3} (foto e nome, detalhes${D.temPreco ? ', preço' : ''}, chamada)`);
+    F.fotos.forEach((f, k) => { const i = document.createElement('img'); i.className = 'f'; i.src = $m.midia(f); i.dataset.k = k; $('#veu').before(i); });
+    $('#selo').textContent = F.selo || 'Em destaque';
+    $('#nome').textContent = F.nome;
+    F.atributos.forEach((a, k) => { const d = document.createElement('div'); d.className = 'at'; d.dataset.k = k;
+      d.innerHTML = '<div class="n tit"></div><div class="tx t seg"></div>'; d.querySelector('.n').textContent = k + 1; d.querySelector('.tx').textContent = a.texto; $('#attrs').appendChild(d); });
+    if (D.temPreco) {
+      F.fotos.forEach(f => { const d = document.createElement('div'); const i = document.createElement('img'); i.src = $m.midia(f); d.appendChild(i); $('#thumbs').appendChild(d); });
+      $('#pNome').textContent = F.nome; $('#preco').textContent = brl(F.preco).replace(' ', ' '); $('#unid').textContent = F.unidade || '';
+      if (!F.unidade) $('#unid').style.display = 'none';
+    } else $('#cR').remove();
+    return { duracoes: D.temPreco ? [2.4, 4.2, 2.4] : [2.4, 4.2] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini } = $m;
+    const S1 = ini(1), S2 = ini(2), L1 = S2 - S1;
+    $m.cena('#cP', t, 0, 1, { push: 0.02 });
+    // which photo: the first on the hero, then the one of the attribute being shown
+    const step = Math.max(1.1, (L1 - 0.6) / 3), k = t < S1 + 0.5 ? 0 : Math.min(2, Math.floor((t - S1 - 0.5) / step));
+    const nf = F.fotos.length, fk = t < S1 + 0.5 ? 0 : k % nf;
+    $$('#quadro img.f').forEach(i => { i.style.opacity = +i.dataset.k === fk ? 1 : 0; });
+    // frame: full bleed hero → rounded card
+    const c = eio(p(t, S1 - 0.1, 0.7)), q = $('#quadro');
+    const x = lerp(0, CARD.x, c), y = lerp(0, CARD.y, c), w = lerp(1080, CARD.w, c), h = lerp(1160, CARD.h, c);
+    Object.assign(q.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', borderRadius: 44 * c + 'px', boxShadow: c > 0.5 ? 'var(--sombra)' : 'none' });
+    $('#veu').style.opacity = 1 - c;
+    const img = $(`#quadro img.f[data-k="${fk}"]`);
+    // hero push toward the first detail
+    const [f0x, f0y] = foco(F, 0), pz = t < S1 ? 1.05 + 0.25 * eio(p(t, 0, S1)) : 1;
+    img.style.transformOrigin = `${f0x * 100}% ${f0y * 100}%`; img.style.transform = `scale(${pz})`;
+    $m.entra('#selo', t, 0.3, 0.4, 30); $m.revela('#nome', t, 0.5, 0.08);
+    const hs = 1 - eo(p(t, S1 - 0.2, 0.3)); $('#selo').style.opacity = Math.min(hs, eo5(p(t, 0.3, 0.4))); $('#nome').style.opacity = hs;
+    // magnifier: glides from one detail to the next, zooming the photo under it
+    const vis = t >= S1 + 0.45;
+    $('#lupa').style.opacity = vis ? eo(p(t, S1 + 0.45, 0.3)) : 0; $('#fio').style.opacity = vis ? 1 : 0;
+    if (vis) {
+      const ta = t - S1 - 0.5, kk = Math.min(2, Math.max(0, Math.floor(ta / step))), mv = eio(p(ta - kk * step, 0, 0.5));
+      const a = foco(F, Math.max(0, kk - (mv < 1 && kk > 0 ? 1 : 0))), b = foco(F, kk), m = kk === 0 ? 1 : mv;
+      const fx = lerp(a[0], b[0], m), fy = lerp(a[1], b[1], m);
+      const lx = CARD.x + fx * CARD.w, ly = CARD.y + fy * CARD.h;
+      const pop = eb(p(t, S1 + 0.45, 0.5));
+      $('#lupa').style.left = lx + 'px'; $('#lupa').style.top = ly + 'px'; $('#lupa').style.transform = `scale(${0.4 + 0.6 * pop})`;
+      const li = $('#lupaImg'); if (li.getAttribute('src') !== img.getAttribute('src')) li.src = img.getAttribute('src');
+      zoom(li, img, CARD.w, CARD.h, fx, fy, R - 12, Z);
+      // line from the magnifier to the attribute it explains
+      const ty = 1170 + kk * 106 + 48, tx0 = 90 + 36;
+      const d = `M ${lx} ${ly + 130} C ${lx} ${ty - 40}, ${tx0 + 60} ${ty - 120}, ${tx0} ${ty - 40}`;
+      $('#fioP').setAttribute('d', d); const L = $('#fioP').getTotalLength(), dr = eo(p(ta - kk * step, 0.35, 0.4));
+      $('#fioP').setAttribute('stroke-dasharray', `${L * dr} ${L}`); $('#fioC').setAttribute('cx', tx0); $('#fioC').setAttribute('cy', ty - 40); $('#fioC').style.opacity = dr;
+    }
+    $$('#attrs .at').forEach(d => { const j = +d.dataset.k, a0 = S1 + 0.5 + j * step + 0.45, qq = eo5(p(t, a0, 0.45));
+      d.style.opacity = t < a0 ? 0 : j === k ? qq : 0.6; d.style.transform = `translateX(${(1 - qq) * 80}px)`; });
+    // 2: price
+    if (D.temPreco) { $m.cena('#cR', t, 2);
+      $$('#thumbs div').forEach((d, j) => { const qq = eb(p(t, S2 + 0.1 + j * 0.12, 0.5)); d.style.opacity = cl(qq * 2); d.style.transform = `scale(${0.6 + 0.4 * qq}) rotate(${(j - (nf - 1) / 2) * 6 * qq}deg)`; });
+      $m.revela('#pNome', t, S2 + 0.3);
+      const pr = eo5(p(t, S2 + 0.6, 0.6)); $('#preco').style.opacity = pr; $('#preco').style.transform = `translateY(${(1 - pr) * 60}px)`; $('#preco').style.letterSpacing = `${(1 - pr) * 0.2}em`;
+      $('#pLinha').style.transform = `scaleX(${eo(p(t, S2 + 1.0, 0.5))})`;
+      $m.entra('#unid', t, S2 + 1.2, 0.4, 20); }
+  },
+  slides(F, M, $m) {
+    const { brl } = $m, palco = $m.$('#palco');
+    if (F.preco != null && !['dono', 'sistema'].includes((F._origem || {}).preco)) $m.erro('preco: dado real sem origem (_origem: dono ou sistema)');
+    $m.$$('.cena', palco).forEach(c => c.remove());
+    // 1: hero with name (and price)
+    const s1 = document.createElement('div'); s1.className = 'slide';
+    s1.innerHTML = '<div id="quadro"><img class="f" alt=""><div id="veu"></div></div><div class="chip t seg" id="selo"></div><div class="tit t seg" id="nome"></div>';
+    s1.querySelector('img').src = $m.midia(F.fotos[0]); s1.querySelector('img').style.opacity = 1;
+    s1.querySelector('#selo').textContent = F.selo || 'Em destaque'; s1.querySelector('#nome').textContent = F.nome;
+    if (F.preco != null) { const c = document.createElement('div'); c.className = 'prc chip t seg'; c.textContent = brl(F.preco).replace(' ', ' ') + (F.unidade ? ' ' + F.unidade : ''); s1.appendChild(c); }
+    palco.appendChild(s1);
+    // 2: the details, three magnifiers pinned on the photo
+    const s2 = document.createElement('div'); s2.className = 'slide det';
+    s2.innerHTML = '<div class="cardF"><img class="f" alt=""></div><div class="tt tit t seg">Repara nos detalhes</div><div id="attrs"></div>';
+    const fimg = s2.querySelector('.cardF img'); fimg.src = $m.midia(F.fotos[0]);
+    const W = 912, Hh = 700, X = 84, Y = 150;
+    F.atributos.forEach((a, k) => {
+      const [fx, fy] = foco(F, k), mi = document.createElement('div'); mi.className = 'mini'; const im = document.createElement('img'); im.src = $m.midia(F.fotos[0]); mi.appendChild(im);
+      const n = document.createElement('div'); n.className = 'n tit'; n.textContent = k + 1; mi.appendChild(n);
+      // the loupes sit beside their point so the three do not pile up
+      const lx = Math.min(X + W - 135, Math.max(X + 135, X + fx * W + (k === 1 ? 150 : -150))), ly = Math.min(Y + Hh - 135, Math.max(Y + 135, Y + fy * Hh - 60));
+      mi.style.left = lx + 'px'; mi.style.top = ly + 'px'; mi.dataset.fx = fx; mi.dataset.fy = fy; mi.dataset.k = k;
+      const pin = document.createElement('div'); pin.className = 'pino'; pin.style.left = X + fx * W + 'px'; pin.style.top = Y + fy * Hh + 'px';
+      s2.append(pin, mi);
+      const d = document.createElement('div'); d.className = 'at'; d.innerHTML = '<div class="n tit"></div><div class="tx t seg"></div>'; d.querySelector('.n').textContent = k + 1; d.querySelector('.tx').textContent = a.texto; s2.querySelector('#attrs').appendChild(d);
+    });
+    palco.appendChild(s2);
+    // zoomed copies need the natural size of the photos: placed once they load
+    s2.querySelectorAll('.mini img').forEach(im => { const go = () => { const mi = im.parentElement; zoom(im, im, W, Hh, +mi.dataset.fx, +mi.dataset.fy, 115, Z); }; if (im.complete) go(); else im.addEventListener('load', go); });
+  },
+});
+</script></body></html>

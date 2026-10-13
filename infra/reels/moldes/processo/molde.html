@@ -1,0 +1,107 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* an editing timeline: full-bleed clips cut with whip pans, step counter, caption chip and a thumbnail track */
+#mw{position:absolute;inset:0;z-index:0;overflow:hidden;background:var(--fundo)}
+.vm{position:absolute;inset:-30px;overflow:hidden}
+.vm img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.08) contrast(1.04)}
+#gT{position:absolute;left:0;right:0;top:0;height:720px;background:linear-gradient(rgba(0,0,0,.66),rgba(0,0,0,0))}
+#gB{position:absolute;left:0;right:0;bottom:0;height:900px;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.72) 60%)}
+#flash{position:absolute;inset:0;background:var(--c2);opacity:0}
+#cont{position:absolute;left:96px;top:370px;width:560px;height:190px;display:flex;align-items:baseline;gap:10px;color:#fff}
+#cnW{position:relative;width:250px;height:170px;overflow:hidden;flex:none}
+#cnW div{position:absolute;left:0;top:0;width:250px;height:170px;text-align:right;font-size:160px;line-height:170px;font-family:var(--ft);font-weight:900;letter-spacing:-.03em}
+#cnT{height:80px;width:200px;font-size:64px;font-weight:800;opacity:.75;line-height:80px}
+#tit{position:absolute;left:100px;top:600px;width:800px;height:300px;font-size:104px;line-height:1.02;color:#fff;text-shadow:0 6px 40px rgba(0,0,0,.5)}
+#leg{position:absolute;left:100px;top:1150px;max-width:780px;height:96px;line-height:96px;padding:0 36px;font-size:54px;white-space:nowrap;transform-origin:0 50%}
+#trilha{position:absolute;left:100px;top:1300px;width:790px;height:150px}
+#trilha .tb{position:absolute;top:14px;height:120px;border-radius:16px;overflow:hidden;border:4px solid rgba(255,255,255,.35)}
+#trilha .tb img{width:100%;height:100%;object-fit:cover}
+#trilha .tb.on{border-color:var(--destaque)}
+#trilha .tb.ja{opacity:.55}
+#cab{position:absolute;top:0;width:8px;height:150px;margin-left:-4px;border-radius:4px;background:var(--destaque);box-shadow:0 0 0 3px rgba(0,0,0,.25)}
+#cab:before{content:'';position:absolute;left:-11px;top:-8px;width:30px;height:30px;border-radius:50%;background:var(--destaque)}
+#pronto{position:absolute;left:96px;top:1150px;height:110px;line-height:110px;padding:0 44px;font-size:66px;letter-spacing:2px;opacity:0}
+/* watermark over the footage: own pill so any logo reads */
+#marca:not(.selo){background:color-mix(in srgb,var(--fundo) 84%,transparent);padding:8px 26px;border-radius:999px}
+</style></head><body><div id="palco">
+<div class="cena" id="c0"><div class="full">
+ <div id="mw"><div class="vm" id="vA"><img alt=""></div><div class="vm" id="vB"><img alt=""></div></div>
+ <div id="gT"></div><div id="gB"></div><div id="flash"></div>
+ <div id="cont"><div id="cnW"></div><div id="cnT" class="t seg"></div></div>
+ <div id="tit" class="tit t seg rv"></div>
+ <div id="leg" class="chip t seg"></div>
+ <div id="pronto" class="chip tit t seg"></div>
+ <div id="trilha"><div id="cab"></div></div>
+</div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Do começo ao fim": the owner's own photos or clips in order, cut on the beat with whip pans, like an editing
+// timeline (step counter rolling, caption chip, thumbnail track with a playhead). Before the result a fast recap
+// flashes every step, then the result lands and holds.
+let D = {};
+Motor.molde({
+  id: 'processo', formatos: ['reel'],
+  montar(F, M, $m) {
+    const { $, cl } = $m, n = F.etapas.length;
+    const vistas = new Set(F.etapas.map(e => e.midia)); if (vistas.size < n) $m.erro('etapas: a mesma mídia aparece duas vezes; cada etapa é um momento diferente');
+    const pad = k => String(k).padStart(2, '0');
+    F.etapas.forEach((e, k) => { const d = document.createElement('div'); d.textContent = pad(k + 1); $('#cnW').appendChild(d); });
+    $('#cnT').textContent = '/' + pad(n);
+    $('#tit').textContent = F.titulo || '';
+    $('#pronto').textContent = F.resultado || 'Pronto!';
+    // longest caption measured once
+    $('#leg').textContent = F.etapas.reduce((a, e) => (e.legenda || '').length > a.length ? e.legenda : a, '');
+    const W = 790, g = 12, w = (W - g * (n - 1)) / n;
+    F.etapas.forEach((e, k) => { const b = document.createElement('div'); b.className = 'tb'; b.style.left = k * (w + g) + 'px'; b.style.width = w + 'px'; b.appendChild(document.createElement('img')); $('#trilha').insertBefore(b, $('#cab')); });
+    D.w = w; D.g = g;
+    const passo = n <= 4 ? 1.6 : n === 5 ? 1.5 : 1.4;
+    const d = [...F.etapas.slice(0, -1).map((e, k) => k === 0 && F.titulo ? passo + 0.6 : passo), 3.4];
+    D.st = []; let s = 0; d.forEach(x => { D.st.push(s); s += x; }); D.st.push(s);
+    // render.py's contact sheet breaks on a last row of one picture (7 or 13 scenes with the final): split the result
+    if ((d.length + 1) % 6 === 1) d.splice(d.length - 1, 1, 0.6, 2.8);
+    return { duracoes: d };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, cl } = $m, n = F.etapas.length, R = n - 1;
+    $m.cena('#c0', t, 0, $m.N - 2, { trans: 'fade', ent: 0.3 });
+    const ini = k => D.st[k];
+    let i = 0; for (let k = 0; k < n; k++) if (t >= ini(k)) i = k;
+    const a = ini(i), tl = t - a;
+    // recap in the first 0.6 s of the result: every earlier step for a blink
+    const rec = i === R && tl < 0.6 ? Math.min(R - 1, Math.floor(tl / (0.6 / R))) : -1;
+    const atual = rec >= 0 ? rec : i;
+    // whip pan between steps (not inside the recap)
+    const q = i > 0 && rec < 0 ? eio(p(t, i === R ? a + 0.6 : a, 0.24)) : 1;
+    const ant = i === R && rec < 0 ? R - 1 : i - 1;
+    const A = $('#vA'), B = $('#vB');
+    $m.filmagem(A.firstChild, F.etapas[atual].midia, Math.max(0, tl));
+    A.style.transform = `translateX(${(1 - q) * 1080}px) scale(${1.04 + 0.05 * p(tl, 0, 3)})`;
+    A.style.filter = q < 1 ? `blur(${Math.sin(Math.PI * q) * 22}px)` : 'none';
+    if (q < 1 && ant >= 0) { B.style.display = 'block'; $m.filmagem(B.firstChild, F.etapas[ant].midia, t); B.style.transform = `translateX(${-q * 1080}px)`; B.style.filter = `blur(${Math.sin(Math.PI * q) * 22}px)`; B.style.zIndex = 0; A.style.zIndex = 1; }
+    else B.style.display = 'none';
+    $('#flash').style.opacity = rec >= 0 ? 0.25 : (i === R ? 0.8 * (1 - p(tl, 0.6, 0.25)) : 0);
+    // counter rolls
+    const cr = eio(p(t, a, 0.3));
+    $$('#cnW div').forEach((d, k) => { const y = (k - (atual - 1 + (rec >= 0 ? 1 : cr))) * 170; d.style.transform = `translateY(${i === 0 && rec < 0 ? (k * 170 + (1 - eo5(p(t, 0.1, 0.5))) * 170) : y}px)`; });
+    $m.entra('#cont', t, 0.1, 0.4, 30);
+    // title on the first step
+    $('#tit').style.opacity = i === 0 ? 1 - eo(p(t, ini(1) - 0.3, 0.25)) : 0;
+    $m.revela('#tit', t, 0.35);
+    // caption chip
+    const lg = F.etapas[atual].legenda;
+    if ($('#leg').dataset.k !== String(atual)) { $('#leg').textContent = lg || ''; $('#leg').dataset.k = atual; }
+    const li = lg && rec < 0 && i < R ? eb(p(t, a + 0.25, 0.4)) : 0;
+    $('#leg').style.opacity = cl(li * 3); $('#leg').style.transform = `scale(${Math.max(0, li)})`;
+    // result label
+    const pr = i === R && rec < 0 ? p(t, a + 0.95, 0.35) : 0;
+    $m.carimbo('#pronto', t, i === R ? a + 0.95 : 1e9);
+    // thumbnail track with the playhead
+    $$('#trilha .tb').forEach((b, k) => { $m.filmagem(b.firstChild, F.etapas[k].midia, 0.5); b.classList.toggle('on', k === atual); b.classList.toggle('ja', k < atual);
+      const ti = eb(p(t, 0.2 + k * 0.08, 0.4)); b.style.transform = `translateY(${(1 - ti) * 40}px) scale(${k === atual ? 1.08 : 1})`; b.style.opacity = cl(ti * 2) * (k < atual ? 0.55 : 1); });
+    const fim = ini(R + 1), x = (atual + (rec >= 0 ? 0.5 : cl(tl / ((i === R ? fim : ini(i + 1)) - a)))) * (D.w + D.g) - D.g / 2;
+    $('#cab').style.left = Math.max(0, Math.min(790, x)) + 'px';
+  },
+});
+</script></body></html>

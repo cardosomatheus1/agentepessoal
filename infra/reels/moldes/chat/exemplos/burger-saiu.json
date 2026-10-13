@@ -1,0 +1,7 @@
+{"_marca": "burger-noite", "_formato": "reel", "hora": "20:02",
+ "mensagens": [
+  {"de": "dono", "texto": "Pedido confirmado! Já vai pra chapa"},
+  {"de": "cliente", "texto": "Obaa"},
+  {"de": "cliente", "texto": "Já saiu?"},
+  {"de": "dono", "texto": "Faz 2 minutos que você pediu"}],
+ "virada": {"de": "cliente", "texto": "Então já tá chegando né?"}}

@@ -1,0 +1,17 @@
+{
+ "formatos": ["reel", "carrossel"],
+ "voz": "opcional",
+ "musica": "leve",
+ "campos": {
+  "tema": {"tipo": "texto", "min": 6, "max": 50, "dica": "o que todo mundo acredita sobre preço"},
+  "assunto": {"tipo": "escolha", "opcoes": ["negocio", "dinheiro", "alimento", "saude", "estetica"], "dica": "dinheiro, alimento, saúde e estética exigem fonte em cada item"},
+  "itens": {"tipo": "lista", "min": 2, "max": 5, "item": {
+    "afirmacao": {"tipo": "texto", "min": 8, "max": 70},
+    "veredito": {"tipo": "escolha", "opcoes": ["mito", "verdade", "depende"]},
+    "explicacao": {"tipo": "texto", "min": 20, "max": 120},
+    "fonte": {"tipo": "texto", "max": 60, "obrigatorio": false, "real": true, "dica": "de onde vem a explicação (instituto, lei, órgão); dado real"}},
+   "dica": "3 a 5 no carrossel, 2 ou 3 no Reel"},
+  "falas": {"tipo": "lista", "min": 6, "max": 12, "obrigatorio": false, "item": {"tipo": "texto", "max": 160},
+   "dica": "narração opcional, na ordem: capa, depois afirmação e veredito de cada item (2 por item), e a chamada no fim"}
+ }
+}

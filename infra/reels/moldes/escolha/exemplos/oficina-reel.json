@@ -1,0 +1,5 @@
+{"_marca": "oficina-do-ze", "_formato": "reel", "titulo": "Qual serviço?",
+ "pares": [
+  {"foto_a": "fotos/oficina_depois.jpg", "nome_a": "Roda polida", "foto_b": "fotos/oficina_interior.jpg", "nome_b": "Revisão completa"},
+  {"foto_a": "fotos/mecanico_maos.jpg", "nome_a": "Troca de óleo", "foto_b": "fotos/oficina_antes.jpg", "nome_b": "Freio novo"},
+  {"foto_a": "fotos/maquina.jpg", "nome_a": "Pagar no cartão", "foto_b": "fotos/relogio.jpg", "nome_b": "Sair na hora marcada"}]}
