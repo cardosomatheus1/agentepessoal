@@ -39,6 +39,20 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
   usuário `ec2-user`). A Main Opus roda no tmux `opus` (`/home/ec2-user/opus_rc.sh`, sessão única na árvore do
   principal), que o serviço `claude-main-opus` sobe sozinho quando a máquina liga (ver "Parada de 11/10").
 
+## Volta para a conta do Matheus (13/10, 09h UTC)
+
+- A conta `sejaorbyte@gmail.com` bateu o limite de uso. O Matheus voltou a trabalhar na conta
+  `falhanosistema1111@gmail.com`. A sessão desta conta (session_01UTvBiAzFcrQDUnzLfUCPvH) **passa a cuidar do agente e
+  da prospecção**. A sessão "A nova" (session_018b16p9f4oKpXfQ9CdRtjVi) não mexe mais, a menos que o Matheus diga.
+- **Máquina de build do IA Business** trocada para a conta do Matheus por `/opt/ros-construcao/trocar_conta.sh`. O
+  login anterior ficou em `/home/ec2-user/.claude-conta-anterior/`; para voltar, copie de lá e rode o mesmo script ao
+  contrário. A Main Opus está na sessão `session_016QkuBRR8Fbb2Vgx95bXE3c` ("Main Opus NEXOS"), apontada no
+  `bridge-pointer.json`. Tem um despertador de segurança de hora em hora: Routine `trig_01M1piaGZesGNpTAakPLn3JH`.
+- **Trilhas interrompidas na troca** (ROS-F9-008, ROS-F9-006, ROS-F8-005): cada uma roda como sessão própria no tmux
+  `trilha-<nome>`, aberta na worktree original com `claude --agent opus-builder`. O `trilha-builder` só funciona como
+  subagente, porque a guarda ROS-F0-036 compara a raiz do projeto com a árvore do cwd. A ordem de cada trilha limita a
+  autoridade dela à trilha. O relatório final vai para `~/recados/novos/trilha-<nome>-fim.txt`, que chega à Main Opus.
+
 ## Quem cuida de quê (decisão do Matheus, 11/10 tarde)
 
 - **A sessão da conta nova (agente pessoal) é a única que cuida do agente e da prospecção.** A sessão da conta antiga
