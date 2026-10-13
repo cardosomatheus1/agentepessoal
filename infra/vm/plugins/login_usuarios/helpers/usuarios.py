@@ -61,3 +61,13 @@ class Bloqueio:
 
     def ok(self, ip: str) -> None:
         self.falhas.pop(ip, None)
+
+
+def bloqueio_do_app(extensoes: dict) -> "Bloqueio":
+    """The app's lockout counter. It lives in the web process, which outlives a plugin deploy: after one, the instance
+    kept there is of the OLD class (13/10: 'Bloqueio' object has no attribute 'espera', every wrong password became
+    a 500). An instance of another version is replaced; the failure counts restart, which is harmless."""
+    atual = extensoes.get("login_usuarios_bloqueio")
+    if not isinstance(atual, Bloqueio):
+        atual = extensoes["login_usuarios_bloqueio"] = Bloqueio()
+    return atual

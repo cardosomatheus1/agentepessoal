@@ -52,6 +52,17 @@ class Suite:
         ok(not b.bloqueado("1.1.1.1", agora), "acertar a senha limpa o IP")
         ok(u.Bloqueio().espera(agora) == 1.0, "normalmente, 1 s por erro")
 
+    def t_bloqueio_de_deploy_antigo_e_trocado(self):
+        # 13/10: the web process kept a Bloqueio of the previous class (no espera) and wrong passwords gave 500
+        u = self.u
+        class Velho:
+            def bloqueado(self, ip): return False
+        ext = {"login_usuarios_bloqueio": Velho()}
+        b = u.bloqueio_do_app(ext)
+        ok(isinstance(b, u.Bloqueio) and hasattr(b, "espera"), "instância antiga trocada pela atual")
+        ok(u.bloqueio_do_app(ext) is b, "a atual é mantida entre pedidos")
+        b.falhou("1.2.3.4"); ok(u.bloqueio_do_app(ext).falhas.get("1.2.3.4"), "as falhas ficam guardadas")
+
     def t_verificar_senha(self):
         u = self.u
         tmp = Path(tempfile.mkdtemp(prefix="login-teste-"))

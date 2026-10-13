@@ -54,7 +54,7 @@ class VariosUsuarios(Extension):
             data["result"] = _pagina("", proximo)
             return
 
-        bloqueio = current_app.extensions.setdefault("login_usuarios_bloqueio", u.Bloqueio())
+        bloqueio = u.bloqueio_do_app(current_app.extensions)  # replaces an instance left by an older deploy
         ip = request.headers.get("CF-Connecting-IP") or request.remote_addr or "?"
         if bloqueio.bloqueado(ip):
             data["result"] = _pagina("Muitas tentativas erradas. Espere 15 minutos e tente de novo.", proximo)
