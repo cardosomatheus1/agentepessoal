@@ -19,7 +19,9 @@ A tabela no fim deste arquivo sai dele.
   o agente reescrever; nunca vai cortada para o vídeo.
 - **Logo**: todo molde tem dois lugares fixos, marca d'água pequena logo abaixo da faixa do topo que o Instagram cobre
   (a partir de 240 px) e logo grande na cena final com o @ e a chamada. Aceita logo horizontal, quadrado ou só ícone; sem versão para o fundo, entra um selo atrás; sem logo, o
-  nome da empresa na fonte da marca. Sem cores cadastradas, a paleta sai do próprio logo.
+  nome da empresa na fonte da marca. Quem não tem logo (ou prefere) assina com uma **foto**: perfil, fachada, o
+  dono ou um produto; ela entra redonda com o nome no topo e grande na cena final (`marca.foto`, `assinatura: foto`).
+  Sem cores cadastradas, a paleta sai do próprio logo.
 - **Estilos**: 5 linguagens visuais (vidro escuro, claro limpo, pop colorido, papel artesanal, noite neon) que
   qualquer molde aceita. Duas empresas no mesmo molde não ficam iguais: muda o estilo, a marca e o conteúdo.
 - **Blocos**: os 30 moldes são montados com 13 blocos reaproveitáveis (título por palavra, número contando, lista,

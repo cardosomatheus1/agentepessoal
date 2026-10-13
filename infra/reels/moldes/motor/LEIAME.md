@@ -123,5 +123,5 @@ logo são conferidos.
 Mídia de teste disponível: `midia/fotos/*.jpg` (comida: acai, bolo, brigadeiro, confeita, delivery, embala, forno,
 freezer, fritura, gas, geral, lanche, leite, maquina, pizza, relogio, salgado; oficina: oficina_antes,
 oficina_depois, oficina_interior, mecanico_maos; salão: salao_antes) e `midia/filmagem/<nome>` com os mesmos nomes
-de comida. Marcas de teste: `raiz` (vidro), `doces-da-lu` (claro), `oficina-do-ze` (pop), `studio-bella` (papel, só
+de comida. Marcas de teste: `cantina-da-vo` (vidro, assina com foto em vez de logo), `raiz` (vidro), `doces-da-lu` (claro), `oficina-do-ze` (pop), `studio-bella` (papel, só
 logo claro), `burger-noite` (noite, logo vai em selo), `sem-logo` (claro, só o nome).

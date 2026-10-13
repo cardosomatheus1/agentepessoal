@@ -4,16 +4,18 @@
   "marca": {
    "logo_escuro": "PNG/SVG transparente para fundo escuro",
    "logo_claro": "PNG/SVG transparente para fundo claro (sem ele: selo atrás do logo)",
-   "sem_logo": "nome da empresa na fonte da marca",
+   "sem_logo": "foto da marca, se houver; senão o nome da empresa na fonte da marca",
    "cores": "2 a 4 cores; sem elas, tiradas do logo",
    "fonte": "uma das fontes livres do kit (OFL)",
    "perfil": "@ do Instagram",
    "chamada_padrao": "ex.: Link na bio / Peça pelo WhatsApp",
-   "voz": "voz da narração (Polly) e tom (descontraído, técnico, acolhedor)"
+   "voz": "voz da narração (Polly) e tom (descontraído, técnico, acolhedor)",
+   "foto": "foto da marca (perfil, fachada, o dono, um produto) para assinar no lugar do logo",
+   "assinatura": "logo (padrão quando há logo) ou foto; sem logo e sem foto, o nome"
   },
   "lugares_do_logo": [
-   "marca d'água pequena logo abaixo da faixa do topo coberta pelo Instagram (a partir de 240 px no Reel e no story)",
-   "grande na cena final com o @ e a chamada"
+   "marca d'água pequena logo abaixo da faixa do topo coberta pelo Instagram (a partir de 240 px no Reel e no story); com foto: foto redonda + nome numa pílula",
+   "grande na cena final com o @ e a chamada; com foto: foto redonda grande com o nome embaixo"
   ],
   "area_livre_instagram": {
    "reel_1080x1920": "livre de texto e logo: topo 220 px, rodapé 420 px, faixa dos botões à direita 160 px",

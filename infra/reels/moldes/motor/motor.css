@@ -74,6 +74,16 @@ body.f-carrossel #marca{left:84px;top:64px}
 .final{position:absolute;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:42px;opacity:0;text-align:center;padding:0 90px}
 .final .logo img{display:block;max-width:620px;max-height:300px;width:auto;height:auto}
 .final .logo .nome{font-family:var(--ft);font-weight:900;font-size:110px;line-height:1}
+/* photo instead of logo */
+.logo.com-foto{display:flex;align-items:center}
+.logo.com-foto .avatar{border-radius:50%;object-fit:cover;max-width:none;max-height:none}
+.logo.com-foto .nome{font-family:var(--ft);font-weight:900;color:var(--texto);white-space:nowrap}
+#marca.com-foto,.marca-slide.com-foto{gap:14px;padding:8px 26px 8px 8px;border-radius:999px;background:var(--cartao);border:1.5px solid var(--borda)}
+#marca.com-foto .avatar{width:64px;height:64px}#marca.com-foto .nome{font-size:30px}
+.marca-slide.com-foto .avatar{width:48px;height:48px}.marca-slide.com-foto .nome{font-size:26px}
+.final .logo.com-foto{flex-direction:column;gap:26px}
+.final .logo.com-foto .avatar{width:320px;height:320px;border:10px solid var(--destaque);box-shadow:var(--sombra)}
+.final .logo.com-foto .nome{font-size:84px;line-height:1.05;white-space:normal;text-align:center;max-width:860px}
 .final .perfil{font-size:52px;font-weight:800;color:var(--texto2)}
 .final .chamada span{display:inline-block;max-width:820px}
 .final .chamada{font-size:60px;max-width:900px;font-weight:900;padding:34px 70px;border-radius:999px;background:var(--destaque);color:var(--sobre-destaque);position:relative;overflow:hidden}

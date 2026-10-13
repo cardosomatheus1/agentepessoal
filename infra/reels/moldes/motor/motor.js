@@ -276,6 +276,11 @@ const Motor = {
     const M = Motor.M, escuro = lum(Motor.ESTILO === 'pop' ? Motor.T.fundo : Motor.T.fundo) < .35;
     const certo = escuro ? M.logo_escuro : M.logo_claro, outro = escuro ? M.logo_claro : M.logo_escuro;
     const d = document.createElement('div'); d.className = 'logo';
+    // a photo instead of a logo (profile photo, storefront, the owner): round photo + name
+    if (M.foto && (M.assinatura === 'foto' || !(M.logo_claro || M.logo_escuro))) {
+      d.classList.add('com-foto'); const img = document.createElement('img'); img.className = 'avatar'; img.src = Motor.logoSrc(M.foto); img.alt = M.nome || '';
+      const n = document.createElement('div'); n.className = 'nome'; n.textContent = M.nome || ''; d.append(img, n); return d;
+    }
     if (certo || outro) { const img = document.createElement('img'); img.src = Motor.logoSrc(certo || outro); img.alt = M.nome || ''; d.appendChild(img);
       if (!certo) { d.classList.add('selo'); d.style.setProperty('--selo', escuro ? '#ffffff' : '#111114'); } }
     else { const n = document.createElement('div'); n.className = 'nome'; n.textContent = M.nome || ''; d.appendChild(n); }
@@ -284,8 +289,8 @@ const Motor = {
   _marca(onde) {
     if (Motor.def.semMarca) return;
     const m = Motor._logo(false); m.id = Motor.FORMATO === 'carrossel' ? '' : 'marca';
-    if (Motor.FORMATO === 'carrossel') { m.className += ' marca-slide'; Object.assign(m.style, { position: 'absolute', left: '84px', top: '64px', zIndex: 80 }); const im = m.querySelector('img'); if (im) im.style.height = '46px'; if (m.classList.contains('selo')) Object.assign(m.style, { padding: '10px 20px', borderRadius: '999px', background: m.style.getPropertyValue('--selo') }); const nm = m.querySelector('.nome'); if (nm) Object.assign(nm.style, { fontFamily: 'var(--ft)', fontWeight: 900, fontSize: '30px' }); }
-    else { const im = m.querySelector('img'); if (im) { im.style.height = '72px'; im.style.maxWidth = '380px'; im.style.objectFit = 'contain'; } if (m.classList.contains('selo')) Object.assign(m.style, { padding: '12px 24px', borderRadius: '999px', background: m.style.getPropertyValue('--selo') }); }
+    if (Motor.FORMATO === 'carrossel') { m.className += ' marca-slide'; Object.assign(m.style, { position: 'absolute', left: '84px', top: '64px', zIndex: 80 }); const im = m.querySelector('img:not(.avatar)'); if (im) im.style.height = '46px'; if (m.classList.contains('selo')) Object.assign(m.style, { padding: '10px 20px', borderRadius: '999px', background: m.style.getPropertyValue('--selo') }); const nm = m.querySelector('.nome'); if (nm && !m.classList.contains('com-foto')) Object.assign(nm.style, { fontFamily: 'var(--ft)', fontWeight: 900, fontSize: '30px' }); }
+    else { const im = m.querySelector('img:not(.avatar)'); if (im) { im.style.height = '72px'; im.style.maxWidth = '380px'; im.style.objectFit = 'contain'; } if (m.classList.contains('selo')) Object.assign(m.style, { padding: '12px 24px', borderRadius: '999px', background: m.style.getPropertyValue('--selo') }); }
     if (Motor.FORMATO !== 'carrossel') m.id = 'marca';
     m.classList.add('seg');
     onde.appendChild(m);
