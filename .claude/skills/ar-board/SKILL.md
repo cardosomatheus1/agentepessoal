@@ -28,13 +28,20 @@ agindo sozinho; o quadro julga amostras e o resultado vira critério e teste.
    ```
    Imagem e vídeo só por asset do próprio quadro (`Artifact` publish com `url` do quadro e `asset: true`): a
    página não carrega mídia de outro site. Documento até 256 KiB; rodada maior vira duas.
-3. Mande ao Matheus o link do quadro e uma linha do que julgar. Ele julga no celular (botões, arrastar para o lado)
-   ou no computador (A, R, ←, →, C para comentar).
+3. Copie a mesma rodada para `calibracao/.quadro/rodada.json` (fora do git), o mesmo documento com `"id"`. É o que
+   o **painel do app** lê: o mod `ar-board` (fonte em `ferramentas/ar-board/mod/`; comando `/ar`) abre um painel ao
+   lado da conversa no Claude Code, com Aprovar/Rejeitar, comentário e "Terminei", e grava os votos em
+   `calibracao/.quadro/vereditos.json` (`{<rodada>: {votos, terminada_em}}`). No "Terminei" ele manda à conversa
+   "terminei a rodada <id> do AR Board".
+4. Mande ao Matheus o link do quadro e uma linha do que julgar. Ele julga no celular (botões, arrastar para o lado),
+   no computador (A, R, ←, →, C para comentar) ou no painel do app.
 
 ## 2. Ler quando ele disser "terminei"
 
-1. `ArtifactData get` em `vereditos/<id>`: `votos` = `{<id do caso>: {v: "A"|"R", c: "comentário", em: ms}}`,
-   e `terminada_em` quando ele apertou "Terminei". Caso sem voto = não julgado (ignore, não conte como rejeitado).
+1. Leia as duas telas e junte: `ArtifactData get` em `vereditos/<id>` (quadro da web) e
+   `calibracao/.quadro/vereditos.json` (painel do app). Os dois têm `votos` = `{<id do caso>: {v: "A"|"R",
+   c: "comentário", em: ms}}`; para o mesmo caso vale o de `em` mais recente. `terminada_em` é quando ele apertou
+   "Terminei". Caso sem voto = não julgado (ignore, não conte como rejeitado).
 2. Grave os casos julgados em `calibracao/<agente-slug>/casos.jsonl`, uma linha por caso:
    `{"rodada", "caso", "tipo", "contexto", "texto", "veredito": "A"|"R", "porque", "julgado_em"}`. Só acrescente;
    nunca reescreva um caso já julgado (se ele mudar de ideia numa rodada nova, vale o mais recente).

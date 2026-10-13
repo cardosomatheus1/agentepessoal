@@ -1,0 +1,1 @@
+{ "name": "ar-board", "version": "0.1.0", "description": "Painel do AR Board: aprovar ou rejeitar, caso a caso, o que um agente produziu, para calibrá-lo", "types": "./types/index.d.ts" }
