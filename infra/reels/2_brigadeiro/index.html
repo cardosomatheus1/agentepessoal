@@ -51,7 +51,7 @@ body{background:var(--cacau)}
 #c6bg{filter:blur(18px) brightness(.38) saturate(1.2);transform:scale(1.15)}
 #cta{position:absolute;left:70px;right:70px;top:380px;padding:80px 50px 70px;text-align:center}
 #cta .k{font-size:50px;font-weight:700;color:#ffe9d6}
-#cta .t{font-family:D;font-size:138px;line-height:.92;letter-spacing:-5px;margin:26px 0 60px}
+#cta .t{font-family:D;font-size:138px;line-height:1;letter-spacing:-5px;margin:26px 0 40px;padding-bottom:.16em}
 #cta .btn{background:linear-gradient(100deg,#ffd9b8,#f7b98f 45%,#e57f6c);color:#2a0f07;box-shadow:0 24px 60px #e57f6c66}
 #cta img{display:block;width:520px;margin:80px auto 0}
 #cta .h{font-size:44px;font-weight:700;color:#ffe9d6;margin-top:16px}
@@ -88,13 +88,11 @@ body{background:var(--cacau)}
  <div id="gcard" class="glass"><div class="t">Custo de 1 brigadeiro</div><div class="s">do começo do ano até hoje</div>
   <svg id="graf" viewBox="0 0 900 900">
    <g id="grade"></g>
-   <path id="areaV" fill="url(#gv)"/>
    <path id="area" fill="url(#ga)"/>
    <line x1="40" y1="160" x2="860" y2="160" stroke="#fff1e2" stroke-width="5" stroke-dasharray="20 16" opacity=".9"/>
    <g transform="translate(850 100)"><rect x="-330" y="-36" width="330" height="64" rx="32" fill="#fff1e2"/><text x="-165" y="9" text-anchor="middle" font-family="I" font-weight="900" font-size="34" fill="#2a0f07">seu preço R$ 2,00</text></g>
    <path id="linha" fill="none" stroke="url(#gl)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
    <circle id="halo" r="40" fill="#f7b98f" opacity=".25"/><circle id="ponto" r="18" fill="#fff1e2" stroke="#e57f6c" stroke-width="8"/>
-   <text id="lucroT" text-anchor="middle" font-family="I" font-weight="900" font-size="46" fill="#5fd35d">seu lucro</text>
    <g id="meses"></g>
   </svg>
   <div id="bolha"></div>
@@ -187,13 +185,11 @@ window.render=async function(t){
   const c=curva(Math.max(k,0.0001));const l=c[c.length-1];
   $('linha').setAttribute('d',sp(c));$('linha').style.opacity=k0;
   $('area').setAttribute('d',sp(c)+`L${l[0]} 840 L${X0} 840Z`);$('area').style.opacity=k0;
-  $('areaV').setAttribute('d',`M${X0} 160 L${l[0]} 160 `+sp(c.slice().reverse()).replace('M','L')+'Z');$('areaV').style.opacity=eo(p(t,S[2]+1.2,0.5));
-  $('lucroT').setAttribute('x',X0+(l[0]-X0)/2+30);$('lucroT').setAttribute('y',(160+l[1])/2+16);$('lucroT').style.opacity=eo(p(t,S[2]+1.4,0.5));
   $('ponto').setAttribute('cx',l[0]);$('ponto').setAttribute('cy',l[1]);$('halo').setAttribute('cx',l[0]);$('halo').setAttribute('cy',l[1]);
   $('halo').setAttribute('r',36+10*Math.sin(t*6));$('ponto').style.opacity=k0;$('halo').style.opacity=.25*k0;
   const v=0.8+0.3*k;const b=$('bolha');b.textContent=brl(v);b.style.background=k>0.98?'linear-gradient(100deg,#ffd9b8,#e57f6c)':'linear-gradient(100deg,#fff1e2,#f7b98f)';
-  b.style.left=(30+l[0]*900/900-b.offsetWidth/2+50)+'px';b.style.top=(200+l[1]-150)+'px';b.style.opacity=k0;b.style.transform=`scale(${0.8+0.2*eb(p(t,S[2]+0.6,0.5))})`;
-  $('legL').textContent=t<S[3]?'No começo do ano: R$ 0,80':'Hoje: R$ 1,10';$('legL').style.opacity=eo(p(t,S[2]+0.8,0.4));
+  b.style.left=Math.min(30+l[0]*900/900-b.offsetWidth/2+50,960-36-b.offsetWidth)+'px';b.style.top=(200+l[1]-150)+'px';b.style.opacity=k0;b.style.transform=`scale(${0.8+0.2*eb(p(t,S[2]+0.6,0.5))})`;
+  $('legL').textContent=k<0.98?'No começo do ano: R$ 0,80':'Hoje: R$ 1,10';$('legL').style.opacity=eo(p(t,S[2]+0.8,0.4));
   // c3
   cena('c3',t,S[4],S[5],{x:540,y:900});if(t>=S[4]&&t<S[5]+0.5)espera.push(quadro($('c3bg'),'v',NQ,t));
   revela($('c3k'),t,S[4]+0.2);const vi=eo(p(t,S[4]+0.3,0.5));$('velho').style.opacity=vi;$('velho').style.transform=`translateY(${(1-vi)*60}px)`;

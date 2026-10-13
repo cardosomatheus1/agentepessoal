@@ -267,23 +267,30 @@ textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent);
     if (ok && !fim) await avisar(r);
   }
 
+  // what happened to the notice stays with the verdicts, so Claude can see why one did not arrive
+  function registrar(rid, aviso) {
+    if (S.db) S.db.doc("vereditos/" + rid).update({ aviso: Object.assign({ em: Date.now() }, aviso) }).catch(() => {});
+  }
+
   // "Terminei" reaches the Claude session that built the round (its id in the round's avisar_sessao), through the
   // Claude Code Remote connector, so nobody has to go back to the chat to say it.
   async function avisar(r) {
     const c = counts(r.id);
     if (!r.avisar_sessao) { $("doneText").textContent += " Esta rodada não tem conversa ligada: diga \"terminei\" ao Claude."; return; }
     const mcp = window.claude && window.claude.use ? await window.claude.use("mcp") : null;
-    if (!mcp) { note("Salvo. Esta tela não consegue avisar o Claude: diga \"terminei\" na conversa.", true); return; }
+    if (!mcp) { registrar(r.id, { ok: false, code: "sem_mcp" }); note("Salvo. Esta tela não consegue avisar o Claude: diga \"terminei\" na conversa.", true); return; }
     note("Avisando o Claude…");
     try {
       await mcp.callTool("Claude Code Remote", "send_message", {
         session_id: r.avisar_sessao,
         message: `terminei a rodada ${r.id} do AR Board (${c.d} de ${c.n} julgados: ${c.a} aprovados, ${c.x} rejeitados, pelo quadro na web)`,
       });
+      registrar(r.id, { ok: true });
       note("O Claude foi avisado e vai ler os vereditos.");
       $("doneText").textContent = `Rodada terminada (${c.a} aprovados, ${c.x} rejeitados). O Claude já foi avisado.`;
     } catch (e) {
       const code = (e && e.code) || "erro";
+      registrar(r.id, { ok: false, code, msg: String((e && e.message) || e || "").slice(0, 500) });
       const why = {
         not_in_manifest: "você não liberou o aviso para esta página",
         server_not_connected: "o conector Claude Code Remote não está ligado na sua conta",
