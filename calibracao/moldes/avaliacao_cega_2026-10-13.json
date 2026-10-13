@@ -1,0 +1,325 @@
+{
+ "rodada": "moldes catálogo v1",
+ "avaliador": "agente cego (só leu catalogo.json)",
+ "em": "2026-10-13",
+ "vereditos": [
+  {
+   "id": "pov",
+   "v": "A",
+   "motivo": "É barato, rápido e serve para qualquer ramo, porque a graça está no texto. O ponto fraco é a filmagem genérica do banco, que pode não ter a cara do negócio e não existe para todos os ramos.",
+   "ajuste": "Aceitar uma foto ou vídeo do próprio cliente como fundo principal e deixar o banco de filmagens só como reserva. Tirar a virada quando a piada já fecha na primeira frase."
+  },
+  {
+   "id": "expectativa",
+   "v": "A",
+   "motivo": "O contraste é fácil de entender e combina com muitos ramos. Só que mostrar a realidade como bagunça pode prejudicar quem vende comida, saúde ou estética, porque o cliente pode ler como falta de higiene.",
+   "ajuste": "Proibir sujeira e falta de higiene na imagem da realidade quando o ramo for comida, saúde ou estética. Permitir que a realidade seja só texto sobre fundo liso quando não houver uma segunda imagem boa."
+  },
+  {
+   "id": "so-quem",
+   "v": "R",
+   "motivo": "Repete a ideia de Frases que você mais ouve: uma lista de verdades do ramo. Além disso fala com colegas de profissão e não com quem compra, o que só faz sentido para a Raiz.",
+   "ajuste": "Juntar com frases, que ganha uma versão em Reel com os cartões trocando na batida."
+  },
+  {
+   "id": "tipos-cliente",
+   "v": "A",
+   "motivo": "Puxa marcação entre clientes e é diferente das listas porque cada cartão é um personagem. O problema é a ilustração: nenhum kit tem desenho pronto para um tipo qualquer de cliente inventado na hora.",
+   "ajuste": "Trocar a ilustração por um ícone grande de um conjunto fixo ou por um emoji. Proibir tipo que deboche do cliente, como o pão-duro ou o chato."
+  },
+  {
+   "id": "frases",
+   "v": "A",
+   "motivo": "É fácil de preencher e gera comentário com o número. Quando junta o so-quem, cobre também o Reel.",
+   "ajuste": "Criar a versão Reel com cartões. Dar uma regra de tom: a frase pode ser engraçada, mas o fechamento não pode humilhar quem disse."
+  },
+  {
+   "id": "chat",
+   "v": "A",
+   "motivo": "Funciona bem para qualquer negócio que vende por mensagem e tem uma linguagem visual própria. O risco é parecer uma conversa real ou copiar a tela do WhatsApp.",
+   "ajuste": "Usar um chat genérico, sem o visual nem a marca do WhatsApp. Pôr um selo pequeno de cena encenada e mudar o nome do molde para Conversa no celular."
+  },
+  {
+   "id": "quiz",
+   "v": "A",
+   "motivo": "Ensina e engaja ao mesmo tempo e serve para qualquer ramo. Mas a explicação é texto livre com números que o código não consegue conferir, e no Reel a resposta aparece antes de a pessoa comentar.",
+   "ajuste": "Pôr os números da explicação em campos próprios para o código fazer a conta. No Reel, incluir uma tela de 'pausa e responde' com a contagem antes da resposta. Proibir tema de saúde sem fonte, como calorias."
+  },
+  {
+   "id": "time",
+   "v": "A",
+   "motivo": "É o molde mais simples de preencher e gera muito comentário. Serve para quase todo ramo.",
+   "ajuste": "No Reel, aumentar para 10 a 12 s, porque em 8 s não dá para ler dois argumentos. Bloquear temas de política, religião e saúde."
+  },
+  {
+   "id": "mito",
+   "v": "A",
+   "motivo": "O carimbo dá um momento forte, a peça ensina e a ficha é clara. Serve para todos os ramos.",
+   "ajuste": "Exigir fonte quando o tema for saúde, estética, alimento ou dinheiro. Limitar a 3 itens no Reel para não ficar longo."
+  },
+  {
+   "id": "escolha",
+   "v": "A",
+   "motivo": "Mostra os produtos sem cara de anúncio e só precisa das fotos que o dono já tem. Serve para todo negócio que tem produto ou serviço para fotografar.",
+   "ajuste": "No story, deixar um espaço vazio para o dono colocar a enquete nativa, que o código não consegue criar. Exigir que as duas fotos de cada par tenham a mesma qualidade."
+  },
+  {
+   "id": "conta-mudou",
+   "v": "A",
+   "motivo": "É o carro-chefe da Raiz, com conta conferida pelo código. Mas fala com o dono e não com o cliente final, então no SaaS serve a poucos e pede dados de custo que muitos donos não têm.",
+   "ajuste": "Marcar como molde para quem vende para outros negócios. Para o cliente final, criar a variante 'por que o preço mudou'. Bloquear a geração quando faltar custo real."
+  },
+  {
+   "id": "custo-escondido",
+   "v": "A",
+   "motivo": "O iceberg é uma imagem diferente e forte, e a soma é feita pelo código. Mas também fala com o dono e pede valores de custo que ele raramente sabe.",
+   "ajuste": "Absorver o pra-onde-vai como variante em rosca. Aceitar faixa ou estimativa marcada como 'em média' em vez de valor exato inventado."
+  },
+  {
+   "id": "pra-onde-vai",
+   "v": "R",
+   "motivo": "Conta a mesma história do custo-escondido, que é decompor o preço. Pede percentuais que o dono não sabe e expõe a margem dele publicamente.",
+   "ajuste": "Virar a opção de visual em rosca dentro do custo-escondido."
+  },
+  {
+   "id": "passo-a-passo",
+   "v": "A",
+   "motivo": "É útil, gera salvamento e serve para qualquer ramo. A linha do tempo vertical é diferente das outras listas.",
+   "ajuste": "Deixar a narração opcional, porque voz robótica em tutorial cansa. Absorver o checklist como modo sem ordem."
+  },
+  {
+   "id": "faca-nao-faca",
+   "v": "A",
+   "motivo": "A leitura é rápida, serve para todos os ramos e é fácil de preencher.",
+   "ajuste": "Garantir que o erro e o certo de cada par sejam sobre a mesma coisa. Evitar que o erro pareça crítica direta a um cliente."
+  },
+  {
+   "id": "numero",
+   "v": "R",
+   "motivo": "A IA tende a inventar números e fontes, e o dono pequeno não tem dado próprio. Os exemplos são de estatísticas que circulam sem origem. A animação de número contando já existe no marco.",
+   "ajuste": "Se quiserem manter, usar só dados de uma base revisada por uma pessoa, como cena dentro de mito ou quiz."
+  },
+  {
+   "id": "checklist",
+   "v": "A",
+   "motivo": "É muito salvável e barato de fazer. Mas é quase igual ao passo-a-passo.",
+   "ajuste": "Fundir com o passo-a-passo como modo 'lista para salvar', com a prancheta como visual dessa opção."
+  },
+  {
+   "id": "tabela",
+   "v": "A",
+   "motivo": "É útil para levar o cliente ao pedido direto ou ao plano maior. Tem risco jurídico se citar concorrente.",
+   "ajuste": "Proibir o nome ou a marca de concorrente e de aplicativo de entrega. Exigir que cada valor venha da ficha e não da IA."
+  },
+  {
+   "id": "demonstracao",
+   "v": "A",
+   "motivo": "É essencial para a Raiz e para o próprio SaaS, mas só serve a quem tem app, site ou cardápio digital, o que exclui boa parte dos pequenos negócios.",
+   "ajuste": "Aceitar gravação de tela real, além de prints. Para quem não tem ferramenta, o agente deve cair no como-pedir."
+  },
+  {
+   "id": "oferta",
+   "v": "A",
+   "motivo": "É o molde de venda mais pedido e o desconto é calculado pelo código. Tem risco legal de preço 'de' inventado e de prazo falso.",
+   "ajuste": "Exigir que o preço 'de' tenha sido praticado de verdade, com o dono confirmando. O prazo é obrigatório e o post não pode sair depois dele. Nada de contagem que reinicia."
+  },
+  {
+   "id": "lancamento",
+   "v": "A",
+   "motivo": "É uma situação comum em qualquer ramo, e a revelação o diferencia da oferta.",
+   "ajuste": "Não esconder a foto principal por mais de 2 s, porque no Reel a pessoa pula. Permitir preço opcional na cena final."
+  },
+  {
+   "id": "combo",
+   "v": "A",
+   "motivo": "A animação dos itens entrando na caixa é diferente e a economia vem da conta. Funciona bem para comida, salão e loja.",
+   "ajuste": "Somar os preços avulsos pelo código e bloquear a peça se o combo não for mais barato. Aceitar uma foto só do kit montado quando não houver foto de cada item."
+  },
+  {
+   "id": "cardapio",
+   "v": "A",
+   "motivo": "É o molde de uso diário com maior valor para comida e loja e fácil de atualizar. Com 9 itens o texto fica pequeno demais.",
+   "ajuste": "Limitar a 4 a 6 itens por tela e dividir em várias telas. Criar uma área livre própria para story. Mudar o nome para Vitrine do dia, para servir também a quem não vende comida."
+  },
+  {
+   "id": "depoimento",
+   "v": "A",
+   "motivo": "É a prova social mais forte, e a regra de exigir a origem da fala é correta. Mas a nota em estrelas é inventada quando a fala vem de WhatsApp, que não tem nota.",
+   "ajuste": "Mostrar estrelas só quando a fonte tiver nota, como o Google. Guardar a permissão do cliente junto da prova. Nunca editar o texto da fala."
+  },
+  {
+   "id": "antes-depois",
+   "v": "A",
+   "motivo": "A barra deslizante é muito eficaz para serviços como salão, oficina, reforma e limpeza. Mas não serve para comida e tem limite legal em saúde e estética.",
+   "ajuste": "Bloquear ou pedir confirmação para clínica, odontologia e estética regulada, conforme a regra do conselho profissional. Conferir que as duas fotos são do mesmo ângulo e não foram editadas."
+  },
+  {
+   "id": "como-pedir",
+   "v": "A",
+   "motivo": "Todo negócio precisa dele, a ficha é curta e ele tira a dúvida que trava a compra.",
+   "ajuste": "Incluir as formas de pagamento e a área de entrega como campos opcionais."
+  },
+  {
+   "id": "agenda",
+   "v": "A",
+   "motivo": "É útil para quem vende por horário e dá urgência real. Mas a agenda muda rápido, e um Reel continua no ar com horários que já acabaram.",
+   "ajuste": "Fazer só em story. Os horários devem vir da agenda real ou de confirmação do dono no dia, nunca de um preenchimento antigo."
+  },
+  {
+   "id": "bastidores",
+   "v": "A",
+   "motivo": "Aproxima o cliente do dono e usa fotos reais, mas 4 a 8 fotos boas é exigente para muitos donos.",
+   "ajuste": "Aceitar a partir de 3 fotos. Os 3 atos devem vir de uma entrevista curta com o dono, nunca de uma história inventada pela IA."
+  },
+  {
+   "id": "aviso",
+   "v": "A",
+   "motivo": "É universal, muito simples e tem risco quase zero. Todo cliente vai usar.",
+   "ajuste": "Pôr a data e o dia da semana calculados pelo código. Incluir o tipo 'falta de produto' ou 'agenda cheia'."
+  },
+  {
+   "id": "marco",
+   "v": "A",
+   "motivo": "Celebração serve para qualquer ramo, e o número conferido evita exagero.",
+   "ajuste": "Pedir a origem do número, como sistema ou contagem do dono. Proibir arredondar para cima."
+  }
+ ],
+ "parecidos": [
+  {
+   "ids": [
+    "so-quem",
+    "frases",
+    "tipos-cliente"
+   ],
+   "comentario": "Os três são listas de verdades do ramo para gerar identificação. Fundir so-quem em frases. Tipos-cliente fica separado porque tem personagens."
+  },
+  {
+   "ids": [
+    "custo-escondido",
+    "pra-onde-vai",
+    "conta-mudou"
+   ],
+   "comentario": "Os três decompõem o preço. Fundir pra-onde-vai em custo-escondido como visual em rosca. Conta-mudou fica por contar outra história (custo que subiu), mas os três servem mais à Raiz do que ao pequeno negócio comum."
+  },
+  {
+   "ids": [
+    "passo-a-passo",
+    "checklist"
+   ],
+   "comentario": "Os dois são listas verticais que se acendem item por item. Fundir em um molde com dois modos: passos em ordem ou lista para salvar."
+  },
+  {
+   "ids": [
+    "como-pedir",
+    "demonstracao",
+    "passo-a-passo"
+   ],
+   "comentario": "Os três explicam 'como fazer'. Manter como-pedir (venda) e demonstração (tela real), mas compartilhar o mesmo motor de passos."
+  },
+  {
+   "ids": [
+    "numero",
+    "marco"
+   ],
+   "comentario": "Os dois usam um número gigante contando. Ficar com marco e tirar número."
+  },
+  {
+   "ids": [
+    "time",
+    "escolha"
+   ],
+   "comentario": "Os dois têm tela dividida para escolher um lado. Escolha é time com fotos de produto. Podem virar um molde com dois modos (opinião ou produto) e duas animações."
+  },
+  {
+   "ids": [
+    "oferta",
+    "combo"
+   ],
+   "comentario": "Os dois usam preço 'de' e 'por' com economia calculada. Manter separados pela animação, mas com o mesmo bloco de preço e as mesmas travas de honestidade."
+  },
+  {
+   "ids": [
+    "pov",
+    "expectativa",
+    "chat"
+   ],
+   "comentario": "Os três são humor do dia a dia. Os formatos são distintos o bastante para manter, mas o agente precisa de uma regra para não usar os três seguidos."
+  }
+ ],
+ "faltando": [
+  {
+   "situacao": "Data comemorativa com prazo de encomenda (Dia das Mães, Páscoa, Natal, Black Friday)",
+   "molde_sugerido": "Data especial: tema da data, 2 ou 3 produtos ou serviços, prazo para encomendar contado pelo código e como pedir."
+  },
+  {
+   "situacao": "Responder dúvidas e objeções frequentes (entrega no bairro, aceita cartão, por que custa isso)",
+   "molde_sugerido": "Pergunta do cliente: a pergunta aparece como comentário recebido e a resposta é revelada em seguida, uma pergunta por peça."
+  },
+  {
+   "situacao": "Destacar um produto ou serviço que já existe, sem promoção nem novidade",
+   "molde_sugerido": "Produto da semana: foto com zoom em detalhes, 3 atributos, preço opcional e chamada."
+  },
+  {
+   "situacao": "Contratação de funcionário",
+   "molde_sugerido": "Estamos contratando: vaga, 3 requisitos, como se candidatar e prazo."
+  },
+  {
+   "situacao": "Apresentar a equipe ou o profissional que atende",
+   "molde_sugerido": "Quem te atende: foto, nome, função, tempo de casa e uma frase da pessoa, com permissão dela."
+  },
+  {
+   "situacao": "Onde atende: bairros de entrega, endereço, como chegar ou presença em feira e evento",
+   "molde_sugerido": "Onde estamos: mapa simplificado com bairros ou ponto destacado, horário e data do evento."
+  },
+  {
+   "situacao": "Pedir avaliação no Google ou indicação de clientes",
+   "molde_sugerido": "Avalia a gente ou Indique e ganhe: o benefício, 3 passos e o link, com regra clara do prêmio."
+  },
+  {
+   "situacao": "Mostrar o processo de produção ou do serviço (o 'como é feito' que prende a atenção)",
+   "molde_sugerido": "Do começo ao fim: sequência de 4 a 6 fotos ou trechos do próprio cliente em cortes rápidos na batida, com legenda mínima."
+  }
+ ],
+ "primeiros_8": [
+  {
+   "id": "cardapio",
+   "motivo": "Uso diário em comida e loja, ficha simples e valor de venda imediato."
+  },
+  {
+   "id": "oferta",
+   "motivo": "É o pedido mais comum de qualquer dono, e as travas de preço e prazo protegem a marca."
+  },
+  {
+   "id": "aviso",
+   "motivo": "Todo negócio precisa dele, é o mais barato de construir e não tem risco."
+  },
+  {
+   "id": "como-pedir",
+   "motivo": "Universal, tira a dúvida que trava a compra e se preenche uma vez para usar sempre."
+  },
+  {
+   "id": "depoimento",
+   "motivo": "Prova social serve a todos os ramos, e a regra de prova já está pensada."
+  },
+  {
+   "id": "antes-depois",
+   "motivo": "É o formato que mais vende serviços (salão, oficina, limpeza, reforma) e usa só 2 fotos."
+  },
+  {
+   "id": "mito",
+   "motivo": "Engaja e ensina em qualquer ramo, com um momento visual forte e ficha clara."
+  },
+  {
+   "id": "escolha",
+   "motivo": "Mostra o produto disfarçado de brincadeira usando só as fotos que o dono já tem."
+  }
+ ],
+ "riscos": [
+  "Vários campos pedem dados que o dono não tem (custos, percentuais, fonte de estatística, número de marco, horários livres), e a IA tende a inventar para não deixar vazio. Cada molde precisa de uma regra de 'sem dado real, não gera' e o agente precisa poder trocar de molde em vez de preencher com chute.",
+  "Honestidade e lei: preço 'de' fictício e contagem regressiva falsa ferem o Código de Defesa do Consumidor; estrelas em depoimento que não teve nota; antes e depois em saúde e estética vetado por conselhos profissionais; comparação com concorrente nomeado; conversa encenada que parece real; mito e quiz de saúde sem fonte. Os três moldes de humor também podem soar como deboche do cliente.",
+  "Área coberta pelo Instagram: o padrão põe a marca d'água no topo, que é justamente a faixa de 220 px declarada livre, então o logo precisa descer. Só existe área livre para o Reel 1080x1920. Faltam as regras para story (barras de resposta e de perfil) e para carrossel 4:5, que o perfil corta em 3:4 na grade. Moldes medidos em telas não dizem quanto duram em Reel.",
+  "Mídia e áudio: as filmagens do banco geradas por IA (Wan/Nova) são genéricas, podem mostrar produto que não é do negócio e podem exigir o selo de conteúdo feito com IA. Música CC0 não alcança como áudio em alta, e conta comercial tem biblioteca limitada. A narração em Polly soa robótica em PT-BR nos moldes que dependem de voz.",
+  "Fichas com texto livre e muitos itens (até 9 produtos, 8 falas, 160 letras de citação) quebram o encaixe do texto e a leitura em celular. Ficha boa para a IA tem poucos campos, limites rígidos, números em campos separados para o código conferir e um exemplo pronto por ramo."
+ ],
+ "resumo": "O catálogo é bem pensado: cobre atrair, engajar, ensinar, vender e institucional, e já traz boas travas, como a conta feita pelo código e a prova obrigatória no depoimento. Ainda há repetição (listas de verdades do ramo, decomposição de preço, número grande, passos e checklist), e o grupo Ensinar pende para a Raiz, porque fala com o dono e não com o cliente final. Recomendo cortar ou fundir 3 a 5 moldes e cobrir lacunas comuns como data comemorativa, dúvidas frequentes, produto em destaque e contratação. Antes de construir, corrijam a área do logo no topo e criem áreas livres para story e carrossel. Cada molde também precisa de uma regra clara para não gerar quando faltar dado real."
+}

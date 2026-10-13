@@ -1,5 +1,5 @@
 {
- "versao": 1,
+ "versao": 2,
  "padrao_de_todo_molde": {
   "marca": {
    "logo_escuro": "PNG/SVG transparente para fundo escuro",
@@ -12,18 +12,35 @@
    "voz": "voz da narração (Polly) e tom (descontraído, técnico, acolhedor)"
   },
   "lugares_do_logo": [
-   "marca d'água pequena no topo durante o vídeo",
+   "marca d'água pequena logo abaixo da faixa do topo coberta pelo Instagram (a partir de 240 px no Reel e no story)",
    "grande na cena final com o @ e a chamada"
   ],
-  "area_livre_instagram": "nada importante no topo (220 px), no rodapé (420 px) e na faixa dos botões à direita (160 px) de um Reel 1080x1920",
+  "area_livre_instagram": {
+   "reel_1080x1920": "livre de texto e logo: topo 220 px, rodapé 420 px, faixa dos botões à direita 160 px",
+   "story_1080x1920": "livre: topo 250 px (barra do perfil), rodapé 340 px (caixa de resposta)",
+   "carrossel_1080x1350": "o essencial dentro do centro 1012x1350, porque a grade do perfil mostra em 3:4 e corta as laterais"
+  },
   "conferencias": [
    "texto cabe e nenhuma letra cortada",
    "tela bate com a fala no mesmo momento",
    "contraste do texto e do logo",
    "conta feita pelo código, nunca pela IA",
    "duração dentro do limite",
-   "nada na área coberta pelo Instagram"
-  ]
+   "nada na área coberta pelo Instagram",
+   "molde com campo de dado real vazio não gera"
+  ],
+  "sem_dado_real_nao_gera": "Campo que pede dado do negócio (custo, preço 'de', horário livre, número de marco, depoimento, fonte) só aceita dado real informado pelo dono ou tirado do sistema. Faltou: o molde não gera e o agente escolhe outro molde, nunca chuta.",
+  "honestidade": [
+   "preço 'de' só se foi praticado de verdade (confirmado pelo dono); prazo de oferta real; nada de contagem que reinicia (Código de Defesa do Consumidor)",
+   "nenhum concorrente ou aplicativo citado pelo nome",
+   "conversa encenada com selo de 'cena encenada' e sem o visual do WhatsApp",
+   "antes e depois em saúde e estética regulada só com confirmação de que o conselho da profissão permite",
+   "filmagem realista gerada por IA segue a regra de rótulo de IA do Instagram",
+   "humor nunca debocha do cliente",
+   "sem política, religião ou saúde sem fonte"
+  ],
+  "audio": "música CC0 do banco; narração (Polly) só onde o molde precisa, opcional nos demais, porque voz sintética cansa em tutorial",
+  "rodizio": "o agente não usa três moldes de humor (pov, expectativa, conversa) seguidos"
  },
  "estilos": [
   {
@@ -96,6 +113,9 @@
     "Salgados: cliente pedindo precinho às 23h",
     "Salão: cliente que mostra foto da atriz e pede igual",
     "Oficina: 'só um barulhinho' que era o motor"
+   ],
+   "regras": [
+    "Aceitar uma foto ou vídeo do próprio cliente como fundo principal e deixar o banco de filmagens só como reserva. Tirar a virada quando a piada já fecha na primeira frase."
    ]
   },
   {
@@ -127,37 +147,9 @@
     "Confeitaria: bolo de vitrine x cozinha às 3h",
     "Personal: treino de foto x aluno faltando",
     "Restaurante: salão cheio x pia lotada"
-   ]
-  },
-  {
-   "id": "so-quem",
-   "nome": "Coisas que só quem ___ entende",
-   "grupo": "Atrair",
-   "onda": 3,
-   "origem": null,
-   "situacao": "Lista rápida de verdades do ramo que geram identificação e marcações.",
-   "formatos": [
-    "reel",
-    "carrossel"
    ],
-   "duracao": "10 a 15 s",
-   "voz": "não (música)",
-   "midia": "nenhuma",
-   "cenas": [
-    "título 'Coisas que só quem ___ entende'",
-    "4 a 6 cartões trocando na batida",
-    "pergunta 'qual é a sua?'",
-    "final"
-   ],
-   "ficha": {
-    "quem": "até 30 letras",
-    "itens": "4 a 6, até 60 letras cada"
-   },
-   "diferencial": "Cartões trocando no ritmo da música, sem narração.",
-   "exemplos": [
-    "Quem vende doce: o 'faz um descontinho, é pra família'",
-    "Quem tem pet shop: banho marcado e o cão rolou na lama",
-    "Quem tem bar: o 'último pedido' às 2h"
+   "regras": [
+    "Proibir sujeira e falta de higiene na imagem da realidade quando o ramo for comida, saúde ou estética. Permitir que a realidade seja só texto sobre fundo liso quando não houver uma segunda imagem boa."
    ]
   },
   {
@@ -173,7 +165,7 @@
    ],
    "duracao": "12 a 18 s",
    "voz": "opcional",
-   "midia": "nenhuma (ilustração do kit)",
+   "midia": "nenhuma (ícone grande de um conjunto fixo)",
    "cenas": [
     "título 'Os N tipos de cliente de todo ___'",
     "um cartão por tipo: nome + frase típica + ilustração",
@@ -189,6 +181,9 @@
     "Hamburgueria: o que tira tudo do lanche",
     "Clínica de estética: a que já leu tudo no TikTok",
     "Loja de roupa: o que prova 12 e leva 1"
+   ],
+   "regras": [
+    "Trocar a ilustração por um ícone grande de um conjunto fixo ou por um emoji. Proibir tipo que deboche do cliente, como o pão-duro ou o chato."
    ]
   },
   {
@@ -197,17 +192,19 @@
    "grupo": "Atrair",
    "onda": 1,
    "origem": "c_frases",
-   "situacao": "Frases típicas que o dono escuta, numeradas, pedindo para comentar o número.",
+   "situacao": "Frases típicas que o dono escuta, numeradas, pedindo para comentar o número. Inclui o antigo 'coisas que só quem ___ entende'.",
    "formatos": [
-    "carrossel"
+    "carrossel",
+    "reel"
    ],
    "duracao": "6 a 9 telas",
    "voz": "não",
    "midia": "nenhuma",
    "cenas": [
     "capa com a pergunta",
-    "uma frase por tela em balão de fala",
-    "tela de fechamento com a mensagem do negócio"
+    "uma frase por tela em balão de fala (no Reel, cartões trocando na batida)",
+    "fechamento com a mensagem do negócio",
+    "final"
    ],
    "ficha": {
     "pergunta": "até 60 letras",
@@ -219,11 +216,14 @@
     "Salgadeira: 'faz por 50 o cento?'",
     "Fotógrafo: 'é só tirar umas fotinhas'",
     "Marmitaria: 'tem como mandar mais arroz?'"
+   ],
+   "regras": [
+    "Criar a versão Reel com cartões. Dar uma regra de tom: a frase pode ser engraçada, mas o fechamento não pode humilhar quem disse."
    ]
   },
   {
    "id": "chat",
-   "nome": "Conversa no WhatsApp",
+   "nome": "Conversa no celular",
    "grupo": "Atrair",
    "onda": 3,
    "origem": null,
@@ -249,7 +249,40 @@
     "Confeitaria: bolo de 3 andares para amanhã",
     "Mecânico: 'quanto fica?' sem dizer o carro",
     "Delivery: 'já saiu?' 2 minutos depois do pedido"
+   ],
+   "regras": [
+    "Usar um chat genérico, sem o visual nem a marca do WhatsApp. Pôr um selo pequeno de cena encenada e mudar o nome do molde para Conversa no celular."
    ]
+  },
+  {
+   "id": "processo",
+   "nome": "Do começo ao fim",
+   "grupo": "Atrair",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Mostra como o produto ou serviço é feito, em cortes rápidos.",
+   "formatos": [
+    "reel"
+   ],
+   "duracao": "8 a 15 s",
+   "voz": "não (música)",
+   "midia": "4 a 6 fotos ou trechos do próprio cliente",
+   "cenas": [
+    "cortes rápidos na batida, do começo ao resultado",
+    "legenda mínima",
+    "final"
+   ],
+   "ficha": {
+    "midias": "4 a 6 do cliente, em ordem",
+    "legendas": "opcionais, até 25 letras"
+   },
+   "diferencial": "Prende pela transformação; só com material real do negócio.",
+   "exemplos": [
+    "Bolo do recheio à decoração",
+    "Carro da sujeira ao polimento",
+    "Corte de cabelo do antes ao acabamento"
+   ],
+   "regras": []
   },
   {
    "id": "quiz",
@@ -276,13 +309,17 @@
     "pergunta": "até 80 letras",
     "opcoes": "3, até 20 letras",
     "certa": "A, B ou C",
-    "explicacao": "até 140 letras (números conferidos pelo código)"
+    "explicacao": "até 140 letras (números conferidos pelo código)",
+    "numeros": "valores da explicação em campos próprios (o código faz a conta)"
    },
    "diferencial": "Suspense até a última tela; a resposta é a aula.",
    "exemplos": [
     "Confeitaria: preço mínimo do bolo",
     "Academia: quantas calorias tem o açaí",
     "Imobiliária: quanto custa o condomínio de verdade"
+   ],
+   "regras": [
+    "Pôr os números da explicação em campos próprios para o código fazer a conta. No Reel, incluir uma tela de 'pausa e responde' com a contagem antes da resposta. Proibir tema de saúde sem fonte, como calorias."
    ]
   },
   {
@@ -296,7 +333,7 @@
     "carrossel",
     "reel"
    ],
-   "duracao": "4 telas ou 8 s",
+   "duracao": "4 telas ou 10 a 12 s",
    "voz": "não",
    "midia": "1 foto opcional",
    "cenas": [
@@ -316,6 +353,9 @@
     "Delivery: taxa à parte ou embutida",
     "Pizzaria: borda recheada sim ou não",
     "Salão: escova ou secar natural"
+   ],
+   "regras": [
+    "No Reel, aumentar para 10 a 12 s, porque em 8 s não dá para ler dois argumentos. Bloquear temas de política, religião e saúde."
    ]
   },
   {
@@ -342,20 +382,23 @@
    ],
    "ficha": {
     "tema": "até 50 letras",
-    "itens": "3 a 5: afirmação até 70, veredito, explicação até 120"
+    "itens": "3 a 5 no carrossel, até 3 no Reel: afirmação até 70, veredito, explicação até 120, fonte quando saúde, alimento ou dinheiro"
    },
    "diferencial": "O carimbo que bate é o momento do vídeo.",
    "exemplos": [
     "Confeitaria: 'preço alto espanta cliente'",
     "Clínica: 'protetor só no verão'",
     "Mecânico: 'gasolina aditivada limpa o motor'"
+   ],
+   "regras": [
+    "Exigir fonte quando o tema for saúde, estética, alimento ou dinheiro. Limitar a 3 itens no Reel para não ficar longo."
    ]
   },
   {
    "id": "escolha",
    "nome": "Isso ou aquilo",
    "grupo": "Engajar",
-   "onda": 3,
+   "onda": 2,
    "origem": null,
    "situacao": "Pares de produtos do próprio negócio para o cliente escolher; mostra o cardápio sem parecer anúncio.",
    "formatos": [
@@ -379,6 +422,9 @@
     "Doceria: brigadeiro ou beijinho",
     "Lanchonete: coxinha ou kibe",
     "Loja: tênis branco ou preto"
+   ],
+   "regras": [
+    "No story, deixar um espaço vazio para o dono colocar a enquete nativa, que o código não consegue criar. Exigir que as duas fotos de cada par tenham a mesma qualidade."
    ]
   },
   {
@@ -387,7 +433,7 @@
    "grupo": "Ensinar",
    "onda": 1,
    "origem": "2_brigadeiro",
-   "situacao": "Um custo subiu e o preço não acompanhou: mostra o antes e o depois do lucro.",
+   "situacao": "Um custo subiu e o preço não acompanhou: mostra o antes e o depois do lucro. Variante para o cliente final: 'por que o preço mudou'.",
    "formatos": [
     "reel"
    ],
@@ -417,6 +463,9 @@
     "Brigadeiro e o leite condensado",
     "Lava-jato e o produto de limpeza",
     "Marmita e o arroz"
+   ],
+   "regras": [
+    "Marcar como molde para quem vende para outros negócios. Para o cliente final, criar a variante 'por que o preço mudou'. Bloquear a geração quando faltar custo real."
    ]
   },
   {
@@ -438,13 +487,14 @@
     "'mas tem o que ninguém coloca'",
     "iceberg: custos escondidos aparecendo embaixo d'água",
     "total escondido",
-    "final"
+    "final",
+    "variante rosca: como cada R$ 100 se divide (antigo 'pra onde vai cada real')"
    ],
    "ficha": {
     "produto": "até 25",
     "preco": "R$",
     "custo_visivel": "R$",
-    "escondidos": "3 a 6: nome até 25 + R$",
+    "escondidos": "3 a 6: nome até 25 + R$ real ou 'em média' marcado",
     "falas": "geradas"
    },
    "diferencial": "Iceberg: o visível em cima, o que pesa embaixo; total somado pelo código.",
@@ -452,37 +502,9 @@
     "Cento de salgado: óleo, gás, embalagem, perdas",
     "Corte de cabelo: produto, luz, toalha, comissão",
     "Frete: pedágio, desgaste, tempo parado"
-   ]
-  },
-  {
-   "id": "pra-onde-vai",
-   "nome": "Pra onde vai cada real",
-   "grupo": "Ensinar",
-   "onda": 3,
-   "origem": null,
-   "situacao": "Explica o preço mostrando como cada R$ 100 (ou cada venda) se divide.",
-   "formatos": [
-    "reel",
-    "carrossel"
    ],
-   "duracao": "20 a 30 s",
-   "voz": "opcional",
-   "midia": "nenhuma",
-   "cenas": [
-    "nota de R$ 100 na tela",
-    "rosca se dividindo em fatias com nome e valor",
-    "o que sobra de verdade",
-    "final"
-   ],
-   "ficha": {
-    "valor": "R$ (padrão 100)",
-    "fatias": "3 a 7: nome até 20 + % (soma 100, conferida pelo código)"
-   },
-   "diferencial": "Gráfico de rosca; transparência que justifica preço.",
-   "exemplos": [
-    "Pizzaria: ingredientes, app, entregador, imposto, lucro",
-    "Fotógrafo: equipamento, edição, deslocamento",
-    "Loja: mercadoria, aluguel, cartão, lucro"
+   "regras": [
+    "Absorver o pra-onde-vai como variante em rosca. Aceitar faixa ou estimativa marcada como 'em média' em vez de valor exato inventado."
    ]
   },
   {
@@ -491,13 +513,13 @@
    "grupo": "Ensinar",
    "onda": 3,
    "origem": null,
-   "situacao": "Tutorial curto de algo útil para o cliente (ou para o dono).",
+   "situacao": "Tutorial curto de algo útil para o cliente (ou para o dono). Modo 'lista para salvar' (prancheta com caixinhas, antigo checklist) quando não há ordem.",
    "formatos": [
     "reel",
     "carrossel"
    ],
    "duracao": "20 a 40 s",
-   "voz": "sim",
+   "voz": "opcional",
    "midia": "fotos ou filmagem opcional",
    "cenas": [
     "promessa ('como fazer X em N passos')",
@@ -515,6 +537,9 @@
     "Confeitaria: congelar bolo sem estragar",
     "Pet shop: escovar o dente do cachorro",
     "Contador: emitir nota como MEI"
+   ],
+   "regras": [
+    "Deixar a narração opcional, porque voz robótica em tutorial cansa. Absorver o checklist como modo sem ordem."
    ]
   },
   {
@@ -545,109 +570,16 @@
     "Delivery: embalagem que vaza",
     "Salão: lavar o cabelo depois da progressiva",
     "Loja virtual: foto com fundo bagunçado"
-   ]
-  },
-  {
-   "id": "numero",
-   "nome": "Número que choca",
-   "grupo": "Ensinar",
-   "onda": 3,
-   "origem": null,
-   "situacao": "Um dado forte com fonte, explicado em 3 frases.",
-   "formatos": [
-    "reel",
-    "story"
    ],
-   "duracao": "10 a 15 s",
-   "voz": "opcional",
-   "midia": "nenhuma",
-   "cenas": [
-    "número gigante contando",
-    "o que ele significa",
-    "fonte pequena",
-    "o que fazer com isso",
-    "final"
-   ],
-   "ficha": {
-    "numero": "valor + unidade",
-    "significado": "até 80",
-    "fonte": "obrigatória (nome e ano)",
-    "acao": "até 80"
-   },
-   "diferencial": "Um número só ocupa a tela; sem fonte não sai.",
-   "exemplos": [
-    "Pequenos negócios que fecham em 5 anos",
-    "Clientes que desistem por demora no WhatsApp",
-    "Pedidos feitos depois das 20h"
-   ]
-  },
-  {
-   "id": "checklist",
-   "nome": "Checklist",
-   "grupo": "Ensinar",
-   "onda": 4,
-   "origem": null,
-   "situacao": "Lista de conferência que o cliente salva para usar depois.",
-   "formatos": [
-    "carrossel",
-    "story"
-   ],
-   "duracao": "1 a 3 telas",
-   "voz": "não",
-   "midia": "nenhuma",
-   "cenas": [
-    "título",
-    "itens marcando ✓ um a um",
-    "'salva pra não esquecer'",
-    "final"
-   ],
-   "ficha": {
-    "titulo": "até 50",
-    "itens": "4 a 8, até 50 letras"
-   },
-   "diferencial": "Feito para salvar: prancheta com caixinhas.",
-   "exemplos": [
-    "Festa: o que encomendar 15 dias antes",
-    "Carro: revisão antes de viajar",
-    "Viagem com pet: o que levar"
-   ]
-  },
-  {
-   "id": "tabela",
-   "nome": "Comparativo em tabela",
-   "grupo": "Ensinar",
-   "onda": 4,
-   "origem": null,
-   "situacao": "Compara duas ou três opções com dados, linha a linha.",
-   "formatos": [
-    "carrossel",
-    "reel"
-   ],
-   "duracao": "2 telas ou 15 s",
-   "voz": "opcional",
-   "midia": "nenhuma",
-   "cenas": [
-    "título",
-    "tabela preenchendo linha a linha",
-    "destaque da opção vencedora",
-    "final"
-   ],
-   "ficha": {
-    "opcoes": "2 ou 3, até 18 letras",
-    "linhas": "3 a 6: critério + valor por opção"
-   },
-   "diferencial": "Dado, não opinião (diferente do Time A ou B).",
-   "exemplos": [
-    "Pedido pelo app x pedido direto",
-    "Plano mensal x avulso na academia",
-    "Aluguel x financiamento"
+   "regras": [
+    "Garantir que o erro e o certo de cada par sejam sobre a mesma coisa. Evitar que o erro pareça crítica direta a um cliente."
    ]
   },
   {
    "id": "demonstracao",
    "nome": "Demonstração no celular",
    "grupo": "Ensinar",
-   "onda": 2,
+   "onda": 3,
    "origem": null,
    "situacao": "Mostra o app, site, cardápio digital ou ferramenta funcionando.",
    "formatos": [
@@ -673,6 +605,43 @@
     "Raiz: calculadora de preço",
     "Restaurante: pedir pelo cardápio digital",
     "Clínica: agendar pelo link"
+   ],
+   "regras": [
+    "Aceitar gravação de tela real, além de prints. Para quem não tem ferramenta, o agente deve cair no como-pedir."
+   ]
+  },
+  {
+   "id": "pergunta-cliente",
+   "nome": "Pergunta do cliente",
+   "grupo": "Ensinar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Responde uma dúvida ou objeção frequente (entrega no bairro, aceita cartão, por que custa isso).",
+   "formatos": [
+    "reel",
+    "story",
+    "carrossel"
+   ],
+   "duracao": "8 a 15 s",
+   "voz": "opcional",
+   "midia": "nenhuma",
+   "cenas": [
+    "a pergunta aparece como comentário recebido",
+    "resposta revelada",
+    "final"
+   ],
+   "ficha": {
+    "pergunta": "até 90 letras (real, vinda de mensagem ou comentário)",
+    "resposta": "até 160"
+   },
+   "diferencial": "Uma pergunta por peça; quebra a objeção que trava a venda.",
+   "exemplos": [
+    "Entrega no Cabula?",
+    "Faz bolo sem lactose?",
+    "Por que o orçamento é por avaliação?"
+   ],
+   "regras": [
+    "pergunta real; sem nome nem foto de quem perguntou"
    ]
   },
   {
@@ -709,13 +678,16 @@
     "Pizzaria: segunda em dobro",
     "Loja: 20% até domingo",
     "Estética: pacote de 3 sessões"
+   ],
+   "regras": [
+    "Exigir que o preço 'de' tenha sido praticado de verdade, com o dono confirmando. O prazo é obrigatório e o post não pode sair depois dele. Nada de contagem que reinicia."
    ]
   },
   {
    "id": "lancamento",
    "nome": "Lançamento",
    "grupo": "Vender",
-   "onda": 2,
+   "onda": 3,
    "origem": null,
    "situacao": "Produto ou serviço novo revelado com suspense.",
    "formatos": [
@@ -743,13 +715,16 @@
     "Doceria: bolo de pote de pistache",
     "Barbearia: corte + barba com toalha quente",
     "Loja: coleção de verão"
+   ],
+   "regras": [
+    "Não esconder a foto principal por mais de 2 s, porque no Reel a pessoa pula. Permitir preço opcional na cena final."
    ]
   },
   {
    "id": "combo",
    "nome": "Combo ou kit",
    "grupo": "Vender",
-   "onda": 2,
+   "onda": 3,
    "origem": null,
    "situacao": "Itens que se juntam num kit, com a economia em relação a comprar separado.",
    "formatos": [
@@ -776,11 +751,14 @@
     "Hamburgueria: combo família",
     "Kit festa: bolo + 100 docinhos",
     "Salão: dia da noiva"
+   ],
+   "regras": [
+    "Somar os preços avulsos pelo código e bloquear a peça se o combo não for mais barato. Aceitar uma foto só do kit montado quando não houver foto de cada item."
    ]
   },
   {
    "id": "cardapio",
-   "nome": "Cardápio ou catálogo do dia",
+   "nome": "Vitrine do dia",
    "grupo": "Vender",
    "onda": 2,
    "origem": null,
@@ -801,7 +779,7 @@
     "final"
    ],
    "ficha": {
-    "itens": "3 a 9: foto + nome até 25 + preço",
+    "itens": "4 a 6 por tela (até 3 telas): foto + nome até 25 + preço",
     "esgotados": "opcional",
     "como_pedir": "até 50"
    },
@@ -810,6 +788,9 @@
     "Marmitaria: pratos do dia",
     "Padaria: fornada da tarde",
     "Brechó: peças novas"
+   ],
+   "regras": [
+    "Limitar a 4 a 6 itens por tela e dividir em várias telas. Criar uma área livre própria para story. Mudar o nome para Vitrine do dia, para servir também a quem não vende comida."
    ]
   },
   {
@@ -837,14 +818,18 @@
    "ficha": {
     "citacao": "até 160 letras, copiada de mensagem real",
     "autor": "primeiro nome",
-    "estrelas": "1 a 5",
-    "prova": "id da mensagem ou print guardado"
+    "estrelas": "só se a fonte tiver nota (ex.: Google)",
+    "prova": "id da mensagem ou print guardado",
+    "permissao": "registro da permissão do cliente"
    },
    "diferencial": "Prova social; o sistema exige a origem da fala e bloqueia depoimento sem prova.",
    "exemplos": [
     "Confeitaria: avaliação do Google",
     "Oficina: mensagem de agradecimento",
     "Personal: aluno contando o resultado"
+   ],
+   "regras": [
+    "Mostrar estrelas só quando a fonte tiver nota, como o Google. Guardar a permissão do cliente junto da prova. Nunca editar o texto da fala."
    ]
   },
   {
@@ -878,6 +863,9 @@
     "Salão: coloração",
     "Estética automotiva: polimento",
     "Reforma: banheiro"
+   ],
+   "regras": [
+    "Bloquear ou pedir confirmação para clínica, odontologia e estética regulada, conforme a regra do conselho profissional. Conferir que as duas fotos são do mesmo ângulo e não foram editadas."
    ]
   },
   {
@@ -886,7 +874,7 @@
    "grupo": "Vender",
    "onda": 2,
    "origem": null,
-   "situacao": "Explica em 3 passos como comprar, agendar ou encomendar.",
+   "situacao": "Explica em 3 passos como comprar, agendar ou encomendar. Também mostra onde atende: bairros de entrega, endereço ou evento.",
    "formatos": [
     "reel",
     "story",
@@ -904,13 +892,19 @@
    "ficha": {
     "passos": "3, até 40 letras",
     "canal": "link, número ou endereço",
-    "prazo": "opcional"
+    "prazo": "opcional",
+    "pagamento": "opcional",
+    "area_entrega": "bairros ou raio, opcional",
+    "endereco": "opcional (antigo 'onde estamos')"
    },
    "diferencial": "Ícones grandes; tira a dúvida que impede a compra.",
    "exemplos": [
     "Encomenda de bolo com 3 dias",
     "Agendamento de banho e tosa",
     "Pedido de marmita da semana"
+   ],
+   "regras": [
+    "Incluir as formas de pagamento e a área de entrega como campos opcionais."
    ]
   },
   {
@@ -921,8 +915,7 @@
    "origem": null,
    "situacao": "Mostra horários ou datas livres para quem vende por agendamento.",
    "formatos": [
-    "story",
-    "reel"
+    "story"
    ],
    "duracao": "8 a 12 s",
    "voz": "não",
@@ -943,6 +936,119 @@
     "Salão: sábado com 2 vagas",
     "Fotógrafo: datas de dezembro",
     "Clínica: avaliações da semana"
+   ],
+   "regras": [
+    "Fazer só em story. Os horários devem vir da agenda real ou de confirmação do dono no dia, nunca de um preenchimento antigo."
+   ]
+  },
+  {
+   "id": "data-especial",
+   "nome": "Data especial",
+   "grupo": "Vender",
+   "onda": 2,
+   "origem": null,
+   "situacao": "Dia das Mães, Páscoa, Natal, Black Friday: o que o negócio oferece e até quando encomendar.",
+   "formatos": [
+    "reel",
+    "carrossel",
+    "story"
+   ],
+   "duracao": "10 a 15 s",
+   "voz": "opcional",
+   "midia": "2 ou 3 fotos",
+   "cenas": [
+    "tema da data com o visual da época",
+    "2 ou 3 produtos ou serviços",
+    "prazo para encomendar contado pelo código",
+    "como pedir",
+    "final"
+   ],
+   "ficha": {
+    "data": "da lista de datas do ano",
+    "itens": "2 ou 3: foto + nome + preço opcional",
+    "prazo": "data real de encomenda"
+   },
+   "diferencial": "Calendário do ano: o agente sabe as datas e prepara antes.",
+   "exemplos": [
+    "Confeitaria: ovos de Páscoa até 5/4",
+    "Floricultura: Dia das Mães",
+    "Barbearia: Dia dos Pais com combo"
+   ],
+   "regras": [
+    "prazo real; o post não sai depois dele"
+   ]
+  },
+  {
+   "id": "produto-semana",
+   "nome": "Produto em destaque",
+   "grupo": "Vender",
+   "onda": 2,
+   "origem": null,
+   "situacao": "Destaca algo que já existe, sem promoção nem novidade.",
+   "formatos": [
+    "reel",
+    "carrossel",
+    "story"
+   ],
+   "duracao": "8 a 12 s",
+   "voz": "opcional",
+   "midia": "1 a 3 fotos",
+   "cenas": [
+    "foto com zoom nos detalhes",
+    "3 atributos",
+    "preço opcional",
+    "chamada",
+    "final"
+   ],
+   "ficha": {
+    "nome": "até 30",
+    "fotos": "1 a 3",
+    "atributos": "3, até 30 letras",
+    "preco": "opcional"
+   },
+   "diferencial": "Zoom nos detalhes; o post de todo dia sem precisar de motivo.",
+   "exemplos": [
+    "Doceria: torta de limão",
+    "Pet shop: banho com hidratação",
+    "Loja: bolsa de couro"
+   ],
+   "regras": []
+  },
+  {
+   "id": "avalia-indica",
+   "nome": "Avalia ou indica",
+   "grupo": "Vender",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Pede avaliação no Google ou indicação, com benefício claro.",
+   "formatos": [
+    "story",
+    "reel"
+   ],
+   "duracao": "8 a 12 s",
+   "voz": "não",
+   "midia": "nenhuma",
+   "cenas": [
+    "o pedido",
+    "o benefício",
+    "3 passos",
+    "link ou código",
+    "final"
+   ],
+   "ficha": {
+    "tipo": "avaliação ou indicação",
+    "beneficio": "até 60 (regra clara do prêmio)",
+    "passos": "3, até 40",
+    "link": "link real"
+   },
+   "diferencial": "Transforma cliente satisfeito em divulgação.",
+   "exemplos": [
+    "Avalia no Google e ganha um brigadeiro",
+    "Indica uma amiga e as duas ganham 10%",
+    "Avalie a oficina e concorra a uma lavagem"
+   ],
+   "regras": [
+    "benefício real e cumprido; sem comprar avaliação positiva (o benefício vale para qualquer nota)"
    ]
   },
   {
@@ -951,14 +1057,14 @@
    "grupo": "Institucional",
    "onda": 4,
    "origem": null,
-   "situacao": "Quem faz, como faz e por que começou, com fotos do próprio negócio.",
+   "situacao": "Quem faz, como faz e por que começou, com fotos do próprio negócio. Modo equipe: quem te atende (foto, nome, função, frase da pessoa, com permissão).",
    "formatos": [
     "reel",
     "carrossel"
    ],
    "duracao": "15 a 30 s",
    "voz": "opcional",
-   "midia": "4 a 8 fotos do cliente",
+   "midia": "3 a 8 fotos do cliente",
    "cenas": [
     "foto do dono com o nome",
     "fotos com zoom lento e legendas curtas (3 atos: começo, hoje, amanhã)",
@@ -966,20 +1072,23 @@
    ],
    "ficha": {
     "fotos": "4 a 8 com legenda até 50",
-    "atos": "3 frases até 80"
+    "atos": "3 frases tiradas de uma entrevista curta com o dono, nunca inventadas"
    },
    "diferencial": "Fotos reais com zoom lento; aproxima o cliente do dono.",
    "exemplos": [
     "Confeitaria que começou na cozinha de casa",
     "Oficina de pai para filho",
     "Loja que nasceu no Instagram"
+   ],
+   "regras": [
+    "Aceitar a partir de 3 fotos. Os 3 atos devem vir de uma entrevista curta com o dono, nunca de uma história inventada pela IA."
    ]
   },
   {
    "id": "aviso",
    "nome": "Aviso",
    "grupo": "Institucional",
-   "onda": 4,
+   "onda": 2,
    "origem": null,
    "situacao": "Horário especial, feriado, férias, mudança de endereço ou de telefone.",
    "formatos": [
@@ -996,16 +1105,20 @@
     "final"
    ],
    "ficha": {
-    "tipo": "feriado, férias, horário, endereço, telefone",
-    "data": "data",
+    "tipo": "feriado, férias, horário, endereço, telefone, falta de produto, agenda cheia, vaga de emprego",
+    "data": "data (dia da semana calculado pelo código)",
     "texto": "até 100",
-    "volta": "opcional"
+    "volta": "opcional",
+    "vaga": "se vaga: função, 3 requisitos, como se candidatar, prazo"
    },
    "diferencial": "Claro e rápido; um cartaz animado que todo negócio precisa.",
    "exemplos": [
     "Fechado no feriado de 15/11",
     "Novo endereço a partir de segunda",
     "Horário estendido no Natal"
+   ],
+   "regras": [
+    "Pôr a data e o dia da semana calculados pelo código. Incluir o tipo 'falta de produto' ou 'agenda cheia'."
    ]
   },
   {
@@ -1038,6 +1151,9 @@
     "1.000 bolos entregues",
     "5 anos de oficina",
     "10 mil seguidores"
+   ],
+   "regras": [
+    "Pedir a origem do número, como sistema ou contagem do dono. Proibir arredondar para cima."
    ]
   }
  ]
