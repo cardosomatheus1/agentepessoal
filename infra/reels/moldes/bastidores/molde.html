@@ -3,12 +3,14 @@
 <style>
 /* documentary: the business's own photos full screen with slow camera moves, a chapter line (começo, hoje, amanhã)
    and the owner's own words as subtitles. Text sits on photos darkened by a black gradient, so it is white. */
-#tela{position:absolute;inset:0;overflow:hidden;background:var(--fundo)}
+#tela{position:absolute;inset:0;overflow:hidden;background:var(--fundo);isolation:isolate;z-index:0}
 .fr{position:absolute;inset:0;overflow:hidden;opacity:0}
 .fr .pan{position:absolute;left:-60px;top:-60px;width:1200px;height:2040px}
 .fr img{width:100%;height:100%;object-fit:cover}
 #somb{position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,0) 26%,rgba(0,0,0,0) 40%,rgba(0,0,0,.62) 58%,rgba(0,0,0,.88) 82%)}
 .bra{color:#fff}
+/* the watermark sits on photos here: a dark logo gets a light pill so it stays readable */
+body.e-claro #marca:not(.selo),body.e-papel #marca:not(.selo),body.e-pop #marca:not(.selo){background:color-mix(in srgb,var(--fundo) 90%,transparent);padding:10px 24px;border-radius:999px}
 /* chapter line */
 #linha{position:absolute;left:110px;right:190px;top:384px;height:86px;opacity:0}
 #linha .tr{position:absolute;left:14px;right:14px;top:16px;height:6px;border-radius:3px;background:rgba(255,255,255,.3)}
@@ -22,8 +24,8 @@
 #func{position:absolute;left:90px;right:180px;top:1236px;height:60px;font-size:46px;font-weight:700;white-space:nowrap}
 /* act subtitles */
 #capT{position:absolute;left:90px;top:900px;font-size:40px}
-#aspas{position:absolute;left:78px;top:960px;font-family:var(--ft);font-size:200px;line-height:1;color:var(--destaque);opacity:0}
-#frase{position:absolute;left:90px;right:180px;top:1010px;height:300px;font-size:64px;font-weight:800;line-height:1.14}
+#aspas{position:absolute;left:80px;top:990px;font-family:var(--ft);font-size:170px;line-height:1;color:var(--destaque);opacity:0}
+#frase{position:absolute;left:170px;right:180px;top:1010px;height:300px;font-size:64px;font-weight:800;line-height:1.14}
 #leg{position:absolute;left:90px;right:180px;top:1350px;height:52px;font-size:36px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:14px;opacity:.9}
 #leg .ico{flex:none;color:var(--destaque)}
 #leg .t{flex:1;height:52px;line-height:52px;white-space:nowrap}
@@ -107,9 +109,9 @@ Motor.molde({
       if (F.falas && F.falas.length !== 5) $m.erro('falas: 5 (dono, começo, hoje, amanhã, chamada)');
       D.cenas.push({ tipo: 'dono', fotos: [quadroFoto(F.dono.foto, $m)] });
       P.grupos.forEach((g, k) => D.cenas.push({ tipo: 'ato', k, ato: F.atos[k], fotos: g.map(f => quadroFoto(f.foto, $m)), legs: g.map(f => f.legenda || '') }));
-      ATOS.forEach((a, k) => { const n = document.createElement('i'); n.className = 'no'; n.style.left = (14 + k * 50) + '%'; $('#linha').appendChild(n);
-        const l = document.createElement('div'); l.className = 'lb t seg'; l.textContent = (F.atos[k] && F.atos[k].titulo) || a; l.style.left = (14 + k * 50) + '%'; $('#linha').appendChild(l); });
-      $('#linha .tr').style.left = '14%'; $('#linha .tr').style.right = (100 - 14 - 100) + '%';
+      ATOS.forEach((a, k) => { const n = document.createElement('i'); n.className = 'no'; n.style.left = (14 + k * 36) + '%'; $('#linha').appendChild(n);
+        const l = document.createElement('div'); l.className = 'lb t seg'; l.textContent = (F.atos[k] && F.atos[k].titulo) || a; l.style.left = (14 + k * 36) + '%'; $('#linha').appendChild(l); });
+      $('#linha .tr').style.left = '14%'; $('#linha .tr').style.right = '14%';
       $('#time').remove(); $('#timeT').remove();
     }
     $('#tag0').textContent = P.eq ? 'quem te atende' : 'nossa história';
@@ -156,8 +158,8 @@ Motor.molde({
     $('#capT').style.opacity = S.tipo === 'ato' ? eo(p(t, a + 0.1, 0.4)) * out : 0;
     if (S.tipo === 'ato') $('#capT').textContent = `${S.k + 1}. ${(S.ato && S.ato.titulo) || ATOS[S.k]}`;
     $('#aspas').style.opacity = temFrase ? 0.9 * eo(p(t, a + 0.25, 0.4)) * out : 0;
-    $('#aspas').style.top = pessoa ? '1150px' : '960px'; $('#frase').style.top = pessoa ? '1200px' : '1010px';
-    $('#frase').style.height = pessoa ? '260px' : '300px';
+    $('#aspas').style.top = pessoa ? '1140px' : '990px'; $('#frase').style.top = pessoa ? '1160px' : '1010px';
+    $('#frase').style.height = pessoa ? '280px' : '300px'; $('#tag0').style.top = pessoa ? '836px' : '968px'; $('#nome').style.top = pessoa ? '900px' : '1030px';
     if ($('#frase').dataset.k !== String(k)) { $('#frase').dataset.k = k; $('#frase').dataset.pal = ''; $('#frase').textContent = temFrase ? (pessoa ? S.p.frase : S.ato.frase) : ''; }
     $('#frase').style.opacity = temFrase ? out : 0; if (temFrase) $m.revela('#frase', t, a + 0.45, 0.045);
     const leg = S.tipo === 'ato' && ativa ? S.legs[ativa.j] : '';

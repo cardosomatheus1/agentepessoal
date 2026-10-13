@@ -1,5 +1,30 @@
-{"_marca": "raiz", "_formato": "reel",
- "nome": "Açaí da casa", "fotos": ["fotos/acai.jpg"],
- "atributos": [{"texto": "Banana fresquinha", "x": 55, "y": 30}, {"texto": "Granola crocante", "x": 28, "y": 48}, {"texto": "Açaí batido na hora", "x": 70, "y": 75}],
- "falas": ["O açaí da casa.", "Banana fresquinha, granola crocante e açaí batido na hora.", "Calcule o preço certo do seu açaí na calculadora grátis do link da bio."],
- "nota": "exemplo"}
+{
+ "_marca": "raiz",
+ "_formato": "reel",
+ "nome": "Açaí da casa",
+ "fotos": [
+  "fotos/acai.jpg"
+ ],
+ "atributos": [
+  {
+   "texto": "Banana fresquinha",
+   "x": 55,
+   "y": 30
+  },
+  {
+   "texto": "Granola crocante",
+   "x": 28,
+   "y": 48
+  },
+  {
+   "texto": "Açaí batido na hora",
+   "x": 70,
+   "y": 75
+  }
+ ],
+ "falas": [
+  "O açaí da casa.",
+  "Banana fresquinha, granola crocante e açaí batido na hora.",
+  "Calcule o preço certo do seu açaí na calculadora grátis do link da bio."
+ ]
+}

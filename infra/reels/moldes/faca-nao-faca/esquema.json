@@ -1,0 +1,15 @@
+{
+ "formatos": ["carrossel", "reel"],
+ "voz": "opcional",
+ "musica": "leve",
+ "campos": {
+  "tema": {"tipo": "texto", "min": 4, "max": 44, "dica": "Embalagem de delivery"},
+  "pares": {"tipo": "lista", "min": 3, "max": 5, "item": {
+    "sobre": {"tipo": "texto", "min": 2, "max": 22, "dica": "a coisa de que o erro e o certo falam (os dois são sobre ela): Molho, Tampa, Etiqueta"},
+    "erro": {"tipo": "texto", "min": 6, "max": 60, "dica": "o jeito errado, sem apontar um cliente"},
+    "certo": {"tipo": "texto", "min": 6, "max": 60}}},
+  "midia": {"tipo": "filmagem", "obrigatorio": false, "dica": "fundo da capa: foto do cliente (fotos/x.jpg), vídeo do cliente ou nome do banco"},
+  "falas": {"tipo": "lista", "min": 8, "max": 12, "obrigatorio": false, "item": {"tipo": "texto", "max": 160},
+   "dica": "narração opcional: capa, depois erro e certo de cada par (2 por par), chamada"}
+ }
+}

@@ -1,0 +1,134 @@
+{
+ "formatos": [
+  "reel",
+  "carrossel"
+ ],
+ "voz": "opcional",
+ "musica": "leve",
+ "campos": {
+  "modo": {
+   "tipo": "escolha",
+   "opcoes": [
+    "historia",
+    "equipe"
+   ]
+  },
+  "titulo": {
+   "tipo": "texto",
+   "max": 18,
+   "obrigatorio": false,
+   "dica": "modo equipe: padrão Quem te atende"
+  },
+  "dono": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "dica": "modo história",
+   "campos": {
+    "nome": {
+     "tipo": "texto",
+     "max": 14,
+     "dica": "como o cliente chama: Lu, Seu Zé"
+    },
+    "funcao": {
+     "tipo": "texto",
+     "max": 30
+    },
+    "foto": {
+     "tipo": "foto"
+    }
+   }
+  },
+  "fotos": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 8,
+   "obrigatorio": false,
+   "dica": "modo história: fotos do próprio negócio, em ordem (começo, hoje, amanhã)",
+   "item": {
+    "foto": {
+     "tipo": "foto"
+    },
+    "legenda": {
+     "tipo": "texto",
+     "max": 40,
+     "obrigatorio": false
+    },
+    "ato": {
+     "tipo": "numero",
+     "min": 1,
+     "max": 3,
+     "obrigatorio": false,
+     "dica": "1 começo, 2 hoje, 3 amanhã; sem ele as fotos se dividem em ordem"
+    }
+   }
+  },
+  "atos": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "obrigatorio": false,
+   "dica": "modo história: 3 frases da entrevista com o dono (começo, hoje, amanhã), com as palavras dele",
+   "item": {
+    "frase": {
+     "tipo": "texto",
+     "max": 100,
+     "min": 12,
+     "real": true
+    },
+    "titulo": {
+     "tipo": "texto",
+     "max": 14,
+     "obrigatorio": false
+    }
+   }
+  },
+  "equipe": {
+   "tipo": "lista",
+   "min": 2,
+   "max": 4,
+   "obrigatorio": false,
+   "dica": "modo equipe: quem te atende, com permissão de cada pessoa",
+   "item": {
+    "foto": {
+     "tipo": "foto"
+    },
+    "nome": {
+     "tipo": "texto",
+     "max": 14
+    },
+    "funcao": {
+     "tipo": "texto",
+     "max": 28
+    },
+    "frase": {
+     "tipo": "texto",
+     "max": 90,
+     "min": 10,
+     "real": true
+    },
+    "permissao": {
+     "tipo": "texto",
+     "max": 60,
+     "real": true,
+     "dica": "registro da permissão: autorizou por mensagem em 10/10"
+    }
+   }
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 4,
+   "max": 6,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "max": 160
+   },
+   "dica": "narração opcional. História: 5 (dono, começo, hoje, amanhã, chamada). Equipe: uma por pessoa mais abertura e chamada"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ }
+}

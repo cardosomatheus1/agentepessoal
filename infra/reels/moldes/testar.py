@@ -6,7 +6,8 @@
     python3 testar.py --video oferta  # also renders the full videos/slides
 
 A template passes when it has 3 or more test fichas, from at least 2 brands (2 styles), every ficha passes the
-check, every format in esquema.json is covered by some ficha, and a ficha in tests/recusadas/ (if any) is refused.
+check, every format in esquema.json is covered by some ficha, a ficha in exemplos/recusadas/ is refused by the ficha check and one in
+exemplos/recusadas-molde/ by the template itself (render exits 2).
 Also checks that every template in catalogo.json has a folder. Exit 1 if anything fails.
 """
 import json, subprocess, sys
@@ -39,6 +40,10 @@ def testar(m, video=False):
     if falta: falhas.append(f"formato sem ficha de teste: {sorted(falta)}")
     for f in sorted((pasta / "exemplos" / "recusadas").glob("*.json")) if (pasta / "exemplos" / "recusadas").exists() else []:
         if not validar(esquema, json.loads(f.read_text())): falhas.append(f"recusadas/{f.name}: deveria ser recusada e passou")
+    # data the template itself refuses ($m.erro: deadline past, combo dearer, missing confirmation): render must exit 2
+    for f in sorted((pasta / "exemplos" / "recusadas-molde").glob("*.json")) if (pasta / "exemplos" / "recusadas-molde").exists() else []:
+        r = subprocess.run([sys.executable, str(RAIZ / "motor" / "render.py"), m, str(f), "--previa", "--saida", str(pasta / "saida" / ("recusada-" + f.stem))], capture_output=True, text=True, timeout=600)
+        if r.returncode != 2: falhas.append(f"recusadas-molde/{f.name}: o molde deveria recusar (saída {r.returncode})")
     return falhas
 
 

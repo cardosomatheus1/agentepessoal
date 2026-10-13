@@ -87,6 +87,8 @@ def _reais(campos, ficha, pre=""):
         if regra.get("real") and v not in (None, "", []): yield pre + nome
         if regra.get("tipo") == "lista" and isinstance(regra.get("item"), dict) and "tipo" not in regra["item"] and isinstance(v, list):
             for i, x in enumerate(v): yield from _reais(regra["item"], x, f"{pre}{nome}[{i + 1}].")
+        if regra.get("tipo") == "objeto" and isinstance(v, dict):
+            yield from _reais(regra.get("campos", {}), v, f"{pre}{nome}.")
 
 
 def validar(esquema: dict, ficha: dict) -> list[str]:
@@ -98,7 +100,7 @@ def validar(esquema: dict, ficha: dict) -> list[str]:
         if EMOJI.search(s): erros.append(f"{caminho}: sem emoji")
     origem = ficha.get("_origem", {})
     for nome, regra in campos.items():
-        if regra.get("real") and ficha.get(nome) in (None, "", []):
+        if regra.get("real") and regra.get("obrigatorio", True) and ficha.get(nome) in (None, "", []):
             erros.append(f"{nome}: dado real obrigatório; sem ele este molde não gera")
     for caminho in _reais(campos, ficha):
         raiz = caminho.split("[")[0].split(".")[0]

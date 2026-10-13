@@ -4,7 +4,7 @@
 /* versus screen: two photos smash together on a diagonal seam, an OU coin slams in the middle, the choice
    ping-pongs between the sides */
 :root{--y0:430px;--ph:950px}
-body.f-story{--y0:400px;--ph:790px}
+body.f-story{--y0:436px;--ph:760px}
 #capT{left:110px;top:520px;width:860px;height:300px;font-size:190px;line-height:.95}
 #capS{left:150px;top:830px;width:780px;height:70px;font-size:46px;font-weight:700}
 #capA,#capB{position:absolute;top:980px;width:380px;height:460px;border-radius:40px;overflow:hidden;box-shadow:var(--sombra)}
@@ -18,7 +18,7 @@ body.f-story #capOu{top:990px}
 .lado.b{left:470px;clip-path:polygon(16% 0,100% 0,100% 100%,0 100%);transform-origin:100% 50%}
 .lado img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .lado .gr{position:absolute;left:0;right:0;bottom:0;height:420px;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.78))}
-.lado .nm{position:absolute;bottom:40px;width:380px;height:150px;font-size:58px;line-height:1.05;color:#fff;display:flex;flex-direction:column;justify-content:flex-end}
+.lado .nm{position:absolute;bottom:34px;width:380px;height:160px;font-size:58px;line-height:1.15;padding-bottom:6px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end}
 .lado.a .nm{left:90px}
 .lado.b .nm{left:100px;width:310px;text-align:right}
 .lado .lt{position:absolute;top:34px;width:84px;height:84px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900;font-size:48px;line-height:84px;text-align:center}
@@ -29,13 +29,14 @@ body.e-noite .ou{box-shadow:0 0 0 8px var(--fundo),0 0 60px var(--destaque)}
 .par .ou{left:435px;top:calc(var(--y0) + var(--ph) / 2 - 105px)}
 .par .cont{position:absolute;left:390px;top:calc(var(--y0) - 46px);width:300px;height:72px;line-height:72px;padding:0;text-align:center;font-size:38px;z-index:3}
 #fimT{left:110px;top:410px;width:860px;height:300px;font-size:128px;line-height:1}
-#fimL{position:absolute;left:110px;top:760px;width:760px;display:flex;flex-direction:column;gap:22px}
+#fimL{position:absolute;left:100px;top:760px;width:790px;display:flex;flex-direction:column;gap:22px}
 #fimL .lin{display:flex;align-items:center;gap:18px;height:120px}
-#fimL .n{flex:none;width:76px;font-family:var(--ft);font-weight:900;font-size:60px;color:var(--destaque);text-align:center}
+#fimL .n{flex:none;width:60px;font-family:var(--ft);font-weight:900;font-size:60px;color:var(--destaque);text-align:center}
 #fimL .fa,#fimL .fb{flex:none;width:120px;height:120px;border-radius:30px;overflow:hidden}
 #fimL img{width:100%;height:100%;object-fit:cover}
 #fimL .o{flex:none;width:64px;height:64px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900;font-size:28px;line-height:64px;text-align:center;margin:0 -30px;z-index:1}
-#fimL .tx{flex:1;height:110px;font-size:40px;font-weight:700;line-height:1.15;display:flex;align-items:center;margin-left:18px}
+#fimL .tx{flex:1;min-width:0;height:110px;font-size:40px;font-weight:700;line-height:1.2;display:flex;flex-direction:column;justify-content:center;margin-left:18px;white-space:nowrap}
+#fimL .tx b{color:var(--destaque);font-weight:900}
 #seta{position:absolute;left:485px;top:1150px;font-size:110px;color:var(--destaque);display:none}
 body.f-story #seta{display:block}
 body.f-story #fimT{height:220px}
@@ -87,10 +88,13 @@ Motor.molde({
     F.pares.forEach((q, i) => { const l = document.createElement('div'); l.className = 'lin';
       l.innerHTML = '<div class="n"></div><div class="fa"><img alt=""></div><div class="o">ou</div><div class="fb"><img alt=""></div><div class="tx t seg"></div>';
       l.querySelector('.n').textContent = i + 1; l.querySelector('.fa img').src = midia(q.foto_a); l.querySelector('.fb img').src = midia(q.foto_b);
-      l.querySelector('.tx').textContent = story ? `${q.nome_a} ou ${q.nome_b}` : `${i + 1}A ${q.nome_a}, ${i + 1}B ${q.nome_b}`; $('#fimL').appendChild(l); });
+      const h = Math.floor(Math.min(140, story ? (1150 - 650) / n - 12 : (1440 - 760) / n - 22));
+      l.style.height = h + 'px'; l.querySelector('.fa').style.width = l.querySelector('.fa').style.height = l.querySelector('.fb').style.width = l.querySelector('.fb').style.height = Math.min(h, 112) + 'px'; l.querySelector('.tx').style.height = h + 'px'; l.querySelector('.tx').style.fontSize = (h >= 110 ? 42 : 36) + 'px';
+      const tx = l.querySelector('.tx'); tx.replaceChildren(); [['A', q.nome_a], ['B', q.nome_b]].forEach(([k, v]) => { const d = document.createElement('div'); const b = document.createElement('b'); b.textContent = (story ? '' : i + 1) + k + ' '; d.append(b, v); tx.appendChild(d); });
+      $('#fimL').appendChild(l); });
     $('#seta').innerHTML = icone('seta'); $('#seta').style.transform = 'rotate(90deg)';
-    const por = Math.min(2.6, Math.max(1.8, 8.4 / n));
-    const d = [1.9, ...F.pares.map(() => +por.toFixed(2)), 2.6];
+    const por = Math.min(2.6, Math.max(1.65, 8.4 / n));
+    const d = [n > 4 ? 1.6 : 1.9, ...F.pares.map(() => +por.toFixed(2)), n > 4 ? 2.4 : 2.6];
     D.ult = d.length - 1;
     // render.py's contact sheet breaks on a last row of one picture (7 or 13 scenes with the final): split the close
     if ((d.length + 1) % 6 === 1) d.splice(d.length - 1, 1, 1.3, 1.3);

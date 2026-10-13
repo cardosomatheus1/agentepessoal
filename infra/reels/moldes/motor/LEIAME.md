@@ -13,6 +13,7 @@ ficha, regras). Plano: `docs/MOLDES_VIDEO.md`. Referências prontas: `../conta-m
 | `esquema.json` | `formatos`, `voz` (`sim`, `nao`, `opcional`), `musica` (nome do banco ou null) e `campos` da ficha |
 | `exemplos/*.json` | 3 ou mais fichas de teste, de pelo menos 2 marcas (estilos diferentes), cobrindo todos os formatos |
 | `exemplos/recusadas/*.json` | pelo menos 1 ficha que tem de ser recusada (ex.: dado real sem `_origem`, travessão, item demais) |
+| `exemplos/recusadas-molde/*.json` | fichas que passam no validador mas o **molde** recusa com `$m.erro` (prazo vencido, combo mais caro); o `testar.py` exige saída 2 |
 
 Rodar: `python3 testar.py <id>` (prévia + conferência de todas as fichas; tem de dar ✓). Uma ficha só:
 `python3 motor/render.py <id> <id>/exemplos/x.json --previa [--area]` → `<id>/saida/x-<formato>/prev.jpg` (folha de
@@ -96,6 +97,8 @@ conforme o estilo, o ajuste de tamanho do texto e a conferência.
   por degradê preto.
 - Letra mínima: 30 px no Reel e no story, 26 px no carrossel (o ajuste para aí e a conferência reprova abaixo).
 - Valor que muda na animação (número contando): ponha o valor final no `montar`, para o ajuste medir o maior.
+- Texto `rv` não pode ser filho direto de uma caixa `display:flex` (cada palavra vira um item e o texto se desmonta): ponha o texto numa `div` dentro dela.
+- Campo `real` opcional: `"real": true, "obrigatorio": false` (sem valor passa; com valor exige `_origem`).
 
 ### Onde pode ir texto (área livre do Instagram)
 

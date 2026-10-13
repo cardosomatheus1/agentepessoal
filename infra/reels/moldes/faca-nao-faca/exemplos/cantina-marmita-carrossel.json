@@ -1,0 +1,6 @@
+{"_marca": "cantina-da-vo", "_formato": "carrossel",
+ "tema": "Marmita no freezer",
+ "pares": [
+  {"sobre": "Temperatura", "erro": "Guardar a marmita ainda quente no freezer", "certo": "Esperar esfriar um pouco antes de congelar"},
+  {"sobre": "Etiqueta", "erro": "Congelar sem anotar nada no pote", "certo": "Etiqueta com o prato e a data no pote"},
+  {"sobre": "Descongelar", "erro": "Deixar descongelando em cima da pia", "certo": "Passar pra geladeira na noite anterior"}]}

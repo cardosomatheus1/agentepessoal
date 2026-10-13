@@ -10,7 +10,7 @@
     "x": {"tipo": "numero", "min": 5, "max": 95, "obrigatorio": false, "dica": "onde está o detalhe na foto, em % da largura"},
     "y": {"tipo": "numero", "min": 5, "max": 95, "obrigatorio": false, "dica": "em % da altura"}}},
   "selo": {"tipo": "texto", "max": 22, "obrigatorio": false, "dica": "sem ele, 'Em destaque'"},
-  "preco": {"tipo": "dinheiro", "obrigatorio": false, "real_se_tiver": true, "dica": "opcional; se vier, precisa de _origem.preco"},
+  "preco": {"tipo": "dinheiro", "obrigatorio": false, "real": true, "dica": "opcional; se vier, precisa de _origem.preco"},
   "unidade": {"tipo": "texto", "max": 16, "obrigatorio": false, "dica": "a fatia, o pote, por sessão"},
   "falas": {"tipo": "lista", "min": 3, "max": 4, "obrigatorio": false, "item": {"tipo": "texto", "max": 130},
    "dica": "narração opcional: 3 falas (foto e nome, detalhes, chamada) ou 4 com preço"}

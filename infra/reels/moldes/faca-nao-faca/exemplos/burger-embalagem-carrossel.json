@@ -1,0 +1,7 @@
+{"_marca": "burger-noite", "_formato": "carrossel",
+ "tema": "Embalagem de delivery",
+ "pares": [
+  {"sobre": "Molho", "erro": "Mandar o molho já dentro do lanche", "certo": "Molho à parte, em pote com tampa"},
+  {"sobre": "Batata", "erro": "Fechar a batata quente em pote sem furo", "certo": "Embalagem com respiro pra não murchar"},
+  {"sobre": "Bebida", "erro": "Lata solta na sacola junto do lanche", "certo": "Bebida em pé, num suporte separado"}],
+ "midia": "fotos/delivery.jpg"}

@@ -5,6 +5,7 @@
 #quadro{position:absolute;left:0;top:0;width:1080px;height:1160px;overflow:hidden}
 #quadro img.f{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
 #veu{position:absolute;left:0;right:0;bottom:0;height:520px;background:linear-gradient(transparent,var(--fundo) 88%)}
+#veuTopo{position:absolute;left:0;right:0;top:0;height:440px;background:linear-gradient(var(--fundo) 30%,transparent)}
 #selo{position:absolute;left:90px;top:1000px;font-size:38px;padding:10px 28px;white-space:nowrap}
 #nome{left:90px;width:820px;top:1080px;height:260px;font-size:126px;line-height:1;text-align:left}
 #lupa{position:absolute;left:0;top:0;width:300px;height:300px;margin:-150px 0 0 -150px;z-index:5}
@@ -14,10 +15,10 @@ body.e-noite #lupa .vid{border-color:var(--destaque);box-shadow:0 0 40px color-m
 #lupa .cabo{position:absolute;left:252px;top:252px;width:44px;height:150px;border-radius:22px;background:var(--texto);transform-origin:22px 0;transform:rotate(-45deg)}
 #lupa .brilho{position:absolute;left:40px;top:34px;width:90px;height:44px;border-radius:50%;background:rgba(255,255,255,.35);transform:rotate(-30deg)}
 #fio{position:absolute;inset:0;z-index:4;overflow:visible;pointer-events:none}
-#attrs{position:absolute;left:90px;width:800px;top:1170px}
-.at{display:flex;align-items:center;gap:22px;height:96px;margin-bottom:10px}
-.at .n{flex:none;width:72px;height:72px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:42px;display:flex;align-items:center;justify-content:center}
-.at .tx{flex:1;height:72px;font-size:50px;font-weight:800;line-height:72px;white-space:nowrap}
+#attrs{position:absolute;left:90px;width:800px;top:1150px}
+.at{display:flex;align-items:center;gap:24px;height:100px;margin-bottom:8px}
+.at .n{flex:none;width:78px;height:78px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:44px;display:flex;align-items:center;justify-content:center}
+.at .tx{flex:1;height:76px;font-size:56px;font-weight:800;line-height:76px;white-space:nowrap}
 /* scene 2: price */
 #thumbs{position:absolute;left:0;right:0;top:420px;height:320px;display:flex;justify-content:center;gap:28px}
 #thumbs div{width:300px;height:300px;border-radius:50%;overflow:hidden;box-shadow:var(--sombra);border:10px solid var(--cartao)}
@@ -48,7 +49,7 @@ body.f-story #nome,body.f-story #pNome,body.f-story #preco,body.f-story #unid{wi
 </style></head><body><div id="palco">
 
 <div class="cena" id="cP"><div class="cam full">
- <div id="quadro"><div id="veu"></div></div>
+ <div id="quadro"><div id="veu"></div><div id="veuTopo"></div></div>
  <div class="chip t seg" id="selo"></div>
  <div class="ctr tit t seg rv" id="nome"></div>
  <svg id="fio" viewBox="0 0 1080 1920"><path id="fioP" fill="none" stroke="var(--destaque)" stroke-width="6" stroke-linecap="round"/><circle id="fioC" r="12" fill="var(--destaque)"/></svg>
@@ -113,7 +114,11 @@ Motor.molde({
     const c = eio(p(t, S1 - 0.1, 0.7)), q = $('#quadro');
     const x = lerp(0, CARD.x, c), y = lerp(0, CARD.y, c), w = lerp(1080, CARD.w, c), h = lerp(1160, CARD.h, c);
     Object.assign(q.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', borderRadius: 44 * c + 'px', boxShadow: c > 0.5 ? 'var(--sombra)' : 'none' });
-    $('#veu').style.opacity = 1 - c;
+    $('#veu').style.opacity = 0; $('#veuTopo').style.opacity = 0;
+    // hero: the photo fades out at the top (under the watermark) and at the bottom (under the name) with a mask, so it
+    // melts into any background (gradient, bokeh, paper) without a seam; the mask opens up as it becomes a card
+    const fd = 1 - c, mk = `linear-gradient(transparent 0, #000 ${380 * fd}px, #000 ${h - 560 * fd}px, transparent ${h - 40 * fd}px)`;
+    q.style.maskImage = q.style.webkitMaskImage = fd > 0.001 ? mk : 'none';
     const img = $(`#quadro img.f[data-k="${fk}"]`);
     // hero push toward the first detail
     const [f0x, f0y] = foco(F, 0), pz = t < S1 ? 1.05 + 0.25 * eio(p(t, 0, S1)) : 1;
@@ -133,10 +138,10 @@ Motor.molde({
       const li = $('#lupaImg'); if (li.getAttribute('src') !== img.getAttribute('src')) li.src = img.getAttribute('src');
       zoom(li, img, CARD.w, CARD.h, fx, fy, R - 12, Z);
       // line from the magnifier to the attribute it explains
-      const ty = 1170 + kk * 106 + 48, tx0 = 90 + 36;
-      const d = `M ${lx} ${ly + 130} C ${lx} ${ty - 40}, ${tx0 + 60} ${ty - 120}, ${tx0} ${ty - 40}`;
+      const ty = 1150 + kk * 108 + 50 + 6, tx0 = 90 + 39;
+      const d = `M ${lx} ${ly + 130} C ${lx} ${1150}, ${60} ${1100}, ${60} ${1160} L 60 ${ty - 6} L ${tx0 - 40} ${ty - 6}`;
       $('#fioP').setAttribute('d', d); const L = $('#fioP').getTotalLength(), dr = eo(p(ta - kk * step, 0.35, 0.4));
-      $('#fioP').setAttribute('stroke-dasharray', `${L * dr} ${L}`); $('#fioC').setAttribute('cx', tx0); $('#fioC').setAttribute('cy', ty - 40); $('#fioC').style.opacity = dr;
+      $('#fioP').setAttribute('stroke-dasharray', `${L * dr} ${L}`); $('#fioC').setAttribute('cx', tx0 - 40); $('#fioC').setAttribute('cy', ty - 6); $('#fioC').style.opacity = dr;
     }
     $$('#attrs .at').forEach(d => { const j = +d.dataset.k, a0 = S1 + 0.5 + j * step + 0.45, qq = eo5(p(t, a0, 0.45));
       d.style.opacity = t < a0 ? 0 : j === k ? qq : 0.6; d.style.transform = `translateX(${(1 - qq) * 80}px)`; });
@@ -154,7 +159,7 @@ Motor.molde({
     $m.$$('.cena', palco).forEach(c => c.remove());
     // 1: hero with name (and price)
     const s1 = document.createElement('div'); s1.className = 'slide';
-    s1.innerHTML = '<div id="quadro"><img class="f" alt=""><div id="veu"></div></div><div class="chip t seg" id="selo"></div><div class="tit t seg" id="nome"></div>';
+    s1.innerHTML = '<div id="quadro"><img class="f" alt=""><div id="veu"></div></div><div class="chip t seg" id="selo"></div><div class="ctr tit t seg" id="nome"></div>';
     s1.querySelector('img').src = $m.midia(F.fotos[0]); s1.querySelector('img').style.opacity = 1;
     s1.querySelector('#selo').textContent = F.selo || 'Em destaque'; s1.querySelector('#nome').textContent = F.nome;
     if (F.preco != null) { const c = document.createElement('div'); c.className = 'prc chip t seg'; c.textContent = brl(F.preco).replace(' ', ' ') + (F.unidade ? ' ' + F.unidade : ''); s1.appendChild(c); }

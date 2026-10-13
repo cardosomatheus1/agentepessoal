@@ -14,7 +14,8 @@ body.e-noite .comp{box-shadow:0 0 0 3px var(--destaque),0 0 50px color-mix(in sr
 .comp .pega .ico:first-child{transform:scaleX(-1)}
 .comp .rot{position:absolute;top:30px;font-family:var(--ft),sans-serif;font-weight:900;font-size:46px;letter-spacing:.08em;padding:10px 26px;border-radius:999px;background:rgba(0,0,0,.62);color:#fff;white-space:nowrap}
 .comp .rot.a{left:30px}.comp .rot.d{right:30px;background:var(--destaque);color:var(--sobre-destaque)}
-#servico{left:90px;width:820px;top:1064px;height:200px;font-size:100px;line-height:1}
+#servico{left:90px;width:820px;top:1064px;height:200px;font-size:100px;line-height:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:18px}
+#servico > div{width:100%}
 #info{position:absolute;left:90px;width:820px;top:1276px;height:80px;display:flex;justify-content:center;align-items:center;gap:20px}
 #tempo{font-size:44px;padding:12px 32px;white-space:nowrap;max-width:420px}
 #detalhe{left:90px;width:820px;top:1368px;height:110px;font-size:44px;font-weight:700;line-height:1.2}
@@ -67,7 +68,7 @@ Motor.molde({
     const { $ } = $m;
     conferir(F, M, $m);
     $('#quadro').appendChild(comp($m, F));
-    $('#servico').textContent = F.servico;
+    const sv = document.createElement('div'); sv.textContent = F.servico; $('#servico').appendChild(sv);
     if (F.tempo) { $('#tempo').innerHTML = $m.icone('relogio') + ' '; $('#tempo').append(F.tempo); } else $('#info').style.display = 'none';
     $('#detalhe').textContent = F.detalhe || '';
     return { duracoes: [1.4, 3.0, 2.4] };

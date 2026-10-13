@@ -34,6 +34,12 @@ caso("item da lista validado", any("itens[1].nome" in e for e in validar(E, {**b
 caso("data errada", any("AAAA-MM-DD" in e for e in validar(E, {**boa, "quando": "13/10/2026"})))
 caso("campo desconhecido", any("não usa" in e for e in validar(E, {**boa, "extra": 1})))
 caso("formato errado", any("_formato" in e for e in validar(E, {**boa, "_formato": "carrossel"})))
+E2 = {"formatos": ["reel"], "campos": {"preco": {"tipo": "dinheiro", "real": True, "obrigatorio": False}}}
+caso("dado real opcional ausente passa", validar(E2, {}) == [])
+caso("dado real opcional presente exige origem", any("sem origem" in e for e in validar(E2, {"preco": 5})))
+E3 = {"formatos": ["reel"], "campos": {"vaga": {"tipo": "objeto", "campos": {"salario": {"tipo": "dinheiro", "real": True}}}}}
+caso("dado real dentro de objeto exige origem", any("sem origem" in e for e in validar(E3, {"vaga": {"salario": 2000}})))
+caso("dado real dentro de objeto com origem passa", validar(E3, {"vaga": {"salario": 2000}, "_origem": {"vaga": "dono"}}) == [])
 caso("número negativo em dinheiro", any("negativo" in e for e in validar(E, {**boa, "preco": -1})))
 
 # every test ficha of every template validates; every ficha in recusadas/ is refused

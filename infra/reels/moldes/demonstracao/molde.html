@@ -1,0 +1,111 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* the real tool inside a phone: the phone flies in, a finger taps where the owner taps, the camera leans into the
+   tap, the next screen slides in like the app does, and the result lands with a check */
+#c0p{position:absolute;left:100px;right:180px;top:640px;height:420px;font-size:104px;line-height:1.04}
+#c0k{position:absolute;left:100px;top:540px;font-size:40px}
+#c0i{position:absolute;left:100px;top:420px;font-size:100px;color:var(--ruim)}
+#fant{position:absolute;left:300px;top:1260px;width:400px;height:820px;border-radius:70px;border:14px solid var(--texto);opacity:.12}
+/* step caption */
+#passo{position:absolute;left:90px;right:180px;top:388px;height:160px;display:flex;gap:24px;align-items:flex-start}
+#pN{flex:none;width:96px;height:96px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900;font-size:60px;display:flex;align-items:center;justify-content:center;box-shadow:var(--sombra)}
+#pT{flex:1;height:150px;font-size:58px;line-height:1.12;padding-top:4px}
+/* phone */
+#cel{position:absolute;left:255px;top:566px;width:470px;height:970px;transform-origin:50% 50%}
+#cel .corpo{position:absolute;inset:0;border-radius:74px;background:var(--texto);box-shadow:0 40px 90px rgba(0,0,0,.4),inset 0 0 0 4px color-mix(in srgb,var(--fundo) 30%,var(--texto))}
+#cel .tela{position:absolute;left:18px;top:18px;right:18px;bottom:18px;border-radius:58px;overflow:hidden;background:var(--fundo)}
+#cel .tela img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
+#cel .ilha{position:absolute;left:50%;top:32px;width:120px;height:34px;margin-left:-60px;border-radius:17px;background:rgba(0,0,0,.92);z-index:5}
+#cel .bt{position:absolute;right:-8px;top:220px;width:8px;height:110px;border-radius:0 4px 4px 0;background:var(--texto)}
+#cel .bt2{position:absolute;left:-8px;top:180px;width:8px;height:70px;border-radius:4px 0 0 4px;background:var(--texto)}
+#dedo{position:absolute;left:0;top:0;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;background:rgba(255,255,255,.55);border:5px solid rgba(255,255,255,.95);box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:6;opacity:0}
+#onda{position:absolute;left:0;top:0;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;border:6px solid var(--destaque);z-index:6;opacity:0}
+#app{position:absolute;left:70px;top:700px;font-size:38px;z-index:8;rotate:-6deg}
+/* result */
+#ok{position:absolute;left:600px;top:740px;width:200px;height:200px;z-index:9;opacity:0}
+#ok circle{fill:var(--bom)}#ok path{fill:none;stroke:var(--sobre-bom);stroke-width:16;stroke-linecap:round;stroke-linejoin:round}
+body.f-reel #nota{bottom:auto;top:1400px;left:60px;right:auto;width:180px;text-align:left;line-height:1.2}
+#res{position:absolute;left:90px;right:180px;top:1100px;height:330px;font-size:92px;line-height:1.05;text-align:center}
+</style></head><body><div id="palco">
+<div class="cena" id="cA"><div class="cam full">
+ <div id="c0i"></div><div class="chip t seg" id="c0k"></div>
+ <div class="tit t seg rv" id="c0p"></div>
+ <div id="fant"></div>
+ <div id="passo"><div id="pN"></div><div class="tit t seg rv" id="pT"></div></div>
+ <div id="cel"><div class="bt"></div><div class="bt2"></div><div class="corpo"></div><div class="tela" id="tela"><div class="ilha"></div></div><div id="dedo"></div><div id="onda"></div></div>
+ <div class="chip t seg" id="app"></div>
+ <svg id="ok" viewBox="0 0 200 200"><circle cx="100" cy="100" r="92"/><path id="okP" d="M56 104 l30 30 l58 -66"/></svg>
+ <div class="tit t seg rv" id="res"></div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Demonstração no celular": the client's real screens (prints, with origin) inside a phone. Narrated: scene 0 is
+// the problem, scene 1 the phone with the first screen, one scene per next screen (the tap on the previous screen's
+// button happens at its start), then the result; the last line is the call (engine's final scene).
+let D = {};
+const W0 = 434, H0 = 934; // screen size inside the phone
+Motor.molde({
+  id: 'demonstracao', formatos: ['reel'],
+  montar(F, M, $m) {
+    const { $ } = $m, n = F.telas.length;
+    if (F.falas.length !== n + 3) $m.erro(`falas: ${n + 3} (problema, uma por tela, resultado, chamada); vieram ${F.falas.length}`);
+    F.telas.forEach((s, k) => { if (k < n - 1 && !s.toque) $m.erro(`telas[${k + 1}]: falta o toque (onde o dedo toca para ir à próxima tela)`); });
+    $('#c0i').innerHTML = $m.icone('alerta'); $('#c0k').textContent = F.dor || 'o problema';
+    $('#c0p').textContent = F.problema;
+    F.telas.forEach((s, k) => { const i = document.createElement('img'); i.src = $m.midia(s.imagem); i.dataset.k = k; i.alt = ''; $('#tela').appendChild(i); });
+    // the longest caption measures the box
+    $('#pT').textContent = F.telas.reduce((a, s) => s.legenda.length > a.length ? s.legenda : a, '');
+    if (F.ferramenta) $('#app').textContent = F.ferramenta; else $('#app').remove();
+    $('#res').textContent = F.resultado;
+    $('#nota').textContent = F.nota || '';
+    D = { n, pt: F.telas.map(s => s.toque ? [18 + s.toque.x / 100 * W0, 18 + s.toque.y / 100 * H0] : null) };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini, fim } = $m, n = D.n, R = n + 1;
+    $m.cena('#cA', t, 0, R, { push: 0.02 });
+    // 0: the problem
+    const o0 = 1 - eo(p(t, ini(1) - 0.15, 0.4));
+    const iq = el(p(t, 0.05, 0.9)); $('#c0i').style.transform = `scale(${iq}) rotate(${(1 - iq) * 30}deg)`; $('#c0i').style.opacity = cl(iq * 3) * o0;
+    $('#c0k').style.opacity = eo(p(t, 0.2, 0.4)) * o0; $m.revela('#c0p', t, 0.3, 0.07); $('#c0p').style.opacity = o0;
+    $('#fant').style.transform = `translateY(${-90 * eo(p(t, ini(1) - 0.9, 0.9))}px)`; $('#fant').style.opacity = 0.12 * eo(p(t, ini(1) - 1, 0.6)) * o0;
+    // phone: flies in on scene 1, leans into each tap, steps back for the result
+    const a1 = ini(1), ent = eo5(p(t, a1 - 0.1, 0.9));
+    const aR = ini(R), sai = eio(p(t, aR + 0.45, 0.8));
+    let zoom = 1, ox = 235, oy = 485, dx = 0, dy = 0;
+    // taps: on scene k (2..n) the finger taps the previous screen; on the result scene it taps the last one (if given)
+    let toq = null;
+    for (let k = 2; k <= R; k++) { const pt = D.pt[k - 2]; if (!pt) continue; const a = ini(k); if (t >= a - 0.1 && t < a + 1.3) toq = { a, pt }; }
+    let dedo = 0, onda = 0, prs = 0, zq = 0;
+    if (toq) { const u = t - toq.a; zq = eio(p(u, 0, 0.45)) * (1 - eio(p(u, 0.85, 0.45)));
+      zoom = 1 + 0.22 * zq; ox = toq.pt[0]; oy = toq.pt[1];
+      dedo = cl(p(u, 0, 0.2) * (1 - p(u, 0.75, 0.25))); prs = Math.sin(Math.PI * p(u, 0.3, 0.25)); onda = p(u, 0.42, 0.5);
+      Object.assign($('#dedo').style, { left: toq.pt[0] + (1 - eo(p(u, 0, 0.35))) * 140 + 'px', top: toq.pt[1] + (1 - eo(p(u, 0, 0.35))) * 160 + 'px', opacity: dedo, transform: `scale(${1 - 0.25 * prs})` });
+      Object.assign($('#onda').style, { left: toq.pt[0] + 'px', top: toq.pt[1] + 'px', opacity: onda > 0 && onda < 1 ? 1 - onda : 0, transform: `scale(${0.6 + 2.6 * onda})` });
+    } else { $('#dedo').style.opacity = 0; $('#onda').style.opacity = 0; }
+    const cel = $('#cel');
+    cel.style.transformOrigin = `${ox}px ${oy}px`;
+    cel.style.opacity = cl(ent * 2);
+    const tilt = 1 - ent;
+    cel.style.transform = `translate(${lerp(0, -10, sai)}px, ${(1 - ent) * 1200 + lerp(0, -330, sai)}px) perspective(1800px) rotateX(${tilt * 38}deg) rotate(${tilt * -14 + sai * -6}deg) scale(${zoom * lerp(1, 0.6, sai)})`;
+    // screens: each slides in from the right at its scene's tap, the previous one moves left and dims
+    $$('#tela img').forEach(i => { const k = +i.dataset.k; const a = k === 0 ? -1 : ini(k + 1) + 0.55, q = k === 0 ? 1 : eio(p(t, a, 0.45));
+      const nx = k + 1 < n ? eio(p(t, ini(k + 2) + 0.55, 0.45)) : 0;
+      i.style.transform = `translateX(${(1 - q) * 100 - nx * 30}%)`; i.style.filter = `brightness(${1 - 0.5 * nx})`; i.style.zIndex = k; i.style.visibility = q > 0 && nx < 1 ? 'visible' : 'hidden'; });
+    // step caption follows the current screen
+    const k = Math.min(n - 1, Math.max(0, [...Array(n).keys()].filter(j => t >= (j === 0 ? a1 : ini(j + 1) + 0.55)).pop() ?? 0));
+    if ($('#pT').dataset.k !== String(k)) { $('#pT').dataset.k = k; $('#pT').dataset.pal = ''; $('#pT').textContent = F.telas[k].legenda; $('#pN').textContent = k + 1; }
+    const tk = k === 0 ? a1 + 0.3 : ini(k + 1) + 0.6;
+    const po = t >= a1 && t < aR + 0.3 ? 1 - eo(p(t, aR + 0.1, 0.3)) : 0; $('#passo').style.opacity = po * (1 - zq);
+    const nq = eb(p(t, tk, 0.4)); $('#pN').style.transform = `scale(${nq})`; $m.revela('#pT', t, tk + 0.1, 0.05);
+    if ($('#app')) { const aq = eo(p(t, a1 + 0.6, 0.4)) * (1 - eo(p(t, ini(2) - 0.2, 0.3))); $('#app').style.opacity = aq; }
+    // result
+    const okq = el(p(t, aR + 1.0, 0.9)); $('#ok').style.opacity = cl(okq * 3); $('#ok').style.transform = `scale(${okq})`;
+    const P = $('#okP'), L = 160; P.style.strokeDasharray = L; P.style.strokeDashoffset = L * (1 - eo(p(t, aR + 1.2, 0.4)));
+    $('#res').style.opacity = t >= aR ? 1 : 0; $m.revela('#res', t, aR + 0.9, 0.07);
+    $('#nota').style.opacity = t < fim(R) ? 1 : 0;
+  },
+});
+</script></body></html>

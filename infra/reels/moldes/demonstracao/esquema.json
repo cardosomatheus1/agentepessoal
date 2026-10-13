@@ -1,0 +1,81 @@
+{
+ "formatos": [
+  "reel"
+ ],
+ "voz": "sim",
+ "musica": null,
+ "campos": {
+  "problema": {
+   "tipo": "texto",
+   "max": 60,
+   "min": 10,
+   "dica": "a dor que a ferramenta resolve: Calcular preço no caderno toma a tarde toda"
+  },
+  "dor": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "etiqueta acima do problema (padrão: o problema)"
+  },
+  "ferramenta": {
+   "tipo": "texto",
+   "max": 24,
+   "obrigatorio": false,
+   "dica": "nome da ferramenta, aparece quando o celular entra"
+  },
+  "telas": {
+   "tipo": "lista",
+   "min": 2,
+   "max": 5,
+   "dica": "prints reais da ferramenta, em ordem",
+   "item": {
+    "imagem": {
+     "tipo": "foto",
+     "real": true,
+     "dica": "print da tela (PNG/JPG), caminho relativo a midia/ ou file://"
+    },
+    "legenda": {
+     "tipo": "texto",
+     "max": 40
+    },
+    "toque": {
+     "tipo": "objeto",
+     "obrigatorio": false,
+     "dica": "onde o dedo toca para ir à próxima tela, em % da tela (x da esquerda, y do topo); obrigatório em todas menos na última",
+     "campos": {
+      "x": {
+       "tipo": "numero",
+       "min": 0,
+       "max": 100
+      },
+      "y": {
+       "tipo": "numero",
+       "min": 0,
+       "max": 100
+      }
+     }
+    }
+   }
+  },
+  "resultado": {
+   "tipo": "texto",
+   "max": 60,
+   "min": 8
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 5,
+   "max": 8,
+   "item": {
+    "tipo": "texto",
+    "max": 150
+   },
+   "dica": "telas + 3 falas: problema, uma por tela, resultado, chamada"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ }
+}

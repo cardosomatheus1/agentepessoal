@@ -180,10 +180,12 @@ const Motor = {
     const e = typeof sel === 'string' ? $(sel) : sel; if (!e) return 0;
     const a = Motor.ini(i), b = Motor.fim(j);
     const trans = o.trans || TRANS[Motor.ESTILO] || 'fade', ent = o.ent ?? (trans === 'corte' ? 0.001 : 0.5);
-    const on = t >= a && t < b + (o.sobra ?? 0.45);
+    const sob = o.sobra ?? (trans === 'corte' ? 0 : 0.45);
+    const on = t >= a && t < b + sob;
     e.style.opacity = on ? 1 : 0; if (!on) { e.style.visibility = 'hidden'; return 0; } e.style.visibility = 'visible';
     const q = eio(p(t, a, ent));
     e.style.clipPath = 'none';
+    if (t >= b && sob > 0) e.style.opacity = 1 - p(t, b, sob);
     if (trans === 'circulo') e.style.clipPath = q < 1 ? `circle(${q * 2300}px at ${o.x ?? 540}px ${o.y ?? Motor.H / 2}px)` : 'none';
     else if (trans === 'fade') e.style.opacity = q;
     else if (trans === 'deslize') e.style.transform = `translateX(${(1 - q) * 1080}px) rotate(${(1 - q) * 3}deg)`;
@@ -237,7 +239,7 @@ const Motor = {
     if (/\.(jpe?g|png|webp)$/i.test(nome || '')) {
       const src = Motor.midia(nome);
       if (img.getAttribute('src') !== src) { img.setAttribute('src', src); Motor._espera.push(img.decode().catch(() => {})); }
-      const k = (t % 14) / 14; img.style.scale = String(1.04 + 0.1 * k); img.style.translate = `${-18 * k}px ${-10 * k}px`;
+      let k = (t % 28) / 14; if (k > 1) k = 2 - k; img.style.scale = String(1.04 + 0.1 * k); img.style.translate = `${-18 * k}px ${-10 * k}px`;
       return;
     }
     const n = (window.FILMAGENS || {})[nome] || 0; if (!n) { Motor.erro('filmagem não encontrada: ' + nome); return; }
@@ -251,7 +253,9 @@ const Motor = {
     const min = +(e.dataset.min || MIN_FONTE[Motor.FORMATO]);
     let fs = parseFloat(getComputedStyle(e).fontSize), guard = 80;
     const sobra = () => e.scrollHeight > e.clientHeight + 2 || e.scrollWidth > e.clientWidth + 2;
+    const fs0 = fs;
     while (sobra() && fs > min && guard--) { fs = Math.max(min, fs - 2); e.style.fontSize = fs + 'px'; }
+    if (fs < fs0 * 0.5) Motor.avisos.push(`texto encolheu de ${fs0}px para ${fs}px (caixa pequena demais?): ` + (e.id ? '#' + e.id : e.textContent.trim().slice(0, 30)));
   },
   _caberTudo() {
     if (Motor.FORMATO === 'carrossel') { Motor._slides.forEach((s, i) => { Motor.slide(i); $$('.t', s).forEach(Motor.caber); }); Motor.slide(0); }
@@ -329,7 +333,10 @@ const Motor = {
   // ---------- checks (render.py calls this at sample times) ----------
   _visivel(e) {
     if (!e.isConnected) return false; let o = 1, n = e;
-    while (n && n !== document.body) { const cs = getComputedStyle(n); if (cs.display === 'none' || cs.visibility === 'hidden') return false; o *= +cs.opacity; n = n.parentElement; }
+    const r = e.getBoundingClientRect();
+    while (n && n !== document.body) { const cs = getComputedStyle(n); if (cs.display === 'none' || cs.visibility === 'hidden') return false; o *= +cs.opacity;
+      if (n !== e && cs.overflow !== 'visible') { const c = n.getBoundingClientRect(); if (r.right <= c.left || r.left >= c.right || r.bottom <= c.top || r.top >= c.bottom) return false; }
+      n = n.parentElement; }
     return o > 0.5;
   },
   // what the eye sees: the glyphs of a text element (not its whole box), or the element itself for images
@@ -344,6 +351,10 @@ const Motor = {
     const c = { left: Math.min(...rs.map(x => x.left)), top: Math.min(...rs.map(x => x.top)), right: Math.max(...rs.map(x => x.right)), bottom: Math.max(...rs.map(x => x.bottom)) };
     c.width = c.right - c.left; return c;
   },
+  _sobreMarca(r) {
+    const m = $('#marca'); if (!m || !Motor._visivel(m)) return false; const q = m.getBoundingClientRect();
+    return r.right > q.left + 2 && r.left < q.right - 2 && r.bottom > q.top + 2 && r.top < q.bottom - 2;
+  },
   conferir() {
     const prob = [], seg = SEGURO[Motor.FORMATO], minf = MIN_FONTE[Motor.FORMATO];
     const nome = e => e.id ? '#' + e.id : (e.textContent || e.className).trim().slice(0, 40);
@@ -357,6 +368,7 @@ const Motor = {
       if (!Motor._visivel(e)) continue; const r = Motor._caixa(e); if (!r.width) continue;
       const caixa = `(${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.right)},${Math.round(r.bottom)})`;
       if (r.left < seg.x0 - 1 || r.right > seg.x1 + 1 || r.top < seg.y0 - 1 || r.bottom > seg.y1 + 1) prob.push(`fora da área livre do Instagram ${caixa}: ` + nome(e));
+      else if (e.id !== 'marca' && !e.closest('#marca') && Motor._sobreMarca(r)) prob.push(`em cima da marca d'água ${caixa}: ` + nome(e));
       else if (seg.fora.some(z => r.right > z.x0 + 1 && r.left < z.x1 && r.bottom > z.y0 + 1 && r.top < z.y1)) prob.push(`embaixo dos botões do Instagram ${caixa}: ` + nome(e));
     }
     return prob;

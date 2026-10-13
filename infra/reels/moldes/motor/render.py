@@ -78,9 +78,18 @@ def abrir(pw, pasta, script, formato):
     b = pw.chromium.launch(executable_path=os.environ.get("CHROME") or None, args=["--allow-file-access-from-files", "--disable-web-security"])
     pg = b.new_page(viewport={"width": 1080, "height": 1350 if formato == "carrossel" else 1920})
     pg.add_init_script(script)
+    falhas = []
+    pg.on("pageerror", lambda e: falhas.append(str(e)))
     pg.goto((pasta / "molde.html").as_uri())
-    pg.wait_for_function("window.MOTOR_PRONTO === true", timeout=60000)
-    return b, pg
+    for _ in range(600):  # up to 60 s, but a script error in the template stops at once with the message
+        if falhas: b.close(); raise ErroMolde("erro de JavaScript no molde: " + falhas[0][:400])
+        if pg.evaluate("window.MOTOR_PRONTO === true"): return b, pg
+        pg.wait_for_timeout(100)
+    b.close(); raise ErroMolde("o molde não ficou pronto em 60 s")
+
+
+class ErroMolde(Exception):
+    pass
 
 
 def _trabalho(args):
@@ -103,7 +112,9 @@ def folha(imagens, destino, largura=270, por_linha=6):
     for r in range(linhas):
         idx = list(range(r * por_linha, min(n, (r + 1) * por_linha)))
         entradas = "".join(f"[s{i}]" for i in idx)
-        if len(idx) < por_linha and linhas > 1:
+        if len(idx) == 1 and linhas > 1:
+            filtros.append(f"{entradas}pad={largura * por_linha}:ih:0:0:black[l{r}]")
+        elif len(idx) < por_linha and linhas > 1:
             filtros.append(f"{entradas}hstack={len(idx)},pad={largura * por_linha}:ih:0:0:black[l{r}]")
         elif len(idx) > 1:
             filtros.append(f"{entradas}hstack={len(idx)}[l{r}]")
@@ -139,7 +150,11 @@ def main():
     script = init_script(ficha, marca, marca_dir, formato, tempos)
     from playwright.sync_api import sync_playwright
     with sync_playwright() as pw:
-        b, pg = abrir(pw, pasta, script, formato)
+        try:
+            b, pg = abrir(pw, pasta, script, formato)
+        except ErroMolde as e:
+            rel["erros"] = [str(e)]; (saida / "relatorio.json").write_text(json.dumps(rel, ensure_ascii=False, indent=1))
+            print("MOLDE RECUSOU:\n  " + str(e)); sys.exit(2)
         info = pg.evaluate("({erros: Motor.erros, avisos: Motor.avisos, S: Motor.S, N: Motor.N, DUR: Motor.DUR, slides: Motor._slides.length})")
         rel["avisos"] = info["avisos"]
         if info["erros"]:

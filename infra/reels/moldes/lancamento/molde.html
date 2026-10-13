@@ -19,8 +19,13 @@ body.e-pop #novo{background:var(--fundo)}
 .cortina:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--fundo) 35%,transparent),transparent 30%,transparent 75%,color-mix(in srgb,var(--fundo) 45%,transparent))}
 #cE{left:-30px;transform-origin:0 0}#cD{right:-30px;transform-origin:100% 0}
 #bando{position:absolute;left:-20px;right:-20px;top:0;height:250px;z-index:6;background:repeating-radial-gradient(circle at 60px 0,var(--destaque) 0 58px,color-mix(in srgb,var(--destaque) 55%,var(--fundo)) 60px 62px,transparent 63px) 0 120px/120px 130px repeat-x,var(--destaque);box-shadow:var(--sombra)}
-#vem{z-index:7;left:90px;width:820px;top:540px;height:340px;font-size:150px;line-height:1;color:var(--sobre-destaque)}
-#vemS{z-index:7;left:90px;width:820px;top:930px;height:70px;font-size:48px;font-weight:800;color:var(--sobre-destaque);opacity:.9}
+#placa{position:absolute;z-index:7;left:120px;width:760px;top:520px;height:520px;border-radius:30px;background:var(--fundo);box-shadow:var(--sombra);transform-origin:50% -120px}
+body.e-pop #placa{border:6px solid var(--texto);box-shadow:12px 12px 0 var(--texto)}
+body.e-noite #placa{box-shadow:0 0 0 2px var(--destaque),0 0 40px color-mix(in srgb,var(--destaque) 45%,transparent)}
+#placa:before,#placa:after{content:'';position:absolute;top:-240px;width:6px;height:240px;background:var(--sobre-destaque);opacity:.8}
+#placa:before{left:120px}#placa:after{right:120px}
+#vem{z-index:8;left:160px;width:680px;top:570px;height:320px;font-size:140px;line-height:1;color:var(--texto)}
+#vemS{z-index:8;left:160px;width:680px;top:920px;height:70px;font-size:46px;font-weight:800;color:var(--destaque)}
 /* confetti */
 #confete{position:absolute;inset:0;z-index:8;pointer-events:none}
 #confete i{position:absolute;left:-15px;top:-22px;width:30px;height:44px;border-radius:5px}
@@ -37,7 +42,7 @@ body.e-claro #leque .ph,body.e-papel #leque .ph{border-color:var(--cartao)}
 .at{position:relative;height:166px;margin-bottom:22px;padding:0 30px 0 150px;display:flex;align-items:center}
 .at .n{position:absolute;left:24px;top:28px;width:110px;height:110px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:62px;display:flex;align-items:center;justify-content:center}
 .at .tx{width:100%;height:132px;font-size:56px;font-weight:800;line-height:1.12;display:flex;align-items:center}
-body.f-story #attrs{width:900px}body.f-story #vem,body.f-story #vemS{width:900px}body.f-story #nome,body.f-story #quando{width:900px}
+body.f-story #attrs{width:900px}body.f-story #nome,body.f-story #quando{width:900px}
 </style></head><body><div id="palco">
 
 <div class="cena" id="cAll"><div class="cam full">
@@ -48,6 +53,7 @@ body.f-story #attrs{width:900px}body.f-story #vem,body.f-story #vemS{width:900px
  <div id="leque"></div>
  <div id="attrs"></div>
  <div class="cortina" id="cE"></div><div class="cortina" id="cD"></div><div id="bando"></div>
+ <div id="placa"></div>
  <div class="ctr tit t seg rv" id="vem"></div>
  <div class="ctr t seg" id="vemS"></div>
  <div id="confete"></div>
@@ -106,6 +112,10 @@ Motor.molde({
     // "vem novidade" sits on the curtain and leaves with it
     $m.revela('#vem', t, 0.15, 0.1); $m.entra('#vemS', t, 0.7, 0.4, 30);
     const vo = 1 - eo(p(t, S1, 0.3)); $('#vem').style.opacity = vo; $('#vemS').style.opacity = Math.min(vo, eo5(p(t, 0.7, 0.4)));
+    // the sign swings in on its strings and is pulled up when the curtain opens
+    const pl = eb(p(t, 0, 0.6)), sobeP = eio(p(t, S1, 0.5)), bal = Math.sin(t * 5) * 2 * (1 - p(t, 0, 1.5));
+    $('#placa').style.transform = `translateY(${(1 - pl) * -700 - sobeP * 1400}px) rotate(${bal - 1.5}deg)`;
+    $('#vem').style.translate = $('#vemS').style.translate = `0 ${(1 - pl) * -700 - sobeP * 1400}px`;
     // spotlight sweeps then settles on the photo
     const lz = 1 - eio(p(t, S1, 1.0)); $('#luz').style.transform = `rotate(${Math.sin(t * 2.2) * 16 * lz}deg)`; $('#luz').style.opacity = 0.5 + 0.5 * eo(p(t, S1, 0.6));
     // photo: behind the curtain from the start, pops forward on the reveal, then climbs to make room for the name

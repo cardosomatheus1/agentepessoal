@@ -1,0 +1,4 @@
+usage: render.py [-h] [--formato FORMATO] [--saida SAIDA] [--previa] [--area]
+                 [--sem-conferir] [--processos PROCESSOS]
+                 molde ficha
+render.py: error: argument --saida: expected one argument

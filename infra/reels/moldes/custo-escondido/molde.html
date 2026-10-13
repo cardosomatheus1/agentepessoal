@@ -1,0 +1,285 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* scene 0: hook over the footage (white text over a darkened image is allowed) */
+#hero{position:absolute;inset:0;overflow:hidden}
+#heroI{position:absolute;left:-420px;top:0;width:1920px;height:1920px;object-fit:cover}
+#hero:after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.55) 45%,rgba(0,0,0,.82) 75%)}
+#h0a{position:absolute;left:130px;width:780px;top:880px;height:90px;font-size:66px;font-weight:800;text-align:center;color:#fff}
+#h0b{position:absolute;left:130px;width:780px;top:980px;height:270px;font-size:250px;line-height:1.05;text-align:center;color:#fff;white-space:nowrap}
+#h0c{position:absolute;left:130px;width:780px;top:1290px;height:110px;font-size:76px;text-align:center;color:#fff}
+#h0c .mk{color:var(--sobre-destaque)}
+#chip0{position:absolute;left:0;right:0;top:800px;text-align:center}
+#chip0 span{font-size:34px;padding:12px 28px}
+
+/* iceberg: the world (iceberg, labels, bubbles) moves with the camera; sky and water are screen layers */
+#agua{position:absolute;left:0;width:1080px;height:2400px;top:900px;background:linear-gradient(color-mix(in srgb,var(--c1) 26%,var(--fundo)),color-mix(in srgb,var(--c1) 40%,var(--fundo)) 60%,color-mix(in srgb,var(--c1) 30%,var(--fundo)))}
+body.e-claro #agua,body.e-papel #agua{background:linear-gradient(color-mix(in srgb,var(--c1) 22%,var(--fundo)),color-mix(in srgb,var(--c1) 38%,var(--fundo)) 60%)}
+#agua .raio{position:absolute;top:0;width:180px;height:1400px;background:linear-gradient(color-mix(in srgb,var(--texto) 9%,transparent),transparent);transform-origin:50% 0}
+#onda{position:absolute;left:0;top:-30px;width:1080px;height:60px;overflow:visible}
+#mundo{position:absolute;left:0;top:0;width:1080px;height:2400px;transform-origin:0 0}
+#ice{position:absolute;left:0;top:0;width:1080px;height:2400px;overflow:visible}
+.lab{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--sobre-destaque);text-align:center}
+.lab .nm{width:100%;height:48px;font-size:40px;font-weight:800;white-space:nowrap}
+.lab .vl{width:100%;height:60px;font-size:52px;line-height:60px;white-space:nowrap}
+.bol{position:absolute;border-radius:50%;border:3px solid color-mix(in srgb,var(--texto) 55%,transparent)}
+#lv{position:absolute;left:170px;width:640px;top:440px;height:140px;padding:18px 30px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+#lv .nm{flex:1;height:56px;font-size:44px;font-weight:800;white-space:nowrap}
+#lv .vl{flex:none;width:210px;height:76px;font-size:66px;line-height:76px;text-align:right;white-space:nowrap}
+#lemb{position:absolute;left:90px;width:900px;top:378px;height:50px;font-size:38px;font-weight:800;letter-spacing:3px;text-align:center;white-space:nowrap}
+#mas{position:absolute;left:110px;width:780px;top:640px;height:330px;font-size:84px;text-align:center}
+#mas .mk{color:var(--sobre-destaque)}
+#cont{position:absolute;left:680px;width:330px;top:372px;height:126px;padding:10px 24px;text-align:right}
+#cont .k{height:38px;font-size:30px;font-weight:800;letter-spacing:2px;white-space:nowrap}
+#cont .v{height:70px;font-size:62px;line-height:70px;white-space:nowrap;color:var(--ruim)}
+/* total */
+#tot{position:absolute;left:90px;width:900px;top:380px;height:230px;text-align:center}
+#tot .v{height:170px;font-size:170px;line-height:170px;color:var(--ruim);white-space:nowrap}
+#tot .k{height:56px;font-size:46px;font-weight:800}
+#eq{position:absolute;left:90px;width:820px;top:1300px;height:160px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between}
+#eq .l{flex:none;width:176px;text-align:center}
+#eq .l .b{height:58px;font-size:48px;line-height:58px;white-space:nowrap}
+#eq .l .a{height:38px;font-size:30px;font-weight:700;white-space:nowrap}
+#eq .op{flex:none;width:30px;height:58px;line-height:58px;align-self:flex-start;margin-top:6px;text-align:center;font-family:var(--fb),sans-serif;font-weight:800;font-size:44px;color:var(--texto2)}
+#eq .l.r .b{font-size:52px}
+
+/* rosca: where each R$ 100 goes */
+#ros svg{position:absolute;left:190px;top:400px;width:700px;height:700px;overflow:visible}
+#ros .ce{position:absolute;left:340px;width:400px;top:620px;height:150px;font-size:136px;line-height:150px;text-align:center;white-space:nowrap}
+#ros .cs{position:absolute;left:360px;width:360px;top:775px;height:84px;font-size:34px;font-weight:800;line-height:1.2;text-align:center}
+#ros .call{position:absolute;left:120px;width:770px;top:1160px;height:300px;text-align:center}
+#ros .call .a{height:150px;font-size:66px}
+#ros .call .b{height:110px;font-size:42px;font-weight:700;margin-top:10px}
+#ros .mas{position:absolute;left:120px;width:770px;top:1160px;height:300px;font-size:72px;text-align:center}
+#nota{top:345px;bottom:auto}
+#nota.ice{top:342px;left:90px;right:auto;width:400px;text-align:left}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="hero"><img id="heroI" alt=""></div>
+ <div id="chip0"><span class="chip t seg">preço de venda</span></div>
+ <div id="h0a" class="t seg rv"></div>
+ <div id="h0b" class="tit t seg"></div>
+ <div id="h0c" class="tit t seg rv">Quanto fica <span class="mk" id="mk0">com você?</span></div>
+</div></div>
+
+<div class="cena" id="ice-c"><div class="full" id="iceIn">
+ <div id="agua"><i class="raio" style="left:120px;transform:rotate(14deg)"></i><i class="raio" style="left:520px;transform:rotate(-8deg)"></i><i class="raio" style="left:820px;transform:rotate(10deg)"></i>
+  <svg id="onda" viewBox="0 0 1080 60"><path id="ondaP" fill="none" stroke="var(--texto)" stroke-opacity=".45" stroke-width="5"/></svg></div>
+ <div id="mundo"><svg id="ice" viewBox="0 0 1080 2400"><defs><clipPath id="corpoC"><polygon id="corpoP"/></clipPath></defs>
+   <polygon id="fantasma" fill="var(--texto)" fill-opacity=".07" stroke="var(--texto)" stroke-opacity=".45" stroke-width="5" stroke-dasharray="18 14"/>
+   <g clip-path="url(#corpoC)" id="camadas"></g>
+   <polygon id="ponta" fill="var(--destaque)"/><polygon id="faceta" fill="var(--texto)" fill-opacity=".16"/>
+  </svg>
+  <div id="labs"></div>
+ </div>
+ <div id="lemb" class="t t2 seg">O QUE TODO MUNDO LEMBRA</div>
+ <div id="lv" class="cartao"><div class="nm t seg"></div><div class="vl tit t seg"></div></div>
+ <div id="mas" class="tit t seg rv">Mas tem o que <span class="mk" id="mk2">ninguém coloca</span> na conta</div>
+ <div id="cont" class="cartao"><div class="k t t2">ESCONDIDO</div><div class="v tit t seg">R$ 0</div></div>
+ <div id="tot"><div class="v tit t seg"></div><div class="k t seg"></div></div>
+ <div id="eq" class="cartao"></div>
+</div></div>
+
+<div class="cena" id="ros"><div class="cam full">
+ <svg viewBox="0 0 700 700"><g transform="rotate(-90 350 350)"><circle cx="350" cy="350" r="280" fill="none" stroke="var(--texto)" stroke-opacity=".12" stroke-width="130"/>
+  <circle id="rfant" cx="350" cy="350" r="280" fill="none" stroke="var(--texto)" stroke-opacity=".4" stroke-width="6" stroke-dasharray="16 14"/><g id="fatias"></g></g></svg>
+ <div class="ce tit t seg"></div><div class="cs t t2 seg"></div>
+ <div class="call"><div class="a tit t seg"></div><div class="b t t2 seg"></div></div>
+ <div class="mas tit t seg rv">Mas tem o que ninguém coloca na conta</div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Custo escondido": the costs an owner forgets to put in the price, summed by the code. Iceberg: the cost everyone
+// remembers is the tip; under the water each hidden cost is a layer as thick as its weight. Variant "rosca": how
+// each R$ 100 of the price splits (the code rounds the shares so they add up to exactly 100).
+// Scenes follow the narration: 0 hook, 1 visible cost, 2 "but there is what nobody counts", one per hidden cost,
+// total, call to action (engine's final scene).
+const NS = 'http://www.w3.org/2000/svg';
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const sv = (tag, at, pai) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); pai.appendChild(e); return e; };
+const r2 = v => Math.round(v * 100) / 100;
+// whole shares of 100 by largest remainder: always add up to 100
+function cem(vals) {
+  const tot = vals.reduce((a, b) => a + b, 0), raw = vals.map(v => v / tot * 100), base = raw.map(Math.floor);
+  let falta = 100 - base.reduce((a, b) => a + b, 0);
+  raw.map((v, i) => [v - base[i], i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (falta > 0) { base[i]++; falta--; } });
+  return base;
+}
+// iceberg outline: half-widths by depth fraction (left, right), center x 490, waterline y 900, depth 1000
+const CX = 490, WL = 900, DP = 1000, NECK = 60;
+const RT = [[160, 0], [262, .06], [360, .22], [410, .45], [380, .68], [320, .86], [250, 1]];
+const LF = [[160, 0], [250, .07], [370, .28], [405, .5], [350, .74], [290, .9], [240, 1]];
+const larg = (tab, f) => { for (let i = 1; i < tab.length; i++) if (f <= tab[i][1]) { const [a, fa] = tab[i - 1], [b, fb] = tab[i]; return a + (b - a) * (f - fa) / (fb - fa); } return tab[tab.length - 1][0]; };
+let D = {};
+Motor.molde({
+  id: 'custo-escondido', formatos: ['reel'],
+  montar(F, M, $m) {
+    const { $ } = $m, n = F.escondidos.length;
+    const din = v => Number.isInteger(r2(v)) ? $m.brl(v, 0) : $m.brl(v);
+    const esc = r2(F.escondidos.reduce((s, e) => s + e.valor, 0)), sobra = r2(F.preco - F.custo_visivel - esc);
+    const modo = F.modo || 'iceberg';
+    if (F.custo_visivel >= F.preco) $m.erro('o custo que todo mundo lembra já passa do preço: use outro molde');
+    if (modo === 'rosca' && sobra <= 0) $m.erro('os custos passam do preço: a rosca não mostra prejuízo, use o modo iceberg');
+    if (window.TEMPOS && F.falas.length !== n + 5) $m.erro(`falas: são ${n + 5} (gancho, lembrado, 'mas tem', um por escondido, total, chamada); vieram ${F.falas.length}`);
+    D = { n, esc, sobra, din, modo };
+    // 0 hook
+    $('#h0a').textContent = F.produto.charAt(0).toUpperCase() + F.produto.slice(1) + ' a';
+    $('#h0b').textContent = din(F.preco);
+    $('#nota').textContent = F.nota || '';
+    if (modo === 'rosca') { $('#ice-c').remove(); montarRosca(F, $m); }
+    else { $('#ros').remove(); montarIceberg(F, $m); $('#nota').classList.add('ice'); }
+    return {};
+  },
+  quadro(t, F, $m) {
+    const { $, p, eo, eo5, eio, eb, cl, ini } = $m;
+    $m.cena('#c0', t, 0);
+    $m.filmagem($('#heroI'), F.filmagem, t);
+    const z = eio(p(t, ini(1) - 0.5, 0.6));
+    $('#heroI').style.filter = `blur(${z * 10}px)`;
+    $m.entra('#chip0', t, 0.05, 0.5, 30, 0.2);
+    $m.revela('#h0a', t, 0.15, 0.06);
+    const pb = eb(p(t, 0.4, 0.6)); $('#h0b').style.opacity = cl(pb * 2); $('#h0b').style.transform = `scale(${0.6 + 0.4 * pb})`;
+    $m.revela('#h0c', t, Math.max(1.2, ini(1) - 1.5), 0.08); $m.marcador('#mk0', t, Math.max(1.6, ini(1) - 1.0));
+    if (D.modo === 'rosca') quadroRosca(t, F, $m); else quadroIceberg(t, F, $m);
+    $('#nota').style.opacity = F.nota && t > ini(1) && t < ini(D.n + 4) ? 1 : 0;
+  },
+});
+
+// ---------- iceberg ----------
+function montarIceberg(F, $m) {
+  const { $ } = $m, n = D.n, din = D.din;
+  // layer heights: a floor for the text plus the rest by weight
+  const area = DP - NECK, piso = 112, extra = area - piso * n;
+  let y = NECK; D.cam = F.escondidos.map(e => { const h = piso + extra * e.valor / D.esc; const c = { y0: y, h }; y += h; return c; });
+  // outline polygon
+  const pts = [];
+  RT.forEach(([x, f]) => pts.push([CX + x, WL + f * DP]));
+  [[170, .99], [80, 1.025], [-40, .985], [-150, 1.02]].forEach(([x, f]) => pts.push([CX + x, WL + f * DP]));
+  LF.slice().reverse().forEach(([x, f]) => pts.push([CX - x, WL + f * DP]));
+  const poly = pts.map(q => q.map(v => v.toFixed(1)).join(',')).join(' ');
+  $('#corpoP').setAttribute('points', poly); $('#fantasma').setAttribute('points', poly);
+  $('#ponta').setAttribute('points', [[-160, 0], [-118, -120], [-56, -236], [-8, -262], [40, -214], [92, -160], [128, -70], [160, 0]].map(([x, yy]) => `${CX + x},${WL + yy}`).join(' '));
+  $('#faceta').setAttribute('points', [[-8, -262], [40, -214], [92, -160], [128, -70], [160, 0], [30, 0], [10, -150]].map(([x, yy]) => `${CX + x},${WL + yy}`).join(' '));
+  const g = $('#camadas');
+  D.neck = sv('rect', { x: 0, y: WL, width: 1080, height: NECK, fill: 'var(--destaque)', 'fill-opacity': 0 }, g);
+  D.cam.forEach((c, i) => {
+    c.rect = sv('rect', { x: 0, y: WL + c.y0, width: 1080, height: c.h, fill: 'var(--destaque)' }, g);
+    c.lin = sv('line', { x1: 0, x2: 1080, y1: WL + c.y0, y2: WL + c.y0, stroke: 'var(--sobre-destaque)', 'stroke-opacity': .35, 'stroke-width': 4 }, g);
+    const f = (c.y0 + c.h / 2) / DP, w = larg(RT, f) + larg(LF, f), xl = CX - larg(LF, f);
+    const lab = mk('div', 'lab', null, $('#labs')); Object.assign(lab.style, { left: (xl + 30) + 'px', width: (w - 60) + 'px', top: (WL + c.y0) + 'px', height: c.h + 'px' });
+    const e = F.escondidos[i]; mk('div', 'nm t seg', e.nome, lab); mk('div', 'vl tit t seg', (e.em_media ? '≈ ' : '') + din(e.valor), lab);
+    c.lab = lab;
+    c.bol = []; for (let k = 0; k < 6; k++) { const b = mk('i', 'bol', null, $('#labs')); const r = 14 + $m.rnd(i * 13 + k) * 22; Object.assign(b.style, { width: r + 'px', height: r + 'px', left: (xl + 40 + $m.rnd(i * 7 + k) * (w - 80)) + 'px', top: (WL + c.y0 + c.h / 2) + 'px' }); c.bol.push(b); }
+  });
+  $('#lv .nm').textContent = F.visivel_nome.charAt(0).toUpperCase() + F.visivel_nome.slice(1);
+  $('#lv .vl').textContent = din(F.custo_visivel);
+  $('#cont .v').textContent = din(D.esc);
+  $('#tot .v').textContent = din(D.esc);
+  $('#tot .k').textContent = 'escondidos em cada ' + F.produto.split(' ')[0];
+  // equation row: price - remembered - hidden = what stays
+  const eq = $('#eq'), linha = (a, b) => { const l = mk('div', 'l', null, eq); const v = mk('div', 'b tit t seg', b, l); mk('div', 'a t t2', a, l); return l; };
+  const op = o => mk('div', 'op', o, eq);
+  linha('preço', din(F.preco)); op('−'); linha('lembrado', din(F.custo_visivel)); op('−'); linha('escondido', din(D.esc)); op('=');
+  const r = linha(D.sobra >= 0 ? 'sobra' : 'falta', din(Math.abs(D.sobra))); r.classList.add('r'); r.querySelector('.b').style.color = D.sobra > 0 ? 'var(--bom)' : 'var(--ruim)';
+  eq.children[2].querySelector('.b').style.color = 'var(--texto)'; eq.children[4].querySelector('.b').style.color = 'var(--ruim)';
+  if (F.escondidos.some(e => e.em_media)) $('#tot .k').textContent += ' (≈ parte em média)';
+  // wave crest
+  D.onda = $('#ondaP');
+}
+function quadroIceberg(t, F, $m) {
+  const { $, $$, p, eo, eo5, eio, eb, cl, lerp, ini } = $m, n = D.n;
+  const iT = 3 + n; // total scene
+  $m.cena('#ice-c', t, 1, iT);
+  // camera: 1 at the surface, 2 dives, total pulls back to the whole iceberg
+  const dv = eio(p(t, ini(2) + 0.1, 1.1)), pb = eio(p(t, ini(iT) + 0.05, 1.1));
+  // states: [scale, x of the iceberg center on screen, y of the waterline on screen]
+  const A = [1.5, 490, 1000], B = [0.86, 490, 600], Z = [0.5, 540, 785];
+  const st = A.map((v, k) => lerp(lerp(v, B[k], dv), Z[k], pb));
+  const s = st[0], tx = st[1] - CX * s, ty = st[2] - WL * s;
+  $('#mundo').style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+  const wl = ty + WL * s; $('#agua').style.top = wl + 'px';
+  // wave
+  let d = ''; for (let x = 0; x <= 1080; x += 30) d += (x ? 'L' : 'M') + x + ' ' + (30 + Math.sin(x / 70 + t * 2.4) * 8 + Math.sin(x / 31 - t * 1.7) * 4).toFixed(1);
+  D.onda.setAttribute('d', d);
+  $$('#agua .raio').forEach((r, k) => { r.style.opacity = 0.6 + 0.4 * Math.sin(t * 0.9 + k * 2); });
+  // 1 tip rises out of the water, label with the cost everyone remembers
+  const a1 = ini(1), tp = eb(p(t, a1 + 0.1, 0.8));
+  ['#ponta', '#faceta'].forEach(s2 => { const e = $(s2); e.style.transformOrigin = `${CX}px ${WL}px`; e.style.transform = `scaleY(${tp})`; });
+  const fa = 0.35 * eo(p(t, ini(2) - 0.8, 0.6)) + 0.65 * eo(p(t, ini(2) + 0.3, 0.7));
+  $('#fantasma').style.opacity = fa; D.neck.setAttribute('fill-opacity', (0.55 * fa).toFixed(3));
+  const lv = eb(p(t, a1 + 0.6, 0.6)), lvOut = eio(p(t, ini(2), 0.5));
+  $('#lv').style.opacity = cl(lv * 2) * (1 - lvOut); $('#lv').style.transform = `translateY(${(1 - lv) * 60 - lvOut * 200}px) scale(${0.8 + 0.2 * lv})`;
+  $('#lemb').style.opacity = eo(p(t, a1 + 0.3, 0.4)) * (1 - lvOut);
+  // 2 "but there is what nobody counts"
+  const a2 = ini(2), mo = 1 - eio(p(t, ini(3), 0.4));
+  $('#mas').style.opacity = t >= a2 + 0.6 ? mo : 0; $m.revela('#mas', t, a2 + 0.7, 0.07); $m.marcador('#mk2', t, a2 + 1.3);
+  // 3..: each hidden layer fills, its label comes up, bubbles rise; running total
+  let soma = 0;
+  D.cam.forEach((c, i) => {
+    const a = ini(3 + i), q = eo(p(t, a + 0.05, 0.5)), lb = eb(p(t, a + 0.25, 0.5)), sai = eio(p(t, ini(iT), 0.4));
+    c.rect.setAttribute('fill-opacity', (q * (i % 2 ? 0.78 : 0.95)).toFixed(3));
+    c.lin.setAttribute('stroke-opacity', (q * 0.35).toFixed(3));
+    c.lab.style.opacity = cl(lb * 2) * (1 - sai); c.lab.style.transform = `scale(${0.7 + 0.3 * lb})`;
+    soma += F.escondidos[i].valor * eo5(p(t, a + 0.2, 0.6));
+    c.bol.forEach((b, k) => { const bq = p(t, a + 0.1 + k * 0.12, 1.6); b.style.opacity = bq > 0 && bq < 1 ? 0.9 * (1 - bq) : 0; b.style.transform = `translate(${Math.sin(bq * 9 + k) * 18}px, ${-bq * (WL + c.y0 + c.h / 2 - WL + 60)}px)`; });
+  });
+  const ci = eo5(p(t, ini(3), 0.5)), co = eio(p(t, ini(iT), 0.4));
+  $('#cont').style.opacity = ci * (1 - co); $('#cont').style.transform = `translateY(${(1 - ci) * -40}px)`;
+  $('#cont .v').textContent = D.din(r2(soma));
+  const pulse = D.cam.reduce((m, c, i) => { const d2 = t - ini(3 + i) - 0.2; return d2 > 0 && d2 < 0.4 ? Math.max(m, Math.sin(d2 / 0.4 * Math.PI)) : m; }, 0);
+  $('#cont .v').style.transform = `scale(${1 + 0.15 * pulse})`; $('#cont .v').style.transformOrigin = '100% 50%';
+  // total: whole iceberg small, total big, the equation
+  const aT = ini(iT), tq = eb(p(t, aT + 0.5, 0.6));
+  $('#tot').style.opacity = cl(tq * 2); $('#tot').style.transform = `scale(${0.7 + 0.3 * tq})`;
+  $m.conta($('#tot .v'), t, aT + 0.5, 0.9, D.esc, D.din);
+  const eqq = eo5(p(t, aT + 1.0, 0.6)); $('#eq').style.opacity = eqq; $('#eq').style.transform = `translateY(${(1 - eqq) * 100}px)`;
+  [...$('#eq').children].forEach((l, k) => { l.style.opacity = eo(p(t, aT + 1.1 + k * 0.15, 0.3)); });
+}
+
+// ---------- rosca ----------
+function montarRosca(F, $m) {
+  const { $ } = $m, din = D.din;
+  const vals = [F.custo_visivel, ...F.escondidos.map(e => e.valor), D.sobra];
+  D.pct = cem(vals);
+  if (D.pct.some(v => v === 0)) $m.erro('um custo fica abaixo de R$ 1 a cada R$ 100: some na rosca, use o modo iceberg');
+  const C = 2 * Math.PI * 280, g = $('#fatias'); let ac = 0;
+  const tons = [100, 80, 64, 52, 42, 34];
+  D.fat = D.pct.map((v, i) => {
+    const cor = i === 0 ? 'color-mix(in srgb, var(--texto) 45%, var(--fundo))' : i === D.pct.length - 1 ? 'var(--bom)' : `color-mix(in srgb, var(--ruim) ${tons[(i - 1) % tons.length]}%, var(--fundo))`;
+    const len = C * v / 100, c = sv('circle', { cx: 350, cy: 350, r: 280, fill: 'none', 'stroke-width': 130, 'stroke-dasharray': `0 ${C}`, 'stroke-dashoffset': -ac }, g);
+    c.style.stroke = cor; const f = { c, len, ini: ac }; ac += len; return f;
+  });
+  D.C = C;
+  // fit the callout to the longest name it will show
+  $('#ros .call .a').textContent = [F.visivel_nome, 'Fica com você', ...F.escondidos.map(e => e.nome)].sort((x, y) => y.length - x.length)[0];
+  $('#ros .call .b').textContent = 'e R$ 100 de cada R$ 100 somem nos custos escondidos';
+  $('#ros .ce').textContent = 'R$ 100'; $('#ros .cs').textContent = 'de cada R$ 100';
+}
+function quadroRosca(t, F, $m) {
+  const { $, p, eo, eo5, eio, eb, cl, ini } = $m, n = D.n, iT = 3 + n;
+  $m.cena('#ros', t, 1, iT);
+  // which scene shows which slice: 1 visible, 3.. hidden, total = what stays
+  const fatiaDe = [[1, 0], ...F.escondidos.map((e, i) => [3 + i, 1 + i]), [iT, n + 1]];
+  fatiaDe.forEach(([cena, k]) => { const f = D.fat[k], q = eio(p(t, ini(cena) + 0.15, 0.8)); f.c.setAttribute('stroke-dasharray', `${(f.len * q).toFixed(2)} ${D.C}`);
+    const viva = t >= ini(cena) && t < ini(cena + 1); f.c.setAttribute('stroke-width', viva ? 130 + 22 * eo(p(t, ini(cena) + 0.15, 0.5)) : 130); });
+  $('#rfant').style.opacity = eo(p(t, ini(2) + 0.2, 0.5)) * (1 - eo(p(t, ini(3), 0.3)));
+  // center number and the callout follow the current scene
+  let i = 1; for (let k = 1; k <= iT; k++) if (t >= ini(k)) i = k;
+  const nome = i === 1 ? F.visivel_nome : i === iT ? 'Fica com você' : i >= 3 ? F.escondidos[i - 3].nome : '';
+  const k = i === 1 ? 0 : i === iT ? n + 1 : i >= 3 ? i - 2 : -1;
+  const ce = $('#ros .ce'), cs = $('#ros .cs'), ca = $('#ros .call .a'), cb = $('#ros .call .b');
+  const q = eb(p(t, ini(i) + 0.2, 0.5));
+  if (k >= 0) {
+    ce.textContent = $m.brl(D.pct[k] * eo5(p(t, ini(i) + 0.15, 0.8)), 0); cs.textContent = 'de cada R$ 100';
+    ce.style.color = k === n + 1 ? 'var(--bom)' : k === 0 ? 'var(--texto)' : 'var(--ruim)';
+    ca.textContent = nome.charAt(0).toUpperCase() + nome.slice(1);
+    cb.textContent = k === n + 1 ? `e ${$m.brl(D.pct.slice(1, n + 1).reduce((a, b) => a + b, 0), 0)} de cada R$ 100 somem nos custos escondidos` : (k > 0 && F.escondidos[k - 1].em_media ? 'valor em média' : '');
+  } else { ce.textContent = '?'; cs.textContent = ''; ce.style.color = 'var(--texto2)'; ca.textContent = ''; cb.textContent = ''; }
+  [ce, cs].forEach(e => { e.style.opacity = cl(q * 2); e.style.transform = `scale(${0.7 + 0.3 * q})`; });
+  const cq = eo5(p(t, ini(i) + 0.3, 0.5)); $('#ros .call').style.opacity = k >= 0 ? cq : 0; $('#ros .call').style.transform = `translateY(${(1 - cq) * 50}px)`;
+  const ms = $('#ros .mas'); ms.style.opacity = i === 2 ? 1 : 0; $m.revela(ms, t, ini(2) + 0.3, 0.07);
+}
+</script></body></html>

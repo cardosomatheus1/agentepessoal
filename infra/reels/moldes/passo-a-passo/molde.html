@@ -1,0 +1,275 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* paper of the clipboard: light paper with dark ink on dark styles, the style's card elsewhere */
+:root{--papel:var(--cartao);--tinta:var(--texto);--prancha:color-mix(in srgb,var(--c1) 45%,var(--fundo))}
+body.e-vidro,body.e-noite{--papel:color-mix(in srgb,var(--texto) 94%,var(--fundo));--tinta:var(--fundo)}
+body.e-pop{--prancha:var(--texto)}
+.ico.bm svg{fill:currentColor}
+/* scene 0: promise */
+#bg{position:absolute;inset:0;overflow:hidden}
+#bgI{position:absolute;left:-420px;top:0;width:1920px;height:1920px;object-fit:cover}
+#bg:after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.62) 40%,rgba(0,0,0,.8))}
+#chip0{position:absolute;left:90px;top:390px;height:64px;line-height:64px;font-size:32px;letter-spacing:3px;padding:0 28px;white-space:nowrap}
+#n0{position:absolute;left:90px;top:470px;width:820px;height:330px;display:flex;align-items:center;gap:34px}
+#n0 b{flex:none;font-family:var(--ft),sans-serif;font-weight:900;font-size:330px;line-height:330px;color:var(--destaque)}
+#n0 span{flex:1;height:120px;font-size:110px;line-height:120px;white-space:nowrap}
+#obj{position:absolute;left:90px;width:820px;top:830px;height:340px;font-size:84px}
+#salva0{position:absolute;left:90px;width:820px;top:1210px;height:80px;font-size:60px;color:var(--destaque);white-space:nowrap}
+.foto #n0 b,.foto #n0 span,.foto #obj{color:#fff}
+.foto #salva0{color:#fff}
+/* timeline */
+#trilho,#trilhoF{position:absolute;left:146px;width:8px;border-radius:4px}
+#trilho{background:var(--borda)}#trilhoF{background:var(--destaque)}
+.no{position:absolute;left:108px;width:84px;height:84px;border-radius:50%;border:6px solid var(--borda);background:var(--fundo);display:flex;align-items:center;justify-content:center}
+.no b{font-family:var(--ft),sans-serif;font-weight:900;font-size:42px;color:var(--texto2)}
+.no .ck{position:absolute;inset:-6px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:44px;opacity:0}
+.no .pr{position:absolute;inset:-6px;border-radius:50%;border:6px solid var(--destaque);opacity:0}
+.no .at{position:absolute;inset:-6px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-family:var(--ft),sans-serif;font-weight:900;font-size:46px;opacity:0}
+.st{position:absolute;left:232px;width:680px}
+.st .cf{position:absolute;inset:0;opacity:0}
+.st .tx{position:absolute;left:34px;right:30px;top:20px;bottom:20px;font-weight:700;line-height:1.18;display:flex;align-items:center}
+.st .tx span{display:block;width:100%}
+/* clipboard */
+#prancha{position:absolute;left:90px;width:900px;top:410px;height:1060px;border-radius:44px;background:var(--prancha);box-shadow:var(--sombra)}
+#folha{position:absolute;left:130px;width:820px;top:470px;height:970px;border-radius:14px;background:var(--papel);color:var(--tinta);box-shadow:0 12px 30px rgba(0,0,0,.18);
+  background-image:repeating-linear-gradient(transparent 0 69px,color-mix(in srgb,var(--tinta) 9%,transparent) 69px 71px)}
+body.e-pop #folha{border:5px solid var(--texto)}
+#garra{position:absolute;left:380px;width:320px;top:376px;height:110px;border-radius:22px;background:var(--texto);box-shadow:var(--sombra)}
+#garra:after{content:'';position:absolute;left:110px;top:20px;width:100px;height:34px;border-radius:17px;background:var(--prancha)}
+body.e-pop #garra{background:var(--fundo2);border:5px solid var(--texto)}
+#folha .tt{position:absolute;left:60px;width:700px;top:40px;height:130px;font-size:54px;color:var(--tinta)}
+.it{position:absolute;left:44px;width:680px}
+.it .cx{position:absolute;left:0;width:66px;height:66px;border:6px solid var(--tinta);border-radius:14px}
+.it .cx svg{position:absolute;left:-6px;top:-22px;width:96px;height:96px;overflow:visible}
+.it .tx{position:absolute;left:96px;right:0;font-size:42px;font-weight:700;line-height:1.16;display:flex;align-items:center}
+.it .tx span{display:block;width:100%}
+/* result */
+#rph{position:absolute;left:140px;width:800px;top:410px;height:520px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+#rph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#rico{position:absolute;left:340px;top:440px;width:400px;height:400px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:210px}
+#fita{position:absolute;left:760px;top:380px;width:110px;height:200px;color:var(--destaque);font-size:0}
+#fita svg{width:110px;height:200px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.3))}
+#rk{position:absolute;left:110px;width:800px;top:975px;height:50px;font-size:36px;font-weight:800;letter-spacing:4px;text-align:center;white-space:nowrap}
+#rt{position:absolute;left:110px;width:800px;top:1035px;height:240px;font-size:80px;text-align:center}
+#rsalva{position:absolute;left:0;right:0;top:1310px;text-align:center}
+#rsalva>span{display:inline-flex;align-items:center;gap:14px;max-width:780px;height:84px;font-size:42px;padding:0 36px;white-space:nowrap}
+
+/* carousel */
+.slide .chipc{position:absolute;right:84px;top:58px;height:60px;line-height:60px;font-size:28px;letter-spacing:3px;padding:0 26px;white-space:nowrap}
+.slide .ph{position:absolute;left:84px;right:84px;top:140px;height:420px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.slide .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slide #n0{left:84px;top:150px;width:912px;height:330px}
+.slide.cf #n0{top:590px;height:220px}.slide.cf #n0 b{font-size:220px;line-height:220px}.slide.cf #n0 span{font-size:84px;height:100px;line-height:100px}
+.slide #obj{left:84px;width:912px;top:520px;height:420px;font-size:92px}
+.slide.cf #obj{top:830px;height:300px;font-size:72px}
+.slide .pe{position:absolute;left:84px;right:84px;top:1196px;height:70px;font-size:52px;color:var(--destaque);white-space:nowrap}
+.slide .rail{position:absolute;left:116px;width:8px;top:200px;height:960px;border-radius:4px;background:var(--borda)}
+.slide .railF{position:absolute;left:116px;width:8px;top:200px;border-radius:4px;background:var(--destaque)}
+.slide .no{left:78px}
+.slide .lb{position:absolute;left:220px;width:776px;top:170px;height:50px;font-size:36px;font-weight:900;letter-spacing:4px;color:var(--destaque);white-space:nowrap}
+.slide .sx{position:absolute;left:220px;width:776px;top:260px;height:760px;font-size:92px;display:flex;align-items:center}
+.slide .sx span{display:block;width:100%}
+.slide .bigN{position:absolute;right:60px;top:760px;width:500px;height:500px;text-align:right;font-family:var(--ft),sans-serif;font-weight:900;font-size:500px;line-height:500px;color:var(--destaque);opacity:.14}
+.slide #prancha{left:84px;width:912px;top:150px;height:1120px}
+.slide #garra{left:380px;top:118px}
+.slide #folha{left:124px;width:832px;top:210px;height:1020px}
+.slide #rico{left:340px;top:170px}
+.slide #rph{left:84px;width:912px;top:140px;height:560px}
+.slide #fita{left:820px;top:120px}
+.slide #rk{left:84px;width:912px;top:740px}
+.slide #rt{left:84px;width:912px;top:800px;height:250px;font-size:84px}
+.slide #rsalva{top:1090px}
+.slide .rf{position:absolute;left:60px;width:712px;height:60px;font-size:36px;font-weight:800;color:var(--tinta);display:flex;align-items:center;gap:14px;white-space:nowrap}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="bg"><img id="bgI" alt=""></div>
+ <div id="chip0" class="chip t seg"></div>
+ <div id="n0"><b class="t seg"></b><span class="tit t seg"></span></div>
+ <div id="obj" class="tit t seg rv"></div>
+ <div id="salva0" class="mao t seg"></div>
+</div></div>
+
+<div class="cena" id="tl"><div class="cam full" id="tlIn">
+ <div id="trilho"></div><div id="trilhoF"></div>
+</div></div>
+
+<div class="cena" id="pr"><div class="cam full">
+ <div id="prancha"></div><div id="folha"><div class="tt tit t seg"></div></div><div id="garra"></div>
+</div></div>
+
+<div class="cena" id="rs"><div class="cam full">
+ <div id="rph"><img id="rphI" alt=""></div>
+ <div id="rico"></div>
+ <div id="fita"></div>
+ <div id="rk" class="t t2 seg">RESULTADO</div>
+ <div id="rt" class="tit t seg rv"></div>
+ <div id="rsalva"><span class="chip t seg"></span></div>
+</div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Passo a passo": a short tutorial. Mode "passos": a vertical timeline where each step lights up in order.
+// Mode "lista" (no order, the old checklist): a clipboard where each box gets a hand-drawn tick. Then the result
+// and a "save this post" cue. Optional narration: promise, one line per step, result, call to action.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
+const MARCA_SVG = '<svg viewBox="0 0 24 24"><path d="M6 2.5h12v19l-6-4.2-6 4.2z" fill="currentColor"/></svg>';
+const bm = () => `<span class="ico bm">${MARCA_SVG}</span>`;
+const TIQUE = '<svg viewBox="0 0 96 96"><path d="M14 52 L36 74 L86 12" fill="none" stroke="var(--destaque)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="120" stroke-dashoffset="120"/></svg>';
+let L = {};
+function comum(F, $m) {
+  const n = F.passos.length, lista = F.modo === 'lista';
+  const voz = window.TEMPOS && window.TEMPOS.length > 1;
+  if (voz && F.falas.length !== n + 3) $m.erro(`falas: são ${n + 3} (promessa, uma por passo, resultado, chamada); vieram ${F.falas.length}`);
+  const iguais = new Set(F.passos.map(s => s.trim().toLowerCase())); if (iguais.size < n) $m.erro('há passos repetidos');
+  return { n, lista };
+}
+// the "how many" header: big number + word
+function promessa(F, $m, raiz) {
+  const { n, lista } = L;
+  raiz.querySelector('#chip0, .chipc').innerHTML = (lista ? $m.icone('check') : $m.icone('seta')) + ' ';
+  raiz.querySelector('#chip0, .chipc').append(lista ? 'LISTA PRA SALVAR' : 'PASSO A PASSO');
+  raiz.querySelector('#n0 b').textContent = n;
+  raiz.querySelector('#n0 span').textContent = lista ? 'itens' : 'passos';
+  raiz.querySelector('#obj').textContent = F.objetivo;
+}
+// clipboard paper with items (static boxes; the video draws the ticks)
+function folha(F, $m, raiz, carrossel) {
+  const fo = raiz.querySelector('#folha'); fo.querySelector('.tt').textContent = F.objetivo;
+  const topo = 200, fim = carrossel ? 880 : 930, hi = Math.min(160, (fim - topo) / L.n);
+  return F.passos.map((s, i) => {
+    const it = mk('div', 'it', null, fo); it.style.top = (topo + i * hi) + 'px'; it.style.height = hi + 'px';
+    const cx = mk('div', 'cx', null, it); cx.style.top = (hi / 2 - 33) + 'px'; cx.innerHTML = TIQUE;
+    const tx = mk('div', 'tx t seg', null, it); tx.style.top = '6px'; tx.style.bottom = '6px'; mk('span', null, s, tx);
+    tx.style.fontSize = (L.n <= 4 ? 46 : 40) + 'px';
+    return it;
+  });
+}
+function resultado(F, $m, raiz) {
+  const q = s => raiz.querySelector(s);
+  if (F.midia) { q('#rico').remove(); $m.filmagem(q('#rphI'), F.midia, 0); } else { q('#rph').remove(); q('#rico').innerHTML = $m.icone(L.lista ? 'check' : 'trofeu'); }
+  q('#fita').innerHTML = MARCA_SVG;
+  q('#rt').textContent = F.resultado;
+  q('#rsalva>span').innerHTML = bm(); q('#rsalva>span').append(L.lista ? 'Salva pra não esquecer' : 'Salva pra fazer depois');
+}
+Motor.molde({
+  id: 'passo-a-passo', formatos: ['reel', 'carrossel'],
+  montar(F, M, $m) {
+    const { $ } = $m; L = comum(F, $m); const n = L.n;
+    if (F.midia) $('#c0').classList.add('foto'); else $('#bg').remove();
+    promessa(F, $m, document);
+    $('#salva0').innerHTML = bm() + ' '; $('#salva0').append(L.lista ? 'confere tudo antes de começar' : 'salva pra fazer depois');
+    if (L.lista) { $('#tl').remove(); L.itens = folha(F, $m, document, false); }
+    else {
+      $('#pr').remove();
+      const Y0 = 440, A = 1020, H = A / n; L.y = F.passos.map((s, i) => Y0 + H * (i + 0.5));
+      $('#trilho').style.top = L.y[0] + 'px'; $('#trilho').style.height = (L.y[n - 1] - L.y[0]) + 'px'; $('#trilhoF').style.top = L.y[0] + 'px';
+      const ch = Math.min(230, H - 16), fs = n <= 3 ? 56 : n <= 4 ? 52 : 46;
+      L.nos = []; L.sts = [];
+      F.passos.forEach((s, i) => {
+        const no = mk('div', 'no', null, $('#tlIn')); no.style.top = (L.y[i] - 42) + 'px';
+        mk('b', 't', i + 1, no); mk('div', 'pr', null, no); const at = mk('div', 'at', i + 1, no); const ck = mk('div', 'ck', null, no); ck.innerHTML = $m.icone('check');
+        const st = mk('div', 'st', null, $('#tlIn')); st.style.top = (L.y[i] - ch / 2) + 'px'; st.style.height = ch + 'px';
+        mk('div', 'cf cartao', null, st); const tx = mk('div', 'tx t seg', null, st); mk('span', null, s, tx); tx.style.fontSize = fs + 'px';
+        L.nos.push(no); L.sts.push(st);
+      });
+    }
+    resultado(F, $m, document);
+    const ler = s => 1.4 + s.length / 24;
+    // render.py cannot build its contact sheet for exactly 7 scenes (ffmpeg "hstack=1"): in that case the result
+    // scene is shown as two (result, then the save cue), splitting the narration line's time in the middle
+    L.dois = n + 3 === 7;
+    if (L.dois && window.TEMPOS && window.TEMPOS.length > 1) { const T = window.TEMPOS, a = T[n + 1], b = T[n + 2]; T.splice(n + 2, 0, +(a + (b - a) * 0.55).toFixed(3)); }
+    return { duracoes: [2.8, ...F.passos.map(ler), ...(L.dois ? [2.2, 2.0] : [3.4])] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, cl, lerp, ini } = $m, n = L.n;
+    // 0 promise
+    $m.cena('#c0', t, 0);
+    if ($('#bg')) $m.filmagem($('#bgI'), F.midia, t);
+    $m.entra('#chip0', t, 0.05, 0.4, 20, 0.2);
+    const nb = $('#n0 b'), nq = eb(p(t, 0.2, 0.6)); nb.style.transform = `scale(${nq})`; nb.style.opacity = cl(nq * 2);
+    $m.conta(nb, t, 0.2, 0.7, n, v => Math.max(1, Math.round(v)));
+    $m.entra('#n0 span', t, 0.45, 0.5, 0, 0); $('#n0 span').style.transform = `translateX(${(1 - eo5(p(t, 0.45, 0.5))) * 120}px)`;
+    $m.revela('#obj', t, 0.7, 0.06);
+    $m.entra('#salva0', t, 1.5, 0.5, 20);
+    if (L.lista) quadroLista(t, F, $m); else quadroTrilho(t, F, $m);
+    // result
+    const ir = n + 1, a = ini(ir); $m.cena('#rs', t, ir, L.dois ? ir + 1 : ir);
+    const ph = $('#rph') || $('#rico'), pq = eb(p(t, a + 0.1, 0.6)); ph.style.opacity = cl(pq * 2); ph.style.transform = `scale(${0.7 + 0.3 * pq}) rotate(${(1 - pq) * -6}deg)`;
+    if ($('#rph')) $m.filmagem($('#rphI'), F.midia, t);
+    const fq = eo5(p(t, a + 0.9, 0.5)); $('#fita').style.transform = `translateY(${(1 - fq) * -260}px)`; $('#fita').style.opacity = fq > 0 ? 1 : 0;
+    $m.entra('#rk', t, a + 0.3, 0.4, 20); $m.revela('#rt', t, a + 0.45, 0.06);
+    const sq = eb(p(t, L.dois ? ini(ir + 1) : a + 1.3, 0.5)); $('#rsalva').style.opacity = cl(sq * 2); $('#rsalva').style.transform = `scale(${sq * (1 + 0.04 * Math.sin((t - a) * 6))})`;
+  },
+  slides(F, M, $m) {
+    L = comum(F, $m); fontes(); const n = L.n;
+    const palco = $m.$('#palco'), tmpl = id => $m.$(id);
+    const novo = () => mk('div', 'slide', null, palco);
+    // cover
+    const s1 = novo(); if (F.midia) { s1.classList.add('cf'); const ph = mk('div', 'ph', null, s1); $m.filmagem(mk('img', null, null, ph), F.midia, 0); }
+    mk('div', 'chipc chip t seg', null, s1);
+    s1.appendChild(tmpl('#n0')); s1.appendChild(tmpl('#obj')); $m.$('#obj', s1).classList.remove('rv');
+    promessa(F, $m, s1);
+    mk('div', 'pe mao t seg', L.lista ? 'salva e confere depois →' : 'salva e arrasta →', s1);
+    if (L.lista) {
+      const s = novo(); ['#prancha', '#folha', '#garra'].forEach(x => s.appendChild(tmpl(x)));
+      const its = folha(F, $m, s, true);
+      const rf = mk('div', 'rf', null, $m.$('#folha', s)); rf.style.top = '920px'; rf.innerHTML = $m.icone('brilho') + ' '; rf.append(F.resultado); rf.classList.add('t', 'seg');
+    } else {
+      F.passos.forEach((p, i) => {
+        const s = novo();
+        mk('div', 'bigN', String(i + 1), s);
+        mk('div', 'rail', null, s); const rf = mk('div', 'railF', null, s);
+        const yy = k => 200 + (n === 1 ? 0 : k * 960 / (n - 1));
+        rf.style.height = (yy(i) - 200) + 'px';
+        for (let k = 0; k < n; k++) {
+          const no = mk('div', 'no', null, s); no.style.top = (yy(k) - 42) + 'px'; mk('b', 't', k + 1, no);
+          if (k < i) { const ck = mk('div', 'ck', null, no); ck.innerHTML = $m.icone('check'); ck.style.opacity = 1; }
+          if (k === i) { const at = mk('div', 'at', k + 1, no); at.style.opacity = 1; no.style.transform = 'scale(1.25)'; }
+        }
+        mk('div', 'lb t seg', `PASSO ${i + 1} DE ${n}`, s);
+        mk('span', null, p, mk('div', 'sx tit t seg', null, s));
+      });
+    }
+    const sr = novo(); ['#rph', '#rico', '#fita', '#rk', '#rt', '#rsalva'].forEach(x => sr.appendChild(tmpl(x)));
+    $m.$('#rt', sr).classList.remove('rv');
+    resultado(F, $m, sr);
+    $m.$$('.cena', palco).forEach(c => c.remove());
+  },
+});
+function quadroTrilho(t, F, $m) {
+  const { $, p, eo, eo5, eio, eb, cl, lerp, ini } = $m, n = L.n;
+  $m.cena('#tl', t, 1, n);
+  const tr = eio(p(t, ini(1), 0.6)); $('#trilho').style.transform = `scaleY(${tr})`; $('#trilho').style.transformOrigin = '50% 0';
+  // fill grows to the active node
+  let alvo = 0; for (let i = 0; i < n; i++) alvo = lerp(alvo, L.y[i] - L.y[0], eio(p(t, ini(1 + i), 0.5)));
+  $('#trilhoF').style.height = alvo + 'px';
+  L.nos.forEach((no, i) => {
+    const a = ini(1 + i), b = ini(2 + i), on = eb(p(t, ini(1) + 0.1 + i * 0.08, 0.45));
+    const ativo = eo(p(t, a, 0.35)), feito = eo(p(t, b, 0.35));
+    no.style.transform = `scale(${on * (1 + 0.22 * ativo * (1 - feito))})`; no.style.opacity = cl(on * 2);
+    no.querySelector('.at').style.opacity = ativo * (1 - feito); no.querySelector('.ck').style.opacity = feito;
+    const pr = no.querySelector('.pr'), pq = ((t - a) % 1.2) / 1.2; pr.style.opacity = t > a && t < b ? 0.8 * (1 - pq) : 0; pr.style.transform = `scale(${1 + pq * 0.9})`;
+    const st = L.sts[i], cq = eo5(p(t, a + 0.1, 0.5));
+    st.style.opacity = t < a ? 0 : cl(cq * 2) * (1 - 0.5 * feito);
+    st.style.transform = `translateX(${(1 - cq) * 140}px) scale(${1 + 0.02 * (1 - feito)})`;
+    st.querySelector('.cf').style.opacity = cq * (1 - feito);
+  });
+}
+function quadroLista(t, F, $m) {
+  const { $, p, eo, eo5, eio, eb, cl, ini } = $m, n = L.n;
+  $m.cena('#pr', t, 1, n);
+  const pq = eo5(p(t, ini(1), 0.7)); $('#prancha').style.transform = $('#folha').style.transform = `translateY(${(1 - pq) * 600}px) rotate(${(1 - pq) * 6}deg)`;
+  const gq = eb(p(t, ini(1) + 0.5, 0.4)); $('#garra').style.transform = `translateY(${(1 - pq) * 600 + (1 - gq) * -40}px)`; $('#garra').style.opacity = cl(gq * 3);
+  L.itens.forEach((it, i) => {
+    const a = ini(1 + i), on = eo5(p(t, ini(1) + 0.4 + i * 0.1, 0.4));
+    const tique = eio(p(t, a + 0.25, 0.45)), feito = t >= ini(2 + i);
+    it.style.opacity = on * (t >= a && !feito ? 1 : feito ? 0.55 : 0.75);
+    it.style.transform = `translateX(${(1 - on) * 60}px) scale(${t >= a && !feito ? 1.02 : 1})`;
+    it.querySelector('path').setAttribute('stroke-dashoffset', (120 * (1 - tique)).toFixed(1));
+  });
+}
+</script></body></html>

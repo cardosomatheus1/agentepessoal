@@ -63,7 +63,7 @@ body.e-claro #grao{opacity:.035}
 body.e-claro #vinheta,body.e-papel #vinheta,body.e-pop #vinheta{display:none}
 
 /* brand: small watermark under the top band Instagram covers, big logo in the final scene */
-#marca{position:absolute;z-index:80;display:flex;align-items:center;justify-content:center}
+#marca{position:absolute;z-index:80;display:flex;align-items:center;justify-content:center;padding:10px 24px;border-radius:999px;background:color-mix(in srgb,var(--fundo) 62%,transparent);backdrop-filter:blur(10px)}
 #marca img{display:block;height:72px;width:auto;max-width:380px}
 #marca .nome{font-family:var(--ft);font-weight:900;font-size:34px;color:var(--texto)}
 #marca.selo,.final .logo.selo{padding:14px 26px;border-radius:999px;background:var(--selo,#fff)}

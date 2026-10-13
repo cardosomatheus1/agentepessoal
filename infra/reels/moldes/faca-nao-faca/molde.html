@@ -1,0 +1,147 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* the two panels: red "don't" with an X drawn in two strokes, green "do" with a tick */
+.pn{position:absolute;left:80px;width:830px;height:360px;border-radius:var(--raio);border:5px solid var(--cor);background:color-mix(in srgb,var(--cor) 13%,var(--fundo));box-shadow:var(--sombra)}
+.pn.ruim{--cor:var(--ruim);--sobre:var(--sobre-ruim)}.pn.bom{--cor:var(--bom);--sobre:var(--sobre-bom)}
+body.e-pop .pn{background:color-mix(in srgb,var(--cor) 26%,var(--fundo));border-width:6px;box-shadow:12px 12px 0 var(--texto)}
+body.e-papel .pn{border-radius:12px}
+.pn .ic{position:absolute;left:36px;top:36px;width:128px;height:128px;border-radius:50%;background:var(--cor);color:var(--sobre)}
+.pn .ic svg{width:128px;height:128px}
+.pn .lb{position:absolute;left:196px;top:40px;width:600px;height:48px;font-size:36px;font-weight:900;letter-spacing:5px;color:var(--cor);white-space:nowrap}
+body.e-pop .pn .lb,body.e-claro .pn .lb,body.e-papel .pn .lb{color:var(--texto)}
+.pn .tx{position:absolute;left:196px;right:40px;top:100px;bottom:34px;font-size:60px;font-weight:800;line-height:1.16;color:var(--texto)}
+.vazio{position:absolute;left:80px;width:830px;height:360px;border-radius:var(--raio);border:5px dashed var(--borda);display:flex;align-items:center;justify-content:center;font-family:var(--ft),sans-serif;font-weight:900;font-size:150px;color:var(--borda)}
+.seta{position:absolute;left:445px;width:100px;height:100px;border-radius:50%;background:var(--texto);color:var(--fundo);display:flex;align-items:center;justify-content:center;font-size:60px;z-index:3}
+.seta .ico{transform:rotate(90deg)}
+.hd{position:absolute;left:84px;width:840px;height:84px;display:flex;align-items:center;gap:24px}
+.hd .n{flex:none;font-size:36px;height:62px;line-height:62px;padding:0 24px;white-space:nowrap}
+.hd .s{flex:1;height:84px;font-size:64px;line-height:84px;white-space:nowrap}
+.par .hd{top:385px}.par .pn.ruim{top:490px}.par .pn.bom,.par .vazio{top:930px}.par .seta{top:845px}
+/* cover */
+#bg{position:absolute;left:0;top:0;width:1080px;height:980px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
+#bgI{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#bg:after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.4),rgba(0,0,0,.7))}
+.bola{position:absolute;width:310px;height:310px;border-radius:50%;box-shadow:var(--sombra)}
+.bola svg{width:310px;height:310px}
+#bx{left:170px;top:420px;background:var(--ruim);color:var(--sobre-ruim)}
+#bv{left:560px;top:450px;background:var(--bom);color:var(--sobre-bom)}
+#k0{position:absolute;left:90px;width:820px;top:810px;height:64px;font-size:50px;font-weight:800;white-space:nowrap}
+#t0{position:absolute;left:90px;width:820px;top:890px;height:330px;font-size:112px}
+#m0{position:absolute;left:90px;width:820px;top:1250px;height:80px;font-size:62px;color:var(--destaque);white-space:nowrap}
+.foto #k0{color:#fff}
+/* carousel */
+.slide .bola{width:280px;height:280px}.slide .bola svg{width:280px;height:280px}
+.slide #bx{left:200px;top:170px}.slide #bv{left:560px;top:200px}
+.slide #k0{left:84px;width:912px;top:540px}
+.slide #t0{left:84px;width:912px;top:620px;height:360px;font-size:120px}
+.slide #m0{left:84px;width:912px;top:1010px}
+.slide .pe{position:absolute;left:84px;right:84px;top:1196px;height:70px;font-size:52px;color:var(--destaque);white-space:nowrap}
+.slide.par .hd{top:150px;left:84px;width:912px}
+.slide.par .pn{left:84px;width:912px;height:390px}.slide.par .pn.ruim{top:270px}.slide.par .pn.bom{top:740px}.slide.par .seta{top:655px;left:490px}.slide.par .pn .tx{font-size:64px;top:104px}
+.slide .pg{position:absolute;right:84px;top:1196px;height:44px;font-size:32px;font-weight:800;color:var(--texto2)}
+.slide .mm{position:absolute;left:84px;width:700px;top:1186px;height:66px;font-size:50px;color:var(--destaque);white-space:nowrap}
+</style></head><body><div id="palco">
+<div class="cena" id="c0"><div class="cam full">
+ <div id="bg"><img id="bgI" alt=""></div>
+ <div class="bola" id="bx"><svg viewBox="0 0 100 100"><path class="tr" d="M31 31 L69 69" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/><path class="tr" d="M69 31 L31 69" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg></div>
+ <div class="bola" id="bv"><svg viewBox="0 0 100 100"><path class="tr" d="M27 53 L43 69 L74 33" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg></div>
+ <div id="k0" class="t t2 seg"></div>
+ <div id="t0" class="tit t seg rv"></div>
+ <div id="m0" class="mao t seg">e o jeito certo de cada um</div>
+</div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Não faça x Faça": common mistakes and the right way, side by side. Each pair is about one thing (`sobre`), so the
+// mistake and the fix always talk about the same subject. The X and the tick are drawn stroke by stroke.
+// Optional narration: cover, then mistake and fix of each pair, call to action.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
+const X = '<svg viewBox="0 0 100 100"><path class="tr" d="M31 31 L69 69" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/><path class="tr" d="M69 31 L31 69" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>';
+const V = '<svg viewBox="0 0 100 100"><path class="tr" d="M27 53 L43 69 L74 33" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>';
+function checar(F, $m) {
+  const n = F.pares.length, voz = window.TEMPOS && window.TEMPOS.length > 1;
+  if (voz && F.falas.length !== 2 + 2 * n) $m.erro(`falas: são ${2 + 2 * n} (capa, erro e certo de cada par, chamada); vieram ${F.falas.length}`);
+  F.pares.forEach((q, i) => { if (q.erro.trim().toLowerCase() === q.certo.trim().toLowerCase()) $m.erro(`pares[${i + 1}]: erro e certo iguais`); });
+}
+function capa(F, $m, raiz) {
+  raiz.querySelector('#k0').textContent = F.tema;
+  raiz.querySelector('#t0').textContent = `${F.pares.length} erros que custam caro`;
+}
+function painel(cls, rot, txt, icon, pai) {
+  const p = mk('div', 'pn ' + cls, null, pai); const ic = mk('div', 'ic', null, p); ic.innerHTML = icon;
+  mk('div', 'lb t seg', rot, p); mk('div', 'tx t seg rv', txt, p); return p;
+}
+function par(F, q, i, pai) {
+  const hd = mk('div', 'hd', null, pai); mk('div', 'n chip t seg', `${i + 1}/${F.pares.length}`, hd); mk('div', 's tit t seg', q.sobre, hd);
+  const r = painel('ruim', 'NÃO FAÇA', q.erro, X, pai);
+  const se = mk('div', 'seta', null, pai); se.innerHTML = Motor.icone('seta');
+  const b = painel('bom', 'FAÇA', q.certo, V, pai);
+  return { hd, r, b, se };
+}
+const tr = (e, k) => e.setAttribute('stroke-dashoffset', (1 - k).toFixed(3));
+let PS = [];
+Motor.molde({
+  id: 'faca-nao-faca', formatos: ['carrossel', 'reel'],
+  montar(F, M, $m) {
+    const { $ } = $m; checar(F, $m);
+    if (F.midia) $('#c0').classList.add('foto'); else $('#bg').remove();
+    capa(F, $m, document);
+    F.pares.forEach((q, i) => {
+      const sc = mk('div', 'cena par', null, $('#palco')); const cam = mk('div', 'cam full', null, sc);
+      const v = mk('div', 'vazio', '?', cam);
+      PS.push(Object.assign(par(F, q, i, cam), { sc, v }));
+    });
+    const d = [2.8]; F.pares.forEach(q => d.push(1.5 + q.erro.length / 26, 1.7 + q.certo.length / 26));
+    return { duracoes: d };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, ini } = $m;
+    // cover: X and tick circles roll in, strokes drawn
+    $m.cena('#c0', t, 0);
+    if ($('#bg')) $m.filmagem($('#bgI'), F.midia, t);
+    const bx = eb(p(t, 0.1, 0.6)), bv = eb(p(t, 0.35, 0.6));
+    $('#bx').style.transform = `translateX(${(1 - bx) * -500}px) rotate(${(1 - bx) * -200}deg)`; $('#bv').style.transform = `translateX(${(1 - bv) * 500}px) rotate(${(1 - bv) * 200}deg)`;
+    $$('#bx .tr').forEach((e, k) => tr(e, eio(p(t, 0.6 + k * 0.18, 0.22)))); $$('#bv .tr').forEach(e => tr(e, eio(p(t, 0.95, 0.35))));
+    $m.entra('#k0', t, 0.6, 0.5, 30); $m.revela('#t0', t, 0.8, 0.07); $m.entra('#m0', t, 1.6, 0.5, 20);
+    PS.forEach((o, i) => {
+      const a = ini(1 + 2 * i), b = ini(2 + 2 * i); $m.cena(o.sc, t, 1 + 2 * i, 2 + 2 * i);
+      const h = eo5(p(t, a + 0.05, 0.5)); o.hd.style.opacity = h; o.hd.style.transform = `translateY(${(1 - h) * -40}px)`;
+      // mistake: panel slams from the left, X drawn, a "no" shake
+      const r = eb(p(t, a + 0.1, 0.55)), dim = eo(p(t, b, 0.4));
+      const sh = t > a + 0.95 && t < a + 1.45 ? Math.sin((t - a - 0.95) * 38) * 22 * (1 - (t - a - 0.95) / 0.5) : 0;
+      o.r.style.opacity = cl(r * 2) * (1 - 0.45 * dim); o.r.style.transform = `translateX(${(1 - r) * -900 + sh}px) scale(${1 - 0.04 * dim})`;
+      $$('.tr', o.r).forEach((e, k) => tr(e, eio(p(t, a + 0.5 + k * 0.2, 0.2))));
+      $m.revela($('.tx', o.r), t, a + 0.35, 0.05);
+      // empty slot waits for the fix
+      o.v.style.opacity = 0.6 * eo(p(t, a + 0.6, 0.4)) * (1 - eo(p(t, b, 0.2)));
+      // fix: panel rises, tick drawn, arrow between
+      const g = eb(p(t, b + 0.05, 0.55)); o.b.style.opacity = t >= b ? cl(g * 2) : 0; o.b.style.transform = `translateY(${(1 - g) * 300}px)`;
+      $$('.tr', o.b).forEach(e => tr(e, eio(p(t, b + 0.45, 0.35))));
+      const ping = p(t, b + 0.8, 0.35); $('.ic', o.b).style.transform = `scale(${1 + 0.25 * Math.sin(Math.PI * ping)})`;
+      $m.revela($('.tx', o.b), t, b + 0.3, 0.05);
+      const s = el(p(t, b + 0.2, 0.7)); o.se.style.opacity = t >= b + 0.2 ? 1 : 0; o.se.style.transform = `scale(${s})`;
+    });
+  },
+  slides(F, M, $m) {
+    checar(F, $m); fontes();
+    const palco = $m.$('#palco'), c0 = $m.$('#c0');
+    const s1 = mk('div', 'slide', null, palco);
+    if (F.midia) { s1.classList.add('foto'); const b = $m.$('#bg'); s1.appendChild(b); b.style.height = '640px'; $m.filmagem($m.$('#bgI', s1), F.midia, 0); } else $m.$('#bg').remove();
+    ['#bx', '#bv', '#k0', '#t0', '#m0'].forEach(x => s1.appendChild($m.$(x)));
+    $m.$('#t0', s1).classList.remove('rv');
+    $m.$$('.tr', s1).forEach(e => tr(e, 1));
+    capa(F, $m, s1);
+    mk('div', 'pe mao t seg', 'arrasta e confere →', s1).style.textAlign = 'right';
+    $m.$('#m0', s1).style.textAlign = 'left';
+    c0.remove();
+    F.pares.forEach((q, i) => {
+      const s = mk('div', 'slide par', null, palco); const o = par(F, q, i, s);
+      $m.$$('.tr', s).forEach(e => tr(e, 1)); $m.$$('.rv', s).forEach(e => e.classList.remove('rv'));
+      mk('div', 'pg t', `${i + 2}/${F.pares.length + 2}`, s);
+      if (i === 0) mk('div', 'mm mao t seg', 'salva pra lembrar depois', s);
+    });
+  },
+});
+</script></body></html>
