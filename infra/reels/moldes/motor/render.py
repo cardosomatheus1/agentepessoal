@@ -89,7 +89,7 @@ def _trabalho(args):
     with sync_playwright() as pw:
         b, pg = abrir(pw, Path(pasta), script, formato)
         for i, t in quadros:
-            pg.evaluate(f"render({t})"); pg.screenshot(path=saida.format(i))
+            pg.evaluate(f"render({t})"); pg.screenshot(path=saida.format(i), type="jpeg", quality=94)
         b.close()
 
 
@@ -175,7 +175,7 @@ def main():
         dur = info["DUR"]; n = int(dur * FPS) + 1
         with tempfile.TemporaryDirectory() as tmp:
             k = max(1, a.processos)
-            jobs = [(str(pasta), script, formato, [(i, round(i / FPS, 4)) for i in range(j, n, k)], f"{tmp}/f{{:05d}}.png") for j in range(k)]
+            jobs = [(str(pasta), script, formato, [(i, round(i / FPS, 4)) for i in range(j, n, k)], f"{tmp}/f{{:05d}}.jpg") for j in range(k)]
             with Pool(k) as pl: pl.map(_trabalho, jobs)
             audio = None
             if audios:
@@ -188,7 +188,7 @@ def main():
                 if m:
                     audio = f"{tmp}/mus.m4a"
                     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(m), "-t", f"{dur:.3f}", "-af", f"afade=t=in:d=0.3,afade=t=out:st={max(0, dur - 1.2):.3f}:d=1.2", audio], check=True)
-            cmd = ["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", f"{tmp}/f%05d.png"]
+            cmd = ["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", f"{tmp}/f%05d.jpg"]
             if audio: cmd += ["-i", audio, "-af", "loudnorm=I=-14:TP=-1.5:LRA=11", "-ar", "48000", "-c:a", "aac", "-b:a", "160k", "-shortest"]
             cmd += ["-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", "-preset", "medium", "-movflags", "+faststart", str(saida / "video.mp4")]
             subprocess.run(cmd, check=True)
