@@ -1,0 +1,9 @@
+{"_marca": "burger-noite", "_formato": "reel",
+ "tema": "Pra acompanhar o hambúrguer",
+ "lado_a": "refri gelado", "lado_b": "milkshake",
+ "argumento_a": "Gelado, borbulhante e limpa o paladar entre uma mordida e outra.",
+ "argumento_b": "Doce, cremoso e vira sobremesa no mesmo pedido.",
+ "fechamento": "Aqui tem os dois. No combo você escolhe o seu time na hora de pedir.",
+ "foto_a": "fotos/burger_combo.jpg", "foto_b": "fotos/burger_milkshake.jpg",
+ "produto": {"foto": "fotos/burger_combo.jpg", "nome": "Combo da casa", "detalhe": "Hambúrguer, batata e bebida à escolha", "preco": 45, "convite": "peça o seu"},
+ "_origem": {"produto": "dono"}}

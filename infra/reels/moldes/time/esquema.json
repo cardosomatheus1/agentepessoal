@@ -1,14 +1,88 @@
 {
- "formatos": ["reel", "carrossel"],
+ "formatos": [
+  "reel",
+  "carrossel"
+ ],
  "voz": "nao",
  "musica": "engracada",
  "campos": {
-  "tema": {"tipo": "texto", "min": 6, "max": 60, "dica": "Taxa de entrega"},
-  "lado_a": {"tipo": "texto", "min": 2, "max": 30, "dica": "cobrar à parte"},
-  "lado_b": {"tipo": "texto", "min": 2, "max": 30, "dica": "embutir no preço"},
-  "argumento_a": {"tipo": "texto", "min": 10, "max": 80, "dica": "o melhor argumento de quem é do time A"},
-  "argumento_b": {"tipo": "texto", "min": 10, "max": 80, "dica": "o melhor argumento de quem é do time B"},
-  "fechamento": {"tipo": "texto", "min": 10, "max": 100, "dica": "mensagem neutra do negócio, sem dar razão a um lado"},
-  "midia": {"tipo": "filmagem", "obrigatorio": false, "dica": "foto do cliente (fotos/x.jpg), vídeo do cliente ou nome do banco"}
- }
+  "tema": {
+   "tipo": "texto",
+   "min": 6,
+   "max": 60,
+   "dica": "Taxa de entrega"
+  },
+  "lado_a": {
+   "tipo": "texto",
+   "min": 2,
+   "max": 30,
+   "dica": "cobrar à parte"
+  },
+  "lado_b": {
+   "tipo": "texto",
+   "min": 2,
+   "max": 30,
+   "dica": "embutir no preço"
+  },
+  "argumento_a": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 80,
+   "dica": "o melhor argumento de quem é do time A"
+  },
+  "argumento_b": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 80,
+   "dica": "o melhor argumento de quem é do time B"
+  },
+  "fechamento": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 100,
+   "dica": "mensagem neutra do negócio, sem dar razão a um lado"
+  },
+  "foto_a": {
+   "tipo": "filmagem",
+   "obrigatorio": false,
+   "dica": "foto real do lado A (fotos/x.jpg) ou vídeo do cliente; só se mostrar exatamente o lado A"
+  },
+  "foto_b": {
+   "tipo": "filmagem",
+   "obrigatorio": false,
+   "dica": "foto real do lado B"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"
+  }
+ },
+ "publico": "cliente_final"
 }

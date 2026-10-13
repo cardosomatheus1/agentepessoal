@@ -1,4 +1,1 @@
-{"_marca": "doces-da-lu", "_formato": "reel",
- "pergunta": "Quanto tempo o bolo de pote dura na geladeira?",
- "opcoes": ["Um dia", "Três dias", "Uma semana", "Um mês"], "certa": "B",
- "explicacao": "Depende do recheio, mas creme fresco pede consumo rápido.", "assunto": "negocio"}
+{"_marca": "doces-da-lu", "_formato": "reel", "pergunta": "Quanto tempo o bolo de pote dura na geladeira?", "opcoes": ["Um dia", "Três dias", "Uma semana", "Um mês"], "certa": "B", "explicacao": "Depende do recheio, mas creme fresco pede consumo rápido.", "assunto": "negocio", "pista": "Bolo de pote com recheio de creme."}

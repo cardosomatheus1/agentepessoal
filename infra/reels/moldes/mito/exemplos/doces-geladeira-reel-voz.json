@@ -1,16 +1,42 @@
-{"_marca": "doces-da-lu", "_formato": "reel",
- "tema": "Bolo e geladeira", "assunto": "alimento",
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
+ "tema": "Bolo e geladeira",
+ "assunto": "alimento",
  "itens": [
-  {"afirmacao": "Pode descongelar o bolo em cima da pia.", "veredito": "mito",
+  {
+   "afirmacao": "Pode descongelar o bolo em cima da pia.",
+   "veredito": "mito",
    "explicacao": "O certo é descongelar na geladeira, para a massa e o recheio não ficarem em temperatura de risco.",
-   "fonte": "Anvisa, cartilha de boas práticas"},
-  {"afirmacao": "Recheio com creme precisa ficar na geladeira.", "veredito": "verdade",
+   "fonte": "Anvisa, cartilha de boas práticas",
+   "foto": "fotos/doce_bolo_congelado.jpg"
+  },
+  {
+   "afirmacao": "Recheio com creme precisa ficar na geladeira.",
+   "veredito": "verdade",
    "explicacao": "Creme, chantilly e fruta estragam rápido fora do frio. Fora da geladeira, só na hora de servir.",
-   "fonte": "Anvisa, cartilha de boas práticas"}],
- "falas": ["Mito ou verdade: bolo e geladeira.",
+   "fonte": "Anvisa, cartilha de boas práticas",
+   "foto": "fotos/doce_bolo_morango.jpg"
+  }
+ ],
+ "falas": [
+  "Mito ou verdade: bolo e geladeira.",
   "Pode descongelar o bolo em cima da pia?",
   "Mito. O certo é descongelar na geladeira, pra massa e o recheio não ficarem em temperatura de risco.",
   "Recheio com creme precisa ficar na geladeira?",
   "Verdade. Creme, chantilly e fruta estragam rápido fora do frio. Fora da geladeira, só na hora de servir.",
-  "Encomende o seu bolo pelo link da bio."],
- "_origem": {"itens": "dono"}}
+  "Que tal um bolo de morango feito na encomenda?",
+  "Encomende o seu bolo pelo link da bio."
+ ],
+ "_origem": {
+  "itens": "dono",
+  "produto": "dono"
+ },
+ "produto": {
+  "foto": "fotos/doce_bolo_morango.jpg",
+  "nome": "Bolo de morango",
+  "detalhe": "Feito na encomenda, pronto pra geladeira",
+  "preco": 95,
+  "convite": "encomende o seu"
+ }
+}

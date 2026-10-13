@@ -1,6 +1,33 @@
-{"_marca": "cantina-da-vo", "_formato": "carrossel",
+{
+ "_marca": "cantina-da-vo",
+ "_formato": "carrossel",
  "tema": "Marmita no freezer",
  "pares": [
-  {"sobre": "Temperatura", "erro": "Guardar a marmita ainda quente no freezer", "certo": "Esperar esfriar um pouco antes de congelar"},
-  {"sobre": "Etiqueta", "erro": "Congelar sem anotar nada no pote", "certo": "Etiqueta com o prato e a data no pote"},
-  {"sobre": "Descongelar", "erro": "Deixar descongelando em cima da pia", "certo": "Passar pra geladeira na noite anterior"}]}
+  {
+   "sobre": "Temperatura",
+   "erro": "Guardar a marmita ainda quente no freezer",
+   "certo": "Esperar esfriar um pouco antes de congelar",
+   "foto": "fotos/cantina_marmita.jpg"
+  },
+  {
+   "sobre": "Etiqueta",
+   "erro": "Congelar sem anotar nada no pote",
+   "certo": "Etiqueta com o prato e a data no pote"
+  },
+  {
+   "sobre": "Descongelar",
+   "erro": "Deixar descongelando em cima da pia",
+   "certo": "Passar pra geladeira na noite anterior"
+  }
+ ],
+ "produto": {
+  "foto": "fotos/cantina_marmita.jpg",
+  "nome": "Marmita da semana",
+  "detalhe": "Cinco pratos caseiros prontos pra congelar",
+  "preco": 110,
+  "convite": "peça a sua"
+ },
+ "_origem": {
+  "produto": "dono"
+ }
+}

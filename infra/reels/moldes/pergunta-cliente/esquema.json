@@ -1,13 +1,81 @@
 {
- "formatos": ["reel", "story", "carrossel"],
+ "formatos": [
+  "reel",
+  "story",
+  "carrossel"
+ ],
  "voz": "opcional",
  "musica": "leve",
  "campos": {
-  "pergunta": {"tipo": "texto", "min": 6, "max": 90, "real": true, "dica": "copiada de mensagem ou comentário real, sem nome nem @ de quem perguntou"},
-  "canal": {"tipo": "escolha", "opcoes": ["comentario", "mensagem"], "obrigatorio": false},
-  "resposta": {"tipo": "texto", "min": 20, "max": 160},
-  "destaque": {"tipo": "texto", "max": 40, "obrigatorio": false, "dica": "trecho da resposta (igualzinho) que ganha marca-texto"},
-  "falas": {"tipo": "lista", "min": 3, "max": 3, "obrigatorio": false, "item": {"tipo": "texto", "max": 200},
-   "dica": "narração opcional: a pergunta, a resposta, a chamada"}
- }
+  "pergunta": {
+   "tipo": "texto",
+   "min": 6,
+   "max": 90,
+   "real": true,
+   "dica": "copiada de mensagem ou comentário real, sem nome nem @ de quem perguntou"
+  },
+  "canal": {
+   "tipo": "escolha",
+   "opcoes": [
+    "comentario",
+    "mensagem"
+   ],
+   "obrigatorio": false
+  },
+  "resposta": {
+   "tipo": "texto",
+   "min": 20,
+   "max": 160,
+   "dica": "responde a dúvida e leva ao produto"
+  },
+  "destaque": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false,
+   "dica": "trecho da resposta (igualzinho) que ganha marca-texto"
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 4,
+   "max": 4,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "max": 200
+   },
+   "dica": "narração opcional: a pergunta, a resposta, o produto, a chamada"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"
+  }
+ },
+ "publico": "cliente_final"
 }

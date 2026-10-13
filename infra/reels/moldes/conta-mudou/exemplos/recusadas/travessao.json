@@ -1,1 +1,39 @@
-{"_marca": "raiz", "_formato": "reel", "produto": "brigadeiro", "unidade": "unidade", "insumo": "leite condensado", "preco": 2.0, "custo_antes": 0.8, "custo_hoje": 1.1, "quando_antes": "janeiro", "lote": 100, "lote_texto": "Num cento de brigadeiros", "virada": "Reajustar — é conta.", "virada_destaque": "É conta.", "filmagem": "brigadeiro", "falas": ["O leite condensado subiu.", "E o seu brigadeiro continua custando dois reais?", "Em janeiro, cada brigadeiro custava oitenta centavos pra fazer.", "Hoje custa um real e dez.", "O seu lucro por unidade caiu de um e vinte pra noventa centavos.", "Num cento, são trinta reais a menos no seu bolso.", "Reajustar não é ganância. É conta.", "Calcule o preço certo do seu doce na calculadora grátis. O link está na bio."], "nota": "valores de exemplo", "_origem": {"preco": "dono", "custo_antes": "dono", "custo_hoje": "dono"}}
+{
+ "_marca": "raiz",
+ "_formato": "reel",
+ "produto": "brigadeiro",
+ "unidade": "unidade",
+ "insumo": "leite condensado",
+ "preco": 2.0,
+ "custo_antes": 0.8,
+ "custo_hoje": 1.1,
+ "quando_antes": "janeiro",
+ "lote": 100,
+ "lote_texto": "Num cento de brigadeiros",
+ "virada": "Reajustar — é conta.",
+ "virada_destaque": "É conta.",
+ "filmagem": "brigadeiro",
+ "falas": [
+  "O leite condensado subiu.",
+  "E o seu brigadeiro continua custando dois reais?",
+  "Em janeiro, cada brigadeiro custava oitenta centavos pra fazer.",
+  "Hoje custa um real e dez.",
+  "O seu lucro por unidade caiu de um e vinte pra noventa centavos.",
+  "Num cento, são trinta reais a menos no seu bolso.",
+  "Reajustar não é ganância. É conta.",
+  "Na calculadora da Raiz, você vê o preço novo.",
+  "Link na bio."
+ ],
+ "nota": "valores de exemplo",
+ "_origem": {
+  "preco": "dono",
+  "custo_antes": "dono",
+  "custo_hoje": "dono"
+ },
+ "oferta": {
+  "foto": "fotos/raiz_calculadora.jpg",
+  "nome": "Calculadora de preço",
+  "detalhe": "Atualiza o custo e mostra o preço novo",
+  "convite": "faça a conta certa"
+ }
+}

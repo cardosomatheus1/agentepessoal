@@ -1,0 +1,36 @@
+{
+ "_marca": "burger-noite",
+ "_formato": "carrossel",
+ "tema": "O que dizem do hambúrguer artesanal",
+ "assunto": "negocio",
+ "itens": [
+  {
+   "afirmacao": "Smash é carne amassada de qualquer jeito.",
+   "veredito": "mito",
+   "explicacao": "A carne é prensada na chapa bem quente de propósito: é isso que cria a casquinha crocante.",
+   "foto": "fotos/burger_smash.jpg"
+  },
+  {
+   "afirmacao": "Batata rústica é frita com a casca.",
+   "veredito": "verdade",
+   "explicacao": "A casca fica na batata. É ela que dá a crocância e o sabor mais forte.",
+   "foto": "fotos/burger_batata.jpg"
+  },
+  {
+   "afirmacao": "Costela desfiada fica pronta em minutos.",
+   "veredito": "mito",
+   "explicacao": "A costela cozinha por horas até soltar do osso. Por isso ela desfia sozinha.",
+   "foto": "fotos/burger_costela.jpg"
+  }
+ ],
+ "produto": {
+  "foto": "fotos/burger_costela.jpg",
+  "nome": "Burger de costela",
+  "detalhe": "Costela desfiada e cheddar no pão brioche",
+  "preco": 38,
+  "convite": "peça o seu"
+ },
+ "_origem": {
+  "produto": "dono"
+ }
+}

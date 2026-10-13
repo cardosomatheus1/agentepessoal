@@ -1,0 +1,38 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
+ "pista": "Festa de 30 convidados, 4 docinhos por pessoa e a caixa de presente pra mesa.",
+ "midia": "fotos/doce_brigadeiros_caixa.jpg",
+ "conta": [
+  {
+   "rotulo": "Brigadeiro gourmet",
+   "valor": 1.5,
+   "vezes": 120,
+   "unidade": "un"
+  },
+  {
+   "rotulo": "Caixa de presente",
+   "valor": 20
+  }
+ ],
+ "pergunta": "Quanto sai a mesa de docinhos dessa festa?",
+ "opcoes": [
+  "R$ 120",
+  "R$ 200",
+  "R$ 240"
+ ],
+ "certa": "B",
+ "explicacao": "São quatro docinhos pra cada convidado, mais a caixa que vai bonita pra mesa. E dá pra pagar no cartão.",
+ "total_rotulo": "Mesa de docinhos",
+ "assunto": "negocio",
+ "produto": {
+  "foto": "fotos/doce_kit_festa.jpg",
+  "nome": "Kit festa",
+  "detalhe": "Bolo e docinhos com entrega no dia",
+  "convite": "encomende o seu"
+ },
+ "_origem": {
+  "conta": "dono"
+ },
+ "chamada": "Comenta a sua letra"
+}

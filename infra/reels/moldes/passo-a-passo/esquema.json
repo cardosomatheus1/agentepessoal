@@ -1,14 +1,89 @@
 {
- "formatos": ["reel", "carrossel"],
+ "formatos": [
+  "reel",
+  "carrossel"
+ ],
  "voz": "opcional",
  "musica": "leve",
  "campos": {
-  "objetivo": {"tipo": "texto", "min": 8, "max": 60, "dica": "Como congelar bolo sem estragar (modo lista: Antes de abrir a loja)"},
-  "modo": {"tipo": "escolha", "opcoes": ["passos", "lista"], "obrigatorio": false, "dica": "passos = com ordem (linha do tempo); lista = sem ordem, prancheta para salvar"},
-  "passos": {"tipo": "lista", "min": 3, "max": 6, "item": {"tipo": "texto", "min": 4, "max": 70}},
-  "resultado": {"tipo": "texto", "min": 6, "max": 60, "dica": "o que a pessoa ganha seguindo: Bolo fofinho por até 3 meses"},
-  "midia": {"tipo": "filmagem", "obrigatorio": false, "dica": "fundo da promessa e foto do resultado: foto do cliente (fotos/x.jpg), vídeo do cliente ou nome do banco"},
-  "falas": {"tipo": "lista", "min": 6, "max": 9, "obrigatorio": false, "item": {"tipo": "texto", "max": 160},
-   "dica": "narração opcional: promessa, uma por passo, resultado, chamada"}
- }
+  "objetivo": {
+   "tipo": "texto",
+   "min": 8,
+   "max": 60,
+   "dica": "Como congelar bolo sem estragar (modo lista: Antes de abrir a loja)"
+  },
+  "modo": {
+   "tipo": "escolha",
+   "opcoes": [
+    "passos",
+    "lista"
+   ],
+   "obrigatorio": false,
+   "dica": "passos = com ordem (linha do tempo); lista = sem ordem, prancheta para salvar"
+  },
+  "passos": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 6,
+   "item": {
+    "tipo": "texto",
+    "min": 4,
+    "max": 70
+   }
+  },
+  "resultado": {
+   "tipo": "texto",
+   "min": 6,
+   "max": 60,
+   "dica": "o que a pessoa ganha seguindo: Bolo fofinho por até 3 meses"
+  },
+  "midia": {
+   "tipo": "filmagem",
+   "obrigatorio": false,
+   "dica": "foto real do assunto do tutorial (o que o texto fala), registrada em midia/fotos/indice.json; ou vídeo do cliente"
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 7,
+   "max": 10,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "max": 160
+   },
+   "dica": "narração opcional: promessa, uma por passo, resultado, produto, chamada"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"
+  }
+ },
+ "publico": "cliente_final"
 }

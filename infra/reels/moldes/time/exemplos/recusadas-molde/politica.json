@@ -1,0 +1,5 @@
+{"_marca": "doces-da-lu", "_formato": "reel",
+ "tema": "Votar no partido A ou no B", "lado_a": "partido A", "lado_b": "partido B",
+ "argumento_a": "Um argumento qualquer do lado A.", "argumento_b": "Um argumento qualquer do lado B.",
+ "fechamento": "Seja qual for o seu lado, tem bolo aqui.",
+ "produto": {"foto": "fotos/doce_kit_festa.jpg", "nome": "Kit festa"}}

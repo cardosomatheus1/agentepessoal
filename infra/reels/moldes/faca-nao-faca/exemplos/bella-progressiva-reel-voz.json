@@ -1,11 +1,45 @@
-{"_marca": "studio-bella", "_formato": "reel",
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
  "tema": "Cabelo depois da progressiva",
  "pares": [
-  {"sobre": "Lavagem", "erro": "Lavar o cabelo no mesmo dia", "certo": "Esperar o tempo que a profissional indicar"},
-  {"sobre": "Penteado", "erro": "Prender com elástico ou prendedor", "certo": "Deixar solto, no máximo atrás da orelha"},
-  {"sobre": "Shampoo", "erro": "Usar shampoo antirresíduo em casa", "certo": "Shampoo sem sal, do jeito que foi indicado"}],
- "falas": ["Fez progressiva? Três erros que custam caro.",
-  "Lavar o cabelo no mesmo dia.", "Espere o tempo que a profissional indicar.",
-  "Prender com elástico ou prendedor.", "Deixe solto, no máximo atrás da orelha.",
-  "Usar shampoo antirresíduo em casa.", "Use shampoo sem sal, do jeito que foi indicado.",
-  "Agende o seu horário pelo link da bio."]}
+  {
+   "sobre": "Lavagem",
+   "erro": "Lavar o cabelo no mesmo dia",
+   "certo": "Esperar o tempo que a profissional indicar",
+   "foto": "fotos/salao_depois.jpg"
+  },
+  {
+   "sobre": "Penteado",
+   "erro": "Prender com elástico ou prendedor",
+   "certo": "Deixar solto, no máximo atrás da orelha"
+  },
+  {
+   "sobre": "Shampoo",
+   "erro": "Usar shampoo antirresíduo em casa",
+   "certo": "Shampoo sem sal, do jeito que foi indicado",
+   "foto": "fotos/salao_produtos.jpg"
+  }
+ ],
+ "falas": [
+  "Fez progressiva? Três erros que custam caro.",
+  "Lavar o cabelo no mesmo dia.",
+  "Espere o tempo que a profissional indicar.",
+  "Prender com elástico ou prendedor.",
+  "Deixe solto, no máximo atrás da orelha.",
+  "Usar shampoo antirresíduo em casa.",
+  "Use shampoo sem sal, do jeito que foi indicado.",
+  "Faça a sua progressiva com a gente, com todos os cuidados.",
+  "Agende o seu horário pelo link da bio."
+ ],
+ "produto": {
+  "foto": "fotos/salao_depois.jpg",
+  "nome": "Progressiva sem formol",
+  "detalhe": "Com a lista de cuidados pra levar pra casa",
+  "preco": 220,
+  "convite": "agende a sua"
+ },
+ "_origem": {
+  "produto": "dono"
+ }
+}

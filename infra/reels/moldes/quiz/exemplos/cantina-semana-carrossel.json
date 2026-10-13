@@ -1,0 +1,39 @@
+{
+ "_marca": "cantina-da-vo",
+ "_formato": "carrossel",
+ "pista": "Cinco marmitas de segunda a sexta, com a entrega da semana inteira numa vez só.",
+ "midia": "fotos/cantina_marmita.jpg",
+ "conta": [
+  {
+   "rotulo": "Marmita caseira",
+   "valor": 22,
+   "vezes": 5,
+   "unidade": "un"
+  },
+  {
+   "rotulo": "Entrega da semana",
+   "valor": 8
+  }
+ ],
+ "pergunta": "Quanto sai a semana inteira de almoço?",
+ "opcoes": [
+  "R$ 110",
+  "R$ 118",
+  "R$ 140"
+ ],
+ "certa": "B",
+ "explicacao": "São cinco marmitas com uma entrega só. Sai mais em conta que pedir todo dia e você não pensa no almoço.",
+ "total_rotulo": "Semana de almoço",
+ "assunto": "negocio",
+ "produto": {
+  "foto": "fotos/cantina_marmita.jpg",
+  "nome": "Marmita da semana",
+  "detalhe": "Cinco pratos caseiros, entrega na segunda",
+  "preco": 118,
+  "convite": "peça a sua"
+ },
+ "_origem": {
+  "conta": "dono",
+  "produto": "dono"
+ }
+}

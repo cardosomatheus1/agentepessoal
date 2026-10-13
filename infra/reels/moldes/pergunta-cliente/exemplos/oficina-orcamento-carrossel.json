@@ -1,5 +1,17 @@
-{"_marca": "oficina-do-ze", "_formato": "carrossel",
- "pergunta": "Por que vocês só passam o orçamento depois da avaliação?", "canal": "mensagem",
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "carrossel",
+ "pergunta": "Por que vocês só passam o orçamento depois da avaliação?",
+ "canal": "mensagem",
  "resposta": "Porque o mesmo barulho pode ser uma peça simples ou um conserto grande. A avaliação é rápida e você só paga o serviço que aprovar.",
  "destaque": "você só paga o serviço que aprovar",
- "_origem": {"pergunta": "dono"}}
+ "_origem": {
+  "pergunta": "dono"
+ },
+ "produto": {
+  "foto": "fotos/oficina_interior.jpg",
+  "nome": "Avaliação do seu carro",
+  "detalhe": "Com o carro no elevador e orçamento na hora",
+  "convite": "agende a sua"
+ }
+}

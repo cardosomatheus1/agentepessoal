@@ -1,8 +1,0 @@
-{"_marca": "raiz", "_formato": "carrossel",
- "objetivo": "Como calcular o preço de um doce",
- "passos": ["Some o custo de cada ingrediente na quantidade da receita",
-            "Acrescente embalagem, gás e luz gastos no preparo",
-            "Divida pelo número de unidades que a receita rende",
-            "Some o valor das suas horas de trabalho por unidade",
-            "Coloque a margem de lucro em cima desse custo"],
- "resultado": "Preço que paga tudo e ainda sobra lucro"}

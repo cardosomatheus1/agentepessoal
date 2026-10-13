@@ -53,6 +53,19 @@ body.e-claro #agua,body.e-papel #agua{background:linear-gradient(color-mix(in sr
 #ros .mas{position:absolute;left:120px;width:770px;top:1160px;height:300px;font-size:72px;text-align:center}
 #nota{top:345px;bottom:auto}
 #nota.ice{top:342px;left:90px;right:auto;width:400px;text-align:left}
+/* ad close: the product or service with its real photo (every post ends selling, AR Board 13/10) */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1058px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+.slide .pvf{left:84px;width:912px;top:130px;height:640px}
+.slide .pvp{left:114px;top:700px;font-size:56px;height:90px;line-height:90px}
+.slide .pvk{left:84px;width:912px;top:800px}
+.slide .pvn{left:84px;width:912px;top:872px;height:200px;font-size:84px}
+.slide .pvd{left:84px;width:912px;top:1084px;height:120px;font-size:42px}
 </style></head><body><div id="palco">
 
 <div class="cena" id="c0"><div class="cam full">
@@ -88,17 +101,47 @@ body.e-claro #agua,body.e-papel #agua{background:linear-gradient(color-mix(in sr
  <div class="call"><div class="a tit t seg"></div><div class="b t t2 seg"></div></div>
  <div class="mas tit t seg rv">Mas tem o que ninguém coloca na conta</div>
 </div></div>
+<div class="cena" id="pd"><div class="cam full" id="pdin"></div></div>
 <div class="nota" id="nota"></div>
 </div>
 <script src="../motor/motor.js"></script>
 <script>
-// "Custo escondido": the costs an owner forgets to put in the price, summed by the code. Iceberg: the cost everyone
+// "Custo escondido" (publico: dono_de_negocio): for a business that sells to other businesses (like the Raiz); it
+// talks to an owner about the costs they forget to put in the price, summed by the code. Iceberg: the cost everyone
 // remembers is the tip; under the water each hidden cost is a layer as thick as its weight. Variant "rosca": how
 // each R$ 100 of the price splits (the code rounds the shares so they add up to exactly 100).
 // Scenes follow the narration: 0 hook, 1 visible cost, 2 "but there is what nobody counts", one per hidden cost,
-// total, call to action (engine's final scene).
+// total, the product being sold (photo), call to action (engine's final scene).
 const NS = 'http://www.w3.org/2000/svg';
 const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+// ad close: the product with photo, name, price and a nudge (every post ends taking the viewer to the product)
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+// the product of the ad (`produto`, or `oferta` where `produto` already names what the post talks about)
+const OF = F => (F.produto && typeof F.produto === 'object' ? F.produto : F.oferta);
+function vitrine(F, $m, pai, kick) {
+  const P = OF(F), v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk mao t seg', P.convite || kick, v);
+  mk('div', 'pvn tit t seg' + ($m.FORMATO === 'carrossel' ? '' : ' rv'), P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  // stack name and detail by the name's length (one or two lines)
+  const car = $m.FORMATO === 'carrossel', linhas = P.nome.length > (car ? 19 : 17) ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  const y0 = car ? 872 : 1130, lh = car ? 92 : 86; n.style.height = (linhas * lh) + 'px';
+  if (d) d.style.top = (y0 + linhas * lh + 14) + 'px';
+  return v;
+}
+const vitrineLer = (F, kick) => ler(OF(F).convite || kick, OF(F).nome, OF(F).detalhe, OF(F).preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.7)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`;
+  $m.filmagem(v.querySelector('.pvf img'), OF(F).foto, t);
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
 const sv = (tag, at, pai) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); pai.appendChild(e); return e; };
 const r2 = v => Math.round(v * 100) / 100;
 // whole shares of 100 by largest remainder: always add up to 100
@@ -123,7 +166,7 @@ Motor.molde({
     const modo = F.modo || 'iceberg';
     if (F.custo_visivel >= F.preco) $m.erro('o custo que todo mundo lembra já passa do preço: use outro molde');
     if (modo === 'rosca' && sobra <= 0) $m.erro('os custos passam do preço: a rosca não mostra prejuízo, use o modo iceberg');
-    if (window.TEMPOS && F.falas.length !== n + 5) $m.erro(`falas: são ${n + 5} (gancho, lembrado, 'mas tem', um por escondido, total, chamada); vieram ${F.falas.length}`);
+    if (window.TEMPOS && F.falas.length !== n + 6) $m.erro(`falas: são ${n + 6} (gancho, lembrado, 'mas tem', um por escondido, total, produto, chamada); vieram ${F.falas.length}`);
     D = { n, esc, sobra, din, modo };
     // 0 hook
     $('#h0a').textContent = F.produto.charAt(0).toUpperCase() + F.produto.slice(1) + ' a';
@@ -131,6 +174,7 @@ Motor.molde({
     $('#nota').textContent = F.nota || '';
     if (modo === 'rosca') { $('#ice-c').remove(); montarRosca(F, $m); }
     else { $('#ros').remove(); montarIceberg(F, $m); $('#nota').classList.add('ice'); }
+    D.v = vitrine(F, $m, $('#pdin'), 'faça a conta certa');
     return {};
   },
   quadro(t, F, $m) {
@@ -144,6 +188,7 @@ Motor.molde({
     const pb = eb(p(t, 0.4, 0.6)); $('#h0b').style.opacity = cl(pb * 2); $('#h0b').style.transform = `scale(${0.6 + 0.4 * pb})`;
     $m.revela('#h0c', t, Math.max(1.2, ini(1) - 1.5), 0.08); $m.marcador('#mk0', t, Math.max(1.6, ini(1) - 1.0));
     if (D.modo === 'rosca') quadroRosca(t, F, $m); else quadroIceberg(t, F, $m);
+    $m.cena('#pd', t, D.n + 4); vitrineQuadro(D.v, F, $m, t, ini(D.n + 4));
     $('#nota').style.opacity = F.nota && t > ini(1) && t < ini(D.n + 4) ? 1 : 0;
   },
 });

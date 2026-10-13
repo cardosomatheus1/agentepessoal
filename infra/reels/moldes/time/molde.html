@@ -9,6 +9,16 @@ body.e-papel{--tb:var(--cartao);--sb:var(--texto)}
 .pa{background:var(--ta);color:var(--sa);clip-path:polygon(0 0,60% 0,36% 100%,0 100%)}
 .pb{background:var(--tb);color:var(--sb);clip-path:polygon(64% 0,100% 0,100% 100%,40% 100%)}
 body.e-papel .pb{background:repeating-linear-gradient(0deg,rgba(90,60,30,.05) 0 2px,transparent 2px 7px),var(--cartao)}
+.pa .fp,.pb .fp,.tela .bgf{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pa .tn,.pb .tn{position:absolute;inset:0}.pa .tn{background:var(--ta);opacity:.8}.pb .tn{background:var(--tb);opacity:.82}
+#ta0,#tb0,.slide .split .ta,.slide .split .tb{z-index:2}
+.tela .bgw{position:absolute;left:0;top:0;width:1080px;height:1000px;overflow:hidden}
+.tela .bgw:after{content:'';position:absolute;inset:0}
+#c1 .bgw:after{background:linear-gradient(transparent 25%,var(--ta) 66%)}
+#c2 .bgw:after{background:linear-gradient(transparent 25%,var(--tb) 66%)}
+.tela.cf .big{top:560px;height:140px;font-size:136px}.tela.cf .ld{top:705px;height:190px;font-size:84px}
+.slide .tela .bgw{height:700px}
+.slide .tela.cf .big{top:330px;height:130px;font-size:120px}.slide .tela.cf .ld{top:465px;height:180px;font-size:76px}
 .lab{font-size:34px;font-weight:900;letter-spacing:5px;height:46px;white-space:nowrap}
 .vs{position:absolute;width:210px;height:210px;border-radius:50%;background:var(--fundo);border:10px solid var(--texto);color:var(--texto);display:flex;align-items:center;justify-content:center;font-family:var(--ft),sans-serif;font-weight:900;font-size:92px;letter-spacing:-2px;z-index:3}
 .onda{position:absolute;width:210px;height:210px;border-radius:50%;border:8px solid var(--texto);opacity:0;z-index:2}
@@ -82,6 +92,19 @@ body.e-pop #bB,body.e-papel #bB{border:6px solid var(--texto)}
 body.e-pop .slide .corda,body.e-papel .slide .corda{border:4px solid var(--texto)}
 .slide .no{position:absolute;left:490px;top:728px;width:100px;height:100px;border-radius:50%;background:var(--fundo);border:10px solid var(--texto)}
 .slide .f4{position:absolute;left:84px;width:912px;top:870px;height:300px;font-size:52px;font-weight:700;line-height:1.25}
+/* ad close: the product or service with its real photo (every post ends selling, AR Board 13/10) */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1058px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+.slide .pvf{left:84px;width:912px;top:130px;height:640px}
+.slide .pvp{left:114px;top:700px;font-size:56px;height:90px;line-height:90px}
+.slide .pvk{left:84px;width:912px;top:800px}
+.slide .pvn{left:84px;width:912px;top:872px;height:200px;font-size:84px}
+.slide .pvd{left:84px;width:912px;top:1084px;height:120px;font-size:42px}
 </style></head><body><div id="palco">
 
 <div class="cena" id="c0"><div class="cam full">
@@ -89,18 +112,18 @@ body.e-pop .slide .corda,body.e-papel .slide .corda{border:4px solid var(--texto
  <div id="kick" class="mao t seg">qual é o seu time?</div>
  <div id="tema" class="tit t seg rv"></div>
  <div id="split">
-  <div class="pa" id="pa0"><div id="ta0"><div class="lab t seg">TIME A</div><div class="ld tit t seg"></div></div></div>
-  <div class="pb" id="pb0"><div id="tb0"><div class="lab t seg">TIME B</div><div class="ld tit t seg"></div></div></div>
+  <div class="pa" id="pa0"><img class="fp" alt=""><div class="tn"></div><div id="ta0"><div class="lab t seg">TIME A</div><div class="ld tit t seg"></div></div></div>
+  <div class="pb" id="pb0"><img class="fp" alt=""><div class="tn"></div><div id="tb0"><div class="lab t seg">TIME B</div><div class="ld tit t seg"></div></div></div>
   <div class="onda" id="onda0"></div><div class="vs" id="vs0">VS</div>
  </div>
 </div></div>
 
-<div class="cena" id="c1"><div class="tela">
+<div class="cena" id="c1"><div class="tela"><div class="bgw"><img class="bgf" alt=""></div>
  <div class="big tit t seg">TIME A</div><div class="ld tit t seg rv"></div>
  <div class="arg"><div class="q">“</div><div class="tx t seg rv"></div></div>
 </div></div>
 
-<div class="cena" id="c2"><div class="tela">
+<div class="cena" id="c2"><div class="tela"><div class="bgw"><img class="bgf" alt=""></div>
  <div class="big tit t seg">TIME B</div><div class="ld tit t seg rv"></div>
  <div class="arg"><div class="q">“</div><div class="tx t seg rv"></div></div>
 </div></div>
@@ -113,6 +136,7 @@ body.e-pop .slide .corda,body.e-papel .slide .corda{border:4px solid var(--texto
  <div id="c3s" class="mao t seg">A ou B? Defende aqui embaixo</div>
 </div></div>
 
+<div class="cena" id="c5"><div class="cam full" id="c5in"></div></div>
 <div class="cena" id="c4"><div class="cam full">
  <div class="bola" id="bA"></div><div class="bola" id="bB"></div>
  <div id="fech" class="tit t seg rv"></div>
@@ -123,14 +147,48 @@ body.e-pop .slide .corda,body.e-papel .slide .corda{border:4px solid var(--texto
 // "Time A ou Time B": a topic that splits opinion in the trade; the split screen asks the viewer to pick a side and
 // defend it in the comments. Opinion, not data: topics about politics, religion or health are refused.
 const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+// ad close: the product with photo, name, price and a nudge (every post ends taking the viewer to the product)
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+// the product of the ad (`produto`, or `oferta` where `produto` already names what the post talks about)
+const OF = F => (F.produto && typeof F.produto === 'object' ? F.produto : F.oferta);
+function vitrine(F, $m, pai, kick) {
+  const P = OF(F), v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk mao t seg', P.convite || kick, v);
+  mk('div', 'pvn tit t seg' + ($m.FORMATO === 'carrossel' ? '' : ' rv'), P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  // stack name and detail by the name's length (one or two lines)
+  const car = $m.FORMATO === 'carrossel', linhas = P.nome.length > (car ? 19 : 17) ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  const y0 = car ? 872 : 1130, lh = car ? 92 : 86; n.style.height = (linhas * lh) + 'px';
+  if (d) d.style.top = (y0 + linhas * lh + 14) + 'px';
+  return v;
+}
+const vitrineLer = (F, kick) => ler(OF(F).convite || kick, OF(F).nome, OF(F).detalhe, OF(F).preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.7)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`;
+  $m.filmagem(v.querySelector('.pvf img'), OF(F).foto, t);
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
 const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
+let V = null;
+// side photos: inside each half of the split and as the band on top of each team's screen
+function fotos(F, $m, raiz) {
+  [['.pa', F.foto_a], ['.pb', F.foto_b]].forEach(([c, f]) => raiz.querySelectorAll(c).forEach(pn => { const im = pn.querySelector('.fp'); if (f) $m.filmagem(im, f, 0); else { im.remove(); pn.querySelector('.tn').remove(); } }));
+  [['#c1', F.foto_a], ['#c2', F.foto_b]].forEach(([c, f]) => { const tl = raiz.querySelector(c + ' .tela'); if (!tl) return; if (f) { tl.classList.add('cf'); $m.filmagem(tl.querySelector('.bgf'), f, 0); } else tl.querySelector('.bgw').remove(); });
+}
 const PROIBIDO = /\b(politic\w*|eleic\w*|eleitor\w*|partido\w*|president\w*|governo\w*|deputad\w*|senador\w*|prefeit\w*|vereador\w*|esquerdist\w*|direitist\w*|lula|bolsonar\w*|religi\w*|igreja\w*|deus|jesus|biblia|pastor|padre|evangel\w*|catolic\w*|espirit\w*|umbanda|candomble|macumba|vacina\w*|remedio\w*|doenc\w*|cancer|diabet\w*|dieta\w*|emagrec\w*|engord\w*|calori\w*|medic\w*|saude|cura)\b/;
 function checar(F, $m) {
   const tudo = [F.tema, F.lado_a, F.lado_b, F.argumento_a, F.argumento_b, F.fechamento].join(' ').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const m = tudo.match(PROIBIDO); if (m) $m.erro(`tema proibido neste molde (política, religião ou saúde): "${m[0]}"`);
   if (F.lado_a.trim().toLowerCase() === F.lado_b.trim().toLowerCase()) $m.erro('os dois lados precisam ser diferentes');
 }
-const ler = s => 1.2 + s.length / 26;
+
 Motor.molde({
   id: 'time', formatos: ['reel', 'carrossel'], duracaoFinal: 2.6,
   montar(F, M, $m) {
@@ -142,7 +200,10 @@ Motor.molde({
     $('#c2 .ld').textContent = F.lado_b; $('#c2 .tx').textContent = F.argumento_b;
     $('#cA .d').textContent = F.lado_a; $('#cB .d').textContent = F.lado_b;
     $('#fech').textContent = F.fechamento;
-    return { duracoes: [2.6, ler(F.argumento_a), ler(F.argumento_b), 2.0, 0.6 + ler(F.fechamento)] };
+    fotos(F, $m, document);
+    V = vitrine(F, $m, $('#c5in'), 'escolheu o seu? peça aqui');
+    return { duracoes: [Math.max(2.8, ler(F.tema, F.lado_a, F.lado_b, 'qual é o seu time? TIME A TIME B VS')), ler('TIME A', F.lado_a, F.argumento_a), ler('TIME B', F.lado_b, F.argumento_b),
+      ler('Comenta o seu time A B', F.lado_a, F.lado_b, 'A ou B? Defende aqui embaixo'), 0.4 + ler(F.fechamento), vitrineLer(F, 'escolheu o seu? peça aqui')] };
   },
   quadro(t, F, $m) {
     const { $, p, eo, eo5, eio, eb, el, cl, lerp, ini, fim } = $m;
@@ -185,6 +246,8 @@ Motor.molde({
     const j = eio(p(t, a4 + 0.2, 0.9)), bi = eb(p(t, a4 + 0.05, 0.5));
     $('#bA').style.transform = `translateX(${lerp(-200, 0, j)}px) scale(${bi})`; $('#bB').style.transform = `translateX(${lerp(200, 0, j)}px) scale(${bi})`;
     $m.revela('#fech', t, a4 + 0.6, 0.05);
+    $m.cena('#c5', t, 5); vitrineQuadro(V, F, $m, t, ini(5));
+    [['#pa0 .fp', F.foto_a], ['#pb0 .fp', F.foto_b], ['#c1 .bgf', F.foto_a], ['#c2 .bgf', F.foto_b]].forEach(([s2, f]) => { const im = $(s2); if (im && f) $m.filmagem(im, f, t); });
     // a white page under the dark vignette looks dirty: lift the vignette while team B fills the screen
     const vn = $('#vinheta'); if (vn) vn.style.opacity = 1 - eio(p(t, ini(2), 0.4)) + eio(p(t, ini(3), 0.4));
   },
@@ -197,13 +260,13 @@ Motor.molde({
     if (F.midia) { s1.classList.add('foto'); const b = mk('div', 'banner', null, s1); $m.filmagem(mk('img', null, null, b), F.midia, 0); }
     mk('div', 'kick mao t seg', 'qual é o seu time?', s1); mk('div', 'tm tit t seg', F.tema, s1);
     const sp = mk('div', 'split', null, s1);
-    const pa = mk('div', 'pa', null, sp), ta = mk('div', 'ta', null, pa); mk('div', 'lab t seg', 'TIME A', ta); mk('div', 'ld tit t seg', F.lado_a, ta);
-    const pb = mk('div', 'pb', null, sp), tb = mk('div', 'tb', null, pb); mk('div', 'lab t seg', 'TIME B', tb); mk('div', 'ld tit t seg', F.lado_b, tb);
+    const pa = mk('div', 'pa', null, sp); mk('img', 'fp', null, pa); mk('div', 'tn', null, pa); const ta = mk('div', 'ta', null, pa); mk('div', 'lab t seg', 'TIME A', ta); mk('div', 'ld tit t seg', F.lado_a, ta);
+    const pb = mk('div', 'pb', null, sp); mk('img', 'fp', null, pb); mk('div', 'tn', null, pb); const tb = mk('div', 'tb', null, pb); mk('div', 'lab t seg', 'TIME B', tb); mk('div', 'ld tit t seg', F.lado_b, tb);
     mk('div', 'vs', 'VS', sp);
     mk('div', 'pe mao t seg', 'escolhe o seu time e arrasta →', s1);
     // 2, 3: each team
     [['A', F.lado_a, F.argumento_a, 'c1'], ['B', F.lado_b, F.argumento_b, 'c2']].forEach(([l, ld, ar, id]) => {
-      const s = novo(); s.id = id; const tl = mk('div', 'tela', null, s);
+      const s = novo(); s.id = id; const tl = mk('div', 'tela', null, s); mk('img', 'bgf', null, mk('div', 'bgw', null, tl));
       mk('div', 'big tit t seg', 'TIME ' + l, tl); mk('div', 'ld tit t seg', ld, tl);
       const ag = mk('div', 'arg', null, tl); mk('div', 'q', '“', ag); mk('div', 'tx t seg', ar, ag);
       mk('div', 'pe2 mao t seg', l === 'A' ? 'e o time B? arrasta →' : 'agora escolhe →', tl);
@@ -217,6 +280,8 @@ Motor.molde({
     const co = mk('div', 'corda', null, s4); mk('i', null, null, co); mk('i', null, null, co); mk('div', 'no', null, s4);
     mk('div', 'f4 t t2 seg', F.fechamento, s4);
     mk('div', 'pe mao t seg', 'comenta o seu time aqui embaixo', s4);
+    fotos(F, $m, palco);
+    vitrine(F, $m, novo(), 'escolheu o seu? peça aqui');
   },
 });
 </script></body></html>

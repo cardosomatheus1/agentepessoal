@@ -6,6 +6,12 @@
  "voz": "nao",
  "musica": "animada",
  "campos": {
+  "pista": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 100,
+   "dica": "o mínimo pra pessoa conseguir responder, mostrado antes da pergunta (os valores vão em conta)"
+  },
   "pergunta": {
    "tipo": "texto",
    "min": 12,
@@ -15,7 +21,7 @@
   "midia": {
    "tipo": "filmagem",
    "obrigatorio": false,
-   "dica": "foto do cliente (fotos/x.jpg), vídeo do cliente ou nome do banco de filmagens"
+   "dica": "foto real do produto ou serviço da pergunta (fotos/x.jpg), mostrada na pista"
   },
   "opcoes": {
    "tipo": "lista",
@@ -92,7 +98,40 @@
    "tipo": "texto",
    "max": 60,
    "obrigatorio": false,
-   "dica": "dado real: precisa de _origem.fonte"
+   "real": true,
+   "dica": "de onde vem a explicação; obrigatória para alimento, saúde e estética"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"
   }
- }
+ },
+ "publico": "cliente_final"
 }

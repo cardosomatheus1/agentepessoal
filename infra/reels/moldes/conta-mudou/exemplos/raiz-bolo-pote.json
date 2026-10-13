@@ -1,0 +1,40 @@
+{
+ "_marca": "raiz",
+ "_formato": "reel",
+ "_estilo": "claro",
+ "produto": "bolo de pote",
+ "unidade": "pote",
+ "insumo": "chocolate",
+ "preco": 12.0,
+ "custo_antes": 4.5,
+ "custo_hoje": 6.0,
+ "quando_antes": "fevereiro",
+ "lote": 200,
+ "lote_texto": "Em 200 potes por mês",
+ "virada": "Preço justo também é cuidado.",
+ "virada_destaque": "Com conta.",
+ "filmagem": "fotos/doce_bolo_pote.jpg",
+ "falas": [
+  "O chocolate subiu.",
+  "E o seu bolo de pote ainda custa doze reais?",
+  "Em fevereiro, cada pote custava quatro e cinquenta pra fazer.",
+  "Hoje custa seis reais.",
+  "O lucro por pote caiu de sete e cinquenta pra seis reais.",
+  "Em duzentos potes por mês, são trezentos reais a menos.",
+  "Preço justo também é cuidado. Com conta.",
+  "Na calculadora da Raiz, você troca o custo e vê o preço novo na hora.",
+  "Teste grátis pelo link da bio."
+ ],
+ "nota": "valores de exemplo",
+ "oferta": {
+  "foto": "fotos/raiz_calculadora.jpg",
+  "nome": "Calculadora de preço",
+  "detalhe": "Atualiza o custo e mostra o preço novo",
+  "convite": "faça a conta certa"
+ },
+ "_origem": {
+  "preco": "dono",
+  "custo_antes": "dono",
+  "custo_hoje": "dono"
+ }
+}

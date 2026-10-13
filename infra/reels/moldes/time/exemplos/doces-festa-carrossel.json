@@ -1,0 +1,18 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "carrossel",
+ "tema": "Na mesa da festa",
+ "lado_a": "caixa de brigadeiros",
+ "lado_b": "bolo de pote",
+ "argumento_a": "Clássico de aniversário: cada um pega o seu e ainda leva pra casa.",
+ "argumento_b": "Prático, bonito na mesa e cada convidado tem a sua sobremesa inteira.",
+ "fechamento": "Brigadeiro ou bolo de pote: a gente faz os dois pra sua festa.",
+ "foto_a": "fotos/doce_brigadeiros_caixa.jpg",
+ "foto_b": "fotos/doce_bolo_pote.jpg",
+ "produto": {
+  "foto": "fotos/doce_kit_festa.jpg",
+  "nome": "Kit festa",
+  "detalhe": "Bolo decorado e docinhos pra mesa da festa",
+  "convite": "encomende o seu"
+ }
+}

@@ -1,0 +1,25 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "pista": "A oficina abre de segunda a sábado e lota no começo e no fim da semana.",
+ "midia": "fotos/oficina_interior.jpg",
+ "pergunta": "Qual o melhor dia pra deixar o carro na revisão e pegar sem fila?",
+ "opcoes": [
+  "Segunda",
+  "Quarta",
+  "Sábado"
+ ],
+ "certa": "B",
+ "explicacao": "Segunda chega tudo que quebrou no fim de semana e sábado lota. No meio da semana você deixa de manhã e busca no fim do dia.",
+ "assunto": "saude",
+ "produto": {
+  "foto": "fotos/oficina_interior.jpg",
+  "nome": "Revisão completa",
+  "detalhe": "Deixe de manhã e busque no fim do dia",
+  "preco": 290,
+  "convite": "agende a sua"
+ },
+ "_origem": {
+  "produto": "dono"
+ }
+}

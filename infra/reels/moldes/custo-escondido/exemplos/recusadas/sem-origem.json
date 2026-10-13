@@ -1,5 +1,37 @@
-{"_marca": "raiz", "_formato": "reel",
- "produto": "cento de salgado", "preco": 90, "visivel_nome": "massa e recheio", "custo_visivel": 32,
- "escondidos": [{"nome": "Óleo da fritura", "valor": 6}, {"nome": "Gás", "valor": 4}, {"nome": "Embalagem", "valor": 5}],
+{
+ "_marca": "raiz",
+ "_formato": "reel",
+ "produto": "cento de salgado",
+ "preco": 90,
+ "visivel_nome": "massa e recheio",
+ "custo_visivel": 32,
+ "escondidos": [
+  {
+   "nome": "Óleo da fritura",
+   "valor": 6
+  },
+  {
+   "nome": "Gás",
+   "valor": 4
+  },
+  {
+   "nome": "Embalagem",
+   "valor": 5
+  }
+ ],
  "filmagem": "salgado",
- "falas": ["a", "b", "c", "d", "e", "f", "g", "h"]}
+ "falas": [
+  "a",
+  "b",
+  "c",
+  "d",
+  "e",
+  "f",
+  "g",
+  "h"
+ ],
+ "oferta": {
+  "foto": "fotos/raiz_calculadora.jpg",
+  "nome": "Calculadora de preço"
+ }
+}

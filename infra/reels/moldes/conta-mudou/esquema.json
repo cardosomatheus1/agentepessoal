@@ -1,4 +1,6 @@
 {
+ "publico": "dono_de_negocio",
+ "nota": "Molde para quem vende para outros negócios (software de gestão como a Raiz, fornecedor, oficina de frota): fala com o DONO cujo custo subiu. Negócio que vende ao público não usa este molde; para o cliente final existe a variante \"por que o preço mudou\" (AR Board 13/10).",
  "formatos": [
   "reel"
  ],
@@ -59,18 +61,49 @@
   },
   "falas": {
    "tipo": "lista",
-   "min": 8,
-   "max": 8,
+   "min": 9,
+   "max": 9,
    "item": {
     "tipo": "texto",
     "max": 150
    },
-   "dica": "8 falas na ordem das cenas: gancho, preço, custo antes, custo hoje, lucro, lote, virada, chamada; os números iguais aos da ficha"
+   "dica": "9 falas na ordem das cenas: gancho, preço, custo antes, custo hoje, lucro, lote, virada, produto, chamada; os números iguais aos da ficha"
   },
   "nota": {
    "tipo": "texto",
    "max": 40,
    "obrigatorio": false
+  },
+  "oferta": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: o que o post vende ao dono, com foto real"
   }
  }
 }

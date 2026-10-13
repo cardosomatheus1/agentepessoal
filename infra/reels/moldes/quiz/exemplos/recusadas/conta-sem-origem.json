@@ -1,5 +1,5 @@
 {"_marca": "raiz", "_formato": "carrossel",
- "pergunta": "Qual o preço mínimo de um bolo de 2 kg pra não trabalhar de graça?",
+ "pista": "Bolo de 2 kg com ingredientes, caixa e quatro horas de trabalho.", "pergunta": "Qual o preço mínimo de um bolo de 2 kg pra não trabalhar de graça?",
  "opcoes": ["R$ 50", "R$ 90", "R$ 110"], "certa": "C",
  "explicacao": "Abaixo disso, alguém paga a conta: o ingrediente ou as suas horas.",
  "conta": [{"rotulo": "Ingredientes", "valor": 35}, {"rotulo": "Caixa e embalagem", "valor": 8},

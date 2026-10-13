@@ -1,4 +1,18 @@
-{"_marca": "sem-logo", "_formato": "reel",
- "pergunta": "Quanto tempo demora pra fazer a barra de uma calça?", "canal": "mensagem",
+{
+ "_marca": "sem-logo",
+ "_formato": "reel",
+ "pergunta": "Quanto tempo demora pra fazer a barra de uma calça?",
+ "canal": "mensagem",
  "resposta": "Barra simples fica pronta no mesmo dia se você deixar até o meio-dia. Barra original de jeans leva dois dias.",
- "_origem": {"pergunta": "dono"}}
+ "_origem": {
+  "pergunta": "dono",
+  "produto": "dono"
+ },
+ "produto": {
+  "foto": "fotos/atelie_barra.jpg",
+  "nome": "Barra de calça",
+  "detalhe": "Pronta no mesmo dia, se deixar até o meio-dia",
+  "preco": 25,
+  "convite": "traga a sua"
+ }
+}

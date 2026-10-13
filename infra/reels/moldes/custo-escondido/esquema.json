@@ -1,20 +1,110 @@
 {
- "formatos": ["reel"],
+ "publico": "dono_de_negocio",
+ "formatos": [
+  "reel"
+ ],
  "voz": "sim",
  "musica": null,
  "campos": {
-  "produto": {"tipo": "texto", "min": 3, "max": 24, "dica": "cento de salgado, corte de cabelo, frete até o centro"},
-  "preco": {"tipo": "dinheiro", "real": true, "min": 0.01},
-  "visivel_nome": {"tipo": "texto", "min": 3, "max": 24, "dica": "o custo que todo mundo lembra: massa e recheio, produto, combustível"},
-  "custo_visivel": {"tipo": "dinheiro", "real": true, "min": 0.01},
-  "escondidos": {"tipo": "lista", "min": 3, "max": 6, "item": {
-    "nome": {"tipo": "texto", "min": 2, "max": 24},
-    "valor": {"tipo": "dinheiro", "real": true, "min": 0.01},
-    "em_media": {"tipo": "booleano", "obrigatorio": false, "dica": "true quando o valor é estimativa ou média, não valor exato"}},
-   "dica": "os custos que ninguém põe no preço, do maior para o menor"},
-  "modo": {"tipo": "escolha", "opcoes": ["iceberg", "rosca"], "obrigatorio": false, "dica": "rosca = pra onde vai cada R$ 100 (antigo 'pra onde vai cada real')"},
-  "filmagem": {"tipo": "filmagem", "dica": "fundo do gancho: nome do banco, vídeo do cliente ou foto do cliente (fotos/x.jpg)"},
-  "falas": {"tipo": "lista", "min": 8, "max": 11, "item": {"tipo": "texto", "max": 160},
-   "dica": "na ordem das cenas: gancho com o preço, custo que todo mundo lembra, 'mas tem o que ninguém coloca', uma fala por escondido, total escondido, chamada; números iguais aos da ficha"}
- }
+  "produto": {
+   "tipo": "texto",
+   "min": 3,
+   "max": 24,
+   "dica": "o que o dono vende: cento de salgado, marmita, frete de entrega"
+  },
+  "preco": {
+   "tipo": "dinheiro",
+   "real": true,
+   "min": 0.01
+  },
+  "visivel_nome": {
+   "tipo": "texto",
+   "min": 3,
+   "max": 24,
+   "dica": "o custo que todo mundo lembra: massa e recheio, produto, combustível"
+  },
+  "custo_visivel": {
+   "tipo": "dinheiro",
+   "real": true,
+   "min": 0.01
+  },
+  "escondidos": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 6,
+   "item": {
+    "nome": {
+     "tipo": "texto",
+     "min": 2,
+     "max": 24
+    },
+    "valor": {
+     "tipo": "dinheiro",
+     "real": true,
+     "min": 0.01
+    },
+    "em_media": {
+     "tipo": "booleano",
+     "obrigatorio": false,
+     "dica": "true quando o valor é estimativa ou média, não valor exato"
+    }
+   },
+   "dica": "os custos que ninguém põe no preço, do maior para o menor"
+  },
+  "modo": {
+   "tipo": "escolha",
+   "opcoes": [
+    "iceberg",
+    "rosca"
+   ],
+   "obrigatorio": false,
+   "dica": "rosca = pra onde vai cada R$ 100 (antigo 'pra onde vai cada real')"
+  },
+  "filmagem": {
+   "tipo": "filmagem",
+   "dica": "fundo do gancho: nome do banco, vídeo do cliente ou foto do cliente (fotos/x.jpg)"
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 9,
+   "max": 12,
+   "item": {
+    "tipo": "texto",
+    "max": 160
+   },
+   "dica": "na ordem das cenas: gancho com o preço, custo que todo mundo lembra, 'mas tem o que ninguém coloca', uma fala por escondido, total escondido, produto, chamada; números iguais aos da ficha"
+  },
+  "oferta": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: o que o post vende ao dono (a calculadora, o plano de manutenção), com foto real"
+  }
+ },
+ "nota": "Molde para quem vende para outros negócios (software de gestão como a Raiz, consultoria, fornecedor, oficina de frota): o texto fala com o DONO de um negócio sobre o custo dele. Um negócio que vende ao público (doceria, salão, hamburgueria) não usa este molde (AR Board 13/10)."
 }

@@ -33,6 +33,19 @@ body.f-story #rp0{height:620px}
 .slide .rp{left:84px;width:912px;top:510px;height:690px}.slide .rp .rs{font-size:58px;top:160px}
 .slide .pe{position:absolute;left:84px;right:84px;top:1000px;height:80px;font-size:58px;color:var(--destaque);white-space:nowrap}
 .slide #fio{top:470px;height:40px;left:148px}
+/* ad close: the product or service with its real photo (every post ends selling, AR Board 13/10) */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1058px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+.slide .pvf{left:84px;width:912px;top:130px;height:640px}
+.slide .pvp{left:114px;top:700px;font-size:56px;height:90px;line-height:90px}
+.slide .pvk{left:84px;width:912px;top:800px}
+.slide .pvn{left:84px;width:912px;top:872px;height:200px;font-size:84px}
+.slide .pvd{left:84px;width:912px;top:1084px;height:120px;font-size:42px}
 </style></head><body><div id="palco">
 <div class="cena" id="c0"><div class="cam full">
  <div id="k0" class="chip t seg"></div>
@@ -43,19 +56,50 @@ body.f-story #rp0{height:620px}
  <div class="rp cartao" id="rp0"><div class="av mar"></div><div class="cab"><div class="q t seg"></div><div class="w t t2 seg">respondeu</div></div>
   <div class="dig"><i></i><i></i><i></i></div><div class="rs t seg rv"></div></div>
 </div></div>
+<div class="cena" id="c2"><div class="cam full" id="c2in"></div></div>
 </div>
 <script src="../motor/motor.js"></script>
 <script>
 // "Pergunta do cliente": one real question per post (no name, no photo of who asked), shown as the comment it came
-// in, and the business's answer revealed under it. Optional narration: question, answer, call to action.
+// in, the business's answer revealed under it, then the product with its photo (the post is an ad).
+// Optional narration: question, answer, product, call to action.
 const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+// ad close: the product with photo, name, price and a nudge (every post ends taking the viewer to the product)
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+// the product of the ad (`produto`, or `oferta` where `produto` already names what the post talks about)
+const OF = F => (F.produto && typeof F.produto === 'object' ? F.produto : F.oferta);
+function vitrine(F, $m, pai, kick) {
+  const P = OF(F), v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk mao t seg', P.convite || kick, v);
+  mk('div', 'pvn tit t seg' + ($m.FORMATO === 'carrossel' ? '' : ' rv'), P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  // stack name and detail by the name's length (one or two lines)
+  const car = $m.FORMATO === 'carrossel', linhas = P.nome.length > (car ? 19 : 17) ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  const y0 = car ? 872 : 1130, lh = car ? 92 : 86; n.style.height = (linhas * lh) + 'px';
+  if (d) d.style.top = (y0 + linhas * lh + 14) + 'px';
+  return v;
+}
+const vitrineLer = (F, kick) => ler(OF(F).convite || kick, OF(F).nome, OF(F).detalhe, OF(F).preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.7)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`;
+  $m.filmagem(v.querySelector('.pvf img'), OF(F).foto, t);
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
 let L = {};
+const KICK = 'tem aqui pra você';
 const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
 function checar(F, $m) {
   if (/@\w/.test(F.pergunta)) $m.erro('pergunta: sem @ nem nome de quem perguntou');
   if (F.destaque && !F.resposta.includes(F.destaque)) $m.erro('destaque: tem de ser um trecho igualzinho da resposta');
   const voz = window.TEMPOS && window.TEMPOS.length > 1;
-  if (voz && F.falas.length !== 3) $m.erro('falas: são 3 (pergunta, resposta, chamada)');
+  if (voz && F.falas.length !== 4) $m.erro('falas: são 4 (pergunta, resposta, produto, chamada)');
 }
 // fills question card, reply card and the header chip inside `raiz`
 function encher(F, M, $m, raiz) {
@@ -86,13 +130,14 @@ Motor.molde({
     const fundoQ = top - 150 + hq * 0.78;
     $('#fio').style.top = fundoQ + 'px'; $('#fio').style.height = '70px';
     const hr = 150 + lr * 66 + 50; $('#rp0').style.top = (fundoQ + 64) + 'px'; $('#rp0').style.height = hr + 'px';
-    L = { hq, hr };
-    return { duracoes: [3.4, 1.8 + F.resposta.length / 22] };
+    L = { hq, hr, v: vitrine(F, $m, $('#c2in'), KICK) };
+    return { duracoes: [Math.max(3.4, ler(F.pergunta, 'PERGUNTA DE CLIENTE Pergunta de cliente comentou no post chega toda semana por aqui')), 1.5 + ler(F.resposta, M.nome, 'respondeu'), vitrineLer(F, KICK)] };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini } = $m;
     const a1 = ini(1);
     $m.cena('#c0', t, 0, 1, { push: 0.02 });
+    $m.cena('#c2', t, 2); vitrineQuadro(L.v, F, $m, t, ini(2));
     // the question arrives like a notification: drops from the top, pings, words come in
     $m.entra('#k0', t, 0.05, 0.4, 20, 0.2);
     const c = eb(p(t, 0.15, 0.7)), sobe = eio(p(t, a1, 0.7));
@@ -123,8 +168,9 @@ Motor.molde({
     const cm2 = cm.cloneNode(true); cm2.classList.replace('g', 'p'); s2.appendChild(cm2);
     s2.appendChild($m.$('#fio'));
     s2.appendChild(rp); rp.id = ''; rp.querySelector('.rs').classList.remove('rv'); rp.querySelector('.dig').remove();
-    c0.remove();
+    c0.remove(); $m.$('#c2').remove();
     encher(F, M, $m, s1); encher(F, M, $m, s2);
+    vitrine(F, $m, mk('div', 'slide', null, palco), KICK);
     // card heights follow the text
     const lg = Math.min(5, Math.max(1, Math.ceil(F.pergunta.length / 16))), hg = 170 + lg * 90 + 50;
     cm.style.height = hg + 'px'; cm.querySelector('.pq').style.height = (lg * 90) + 'px'; pe.style.top = (260 + hg + 60) + 'px';

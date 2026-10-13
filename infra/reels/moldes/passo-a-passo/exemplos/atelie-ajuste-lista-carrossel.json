@@ -1,5 +1,20 @@
-{"_marca": "sem-logo", "_formato": "carrossel", "modo": "lista",
+{
+ "_marca": "sem-logo",
+ "_formato": "carrossel",
+ "modo": "lista",
  "objetivo": "Antes de levar a roupa pro ajuste",
- "passos": ["Lave a peça: tecido encolhe na primeira lavagem", "Leve o sapato que vai usar com ela",
-            "Vista a roupa de baixo certa pra prova", "Separe uma foto de como você quer que fique"],
- "resultado": "Ajuste certo logo na primeira prova"}
+ "passos": [
+  "Lave a peça: tecido encolhe na primeira lavagem",
+  "Leve o sapato que vai usar com ela",
+  "Vista a roupa de baixo certa pra prova",
+  "Separe uma foto de como você quer que fique"
+ ],
+ "resultado": "Ajuste certo logo na primeira prova",
+ "midia": "fotos/atelie_vestido.jpg",
+ "produto": {
+  "foto": "fotos/atelie_maquina.jpg",
+  "nome": "Ajustes e consertos",
+  "detalhe": "Barra, cintura e manga com prova no ateliê",
+  "convite": "traga a sua peça"
+ }
+}

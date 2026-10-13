@@ -17,7 +17,13 @@ body.e-pop .pn .lb,body.e-claro .pn .lb,body.e-papel .pn .lb{color:var(--texto)}
 .hd{position:absolute;left:84px;width:840px;height:84px;display:flex;align-items:center;gap:24px}
 .hd .n{flex:none;font-size:36px;height:62px;line-height:62px;padding:0 24px;white-space:nowrap}
 .hd .s{flex:1;height:84px;font-size:64px;line-height:84px;white-space:nowrap}
-.par .hd{top:385px}.par .pn.ruim{top:490px}.par .pn.bom,.par .vazio{top:930px}.par .seta{top:845px}
+.par .hd{top:385px}.par .pn.ruim{top:490px;height:440px}.par .pn.bom,.par .vazio{top:965px;height:440px}.par .seta{top:898px}
+.par .pn .tx{top:108px;font-size:68px}
+/* pair with a photo of the thing it talks about */
+.pft{position:absolute;left:80px;width:830px;top:485px;height:300px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.pft img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.par.cf .pn.ruim{top:805px;height:300px}.par.cf .pn.bom,.par.cf .vazio{top:1148px;height:300px}.par.cf .seta{top:1078px}
+.par.cf .pn .tx{top:92px;font-size:54px;bottom:24px}.par.cf .pn .ic{top:28px;width:100px;height:100px}.par.cf .pn .ic svg{width:100px;height:100px}.par.cf .pn .lb{top:30px}
 /* cover */
 #bg{position:absolute;left:0;top:0;width:1080px;height:980px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
 #bgI{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -38,9 +44,24 @@ body.e-pop .pn .lb,body.e-claro .pn .lb,body.e-papel .pn .lb{color:var(--texto)}
 .slide #m0{left:84px;width:912px;top:1010px}
 .slide .pe{position:absolute;left:84px;right:84px;top:1196px;height:70px;font-size:52px;color:var(--destaque);white-space:nowrap}
 .slide.par .hd{top:150px;left:84px;width:912px}
-.slide.par .pn{left:84px;width:912px;height:390px}.slide.par .pn.ruim{top:270px}.slide.par .pn.bom{top:740px}.slide.par .seta{top:655px;left:490px}.slide.par .pn .tx{font-size:64px;top:104px}
+.slide.par .pn{left:84px;width:912px;height:420px}.slide.par .pn.ruim{top:255px}.slide.par .pn.bom{top:745px}.slide.par .seta{top:665px;left:490px}.slide.par .pn .tx{font-size:66px;top:104px}
+.slide .pft{left:84px;width:912px;top:240px;height:250px}
+.slide.par.cf .pn{height:300px}.slide.par.cf .pn.ruim{top:510px}.slide.par.cf .pn.bom{top:860px}.slide.par.cf .seta{top:787px}.slide.par.cf .pn .tx{font-size:54px;top:92px}
 .slide .pg{position:absolute;right:84px;top:1196px;height:44px;font-size:32px;font-weight:800;color:var(--texto2)}
 .slide .mm{position:absolute;left:84px;width:700px;top:1186px;height:66px;font-size:50px;color:var(--destaque);white-space:nowrap}
+/* ad close: the product or service with its real photo (every post ends selling, AR Board 13/10) */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1058px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+.slide .pvf{left:84px;width:912px;top:130px;height:640px}
+.slide .pvp{left:114px;top:700px;font-size:56px;height:90px;line-height:90px}
+.slide .pvk{left:84px;width:912px;top:800px}
+.slide .pvn{left:84px;width:912px;top:872px;height:200px;font-size:84px}
+.slide .pvd{left:84px;width:912px;top:1084px;height:120px;font-size:42px}
 </style></head><body><div id="palco">
 <div class="cena" id="c0"><div class="cam full">
  <div id="bg"><img id="bgI" alt=""></div>
@@ -57,12 +78,40 @@ body.e-pop .pn .lb,body.e-claro .pn .lb,body.e-papel .pn .lb{color:var(--texto)}
 // mistake and the fix always talk about the same subject. The X and the tick are drawn stroke by stroke.
 // Optional narration: cover, then mistake and fix of each pair, call to action.
 const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+// ad close: the product with photo, name, price and a nudge (every post ends taking the viewer to the product)
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+// the product of the ad (`produto`, or `oferta` where `produto` already names what the post talks about)
+const OF = F => (F.produto && typeof F.produto === 'object' ? F.produto : F.oferta);
+function vitrine(F, $m, pai, kick) {
+  const P = OF(F), v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk mao t seg', P.convite || kick, v);
+  mk('div', 'pvn tit t seg' + ($m.FORMATO === 'carrossel' ? '' : ' rv'), P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  // stack name and detail by the name's length (one or two lines)
+  const car = $m.FORMATO === 'carrossel', linhas = P.nome.length > (car ? 19 : 17) ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  const y0 = car ? 872 : 1130, lh = car ? 92 : 86; n.style.height = (linhas * lh) + 'px';
+  if (d) d.style.top = (y0 + linhas * lh + 14) + 'px';
+  return v;
+}
+const vitrineLer = (F, kick) => ler(OF(F).convite || kick, OF(F).nome, OF(F).detalhe, OF(F).preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.7)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`;
+  $m.filmagem(v.querySelector('.pvf img'), OF(F).foto, t);
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
 const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
 const X = '<svg viewBox="0 0 100 100"><path class="tr" d="M31 31 L69 69" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/><path class="tr" d="M69 31 L31 69" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>';
 const V = '<svg viewBox="0 0 100 100"><path class="tr" d="M27 53 L43 69 L74 33" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>';
 function checar(F, $m) {
   const n = F.pares.length, voz = window.TEMPOS && window.TEMPOS.length > 1;
-  if (voz && F.falas.length !== 2 + 2 * n) $m.erro(`falas: são ${2 + 2 * n} (capa, erro e certo de cada par, chamada); vieram ${F.falas.length}`);
+  if (voz && F.falas.length !== 3 + 2 * n) $m.erro(`falas: são ${3 + 2 * n} (capa, erro e certo de cada par, produto, chamada); vieram ${F.falas.length}`);
   F.pares.forEach((q, i) => { if (q.erro.trim().toLowerCase() === q.certo.trim().toLowerCase()) $m.erro(`pares[${i + 1}]: erro e certo iguais`); });
 }
 function capa(F, $m, raiz) {
@@ -74,6 +123,7 @@ function painel(cls, rot, txt, icon, pai) {
   mk('div', 'lb t seg', rot, p); mk('div', 'tx t seg rv', txt, p); return p;
 }
 function par(F, q, i, pai) {
+  if (q.foto) { pai.closest('.cena, .slide').classList.add('cf'); $m0().filmagem(mk('img', null, null, mk('div', 'pft', null, pai)), q.foto, 0); }
   const hd = mk('div', 'hd', null, pai); mk('div', 'n chip t seg', `${i + 1}/${F.pares.length}`, hd); mk('div', 's tit t seg', q.sobre, hd);
   const r = painel('ruim', 'NÃO FAÇA', q.erro, X, pai);
   const se = mk('div', 'seta', null, pai); se.innerHTML = Motor.icone('seta');
@@ -81,7 +131,9 @@ function par(F, q, i, pai) {
   return { hd, r, b, se };
 }
 const tr = (e, k) => e.setAttribute('stroke-dashoffset', (1 - k).toFixed(3));
-let PS = [];
+let PS = [], VD = null;
+const KICK = 'faz certo com a gente';
+const $m0 = () => Motor;
 Motor.molde({
   id: 'faca-nao-faca', formatos: ['carrossel', 'reel'],
   montar(F, M, $m) {
@@ -93,7 +145,10 @@ Motor.molde({
       const v = mk('div', 'vazio', '?', cam);
       PS.push(Object.assign(par(F, q, i, cam), { sc, v }));
     });
-    const d = [2.8]; F.pares.forEach(q => d.push(1.5 + q.erro.length / 26, 1.7 + q.certo.length / 26));
+    const pv = mk('div', 'cena', null, $('#palco')); pv.id = 'prod'; VD = vitrine(F, $m, mk("div", "cam full", null, pv), KICK);
+    const d = [ler(F.tema, F.pares.length + ' erros que custam caro e o jeito certo de cada um')];
+    F.pares.forEach((q, i) => d.push(0.3 + ler(q.erro, q.sobre, '0/0 NÃO FAÇA'), 0.3 + ler(q.certo, 'FAÇA')));
+    d.push(vitrineLer(F, KICK));
     return { duracoes: d };
   },
   quadro(t, F, $m) {
@@ -105,8 +160,10 @@ Motor.molde({
     $('#bx').style.transform = `translateX(${(1 - bx) * -500}px) rotate(${(1 - bx) * -200}deg)`; $('#bv').style.transform = `translateX(${(1 - bv) * 500}px) rotate(${(1 - bv) * 200}deg)`;
     $$('#bx .tr').forEach((e, k) => tr(e, eio(p(t, 0.6 + k * 0.18, 0.22)))); $$('#bv .tr').forEach(e => tr(e, eio(p(t, 0.95, 0.35))));
     $m.entra('#k0', t, 0.6, 0.5, 30); $m.revela('#t0', t, 0.8, 0.07); $m.entra('#m0', t, 1.6, 0.5, 20);
+    const ip = 1 + 2 * PS.length; $m.cena('#prod', t, ip); vitrineQuadro(VD, F, $m, t, ini(ip));
     PS.forEach((o, i) => {
       const a = ini(1 + 2 * i), b = ini(2 + 2 * i); $m.cena(o.sc, t, 1 + 2 * i, 2 + 2 * i);
+      const ft = o.sc.querySelector('.pft'); if (ft) { const fq = eo5(p(t, a + 0.05, 0.6)); ft.style.opacity = fq; ft.style.transform = `scale(${0.94 + 0.06 * fq})`; $m.filmagem(ft.querySelector('img'), F.pares[i].foto, t); }
       const h = eo5(p(t, a + 0.05, 0.5)); o.hd.style.opacity = h; o.hd.style.transform = `translateY(${(1 - h) * -40}px)`;
       // mistake: panel slams from the left, X drawn, a "no" shake
       const r = eb(p(t, a + 0.1, 0.55)), dim = eo(p(t, b, 0.4));
@@ -139,9 +196,10 @@ Motor.molde({
     F.pares.forEach((q, i) => {
       const s = mk('div', 'slide par', null, palco); const o = par(F, q, i, s);
       $m.$$('.tr', s).forEach(e => tr(e, 1)); $m.$$('.rv', s).forEach(e => e.classList.remove('rv'));
-      mk('div', 'pg t', `${i + 2}/${F.pares.length + 2}`, s);
+      mk('div', 'pg t', `${i + 2}/${F.pares.length + 3}`, s);
       if (i === 0) mk('div', 'mm mao t seg', 'salva pra lembrar depois', s);
     });
+    vitrine(F, $m, mk('div', 'slide', null, palco), KICK);
   },
 });
 </script></body></html>

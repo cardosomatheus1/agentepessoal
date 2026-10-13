@@ -1,6 +1,7 @@
 <!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="../motor/motor.css">
 <style>
+#nota{top:342px;bottom:auto}
 /* scene 0+1: footage hero, then the price tag */
 #heroBox{position:absolute;left:0;top:0;width:1080px;height:1180px;overflow:hidden}
 #hero{position:absolute;left:-420px;top:0;width:1920px;height:1180px;object-fit:cover;filter:saturate(1.1) contrast(1.05) brightness(.9)}
@@ -39,6 +40,19 @@
 /* scene 6 */
 #c6a{left:80px;right:80px;top:560px;height:260px;font-size:112px;line-height:1.02}
 #c6b{left:160px;right:160px;top:900px;height:260px;font-size:190px;line-height:1.15}
+/* ad close: the product or service with its real photo (every post ends selling, AR Board 13/10) */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1058px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+.slide .pvf{left:84px;width:912px;top:130px;height:640px}
+.slide .pvp{left:114px;top:700px;font-size:56px;height:90px;line-height:90px}
+.slide .pvk{left:84px;width:912px;top:800px}
+.slide .pvn{left:84px;width:912px;top:872px;height:200px;font-size:84px}
+.slide .pvd{left:84px;width:912px;top:1084px;height:120px;font-size:42px}
 </style></head><body><div id="palco">
 
 <div class="cena" id="c0"><div class="cam full">
@@ -86,14 +100,47 @@
  <div class="ctr tit t seg" id="c6b"><span class="mk" id="mk6"></span></div>
 </div></div>
 
+<div class="cena" id="pd"><div class="cam full" id="pdin"></div></div>
 <div class="nota" id="nota"></div>
 </div>
 <script src="../motor/motor.js"></script>
 <script>
 // "A conta mudou": an input got more expensive and the price stayed; shows the profit before and after.
-// Scenes follow the 8 lines of narration (falas): 0 hook, 1 price tag, 2 cost then, 3 cost now, 4 profit,
-// 5 batch loss, 6 turn, 7 call to action (engine's final scene). Every number comes from the ficha.
+// Público: dono_de_negocio. For a business that sells to other businesses (the Raiz, a fleet workshop): it talks
+// to an owner whose cost went up. Ends on the product being sold to that owner (oferta, with photo).
+// Scenes follow the 9 lines of narration (falas): 0 hook, 1 price tag, 2 cost then, 3 cost now, 4 profit,
+// 5 batch loss, 6 turn, 7 the product (oferta), 8 call to action (engine's final scene). Every number comes from the ficha.
 let D = {};
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+// ad close: the product with photo, name, price and a nudge (every post ends taking the viewer to the product)
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+// the product of the ad (`produto`, or `oferta` where `produto` already names what the post talks about)
+const OF = F => (F.produto && typeof F.produto === 'object' ? F.produto : F.oferta);
+function vitrine(F, $m, pai, kick) {
+  const P = OF(F), v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk mao t seg', P.convite || kick, v);
+  mk('div', 'pvn tit t seg' + ($m.FORMATO === 'carrossel' ? '' : ' rv'), P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  // stack name and detail by the name's length (one or two lines)
+  const car = $m.FORMATO === 'carrossel', linhas = P.nome.length > (car ? 19 : 17) ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  const y0 = car ? 872 : 1130, lh = car ? 92 : 86; n.style.height = (linhas * lh) + 'px';
+  if (d) d.style.top = (y0 + linhas * lh + 14) + 'px';
+  return v;
+}
+const vitrineLer = (F, kick) => ler(OF(F).convite || kick, OF(F).nome, OF(F).detalhe, OF(F).preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.7)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`;
+  $m.filmagem(v.querySelector('.pvf img'), OF(F).foto, t);
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
+
 Motor.molde({
   id: 'conta-mudou', formatos: ['reel'],
   montar(F, M, $m) {
@@ -102,6 +149,8 @@ Motor.molde({
     if (F.custo_hoje <= F.custo_antes) $m.erro('o custo de hoje precisa ser maior que o de antes');
     if (lucroA <= 0) $m.erro('o preço precisa ser maior que o custo de antes');
     D = { lucroA, lucroH, pct: Math.round((lucroH - lucroA) / lucroA * 100), perda: (F.custo_hoje - F.custo_antes) * F.lote };
+    if (window.TEMPOS && window.TEMPOS.length > 1 && F.falas.length !== 9) $m.erro('falas: são 9 (gancho, preço, custo antes, custo hoje, lucro, lote, virada, produto, chamada)');
+    D.v = vitrine(F, $m, $('#pdin'), 'faça a conta certa');
     $('#h0a').textContent = 'O ' + F.insumo; $('#h0b').textContent = 'subiu';
     $('#chip0').innerHTML = $m.icone('seta') + ' '; $('#chip0').append('insumo mais caro');
     $('#tag .k').textContent = F.produto.toUpperCase();
@@ -179,6 +228,7 @@ Motor.molde({
     const mq = eo5(p(t, S(5) + 1.7, 0.9)); $('#menos').textContent = '−' + brl(D.perda * mq, 0); $('#menos').style.opacity = cl(mq * 4);
     $m.revela('#c5s', t, S(5) + 2.2);
     // 6 turn
+    $m.cena('#pd', t, 7); vitrineQuadro(D.v, F, $m, t, S(7));
     $m.cena('#c6', t, 6); $m.revela('#c6a', t, S(6) + 0.1, 0.09);
     const m6 = eo5(p(t, S(6) + 1.15, 0.5)); $('#c6b').style.opacity = cl(m6 * 3); $('#c6b').style.transform = `scale(${1.6 - 0.6 * m6})`; $m.marcador('#mk6', t, S(6) + 1.4);
     $('#nota').style.opacity = (t > S(2) && t < S(7)) ? 1 : 0;

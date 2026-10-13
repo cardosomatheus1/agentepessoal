@@ -1,6 +1,9 @@
 {"_marca": "studio-bella", "_formato": "reel",
  "tema": "Depois de lavar o cabelo",
- "lado_a": "escova sempre", "lado_b": "secar natural",
+ "lado_a": "escova sempre", "lado_b": "cachos ao natural",
  "argumento_a": "Fio alinhado, brilho e aquele cabelo de salão que dura a semana toda.",
  "argumento_b": "Menos calor no fio, menos tempo no espelho e o movimento natural aparece.",
- "fechamento": "Os dois jeitos têm cuidado certo. Conta o seu e a gente indica o produto que combina."}
+ "fechamento": "Os dois jeitos têm cuidado certo. Conta o seu e a gente indica o que combina.",
+ "foto_a": "fotos/salao_escova.jpg", "foto_b": "fotos/salao_cachos.jpg",
+ "produto": {"foto": "fotos/salao_escova.jpg", "nome": "Escova modelada", "detalhe": "Com proteção térmica e finalização", "preco": 60, "convite": "agende a sua"},
+ "_origem": {"produto": "dono"}}

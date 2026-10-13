@@ -1,0 +1,54 @@
+{
+ "_marca": "raiz",
+ "_formato": "reel",
+ "modo": "rosca",
+ "_estilo": "claro",
+ "produto": "marmita",
+ "preco": 25,
+ "visivel_nome": "comida da marmita",
+ "custo_visivel": 9,
+ "escondidos": [
+  {
+   "nome": "Embalagem e talher",
+   "valor": 2
+  },
+  {
+   "nome": "Gás e luz",
+   "valor": 1.5,
+   "em_media": true
+  },
+  {
+   "nome": "Taxa do aplicativo",
+   "valor": 5
+  },
+  {
+   "nome": "Entrega",
+   "valor": 3
+  }
+ ],
+ "filmagem": "fotos/cantina_marmita.jpg",
+ "falas": [
+  "Marmita a vinte e cinco reais. Pra onde vai cada real?",
+  "A comida leva trinta e seis de cada cem. Isso todo mundo lembra.",
+  "Mas tem o que ninguém coloca na conta.",
+  "Embalagem e talher: oito.",
+  "Gás e luz: uns seis, em média.",
+  "A taxa do aplicativo: vinte.",
+  "A entrega: doze.",
+  "No fim, de cada cem reais, só dezoito ficam com você.",
+  "A calculadora da Raiz mostra isso antes de você fechar o preço.",
+  "Teste grátis pelo link da bio."
+ ],
+ "nota": "valores de exemplo",
+ "_origem": {
+  "preco": "dono",
+  "custo_visivel": "dono",
+  "escondidos": "dono"
+ },
+ "oferta": {
+  "foto": "fotos/raiz_calculadora.jpg",
+  "nome": "Calculadora de preço",
+  "detalhe": "Põe cada custo no lugar, grátis no celular",
+  "convite": "faça a conta certa"
+ }
+}

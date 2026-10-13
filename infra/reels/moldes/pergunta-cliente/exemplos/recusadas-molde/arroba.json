@@ -1,0 +1,19 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "story",
+ "pergunta": "@maria vocês fazem bolo sem lactose?",
+ "canal": "comentario",
+ "resposta": "Fazemos sim! Massa e recheio sem lactose, com o mesmo sabor. É só encomendar com três dias de antecedência pelo link da bio.",
+ "destaque": "sem lactose",
+ "_origem": {
+  "pergunta": "dono",
+  "produto": "dono"
+ },
+ "produto": {
+  "foto": "fotos/doce_bolo_pote.jpg",
+  "nome": "Bolo de pote sem lactose",
+  "detalhe": "Chocolate em camadas, feito na encomenda",
+  "preco": 14,
+  "convite": "encomende o seu"
+ }
+}

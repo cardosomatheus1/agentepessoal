@@ -1,0 +1,21 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "carrossel",
+ "pista": "Em dezembro, muita cliente quer mudar o visual pras festas e pro verão.",
+ "midia": "fotos/salao_interior.jpg",
+ "pergunta": "Qual serviço do salão é o mais pedido em dezembro?",
+ "opcoes": [
+  "Escova",
+  "Mechas",
+  "Manicure"
+ ],
+ "certa": "B",
+ "explicacao": "Mudar a cor pede mais tempo de cadeira, por isso a agenda de mechas enche primeiro. Quem marca cedo garante o horário.",
+ "assunto": "negocio",
+ "produto": {
+  "foto": "fotos/salao_mechas.jpg",
+  "nome": "Mechas e coloração",
+  "detalhe": "Avaliação do fio antes, sem custo",
+  "convite": "garanta o seu horário"
+ }
+}

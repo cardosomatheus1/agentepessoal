@@ -1,0 +1,23 @@
+{
+ "_marca": "cantina-da-vo",
+ "_formato": "carrossel",
+ "objetivo": "Como esquentar a marmita sem ressecar",
+ "passos": [
+  "Passe do freezer pra geladeira na noite anterior",
+  "Abra uma frestinha da tampa antes do micro-ondas",
+  "Esquente em potência média e mexa na metade do tempo",
+  "Deixe descansar um minuto antes de comer"
+ ],
+ "resultado": "Comida quentinha por igual, como saiu do fogão",
+ "midia": "fotos/cantina_marmita.jpg",
+ "produto": {
+  "foto": "fotos/cantina_marmita.jpg",
+  "nome": "Marmita da semana",
+  "detalhe": "Cinco pratos caseiros prontos pra congelar",
+  "preco": 110,
+  "convite": "peça a sua"
+ },
+ "_origem": {
+  "produto": "dono"
+ }
+}

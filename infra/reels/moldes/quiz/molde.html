@@ -18,6 +18,18 @@ body.e-pop .op .le{border:5px solid var(--texto)}
 .op.errada{opacity:.45}.op.errada .le .no{opacity:1}
 
 /* scene 0: question */
+.pchip{position:absolute;left:90px;top:388px;height:66px;line-height:66px;font-size:34px;letter-spacing:4px;padding:0 30px;white-space:nowrap}
+.pcol{position:absolute;left:90px;width:820px;top:480px;display:flex;flex-direction:column;gap:28px}
+.pph{position:relative;flex:none;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.pph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ptx{flex:none;font-size:62px;line-height:1.08}
+.pdd{flex:none;padding:20px 34px}
+.pl{display:flex;justify-content:space-between;align-items:center;gap:20px;height:70px;border-bottom:3px dashed var(--borda)}
+.pl:last-child{border-bottom:0}
+.pl .a{flex:1;height:50px;font-size:40px;font-weight:800;white-space:nowrap}
+.pl .b{flex:none;max-width:380px;height:54px;font-size:44px;text-align:right;white-space:nowrap}
+.slide .pchip{left:auto;right:84px;top:58px;height:62px;line-height:62px;font-size:30px}
+.slide .pcol{left:84px;width:912px;top:150px}
 #tag0{position:absolute;left:90px;top:388px;height:66px;font-size:34px;letter-spacing:4px;padding:0 30px;line-height:66px;white-space:nowrap}
 #ph0{position:absolute;left:90px;top:490px;width:900px;height:450px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
 #ph0 img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -97,8 +109,23 @@ body.e-pop .recibo{background:var(--fundo2)}
 .slide .salva{position:absolute;left:84px;right:84px;top:1110px;height:70px;font-size:52px;color:var(--destaque);text-align:center;white-space:nowrap}
 .slide .recibo{padding:44px 54px 56px}.slide .recibo .cab{height:52px;font-size:34px}.slide .recibo .lin .r .a{height:60px;font-size:48px}.slide .recibo .lin .r .s{height:44px;font-size:34px}.slide .recibo .lin .v{height:60px;font-size:52px}.slide .recibo .tot .a{height:64px;font-size:46px}.slide .recibo .tot .v{width:360px;height:100px;line-height:100px;font-size:90px}.slide .recW .selo{width:170px;height:170px;font-size:74px}
 .slide .notac{position:absolute;left:84px;right:84px;top:1214px;height:40px;font-size:28px;font-weight:600;text-align:center}
+/* ad close: the product or service with its real photo (every post ends selling, AR Board 13/10) */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1058px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+.slide .pvf{left:84px;width:912px;top:130px;height:640px}
+.slide .pvp{left:114px;top:700px;font-size:56px;height:90px;line-height:90px}
+.slide .pvk{left:84px;width:912px;top:800px}
+.slide .pvn{left:84px;width:912px;top:872px;height:200px;font-size:84px}
+.slide .pvd{left:84px;width:912px;top:1084px;height:120px;font-size:42px}
 </style></head><body><div id="palco">
 
+<div class="cena" id="cp"><div class="cam full" id="cpin"></div></div>
+<div class="cena" id="c6"><div class="cam full" id="c6in"></div></div>
 <div class="cena" id="c0"><div class="cam full">
  <div id="tag0" class="chip t seg"></div>
  <div id="ph0"><img id="ph0i" alt=""></div>
@@ -127,7 +154,9 @@ body.e-pop .recibo{background:var(--fundo2)}
 </div>
 <script src="../motor/motor.js"></script>
 <script>
-// "Quiz A, B ou C": a question with three answers to comment on; the answer comes last and teaches. In the Reel a
+// "Quiz A, B ou C": first the clue (the data needed to answer, AR Board 13/10: "senão é chute"), then a question
+// with three answers to comment on; the answer comes last and teaches, and the post ends on the product.
+// In the Reel a
 // "pause and answer" countdown comes before the answer. Numbers of the explanation live in `conta` (the code sums
 // them and checks that the right option is the total); the explanation text itself carries no digits.
 // work around: in a carousel only the first slide is displayed when the engine waits for fonts, so faces used only
@@ -136,6 +165,34 @@ const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
 const LET = ['A', 'B', 'C'];
 let Q = {};
 const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+// ad close: the product with photo, name, price and a nudge (every post ends taking the viewer to the product)
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+// the product of the ad (`produto`, or `oferta` where `produto` already names what the post talks about)
+const OF = F => (F.produto && typeof F.produto === 'object' ? F.produto : F.oferta);
+function vitrine(F, $m, pai, kick) {
+  const P = OF(F), v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk mao t seg', P.convite || kick, v);
+  mk('div', 'pvn tit t seg' + ($m.FORMATO === 'carrossel' ? '' : ' rv'), P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  // stack name and detail by the name's length (one or two lines)
+  const car = $m.FORMATO === 'carrossel', linhas = P.nome.length > (car ? 19 : 17) ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  const y0 = car ? 872 : 1130, lh = car ? 92 : 86; n.style.height = (linhas * lh) + 'px';
+  if (d) d.style.top = (y0 + linhas * lh + 14) + 'px';
+  return v;
+}
+const vitrineLer = (F, kick) => ler(OF(F).convite || kick, OF(F).nome, OF(F).detalhe, OF(F).preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.7)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`;
+  $m.filmagem(v.querySelector('.pvf img'), OF(F).foto, t);
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
 // "R$ 1.250,50" -> 1250.5 (first number in an option text)
 const valorDe = s => { const m = String(s).replace(/\s/g, '').match(/(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d+))?/); return m ? parseFloat(m[1].replace(/\./g, '') + (m[2] ? '.' + m[2] : '')) : null; };
 
@@ -166,6 +223,19 @@ function tile(txt, i, pai) {
   return d;
 }
 
+// the clue: photo of what the question is about, the hint and the data lines (no total: that is the answer)
+function pista(F, $m, pai) {
+  const car = $m.FORMATO === 'carrossel', ch = mk('div', 'pchip chip t seg', null, pai); ch.innerHTML = $m.icone('lupa') + ' '; ch.append('A PISTA');
+  const col = mk('div', 'pcol', null, pai), alto = car ? 1120 : 980, lt = Math.ceil(F.pista.length / (car ? 24 : 21)), ht = lt * 70;
+  const n = F.conta ? F.conta.length : 0, hd = n ? 44 + n * 70 : 0;
+  if (F.midia) { const hp = Math.max(240, Math.min(car ? 560 : 520, alto - ht - hd - 60)); const ph = mk('div', 'pph', null, col); ph.style.height = hp + 'px'; $m.filmagem(mk('img', null, null, ph), F.midia, 0); }
+  const tx = mk('div', 'ptx tit t seg' + (car ? '' : ' rv'), F.pista, col); tx.style.height = ht + 'px';
+  if (n) { const dd = mk('div', 'pdd cartao', null, col); F.conta.forEach(l => { const li = mk('div', 'pl', null, dd); mk('div', 'a t', l.rotulo, li);
+    mk('div', 'b tit t seg', l.vezes != null && l.vezes !== 1 ? `${$m.num(l.vezes, Number.isInteger(l.vezes) ? 0 : 1)}${l.unidade ? ' ' + l.unidade : 'x'} × ${$m.brl(l.valor, Number.isInteger(l.valor) ? 0 : 2)}` : $m.brl(l.valor, Number.isInteger(l.valor) ? 0 : 2), li); }); }
+  return col;
+}
+const KICK = 'tem aqui pra você';
+let PV = null;
 // the receipt: each line value x times, double rule, total and the seal with the right letter
 function recibo(F, $m, pai) {
   const din = v => $m.brl(v, Q.dec);
@@ -191,7 +261,8 @@ Motor.molde({
     Q = checar(F, $m);
     $('#tag0').innerHTML = $m.icone('lupa') + ' '; $('#tag0').append('QUIZ');
     $('#perg').textContent = F.pergunta;
-    if (F.midia) { $('#qm').remove(); } else { $('#ph0').remove(); $('#perg').classList.add('semfoto'); $('#perg').style.top = '1000px'; }
+    $('#ph0').remove(); $('#perg').classList.add('semfoto'); $('#perg').style.top = '1000px';
+    pista(F, $m, $('#cpin')); PV = vitrine(F, $m, $('#c6in'), KICK);
     $('#pmini').textContent = F.pergunta;
     F.opcoes.forEach((o, i) => { const d = tile(o, i, $('#ops')); d.style.top = i * 174 + 'px'; });
     $('#chk').innerHTML = $m.icone('check');
@@ -202,19 +273,31 @@ Motor.molde({
     if (F.conta) { const r = recibo(F, $m, $('#c4 .cam')); r.id = 'rec4'; if (!F.fonte) r.classList.add('semfonte'); }
     else { const c = mk('div', 'cartao', null, $('#c4 .cam')); c.id = 'porque'; const lb = mk('div', 'lb t', null, c); lb.innerHTML = $m.icone('info') + ' '; lb.append('POR QUÊ?'); c.appendChild($('#expl')); $('#expl').classList.add('solta'); if ($('#fonte')) $('#fonte').classList.add('solta'); }
     $('#nota').textContent = F.nota || '';
-    return { duracoes: [3.2, 3.0, 3.6, 2.6, F.conta ? 4.6 + F.conta.length * 0.3 : 1.6 + F.explicacao.length / 22] };
+    const dados = (F.conta || []).map(l => l.rotulo + ' 0 x R$ 0').join(' ');
+    const rec = F.conta ? 'A CONTA ' + F.conta.map(l => l.rotulo + ' R$ 0 0 h x R$ 0').join(' ') + ' ' + (F.total_rotulo || 'Total') + ' R$ 0 LETRA C ' + (F.nota || '') : 'POR QUÊ?';
+    return { duracoes: [0.4 + ler('A PISTA', F.pista, dados), Math.max(3.0, ler('QUIZ', F.pergunta)), Math.max(3.2, ler(F.pergunta, F.opcoes.join(' '))), 3.8, 2.6,
+      0.6 + ler(F.opcoes[Q.k], F.explicacao, F.fonte ? 'Fonte: ' + F.fonte : '', rec), vitrineLer(F, KICK)] };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini } = $m;
-    const S = ini;
-    // 0: question
-    $m.cena('#c0', t, 0);
-    const tg = eb(p(t, 0.1, 0.5)); $('#tag0').style.opacity = cl(tg * 3); $('#tag0').style.transform = `scale(${tg})`;
-    if ($('#ph0')) { const q = eo5(p(t, 0.05, 0.9)); $('#ph0').style.opacity = q; $('#ph0').style.transform = `translateY(${(1 - q) * 80}px) rotate(${-2.5 + 1.5 * q}deg) scale(${1.08 - 0.08 * q})`; $m.filmagem($('#ph0i'), F.midia, t); }
-    if ($('#qm')) { const q = el(p(t, 0.1, 1.2)); $('#qm').style.opacity = cl(q * 2); $('#qm').style.transform = `translateY(${(1 - q) * -300 + Math.sin(t * 2.4) * 14}px) rotate(${(1 - q) * -40 + Math.sin(t * 1.7) * 5}deg)`; }
-    $m.revela('#perg', t, 0.45, 0.06);
+    const S = i => ini(i + 1);
+    // clue
+    $m.cena('#cp', t, 0);
+    const pc = $('#cpin'); $m.entra(pc.querySelector('.pchip'), t, 0.05, 0.4, 20, 0.2);
+    const pp = pc.querySelector('.pph'); if (pp) { const q = eo5(p(t, 0.1, 0.8)); pp.style.opacity = q; pp.style.transform = `scale(${0.94 + 0.06 * q})`; $m.filmagem(pp.querySelector('img'), F.midia, t); }
+    $m.revela(pc.querySelector('.ptx'), t, 0.4, 0.05);
+    $$('.pl', pc).forEach((l, j) => $m.entra(l, t, 0.9 + j * 0.25, 0.4, 0, 0));
+    $$('.pl', pc).forEach((l, j) => { l.style.transform = `translateX(${(1 - eo5(p(t, 0.9 + j * 0.25, 0.4))) * 60}px)`; });
+    // product
+    $m.cena('#c6', t, 6); vitrineQuadro(PV, F, $m, t, ini(6));
+    // question
+    const a0 = S(0); $m.cena('#c0', t, 1);
+    const tg = eb(p(t, a0 + 0.1, 0.5)); $('#tag0').style.opacity = cl(tg * 3); $('#tag0').style.transform = `scale(${tg})`;
+    if ($('#ph0')) { const q = eo5(p(t, a0 + 0.05, 0.9)); $('#ph0').style.opacity = q; $('#ph0').style.transform = `translateY(${(1 - q) * 80}px) rotate(${-2.5 + 1.5 * q}deg) scale(${1.08 - 0.08 * q})`; $m.filmagem($('#ph0i'), F.midia, t); }
+    if ($('#qm')) { const q = el(p(t, a0 + 0.1, 1.2)); $('#qm').style.opacity = cl(q * 2); $('#qm').style.transform = `translateY(${(1 - q) * -300 + Math.sin(t * 2.4) * 14}px) rotate(${(1 - q) * -40 + Math.sin(t * 1.7) * 5}deg)`; }
+    $m.revela('#perg', t, a0 + 0.45, 0.06);
     // 1..3: options, countdown, answer (one stage so the tiles stay put)
-    $m.cena('#c1', t, 1, 3);
+    $m.cena('#c1', t, 2, 4);
     $m.revela('#pmini', t, S(1) + 0.05, 0.03);
     const desce = eio(p(t, S(2) - 0.05, 0.6));
     $('#pmini').style.opacity = 1 - desce; $('#pmini').style.transform = `translateY(${-desce * 60}px)`;
@@ -252,7 +335,7 @@ Motor.molde({
     $('#pausa2').style.opacity = eo5(p(t, S(2) + 0.6, 0.5)) * (1 - cl(vira * 3));
     const rq = eb(p(t, S(3) + 0.25, 0.5)); $('#resp').style.opacity = cl(rq * 3); $('#resp').style.transform = `scale(${0.6 + 0.4 * rq})`;
     // 4: explanation + receipt
-    $m.cena('#c4', t, 4);
+    $m.cena('#c4', t, 5);
     const a = S(4), h = eb(p(t, a + 0.1, 0.55)); $('#rh').style.opacity = cl(h * 3); $('#rh').style.transform = `translateX(${(1 - h) * -120}px)`;
     $m.revela('#expl', t, a + 0.45, 0.035);
     if ($('#fonte')) $m.entra('#fonte', t, a + 1.2, 0.5, 20);
@@ -274,14 +357,15 @@ Motor.molde({
     Q = checar(F, $m); fontes();
     const palco = $m.$('#palco'); $m.$$('.cena', palco).forEach(c => c.remove()); $m.$('#nota').remove();
     const novo = () => mk('div', 'slide', null, palco);
+    // 0: the clue
+    pista(F, $m, novo());
     // 1: question and options
     const s1 = novo();
     const tg = mk('div', 'chipq chip t seg', null, s1); tg.innerHTML = $m.icone('lupa') + ' '; tg.append('QUIZ');
-    if (F.midia) { const ph = mk('div', 'ph', null, s1); const im = mk('img', null, null, ph); $m.filmagem(im, F.midia, 0); }
-    else mk('div', 'qbg tit', '?', s1);
-    mk('div', 'pq tit t seg' + (F.midia ? '' : ' semfoto'), F.pergunta, s1);
-    const o1 = mk('div', 'ops' + (F.midia ? '' : ' semfoto'), null, s1);
-    F.opcoes.forEach((o, i) => { const d = tile(o, i, o1); d.style.top = i * (F.midia ? 120 : 140) + 'px'; });
+    mk('div', 'qbg tit', '?', s1);
+    mk('div', 'pq tit t seg semfoto', F.pergunta, s1);
+    const o1 = mk('div', 'ops semfoto', null, s1);
+    F.opcoes.forEach((o, i) => { const d = tile(o, i, o1); d.style.top = i * 140 + 'px'; });
     mk('div', 'pe mao t seg', 'comenta a letra antes de arrastar →', s1);
     // 2: comment before you swipe (keeps the answer out of the peek)
     const s2 = novo();
@@ -301,8 +385,9 @@ Motor.molde({
     if (F.conta) {
       const s4 = novo(); mk('div', 'ct tit t seg', 'Fazendo a conta', s4);
       recibo(F, $m, s4);
-      mk('div', 'salva mao t seg', 'salva pra fazer com os seus números', s4);
+      mk('div', 'salva mao t seg', 'salva pra lembrar na hora de pedir', s4);
     }
+    vitrine(F, $m, novo(), KICK);
   },
 });
 </script></body></html>

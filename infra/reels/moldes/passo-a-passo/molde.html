@@ -39,10 +39,10 @@ body.e-pop #folha{border:5px solid var(--texto)}
 #garra:after{content:'';position:absolute;left:110px;top:20px;width:100px;height:34px;border-radius:17px;background:var(--prancha)}
 body.e-pop #garra{background:var(--fundo2);border:5px solid var(--texto)}
 #folha .tt{position:absolute;left:60px;width:700px;top:40px;height:130px;font-size:54px;color:var(--tinta)}
-.it{position:absolute;left:44px;width:680px}
-.it .cx{position:absolute;left:0;width:66px;height:66px;border:6px solid var(--tinta);border-radius:14px}
+.it{position:absolute;left:40px;width:704px}
+.it .cx{position:absolute;left:0;width:62px;height:62px;border:6px solid var(--tinta);border-radius:14px}
 .it .cx svg{position:absolute;left:-6px;top:-22px;width:96px;height:96px;overflow:visible}
-.it .tx{position:absolute;left:96px;right:0;font-size:42px;font-weight:700;line-height:1.16;display:flex;align-items:center}
+.it .tx{position:absolute;left:88px;right:0;font-size:42px;font-weight:700;line-height:1.16;display:flex;align-items:center}
 .it .tx span{display:block;width:100%}
 /* result */
 #rph{position:absolute;left:140px;width:800px;top:410px;height:520px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
@@ -62,7 +62,7 @@ body.e-pop #garra{background:var(--fundo2);border:5px solid var(--texto)}
 .slide #n0{left:84px;top:150px;width:912px;height:330px}
 .slide.cf #n0{top:590px;height:220px}.slide.cf #n0 b{font-size:220px;line-height:220px}.slide.cf #n0 span{font-size:84px;height:100px;line-height:100px}
 .slide #obj{left:84px;width:912px;top:520px;height:420px;font-size:92px}
-.slide.cf #obj{top:830px;height:300px;font-size:72px}
+.slide.cf #obj{top:820px;height:350px;font-size:92px}
 .slide .pe{position:absolute;left:84px;right:84px;top:1196px;height:70px;font-size:52px;color:var(--destaque);white-space:nowrap}
 .slide .rail{position:absolute;left:116px;width:8px;top:200px;height:960px;border-radius:4px;background:var(--borda)}
 .slide .railF{position:absolute;left:116px;width:8px;top:200px;border-radius:4px;background:var(--destaque)}
@@ -81,6 +81,19 @@ body.e-pop #garra{background:var(--fundo2);border:5px solid var(--texto)}
 .slide #rt{left:84px;width:912px;top:800px;height:250px;font-size:84px}
 .slide #rsalva{top:1090px}
 .slide .rf{position:absolute;left:60px;width:712px;height:60px;font-size:36px;font-weight:800;color:var(--tinta);display:flex;align-items:center;gap:14px;white-space:nowrap}
+/* ad close: the product or service with its real photo (every post ends selling, AR Board 13/10) */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1058px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+.slide .pvf{left:84px;width:912px;top:130px;height:640px}
+.slide .pvp{left:114px;top:700px;font-size:56px;height:90px;line-height:90px}
+.slide .pvk{left:84px;width:912px;top:800px}
+.slide .pvn{left:84px;width:912px;top:872px;height:200px;font-size:84px}
+.slide .pvd{left:84px;width:912px;top:1084px;height:120px;font-size:42px}
 </style></head><body><div id="palco">
 
 <div class="cena" id="c0"><div class="cam full">
@@ -99,6 +112,7 @@ body.e-pop #garra{background:var(--fundo2);border:5px solid var(--texto)}
  <div id="prancha"></div><div id="folha"><div class="tt tit t seg"></div></div><div id="garra"></div>
 </div></div>
 
+<div class="cena" id="pd"><div class="cam full" id="pdin"></div></div>
 <div class="cena" id="rs"><div class="cam full">
  <div id="rph"><img id="rphI" alt=""></div>
  <div id="rico"></div>
@@ -114,15 +128,44 @@ body.e-pop #garra{background:var(--fundo2);border:5px solid var(--texto)}
 // Mode "lista" (no order, the old checklist): a clipboard where each box gets a hand-drawn tick. Then the result
 // and a "save this post" cue. Optional narration: promise, one line per step, result, call to action.
 const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+// ad close: the product with photo, name, price and a nudge (every post ends taking the viewer to the product)
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+// the product of the ad (`produto`, or `oferta` where `produto` already names what the post talks about)
+const OF = F => (F.produto && typeof F.produto === 'object' ? F.produto : F.oferta);
+function vitrine(F, $m, pai, kick) {
+  const P = OF(F), v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk mao t seg', P.convite || kick, v);
+  mk('div', 'pvn tit t seg' + ($m.FORMATO === 'carrossel' ? '' : ' rv'), P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  // stack name and detail by the name's length (one or two lines)
+  const car = $m.FORMATO === 'carrossel', linhas = P.nome.length > (car ? 19 : 17) ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  const y0 = car ? 872 : 1130, lh = car ? 92 : 86; n.style.height = (linhas * lh) + 'px';
+  if (d) d.style.top = (y0 + linhas * lh + 14) + 'px';
+  return v;
+}
+const vitrineLer = (F, kick) => ler(OF(F).convite || kick, OF(F).nome, OF(F).detalhe, OF(F).preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.7)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`;
+  $m.filmagem(v.querySelector('.pvf img'), OF(F).foto, t);
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
 const fontes = () => [...document.fonts].forEach(f => f.load().catch(() => {}));
 const MARCA_SVG = '<svg viewBox="0 0 24 24"><path d="M6 2.5h12v19l-6-4.2-6 4.2z" fill="currentColor"/></svg>';
 const bm = () => `<span class="ico bm">${MARCA_SVG}</span>`;
 const TIQUE = '<svg viewBox="0 0 96 96"><path d="M14 52 L36 74 L86 12" fill="none" stroke="var(--destaque)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="120" stroke-dashoffset="120"/></svg>';
 let L = {};
+const KICK = 'a gente faz pra você';
 function comum(F, $m) {
   const n = F.passos.length, lista = F.modo === 'lista';
   const voz = window.TEMPOS && window.TEMPOS.length > 1;
-  if (voz && F.falas.length !== n + 3) $m.erro(`falas: são ${n + 3} (promessa, uma por passo, resultado, chamada); vieram ${F.falas.length}`);
+  if (voz && F.falas.length !== n + 4) $m.erro(`falas: são ${n + 4} (promessa, uma por passo, resultado, produto, chamada); vieram ${F.falas.length}`);
   const iguais = new Set(F.passos.map(s => s.trim().toLowerCase())); if (iguais.size < n) $m.erro('há passos repetidos');
   return { n, lista };
 }
@@ -143,7 +186,7 @@ function folha(F, $m, raiz, carrossel) {
     const it = mk('div', 'it', null, fo); it.style.top = (topo + i * hi) + 'px'; it.style.height = hi + 'px';
     const cx = mk('div', 'cx', null, it); cx.style.top = (hi / 2 - 33) + 'px'; cx.innerHTML = TIQUE;
     const tx = mk('div', 'tx t seg', null, it); tx.style.top = '6px'; tx.style.bottom = '6px'; mk('span', null, s, tx);
-    tx.style.fontSize = (L.n <= 4 ? 46 : 40) + 'px';
+    tx.style.fontSize = (L.n <= 4 ? 54 : L.n <= 5 ? 48 : 44) + 'px';
     return it;
   });
 }
@@ -166,7 +209,7 @@ Motor.molde({
       $('#pr').remove();
       const Y0 = 440, A = 1020, H = A / n; L.y = F.passos.map((s, i) => Y0 + H * (i + 0.5));
       $('#trilho').style.top = L.y[0] + 'px'; $('#trilho').style.height = (L.y[n - 1] - L.y[0]) + 'px'; $('#trilhoF').style.top = L.y[0] + 'px';
-      const ch = Math.min(230, H - 16), fs = n <= 3 ? 56 : n <= 4 ? 52 : 46;
+      const ch = Math.min(260, H - 12), fs = n <= 3 ? 66 : n <= 4 ? 60 : n <= 5 ? 54 : 50;
       L.nos = []; L.sts = [];
       F.passos.forEach((s, i) => {
         const no = mk('div', 'no', null, $('#tlIn')); no.style.top = (L.y[i] - 42) + 'px';
@@ -177,12 +220,8 @@ Motor.molde({
       });
     }
     resultado(F, $m, document);
-    const ler = s => 1.4 + s.length / 24;
-    // render.py cannot build its contact sheet for exactly 7 scenes (ffmpeg "hstack=1"): in that case the result
-    // scene is shown as two (result, then the save cue), splitting the narration line's time in the middle
-    L.dois = n + 3 === 7;
-    if (L.dois && window.TEMPOS && window.TEMPOS.length > 1) { const T = window.TEMPOS, a = T[n + 1], b = T[n + 2]; T.splice(n + 2, 0, +(a + (b - a) * 0.55).toFixed(3)); }
-    return { duracoes: [2.8, ...F.passos.map(ler), ...(L.dois ? [2.2, 2.0] : [3.4])] };
+    L.v = vitrine(F, $m, $('#pdin'), KICK);
+    return { duracoes: [ler(F.objetivo, 'PASSO A PASSO 0 passos salva pra fazer depois'), ...F.passos.map(s => 0.3 + ler(s, '0')), ler(F.resultado, 'RESULTADO Salva pra fazer depois'), vitrineLer(F, KICK)] };
   },
   quadro(t, F, $m) {
     const { $, $$, p, eo, eo5, eio, eb, cl, lerp, ini } = $m, n = L.n;
@@ -197,12 +236,13 @@ Motor.molde({
     $m.entra('#salva0', t, 1.5, 0.5, 20);
     if (L.lista) quadroLista(t, F, $m); else quadroTrilho(t, F, $m);
     // result
-    const ir = n + 1, a = ini(ir); $m.cena('#rs', t, ir, L.dois ? ir + 1 : ir);
+    const ir = n + 1, a = ini(ir); $m.cena('#rs', t, ir);
+    $m.cena('#pd', t, n + 2); vitrineQuadro(L.v, F, $m, t, ini(n + 2));
     const ph = $('#rph') || $('#rico'), pq = eb(p(t, a + 0.1, 0.6)); ph.style.opacity = cl(pq * 2); ph.style.transform = `scale(${0.7 + 0.3 * pq}) rotate(${(1 - pq) * -6}deg)`;
     if ($('#rph')) $m.filmagem($('#rphI'), F.midia, t);
     const fq = eo5(p(t, a + 0.9, 0.5)); $('#fita').style.transform = `translateY(${(1 - fq) * -260}px)`; $('#fita').style.opacity = fq > 0 ? 1 : 0;
     $m.entra('#rk', t, a + 0.3, 0.4, 20); $m.revela('#rt', t, a + 0.45, 0.06);
-    const sq = eb(p(t, L.dois ? ini(ir + 1) : a + 1.3, 0.5)); $('#rsalva').style.opacity = cl(sq * 2); $('#rsalva').style.transform = `scale(${sq * (1 + 0.04 * Math.sin((t - a) * 6))})`;
+    const sq = eb(p(t, a + 1.3, 0.5)); $('#rsalva').style.opacity = cl(sq * 2); $('#rsalva').style.transform = `scale(${sq * (1 + 0.04 * Math.sin((t - a) * 6))})`;
   },
   slides(F, M, $m) {
     L = comum(F, $m); fontes(); const n = L.n;
@@ -237,6 +277,7 @@ Motor.molde({
     const sr = novo(); ['#rph', '#rico', '#fita', '#rk', '#rt', '#rsalva'].forEach(x => sr.appendChild(tmpl(x)));
     $m.$('#rt', sr).classList.remove('rv');
     resultado(F, $m, sr);
+    vitrine(F, $m, novo(), KICK);
     $m.$$('.cena', palco).forEach(c => c.remove());
   },
 });
@@ -254,8 +295,8 @@ function quadroTrilho(t, F, $m) {
     no.querySelector('.at').style.opacity = ativo * (1 - feito); no.querySelector('.ck').style.opacity = feito;
     const pr = no.querySelector('.pr'), pq = ((t - a) % 1.2) / 1.2; pr.style.opacity = t > a && t < b ? 0.8 * (1 - pq) : 0; pr.style.transform = `scale(${1 + pq * 0.9})`;
     const st = L.sts[i], cq = eo5(p(t, a + 0.1, 0.5));
-    st.style.opacity = t < a ? 0 : cl(cq * 2) * (1 - 0.5 * feito);
-    st.style.transform = `translateX(${(1 - cq) * 140}px) scale(${1 + 0.02 * (1 - feito)})`;
+    st.style.opacity = t < a ? 0.22 * eo(p(t, ini(1) + 0.3 + i * 0.1, 0.4)) : Math.max(0.22, cl(cq * 2)) * (1 - 0.45 * feito);
+    st.style.transform = `translateX(${t < a ? 0 : (1 - cq) * 40}px) scale(${1 + 0.02 * (t < a ? 0 : 1 - feito)})`;
     st.querySelector('.cf').style.opacity = cq * (1 - feito);
   });
 }
@@ -267,7 +308,7 @@ function quadroLista(t, F, $m) {
   L.itens.forEach((it, i) => {
     const a = ini(1 + i), on = eo5(p(t, ini(1) + 0.4 + i * 0.1, 0.4));
     const tique = eio(p(t, a + 0.25, 0.45)), feito = t >= ini(2 + i);
-    it.style.opacity = on * (t >= a && !feito ? 1 : feito ? 0.55 : 0.75);
+    it.style.opacity = on * (t >= a && !feito ? 1 : feito ? 0.6 : 0.42);
     it.style.transform = `translateX(${(1 - on) * 60}px) scale(${t >= a && !feito ? 1.02 : 1})`;
     it.querySelector('path').setAttribute('stroke-dashoffset', (120 * (1 - tique)).toFixed(1));
   });

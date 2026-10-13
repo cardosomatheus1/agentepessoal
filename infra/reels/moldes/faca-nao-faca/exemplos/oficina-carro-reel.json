@@ -1,8 +1,41 @@
-{"_marca": "oficina-do-ze", "_formato": "reel",
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
  "tema": "Cuidado com o carro",
  "pares": [
-  {"sobre": "Pneu", "erro": "Calibrar só quando parece murcho", "certo": "Calibrar a cada quinze dias, com o pneu frio"},
-  {"sobre": "Óleo", "erro": "Trocar o óleo só quando a luz acende", "certo": "Trocar no prazo que o manual do carro pede"},
-  {"sobre": "Freio", "erro": "Ignorar o chiado na hora de frear", "certo": "Revisar as pastilhas no primeiro barulho"},
-  {"sobre": "Bateria", "erro": "Ouvir som alto com o motor desligado", "certo": "Usar o som com o motor funcionando"}],
- "midia": "fotos/mecanico_maos.jpg"}
+  {
+   "sobre": "Pneu",
+   "erro": "Calibrar só quando parece murcho",
+   "certo": "Calibrar a cada quinze dias, com o pneu frio",
+   "foto": "fotos/oficina_pneu.jpg"
+  },
+  {
+   "sobre": "Óleo",
+   "erro": "Trocar o óleo só quando a luz acende",
+   "certo": "Trocar no prazo que o manual do carro pede",
+   "foto": "fotos/oficina_oleo.jpg"
+  },
+  {
+   "sobre": "Freio",
+   "erro": "Ignorar o chiado na hora de frear",
+   "certo": "Revisar as pastilhas no primeiro barulho",
+   "foto": "fotos/oficina_freio.jpg"
+  },
+  {
+   "sobre": "Bateria",
+   "erro": "Ouvir som alto com o motor desligado",
+   "certo": "Usar o som com o motor funcionando"
+  }
+ ],
+ "midia": "fotos/oficina_fachada.jpg",
+ "produto": {
+  "foto": "fotos/oficina_interior.jpg",
+  "nome": "Revisão completa",
+  "detalhe": "Pneus, óleo, freios e bateria conferidos",
+  "preco": 290,
+  "convite": "agende a sua"
+ },
+ "_origem": {
+  "produto": "dono"
+ }
+}

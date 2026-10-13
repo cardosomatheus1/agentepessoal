@@ -1,7 +1,0 @@
-{"_marca": "oficina-do-ze", "_formato": "reel",
- "produto": "lavagem completa", "unidade": "carro", "insumo": "produto de limpeza",
- "preco": 60.0, "custo_antes": 14.0, "custo_hoje": 19.0, "quando_antes": "março",
- "lote": 80, "lote_texto": "Em 80 carros por mês", "virada": "Preço parado é prejuízo.", "virada_destaque": "Faz a conta.",
- "filmagem": "maquina",
- "falas": ["O produto de limpeza subiu.", "E a sua lavagem completa ainda custa sessenta reais?", "Em março, lavar um carro custava catorze reais em produto.", "Hoje custa dezenove.", "O lucro por carro caiu de quarenta e seis pra quarenta e um reais.", "Em oitenta carros por mês, são quatrocentos reais a menos.", "Preço parado é prejuízo. Faz a conta.", "Agende pelo WhatsApp e confira a tabela nova."],
- "_origem": {"preco": "dono", "custo_antes": "dono", "custo_hoje": "dono"}}

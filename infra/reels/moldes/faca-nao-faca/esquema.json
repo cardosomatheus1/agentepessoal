@@ -1,15 +1,93 @@
 {
- "formatos": ["carrossel", "reel"],
+ "formatos": [
+  "carrossel",
+  "reel"
+ ],
  "voz": "opcional",
  "musica": "leve",
  "campos": {
-  "tema": {"tipo": "texto", "min": 4, "max": 44, "dica": "Embalagem de delivery"},
-  "pares": {"tipo": "lista", "min": 3, "max": 5, "item": {
-    "sobre": {"tipo": "texto", "min": 2, "max": 22, "dica": "a coisa de que o erro e o certo falam (os dois são sobre ela): Molho, Tampa, Etiqueta"},
-    "erro": {"tipo": "texto", "min": 6, "max": 60, "dica": "o jeito errado, sem apontar um cliente"},
-    "certo": {"tipo": "texto", "min": 6, "max": 60}}},
-  "midia": {"tipo": "filmagem", "obrigatorio": false, "dica": "fundo da capa: foto do cliente (fotos/x.jpg), vídeo do cliente ou nome do banco"},
-  "falas": {"tipo": "lista", "min": 8, "max": 12, "obrigatorio": false, "item": {"tipo": "texto", "max": 160},
-   "dica": "narração opcional: capa, depois erro e certo de cada par (2 por par), chamada"}
- }
+  "tema": {
+   "tipo": "texto",
+   "min": 4,
+   "max": 44,
+   "dica": "Embalagem de delivery"
+  },
+  "pares": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 5,
+   "item": {
+    "sobre": {
+     "tipo": "texto",
+     "min": 2,
+     "max": 22,
+     "dica": "a coisa de que o erro e o certo falam (os dois são sobre ela): Molho, Tampa, Etiqueta"
+    },
+    "erro": {
+     "tipo": "texto",
+     "min": 6,
+     "max": 60,
+     "dica": "o jeito errado, sem apontar um cliente"
+    },
+    "certo": {
+     "tipo": "texto",
+     "min": 6,
+     "max": 60
+    },
+    "foto": {
+     "tipo": "filmagem",
+     "obrigatorio": false,
+     "dica": "foto real da coisa de que o par fala (fotos/x.jpg)"
+    }
+   }
+  },
+  "midia": {
+   "tipo": "filmagem",
+   "obrigatorio": false,
+   "dica": "fundo da capa: foto real do produto ou serviço do tema (fotos/x.jpg) ou vídeo do cliente"
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 9,
+   "max": 13,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "max": 160
+   },
+   "dica": "narração opcional: capa, erro e certo de cada par (2 por par), produto, chamada"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"
+  }
+ },
+ "publico": "cliente_final"
 }
