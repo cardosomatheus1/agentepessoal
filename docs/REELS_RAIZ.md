@@ -7,31 +7,20 @@ Feito aplicando os prompts do @erickcastilio.ia ao nosso nicho.
 
 Os números dos exemplos são de conta pronta para ilustrar. Antes de gravar, troque pelos preços reais da sua região.
 
-## Os 7 Reels feitos (motion, fontes em `infra/reels/`)
+## Semana 1 (formatos diferentes, um por dia)
 
-| # | Ramo | Ideia visual | Dor | Chamada |
+| Dia | Post | Formato | Pede ao público | Métrica |
 |---|---|---|---|---|
-| 1 | Marmita | Nota de custos + barra preço/custo/taxa | Não sabe o custo real | Calculadora grátis |
-| 2 | Brigadeiro | Etiqueta balançando + gráfico do insumo subindo | Insumo subiu, preço não | Preço certo pro doce |
-| 3 | Cento de salgado | Grade de 100 salgados "comida" pelos custos | Custos escondidos (óleo, gás, quebra) | Coloque tudo na conta |
-| 4 | Bolo de aniversário | Bolo visto de cima vira gráfico e depois relógio | O próprio trabalho fora do preço | Você paga todo mundo, menos você? |
-| 5 | Lanche no app | Celular com o pedido; o dinheiro sai em pedaços | Preço do app igual ao do balcão | Calcule os dois |
-| 6 | Pizza em combo | Comparação lado a lado + balança | Desconto sem conta | Simule o seu combo |
-| 7 | Açaí | Manifesto tipográfico, cortes secos | Cobrar barato | Preço certo começa na conta |
+| Seg | POV "cliente às 23h" (`r_pov`) | Reel meme, sem voz (áudio em alta ao postar) | marcar alguém | compartilhamentos |
+| Ter | "7 frases que todo mundo que vende comida já ouviu" (`c_frases`) | Carrossel identificação | comentar o número | salvamentos e envios |
+| Qua | Brigadeiro (`2_brigadeiro`) | Reel motion educativo (narrado) | salvar | salvamentos |
+| Qui | Quiz "preço mínimo do bolo" (`c_quiz`) | Carrossel quiz | comentar A, B ou C | comentários |
+| Sex | "Expectativa × Realidade" do bolo (`r_expec`) | Reel meme, sem voz | mandar pra uma confeiteira | envios por Direct |
+| Sáb | "Taxa de entrega: A ou B?" (`c_polemica`) | Carrossel polêmica | votar no time | comentários |
+| Dom | "Mito ou verdade?" sobre preço (`c_mito`) | Carrossel | comentar o número | salvamentos |
 
-## Ordem sugerida (1 por dia) e o que medir
-
-| Dia | Reel | Métrica principal |
-|---|---|---|
-| 1 | 7 Açaí (manifesto, gancho forte) | Retenção nos 3 s |
-| 2 | 5 Lanche no app | Compartilhamentos |
-| 3 | 2 Brigadeiro | Salvamentos |
-| 4 | 3 Salgado | Comentários |
-| 5 | 4 Bolo | Envios por Direct |
-| 6 | 6 Pizza | Cliques no link da bio |
-| 7 | 1 Marmita | Visitas ao perfil |
-
-No 8º dia: repetir o formato que mais ganhou com outro ramo.
+Os outros Reels de conta (salgado, bolo, lanche, pizza, açaí) entram no máximo 1 por semana, como tempero.
+Faltam com o Matheus: série "Analiso o seu cardápio" (decisão dele) e vídeo dele na câmera.
 
 ## Regras para não parecer robô
 - Nada de "comente para receber" com resposta automática em massa. O comentário "PREÇO" é respondido pela prospecção normal, um a um, e conta na cota.

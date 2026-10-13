@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:B;src:url(../base/gf/brico.woff2)}
+@font-face{font-family:A;src:url(../base/gf/anton.woff2)}
+@font-face{font-family:H;src:url(../base/gf/caveat.woff2)}
+@font-face{font-family:I;src:url(../base/fonts/Inter-Bold.otf);font-weight:700}
+@font-face{font-family:I;src:url(../base/fonts/Inter-Black.otf);font-weight:900}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1080px;height:1350px;overflow:hidden;font-family:I;background:#0f0f10;color:#fff}
+.slide{position:absolute;inset:0;overflow:hidden;display:none;background:#0f0f10}
+.grao{position:absolute;inset:0;background:url(../base/grao.png);opacity:.09;mix-blend-mode:overlay;z-index:9}
+.marca{position:absolute;left:70px;top:60px;background:#000a;border:1px solid #fff2;border-radius:22px;padding:10px 18px;z-index:10}.marca img{width:150px;display:block}
+.num{position:absolute;right:70px;top:56px;font-family:A;font-size:64px;color:#ffffff40}
+.frase{position:absolute;left:70px;right:70px;top:230px;font-family:B;font-size:82px;line-height:1.02;letter-spacing:-2px}
+.frase:before{content:'“';display:block;font-family:A;font-size:170px;line-height:.6;color:#ffd66b}
+.selo{position:absolute;left:70px;top:720px;font-family:A;font-size:150px;line-height:1;padding:10px 40px 0;border-radius:24px;transform:rotate(-4deg);box-shadow:0 20px 60px #0008}
+.mito{background:#ff4d4f;color:#fff}.verd{background:#3fd16a;color:#0b2a12}.dep{background:#ffd66b;color:#2a1f00}
+.exp{position:absolute;left:70px;right:70px;top:960px;font-size:44px;font-weight:700;line-height:1.32;color:#e8e8e8}
+.exp b{color:#fff;font-weight:900}
+.pe{position:absolute;left:70px;right:70px;bottom:50px;display:flex;justify-content:space-between;font-size:30px;font-weight:700;color:#8a8a8a;z-index:10}
+.luz{position:absolute;width:900px;height:900px;border-radius:50%;filter:blur(120px);opacity:.35}
+</style></head><body>
+<!-- capa -->
+<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
+ <div class="luz" style="background:#ff4d4f;left:-300px;top:-200px"></div><div class="luz" style="background:#3fd16a;right:-350px;bottom:-250px"></div>
+ <div style="position:absolute;left:70px;right:70px;top:220px;font-family:A;font-size:190px;line-height:.88"><span style="color:#ff4d4f">MITO</span><br>OU <span style="color:#3fd16a">VERDADE</span>?</div>
+ <div style="position:absolute;left:70px;right:70px;top:840px;font-family:B;font-size:62px;line-height:1.05;letter-spacing:-1.5px">4 coisas que quase todo mundo que vende comida acredita sobre preço</div>
+ <div style="position:absolute;left:70px;top:1150px;font-family:H;font-size:64px;color:#ffd66b;transform:rotate(-3deg)">chuta antes de arrastar →</div>
+ <div class="pe"><span>@raiz.connect</span><span>1/6</span></div></div>
+<!-- 1 -->
+<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div><div class="num">01</div>
+ <div class="luz" style="background:#ff4d4f;right:-400px;top:300px"></div>
+ <div class="frase">Se eu aumentar o preço, perco todos os meus clientes.</div>
+ <div class="selo mito">MITO</div>
+ <div class="exp">Alguns podem sair, sim. Mas se cada venda passa a dar lucro, <b>vender um pouco menos pode render mais</b> do que vender muito no prejuízo.</div>
+ <div class="pe"><span>@raiz.connect</span><span>2/6 →</span></div></div>
+<!-- 2 -->
+<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div><div class="num">02</div>
+ <div class="luz" style="background:#ff4d4f;left:-400px;top:400px"></div>
+ <div class="frase">Preço no app pode ser o mesmo do balcão.</div>
+ <div class="selo mito">MITO</div>
+ <div class="exp">O app fica com uma parte de cada venda. Com o mesmo preço, <b>você ganha menos em cada pedido do app</b>. O preço de lá precisa considerar a taxa.</div>
+ <div class="pe"><span>@raiz.connect</span><span>3/6 →</span></div></div>
+<!-- 3 -->
+<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div><div class="num">03</div>
+ <div class="luz" style="background:#3fd16a;right:-400px;top:300px"></div>
+ <div class="frase">Uma embalagem caprichada ajuda a cobrar mais.</div>
+ <div class="selo verd">VERDADE</div>
+ <div class="exp">Apresentação conta no valor que o cliente enxerga. Só lembra: <b>a embalagem também é custo</b> e tem que estar dentro do preço.</div>
+ <div class="pe"><span>@raiz.connect</span><span>4/6 →</span></div></div>
+<!-- 4 -->
+<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div><div class="num">04</div>
+ <div class="luz" style="background:#ffd66b;left:-300px;top:500px"></div>
+ <div class="frase">Eu sei meu lucro de cabeça.</div>
+ <div class="selo dep">DEPENDE</div>
+ <div class="exp">Dá pra ter uma ideia. Saber mesmo, só com a conta de <b>cada produto</b>: ingrediente, embalagem, gás, taxa e o seu tempo. É aí que costuma aparecer a surpresa.</div>
+ <div class="pe"><span>@raiz.connect</span><span>5/6 →</span></div></div>
+<!-- final -->
+<div class="slide" style="background:#3fd16a;color:#0b2a12"><div class="grao" style="mix-blend-mode:multiply;opacity:.08"></div><div class="marca"><img src="../base/logo.png"></div>
+ <div style="position:absolute;left:70px;right:70px;top:230px;font-family:B;font-size:116px;line-height:.95;letter-spacing:-3px">Qual desses você já acreditou? Comenta o número 👇</div>
+ <div style="position:absolute;left:70px;right:70px;top:700px;font-size:46px;font-weight:700;line-height:1.35">Pra tirar a dúvida do 4 com os seus números: a calculadora da Raiz faz a conta de cada produto, de graça.</div>
+ <div style="position:absolute;left:70px;right:70px;bottom:130px;background:#0f0f10;color:#fff;border-radius:40px;padding:36px 44px;display:flex;align-items:center;justify-content:space-between">
+  <img src="../base/logo.png" style="width:240px"><div style="font-size:36px;font-weight:900;text-align:right;line-height:1.25">Calculadora grátis<br><span style="color:#3fd16a">link na bio</span></div></div>
+ <div class="pe" style="color:#0b2a12aa"><span>salva pra mandar pra alguém</span><span>6/6</span></div></div>
+</body></html>

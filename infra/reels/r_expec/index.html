@@ -1,0 +1,54 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../base/kit.css">
+<style>
+@font-face{font-family:B;src:url(../base/gf/brico.woff2)}
+@font-face{font-family:H;src:url(../base/gf/caveat.woff2)}
+body{background:#000}
+#topo{position:absolute;left:0;right:0;top:0;height:440px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:40px 60px;text-align:center}
+#lab{font-family:B;font-size:46px;letter-spacing:4px;padding:12px 30px;border-radius:40px}
+#txt{font-family:B;font-size:78px;line-height:1.02;letter-spacing:-2px;color:#111}
+#vbox{position:absolute;left:0;top:440px;width:1080px;height:1080px;overflow:hidden;background:#111}
+#vid{position:absolute;left:-420px;top:0;width:1920px;height:1080px;object-fit:cover}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:50}
+#nota{position:absolute;left:0;right:0;top:1600px;text-align:center;font-family:H;font-size:96px;color:#fff;transform:rotate(-3deg)}
+#bolha{position:absolute;left:90px;right:150px;top:1120px;z-index:5;background:#fff;border-radius:44px 44px 44px 12px;padding:36px 44px;font-size:58px;font-weight:700;line-height:1.2;color:#111;box-shadow:0 30px 80px #000c;opacity:0}
+#bolha small{display:block;font-size:30px;color:#888;margin-bottom:10px}
+.sp{position:absolute;font-size:70px;pointer-events:none}
+#fim{position:absolute;inset:0;background:#fff3e3;opacity:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 80px;z-index:40}
+#fim .t{font-family:B;font-size:112px;line-height:.98;letter-spacing:-3px;color:#111}
+#fim .t em{font-style:normal;background:#ffb3c7;padding:0 14px;border-radius:16px}
+#fim .s{font-size:44px;font-weight:700;color:#5a4d40;margin-top:50px;line-height:1.3}
+#fim .lg{margin-top:80px;background:#111;border-radius:36px;padding:26px 40px}#fim .lg img{width:340px;display:block}
+</style></head><body>
+<div id="topo"><div id="lab"></div><div id="txt"></div></div>
+<div id="vbox"><img id="vid"><div id="sps"></div></div>
+<div id="nota"></div><div id="bolha"><small>cliente · 10:42</small>ficou lindo!! mas tá caro né 🥲 faz 80?</div>
+<div id="fim"><div class="t">Manda pra uma confeiteira que vai <em>entender</em> 😅</div><div class="s">e faz a conta antes de passar o preço:<br>calculadora grátis no link da bio</div><div class="lg"><img src="../base/logo.png"></div></div>
+<div id="flash"></div><div id="grao"></div>
+<script src="../base/kit.js"></script><script src="tempos.js"></script>
+<script>
+const SEG=[[0,'EXPECTATIVA','vender bolo vai ser tão lindo ✨','bolo','eu, começando',1],
+ [2.8,'REALIDADE','4 horas confeitando','x_confeita','com dor nas costas',0],
+ [4.7,'REALIDADE','02:13 da manhã','x_relogio','e ainda falta a decoração',0],
+ [6.5,'REALIDADE','entrega do outro lado da cidade','x_delivery','gasolina por minha conta',0],
+ [8.4,'REALIDADE','aí a cliente:','bolo','💀',2],[10.4]];
+let h='';for(let i=0;i<14;i++)h+=`<div class="sp" id="s${i}">✨</div>`;$('sps').innerHTML=h;
+window.render=async function(t){
+  fx(t);let k=0;for(let i=0;i<SEG.length;i++)if(t>=SEG[i][0])k=i;
+  const fim=t>=10.4;const esp=[];
+  if(!fim){const s=SEG[k],lt=t-s[0];
+    $('lab').textContent=s[1];$('lab').style.background=s[5]===1?'#ffd6e2':'#ff3b30';$('lab').style.color=s[5]===1?'#b0325c':'#fff';
+    $('txt').textContent=s[2];const pt=eo5(p(lt,0,0.35));$('txt').style.transform=`scale(${1.15-0.15*pt})`;
+    esp.push(quadro($('vid'),s[3],358,lt+(s[3]==='bolo'&&s[5]===2?4:0)));
+    $('vid').style.transform=`scale(${1.12-0.08*eo(p(lt,0,0.5))+0.03*lt/2})`;
+    $('vid').style.filter=s[5]===1?'saturate(1.25) brightness(1.08) contrast(.95)':s[5]===2?'saturate(.5) brightness(.6)':'saturate(.85) contrast(1.15) brightness(.85)';
+    $('nota').textContent=s[4];$('nota').style.opacity=eo(p(lt,0.35,0.3));
+    $$('.sp').forEach((e,i)=>{e.style.opacity=s[5]===1?(0.4+0.6*Math.abs(Math.sin(t*3+i))):0;e.style.left=(rnd(i)*980)+'px';e.style.top=(rnd(i+7)*980)+'px';e.style.transform=`scale(${0.5+0.6*Math.abs(Math.sin(t*2+i*1.3))})`});
+    const b=el(p(t,8.75,0.7));$('bolha').style.opacity=k===4?cl(b*3):0;$('bolha').style.transform=`scale(${Math.max(b,0)})`;
+    const fl=Math.max(...SEG.slice(1).map(x=>t>=x[0]?1-p(t,x[0],0.12):0));$('flash').style.opacity=fl*0.85;
+  }
+  const f=eo5(p(t,10.4,0.45));$('fim').style.opacity=f;$('fim').style.transform=`scale(${1.08-0.08*f})`;
+  await Promise.all(esp);
+};
+render(0);
+</script></body></html>
