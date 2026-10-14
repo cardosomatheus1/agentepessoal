@@ -146,6 +146,15 @@ def musica(ficha, esquema, marca):
     return (pasta / lic[nome]["arquivo"]) if nome in lic else None
 
 
+def misturar_musica(voz, mus, dur, saida, volume=0.14):
+    """ffmpeg command: the narration with the music low underneath (long narrated templates, `musica_sob_voz` in the
+    schema). The music loops if shorter than the video, fades in and out, and the mix lasts the whole video."""
+    return ["ffmpeg", "-v", "error", "-y", "-i", str(voz), "-stream_loop", "-1", "-i", str(mus), "-filter_complex",
+            f"[1:a]atrim=0:{dur:.3f},volume={volume},afade=t=in:d=1,afade=t=out:st={max(0, dur - 2):.3f}:d=2[m];"
+            f"[0:a]apad=whole_dur={dur:.3f}[v];[v][m]amix=inputs=2:duration=first:normalize=0[o]",
+            "-map", "[o]", "-t", f"{dur:.3f}", str(saida)]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("molde"); ap.add_argument("ficha")
@@ -222,6 +231,10 @@ def main():
                 af = ";".join(f"[{i}:a]apad=whole_dur={d:.3f}[a{i}]" for i, (_, d) in enumerate(audios)) + ";" + "".join(f"[a{i}]" for i in range(len(audios))) + f"concat=n={len(audios)}:v=0:a=1[o]"
                 audio = f"{tmp}/voz.m4a"
                 subprocess.run(["ffmpeg", "-v", "error", "-y"] + ins + ["-filter_complex", af, "-map", "[o]", audio], check=True)
+                m = musica(ficha, esquema, marca) if esquema.get("musica_sob_voz") else None
+                if m:
+                    subprocess.run(misturar_musica(audio, m, dur, f"{tmp}/voz_mus.m4a"), check=True)
+                    audio = f"{tmp}/voz_mus.m4a"
             else:
                 m = musica(ficha, esquema, marca)
                 if m:
