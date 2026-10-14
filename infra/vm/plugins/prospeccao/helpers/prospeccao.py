@@ -284,6 +284,7 @@ def _lead(d: dict, lid: str) -> dict | None:
 
 # ------------------------------------------------------------------ lead score (fixed rubric, computed from evidence)
 
+LIMITE_PLAYBOOK = 26000  # the reviewer reads the whole playbook; 14/10 the offer pushed it past the old 20000 cut
 NOTA_MINIMA = 55   # below: not a lead
 NOTA_QUENTE = 75   # first in line for the day's limited slots
 PONTOS_SEGMENTO = {"marmitaria": 25, "congelados": 25, "cozinha_producao": 25, "fabrica": 22, "confeitaria": 20,
@@ -1973,7 +1974,7 @@ def revisar_textos(d: dict, acoes: list, login: str = "") -> dict:
                       + (f"JÁ RECEBEU: {lead['historico'][-1]['texto'][:300]}\n" if lead.get("historico") and a["tipo"] != "resposta" else "")
                       + (f"O QUE A PESSOA DISSE: {_disse(lead)}\n" if a["tipo"] == "resposta" else "")
                       + f"TEXTO:\n«{a['texto']}»")
-    regras = REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:20000] if playbook.exists() else "")
+    regras = REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:LIMITE_PLAYBOOK] if playbook.exists() else "")
     guardados = _ler_vereditos(login) if login else {}
     chaves = {a["id"]: hashlib.sha256(f"{regras}\n{a['tipo']}\n{b.split(chr(10), 1)[1]}".encode()).hexdigest()[:32]
               for a, b in zip(acoes, blocos)}  # the item's id stays out: the same text for the same lead is the same item

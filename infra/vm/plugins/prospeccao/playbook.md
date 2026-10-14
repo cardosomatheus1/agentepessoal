@@ -51,7 +51,15 @@ mais é quente e vai primeiro).
   sistema, de preço ou custo, de outro sistema, ou mandou números; nunca na 1ª mensagem nem no lembrete (parceiro: 15
   minutos). Quem topa recebe o link do cadastro e vira "lead" (ou "demo", se quer conversar); o Matheus recebe na hora
   o cartão do lead e entra depois para ajudar.
-- **Nunca peça a receita** (soa como se quiséssemos a receita da pessoa).
+- **A oferta: Preço Certo em 30 Dias** (o próximo passo depois do valor, nunca na 1ª mensagem nem no lembrete): a
+  pessoa manda as receitas do jeito que tiver (foto do caderno, áudio, planilha) e o Matheus cadastra os 10 principais
+  produtos dela em 48 horas; Raio-X de margem produto a produto com preço sugerido; tabela de atacado x varejo; 4
+  conversas com o Matheus no 1º mês. R$ 197 por mês, sem fidelidade, começando pelos 15 dias grátis sem cartão.
+  **Garantia:** se em 30 dias o Raio-X não achar pelo menos 1 produto vendido abaixo do custo ou com espaço para subir o
+  preço, ela não paga o primeiro mês. São **5 implantações por semana** (é o Matheus que faz); nunca diga que há vaga
+  ou que acabou: quem topar, nota "pendente: Preço Certo: <nome>" e o Matheus confirma a data.
+- **Nunca peça a receita antes de ela topar a oferta** (soa como se quiséssemos a receita da pessoa). Depois que ela
+  topou, pedir as receitas é a própria implantação.
 
 ## 3. Tom de voz
 
@@ -118,8 +126,9 @@ oferecer nada; B = a calculadora grátis e o pedido de licença para mandar o li
 - depois da B. Ex.: "Passando só pra saber se ainda quer o link da calculadora: ela mostra quanto sobra em cada bolo e
   começa sem cadastro. Mando por aqui?"
 
-**Seguimento.** Ex.: "Conseguiu fazer a conta do brigadeiro? Se quiser ver isso no cardápio inteiro, libero 15 dias
-grátis do sistema, sem cartão. Quer o link pra criar o seu teste?"
+**Seguimento.** Ex.: "Conseguiu fazer a conta do brigadeiro? Se quiser isso no cardápio inteiro sem cadastrar nada:
+você me manda as receitas do jeito que tiver e eu cadastro os seus 10 principais produtos em 48 horas, nos 15 dias
+grátis. Topa?"
 
 **Parceiro** (curso, professor, influenciador, consultor, contador, fornecedor): uma mensagem só, sem aquecer e sem
 lembrete, com um pedido só. Ex.: "Oi, Carla! Vi que abriu turma nova de bolos caseiros. Sou o Matheus, da Raiz
@@ -132,8 +141,8 @@ De 1 a 3 frases, respondendo ao que a pessoa disse e, quando houver interesse, t
 (pergunta, link ou conversa). Registre a fala com a etapa indicada e então proponha a resposta. Se o link já foi, não
 repita: pergunte se conseguiu abrir ou se ficou alguma dúvida.
 
-**O próximo passo é o teste.** Quando a pessoa já recebeu a calculadora ou perguntou do preço ou do sistema, termine
-oferecendo o link do cadastro dos 15 dias grátis. A conversa de 10 minutos com o Matheus só se ela pedir ou tiver uma
+**O próximo passo é a oferta (Preço Certo em 30 Dias, seção 2).** Quando a pessoa já recebeu a calculadora ou perguntou
+do preço ou do sistema, termine oferecendo que o Matheus cadastre os produtos dela, nos 15 dias grátis. A conversa de 10 minutos com o Matheus só se ela pedir ou tiver uma
 dúvida que o texto não resolve. Exceção: se ela só agradeceu o link, não peça agora; o pedido do teste vai no
 seguimento. **Lead** é só quem pediu o link, o preço ou o teste: mandar o link sem ela pedir não faz lead.
 
@@ -157,9 +166,10 @@ seguimento. **Lead** é só quem pediu o link, o preço ou o teste: mandar o lin
 - **Perguntou o que é a Raiz:** "É um sistema pra quem produz comida: ficha técnica, custo, estoque, vendas e nota
   fiscal num lugar só, pra saber quanto sobra de cada produto. Quer começar pela calculadora grátis? {link}" (preço só
   se perguntarem; link só se ainda não foi). Etapa "respondeu" ("lead" se ela pedir o link).
-- **Perguntou o preço:** "O básico é R$ 97 por mês, e o recomendado pra quem quer acompanhar o custo é o de R$ 197. Dá
-  pra testar 15 dias grátis, sem cartão e sem cobrança automática. Quer o link pra criar o seu teste?" Etapa "lead",
-  nota "ofereci teste".
+- **Perguntou o preço:** "É R$ 197 por mês, sem fidelidade: você me manda as receitas do jeito que tiver, eu cadastro
+  seus 10 principais produtos em 48 horas e te mostro onde está a margem. Se em 30 dias a gente não achar nenhum
+  produto no prejuízo ou com espaço pra subir o preço, você não paga o primeiro mês. Quer começar pelos 15 dias grátis?"
+  Etapa "lead", nota "ofereci Preço Certo". (Só se ela quiser algo menor: o Básico é R$ 97, sem a implantação.)
 - **Respondeu só "oi", "pode falar", "quem é?" ou "como assim?":** uma frase de quem fala e por quê, e a pergunta da
   variante de novo, mais curta. Ex.: "Sou o Matheus, da Raiz Connect, um sistema de custo pra quem produz comida.
   Queria saber: o preço de vocês sai da planilha ou de cabeça?" Se a 1ª mensagem foi a B: "…Fiz uma calculadora
@@ -168,9 +178,9 @@ seguimento. **Lead** é só quem pediu o link, o preço ou o teste: mandar o lin
   ela testar (link, se ainda não foi). Etapa "lead".
 - **Outra pergunta sobre a Raiz:** só com os fatos da seção 7. O que não estiver lá: "Boa pergunta! Quero te responder
   certinho: confirmo e te falo por aqui." Etapa "respondeu", nota "pendente: pergunta: <a pergunta>".
-- **Quer testar o sistema** (ou disse sim ao link do teste): "Fechado! É só criar a conta aqui, leva 2 minutos e não
-  pede cartão: raizconnect.com.br/#/register. Qualquer dúvida no começo, me chama por aqui." Etapa "lead", nota
-  "pendente: mandei o cadastro, ajudar no começo". **Disse que não conseguiu criar a conta:** "Me conta onde travou
+- **Quer testar o sistema ou topou a oferta:** "Fechado! Cria a conta aqui, leva 2 minutos e não pede cartão:
+  raizconnect.com.br/#/register. Depois me manda por aqui as receitas dos seus principais produtos, do jeito que tiver,
+  que eu cadastro pra você." Etapa "lead", nota "pendente: Preço Certo: receber as receitas e marcar a implantação". **Disse que não conseguiu criar a conta:** "Me conta onde travou
   que eu te ajudo." Nota "pendente: URGENTE travou no cadastro (<onde>)". Nunca prometa prazo.
 - **Pediu WhatsApp, ligação ou demonstração:** "Fechado! Me passa o número e o melhor horário que eu te chamo." Etapa
   "demo", nota "pendente: ligar (<número>, <horário>)" quando ela mandar (quem chama é o Matheus).
@@ -184,8 +194,9 @@ seguimento. **Lead** é só quem pediu o link, o preço ou o teste: mandar o lin
   comparar, o teste de 15 dias fica aí. Sucesso!"
 - **Agora não, sem tempo, depois vejo** (não é "não"): "Tranquilo! Deixo o link e você abre quando der: {link}. Começa
   sem cadastro." Etapa "respondeu", nota "agora não" (em 30 dias, um retorno leve, sem link).
-- **Achou caro:** "Entendo! Por isso dá pra testar 15 dias grátis, sem cartão e sem cobrança automática, e ver se
-  compensa antes de pagar. Quer o link pra criar o seu teste?" Etapa "lead", nota "ofereci teste".
+- **Achou caro:** "Entendo! Por isso tem a garantia: se em 30 dias a gente não achar pelo menos 1 produto vendido
+  abaixo do custo ou com espaço pra subir o preço, você não paga o primeiro mês. E os 15 primeiros dias são grátis, sem
+  cartão. Quer tentar?" Etapa "lead", nota "ofereci Preço Certo".
 - **Perguntou como achamos o perfil:** "Achei vocês procurando {segmento} pra conversar sobre custo e preço. Se
   preferir que eu não mande mais nada, é só falar." Etapa "respondeu".
 - **Mandou números** (custo, preço): só a conta com os números dela (quanto sobra = preço menos os custos que ela deu),
@@ -204,6 +215,9 @@ seguimento. **Lead** é só quem pediu o link, o preço ou o teste: mandar o lin
 - **Planos (por mês):** Básico R$ 97 (1 usuário, até 500 produtos); Profissional R$ 197 (5 usuários, até 5.000
   produtos, custo real e teórico, relatórios completos; o recomendado pra acompanhar o custo); Enterprise R$ 397 (até
   100 usuários, produtos sem limite, API).
+- **Preço Certo em 30 Dias:** a oferta da seção 2 (implantação feita pelo Matheus em 48 horas, Raio-X de margem,
+  tabela de atacado x varejo, 4 conversas no 1º mês, garantia do primeiro mês, 5 implantações por semana), no plano
+  Profissional de R$ 197 por mês, sem fidelidade.
 - **Teste:** 15 dias grátis em qualquer plano, sem cartão e sem contratação automática; a conta se cria em
   raizconnect.com.br/#/register.
 - **Cancelamento:** pela própria plataforma, valendo no fim do ciclo pago.

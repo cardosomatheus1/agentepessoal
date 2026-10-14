@@ -512,6 +512,13 @@ class Suite:
         eq(f._municipios(d, "5620104", "PE"), {"recife": "1234"}, "municípios de outro estado")
         ok(any("/uf/PE/cnae/5620104" in u for u in paginas), "lê a página do estado certo")
 
+    def t_revisor_le_o_playbook_inteiro(self):
+        # 14/10: with the offer (Preço Certo em 30 Dias) the playbook passed the old 20000-character cut, and the
+        # reviewer stopped seeing the facts at the end (section 7 and 8)
+        texto = (RAIZ / "playbook.md").read_text(encoding="utf-8")
+        ok(len(texto) <= self.p.LIMITE_PLAYBOOK, f"playbook com {len(texto)} caracteres passa do que o revisor lê")
+        ok("Preço Certo em 30 Dias" in texto and "não paga o primeiro mês" in texto, "a oferta e a garantia estão no playbook")
+
     def t_cliente_e_quem_produz_alimento(self):
         # Matheus, 14/10: "o icp é o produtor de alimentos de fato e não só esses ramos grandes" (two closing make
         # ice-cream syrup and granola): small factories of any food enter the walk, the search words and the rubric
