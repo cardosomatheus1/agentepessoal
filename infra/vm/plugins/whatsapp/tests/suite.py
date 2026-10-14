@@ -702,6 +702,24 @@ class Suite:
         ok('botao.startswith("rt:")' in rec and "t.retomar(ctx, cid, m, entregar=_intervir)" in rec, "botão ▶️ Retomar")
         ok("/voz" in rec.split("AJUDA = ")[1].split('"""')[1] and "voz().comando(usuario, comando)" in rec, "/voz no receber e na ajuda")
 
+    def t_conversa_girada_leva_as_ancoras(self):
+        # the rotated phone chat's _herdado cuts each line at 350 chars: resumo_seguro adds the @, ids and saidas/
+        import importlib.util
+
+        caminho = RAIZ.parent / "resumo_seguro" / "helpers" / "ancoras.py"
+        spec = importlib.util.spec_from_file_location("ancoras_teste_whatsapp", caminho)
+        a = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(a)
+        item = type("I", (), {"content": "x" * 400 + " lead @doces.da.ana, acao_id a1b2c3 e "
+                                          "/a0/usr/chats/ctxV/saidas/0003-pesquisa.txt"})()
+        bloco = a.bloco_do_registro([item], "ctxV")
+        ok("@doces.da.ana" in bloco and "saidas/0003-pesquisa.txt" in bloco, f"âncoras da conversa velha: {bloco}")
+        rec = (RAIZ / "api" / "receber.py").read_text(encoding="utf-8")
+        girar = rec.split("def _girar_se_velha")[1].split("\ndef ")[0]
+        ok("_ancoras_herdadas(ctx)" in girar and "bloco_do_registro(_logs(ctx), ctx.id)" in rec,
+           "a conversa girada soma as âncoras ao _herdado")
+        ok('return ""' in rec.split("def _ancoras_herdadas")[1].split("\ndef ")[0], "sem o plugin, segue sem âncoras")
+
     def t_sem_retomar_em_laco_de_reinicios(self):
         # Hermes restart_loop_guard: 3 starts, each less than 5 min after the one before, is a loop
         t = self.t

@@ -196,6 +196,26 @@ def _paralela(usuario: str):
     return ctx
 
 
+def _ancoras_herdadas(ctx) -> str:
+    """plugins/resumo_seguro bloco_do_registro of the old chat ("" when that plugin is missing or fails)."""
+    import importlib.util
+
+    nome, caminho = "resumo_seguro_ancoras", Path("/a0/usr/plugins/resumo_seguro/helpers/ancoras.py")
+    try:
+        antigo = sys.modules.get(nome)
+        mtime = caminho.stat().st_mtime
+        if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+            spec = importlib.util.spec_from_file_location(nome, caminho)
+            modulo = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(modulo)
+            modulo._mtime = mtime
+            sys.modules[nome] = modulo
+        return str(sys.modules[nome].bloco_do_registro(_logs(ctx), ctx.id) or "")
+    except Exception as exc:
+        print(f"whatsapp: anchors for the rotated chat unavailable: {type(exc).__name__}: {exc}", flush=True)
+        return ""
+
+
 def _girar_se_velha(usuario: str, ctx):
     """A main phone chat idle for hours (or huge) starts fresh, carrying the last exchanges as a summary."""
     ultima = float(ctx.get_data("whatsapp_ultima_entrada") or 0)
@@ -204,6 +224,8 @@ def _girar_se_velha(usuario: str, ctx):
     if time.time() - ultima < GIRAR_APOS_S and len(_logs(ctx)) < GIRAR_ACIMA_DE_ITENS:
         return ctx
     herdado = _historico(ctx, 8, 350)
+    if ancoras := _ancoras_herdadas(ctx):  # the @, ids and saidas/ files the 350-char lines would cut
+        herdado = f"{herdado}\n\n{ancoras}".strip()
     nova, _ = _conversa(usuario, nova=True)
     if herdado:
         nova.set_data("_herdado", herdado)
