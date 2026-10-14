@@ -1195,6 +1195,183 @@
     "Pedir a origem do número, como sistema ou contagem do dono. Proibir arredondar para cima."
    ],
    "publico": "cliente_final"
+  },
+  {
+   "id": "lanca-app",
+   "nome": "Lançamento de app ou software",
+   "grupo": "Lançar",
+   "onda": 5,
+   "origem": null,
+   "situacao": "Comercial de 1 minuto para lançar um app, sistema, plataforma ou curso online (negócio digital).",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "55 a 65 s",
+   "voz": "sim",
+   "midia": "3 a 5 prints reais do produto (celular ou computador)",
+   "cenas": [
+    "dores chegando como notificações",
+    "virada 'e se...'",
+    "logo se montando e acendendo",
+    "tour de 3 a 5 telas com a câmera mergulhando no ponto que importa",
+    "3 benefícios",
+    "como começar em 3 passos",
+    "oferta de lançamento (real) ou para quem é",
+    "final"
+   ],
+   "ficha": {
+    "dores": "3 frases curtas",
+    "telas": "3 a 5 prints com destaque (x, y, largura, altura em %) e legenda",
+    "aparelho": "celular ou computador",
+    "beneficios": "3",
+    "passos": "3",
+    "oferta": "opcional, real, com prazo"
+   },
+   "diferencial": "Zoom na tela: a câmera mergulha no ponto do print que importa, com contorno acendendo.",
+   "exemplos": [
+    "NEXOS: assistente de gestão",
+    "Raiz: calculadora de preço",
+    "AgendaJá: agenda para salão"
+   ],
+   "regras": [
+    "Só prints reais do produto; dados de exemplo levam a nota 'Dados fictícios'.",
+    "Oferta só com preço praticado e prazo real; o molde recusa prazo vencido."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "lanca-produto",
+   "nome": "Lançamento de marca de produto",
+   "grupo": "Lançar",
+   "onda": 5,
+   "origem": null,
+   "situacao": "Comercial de 1 minuto para lançar uma marca ou linha de produto físico (varejo, e-commerce, indústria, artesanato).",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "55 a 65 s",
+   "voz": "sim",
+   "midia": "fotos reais do produto (2 a 3 ângulos), dos materiais e da linha",
+   "cenas": [
+    "feixe de luz revelando o produto",
+    "nome letra por letra e logo",
+    "a origem na frase do dono",
+    "ângulos do produto com chamadas de detalhe",
+    "feito com: 3 materiais",
+    "a linha em grade",
+    "momento de uso (opcional)",
+    "onde comprar e quando",
+    "final"
+   ],
+   "ficha": {
+    "origem": "frase real do dono",
+    "angulos": "2 a 3 fotos com detalhes (texto + ponto x, y)",
+    "feito_com": "3",
+    "linha": "3 a 6 itens, preço opcional real",
+    "onde": "canais reais e data opcional"
+   },
+   "diferencial": "Chamadas de detalhe com linha e ponto saindo do produto, posicionadas pelo código.",
+   "exemplos": [
+    "Flor de Sal: cosméticos naturais",
+    "Doces da Lu: linha de bolos de pote",
+    "Linho Norte: roupas de linho"
+   ],
+   "regras": [
+    "Frase de origem só se o dono disse; data de lançamento passada é recusada.",
+    "Cada foto mostra exatamente o produto ou material da cena."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "inauguracao",
+   "nome": "Inauguração",
+   "grupo": "Lançar",
+   "onda": 5,
+   "origem": null,
+   "situacao": "Comercial de 1 minuto para a abertura de um ponto físico (restaurante, salão, oficina, clínica, loja de bairro).",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "55 a 65 s",
+   "voz": "sim",
+   "midia": "fachada e 3 a 5 fotos do espaço; equipe opcional",
+   "cenas": [
+    "contagem 'faltam N dias'",
+    "tesoura cortando a fita da fachada",
+    "o espaço",
+    "quem atende (opcional)",
+    "o que tem",
+    "condição de inauguração (opcional)",
+    "endereço com pino no mapa desenhado",
+    "a data no calendário",
+    "final"
+   ],
+   "ficha": {
+    "data": "data da inauguração (dias e dia da semana são do código)",
+    "espaco": "3 a 5 fotos com legenda",
+    "equipe": "opcional, com permissão",
+    "itens": "3 a 6",
+    "condicao": "opcional, real, com validade",
+    "endereco": "real"
+   },
+   "diferencial": "Fita de inauguração cortada pela tesoura revelando a fachada.",
+   "exemplos": [
+    "Burger Noite: hamburgueria",
+    "Oficina do Zé: oficina",
+    "Studio Bella: salão"
+   ],
+   "regras": [
+    "Data passada ou condição vencida: o molde recusa.",
+    "Fala com dia da semana ou número de dias diferente do calculado é recusada.",
+    "Mapa é desenho, nunca mapa real nem marca de app."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "manifesto",
+   "nome": "Manifesto de marca",
+   "grupo": "Lançar",
+   "onda": 5,
+   "origem": null,
+   "situacao": "Comercial de 1 minuto para uma marca que nasce ou muda de identidade (serviço, B2B, agência, consultoria, escritório).",
+   "formatos": [
+    "reel"
+   ],
+   "duracao": "55 a 65 s",
+   "voz": "sim",
+   "midia": "logo PNG; foto opcional da equipe ou do lugar",
+   "cenas": [
+    "frases do manifesto em tipografia cinética",
+    "'não é sobre X, é sobre Y'",
+    "3 valores",
+    "o símbolo se montando em peças",
+    "a paleta com nome e HEX",
+    "o logo aplicado (cartão, placa, ícone, post)",
+    "fato real ou foto (opcional)",
+    "assinatura",
+    "final"
+   ],
+   "ficha": {
+    "manifesto": "3 a 4 frases com palavras-chave",
+    "contraste": "2 pares",
+    "valores": "3",
+    "paleta": "opcional (sem ela, as cores da marca)",
+    "fato": "opcional, real"
+   },
+   "diferencial": "O logo se monta a partir das partes do próprio PNG.",
+   "exemplos": [
+    "NEXOS: nova identidade",
+    "Prumo Contábil: contabilidade",
+    "Norte Arquitetura: escritório de arquitetura"
+   ],
+   "regras": [
+    "Fato (anos, clientes, números) só com origem.",
+    "A marca d'água some enquanto o logo se monta e na assinatura, para não repetir o logo."
+   ],
+   "publico": "cliente_final"
   }
  ],
  "nota_duracao": "Durações medidas nas fichas de teste da rodada 2 (13/10), já com o tempo mínimo de leitura: 0,8 s + 0,25 s por palavra nova em cada cena sem narração."

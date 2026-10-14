@@ -91,6 +91,7 @@ por Reel. Motor próprio (navegador + ffmpeg) em vez de Remotion, que pede licen
 | 2 | Isso ou aquilo, Oferta relâmpago, Vitrine do dia, Depoimento de cliente, Antes e depois, Como pedir, Data especial, Produto em destaque, Aviso | os mais usados por qualquer pequeno negócio (escolha do avaliador cego) e as datas do ano |
 | 3 | Os tipos de cliente, Conversa no celular, Do começo ao fim, Passo a passo, Não faça x Faça, Demonstração no celular, Pergunta do cliente, Lançamento, Combo ou kit, Avalia ou indica | variedade para atrair, engajar e ensinar |
 | 4 | Agenda aberta, Bastidores e história, Marco e agradecimento | institucional |
+| 5 | Lançamento de app, Lançamento de produto, Inauguração, Manifesto de marca | comerciais de 1 minuto, narrados com música baixa por baixo (`musica_sob_voz`), um por modelo de negócio: digital, produto físico, ponto físico e serviço (pedido do Matheus em 14/10) |
 
 Cada molde só entra no catálogo do agente depois de:
 1. três fichas de teste de ramos diferentes (ex.: confeitaria, oficina, salão) geradas e passando na conferência;
@@ -137,6 +138,10 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 | 28 | Bastidores e história (`bastidores`) | Institucional | 4 | reel, carrossel | Quem faz, como faz e por que começou, com fotos do próprio negócio. Modo equipe: quem te atende (foto, nome, função, frase da pessoa, com permissão). | Fotos reais com zoom lento; aproxima o cliente do dono. |  |
 | 29 | Aviso (`aviso`) | Institucional | 2 | story, reel | Horário especial, feriado, férias, mudança de endereço ou de telefone. | Claro e rápido; um cartaz animado que todo negócio precisa. |  |
 | 30 | Marco e agradecimento (`marco`) | Institucional | 4 | reel, carrossel | Comemora um número ou data e agradece aos clientes. | Celebração; número real conferido. |  |
+| 31 | Lançamento de app ou software (`lanca-app`) | Lançar | 5 | reel, story | Comercial de 1 minuto para lançar um app, sistema, plataforma ou curso online (negócio digital). | Zoom na tela: a câmera mergulha no ponto do print que importa, com contorno acendendo. |  |
+| 32 | Lançamento de marca de produto (`lanca-produto`) | Lançar | 5 | reel, story | Comercial de 1 minuto para lançar uma marca ou linha de produto físico (varejo, e-commerce, indústria, artesanato). | Chamadas de detalhe com linha e ponto saindo do produto, posicionadas pelo código. |  |
+| 33 | Inauguração (`inauguracao`) | Lançar | 5 | reel, story | Comercial de 1 minuto para a abertura de um ponto físico (restaurante, salão, oficina, clínica, loja de bairro). | Fita de inauguração cortada pela tesoura revelando a fachada. |  |
+| 34 | Manifesto de marca (`manifesto`) | Lançar | 5 | reel | Comercial de 1 minuto para uma marca que nasce ou muda de identidade (serviço, B2B, agência, consultoria). | O logo se monta a partir das partes do próprio PNG. |  |
 
 ## 8. Detalhe de cada molde
 
