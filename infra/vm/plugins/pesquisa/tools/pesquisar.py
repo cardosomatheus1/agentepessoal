@@ -81,16 +81,29 @@ def _texto_html(html: str) -> str:
     return "\n".join(l for l in linhas if len(l) > 2)
 
 
-async def _ler_pagina(sessao: aiohttp.ClientSession, url: str) -> str:
+async def _ler_pagina(sessao: aiohttp.ClientSession, url: str) -> tuple[str, dict]:
+    """(text, copy): copy is {} for the live page, else the archived copy read instead of a blocked page (14/10: a site
+    answering 403/429 or a bot wall used to drop out of the research) — {"rotulo": "cópia arquivada de <data>", "url"}."""
     try:
         async with sessao.get(url, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=True,
                               headers={"User-Agent": NAVEGADOR, "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.6"}) as r:
-            if r.status >= 400 or "html" not in (r.headers.get("Content-Type") or "html"):
-                return ""
+            status = r.status
+            if status < 400 and "html" not in (r.headers.get("Content-Type") or "html"):
+                return "", {}
             bruto = await r.text(errors="ignore")
-        return await asyncio.to_thread(_texto_html, bruto[:3_000_000])
     except Exception:
-        return ""
+        return "", {}
+    rp = _modulo_local("pesquisa_recuperar", "recuperar_pagina.py")
+    if not rp.bloqueada(status, bruto[:65536].encode("utf-8", "ignore")):
+        return await asyncio.to_thread(_texto_html, bruto[:3_000_000]), {}
+    try:
+        copia = await asyncio.to_thread(rp.recover, url)
+    except Exception:
+        copia = None
+    if not copia:
+        return "", {}
+    texto = await asyncio.to_thread(_texto_html, copia["body"][:3_000_000].decode("utf-8", "replace"))
+    return texto, {"rotulo": copia["label"], "url": copia["source_url"]}
 
 
 def _vtt_texto(vtt: str) -> str:
@@ -174,6 +187,8 @@ Abaixo estão notas extraídas de {n} fontes numeradas. Escreva a resposta em po
 - depois os pontos que sustentam, com a fonte entre colchetes [n] em cada afirmação importante;
 - diga onde as fontes concordam, onde divergem e o que ficou sem confirmação;
 - números (medidas, preços, notas) só como aparecem nas fontes, com a fonte;
+- fonte do tipo "cópia arquivada de <data>" é uma cópia antiga da página: diga a data ao citar; preço e estoque dela
+  não valem como atuais;
 - seja completo mas direto (sem enrolação), no máximo ~{limite} palavras.
 {extra}
 --- notas ---
@@ -204,10 +219,14 @@ async def _rodada(pergunta: str, buscas: list[str], videos: bool, vistos: set[st
                 elif len(paginas) < MAX_PAGINAS:
                     vistos.add(chave)
                     paginas.append(lista[i])
-        textos = await asyncio.gather(*[_ler_pagina(sessao, p["url"]) for p in paginas])
+        lidas = await asyncio.gather(*[_ler_pagina(sessao, p["url"]) for p in paginas])
     fontes = []
-    for p, t in zip(paginas, textos):
-        t = t or p.get("trecho", "")
+    for p, (t, copia) in zip(paginas, lidas):
+        if copia and len(t) > 200:  # the page was blocked: an archived copy, cited with its date
+            fontes.append({"url": p["url"], "titulo": p["titulo"], "tipo": f"página, {copia['rotulo']}",
+                           "texto": t[:MAX_TEXTO], "copia": f"{copia['rotulo']}: {copia['url']}"})
+            continue
+        t = (t if not copia else "") or p.get("trecho", "")
         if len(t) > 200:
             fontes.append({"url": p["url"], "titulo": p["titulo"], "tipo": "página", "texto": t[:MAX_TEXTO]})
     caps, vistas = await asyncio.gather(
@@ -347,7 +366,8 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
         if PRECO.search(pergunta) else ""
     sintese = await _modelo_async(PROMPT_SINTESE.format(pergunta=pergunta, n=len(fontes), notas=notas, extra=extra,
                                                               limite=1200 if extra else 600), "medium")
-    lista = "\n".join(f"[{i}] {f['titulo'] or ''} — {f['url']}" for i, f in enumerate(fontes, 1))
+    lista = "\n".join(f"[{i}] {f['titulo'] or ''} — {f['url']}" + (f" ({f['copia']})" if f.get("copia") else "")
+                      for i, f in enumerate(fontes, 1))
     (pasta / "notas.md").write_text(f"# {pergunta}\n\nBuscas: {todas_buscas}\n\n{notas}\n", encoding="utf-8")
     (pasta / "sintese.md").write_text(sintese + "\n\n" + lista, encoding="utf-8")
     if ao_salvar:
@@ -365,8 +385,12 @@ async def pesquisar(pergunta: str, buscas: list[str], profundidade: int, videos:
 
 
 def _livro_pesquisa():
-    nome = "pesquisa_livro"
-    caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists()) / "helpers" / "livro_pesquisa.py"
+    return _modulo_local("pesquisa_livro", "livro_pesquisa.py")
+
+
+def _modulo_local(nome: str, arquivo: str):
+    """A helper of this plugin, loaded again when the file changes (a deploy)."""
+    caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists()) / "helpers" / arquivo
     antigo = sys.modules.get(nome)
     mtime = caminho.stat().st_mtime
     if antigo is None or getattr(antigo, "_mtime", None) != mtime:
