@@ -1,0 +1,59 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "para_quem": "Para quem tem van de entrega",
+ "resultado": "Sua van de entrega rodando o mês inteiro, sem parar por defeito bobo.",
+ "destaques": [
+  "o mês inteiro"
+ ],
+ "midia": "fotos/oficina_frota.jpg",
+ "nome": "Plano Frota em Dia",
+ "subtitulo": "Manutenção mensal para pequenas frotas",
+ "itens": [
+  {
+   "nome": "Revisão mensal completa",
+   "detalhe": "Freio, suspensão, óleo e pneus conferidos",
+   "valor": 250,
+   "icone": "carro"
+  },
+  {
+   "nome": "Troca de óleo e filtro",
+   "detalhe": "Uma por mês, com o óleo certo da van",
+   "valor": 180,
+   "icone": "chave"
+  },
+  {
+   "nome": "Alinhamento e balanceamento",
+   "detalhe": "Todo mês, para o pneu durar mais",
+   "valor": 120,
+   "icone": "check"
+  },
+  {
+   "nome": "Atendimento no mesmo dia",
+   "detalhe": "Van parada passa na frente da fila",
+   "icone": "relogio"
+  }
+ ],
+ "preco": 390,
+ "periodo": "por mês",
+ "condicoes": [
+  "Sem fidelidade",
+  "Preço por van"
+ ],
+ "garantia": {
+  "texto": "Se a van parar por defeito numa peça que a gente revisou, o conserto é por nossa conta."
+ },
+ "falas": [
+  "Sua van de entrega rodando o mês inteiro, sem parar por defeito bobo.",
+  "Conheça o Plano Frota em Dia, da Oficina do Zé.",
+  "Revisão mensal completa, com freio, suspensão e pneus: duzentos e cinquenta reais.",
+  "Troca de óleo e filtro todo mês: cento e oitenta.",
+  "Alinhamento e balanceamento: cento e vinte.",
+  "E atendimento no mesmo dia, se a van parar, já vem incluso.",
+  "Tudo isso vale quinhentos e cinquenta reais por mês.",
+  "Você paga trezentos e noventa por mês, por van, sem fidelidade.",
+  "E tem garantia: se a van parar por defeito numa peça que a gente revisou, o conserto é por nossa conta.",
+  "Agende pelo WhatsApp."
+ ],
+ "nota": "valores de exemplo"
+}

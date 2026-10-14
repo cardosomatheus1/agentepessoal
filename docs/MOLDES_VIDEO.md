@@ -92,6 +92,7 @@ por Reel. Motor próprio (navegador + ffmpeg) em vez de Remotion, que pede licen
 | 3 | Os tipos de cliente, Conversa no celular, Do começo ao fim, Passo a passo, Não faça x Faça, Demonstração no celular, Pergunta do cliente, Lançamento, Combo ou kit, Avalia ou indica | variedade para atrair, engajar e ensinar |
 | 4 | Agenda aberta, Bastidores e história, Marco e agradecimento | institucional |
 | 5 | Lançamento de app, Lançamento de produto, Inauguração, Manifesto de marca | comerciais de 1 minuto, narrados com música baixa por baixo (`musica_sob_voz`), um por modelo de negócio: digital, produto físico, ponto físico e serviço (pedido do Matheus em 14/10) |
+| 6 | Oferta completa | a oferta 'Lucro na Mão em 30 Dias' (Hormozi, 14/10) não cabia em nenhum molde: oferta relâmpago pede preço 'de' e prazo, os lançamentos pedem 55 a 65 s e cenas de marca. Aguarda o AR Board |
 
 Cada molde só entra no catálogo do agente depois de:
 1. três fichas de teste de ramos diferentes (ex.: confeitaria, oficina, salão) geradas e passando na conferência;
@@ -142,6 +143,7 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 | 32 | Lançamento de marca de produto (`lanca-produto`) | Lançar | 5 | reel, story | Comercial de 1 minuto para lançar uma marca ou linha de produto físico (varejo, e-commerce, indústria, artesanato). | Chamadas de detalhe com linha e ponto saindo do produto, posicionadas pelo código. |  |
 | 33 | Inauguração (`inauguracao`) | Lançar | 5 | reel, story | Comercial de 1 minuto para a abertura de um ponto físico (restaurante, salão, oficina, clínica, loja de bairro). | Fita de inauguração cortada pela tesoura revelando a fachada. |  |
 | 34 | Manifesto de marca (`manifesto`) | Lançar | 5 | reel | Comercial de 1 minuto para uma marca que nasce ou muda de identidade (serviço, B2B, agência, consultoria). | O logo se monta a partir das partes do próprio PNG. |  |
+| 35 | Oferta completa (`oferta-completa`) | Vender | 6 | reel | A oferta inteira num Reel narrado: o resultado que a pessoa quer, o que entra com o valor de cada peça, o preço, a garantia e a vaga limitada de verdade. | O recibo que se monta peça por peça e soma o valor; o preço chega ao lado, nunca como preço 'de'. |  |
 
 ## 8. Detalhe de cada molde
 
@@ -412,3 +414,12 @@ entrega o motor, o catálogo e os testes prontos para a Story.
 - **Ficha:** numero (valor real); o_que (até 40 (pedidos, anos, clientes)); obrigado (até 100)
 - **Exemplos:** 1.000 bolos entregues; 5 anos de oficina; 10 mil seguidores
 - **Regras:** Pedir a origem do número, como sistema ou contagem do dono. Proibir arredondar para cima.
+
+### 35. Oferta completa (`oferta-completa`)
+
+- **Quando usar:** A oferta inteira num Reel narrado: o resultado que a pessoa quer, o que entra com o valor de cada peça, o preço, a garantia e a vaga limitada de verdade.
+- **Formato:** reel · 35 a 55 s · voz: sim (música baixa por baixo) · mídia: foto opcional do negócio na abertura
+- **Cenas:** resultado com destaque → nome da oferta → uma peça por fala, entrando no recibo com o valor → total somado pelo código → preço ao lado do valor e condições → garantia carimbada (opcional) → vagas reais em casinhas (opcional) → final
+- **Ficha:** resultado (até 90 letras); itens (3 a 6: nome até 30, detalhe, valor real ou incluso); preco (R$ real); condicoes (até 3); garantia (opcional, real); vagas (opcional, real)
+- **Exemplos:** Raiz: Lucro na Mão em 30 Dias; Oficina: plano mensal de frota; Salão: Dia da Noiva
+- **Regras:** O total é somado pelo código e o preço precisa ser menor que ele. Valor, preço, garantia e vagas só com origem. Sem preço 'de' riscado, sem prazo inventado, sem 'restam X vagas'.

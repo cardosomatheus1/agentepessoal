@@ -1372,6 +1372,51 @@
     "A marca d'água some enquanto o logo se monta e na assinatura, para não repetir o logo."
    ],
    "publico": "cliente_final"
+  },
+  {
+   "id": "oferta-completa",
+   "nome": "Oferta completa",
+   "grupo": "Vender",
+   "onda": 6,
+   "origem": null,
+   "situacao": "A oferta inteira num Reel narrado: o resultado que a pessoa quer, o que entra com o valor de cada peça, o preço, a garantia e a vaga limitada de verdade.",
+   "formatos": [
+    "reel"
+   ],
+   "duracao": "35 a 55 s",
+   "voz": "sim",
+   "midia": "foto opcional do negócio na abertura",
+   "cenas": [
+    "resultado com destaque",
+    "nome da oferta",
+    "uma peça por fala: entra no recibo com o valor",
+    "total somado pelo código",
+    "preço ao lado do valor (sem preço 'de' riscado) e condições",
+    "garantia carimbada (opcional)",
+    "vagas reais em casinhas, sem contagem (opcional)",
+    "final"
+   ],
+   "ficha": {
+    "resultado": "até 90 letras",
+    "itens": "3 a 6 (nome, detalhe, valor real ou incluso)",
+    "preco": "R$ real",
+    "condicoes": "até 3",
+    "garantia": "opcional, real",
+    "vagas": "opcional, real"
+   },
+   "diferencial": "O recibo que se monta peça por peça e soma o valor; o preço chega ao lado, nunca como preço 'de'.",
+   "exemplos": [
+    "Raiz: Lucro na Mão em 30 Dias",
+    "Oficina: plano mensal de frota",
+    "Salão: Dia da Noiva"
+   ],
+   "regras": [
+    "O total é somado pelo código e o preço precisa ser menor que ele; senão o molde recusa.",
+    "Valor de cada peça, preço, garantia e vagas só com origem (dono ou sistema).",
+    "Sem preço 'de' riscado, sem prazo inventado, sem 'restam X vagas'.",
+    "Aguarda aprovação do Matheus no AR Board antes de o agente escolher sozinho."
+   ],
+   "publico": "cliente_final"
   }
  ],
  "nota_duracao": "Durações medidas nas fichas de teste da rodada 2 (13/10), já com o tempo mínimo de leitura: 0,8 s + 0,25 s por palavra nova em cada cena sem narração."

@@ -203,6 +203,10 @@
   "mostra": "chama do fogão a gás",
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
  },
+ "geleia_potes.jpg": {
+  "mostra": "potes de vidro de geleia artesanal de morango, sem rótulo, na bancada de uma pequena cozinha de produção",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
  "geral.jpg": {
   "mostra": "brigadeiros em forminhas (filmagem)",
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"

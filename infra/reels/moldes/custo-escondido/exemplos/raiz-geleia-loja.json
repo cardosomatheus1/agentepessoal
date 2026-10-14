@@ -1,0 +1,53 @@
+{
+ "_marca": "raiz",
+ "_formato": "reel",
+ "produto": "pote de geleia",
+ "preco": 20,
+ "visivel_nome": "frutas e açúcar",
+ "custo_visivel": 6,
+ "escondidos": [
+  {
+   "nome": "Pote de vidro e tampa",
+   "valor": 2.5
+  },
+  {
+   "nome": "Rótulo",
+   "valor": 0.5
+  },
+  {
+   "nome": "Gás do tacho",
+   "valor": 1
+  },
+  {
+   "nome": "Desconto da loja (35%)",
+   "valor": 7
+  }
+ ],
+ "filmagem": "fotos/geleia_potes.jpg",
+ "falas": [
+  "Pote de geleia a vinte reais. Vendendo pra loja revender, quanto fica com você?",
+  "Frutas e açúcar: seis reais. Isso todo mundo lembra.",
+  "Mas tem o que quase ninguém coloca na conta.",
+  "O pote de vidro com tampa: dois e cinquenta.",
+  "O rótulo: cinquenta centavos.",
+  "O gás do tacho: um real.",
+  "E o desconto de trinta e cinco por cento que a loja pede: sete reais.",
+  "No balcão, sobravam dez reais por pote. Na loja, sobram só três.",
+  "Preço de loja sai do custo, não do preço de balcão menos o desconto.",
+  "Faz a conta do seu produto na calculadora grátis. Link na bio."
+ ],
+ "nota": "valores de exemplo",
+ "_origem": {
+  "preco": "dono",
+  "custo_visivel": "dono",
+  "escondidos": "dono"
+ },
+ "oferta": {
+  "foto": "fotos/raiz_calculadora.jpg",
+  "nome": "Calculadora de preço",
+  "detalhe": "Preço de balcão e de loja a partir do custo",
+  "convite": "preço de loja sai do custo"
+ },
+ "chamada": "Link na bio",
+ "final_extra": "Calculadora grátis, sem cadastro"
+}

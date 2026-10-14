@@ -1,0 +1,224 @@
+{
+ "publico": "cliente_final",
+ "nota": "Oferta completa (pedido do Matheus em 14/10, oferta 'Lucro na Mão em 30 Dias' pela metodologia Hormozi): o resultado que a pessoa quer, o que entra com o valor de cada peça, o preço, a garantia e a vaga limitada de verdade. Sem preço 'de' riscado (o valor do pacote é de referência, não preço praticado), sem prazo inventado e sem contador de vagas. Narrado, 35 a 55 s.",
+ "formatos": [
+  "reel"
+ ],
+ "voz": "sim",
+ "musica": "inspiradora",
+ "musica_sob_voz": true,
+ "pausa_fala": 0.3,
+ "campos": {
+  "resultado": {
+   "tipo": "texto",
+   "min": 20,
+   "max": 90,
+   "dica": "o resultado que a pessoa quer, em uma frase: Em 30 dias você sabe quanto sobra em cada produto"
+  },
+  "destaques": {
+   "tipo": "lista",
+   "min": 1,
+   "max": 2,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "max": 24
+   },
+   "dica": "1 ou 2 trechos da frase do resultado (escritos igual) que acendem na cor da marca"
+  },
+  "para_quem": {
+   "tipo": "texto",
+   "max": 32,
+   "obrigatorio": false,
+   "dica": "pílula acima do resultado: Para quem produz alimento"
+  },
+  "midia": {
+   "tipo": "filmagem",
+   "obrigatorio": false,
+   "dica": "fundo da abertura: foto real do que o negócio faz (fotos/x.jpg) ou vídeo do cliente; sem ela, o fundo da marca"
+  },
+  "selo": {
+   "tipo": "texto",
+   "max": 20,
+   "obrigatorio": false,
+   "dica": "pílula acima do nome da oferta (padrão: Conheça o)"
+  },
+  "nome": {
+   "tipo": "texto",
+   "min": 3,
+   "max": 30,
+   "dica": "nome da oferta: Lucro na Mão em 30 Dias, Plano Frota em Dia"
+  },
+  "subtitulo": {
+   "tipo": "texto",
+   "max": 64,
+   "obrigatorio": false,
+   "dica": "uma linha embaixo do nome: o método da Raiz para pequenos produtores"
+  },
+  "titulo_lista": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "título da lista (padrão: O que entra)"
+  },
+  "itens": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 6,
+   "dica": "as peças da oferta, uma por fala; pelo menos 2 com valor (real, com _origem.itens); peça sem valor aparece como 'incluso'",
+   "item": {
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 60,
+     "obrigatorio": false,
+     "dica": "o que a peça resolve, em uma linha"
+    },
+    "valor": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false,
+     "min": 0.01,
+     "dica": "quanto a peça vale (referência dada pelo dono); sem valor, 'incluso'"
+    },
+    "icone": {
+     "tipo": "escolha",
+     "obrigatorio": false,
+     "opcoes": [
+      "check",
+      "estrela",
+      "relogio",
+      "calendario",
+      "chat",
+      "balao",
+      "cartao",
+      "dinheiro",
+      "presente",
+      "coracao",
+      "etiqueta",
+      "caixa",
+      "camera",
+      "tesoura",
+      "chave",
+      "bolo",
+      "xicara",
+      "casa",
+      "pessoa",
+      "pessoas",
+      "megafone",
+      "brilho",
+      "grafico",
+      "percentual",
+      "trofeu",
+      "lupa",
+      "carro",
+      "folha",
+      "alerta",
+      "telefone",
+      "garfo",
+      "vestido",
+      "dente",
+      "haltere",
+      "pata",
+      "link"
+     ],
+     "dica": "ícone da peça (padrão: check)"
+    }
+   }
+  },
+  "total_rotulo": {
+   "tipo": "texto",
+   "max": 30,
+   "obrigatorio": false,
+   "dica": "o que o total é (padrão: Valor de tudo isso); o total é somado pelo código"
+  },
+  "preco": {
+   "tipo": "dinheiro",
+   "real": true,
+   "min": 0.01,
+   "dica": "o preço que a pessoa paga; precisa ser menor que o total (o molde recusa se não for)"
+  },
+  "periodo": {
+   "tipo": "texto",
+   "max": 14,
+   "obrigatorio": false,
+   "dica": "por mês, por ano, à vista"
+  },
+  "condicoes": {
+   "tipo": "lista",
+   "min": 1,
+   "max": 3,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "texto",
+    "min": 3,
+    "max": 26
+   },
+   "dica": "condições reais em pílulas: Sem fidelidade, 15 dias grátis, Sem cartão"
+  },
+  "garantia": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "dica": "a garantia como o dono escreveu (real: _origem.garantia), sem mudar o sentido",
+   "campos": {
+    "titulo": {
+     "tipo": "texto",
+     "max": 24,
+     "obrigatorio": false,
+     "dica": "padrão: Garantia"
+    },
+    "texto": {
+     "tipo": "texto",
+     "min": 20,
+     "max": 240,
+     "real": true
+    }
+   }
+  },
+  "vagas": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "dica": "limite real de atendimento (real: _origem.vagas); o molde nunca mostra 'restam' nem contagem",
+   "campos": {
+    "numero": {
+     "tipo": "numero",
+     "real": true,
+     "min": 1,
+     "max": 30
+    },
+    "rotulo": {
+     "tipo": "texto",
+     "min": 4,
+     "max": 28,
+     "dica": "implantações por semana, noivas por sábado"
+    },
+    "motivo": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false,
+     "dica": "por que o limite existe: quem faz é o fundador"
+    }
+   }
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 8,
+   "max": 13,
+   "item": {
+    "tipo": "texto",
+    "max": 170
+   },
+   "dica": "uma fala por cena, na ordem: resultado, nome, uma por peça, total, preço, garantia (se houver), vagas (se houver), chamada. Juntas dão 35 a 55 s; números iguais aos da ficha"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false,
+   "dica": "valores de referência"
+  }
+ }
+}

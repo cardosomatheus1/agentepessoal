@@ -1,0 +1,90 @@
+{
+ "_marca": "raiz",
+ "_formato": "reel",
+ "para_quem": "Para quem produz alimento",
+ "resultado": "Em 30 dias você sabe quanto sobra em cada produto e onde o dinheiro está escapando.",
+ "destaques": [
+  "lucro garantido"
+ ],
+ "midia": "fotos/geleia_potes.jpg",
+ "nome": "Lucro na Mão em 30 Dias",
+ "subtitulo": "O método da Raiz para quem produz alimento",
+ "itens": [
+  {
+   "nome": "Sistema Raiz completo",
+   "detalhe": "Custo por receita, estoque, produção, compras e vendas",
+   "valor": 197,
+   "icone": "grafico"
+  },
+  {
+   "nome": "Implementação grátis em 48 h",
+   "detalhe": "Mande caderno, áudio ou planilha: a gente cadastra",
+   "valor": 600,
+   "icone": "relogio"
+  },
+  {
+   "nome": "Raio-X do negócio",
+   "detalhe": "Lucro de cada produto, estoque parado e compras",
+   "valor": 400,
+   "icone": "lupa"
+  },
+  {
+   "nome": "Tabela de atacado x varejo",
+   "detalhe": "Preço para o cliente e para a loja, pelo custo",
+   "valor": 200,
+   "icone": "etiqueta"
+  },
+  {
+   "nome": "4 conversas com o Matheus",
+   "detalhe": "Acompanhamento nos seus números, no 1º mês",
+   "valor": 300,
+   "icone": "chat"
+  },
+  {
+   "nome": "Fernanda de olho no lucro",
+   "detalhe": "A IA avisa quando um insumo sobe ou algo vai vencer",
+   "icone": "alerta"
+  }
+ ],
+ "total_rotulo": "Valor do 1º mês",
+ "preco": 197,
+ "periodo": "por mês",
+ "condicoes": [
+  "Sem fidelidade",
+  "15 dias grátis",
+  "Sem cartão"
+ ],
+ "garantia": {
+  "titulo": "Garantia",
+  "texto": "Se em 30 dias o Raio-X não achar pelo menos um lugar onde o seu dinheiro está escapando (produto vendido abaixo do custo, preço que pode subir, estoque perdendo validade ou compra acima do necessário), você não paga o primeiro mês."
+ },
+ "vagas": {
+  "numero": 5,
+  "rotulo": "implementações por semana",
+  "motivo": "Quem implementa é o fundador"
+ },
+ "falas": [
+  "Em trinta dias, você sabe quanto sobra em cada produto e onde o seu dinheiro está escapando.",
+  "Esse é o Lucro na Mão em Trinta Dias.",
+  "Sistema Raiz completo: cento e noventa e sete.",
+  "Implementação grátis em quarenta e oito horas, feita por nós: seiscentos.",
+  "Raio-X do negócio: quatrocentos.",
+  "Tabela de atacado e varejo: duzentos.",
+  "Quatro conversas com o Matheus, o fundador: trezentos.",
+  "E a Fernanda, de olho no lucro, inclusa.",
+  "Tudo isso vale quase mil e setecentos no primeiro mês.",
+  "Você paga cento e noventa e sete por mês, sem fidelidade. Quinze dias grátis, sem cartão.",
+  "A garantia: se em trinta dias o Raio-X não achar pelo menos um lugar onde o seu dinheiro está escapando, você não paga o primeiro mês.",
+  "Quem implementa é o fundador, então são só cinco por semana.",
+  "Link na bio."
+ ],
+ "nota": "valores de referência",
+ "_origem": {
+  "itens": "dono",
+  "preco": "dono",
+  "garantia": "dono",
+  "vagas": "dono"
+ },
+ "chamada": "Link na bio",
+ "final_extra": "15 dias grátis, sem cartão"
+}

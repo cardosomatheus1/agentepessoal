@@ -1,0 +1,75 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "para_quem": "Para noivas",
+ "resultado": "No dia do seu casamento, você só se preocupa em chegar linda.",
+ "destaques": [
+  "chegar linda"
+ ],
+ "selo": "Conheça o",
+ "nome": "Dia da Noiva Bella",
+ "subtitulo": "Cabelo, maquiagem e unhas com a equipe do salão",
+ "titulo_lista": "O pacote",
+ "itens": [
+  {
+   "nome": "Prova de cabelo e maquiagem",
+   "detalhe": "Um mês antes, para acertar tudo com calma",
+   "valor": 350,
+   "icone": "tesoura"
+  },
+  {
+   "nome": "Penteado no dia",
+   "detalhe": "No salão ou onde você for se arrumar",
+   "valor": 400,
+   "icone": "brilho"
+  },
+  {
+   "nome": "Maquiagem no dia",
+   "detalhe": "Com retoque antes da cerimônia",
+   "valor": 450,
+   "icone": "estrela"
+  },
+  {
+   "nome": "Mãos e pés",
+   "detalhe": "Manicure e pedicure na véspera",
+   "valor": 120,
+   "icone": "coracao"
+  },
+  {
+   "nome": "Café da manhã da noiva",
+   "detalhe": "Para você e duas madrinhas",
+   "icone": "xicara"
+  }
+ ],
+ "total_rotulo": "Valor de cada parte",
+ "preco": 990,
+ "periodo": "no pacote",
+ "condicoes": [
+  "Em até 10x",
+  "Data garantida com sinal"
+ ],
+ "vagas": {
+  "numero": 2,
+  "rotulo": "noivas por sábado",
+  "motivo": "A equipe inteira cuida de você"
+ },
+ "falas": [
+  "No dia do seu casamento, você só se preocupa em chegar linda.",
+  "Conheça o Dia da Noiva Bella.",
+  "Prova de cabelo e maquiagem, um mês antes: trezentos e cinquenta reais.",
+  "Penteado no dia: quatrocentos.",
+  "Maquiagem no dia, com retoque: quatrocentos e cinquenta.",
+  "Mãos e pés na véspera: cento e vinte.",
+  "E o café da manhã da noiva vai incluso.",
+  "Somando cada parte, tudo isso vale mil trezentos e vinte reais.",
+  "No pacote, você paga novecentos e noventa, em até dez vezes.",
+  "A equipe inteira cuida de você, por isso são só duas noivas por sábado.",
+  "Agende seu horário."
+ ],
+ "nota": "valores de exemplo",
+ "_origem": {
+  "itens": "dono",
+  "preco": "dono",
+  "vagas": "dono"
+ }
+}
