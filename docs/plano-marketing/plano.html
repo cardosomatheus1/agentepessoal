@@ -1,0 +1,454 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Plano de marketing Raiz Connect</title>
+<style>
+@font-face{font-family:M;src:url(../../infra/reels/base/kit/manrope-latin-variable.woff2) format('woff2');font-weight:200 800}
+@font-face{font-family:S;src:url(../../infra/reels/base/kit/instrument-serif-italic-latin.woff2) format('woff2');font-style:italic}
+:root{--night:#101d18;--card:#1b3026;--soft:#2b4433;--fio:#3b5043;--txt:#f5f7ed;--mut:#b5c2b6;--lima:#c8f17a;--lima-b:#9bbb60;
+ --btn:#245d38;--forest:#27613c;--tint:#e9f1df;--bg:#f5f2e9;--paper:#fcfaf3;--borda:#d9d5c7;--soft-c:#ece8dc;--ink:#182b23;--mutc:#58665e;
+ --perda:#8c2a17;--perda-f:#fbe3dd;--aten:#8a410e;--aten-f:#fff2e4}
+@page{size:A4;margin:20mm 18mm 20mm 18mm}
+@page :first{margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:M,sans-serif;color:var(--ink);font-size:9.6pt;line-height:1.55;background:#fff}
+.it{font-family:S;font-style:italic;font-weight:400;letter-spacing:0}
+b,strong{font-weight:700}
+/* capa */
+.capa{width:210mm;height:297mm;position:relative;background:var(--night);color:var(--txt);overflow:hidden;page-break-after:always}
+.capa .foto{position:absolute;left:0;right:0;bottom:0;height:150mm;background:url(../../infra/reels/base/kit/fotos/produtos.jpg) center 40%/cover}
+.capa .foto:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,var(--night) 0%,rgba(16,29,24,.55) 35%,rgba(16,29,24,.15) 65%,rgba(16,29,24,.85) 100%)}
+.capa .topo{position:absolute;left:22mm;right:22mm;top:20mm;display:flex;justify-content:space-between;align-items:center}
+.capa .topo img{height:15mm}
+.capa .topo span{font-weight:700;font-size:8pt;letter-spacing:.18em;color:var(--mut);text-transform:uppercase}
+.capa .titulo{position:absolute;left:22mm;right:22mm;top:62mm}
+.capa .kicker{font-weight:700;font-size:9pt;letter-spacing:.2em;color:var(--lima-b);text-transform:uppercase}
+.capa h1{font-weight:800;font-size:46pt;line-height:.98;letter-spacing:-.045em;margin-top:6mm}
+.capa h1 .it{color:var(--lima);font-size:1.08em}
+.capa .promessa{font-size:13pt;line-height:1.45;color:#dfe6dc;margin-top:9mm;max-width:140mm}
+.capa .rodape{position:absolute;left:22mm;right:22mm;bottom:16mm;display:flex;justify-content:space-between;font-size:8.5pt;color:#dfe6dc;z-index:2}
+.capa .rodape b{color:var(--txt)}
+.capa .selo{position:absolute;right:22mm;bottom:30mm;z-index:2;font-size:7.5pt;color:rgba(245,247,237,.6)}
+/* estrutura */
+.secao{margin-top:12mm}
+.nova{break-before:page;page-break-before:always;margin-top:0}
+.lead,.nota,p{break-inside:avoid}
+.cab{break-after:avoid;page-break-after:avoid}
+.cab+.lead{break-before:avoid}
+h3{break-after:avoid;page-break-after:avoid}
+.grade,.destaque,.recibo,.fases,.metricas,.funil{break-inside:avoid}
+.cab{display:flex;align-items:baseline;gap:5mm;border-bottom:1.2pt solid var(--ink);padding-bottom:2.5mm;margin-bottom:6mm}
+.cab .n{font-weight:800;font-size:9pt;letter-spacing:.14em;color:var(--forest)}
+.cab h2{font-weight:800;font-size:22pt;letter-spacing:-.035em;line-height:1.1}
+.cab h2 .it{color:var(--forest);font-size:1.08em}
+.lead{font-size:11pt;line-height:1.55;color:var(--mutc);max-width:160mm;margin-bottom:6mm}
+.lead b{color:var(--ink)}
+h3{font-weight:800;font-size:11.5pt;letter-spacing:-.015em;margin:7mm 0 2.5mm}
+.rot{font-weight:700;font-size:7.5pt;letter-spacing:.16em;text-transform:uppercase;color:var(--mutc)}
+p+p{margin-top:2.5mm}
+.mut{color:var(--mutc)}
+/* tabelas */
+table{width:100%;border-collapse:collapse;font-size:8.6pt;line-height:1.45;margin:2mm 0 1mm;page-break-inside:auto}
+thead th{text-align:left;font-weight:700;font-size:7pt;letter-spacing:.12em;text-transform:uppercase;color:var(--mutc);padding:2.2mm 3mm;border-bottom:1pt solid var(--ink)}
+tbody td{padding:2.6mm 3mm;border-bottom:.5pt solid var(--borda);vertical-align:top}
+tbody tr{page-break-inside:avoid}
+tbody td:first-child{font-weight:700}
+td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+/* cartões */
+.grade{display:grid;gap:4mm}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+.cartao{background:var(--bg);border-radius:3mm;padding:4.5mm 5mm;page-break-inside:avoid}
+.cartao .rot{color:var(--forest)}
+.cartao p{margin-top:1.5mm;font-size:9pt}
+.escuro{background:var(--night);color:var(--txt)}
+.escuro .rot{color:var(--lima-b)}
+.destaque{background:var(--night);color:var(--txt);border-radius:3.5mm;padding:7mm 8mm;page-break-inside:avoid}
+.destaque .frase{font-weight:800;font-size:16pt;line-height:1.25;letter-spacing:-.025em}
+.destaque .frase .it{color:var(--lima);font-size:1.1em}
+.nota{border-left:2.2pt solid var(--forest);padding:1mm 0 1mm 4mm;margin:4mm 0;font-size:9pt;page-break-inside:avoid}
+.nota.alerta{border-color:var(--aten)}
+.chips{display:flex;flex-wrap:wrap;gap:2mm;margin-top:2mm}
+.chip{border-radius:99px;padding:1.2mm 3.2mm;font-size:8.2pt;font-weight:600;background:var(--tint);color:var(--forest)}
+.chip.sai{background:var(--perda-f);color:var(--perda);text-decoration:line-through;text-decoration-thickness:.8pt}
+.aspas{font-family:S;font-style:italic;font-size:12pt;line-height:1.35;color:var(--ink)}
+/* oferta: recibo */
+.recibo{background:var(--paper);border:1pt solid var(--borda);border-radius:3mm;padding:5mm 6mm;page-break-inside:avoid}
+.recibo .linha{display:grid;grid-template-columns:1.25fr 2fr auto;gap:5mm;padding:2.6mm 0;border-bottom:.5pt dashed var(--borda);font-size:8.8pt}
+.recibo .linha b{font-weight:700}
+.recibo .linha .mut{font-size:8.2pt}
+.recibo .v{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.recibo .total{display:flex;justify-content:space-between;align-items:baseline;padding-top:3.5mm;font-size:10pt;color:var(--mutc)}
+.recibo .paga{display:flex;justify-content:space-between;align-items:center;margin-top:3mm;background:var(--lima);color:var(--night);border-radius:2.5mm;padding:3.5mm 5mm;font-weight:800;font-size:13pt;letter-spacing:-.02em}
+.recibo .paga small{font-weight:600;font-size:8.5pt;letter-spacing:0}
+.garantia{display:grid;grid-template-columns:30mm 1fr;gap:6mm;align-items:center;border:1.2pt solid var(--forest);border-radius:3.5mm;padding:5mm 6mm;margin-top:5mm;page-break-inside:avoid}
+.garantia .sel{width:28mm;height:28mm;border-radius:50%;border:1.6pt solid var(--forest);display:grid;place-items:center;text-align:center;color:var(--forest);font-weight:800;font-size:7.5pt;letter-spacing:.12em;line-height:1.3}
+.garantia .sel:before{content:'';position:absolute}
+/* jornada */
+.jornada{position:relative;margin-top:3mm}
+.passo{display:grid;grid-template-columns:24mm 1fr;gap:5mm;padding:3.2mm 0;border-bottom:.5pt solid var(--borda);page-break-inside:avoid}
+.passo .dia{font-weight:800;font-size:10.5pt;letter-spacing:-.02em;color:var(--forest)}
+.passo .dia small{display:block;font-weight:700;font-size:6.8pt;letter-spacing:.14em;color:var(--mutc);text-transform:uppercase}
+.passo h4{font-weight:800;font-size:9.8pt}
+.passo p{font-size:8.8pt;color:var(--mutc);margin-top:.8mm}
+/* funil */
+.funil{display:grid;grid-template-columns:repeat(6,1fr);gap:2mm;margin:3mm 0 2mm}
+.etapa{background:var(--bg);border-radius:2.5mm;padding:3.5mm 3mm;font-size:7.8pt;line-height:1.4;page-break-inside:avoid;position:relative}
+.etapa:nth-child(n){background:color-mix(in srgb,var(--tint) calc(100% - var(--k)*14%),var(--forest) calc(var(--k)*14%))}
+.etapa b{display:block;font-size:8.6pt;margin-bottom:1.5mm}
+.etapa .prox{display:block;margin-top:2mm;font-weight:700;color:var(--forest)}
+/* roteiro */
+.passos-venda{counter-reset:p}
+.pv{display:grid;grid-template-columns:9mm 1fr 16mm;gap:4mm;padding:3mm 0;border-bottom:.5pt solid var(--borda);page-break-inside:avoid}
+.pv .k{width:7mm;height:7mm;border-radius:50%;background:var(--night);color:var(--lima);display:grid;place-items:center;font-weight:800;font-size:8pt}
+.pv h4{font-weight:800;font-size:9.6pt}
+.pv p{font-size:8.8pt;color:var(--mutc);margin-top:.6mm}
+.pv p i{font-family:S;font-size:1.12em;color:var(--ink)}
+.pv .t{font-weight:700;font-size:7.5pt;letter-spacing:.08em;color:var(--forest);text-align:right;padding-top:.8mm}
+ul.check{list-style:none;display:grid;gap:1.8mm;margin-top:2mm}
+ul.check li{display:grid;grid-template-columns:5mm 1fr;gap:2mm;font-size:9pt;page-break-inside:avoid}
+ul.check li:before{content:'';width:3.2mm;height:3.2mm;border:1pt solid var(--forest);border-radius:.8mm;margin-top:.9mm}
+ul.check li.ok:before{background:var(--forest);box-shadow:inset 0 0 0 .7mm var(--paper)}
+ul.check li.ok{color:var(--mutc)}
+/* cronograma */
+.fases{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm;margin-top:3mm}
+.fase{border:1pt solid var(--borda);border-radius:3mm;padding:5mm;page-break-inside:avoid}
+.fase.atual{background:var(--night);color:var(--txt);border-color:var(--night)}
+.fase .rot{color:var(--forest)}.fase.atual .rot{color:var(--lima)}
+.fase h4{font-weight:800;font-size:13pt;letter-spacing:-.02em;margin-top:1mm}
+.fase .data{font-size:8pt;color:var(--mutc)}.fase.atual .data{color:var(--mut)}
+.fase ul{list-style:none;margin-top:3.5mm;display:grid;gap:1.6mm;font-size:8.6pt}
+.fase li{padding-left:3.5mm;position:relative}
+.fase li:before{content:'';position:absolute;left:0;top:2mm;width:1.4mm;height:1.4mm;border-radius:50%;background:var(--forest)}
+.fase.atual li:before{background:var(--lima)}
+.portoes{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:4mm}
+.portao{display:flex;gap:3mm;align-items:center;font-size:8.8pt;background:var(--bg);border-radius:2.5mm;padding:3mm 4mm}
+.portao .lo{width:4mm;height:4mm;transform:rotate(45deg);background:var(--forest);flex:none}
+.metricas{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin:3mm 0}
+.met{background:var(--bg);border-radius:2.5mm;padding:4mm;page-break-inside:avoid}
+.met .v{font-weight:800;font-size:18pt;letter-spacing:-.04em;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.met .l{font-size:7.8pt;color:var(--mutc);margin-top:1.5mm;line-height:1.35}
+.pill{display:inline-block;border-radius:99px;padding:.6mm 2.4mm;font-size:7pt;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.pill.ar{background:var(--tint);color:var(--forest)}
+.pill.esp{background:var(--soft-c);color:var(--mutc)}
+.pill.dep{background:var(--aten-f);color:var(--aten)}
+.fim{margin-top:10mm;padding-top:4mm;border-top:.5pt solid var(--borda);display:flex;justify-content:space-between;align-items:center;font-size:8pt;color:var(--mutc)}
+.fim img{height:9mm}
+</style></head><body>
+
+<!-- CAPA -->
+<section class="capa">
+ <div class="foto"></div>
+ <div class="topo"><img src="../../infra/reels/base/kit/rc-logo-dark-v26.png"><span>Plano de marketing · 90 dias</span></div>
+ <div class="titulo">
+  <div class="kicker">A oferta da Raiz para quem produz alimento</div>
+  <h1>Lucro <span class="it">na Mão</span><br>em 30 Dias</h1>
+  <p class="promessa">Em 30 dias o produtor sabe quanto sobra em cada produto e onde o dinheiro dele está escapando. E a implementação é por nossa conta.</p>
+ </div>
+ <div class="selo">imagem ilustrativa</div>
+ <div class="rodape"><span><b>Raiz Connect</b> · plano de marketing</span><span>14 de outubro de 2026 · Matheus, fundador</span></div>
+</section>
+
+<!-- 1 RESUMO -->
+<section>
+ <div class="cab"><span class="n">01</span><h2>Resumo</h2></div>
+ <p class="lead">A Raiz deixa de vender um sistema e passa a vender um resultado: <b>em 30 dias o produtor sabe quanto sobra em cada produto e onde o dinheiro dele está escapando, e quem faz o trabalho pesado somos nós.</b> A implementação é gratuita, o acompanhamento e a consultoria estão incluídos, e o risco fica com a Raiz.</p>
+ <div class="grade g2">
+  <div class="cartao"><span class="rot">A grande ideia</span><p>Ninguém compra um sistema de gestão. O dono de uma pequena produção compra a certeza de que o preço paga o custo e o trabalho dele. Por isso a porta de entrada é a implementação feita por nós, não o cadastro feito por ele.</p></div>
+  <div class="cartao"><span class="rot">Para quem</span><p>Quem produz alimento de fato e vende o que produz: das marmitas às pequenas fábricas pouco comuns (caldas, granolas, geleias, molhos, sorvetes).</p></div>
+  <div class="cartao"><span class="rot">Como chega</span><p>Conteúdo que entrega valor e leva à calculadora grátis, prospecção um a um no Direct e indicação dos primeiros clientes.</p></div>
+  <div class="cartao escuro"><span class="rot">Meta dos próximos 90 dias</span><p>20 implementações por mês (o limite honesto de 5 por semana) e 10 clientes pagantes até o fim de janeiro, com os 2 primeiros casos reais publicados.</p></div>
+ </div>
+ <p class="nota">O plano segue a metodologia de Alex Hormozi: mercado com fome, uma oferta que faz recusar parecer burrice, ímã que entrega valor antes de pedir e as quatro formas de gerar contatos (conteúdo, abordagem fria, rede quente e anúncios).</p>
+
+ <!-- 2 CLIENTE -->
+ <div class="cab" style="margin-top:11mm"><span class="n">02</span><h2>Cliente <span class="it">ideal</span></h2></div>
+ <p class="lead">O dono de um pequeno negócio que <b>produz alimento e vende o que produz</b>, com 1 a 15 pessoas, que define preço "de cabeça" ou numa planilha que não acompanha o insumo. Os dois clientes perto de fechar (calda para sorvete e granola) mostram que o melhor cliente muitas vezes não está nos ramos grandes.</p>
+ <table><thead><tr><th>Quem</th><th>Exemplos</th><th>Por que é bom cliente</th></tr></thead><tbody>
+  <tr><td>Pequenas fábricas</td><td>caldas, granolas, geleias, conservas, molhos e pimentas, temperos, chocolates, sorvetes e picolés, pães de fermentação natural, massas frescas, queijos, kombucha, biscoitos</td><td>produzem em lote, vendem para lojas e cliente final, têm pouca concorrência de sistema</td></tr>
+  <tr><td>Comida pronta</td><td>marmitas, congelados, cozinhas de produção</td><td>muitos produtos, insumo que muda toda semana</td></tr>
+  <tr><td>Doces e salgados</td><td>confeitarias, docerias, salgados para festa</td><td>encomenda e preço por cento, margem que some sem perceber</td></tr>
+  <tr><td>Restaurantes com produção própria</td><td>delivery e salão</td><td>taxa de app e cardápio grande</td></tr>
+ </tbody></table>
+ <div class="grade g2" style="margin-top:5mm">
+  <div><span class="rot">Dores, nas palavras dele</span>
+   <p class="aspas" style="margin-top:2mm">"vendo muito e não sobra" · "o insumo subiu e eu não sei se reajusto" · "não sei quanto cobrar da loja que revende" · "não tenho tempo de cadastrar nada" · "sistema é coisa de empresa grande"</p></div>
+  <div class="grade" style="gap:3mm">
+   <div><span class="rot">O sonho</span><p>Cobrar sem medo, saber que cada produto paga o custo e o trabalho, e crescer vendendo para mais lojas sem perder dinheiro no atacado.</p></div>
+   <div><span class="rot">Onde ele está</span><p>Instagram e Direct, WhatsApp, catálogos de CNPJ da indústria de alimentos, feiras e empórios, cursos e grupos de produtores, contadores e fornecedores de embalagem.</p></div>
+   <div><span class="rot">Fora</span><p>Redes e franquias, quem só revende o que outros produzem, quem não vende comida.</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- 3 MENSAGEM -->
+<section class="secao">
+ <div class="cab"><span class="n">03</span><h2>Mensagem <span class="it">central</span></h2></div>
+ <p class="lead">Toda comunicação fala do resultado e do benefício; a funcionalidade só aparece como prova de que o benefício é real.</p>
+ <div class="destaque"><span class="rot" style="color:var(--lima-b)">A frase-mãe</span>
+  <p class="frase" style="margin-top:3mm">"Saiba quanto sobra em cada produto e onde o seu dinheiro escapa, e a gente faz o trabalho <span class="it">pesado</span> por você."</p></div>
+ <table style="margin-top:6mm"><thead><tr><th>O que o sistema tem</th><th>O benefício que o dono sente</th><th>Como dizer</th></tr></thead><tbody>
+  <tr><td>Ficha técnica com custo por receita e por lote</td><td>sabe o custo real de cada produto</td><td>"você sabe quanto custa cada pote, cada marmita, cada cento"</td></tr>
+  <tr><td>Custo atualizado pela última compra</td><td>não é pego de surpresa quando o insumo sobe</td><td>"o leite subiu? você fica sabendo antes de vender no prejuízo"</td></tr>
+  <tr><td>Simulação de preço</td><td>cobra sem medo</td><td>"você testa o preço antes de mudar"</td></tr>
+  <tr><td>Tabela de preço (atacado e varejo)</td><td>vende para loja sem perder dinheiro</td><td>"o preço da loja nasce do custo, não do desconto"</td></tr>
+  <tr><td>Produção e estoque por lote e validade</td><td>menos perda e menos compra de emergência</td><td>"você sabe o que vence e o que precisa comprar"</td></tr>
+  <tr><td>Vendas, PDV e nota fiscal</td><td>tudo num lugar só</td><td>"vendeu, baixou do estoque e saiu a nota"</td></tr>
+  <tr><td>Financeiro</td><td>sabe se o mês deu lucro</td><td>"no fim do mês você sabe quanto sobrou, de verdade"</td></tr>
+  <tr><td>Fernanda (IA)</td><td>um olhar a mais nos números</td><td>"ela te avisa o que conferir"</td></tr>
+ </tbody></table>
+ <div class="grade g2" style="margin-top:5mm">
+  <div><span class="rot">Palavras que saem</span><div class="chips"><span class="chip sai">ERP</span><span class="chip sai">CMV</span><span class="chip sai">gestão integrada</span><span class="chip sai">solução</span><span class="chip sai">data management</span><span class="chip sai">aumente seu lucro</span></div></div>
+  <div><span class="rot">Palavras que entram</span><div class="chips"><span class="chip">quanto sobra</span><span class="chip">custo de verdade</span><span class="chip">sem cadastrar nada</span><span class="chip">a gente faz por você</span><span class="chip">valores de exemplo</span></div></div>
+ </div>
+</section>
+
+<!-- 4 OFERTA -->
+<section class="secao nova">
+ <div class="cab"><span class="n">04</span><h2>A oferta: Lucro <span class="it">na Mão</span> em 30 Dias</h2></div>
+ <p class="lead"><b>"Em 30 dias você sabe quanto sobra em cada produto e onde o seu dinheiro está escapando. E a implementação é por nossa conta."</b> Cada peça existe para matar uma objeção; o valor de referência ancora o preço.</p>
+ <div class="recibo">
+  <div class="linha"><b>Implementação gratuita em 48&nbsp;h</b><span class="mut">manda as receitas como tem (foto do caderno, áudio, planilha) e a Raiz cadastra os 10 principais produtos, os insumos e o estoque · mata "não tenho tempo de cadastrar"</span><span class="v">R$ 600</span></div>
+  <div class="linha"><b>Importação do que ele já tem</b><span class="mut">planilha e lista de produtos entram sem digitar de novo · mata "já uso planilha"</span><span class="v">incluso</span></div>
+  <div class="linha"><b>Raio-X do negócio</b><span class="mut">quanto sobra em cada produto e preço sugerido, estoque parado ou vencendo, insumos que subiram, compras acima do necessário, quanto sobrou no mês · mata "não sei se compensa"</span><span class="v">R$ 400</span></div>
+  <div class="linha"><b>Tabela de atacado x varejo</b><span class="mut">preço para cliente final e para loja, pelo custo · mata "vendo para loja e não sei cobrar"</span><span class="v">R$ 200</span></div>
+  <div class="linha"><b>4 conversas de 15 min no primeiro mês</b><span class="mut">preço, rotina e uso do sistema com o fundador · mata "sistema é complicado"</span><span class="v">R$ 300</span></div>
+  <div class="linha"><b>Fernanda de olho no lucro</b><span class="mut">avisa quando o insumo sobe, a sobra cai ou o estoque vai vencer · mata "depois de um mês eu esqueço"</span><span class="v">incluso</span></div>
+  <div class="linha" style="border:0"><b>Sistema completo</b><span class="mut">custo, estoque, produção, vendas, nota, financeiro (plano Profissional)</span><span class="v">R$ 197/mês</span></div>
+  <div class="total"><span>Valor de referência do primeiro mês</span><b style="color:var(--ink);font-size:12pt">R$ 1.697</b></div>
+  <div class="paga"><span>Você paga R$ 197/mês</span><small>sem fidelidade · 15 dias grátis, sem cartão</small></div>
+ </div>
+ <div class="garantia"><div class="sel">GARANTIA<br>30 DIAS</div>
+  <div><span class="rot" style="color:var(--forest)">O risco é nosso</span><p style="font-size:10pt;margin-top:1.5mm">Se em 30 dias o Raio-X não achar pelo menos um lugar onde o dinheiro do cliente está escapando (produto abaixo do custo, preço que pode subir, estoque perdendo validade ou compra acima do necessário), <b>a gente não cobra a próxima mensalidade.</b> Não é devolução: a mensalidade seguinte simplesmente não é cobrada.</p></div></div>
+ <div class="grade g3" style="margin-top:5mm">
+  <div class="cartao"><span class="rot">Escassez honesta</span><p>5 implementações por semana, porque quem faz é o fundador. Nunca contador falso nem "só hoje".</p></div>
+  <div class="cartao"><span class="rot">Teste Hormozi</span><p>Não dá para comparar com outro sistema; o valor percebido é quase 9 vezes o preço; o risco é da Raiz; recusar parece burrice para quem não sabe o próprio custo.</p></div>
+  <div class="cartao"><span class="rot">Por que a promessa larga</span><p>"Quanto sobra e onde o dinheiro escapa" usa o sistema inteiro já na entrada, sem virar lista de funções. Depois do primeiro mês vêm crescer vendendo para lojas e planos maiores.</p></div>
+ </div>
+</section>
+
+<!-- 5 ENTREGA -->
+<section class="secao">
+ <div class="cab"><span class="n">05</span><h2>Como entregamos: os 30 dias do <span class="it">cliente</span></h2></div>
+ <p class="lead">A promessa só vale se a entrega for rápida e feita por nós. Desde 14/10 ela existe dentro do sistema: tela "Lucro na Mão" para o cliente e fila com 5 vagas por semana no admin.</p>
+ <div class="jornada">
+  <div class="passo"><div class="dia">Dia 0<small>o sim</small></div><div><h4>Cria a conta e cai na tela do Lucro na Mão</h4><p>Cadastro curto; dados fiscais ficam para quando for emitir nota.</p></div></div>
+  <div class="passo"><div class="dia">Dia 0<small>as receitas</small></div><div><h4>Manda as receitas do jeito que tem</h4><p>Foto, áudio, planilha ou PDF, e os 10 produtos que mais vende com o preço de hoje. Entra na fila da semana e o Matheus é avisado.</p></div></div>
+  <div class="passo"><div class="dia">Até dia 2<small>implementação</small></div><div><h4>A Raiz cadastra insumos, estoque e fichas dos 10 produtos</h4><p>Importação por planilha; o cliente acompanha o andamento na tela.</p></div></div>
+  <div class="passo"><div class="dia">Dia 2 ou 3<small>o "uau"</small></div><div><h4>Raio-X do negócio e conversa 1</h4><p>Quanto sobra em cada produto, estoque parado ou vencendo, insumos que subiram. Em 15 minutos o Matheus mostra onde está o prejuízo e o preço sugerido.</p></div></div>
+  <div class="passo"><div class="dia">Dia 7<small>conversa 2</small></div><div><h4>Preços ajustados e tabela de atacado x varejo</h4><p>Para quem vende a lojas.</p></div></div>
+  <div class="passo"><div class="dia">Dia 14<small>conversa 3</small></div><div><h4>Revisão e fim do teste</h4><p>A primeira cobrança vem com o resultado na mão, não com "sua conta será suspensa".</p></div></div>
+  <div class="passo" style="border:0"><div class="dia">Dia 28<small>conversa 4</small></div><div><h4>Fechamento do mês e garantia</h4><p>Se o Raio-X não achou nada, a próxima mensalidade não é cobrada (o sistema confere sozinho e avisa). Pedido de depoimento e de 2 indicações.</p></div></div>
+ </div>
+ <div class="grade g2" style="margin-top:5mm">
+  <div class="cartao"><span class="rot">Capacidade</span><p>5 implementações por semana = 20 por mês e até 20 conversas por semana no pico. Acima disso, a fila mostra a próxima semana com honestidade.</p></div>
+  <div class="cartao"><span class="rot">Fernanda no teste</span><p>Hoje ela responde 1 mensagem por dia no teste, o que contradiz a oferta. No Lucro na Mão ela fica liberada como no plano Profissional (decisão pendente).</p></div>
+ </div>
+</section>
+
+<!-- 6 IMÃS + CANAIS -->
+<section class="secao">
+ <div class="cab"><span class="n">06</span><h2>Ímãs de <span class="it">leads</span></h2></div>
+ <p class="lead">O ímã entrega um pedacinho do resultado de graça e revela o próximo problema, que só a oferta resolve. Todo botão de todo ímã leva ao Lucro na Mão, não a um "teste grátis" genérico.</p>
+ <table><thead><tr><th>Ímã</th><th>O que entrega</th><th>O próximo problema</th><th>O que muda</th></tr></thead><tbody>
+  <tr><td>Calculadora de precificação</td><td>quanto sobra em 1 produto, sem cadastro</td><td>"e os outros 30 produtos? e quando o insumo subir?"</td><td>canal "loja que revende", categoria "pequena fábrica" e receita por lote</td></tr>
+  <tr><td>Simulador de delivery</td><td>o efeito da taxa do app no lucro</td><td>"o preço do app está errado em todo o cardápio"</td><td>botão final vira a oferta</td></tr>
+  <tr><td>Diagnóstico do lucro</td><td>8 perguntas</td><td>"preciso dos números de verdade"</td><td>novo nome, para não confundir com o Raio-X da oferta</td></tr>
+  <tr><td>Carrossel "custo em 10 minutos"</td><td>o método no papel, para salvar</td><td>"fazer isso para todos dá trabalho"</td><td>leva à calculadora e à implementação</td></tr>
+ </tbody></table>
+ <p class="nota alerta">Regra: o ímã nunca termina satisfeito. Hoje a calculadora responde "o preço atual já atende o objetivo" para um fabricante, e ele sai sem ver o problema do atacado.</p>
+
+ <div class="cab" style="margin-top:10mm"><span class="n">07</span><h2><span class="it">Canais</span></h2></div>
+ <p class="lead">Os quatro caminhos do Hormozi, em ordem para quem começa com pouco dinheiro: primeiro os que custam tempo, depois os que custam dinheiro.</p>
+ <table><thead><tr><th>Canal</th><th>Como</th><th>Ritmo</th><th>Situação</th></tr></thead><tbody>
+  <tr><td>Abordagem fria (Direct)</td><td>o agente acha produtores, aquece, manda a 1ª mensagem com a calculadora e leva à oferta</td><td>até o limite seguro da conta</td><td><span class="pill ar">no ar</span></td></tr>
+  <tr><td>Conteúdo (Instagram)</td><td>1 post por dia, 3 de valor para 1 de oferta, 1 vídeo do fundador por semana</td><td>diário, 11h45</td><td><span class="pill ar">no ar</span></td></tr>
+  <tr><td>Rede quente e indicações</td><td>contatos do Matheus, os 2 clientes perto de fechar e 2 indicações por cliente</td><td>no dia 28 de cada cliente</td><td><span class="pill esp">a começar</span></td></tr>
+  <tr><td>Parceiros</td><td>cursos de produção, contadores, fornecedores de embalagem, feiras e empórios</td><td>5 por semana</td><td><span class="pill esp">regra pronta</span></td></tr>
+  <tr><td>Anúncios</td><td>com o vídeo de oferta que mais converter</td><td>depois de 10 clientes</td><td><span class="pill dep">depois</span></td></tr>
+ </tbody></table>
+ <p class="nota">Por que anúncio por último: anúncio multiplica o que já converte. Sem caso real e sem saber qual mensagem fecha, o dinheiro paga o aprendizado que o Direct ensina de graça.</p>
+</section>
+
+<!-- 8 CONTEUDO -->
+<section class="secao">
+ <div class="cab"><span class="n">08</span><h2><span class="it">Conteúdo</span></h2></div>
+ <p class="lead">O conteúdo dá antes de pedir: <b>três posts de valor para cada um de oferta.</b> Cada post ataca uma alavanca de valor (o sonho, a prova, o tempo, o esforço) ou uma objeção, e termina na calculadora grátis ou na oferta.</p>
+ <table><thead><tr><th>Pilar</th><th>Papel</th><th>Exemplos</th><th>Fim do post</th></tr></thead><tbody>
+  <tr><td>A conta que dói</td><td>sonho e dor</td><td>brigadeiro (o insumo subiu), atacado x varejo</td><td>calculadora</td></tr>
+  <tr><td>Como fazer</td><td>esforço e tempo</td><td>custo em 10 minutos, tabela de atacado</td><td>calculadora, para salvar</td></tr>
+  <tr><td>Crenças e objeções</td><td>objeção</td><td>mito ou verdade, quiz do bolo</td><td>calculadora</td></tr>
+  <tr><td>Bastidores e casos</td><td>prova</td><td>a implementação de um cliente, com autorização</td><td>oferta</td></tr>
+  <tr><td>A oferta</td><td>pedido</td><td>Lucro na Mão, garantia, vagas da semana</td><td>oferta</td></tr>
+  <tr><td>Identificação</td><td>alcance</td><td>frases de cliente, expectativa x realidade, polêmica</td><td>comentário e calculadora</td></tr>
+ </tbody></table>
+ <div class="grade g2" style="margin-top:5mm">
+  <div class="cartao"><span class="rot">Padrão de qualidade</span><p>Vídeos e carrosséis com a qualidade do kit de motion graphics da Raiz: revisão com nota mínima 8 e checagem técnica antes de publicar. <b>Fixos:</b> logo, Manrope e Instrument Serif, as cores da marca (limão só no que sobra), as regras de texto e a voz da Carolina.</p></div>
+  <div class="cartao"><span class="rot">Liberdade criativa</span><p>Cada peça tem conceito próprio, para o feed não ficar repetitivo: duas peças seguidas nunca usam a mesma ideia. Livres: conceito, composição, formato, ritmo e trilha.</p></div>
+ </div>
+ <h3>A semana de 15 a 24 de outubro</h3>
+ <table><thead><tr><th>Dia</th><th>Post</th><th>Ideia visual</th><th>Papel</th></tr></thead><tbody>
+  <tr><td>15</td><td>Custo em 10 minutos (carrossel)</td><td>conta passo a passo, foto do molho</td><td>dar</td></tr>
+  <tr><td>16</td><td>Mito ou verdade (carrossel)</td><td>fichas de papel com carimbo</td><td>dar</td></tr>
+  <tr><td>17</td><td>Atacado x varejo (vídeo)</td><td>o pote de geleia no balcão e na loja</td><td>dar</td></tr>
+  <tr><td>18</td><td>Brigadeiro (vídeo)</td><td>barra de custo e grade de 100</td><td>dar</td></tr>
+  <tr><td>19</td><td>Lucro na Mão (vídeo)</td><td>o recibo do que entra</td><td>pedir</td></tr>
+  <tr><td>20</td><td>Garantia (carrossel)</td><td>certificado com cláusulas</td><td>pedir</td></tr>
+  <tr><td>21</td><td>Frases (carrossel)</td><td>conversa no celular</td><td>identificação</td></tr>
+  <tr><td>22</td><td>Quiz (carrossel)</td><td>programa de perguntas</td><td>identificação</td></tr>
+  <tr><td>23</td><td>Polêmica (carrossel)</td><td>tela dividida, time A contra time B</td><td>identificação</td></tr>
+  <tr><td>24</td><td>Expectativa x realidade (vídeo)</td><td>a linha que sobe</td><td>identificação</td></tr>
+ </tbody></table>
+ <p class="nota"><b>No perfil:</b> bio com a oferta e link direto para a calculadora; arquivar os 15 posts antigos com jargão; fixar a oferta, o brigadeiro e o "Raiz invisível". <b>Ponto de partida (14/10):</b> 86 seguidores, 2 salvamentos somados em 20 posts. Meta: cada post de "como fazer" com pelo menos 5 salvamentos.</p>
+</section>
+
+<!-- 9 FUNIL -->
+<section class="secao">
+ <div class="cab"><span class="n">09</span><h2>Funil e mensagens por <span class="it">etapa</span></h2></div>
+ <p class="lead">Cada etapa tem uma mensagem e um próximo passo; nenhuma termina sem pedir o passo seguinte.</p>
+ <div class="funil">
+  <div class="etapa" style="--k:0"><b>Desconhecido</b>uma conta que dói, sobre o produto dele<span class="prox">→ calculadora grátis</span></div>
+  <div class="etapa" style="--k:1"><b>Usou o ímã</b>"esse é um produto; e os outros?"<span class="prox">→ Lucro na Mão</span></div>
+  <div class="etapa" style="--k:2"><b>Conversa</b>implementação por nossa conta + garantia<span class="prox">→ criar a conta e mandar as receitas</span></div>
+  <div class="etapa" style="--k:3"><b>Teste, dia 0 a 14</b>o andamento da implementação e o Raio-X<span class="prox">→ conversas 1 a 3</span></div>
+  <div class="etapa" style="--k:4"><b>Cliente, mês 1</b>o que mudou nos preços e no que sobra<span class="prox">→ depoimento e 2 indicações</span></div>
+  <div class="etapa" style="--k:5;color:var(--txt);background:var(--night)"><b>Cliente fiel</b>"o insumo subiu, confira este preço"<span class="prox" style="color:var(--lima)">→ indicação e plano maior</span></div>
+ </div>
+ <div class="grade g3" style="margin-top:5mm">
+  <div class="cartao"><span class="rot">Sequência do teste</span><p>WhatsApp e e-mail nos dias 0, 1, 3, 5, 7, 10, 13 e 15, falando só do resultado: receitas recebidas, cadastro pronto, Raio-X, o produto no prejuízo que achamos, a conversa marcada.</p></div>
+  <div class="cartao"><span class="rot">Cadastro</span><p>WhatsApp obrigatório com o motivo escrito ("para a gente te ajudar a cadastrar") e "Nome do seu negócio" no lugar de "Razão social".</p></div>
+  <div class="cartao"><span class="rot">Promessas sem prova saem</span><p>O selo "Mais popular", "empresa configurada em minutos" e "suporte por WhatsApp" enquanto não houver o botão no sistema.</p></div>
+ </div>
+</section>
+
+<!-- 10 ROTEIRO -->
+<section class="secao nova">
+ <div class="cab"><span class="n">10</span><h2>Roteiro de <span class="it">vendas</span></h2></div>
+ <p class="lead">A conversa dura 20 minutos (vídeo ou WhatsApp com tela) e quem mais fala é o cliente: perguntar muito, mostrar pouco e só com o produto dele. O objetivo é ele sair com a conta criada e a data da implementação marcada.</p>
+ <div class="grade g2">
+  <div class="cartao"><span class="rot">Antes da conversa · 5 min</span>
+   <ul class="check"><li>Ler o perfil e o que ele escreveu no Direct; anotar o produto que mais aparece.</li><li>Fazer a conta desse produto na calculadora com o preço público dele.</li><li>Abrir a conta de demonstração com um exemplo do mesmo tipo.</li><li>Ver a próxima vaga real de implementação da semana.</li></ul></div>
+  <div class="cartao escuro"><span class="rot">Nunca</span><p style="margin-top:2mm">Prometer resultado em reais, falar mal de concorrente, inventar vaga ou prazo, empurrar plano maior, mostrar o sistema antes de entender o negócio.</p>
+   <span class="rot" style="display:block;margin-top:4mm">Depois da conversa</span><p>Em até 1 hora, resumo no WhatsApp (o produto e quanto sobra, a oferta, a garantia, a data), o link do cadastro e o pedido das receitas. Sem fechamento: 1 seguimento em 2 dias.</p></div>
+ </div>
+ <h3>A conversa</h3>
+ <div class="passos-venda">
+  <div class="pv"><span class="k">1</span><div><h4>Abrir</h4><p>Combinar o objetivo e pedir licença: <i>"Em 20 minutos quero entender como você faz o preço hoje e te mostrar, com um produto seu, quanto sobra."</i></p></div><span class="t">1 MIN</span></div>
+  <div class="pv"><span class="k">2</span><div><h4>Clarear por que ele está aqui</h4><p><i>"O que te fez topar essa conversa? O que você queria resolver agora?"</i></p></div><span class="t">2 MIN</span></div>
+  <div class="pv"><span class="k">3</span><div><h4>Nomear o problema</h4><p>Repetir com as palavras dele: <i>"Então você vende bem, mas não sabe se o pote que vai para a loja dá dinheiro. É isso?"</i></p></div><span class="t">1 MIN</span></div>
+  <div class="pv"><span class="k">4</span><div><h4>Olhar o passado</h4><p>As perguntas abaixo, uma de cada vez, anotando os números.</p></div><span class="t">5 MIN</span></div>
+  <div class="pv"><span class="k">5</span><div><h4>Vender o resultado e mostrar</h4><p><i>"Imagina daqui a 30 dias: você abre o celular e vê quanto sobra em cada produto."</i> Depois mostrar, na ordem da tabela "O que mostrar".</p></div><span class="t">5 MIN</span></div>
+  <div class="pv"><span class="k">6</span><div><h4>Apresentar a oferta</h4><p>Na ordem do valor: implementação grátis, Raio-X, atacado x varejo, 4 conversas, o sistema. Referência R$ 1.697; preço R$ 197/mês; a garantia; a próxima vaga real.</p></div><span class="t">2 MIN</span></div>
+  <div class="pv"><span class="k">7</span><div><h4>Tirar as dúvidas</h4><p>Para cada objeção, fazer a pergunta antes de responder.</p></div><span class="t">2 MIN</span></div>
+  <div class="pv" style="border:0"><span class="k">8</span><div><h4>Fechar</h4><p><i>"Vamos fazer agora? Eu crio sua conta com você, e você já me manda as fotos das receitas."</i> Marcar a implementação e a primeira conversa.</p></div><span class="t">2 MIN</span></div>
+ </div>
+</section>
+
+<section class="secao">
+ <div class="grade g2" style="gap:6mm">
+  <div><h3 style="margin-top:0">Perguntas do passo 4</h3>
+   <table><thead><tr><th>Pergunta</th><th>O que revela</th></tr></thead><tbody>
+    <tr><td>Quais são os 3 produtos que mais vende, e por quanto?</td><td>por onde começar o Raio-X</td></tr>
+    <tr><td>Como chegou nesse preço? Quando mudou pela última vez?</td><td>preço de cabeça ou defasado</td></tr>
+    <tr><td>Algum insumo subiu nos últimos meses? O que você fez?</td><td>margem que sumiu sem ele ver</td></tr>
+    <tr><td>Vende para loja? Como calcula o preço de atacado?</td><td>atacado no prejuízo</td></tr>
+    <tr><td>Joga produto fora por validade? Quanto por mês?</td><td>dinheiro escapando no estoque</td></tr>
+    <tr><td>No fim do mês, você sabe quanto sobrou?</td><td>se ele tem o número do mês</td></tr>
+    <tr><td>Já tentou planilha ou sistema? O que deu errado?</td><td>a objeção que vai aparecer</td></tr>
+    <tr><td>Se nada mudar em 6 meses, o que acontece?</td><td>a dor nas palavras dele</td></tr>
+   </tbody></table></div>
+  <div><h3 style="margin-top:0">O que mostrar no passo 5</h3>
+   <table><thead><tr><th>#</th><th>O que mostrar</th></tr></thead><tbody>
+    <tr><td>1</td><td>A conta do produto dele, já pronta: custo real, preço, quanto sobra. O "uau" vem do número dele.</td></tr>
+    <tr><td>2</td><td>A ficha técnica de um produto parecido e o aviso de insumo que subiu.</td></tr>
+    <tr><td>3</td><td>Um Raio-X de exemplo, com produto abaixo do custo e estoque vencendo: é o que ele recebe em 48 h.</td></tr>
+    <tr><td>4</td><td>A tabela de atacado x varejo (só se vende para loja).</td></tr>
+    <tr><td>5</td><td>O mês: quanto sobrou.</td></tr>
+   </tbody></table>
+   <p class="mut" style="font-size:8.4pt;margin-top:2mm">Não mostrar menus, cadastros, configuração, nota e financeiro em detalhe (só se ele perguntar). Tela vazia nunca.</p></div>
+ </div>
+ <h3>Objeções</h3>
+ <table><thead><tr><th>Objeção</th><th>Pergunte antes</th><th>Responda</th></tr></thead><tbody>
+  <tr><td>"Está caro"</td><td>"Caro comparado a quê?"</td><td>"Se o Raio-X achar R$ 0,50 a mais num produto que você vende 400 vezes por mês, são R$ 200 por mês (exemplo). E se não achar nada, a gente não cobra a sua próxima mensalidade."</td></tr>
+  <tr><td>"Não tenho tempo"</td><td>"Quanto tempo você gasta hoje refazendo conta?"</td><td>"É por isso que a gente implementa. Você só manda as fotos das receitas."</td></tr>
+  <tr><td>"Vou pensar"</td><td>"O que falta para decidir: o preço, o tempo ou se funciona para você?"</td><td>Tratar o ponto que ele disser; "os 15 dias são grátis e sem cartão, pensar com os seus números na tela é melhor".</td></tr>
+  <tr><td>"Já uso planilha"</td><td>"Ela te avisa quando o insumo sobe?"</td><td>"A gente importa a sua planilha, você não perde nada."</td></tr>
+  <tr><td>"Já tenho sistema"</td><td>"Ele mostra quanto sobra em cada produto, com embalagem e taxa?"</td><td>Se mostra, ótimo, e a conversa termina bem. Se não, o Raio-X mostra.</td></tr>
+  <tr><td>"Preciso falar com meu sócio"</td><td>"O que você acha que ele vai perguntar?"</td><td>Marcar uma conversa com os dois.</td></tr>
+  <tr><td>"Sou muito pequeno"</td><td>"Quantos produtos você tem?"</td><td>"Quanto menor, mais cada centavo pesa. A implementação é a mesma."</td></tr>
+ </tbody></table>
+</section>
+
+<!-- 11 PROVA + NUMEROS -->
+<section class="secao">
+ <div class="cab"><span class="n">11</span><h2><span class="it">Prova</span></h2></div>
+ <p class="lead">A maior fraqueza da oferta hoje é não ter nenhum caso real. Os dois clientes perto de fechar (calda para sorvete e granola) viram os primeiros casos, com autorização e números verdadeiros.</p>
+ <div class="grade g4" style="grid-template-columns:repeat(5,1fr);gap:3mm">
+  <div class="cartao"><span class="rot">1 · Antes</span><p>No dia 0, como cada um define preço e o preço de cada produto.</p></div>
+  <div class="cartao"><span class="rot">2 · Raio-X</span><p>O relatório do dia 2 ou 3: produtos abaixo do custo, quanto sobra.</p></div>
+  <div class="cartao"><span class="rot">3 · Depois</span><p>No dia 28, o que mudou em preço e no que sobra por mês.</p></div>
+  <div class="cartao"><span class="rot">4 · Depoimento</span><p>30 s de vídeo ou áudio do dono e uma foto da produção.</p></div>
+  <div class="cartao escuro"><span class="rot">5 · Publicar</span><p>Um vídeo de bastidor por caso, um card no site e o número no Direct.</p></div>
+ </div>
+ <p class="nota">Até lá: nada de depoimento, número de cliente ou selo inventado; os valores de exemplo seguem marcados como exemplo.</p>
+
+ <div class="cab" style="break-before:page;page-break-before:always"><span class="n">12</span><h2><span class="it">Números</span> e rotina do agente</h2></div>
+ <p class="lead">As metas do Direct são <b>taxas</b>: a cada 100 primeiras mensagens, 15 respostas, 5 leads e 1 teste aberto. Só o Direct não enche as 20 implementações do mês; conteúdo, indicação e parceiros completam.</p>
+ <div class="metricas">
+  <div class="met"><div class="v">15%</div><div class="l">taxa de resposta no Direct</div></div>
+  <div class="met"><div class="v">5%</div><div class="l">das mensagens viram lead (calculadora, preço ou teste)</div></div>
+  <div class="met"><div class="v">5</div><div class="l">testes com receitas enviadas por semana (o limite de implementações)</div></div>
+  <div class="met"><div class="v">50%</div><div class="l">dos testes viram cliente</div></div>
+  <div class="met"><div class="v">5+</div><div class="l">salvamentos por post de "como fazer"</div></div>
+  <div class="met"><div class="v">2</div><div class="l">indicações por cliente no dia 28</div></div>
+  <div class="met"><div class="v">↑</div><div class="l">usos da calculadora crescendo toda semana</div></div>
+  <div class="met" style="background:var(--night);color:var(--txt)"><div class="v" style="color:var(--lima)">10</div><div class="l" style="color:var(--mut)">clientes pagantes antes de qualquer anúncio</div></div>
+ </div>
+ <table style="margin-top:4mm"><thead><tr><th>Quando</th><th>O que o agente faz</th><th>O que cabe ao Matheus</th></tr></thead><tbody>
+  <tr><td>Todo dia</td><td>publica o post das 11h45; prospecta no Direct (buscar 8h e 13h, conversas das 9h às 21h); às 16h53 avisa só se o post falhou ou se amanhã está sem post; às 20h17 resume a prospecção</td><td>fazer implementações e conversas de 15 min quando alguém topa (o agente avisa na hora)</td></tr>
+  <tr><td>Segunda, 8h52</td><td>números da semana contra as metas, o que funcionou e o que não, <b>uma</b> mudança proposta, dias sem post e o roteiro do vídeo da semana</td><td>responder sim ou não à mudança e gravar o vídeo</td></tr>
+  <tr><td>Dia 1, 9h07</td><td>números do mês, fase do cronograma e o que falta para o próximo portão, formatos para repetir e evitar, temas das próximas 4 semanas</td><td>aprovar os temas do mês</td></tr>
+ </tbody></table>
+</section>
+
+<!-- 13 CRONOGRAMA -->
+<section class="secao nova">
+ <div class="cab"><span class="n">13</span><h2>Cronograma de <span class="it">90 dias</span></h2></div>
+ <p class="lead">Primeiro a oferta precisa existir de verdade no sistema e no site; depois ela se prova com casos reais; só então vale gastar para escalar.</p>
+ <div class="fases">
+  <div class="fase atual"><span class="rot">Fase 1 · agora</span><h4>Oferta no ar</h4><div class="data">dias 1 a 30, até 13/11</div>
+   <ul><li>Envio de receitas e fila no app</li><li>Importação de ficha técnica</li><li>Raio-X do negócio e garantia</li><li>Landing e planos na oferta</li><li>Cadastro curto, Fernanda livre</li><li>Sequência do teste ligada</li><li>2 primeiros casos em andamento</li></ul></div>
+  <div class="fase"><span class="rot">Fase 2</span><h4>Provar</h4><div class="data">dias 31 a 60, até 13/12</div>
+   <ul><li>2 casos reais publicados</li><li>Calculadora para quem fabrica</li><li>1 vídeo do Matheus por semana</li><li>5 parceiros abordados por semana</li><li>20 implementações no mês</li></ul></div>
+  <div class="fase"><span class="rot">Fase 3</span><h4>Escalar</h4><div class="data">dias 61 a 90, até 12/01</div>
+   <ul><li>Indicação no dia 28 do cliente</li><li>Anúncio com o vídeo que vende</li><li>Página para pequenas fábricas</li><li>Revisar a oferta pelos números</li></ul></div>
+ </div>
+ <div class="portoes">
+  <div class="portao"><span class="lo"></span><div><b>Portão 1 · site publicado</b><br><span class="mut">só com a ordem do Matheus · liberado em 14/10</span></div></div>
+  <div class="portao"><span class="lo" style="background:var(--borda)"></span><div><b>Portão 2 · 10 clientes pagantes</b><br><span class="mut">antes de gastar com anúncio</span></div></div>
+ </div>
+ <div class="grade g2" style="margin-top:7mm;gap:7mm">
+  <div><h3 style="margin-top:0">Já feito (14/10)</h3>
+   <ul class="check">
+    <li class="ok">Prospecção: cliente é quem produz alimento e o próximo passo é a oferta, com a garantia e as vagas</li>
+    <li class="ok">Agenda do Instagram de 15 a 24/10: 6 carrosséis e 4 vídeos novos, cada um com ideia própria</li>
+    <li class="ok">Auditoria do funil e do Instagram com os números da API</li>
+    <li class="ok">Site reescrito na oferta, publicado com a ordem do Matheus</li>
+    <li class="ok">Lucro na Mão dentro do sistema: receitas, fila, importação, Raio-X, garantia, atacado x varejo e as 4 conversas</li>
+    <li class="ok">Agente alinhado: decisões, rotinas de dia, semana e mês</li>
+    <li>Bio e link da bio no Instagram</li>
+   </ul></div>
+  <div><h3 style="margin-top:0">Decisões do Matheus</h3>
+   <ul class="check">
+    <li class="ok">Garantia: se o Raio-X não achar nada, não cobramos a próxima mensalidade</li>
+    <li class="ok">Publicar o site e o sistema</li>
+    <li>Link da agenda para as 4 conversas e canal de aviso de pedido novo</li>
+    <li>Confirmar 5 implementações por semana e a meta de sobra de 30%</li>
+    <li>Confirmar o preço (R$ 197, Profissional) e se o Básico de R$ 97 continua</li>
+    <li>Liberar a Fernanda no teste e aprovar o cadastro curto</li>
+    <li>Ligar a sequência de mensagens do teste</li>
+    <li>Pedir aos clientes da calda e da granola autorização para virarem casos</li>
+    <li>Gravar 1 vídeo por semana (o agente escreve o roteiro)</li>
+    <li>Logo sem "data management ERP" nos posts e arquivar os posts antigos com jargão</li>
+   </ul></div>
+ </div>
+ <div class="fim"><img src="../../infra/reels/base/kit/rc-logo-light-v26.png"><span>Raiz Connect · plano de marketing Lucro na Mão em 30 Dias · versão de 14/10/2026<br>Valores de referência e números de exemplo marcados como tal.</span></div>
+</section>
+</body></html>
