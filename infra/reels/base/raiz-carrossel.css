@@ -100,3 +100,6 @@ p b,.p b{color:var(--txt);font-weight:700}
 .slide:not(.claro) .selo-verd{background:var(--forest);color:#fff}
 .area.centro{justify-content:center}
 .area.centro .esp{flex:0 0 72px}
+/* rodapé legível sobre foto (revisão H, ciclo 2) */
+.slide.com-foto:after{content:'';position:absolute;left:0;right:0;bottom:0;height:300px;z-index:1;pointer-events:none;
+ background:linear-gradient(180deg,rgba(16,29,24,0) 0%,rgba(16,29,24,.9) 60%,var(--night) 100%)}
