@@ -1,1 +1,15 @@
-{"voz": "Thiago", "motor": "neural", "falas": ["Cento de salgado a noventa reais. Quanto fica com você?", "Massa e recheio: trinta e dois reais.", "Mas tem o que quase ninguém coloca na conta.", "O óleo da fritura: seis reais.", "O gás: quatro.", "Embalagem e guardanapo: cinco.", "E os que quebram ou sobram: três.", "São dezoito reais escondidos em cada cento.", "Coloque tudo na calculadora grátis. Link na bio."]}
+{
+ "voz": "carolina",
+ "motor": "nova-sonic",
+ "falas": [
+  "Cento de salgado a noventa reais. Quanto fica com você?",
+  "Massa e recheio: trinta e dois reais.",
+  "Mas tem o que quase ninguém coloca na conta.",
+  "O óleo da fritura: seis reais.",
+  "O gás: quatro.",
+  "Embalagem e guardanapo: cinco.",
+  "E os que quebram ou sobram: três.",
+  "São dezoito reais escondidos em cada cento.",
+  "Coloque tudo na calculadora grátis. Link na bio."
+ ]
+}

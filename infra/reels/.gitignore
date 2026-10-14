@@ -13,3 +13,4 @@ moldes/midia/filmagem/
 moldes/*/saida/
 moldes/_teste/
 moldes/motor/node_modules/
+*.wav

@@ -1,6 +1,6 @@
 # Reels em motion da @raiz.connect
 
-Cada pasta é um Reel: `falas.json` (narração, voz da AWS Polly) e `index.html` (animação com `render(t)`).
+Cada pasta é um Reel: `falas.json` (narração com a Carolina, do Amazon Nova 2 Sonic; `npm ci` em `moldes/motor/`) e `index.html` (animação com `render(t)`).
 As fontes Inter ficam em `base/fonts/` (copie de `/usr/share/fonts/opentype/inter/`).
 
     python3 base/gen.py 2_brigadeiro        # gera a voz e os tempos (tempos.js)

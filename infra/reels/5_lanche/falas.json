@@ -1,1 +1,14 @@
-{"voz": "Thiago", "motor": "neural", "falas": ["Pedido de trinta reais no aplicativo.", "Quanto disso é seu?", "Taxa do app, nesse exemplo vinte e cinco por cento: sete e cinquenta.", "Pão, carne, queijo e batata: onze reais.", "Embalagem e sachês: dois e cinquenta.", "Sobram nove reais.", "No balcão, o mesmo lanche deixaria dezesseis e cinquenta.", "Preço de app não pode ser igual ao do balcão. Calcule os dois na calculadora grátis. Link na bio."]}
+{
+ "voz": "carolina",
+ "motor": "nova-sonic",
+ "falas": [
+  "Pedido de trinta reais no aplicativo.",
+  "Quanto disso é seu?",
+  "Taxa do app, nesse exemplo vinte e cinco por cento: sete e cinquenta.",
+  "Pão, carne, queijo e batata: onze reais.",
+  "Embalagem e sachês: dois e cinquenta.",
+  "Sobram nove reais.",
+  "No balcão, o mesmo lanche deixaria dezesseis e cinquenta.",
+  "Preço de app não pode ser igual ao do balcão. Calcule os dois na calculadora grátis. Link na bio."
+ ]
+}
