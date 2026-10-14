@@ -1,0 +1,20 @@
+{
+ "HL76nfIg": {
+  "rotina": "🔎 Radar e fios soltos (já inclui a antiga 🧵 Fios soltos, desligada desde 12/10)",
+  "fontes": [
+   {"nome": "e-mails novos na caixa de entrada", "tipo": "gmail", "so_novos": true,
+    "busca": "in:inbox newer_than:2d -category:promotions -category:social -category:forums", "max": 40},
+   {"nome": "agenda dos próximos 7 dias", "tipo": "agenda", "dias": 8}
+  ]
+ },
+ "2FIQTI0o": {
+  "rotina": "💡 Iniciativa",
+  "fontes": [
+   {"nome": "fios soltos em aberto", "tipo": "arquivo", "caminho": "/a0/usr/fios/matheus.json", "lista": "fios", "so_novos": true,
+    "campos": ["titulo", "estado", "prioridade", "prazo"], "so_estados": ["aberto", "adiado"]},
+   {"nome": "e-mails novos na caixa de entrada", "tipo": "gmail", "so_novos": true,
+    "busca": "in:inbox newer_than:1d -category:promotions -category:social -category:forums", "max": 30},
+   {"nome": "agenda dos próximos 3 dias", "tipo": "agenda", "dias": 3}
+  ]
+ }
+}

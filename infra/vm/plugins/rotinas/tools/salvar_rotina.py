@@ -1,72 +1,87 @@
-"""Save a routine as an Agent Zero skill (/a0/usr/skills/<name>/SKILL.md), or add a correction.
+"""Save a routine as an Agent Zero skill (/a0/usr/skills/<name>/SKILL.md), read it, add a correction or adjust a passage.
 
 A routine says when to use it, what it needs, the steps, how to check the result, what to deliver
 and what needs the user's approval — the parts Grok Bot's skills document — plus the corrections
-the user made over time, so the same mistake is not repeated.
+the user made over time, so the same mistake is not repeated. The rules live in helpers/rotinas.py
+(shared with the end-of-chat reviewer); this tool turns their answers into messages for the agent.
 """
 
-import re
-import time
+import importlib.util
+import sys
 from pathlib import Path
 
 from helpers.tool import Response, Tool
 
-SKILLS = Path("/a0/usr/skills")
+RAIZ = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
 
 
-def _slug(nome: str) -> str:
-    s = re.sub(r"[^a-z0-9]+", "-", nome.lower().translate(str.maketrans("áàâãéêíóôõúçü", "aaaaeeiooouuc"))).strip("-")
-    return s[:50] or "rotina"
+def rotinas():
+    """helpers/rotinas.py, loaded again when the file changes (a deploy takes effect without restarting the agent)."""
+    nome, caminho = "rotinas_helper", RAIZ / "helpers" / "rotinas.py"
+    antigo = sys.modules.get(nome)
+    mtime = caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = mtime
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
 
 
-def _lista(texto) -> str:
-    if isinstance(texto, list):
-        return "\n".join(f"{i}. {p}" for i, p in enumerate(texto, 1))
-    return str(texto or "").strip()
+def _limpeza(r: dict) -> str:
+    if not r.get("pede_reescrita"):
+        return ""
+    return (f" A rotina já acumula {r['n_correcoes']} correções: releia com `acao: ler`, reescreva os passos limpos já "
+            "com as correções dentro deles e salve com `acao: salvar`, `consolidar: true` e a `versao` lida (a seção de "
+            "correções sai; a versão anterior fica guardada).")
 
 
 class SalvarRotina(Tool):
     async def execute(self, acao: str = "salvar", nome: str = "", descricao: str = "", quando_usar: str = "",
                       entradas: str = "", passos="", verificar: str = "", entregar: str = "", aprovacao: str = "",
-                      gatilhos=None, correcao: str = "", **kwargs) -> Response:
-        slug = _slug(nome)
-        arquivo = SKILLS / slug / "SKILL.md"
+                      gatilhos=None, correcao: str = "", trecho: str = "", novo: str = "", versao: str = "",
+                      consolidar: bool = False, **kwargs) -> Response:
+        R = rotinas()
+        slug = R.slug(nome)
         acao = (acao or "salvar").lower()
-        if acao == "corrigir":
-            if not arquivo.exists():
-                return Response(message=f"Rotina «{slug}» não existe. Use memory_save para guardar a correção.", break_loop=False)
-            if not correcao.strip():
-                return Response(message="Informe `correcao`.", break_loop=False)
-            texto = arquivo.read_text(encoding="utf-8").rstrip()
-            if "## Correções do usuário" not in texto:
-                texto += "\n\n## Correções do usuário (valem acima dos passos)"
-            texto += f"\n- {time.strftime('%d/%m/%Y')}: {correcao.strip()}"
-            arquivo.write_text(texto + "\n", encoding="utf-8")
-            return Response(message=f"Correção gravada na rotina «{slug}».", break_loop=False)
-
-        if not (nome and descricao and passos):
-            return Response(message="Para salvar informe ao menos `nome`, `descricao` e `passos`.", break_loop=False)
-        gat = [g for g in (gatilhos or []) if str(g).strip()] if isinstance(gatilhos, list) else \
-              [g.strip() for g in str(gatilhos or "").split(",") if g.strip()]
+        consolidar = consolidar is True or str(consolidar).strip().lower() in ("true", "1", "sim")
         dono = (self.agent.context.get_data("dono") or "").lower()
-        frente = ["---", f"name: {slug}", f'description: "{descricao.strip().replace(chr(34), chr(39))}"',
-                  "version: 1.0.0", f'tags: ["rotina"{", " + chr(34) + dono + chr(34) if dono else ""}]']
-        if gat:
-            frente.append("trigger_patterns:")
-            frente += [f'  - "{g}"' for g in gat[:12]]
-        frente.append("---")
-        corpo = [f"# {nome.strip()}", "",
-                 f"Rotina salva em {time.strftime('%d/%m/%Y')}" + (f" por {dono}" if dono else "") + ".", "",
-                 "## Quando usar", quando_usar.strip() or descricao.strip(), "",
-                 "## Entradas e acessos", entradas.strip() or "(nenhuma)", "",
-                 "## Passos", _lista(passos), "",
-                 "## Como verificar que deu certo", verificar.strip() or "(confira o resultado antes de entregar)", "",
-                 "## O que entregar", entregar.strip() or "(resumo curto do que foi feito)", "",
-                 "## Precisa de aprovação do usuário", aprovacao.strip() or "(siga as regras de aprovações)"]
-        anterior = arquivo.read_text(encoding="utf-8") if arquivo.exists() else ""
-        if "## Correções do usuário" in anterior:  # keep what the user taught on re-save
-            corpo += ["", anterior[anterior.index("## Correções do usuário"):].strip()]
-        arquivo.parent.mkdir(parents=True, exist_ok=True)
-        arquivo.write_text("\n".join(frente + corpo) + "\n", encoding="utf-8")
-        return Response(message=f"Rotina «{slug}» salva em {arquivo}. Para usar: peça pelo nome ou digite /{slug}.",
-                        break_loop=False)
+        por = dono or "usuário"
+
+        def resp(texto: str) -> Response:
+            return Response(message=texto, break_loop=False)
+
+        if acao == "ler":
+            lido = R.ler(nome)
+            return resp(f"versao: {lido['hash']}\n\n{lido['texto']}" if lido else f"Rotina «{slug}» não existe.")
+
+        if acao == "corrigir":
+            r = R.corrigir(nome, correcao, por=por)
+            return resp({"nao_existe": f"Rotina «{slug}» não existe. Use memory_save para guardar a correção.",
+                         "vazia": "Informe `correcao`.",
+                         "repetida": f"Essa correção já está na rotina «{slug}»; nada foi gravado.",
+                         }.get(r["motivo"], f"Correção gravada na rotina «{slug}».") + _limpeza(r))
+
+        if acao == "ajustar":
+            r = R.ajustar(nome, trecho, novo, versao, por=por)
+            return resp({"nao_existe": f"Rotina «{slug}» não existe.",
+                         "nao_relida": f"A rotina «{slug}» não foi relida (ou mudou depois): leia com `acao: ler` e "
+                                       "ajuste passando a `versao` que veio. Nada foi trocado.",
+                         "vazio": "Informe `trecho` (o texto exato a trocar) e `novo`.",
+                         "nao_achou": f"O trecho não está na rotina «{slug}». Nada foi trocado.",
+                         "repetido": f"O trecho aparece {r.get('vezes')} vezes na rotina «{slug}»; mande um trecho "
+                                     "maior. Nada foi trocado.",
+                         }.get(r["motivo"], f"Rotina «{slug}» ajustada (versao nova: {r['hash']}).") + _limpeza(r))
+
+        r = R.salvar(nome, descricao, passos, quando_usar=quando_usar, entradas=entradas, verificar=verificar,
+                     entregar=entregar, aprovacao=aprovacao, gatilhos=gatilhos, dono=dono, consolidar=consolidar,
+                     hash_lido=versao, por=por)
+        if r["motivo"] == "incompleta":
+            return resp("Para salvar informe ao menos `nome`, `descricao` e `passos`.")
+        if r["motivo"] == "nao_relida":
+            return resp(f"Para consolidar, releia a rotina «{slug}» com `acao: ler` e salve passando a `versao` que "
+                        "veio. Nada foi gravado.")
+        return resp(f"Rotina «{slug}» salva em {r['arquivo']}. Para usar: peça pelo nome ou digite /{slug}."
+                    + (" Correções incorporadas aos passos; a versão anterior ficou guardada."
+                       if r["motivo"] == "consolidada" else _limpeza(r)))
