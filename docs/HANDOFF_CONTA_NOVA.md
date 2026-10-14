@@ -186,6 +186,7 @@ comando (a máquina não lê o bucket S3).
 | `ver_chat.sh <ctx>` (rodar na VM) | Últimas mensagens de uma conversa do agente |
 | `implantar.py <plugin> [--skill s]` / `implantar.py --host <script> [--reiniciar unit]` / `implantar.py --controle` | **O único jeito** de levar plugin, skill ou script do host à VM, e a função de controle (página + webhooks) à AWS (só o commitado e no GitHub; plugin testado numa cópia de estágio com `ESTAGIO=1` antes) |
 | `decisoes.py listar\|registrar\|revogar\|semear` | Registro de decisões do Matheus pelo helper (`--motivo` obrigatório para mudar) |
+| `ficha.py ver\|migrar` | Ficha "Sobre você" pelo helper do `memoria_pessoal`: `ver` simula, `migrar --motivo` converte a ficha antiga em entradas (uma vez, depois de implantar o 1.2.0) |
 | `retomar_chat.py <ctx> [--pausar]`, `aprovar_pendente.py <ctx> [--so-ver]` | Despausar/pausar uma conversa; ver/aprovar o pedido de ok que está esperando |
 | `mover_perfis_navegador.py` | (feito em 12/10) levou os perfis do navegador para fora do contêiner |
 | `rotinas.py comparar\|exportar\|aplicar <uuid>` | Rotinas do agendador versionadas em `infra/vm/rotinas/` (as da prospecção ficam em `rodadas.py`) |
