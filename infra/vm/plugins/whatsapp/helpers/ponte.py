@@ -62,6 +62,26 @@ BLOQUEIO = re.compile(r"(pediu|pede|precisa de|fazer|refazer|entrar com) (o |um 
                       r"conta (foi )?(bloqueada|suspensa|restrita|limitada|desativada)", re.I)
 
 
+URL_AGENTE = Path("/a0/usr/agente/url.txt")  # the app's public address, kept current by the VM's report_url.py
+PEDE_NAVEGADOR = re.compile(r"\b(navegador|browser)\b", re.I)
+PEDE_ACAO = re.compile(r"captcha|desafio|login|logar|entrar|entre |resolv|conclu|confirm|c[oó]digo|verifica", re.I)
+
+
+def com_link_do_navegador(texto: str, ctx_id: str, arquivo: Path | None = None) -> str:
+    """A reply that asks the person to do something in the Navegador carries a link that opens the app on this very
+    chat. 14/10: the panel shows the browser of the chat selected in the app; Matheus had another chat open there, saw
+    no captcha, and the agent kept saying it was still there."""
+    if not ctx_id or "?ctxid=" in texto or not (PEDE_NAVEGADOR.search(texto) and PEDE_ACAO.search(texto)):
+        return texto
+    try:
+        url = (arquivo or URL_AGENTE).read_text(encoding="utf-8").strip().rstrip("/")
+    except OSError:
+        return texto
+    if not url.startswith("https://"):
+        return texto
+    return f"{texto}\n\n🖥️ Abrir o Navegador desta conversa: {url}/?ctxid={ctx_id}"
+
+
 def urgente(texto: str) -> bool:
     texto = str(texto or "")
     return bool(URGENTE.match(texto) or BLOQUEIO.search(texto[:600]))

@@ -117,6 +117,7 @@ class EnviarResposta(Extension):
             if not (tarefa or ausente):
                 return
             destino, mensagem = p.dono(ctx), _aviso(ctx, texto, tarefa, nome_tarefa)
+        mensagem = p.com_link_do_navegador(mensagem, ctx.id)  # "resolva na tela": a link to this chat's browser
         # a phone chat is a conversation (answer now); a task round or an away notice is progress, held during
         # the person's quiet hours unless it says it needs them
         urgente = p.urgente(texto) or any(t == "urgente" for _, t in avisos)

@@ -27,12 +27,16 @@ LOCAL_UI = "http://127.0.0.1:50080/"
 PHONE_UNIT = "agentepessoal-phone-tunnel"
 REFRESH_S = 60
 PHONE_FILE = "/opt/a0/usr/celular/url.txt"  # read by the Agent Zero "Celular" panel
+# read by the WhatsApp plugin: a reply that asks for something in the Navegador carries a link that opens the app on
+# that very chat (14/10: the panel shows the browser of the chat selected in the app, which was another one)
+AGENT_FILE = "/opt/a0/usr/agente/url.txt"
+FILES = {PHONE_PARAM: PHONE_FILE, AGENT_PARAM: AGENT_FILE}
 
 
-def write_phone_file(url: str) -> None:
+def write_url_file(path: str, url: str) -> None:
     try:
-        os.makedirs(os.path.dirname(PHONE_FILE), exist_ok=True)
-        with open(PHONE_FILE, "w") as f:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
             f.write(url)
     except OSError as exc:
         print(f"report_url: {exc}", flush=True)
@@ -136,8 +140,7 @@ def main() -> None:
                     checked[param] = time.time()
                     if url:
                         live[param] = url
-                        if param == PHONE_PARAM:
-                            write_phone_file(url)
+                        write_url_file(FILES[param], url)
                         if current != url:
                             ssm.put_parameter(Name=param, Value=url, Type="String", Overwrite=True)
             except Exception as exc:  # keep trying; the page shows "starting" meanwhile
