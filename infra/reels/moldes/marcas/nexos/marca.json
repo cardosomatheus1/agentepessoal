@@ -1,0 +1,18 @@
+{
+ "nome": "NEXOS",
+ "perfil": "sejanexos.com.br",
+ "cores": [
+  "#00ff66",
+  "#1f1f1f"
+ ],
+ "fonte": "inter",
+ "estilo": "noite",
+ "logo_escuro": "logo_escuro.png",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Agende sua demonstração",
+ "voz": {
+  "id": "Camila",
+  "motor": "generative"
+ },
+ "ramo": "assistente de gestão para empresas e agências (marketing, conversas, vendas e margem)"
+}

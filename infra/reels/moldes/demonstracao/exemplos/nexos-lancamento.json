@@ -1,0 +1,42 @@
+{
+ "_marca": "nexos",
+ "_formato": "reel",
+ "dor": "Venda travada",
+ "problema": "Investe em anúncio e não sabe por que vende menos?",
+ "ferramenta": "NEXOS",
+ "telas": [
+  {
+   "imagem": "../demonstracao/exemplos/telas/nexos-1.png",
+   "legenda": "Mostra onde a venda travou",
+   "toque": {
+    "x": 41.6,
+    "y": 75.2
+   }
+  },
+  {
+   "imagem": "../demonstracao/exemplos/telas/nexos-2.png",
+   "legenda": "Você aprova, ele executa na Meta",
+   "toque": {
+    "x": 39.6,
+    "y": 68.1
+   }
+  },
+  {
+   "imagem": "../demonstracao/exemplos/telas/nexos-3.png",
+   "legenda": "Sete dias depois, o resultado volta"
+  }
+ ],
+ "resultado": "Da decisão à execução, numa tela só.",
+ "falas": [
+  "Investe em anúncio e não sabe por que vende menos?",
+  "O NEXOS mostra onde a venda travou, com a ação pronta.",
+  "Você aprova, e ele executa direto na Meta.",
+  "Sete dias depois, o resultado volta para a mesma tela.",
+  "Da decisão à execução, numa tela só.",
+  "Chegou o NEXOS. Agende sua demonstração."
+ ],
+ "nota": "Dados fictícios",
+ "_origem": {
+  "telas": "sistema"
+ }
+}
