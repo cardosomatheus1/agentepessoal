@@ -24,10 +24,10 @@ USUARIOS = USR / "usuarios.json"
 MAX_CHARS = 12000  # keep each injected file to a few thousand tokens
 
 
-def decisoes():
-    """helpers/decisoes.py of this plugin, reloaded when the file changes."""
-    nome = "memoria_pessoal_decisoes"
-    caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists()) / "helpers" / "decisoes.py"
+def _helper(arquivo: str):
+    """A helper of this plugin, reloaded when the file changes."""
+    nome = f"memoria_pessoal_{arquivo}"
+    caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists()) / "helpers" / f"{arquivo}.py"
     antigo = sys.modules.get(nome)
     mtime = caminho.stat().st_mtime
     if antigo is None or getattr(antigo, "_mtime", None) != mtime:
@@ -39,6 +39,18 @@ def decisoes():
     return sys.modules[nome]
 
 
+def decisoes():
+    return _helper("decisoes")
+
+
+def ficha(quem: str, modulo=None) -> tuple[str, bool]:
+    """(the speaker's profile for the prompt, kept by the `ficha` tool?). Old free-text file: as it is."""
+    try:
+        return (modulo or _helper("ficha")).texto_para_prompt(quem)
+    except Exception as exc:  # the turn must go on without the block
+        return f"(ficha indisponível: {type(exc).__name__})", True
+
+
 def bloco_decisoes(quem: str, nome: str, modulo=None) -> str:
     try:
         lista = (modulo or decisoes()).texto_para_prompt(quem)
@@ -47,7 +59,8 @@ def bloco_decisoes(quem: str, nome: str, modulo=None) -> str:
     return f"""### Decisões de {nome} em vigor — valem até {nome} mudar; não pergunte de novo
 {lista or "(nenhuma registrada ainda)"}
 - Antes de perguntar algo a {nome} ou de pedir o ok de {nome}, confira esta lista: se o assunto já está decidido, siga a decisão e só conte o que fez. Pergunte só o que ela não cobre.
-- Quando {nome} decidir algo que vale para as próximas vezes (permitir ou proibir algo, um jeito de trabalhar, uma preferência), registre na hora com a ferramenta `decisao` (acao "registrar", com as palavras de {nome} em `citacao`) e termine a resposta com "Anotado: …". Se {nome} mudar de ideia, registre de novo com o mesmo `tema` (a antiga é substituída) ou use acao "revogar"."""
+- Quando {nome} decidir algo que vale para as próximas vezes (permitir ou proibir algo, um jeito de trabalhar, uma preferência), registre na hora com a ferramenta `decisao` (acao "registrar", com as palavras de {nome} em `citacao`) e termine a resposta com "Anotado: …". Se {nome} mudar de ideia, registre de novo com o mesmo `tema` (a antiga é substituída) ou use acao "revogar".
+- Depois da conversa, um revisor relê as mensagens de {nome} e manda avisos curtos ao celular ("Anotado: …", "Anotado na rotina …", "Anotado sobre você: …", "Quer que eu salve '…' como rotina?", "Você disse «…». Hoje vale a decisão #N … Troco por «…»?"). Quando {nome} responder a um deles: «desfaz a N» → `decisao` acao "revogar" id N; «troca a N» → `decisao` acao "registrar" no tema da decisão N com o texto e as palavras que o aviso trouxe; «tira da ficha: …» → `ficha` acao "remove"; «tira da rotina X» → `salvar_rotina` acao "corrigir" na rotina X dizendo que a correção do aviso deixou de valer; "sim" para salvar rotina → `salvar_rotina` acao "salvar" com os passos que funcionaram."""
 
 
 def _read(path: Path) -> str:
@@ -80,7 +93,8 @@ class MemoriaPessoal(Extension):
             todos = [u.get("nome") or k.title() for k, u in json.loads(USUARIOS.read_text()).get("usuarios", {}).items()]
         except Exception:
             todos = [nome]
-        profile = _read(PROFILE) or "(vazio)"
+        profile, ficha_nova = ficha(quem)
+        profile = profile or "(vazio)"
         chat_context = _read(context_file) or "(vazio — crie o arquivo quando houver algo a guardar)"
         try:
             files = sorted(p for p in attachments.iterdir() if p.is_file())
@@ -94,6 +108,14 @@ class MemoriaPessoal(Extension):
             else "Esta conversa não está ligada a nenhum agente específico (conversa avulsa)."
         )
 
+        regra_ficha = (
+            f"- Quando {nome} contar algo duradouro sobre si (nome, cidade, profissão, família, preferências, jeito de "
+            "responder, contexto do negócio), grave na hora com a ferramenta `ficha` (acao \"add\"; corrigir: \"patch\"; "
+            "deixou de valer: \"remove\") — só a ficha de quem está falando, só fatos (ordens e permissões vão na "
+            "`decisao`). Nunca edite o arquivo da ficha direto. Ficha cheia: junte ou tire entradas e tente de novo."
+            if ficha_nova else
+            f"- Quando {nome} contar algo duradouro sobre si (nome, cidade, profissão, família, preferências, jeito de "
+            f"responder), atualize {PROFILE} na hora — só a ficha de quem está falando.")
         system_prompt.append(
             f"""## Memória pessoal do usuário
 
@@ -111,7 +133,8 @@ Pessoas que usam este agente: {", ".join(todos)} (cada uma com a sua ficha). **Q
 {anexos}
 
 ### Como manter essa memória
-- Quando {nome} contar algo duradouro sobre si (nome, cidade, profissão, família, preferências, jeito de responder), atualize {PROFILE} na hora — só a ficha de quem está falando.
+{regra_ficha}
+- Quando {nome} citar algo de uma conversa antiga que não está aqui ("aquilo que falamos sobre…"), procure com a ferramenta `lembrar` antes de dizer que não sabe ou de perguntar de novo.
 - Quando surgir algo importante só para esta conversa (objetivo, combinados que só valem aqui, dados, pendências, resumo do que foi feito), atualize {context_file}; decisão que vale também fora daqui vai para a ferramenta `decisao`. Mantenha o arquivo curto e organizado em seções; reescreva em vez de só acrescentar.
 - O texto acima **já é** o {context_file} atual: não o leia de novo (nem com text_editor nem com cat) — isso só repete o mesmo texto no histórico. Para atualizar, reescreva o arquivo inteiro de uma vez a partir do que está acima.
 - Arquivos que o usuário manda da máquina dele: pelo **+ → Attach files** desta conversa, os grandes (até 5 GB) já ficam em {attachments}/ (lista acima; a mensagem traz o caminho) e os pequenos chegam como anexo normal; pela página de controle ("Enviar arquivos", funciona com a máquina desligada) chegam em /a0/usr/workdir/entrada/; pelo botão Files vão para a pasta que ele escolher. Se ele disser que mandou um arquivo, procure nesses lugares.
