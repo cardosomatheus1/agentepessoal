@@ -706,7 +706,7 @@ class Suite:
         # the rotated phone chat's _herdado cuts each line at 350 chars: resumo_seguro adds the @, ids and saidas/
         import importlib.util
 
-        caminho = RAIZ.parent / "resumo_seguro" / "helpers" / "ancoras.py"
+        caminho = next(c for c in (RAIZ.parent / "resumo_seguro", Path("/a0/usr/plugins/resumo_seguro")) if c.exists()) / "helpers" / "ancoras.py"
         spec = importlib.util.spec_from_file_location("ancoras_teste_whatsapp", caminho)
         a = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(a)

@@ -14,7 +14,8 @@ import types
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-PLUGINS = RAIZ.parent
+# the staging copy on the VM runs alone in /tmp: the other plugins are then the live ones
+PLUGINS = RAIZ.parent if (RAIZ.parent / "prospeccao").exists() else Path("/a0/usr/plugins")
 
 
 class Falha(AssertionError):
