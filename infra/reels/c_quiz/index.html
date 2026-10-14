@@ -6,7 +6,7 @@
 .slide:before{display:none}
 .palco{position:absolute;inset:0;background:
   radial-gradient(620px 520px at 50% 22%,rgba(245,247,237,.16),transparent 70%),
-  repeating-conic-gradient(from 0deg at 50% -10%,rgba(255,255,255,.035) 0 4deg,transparent 4deg 12deg),
+  repeating-conic-gradient(from 0deg at 50% -10%,rgba(255,255,255,.02) 0 4deg,transparent 4deg 12deg),
   linear-gradient(180deg,#1b4a2e,#0f2a1b)}
 .placa-p{background:var(--night);border:2px solid #2f6a45;border-radius:22px;padding:34px 40px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
 .placa-p .etq{color:#9fc7a9}
@@ -15,9 +15,9 @@
 .placa{background:var(--paper);color:var(--ink);border-radius:22px;padding:26px 20px 30px;text-align:center;box-shadow:0 14px 0 #c9c2ad,0 30px 50px rgba(0,0,0,.35)}
 .placa .letra{width:84px;height:84px;margin:0 auto;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-weight:800;font-size:44px}
 .placa .n{font-size:66px;margin-top:16px;display:block}
-.placa.fora{opacity:.62;filter:grayscale(.3)}
-.placa.certa{outline:6px solid var(--txt);outline-offset:6px}
-.placa .vered{font-weight:800;font-size:22px;letter-spacing:.14em;margin-top:10px}
+.placa.fora{opacity:.8;filter:grayscale(.3)}
+.placa.certa{box-shadow:inset 0 0 0 6px var(--forest),0 14px 0 #c9c2ad,0 30px 50px rgba(0,0,0,.35)}
+.placa .vered{font-weight:800;font-size:28px;letter-spacing:.08em;margin-top:10px}
 .foto-bolo{width:360px;height:360px;border-radius:50%;background:url(../base/kit/fotos/bolo.jpg) center 62%/cover;margin:34px auto 0;
   box-shadow:0 0 0 10px rgba(245,247,237,.08),0 30px 60px rgba(0,0,0,.45)}
 .pista{display:flex;justify-content:space-between;align-items:baseline;background:rgba(16,29,24,.55);border:1.5px solid #2f6a45;border-radius:16px;padding:24px 32px;font-size:38px;font-weight:600}
@@ -26,6 +26,7 @@
 .expl{font-size:30px;line-height:1.35;color:var(--mut);margin-top:16px;text-align:left}
 .expl b{color:var(--txt)}
 .legenda{font-size:22px;font-weight:600;color:var(--mut);margin-top:12px}
+.cta-calc .celular{height:470px}
 </style></head><body>
 
 <!-- 1 pergunta -->
@@ -68,8 +69,8 @@
   <div class="etq" style="color:#9fc7a9">RESPOSTA</div>
   <h2 style="margin-top:18px">É a C, e mesmo assim só <span class="it">empata.</span></h2>
   <div class="placas" style="margin-top:40px">
-   <div class="placa fora"><div class="letra">A</div><span class="n">R$ 85</span><div class="vered" style="color:var(--perda-c)">✕ DE GRAÇA</div></div>
-   <div class="placa fora"><div class="letra">B</div><span class="n">R$ 120</span><div class="vered" style="color:var(--perda-c)">✕ R$ 8,75/H</div></div>
+   <div class="placa fora"><div class="letra">A</div><span class="n">R$ 85</span><div class="vered" style="color:#8c2a17">✕ DE GRAÇA</div></div>
+   <div class="placa fora"><div class="letra">B</div><span class="n">R$ 120</span><div class="vered" style="color:#8c2a17">✕ R$ 8,75/H</div></div>
    <div class="placa certa"><div class="letra">C</div><span class="n">R$ 145</span><div class="vered" style="color:var(--forest)">✓ EMPATA</div></div>
   </div>
   <div class="expl" style="margin-top:44px"><b>A:</b> R$ 85 paga ingrediente, caixa e gás. As suas 4 horas saem de graça.</div>
@@ -87,7 +88,7 @@
   <h2>E a R$ 160? Sobram só R$ 15 por <span class="it">bolo.</span></h2>
   <div class="cta-calc" data-tela="tela-calculadora-bolo.jpg"></div>
   <div class="legenda">Na tela: a calculadora com esse bolo · valores de exemplo</div>
-  <div class="esp"></div>
+  <div class="esp" style="min-height:32px"></div>
   <div class="botao"><div>Faça a conta com os seus números<small>calculadora grátis · link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
  </div>
 </div>

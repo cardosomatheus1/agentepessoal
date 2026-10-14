@@ -9,6 +9,7 @@
 | `fotos/molho-pimenta.jpg` | **gerada por IA**: Stability Stable Image Ultra (Bedrock us-west-2), semente 23, prompt "pimenta" em scratchpad `carr_img/gerar.py`; escolhida entre 11, 23 e 37 (fundo mais escuro, espaço para título) | capa do custo em 10 minutos | gerada |
 | `fotos/bolo.jpg` | **gerada por IA**: Stable Image Ultra, semente 5 (entre 5 e 19: fundo verde da marca) | capa do quiz | gerada |
 | `fotos/entrega.jpg` | **gerada por IA**: Stable Image Ultra, semente 7 (entre 7 e 42) | capa da polêmica | gerada |
+| `fotos/caderno.jpg` | **gerada por IA** para o vídeo da oferta (erp-saas `marketing/oferta-lucro-na-mao/assets/geradas/caderno.jpg`) | garantia, cláusula 3 ("foto do caderno") | gerada |
 | `fotos/produtos.jpg` | **gerada por IA** para o vídeo da oferta (erp-saas `marketing/oferta-lucro-na-mao/assets/geradas/produtos.jpg`) | capa da garantia | gerada |
 
 Prompts das três fotos novas: produto em vidro/kraft sem texto, fundo verde-escuro, luz quente lateral, espaço vazio

@@ -12,7 +12,7 @@
 .time{font-weight:800;font-size:26px;letter-spacing:.16em}
 .capa-a .time{color:var(--forest)} .capa-b .time{color:#cfe3d3}
 .capa-t{font-weight:800;font-size:84px;letter-spacing:-.045em;line-height:1.02;margin-top:14px}
-.letrao{position:absolute;right:40px;bottom:120px;font-weight:800;font-size:640px;line-height:.8;letter-spacing:-.06em;opacity:.09;z-index:0}
+.letrao{position:absolute;right:30px;bottom:150px;font-weight:800;font-size:420px;line-height:.8;letter-spacing:-.06em;opacity:.08;z-index:0}
 .slide.time-b{background:var(--btn)}
 .time-b h2,.time-b .arg{color:#fff}
 .time-b .etq{color:#cfe3d3}
@@ -23,16 +23,19 @@
 .time-b .lema{color:#fff}
 .barra{display:flex;height:84px;border-radius:14px;overflow:hidden;margin-top:30px;font-weight:800;font-size:30px}
 .barra div{display:flex;align-items:center;padding:0 24px}
-.barra .frete{width:20%;background:#e4674a;color:#fff;justify-content:center}
+.barra .frete{width:34%;background:#e4674a;color:#fff;justify-content:center}
 .barra .resto{flex:1;background:var(--soft);color:var(--txt)}
-.cta-calc .celular{height:440px}
 .capa-split .pe span{color:#cfe3d3}.capa-split .pe .barras i{background:rgba(255,255,255,.25)}.capa-split .pe .barras i.on{background:#fff}
+.dois{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:40px}
+.dois>div{border-radius:16px;padding:26px 28px}.dois p{font-size:32px;margin-top:10px}.dois b{white-space:nowrap}
+.dois .ta{background:var(--bg)}.dois .ta .time{color:var(--forest)}.dois .ta p{color:var(--mutc)}.dois .ta b{color:var(--ink)}
+.dois .tb{background:var(--btn)}.dois .tb .time{color:#cfe3d3}.dois .tb p{color:#e3efe6}.dois .tb b{color:#fff}
 </style></head><body>
 
 <!-- 1 capa -->
 <div class="slide claro capa-split" data-rot="Frete para a loja">
  <div class="lado-b"></div><div class="lado-a"></div>
- <div class="capa-a"><div class="time">TIME A</div><div class="capa-t">Cobrar o frete da loja à parte?</div></div>
+ <div class="capa-a"><div class="time">TIME A</div><div class="capa-t">Cobrar o frete à parte?</div></div>
  <div class="vs">ou</div>
  <div class="capa-b"><div class="time">TIME B</div><div class="capa-t">Embutir o frete no preço?</div><div class="ex" style="color:#cfe3d3;margin-top:22px">Escolha o seu time e arraste.</div></div>
 </div>
@@ -72,9 +75,13 @@
  <div class="area">
   <h2>Time A ou <span class="it">B?</span> Comente.</h2>
   <p style="margin-top:28px">Seja qual for: <b>o frete custa.</b></p>
-  <div class="barra"><div class="frete">R$ 8</div><div class="resto">o resto do pedido de R$ 40</div></div>
-  <div class="ex" style="margin-top:14px">o frete é 1/5 do pedido · valores de exemplo</div>
-  <div class="cta-calc" style="margin-top:34px"></div>
+  <div class="barra"><div class="frete">− R$ 8 frete</div><div class="resto">R$ 32 o resto do pedido</div></div>
+  <div class="ex" style="margin-top:14px">num pedido de R$ 40, o frete é 1/5 · valores de exemplo</div>
+  <div class="dois">
+   <div class="ta"><div class="time">TIME A</div><p>O frete aparece na nota: <b>− R$ 8</b> pagos pela loja.</p></div>
+   <div class="tb"><div class="time">TIME B</div><p>O frete vai no preço: <b>− R$ 8</b> já dentro do produto.</p></div>
+  </div>
+  <p style="margin-top:34px">Nos dois, alguém paga os R$ 8. <b>Só não pode ser você sem saber.</b></p>
   <div class="esp"></div>
   <div class="botao"><div>Coloque o frete na conta<small>calculadora grátis · link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
  </div>
