@@ -1,80 +1,99 @@
 <!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="../base/raiz-carrossel.css">
 <style>
-.num{font-weight:800;font-size:30px;letter-spacing:.14em;color:var(--mut)}
-.claro .num{color:var(--mutc)}
-.crenca{font-weight:800;letter-spacing:-.04em;font-size:76px;line-height:1.04;text-wrap:balance;margin-top:26px}
-.selo-verd{background:var(--forest);color:#fff}
-.capa4{display:flex;flex-direction:column;gap:14px}
-.capa4 .linha{font-size:34px;padding:18px 0}
+/* Conceito próprio: fichas de papel numa mesa escura, julgadas com carimbo. */
+.slide{background:#0d1813}
+.mesa{position:absolute;inset:0;background:
+  radial-gradient(900px 700px at 70% 30%,rgba(39,97,60,.35),transparent 70%),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.012) 0 2px,transparent 2px 9px)}
+.ficha{position:relative;background:var(--paper);color:var(--ink);border-radius:6px;padding:64px 60px 150px 92px;
+  box-shadow:0 30px 60px rgba(0,0,0,.45),0 2px 0 rgba(0,0,0,.08);
+  background-image:linear-gradient(90deg,transparent 64px,rgba(228,103,74,.35) 64px,rgba(228,103,74,.35) 66px,transparent 66px),
+    repeating-linear-gradient(180deg,transparent 0 58px,#e6dfcd 58px 60px)}
+.ficha .num{font-weight:800;font-size:26px;letter-spacing:.14em;color:var(--mutc)}
+.ficha .crenca{font-weight:800;letter-spacing:-.04em;font-size:70px;line-height:1.04;margin-top:18px;text-wrap:balance}
+.carimbo{position:absolute;right:46px;bottom:34px;transform:rotate(-12deg);font-weight:800;font-size:66px;letter-spacing:.14em;
+  padding:8px 30px;border:7px solid currentColor;border-radius:12px;filter:url(#tinta);opacity:.9;mix-blend-mode:multiply}
+.c-mito{color:#c2412a}.c-verd{color:var(--forest)}.c-dep{color:#a35a14}
+.porque{font-size:40px;line-height:1.38;color:var(--mut);font-weight:500}
+.porque b{color:var(--txt);font-weight:700}
+/* capa: fichas em leque */
+.leque{display:grid;grid-template-columns:1fr 1fr;gap:40px 28px;margin-top:80px}
+.leque .ficha{padding:34px 30px 44px 56px;background-image:linear-gradient(90deg,transparent 34px,rgba(228,103,74,.35) 34px,rgba(228,103,74,.35) 36px,transparent 36px),repeating-linear-gradient(180deg,transparent 0 46px,#e6dfcd 46px 48px)}
+.leque .ficha .crenca{font-size:44px;margin-top:12px}
+.leque .ficha .num{font-size:22px}
+.legenda{font-size:22px;font-weight:600;color:var(--mut);margin-top:12px}
 </style></head><body>
+<svg width="0" height="0" style="position:absolute"><filter id="tinta"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter></svg>
 
 <!-- 1 capa -->
 <div class="slide" data-rot="Sobre preço">
+ <div class="mesa"></div>
  <div class="area">
   <h1>Mito ou <span class="it">verdade?</span></h1>
-  <p style="margin-top:36px">4 coisas que quase todo mundo que produz e vende comida acredita sobre preço. <b>Responda antes de arrastar.</b></p>
-  <div class="esp"></div>
-  <div class="cartao capa4">
-   <div class="linha"><span class="l">01 · Se eu aumentar o preço, perco todos os clientes</span><span class="v">?</span></div>
-   <div class="linha"><span class="l">02 · O preço para a loja pode ser o do cliente final</span><span class="v">?</span></div>
-   <div class="linha"><span class="l">03 · Embalagem caprichada ajuda a cobrar mais</span><span class="v">?</span></div>
-   <div class="linha"><span class="l">04 · Eu sei o meu lucro de cabeça</span><span class="v">?</span></div>
+  <p style="margin-top:28px">4 crenças sobre preço de quem produz e vende comida. <b>Julgue antes de arrastar.</b></p>
+  <div class="leque">
+   <div class="ficha" style="top:0;transform:rotate(-3deg)"><div class="num">FICHA 01</div><div class="crenca">Se eu aumentar o preço, perco todos os clientes.</div></div>
+   <div class="ficha" style="transform:rotate(2deg)"><div class="num">FICHA 02</div><div class="crenca">O preço para a loja pode ser o do cliente final.</div></div>
+   <div class="ficha" style="transform:rotate(-1.5deg)"><div class="num">FICHA 03</div><div class="crenca">Embalagem caprichada ajuda a cobrar mais.</div></div>
+   <div class="ficha" style="transform:rotate(1.5deg)"><div class="num">FICHA 04</div><div class="crenca">Eu sei o meu lucro de cabeça.</div></div>
   </div>
  </div>
 </div>
 
 <!-- 2 -->
-<div class="slide claro" data-rot="Mito ou verdade" style="--lx:300px;--ly:-300px">
+<div class="slide" data-rot="Ficha 1 de 4">
+ <div class="mesa"></div>
  <div class="area centro">
-  <div class="num">01 DE 04</div>
-  <div class="crenca">Se eu aumentar o preço, perco todos os meus clientes.</div>
-  <div class="esp"></div>
-  <div style="margin-bottom:30px"><span class="pilula selo-mito">✕ Mito</span></div>
-  <p>Alguns podem sair, sim. Mas se cada venda passa a deixar dinheiro, <b>vender um pouco menos pode render mais</b> do que vender muito no prejuízo.</p>
+  <div class="ficha" style="transform:rotate(-1.5deg)"><div class="num">FICHA 01</div>
+   <div class="crenca">Se eu aumentar o preço, perco todos os meus clientes.</div>
+   <div class="carimbo c-mito">MITO</div></div>
+  <div class="porque" style="margin-top:110px">Alguns podem sair, sim. Mas se cada venda passa a deixar dinheiro, <b>vender um pouco menos pode render mais</b> do que vender muito no prejuízo.</div>
  </div>
 </div>
 
 <!-- 3 -->
-<div class="slide" data-rot="Mito ou verdade" style="--lx:-400px;--ly:100px">
+<div class="slide" data-rot="Ficha 2 de 4">
+ <div class="mesa"></div>
  <div class="area centro">
-  <div class="num">02 DE 04</div>
-  <div class="crenca">O preço para a loja pode ser o mesmo do cliente final.</div>
-  <div class="esp"></div>
-  <div style="margin-bottom:30px"><span class="pilula selo-mito">✕ Mito</span></div>
-  <p>A loja precisa revender com lucro, então ela não paga o preço do balcão. <b>O preço de atacado sai do seu custo</b>, não de um desconto chutado.</p>
+  <div class="ficha" style="transform:rotate(1.2deg)"><div class="num">FICHA 02</div>
+   <div class="crenca">O preço para a loja pode ser o mesmo do cliente final.</div>
+   <div class="carimbo c-mito" style="transform:rotate(-8deg)">MITO</div></div>
+  <div class="porque" style="margin-top:110px">A loja precisa revender com lucro, então não paga o preço do balcão. <b>O preço de atacado sai do seu custo</b>, não de um desconto chutado.</div>
  </div>
 </div>
 
 <!-- 4 -->
-<div class="slide claro" data-rot="Mito ou verdade" style="--lx:-200px;--ly:-400px">
+<div class="slide" data-rot="Ficha 3 de 4">
+ <div class="mesa"></div>
  <div class="area centro">
-  <div class="num">03 DE 04</div>
-  <div class="crenca">Uma embalagem caprichada ajuda a cobrar mais.</div>
-  <div class="esp"></div>
-  <div style="margin-bottom:30px"><span class="pilula selo-verd">✓ Verdade</span></div>
-  <p>A apresentação conta no valor que o cliente enxerga. Só lembre: <b>a embalagem também é custo</b> e precisa estar dentro do preço.</p>
+  <div class="ficha" style="transform:rotate(-1deg)"><div class="num">FICHA 03</div>
+   <div class="crenca">Uma embalagem caprichada ajuda a cobrar mais.</div>
+   <div class="carimbo c-verd" style="transform:rotate(-14deg)">VERDADE</div></div>
+  <div class="porque" style="margin-top:110px">A apresentação conta no valor que o cliente enxerga. Só lembre: <b>a embalagem também é custo</b> e precisa estar dentro do preço.</div>
  </div>
 </div>
 
 <!-- 5 -->
-<div class="slide" data-rot="Mito ou verdade" style="--lx:200px;--ly:200px">
+<div class="slide" data-rot="Ficha 4 de 4">
+ <div class="mesa"></div>
  <div class="area centro">
-  <div class="num">04 DE 04</div>
-  <div class="crenca">Eu sei o meu lucro de cabeça.</div>
-  <div class="esp"></div>
-  <div style="margin-bottom:30px"><span class="pilula selo-dep">~ Depende</span></div>
-  <p>Dá para ter uma ideia. Saber mesmo, só com a conta de <b>cada produto:</b> ingrediente, embalagem, gás, perda e o seu tempo. É aí que costuma aparecer a surpresa.</p>
+  <div class="ficha" style="transform:rotate(1.5deg)"><div class="num">FICHA 04</div>
+   <div class="crenca">Eu sei o meu lucro de cabeça.</div>
+   <div class="carimbo c-dep" style="transform:rotate(-10deg)">DEPENDE</div></div>
+  <div class="porque" style="margin-top:110px">Dá para ter uma ideia. Saber mesmo, só com a conta de <b>cada produto:</b> ingrediente, embalagem, gás, perda e o seu tempo. É aí que costuma aparecer a surpresa.</div>
  </div>
 </div>
 
 <!-- 6 CTA -->
-<div class="slide" data-rot="Calculadora grátis" data-fim="salve e envie" style="--lx:100px;--ly:300px">
+<div class="slide" data-rot="Calculadora grátis" data-fim="salve e envie">
+ <div class="mesa"></div>
  <div class="area">
-  <h2>Qual você já <span class="it">acreditou?</span> Comente.</h2>
+  <h2>Em qual você já <span class="it">acreditou?</span> Comente.</h2>
   <div class="cta-calc"></div>
+  <div class="legenda">Na tela: exemplo de um molho de pimenta.</div>
   <div class="esp"></div>
-  <div class="botao"><div>Calculadora grátis<small>link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
+  <div class="botao"><div>Tire a dúvida da ficha 04<small>calculadora grátis · link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
  </div>
 </div>
 
