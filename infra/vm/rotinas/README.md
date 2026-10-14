@@ -14,5 +14,5 @@ O portão (pular a rodada quando a fonte barata não mudou) é configurado por r
 `infra/vm/plugins/rotinas/portao.json` (vai para a VM com `implantar.py rotinas`), não no JSON da rotina: o
 agendador não guarda campos extras.
 
-Arquivo sem `uuid` é rotina nova, ainda não criada na VM (`rotinas.py aplicar` só atualiza as que existem; quem cria é a
-sessão principal pela API do agendador): `concorrentes-semana.json` (vigia semanal do plugin `concorrentes`).
+Arquivo sem `uuid` é rotina nova, ainda não criada na VM: `A0_SENHA=... python3 infra/operador/rotinas.py criar <arquivo>` cria pela API do
+agendador e depois `exportar` grava como `<uuid>.json` (o arquivo sem uuid sai). Ex.: `qt0dNXtu` (🔭 Concorrentes — semana).

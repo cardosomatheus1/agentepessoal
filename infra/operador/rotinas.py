@@ -3,6 +3,7 @@
     python3 infra/operador/rotinas.py exportar          # live → infra/vm/rotinas/<uuid>.json (then review and commit)
     python3 infra/operador/rotinas.py comparar          # what differs between the VM and git
     A0_SENHA=... python3 infra/operador/rotinas.py aplicar <uuid>   # git → VM (name, schedule, prompts, off; by the API)
+    A0_SENHA=... python3 infra/operador/rotinas.py criar <arquivo>  # a new routine (JSON without uuid) → VM, then exportar
 
 The prospecting rounds stay in infra/vm/plugins/prospeccao/rodadas.py. Reading is by SSM (tasks.json is never
 edited); "aplicar" goes through the scheduler's own API, like tarefa_atualizar.py. Anything that looks like a secret
@@ -95,23 +96,52 @@ def comparar() -> int:
     return 1 if diferencas else 0
 
 
+async def _entrar(p):
+    """A logged-in page of the agent's web UI (the scheduler API is called from it, like the UI does)."""
+    url = boto3.client("ssm", region_name="us-east-1").get_parameter(Name="/agentepessoal/agent-url")["Parameter"]["Value"].rstrip("/")
+    b = await p.chromium.launch(executable_path=os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"),
+                                headless=True)
+    a = await (await b.new_context()).new_page()
+    await a.goto(url + "/login", timeout=120000)
+    await a.wait_for_selector("#username")
+    await a.fill("#username", os.environ.get("A0_LOGIN", "matheus"))
+    await a.fill("#password", os.environ["A0_SENHA"])
+    await a.click("button[type=submit]")
+    await a.wait_for_selector("#chat-input", timeout=90000)
+    return b, a
+
+
+async def criar(arquivo: str) -> None:
+    """A routine kept in git before it exists on the VM (a file without "uuid"): created by the scheduler API, unless
+    a live routine already has that name. Then `exportar` writes it as <uuid>.json and the uuid-less file goes."""
+    from playwright.async_api import async_playwright
+
+    t = json.loads(Path(arquivo).read_text(encoding="utf-8"))
+    if t.get("uuid"):
+        raise SystemExit(f"{arquivo} já tem uuid: use aplicar")
+    if SEGREDO.search(json.dumps(t, ensure_ascii=False)):
+        raise SystemExit("parece ter um segredo no texto (troque por §§secret(NOME))")
+    if any(v.get("name") == t["name"] for v in ao_vivo().values()):
+        raise SystemExit(f"já existe uma rotina '{t['name']}' na VM: rode exportar")
+    async with async_playwright() as p:
+        b, a = await _entrar(p)
+        r = await a.evaluate("""async (dados) => { const api = await import('/js/api.js');
+            const r = await api.callJsonApi('scheduler_task_create', dados);
+            return (r.task || {}).uuid || ('ERRO ' + (r.error || JSON.stringify(r).slice(0, 200))); }""",
+                             {"name": t["name"], "prompt": t["prompt"], "system_prompt": t.get("system_prompt", ""),
+                              "schedule": t["schedule"]})
+        print(f"{t['name']}: criada = {r}")
+        await b.close()
+
+
 async def aplicar(uuid: str) -> None:
     from playwright.async_api import async_playwright
 
     t = no_git().get(uuid)
     if not t:
         raise SystemExit(f"{uuid} não está em {PASTA}")
-    url = boto3.client("ssm", region_name="us-east-1").get_parameter(Name="/agentepessoal/agent-url")["Parameter"]["Value"].rstrip("/")
     async with async_playwright() as p:
-        b = await p.chromium.launch(executable_path=os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"),
-                                    headless=True)
-        a = await (await b.new_context()).new_page()
-        await a.goto(url + "/login", timeout=120000)
-        await a.wait_for_selector("#username")
-        await a.fill("#username", os.environ.get("A0_LOGIN", "matheus"))
-        await a.fill("#password", os.environ["A0_SENHA"])
-        await a.click("button[type=submit]")
-        await a.wait_for_selector("#chat-input", timeout=90000)
+        b, a = await _entrar(p)
         r = await a.evaluate("""async (dados) => { const api = await import('/js/api.js');
             const r = await api.callJsonApi('scheduler_task_update', dados); return String(!!(r.task || r.ok)) + (r.error ? ' ' + r.error : ''); }""",
                              {"task_id": uuid, "name": t["name"], "prompt": t["prompt"], "system_prompt": t["system_prompt"],
@@ -126,7 +156,7 @@ async def aplicar(uuid: str) -> None:
 
 def main() -> None:
     args = sys.argv[1:]
-    if not args or args[0] not in ("exportar", "comparar", "aplicar"):
+    if not args or args[0] not in ("exportar", "comparar", "aplicar", "criar"):
         raise SystemExit(__doc__)
     if args[0] == "exportar":
         exportar()
@@ -135,7 +165,7 @@ def main() -> None:
     else:
         if len(args) < 2:
             raise SystemExit(__doc__)
-        asyncio.run(aplicar(args[1]))
+        asyncio.run(criar(args[1]) if args[0] == "criar" else aplicar(args[1]))
 
 
 if __name__ == "__main__":

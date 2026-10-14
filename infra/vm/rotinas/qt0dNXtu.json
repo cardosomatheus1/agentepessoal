@@ -1,6 +1,7 @@
 {
+ "uuid": "qt0dNXtu",
  "name": "🔭 Concorrentes — semana",
- "state": "idle",
+ "state": "running",
  "schedule": {
   "minute": "23",
   "hour": "8",
