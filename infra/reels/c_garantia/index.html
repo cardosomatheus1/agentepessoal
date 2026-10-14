@@ -1,99 +1,121 @@
 <!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="../base/raiz-carrossel.css">
 <style>
-.lista{display:flex;flex-direction:column;gap:22px;margin-top:44px}
-.lista div{display:flex;gap:26px;align-items:baseline;font-size:40px;font-weight:600;line-height:1.3}
-.lista i{font-style:normal;font-weight:800;color:var(--mut);font-size:30px;min-width:52px;font-variant-numeric:tabular-nums}
-.claro .lista i{color:var(--mutc)}
-.cartao.oferta .linha{font-size:33px;padding:16px 0}
+/* Conceito próprio: um certificado de garantia, cláusula por cláusula, assinado pelo fundador. */
+.slide.claro{background:#efe9da}
+.slide.claro:before{display:none}
+.moldura{position:absolute;inset:44px;border:2px solid var(--forest);border-radius:4px;pointer-events:none;z-index:0}
+.moldura:after{content:'';position:absolute;inset:10px;border:1px solid rgba(39,97,60,.45);border-radius:2px}
+.papel{position:absolute;inset:0;background:
+  radial-gradient(1200px 800px at 30% 10%,rgba(255,255,255,.55),transparent 60%),
+  repeating-linear-gradient(0deg,rgba(24,43,35,.018) 0 1px,transparent 1px 4px)}
+.clausula{font-weight:800;font-size:26px;letter-spacing:.16em;color:var(--forest)}
+.doc h2{color:var(--ink)}
+.itens{display:flex;flex-direction:column;margin-top:36px;border-top:1.5px solid #d6ceb8}
+.itens div{display:flex;gap:26px;align-items:baseline;font-size:38px;font-weight:600;padding:22px 0;border-bottom:1.5px solid #d6ceb8}
+.itens i{font-style:normal;font-weight:800;font-size:28px;color:var(--forest);min-width:56px}
+.selo{position:absolute;width:250px;height:250px;border-radius:50%;border:5px solid var(--forest);color:var(--forest);
+  display:grid;place-items:center;text-align:center;transform:rotate(-14deg);filter:url(#tinta);opacity:.88;z-index:3}
+.selo:before{content:'';position:absolute;inset:12px;border:2px dashed currentColor;border-radius:50%}
+.selo b{font-weight:800;font-size:34px;letter-spacing:.1em;line-height:1.15;display:block}
+.selo small{font-weight:700;font-size:20px;letter-spacing:.16em;display:block;margin-top:6px}
+.assina{font-family:S;font-style:italic;font-size:92px;color:var(--ink);line-height:1;margin-top:20px}
+.linha-ass{border-top:2px solid var(--ink);width:520px;padding-top:12px;font-weight:700;font-size:24px;letter-spacing:.12em;color:var(--mutc)}
+.tab .linha{font-size:31px;padding:13px 0}
 .risco{text-decoration:line-through;text-decoration-thickness:3px;color:var(--mutc)}
-.passos{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:52px}
-.passos .cartao{padding:30px 28px}
-.passos .n{font-size:64px}
-.passos .p{font-size:32px;margin-top:14px}
+.passos3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+.passos3>div{border-top:4px solid var(--forest);padding-top:20px}
+.passos3 .etq{color:var(--forest)}
+.passos3 p{font-size:32px;margin-top:12px;color:var(--ink);font-weight:600;line-height:1.3}
+.nota-ex{font-size:24px;font-weight:600;color:var(--mutc);line-height:1.4}
 </style></head><body>
+<svg width="0" height="0" style="position:absolute"><filter id="tinta"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="4"/></filter></svg>
 
 <!-- 1 capa -->
-<div class="slide com-foto" data-rot="Lucro na Mão em 30 Dias">
- <div class="foto" style="background-image:url(../base/kit/fotos/produtos.jpg);top:520px;background-position:center top"></div>
- <div class="selo-gerada">imagem ilustrativa</div>
- <div class="area">
-  <div class="etq">A garantia</div>
-  <h1 style="margin-top:28px;font-size:92px">Se a gente não achar onde seu dinheiro escapa, você <span class="it">não paga.</span></h1>
-  <p style="margin-top:34px">A garantia do <b>Lucro na Mão em 30 Dias</b>, o método da Raiz para quem produz alimento.</p>
+<div class="slide claro" data-rot="Lucro na Mão em 30 Dias">
+ <div class="papel"></div><div class="moldura"></div>
+ <div class="area doc">
+  <div class="clausula">CERTIFICADO DE GARANTIA</div>
+  <h1 style="margin-top:34px;font-size:96px;color:var(--ink)">Se a gente não achar onde seu dinheiro escapa, você <span class="it">não paga.</span></h1>
+  <div class="esp"></div>
+  <p style="max-width:640px">A garantia do <b>Lucro na Mão em 30 Dias</b>, o método da Raiz para quem produz alimento.</p>
  </div>
+ <div class="selo" style="right:120px;top:640px;width:300px;height:300px"><div><b>LUCRO<br>NA MÃO</b><small>30 DIAS</small></div></div>
 </div>
 
-<!-- 2 o que procuramos -->
-<div class="slide claro" data-rot="Lucro na Mão em 30 Dias" style="--lx:300px;--ly:-300px">
- <div class="area centro">
-  <div class="etq">O que o Raio-X do negócio procura</div>
-  <h2 style="margin-top:24px">Pelo menos um lugar onde o seu dinheiro está <span class="it">escapando.</span></h2>
-  <div class="lista">
-   <div><i>01</i>Produto vendido abaixo do custo</div>
-   <div><i>02</i>Preço que pode subir</div>
-   <div><i>03</i>Estoque perdendo validade</div>
-   <div><i>04</i>Compra acima do necessário</div>
+<!-- 2 cláusula 1 -->
+<div class="slide claro" data-rot="Lucro na Mão em 30 Dias">
+ <div class="papel"></div><div class="moldura"></div>
+ <div class="area doc centro">
+  <div class="clausula">CLÁUSULA 1 · O QUE O RAIO-X DO NEGÓCIO PROCURA</div>
+  <h2 style="margin-top:22px">Pelo menos um lugar onde o seu dinheiro está <span class="it">escapando:</span></h2>
+  <div class="itens">
+   <div><i>a)</i>produto vendido abaixo do custo</div>
+   <div><i>b)</i>preço que pode subir</div>
+   <div><i>c)</i>estoque perdendo validade</div>
+   <div><i>d)</i>compra acima do necessário</div>
   </div>
-  <div class="esp"></div>
-  <p>Se em 30 dias o Raio-X não achar nenhum, <b>você não paga o primeiro mês.</b></p>
  </div>
 </div>
 
-<!-- 3 por que arriscamos -->
-<div class="slide" data-rot="Lucro na Mão em 30 Dias" style="--lx:-300px;--ly:200px">
- <div class="area centro">
-  <div class="etq">Por que a gente arrisca</div>
-  <h2 style="margin-top:24px">Em quem produz, o dinheiro quase sempre escapa em <span class="it">algum</span> lugar.</h2>
-  <p style="margin-top:40px">O insumo sobe e o preço não acompanha. O estoque vence na prateleira. A compra sai no improviso.</p>
-  <div class="esp"></div>
-  <div class="cartao"><p style="font-size:36px">E se estiver tudo certo no seu, ótimo: <b>você descobriu sem pagar.</b></p></div>
+<!-- 3 cláusula 2 -->
+<div class="slide claro" data-rot="Lucro na Mão em 30 Dias">
+ <div class="papel"></div><div class="moldura"></div>
+ <div class="area doc centro">
+  <div class="clausula">CLÁUSULA 2 · EM 30 DIAS</div>
+  <h2 style="margin-top:22px">Se o Raio-X não achar nenhum, você não paga o primeiro <span class="it">mês.</span></h2>
+  <p style="margin-top:44px">Em quem produz, o dinheiro quase sempre escapa em algum lugar: o insumo sobe e o preço não acompanha, o estoque vence, a compra sai no improviso.</p>
+  <p style="margin-top:24px"><b>E se estiver tudo certo no seu negócio, ótimo: você descobriu sem pagar.</b></p>
  </div>
 </div>
 
-<!-- 4 o que entra -->
-<div class="slide claro" data-rot="O que entra" style="--lx:-200px;--ly:-400px">
- <div class="area">
-  <h2>Tudo o que entra no <span class="it">primeiro</span> mês.</h2>
-  <div class="cartao oferta" style="margin-top:40px">
+<!-- 4 anexo -->
+<div class="slide claro" data-rot="O que entra">
+ <div class="papel"></div><div class="moldura"></div>
+ <div class="area doc">
+  <div class="clausula">ANEXO · O QUE ENTRA NO PRIMEIRO MÊS</div>
+  <div class="cartao compacto tab" style="margin-top:30px">
    <div class="linha"><span class="l">Sistema Raiz completo</span><span class="v">R$ 197</span></div>
    <div class="linha"><span class="l">Implementação feita por nós, em 48 h</span><span class="v">R$ 600</span></div>
    <div class="linha"><span class="l">Raio-X do negócio</span><span class="v">R$ 400</span></div>
    <div class="linha"><span class="l">Tabela de atacado x varejo</span><span class="v">R$ 200</span></div>
-   <div class="linha"><span class="l">4 conversas com o fundador no 1º mês</span><span class="v">R$ 300</span></div>
-   <div class="linha tot"><span class="l">Valor do 1º mês</span><span class="v risco">R$ 1.697</span></div>
+   <div class="linha"><span class="l">4 conversas com o fundador</span><span class="v">R$ 300</span></div>
+   <div class="linha"><span class="l">Fernanda (IA) de olho no lucro</span><span class="v">incluso</span></div>
+   <div class="linha tot"><span class="l">Valor do primeiro mês</span><span class="v risco">R$ 1.697</span></div>
    <div class="linha tot"><span class="l">Você paga</span><span class="v">R$ 197/mês</span></div>
   </div>
   <div class="esp"></div>
-  <div class="ex">Sem fidelidade. Teste 15 dias grátis, sem cartão; a garantia vale para o 1º mês pago. Valores de referência de cada parte.</div>
+  <div class="nota-ex">Sem fidelidade. Teste 15 dias grátis, sem cartão; a garantia vale para o primeiro mês pago. Valores de referência de cada parte.</div>
  </div>
 </div>
 
-<!-- 5 implementação -->
-<div class="slide" data-rot="Implementação grátis" style="--lx:200px;--ly:-300px">
- <div class="area centro">
-  <h2>Você não faz o trabalho <span class="it">chato.</span></h2>
-  <p style="margin-top:36px">Mande as receitas do jeito que você tem. <b>A gente cadastra os seus 10 principais produtos.</b></p>
-  <div class="passos">
-   <div class="cartao"><div class="etq">Você manda</div><div class="p"><b>Foto do caderno,</b> áudio ou planilha</div></div>
-   <div class="cartao"><div class="etq">Em 48 h</div><div class="p"><b>Produtos, insumos</b> e estoque no sistema</div></div>
-   <div class="cartao"><div class="etq">Pronto</div><div class="p"><b>O custo de cada</b> produto calculado</div></div>
+<!-- 5 cláusula 3 -->
+<div class="slide claro" data-rot="Implementação grátis">
+ <div class="papel"></div><div class="moldura"></div>
+ <div class="area doc centro">
+  <div class="clausula">CLÁUSULA 3 · O TRABALHO CHATO É NOSSO</div>
+  <h2 style="margin-top:22px">A gente cadastra os seus 10 principais <span class="it">produtos.</span></h2>
+  <div class="passos3">
+   <div><div class="etq">Você manda</div><p>Foto do caderno, áudio ou planilha</p></div>
+   <div><div class="etq">Em 48 h</div><p>Produtos, insumos e estoque no sistema</p></div>
+   <div><div class="etq">Pronto</div><p>O custo de cada produto calculado</p></div>
   </div>
-  <div class="esp"></div>
-  <div class="ex">Planilha pronta? A gente importa.</div>
  </div>
 </div>
 
-<!-- 6 vagas + CTA -->
-<div class="slide" data-rot="Vagas da semana" style="--lx:100px;--ly:300px">
- <div class="area">
-  <h2>5 implementações por <span class="it">semana.</span></h2>
-  <p style="margin-top:36px">Porque sou eu que faço cada uma. Quando as vagas da semana acabam, a próxima abre na segunda.</p>
-  <div class="etq" style="margin-top:36px">Matheus, fundador da Raiz Connect</div>
+<!-- 6 assinatura -->
+<div class="slide claro" data-rot="Vagas da semana">
+ <div class="papel"></div><div class="moldura"></div>
+ <div class="area doc">
+  <div class="clausula">CLÁUSULA 4 · VAGAS</div>
+  <h2 style="margin-top:22px">5 implementações por <span class="it">semana.</span></h2>
+  <p style="margin-top:28px">Porque sou eu que faço cada uma. Quando as vagas da semana acabam, a próxima abre na segunda.</p>
+  <div class="assina">Matheus</div>
+  <div class="linha-ass">FUNDADOR DA RAIZ CONNECT</div>
   <div class="esp"></div>
-  <div class="cartao" style="margin-bottom:28px"><div class="etq">Garantia</div><p style="margin-top:12px;font-size:34px">Se em 30 dias o Raio-X não achar pelo menos um lugar onde o seu dinheiro está escapando, <b>você não paga o primeiro mês.</b></p></div>
   <div class="botao"><div>Lucro na Mão em 30 Dias<small>link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
  </div>
+ <div class="selo" style="right:130px;top:640px;width:220px;height:220px"><div><b>LUCRO<br>NA MÃO</b><small>30 DIAS</small></div></div>
 </div>
 
 <script src="../base/raiz-carrossel.js"></script>
