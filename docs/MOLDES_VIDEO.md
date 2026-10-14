@@ -1,5 +1,13 @@
 # Moldes de vídeo e post (Raiz agora, NEXOS depois)
 
+> **Regra do Matheus (14/10/2026): todo vídeo da Raiz Connect segue o kit de motion graphics da Raiz**, que mora no
+> repositório erp-saas (branch `claude/integrar-instrucoes-ywizpw`): `.claude/skills/motion-graphics/SKILL.md`
+> (etapas A–K), `marketing/brand-system.md` (logo, cores, Manrope + Instrument Serif, área segura, movimento, som,
+> voz Carolina) e o modelo `marketing/_modelo-motion-html/`. Cada vídeo novo é um projeto em `marketing/<nome>/` lá.
+> Os Reels desta pasta e os moldes deste repositório **não** valem mais para vídeo da Raiz (ficam como histórico e,
+> no caso dos moldes, para outras marcas).
+
+
 Objetivo: 30 moldes (versão 2, revisada por um avaliador cego em 13/10:
 `calibracao/moldes/avaliacao_cega_2026-10-13.json`) de Reel, carrossel e story que servem para qualquer tipo de negócio. O agente escolhe o molde
 que mais se adapta à situação, preenche uma ficha curta e a máquina gera o vídeo. A IA nunca escreve animação.
