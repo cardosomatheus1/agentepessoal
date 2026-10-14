@@ -180,6 +180,37 @@ def tentar_de_novo(item_id: str) -> dict:
     return {"ok": True, "id": item_id, "data": alvo["data"], "hora": alvo["hora"]}
 
 
+def adiar_a_partir(data: str, dias: int = 1, agora: float | None = None) -> dict:
+    """Moves every pending post on `data` or later `dias` days ahead, keeping their order and hour (13/10: Matheus put a
+    new video on the 14th and wanted the rest to skip a day). Only the operator; nothing is published or cancelled.
+    Refuses when a moved post would land on a day already taken by a post that is not moving."""
+    if not str(AUTOR["quem"]).startswith("operador:"):
+        return {"ok": False, "erro": "só o operador remarca a agenda (AUTOR['quem'] = 'operador: <motivo>')"}
+    try:
+        inicio = dt.date.fromisoformat(str(data))
+    except ValueError:
+        return {"ok": False, "erro": "data (AAAA-MM-DD) inválida"}
+    if int(dias) < 1:
+        return {"ok": False, "erro": "dias tem de ser 1 ou mais"}
+    agora = time.time() if agora is None else agora
+    if inicio < dt.datetime.fromtimestamp(agora, _tz()).date():
+        return {"ok": False, "erro": "data no passado"}
+    with _exclusivo():
+        d = carregar()
+        mover = [i for i in d["itens"] if i["estado"] == "pendente" and i["data"] >= inicio.isoformat()]
+        fixos = {i["data"] for i in d["itens"] if i not in mover and i["estado"] not in ("cancelada", "falhou")}
+        novas = {i["id"]: (dt.date.fromisoformat(i["data"]) + dt.timedelta(days=int(dias))).isoformat() for i in mover}
+        choque = sorted(set(novas.values()) & fixos)
+        if choque:
+            return {"ok": False, "erro": f"cairia em dia já ocupado: {', '.join(choque)}"}
+        for i in mover:
+            antes = i["data"]
+            i["data"] = novas[i["id"]]
+            _diario({"item": i["id"], "remarcado": True, "de_data": antes, "para_data": i["data"]})
+        _gravar(d)
+    return {"ok": True, "movidos": {i["id"]: i["data"] for i in mover}}
+
+
 def devido(agora: float | None = None) -> dict | None:
     """Today's post when its hour has come, unless something was already published or attempted today."""
     agora = time.time() if agora is None else agora

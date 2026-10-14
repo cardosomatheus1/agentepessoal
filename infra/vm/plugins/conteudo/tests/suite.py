@@ -2,6 +2,7 @@
 in for the Graph API. Run with implantar.py or: python3 infra/vm/plugins/conteudo/tests/suite.py"""
 
 import datetime as dt
+import json
 import importlib.util
 import os
 import tempfile
@@ -146,6 +147,38 @@ class Suite:
         ok(r["estado"] == "publicada", r)
         ok(not c.tentar_de_novo("seg-pov")["ok"], "publicada não volta para a fila")
         ok(not c.tentar_de_novo("nao-existe")["ok"], "id desconhecido")
+
+    def t_adiar_a_partir_de_um_dia(self):
+        c = _modulo()
+        agora = _ts(c, "2026-10-13", "21:30")
+        c.agendar([ITEM, CARR, dict(ITEM, id="qui", data="2026-10-16")], agora)
+        ok(not c.adiar_a_partir("2026-10-14", 1, agora)["ok"], "o agente sozinho não remarca")
+        c.AUTOR["quem"] = "operador: video novo no dia 14"
+        r = c.adiar_a_partir("2026-10-14", 1, agora)
+        ok(r["ok"] and r["movidos"] == {"seg-pov": "2026-10-15", "ter-frases": "2026-10-16", "qui": "2026-10-17"}, r)
+        itens = {i["id"]: i for i in c.carregar()["itens"]}
+        ok(itens["seg-pov"]["hora"] == "11:45" and all(i["estado"] == "pendente" for i in itens.values()), "hora e estado mantidos")
+        novo = dict(ITEM, id="video-novo", arquivos=["conteudo/semana2/raiz-invisivel-9x16.mp4"])
+        ok(c.agendar([novo], agora)["ok"], "o dia liberado aceita o post novo")
+        ok(c.devido(_ts(c, "2026-10-14", "11:46"))["id"] == "video-novo", "no dia 14 sai o novo")
+        diario = [json.loads(l) for l in (c.PASTA / "diario.jsonl").read_text().splitlines()]
+        ok(any(e.get("remarcado") and e["item"] == "seg-pov" and e["para_data"] == "2026-10-15" and e["quem"].startswith("operador")
+               for e in diario), "o diário registra a remarcação e quem fez")
+        ok(not c.adiar_a_partir("2026-10-01", 1, agora)["ok"], "data no passado")
+
+    def t_adiar_nao_cai_em_dia_ocupado(self):
+        c = _modulo()
+        agora = _ts(c, "2026-10-13", "10:00")
+        c.agendar([ITEM, CARR], agora)
+        d = c.carregar()
+        d["itens"][1]["estado"] = "publicada"  # o do dia 15 já saiu (ex.: publicado à mão)
+        c._gravar(d)
+        c.AUTOR["quem"] = "operador: teste"
+        r = c.adiar_a_partir("2026-10-14", 1, agora)
+        ok(not r["ok"] and "2026-10-15" in r["erro"], f"não empurra um post para cima de outro: {r}")
+        ok(c.carregar()["itens"][0]["data"] == "2026-10-14", "recusado: nada se mexeu")
+        r = c.adiar_a_partir("2026-10-14", 2, agora)
+        ok(r["ok"] and r["movidos"] == {"seg-pov": "2026-10-16"}, "só os pendentes se movem, e cabem dois dias depois")
 
     def t_link_do_arquivo_pelo_proxy(self):
         """13/10: the container has no AWS credentials; the link comes from the host proxy."""
