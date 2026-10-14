@@ -19,6 +19,16 @@ agente → este plugin → ponte_whatsapp (:8789) → Meta → WhatsApp
 - **Avisos** em outras conversas: se você não escreve há 5 min e o agente termina (ou para para te
   perguntar algo), chega um resumo; tarefa agendada que termina sempre avisa.
 - **Arquivos**: a ferramenta `whatsapp_enviar` manda print/PDF/foto para o dono da conversa.
+- **Reinício no meio de um pedido** (`helpers/turnos.py`): cada pedido do celular deixa uma marca em
+  `/a0/usr/whatsapp/turnos_abertos.json`, que a resposta final apaga. Se o agente reinicia (memguard, queda), o
+  job loop retoma o pedido de menos de 15 min mandando o agente conferir no `livro` o que já fez; pedido mais
+  velho, já retomado uma vez ou com 3 reinícios seguidos (menos de 5 min entre eles) vira pergunta com
+  "▶️ Retomar" / "🙈 Deixa".
+- **Mensagem que a ponte recusou** (502, Telegram/Meta fora): fica em `/a0/usr/whatsapp/saida_pendente.jsonl` e sai
+  de novo 30 s e 2 min depois (3 tentativas, até 24 h); se a ponte chegou a receber, vai com "(pode ser repetida)".
+  Destino inválido não é retentado; as desistidas ficam em `saida_desistida.jsonl`.
+- **`/voz`** liga/desliga (começa desligada): com ela ligada, quando você manda áudio a resposta vem em texto e
+  também numa nota de voz (Polly do `auxiliar`, sem formatação, até ~1 min e meio).
 
 Segurança:
 - só números cadastrados falam com o agente (os outros são ignorados na Lambda);

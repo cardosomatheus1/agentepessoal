@@ -4,6 +4,8 @@ The bridge holds the Meta token and the phone numbers; here people are addressed
 their login name, so the agent can reach no one but the registered users.
 """
 
+import contextlib
+import fcntl
 import hashlib
 import importlib.util
 import json
@@ -11,7 +13,9 @@ import os
 import re
 import tempfile
 import time
+import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 
 URL = "http://host.docker.internal:8789/enviar"
@@ -95,14 +99,47 @@ def urgente(texto: str) -> bool:
     return bool(URGENTE.match(texto) or BLOQUEIO.search(texto[:600]))
 
 
+def _corpo(usuario: str, texto: str, arquivo: str, legenda: str, botoes: list | None, tipo: str, rotina: str,
+           app: dict | None) -> dict:
+    corpo = {"usuario": usuario, "texto": formatar(texto) if texto else "", "arquivo": arquivo, "legenda": legenda,
+             "botoes": botoes or [], "tipo": tipo or ("urgente" if botoes else "resposta"), "rotina": rotina}
+    if app:
+        corpo["app"] = app
+    return corpo
+
+
+def _postar(corpo: dict) -> tuple[str, bool]:
+    """POST to the bridge's /enviar: ("", False) when sent, else (reason, uncertain). Uncertain = the bridge got the
+    request, so part of it may have reached the phone (it answered 5xx, or the answer was lost); a request that never
+    reached it (refused, no route: urllib wraps those in URLError while sending) is not."""
+    req = urllib.request.Request(URL, data=json.dumps(corpo).encode(),
+                                 headers={"Content-Type": "application/json", "X-Chave": chave()})
+    try:
+        with _abrir(req, timeout=180) as r:
+            r.read()
+        return "", False
+    except urllib.error.HTTPError as e:
+        try:
+            erro = json.loads(e.read()).get("erro") or str(e)
+        except Exception:
+            erro = str(e)
+        return erro, e.code >= 500
+    except urllib.error.URLError as e:
+        return str(e), False
+    except Exception as exc:  # timed out or cut while the bridge was sending
+        return str(exc) or type(exc).__name__, True
+
+
 def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", botoes: list | None = None,
-           tipo: str = "", sempre: bool = False, rotina: str = "", app: dict | None = None) -> str:
+           tipo: str = "", sempre: bool = False, rotina: str = "", app: dict | None = None,
+           reenviar: bool = False) -> str:
     """'' when sent, else the reason it was not. botoes: up to 3 [{"id", "titulo"}] reply buttons.
     tipo: "resposta" (default: answer to the person), "urgente" (needs them now: goes even in quiet hours) or
     "progresso" (held during their quiet hours and delivered together afterwards).
     sempre: send even when identical to a recent notice (a new request that happens to read the same, e.g. a code).
     rotina: the scheduled task that wrote it (the bridge puts the night's held notices inside the morning summary).
-    app: {"titulo", "url"}: a button that opens a page inside Telegram (WhatsApp gets the link in the text)."""
+    app: {"titulo", "url"}: a button that opens a page inside Telegram (WhatsApp gets the link in the text).
+    reenviar: when it fails, keep it in SAIDA for the job loop to try again (see reenviar_pendentes)."""
     if not usuario:
         return "conversa sem dono"
     if usuario.startswith("teste_"):  # test logins: what would reach the phone is recorded, nothing is sent
@@ -113,30 +150,152 @@ def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", 
                                 "app": app},
                                ensure_ascii=False) + "\n")
         return ""
-    corpo = {"usuario": usuario, "texto": formatar(texto) if texto else "", "arquivo": arquivo, "legenda": legenda,
-             "botoes": botoes or [], "tipo": tipo or ("urgente" if botoes else "resposta"), "rotina": rotina}
-    if app:
-        corpo["app"] = app
+    corpo = _corpo(usuario, texto, arquivo, legenda, botoes, tipo, rotina, app)
     marca = _chave_aviso(texto, arquivo, botoes)
     janela = REPETIDO_H.get(corpo["tipo"])
     if janela and texto and not sempre and _ja_avisado(usuario, marca, janela):
         _segurar(usuario, texto, corpo["tipo"], f"igual a um aviso das últimas {janela} h")
         return ""  # it reached the phone already: for the caller this one is delivered
-    req = urllib.request.Request(URL, data=json.dumps(corpo).encode(),
-                                 headers={"Content-Type": "application/json", "X-Chave": chave()})
-    try:
-        with _abrir(req, timeout=180) as r:
-            r.read()
+    erro, incerto = _postar(corpo)
+    if not erro:
         if corpo["tipo"] != "resposta" and texto:
             _lembrar_aviso(usuario, texto, marca)
         return ""
-    except urllib.error.HTTPError as e:
+    if reenviar:
+        guardar_saida({"usuario": usuario, "texto": texto, "arquivo": arquivo, "legenda": legenda, "botoes": botoes or [],
+                       "tipo": tipo, "sempre": sempre, "rotina": rotina, "app": app}, erro, incerto)
+    return erro
+
+
+# 14/10 (Hermes gateway/delivery_ledger.py): an answer the bridge refused (502: Telegram or Meta down, flood control)
+# only went to the log and was lost. Now it waits in SAIDA and the job loop (_58_reenviar_saida) tries again 30 s and
+# then 2 min later: 3 tries in all, within 24 h. When the bridge had the request (5xx, answer lost) part of it may
+# already be on the phone, so the new try says "(pode ser repetida)". A destination that cannot work (nobody
+# registered, chat gone, bot blocked, file missing) is never retried. Given-up messages go to SAIDA_DESISTIDA.
+SAIDA = Path("/a0/usr/whatsapp/saida_pendente.jsonl")
+SAIDA_DESISTIDA = Path("/a0/usr/whatsapp/saida_desistida.jsonl")
+REENVIO_APOS = (30, 120)  # wait before the 2nd and the 3rd try
+REENVIO_MAX = 3           # tries in all, counting the first
+REENVIO_VIDA = 24 * 3600
+REENVIO_TRAVADO = 5 * 60  # a try marked as sending this long ago died with the process: it may have gone out
+TALVEZ_REPETIDA = "(pode ser repetida) "
+DEFINITIVO = re.compile(r"pessoa sem WhatsApp/Telegram|conversa sem dono|arquivo não encontrado|arquivo maior|"
+                        r"chat not found|bot was blocked|user is deactivated|bot was kicked|PEER_ID_INVALID|"
+                        r"\b1310(?:26|30)\b", re.I)  # Meta: 131026 undeliverable, 131030 number not allowed
+
+
+def definitivo(erro: str) -> bool:
+    return bool(DEFINITIVO.search(str(erro or "")))
+
+
+@contextlib.contextmanager
+def _trava_saida():
+    """One writer at a time on SAIDA (the send hook adds while the job loop rewrites)."""
+    SAIDA.parent.mkdir(parents=True, exist_ok=True)
+    with open(SAIDA.with_name(SAIDA.name + ".trava"), "a") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
         try:
-            return json.loads(e.read()).get("erro") or str(e)
-        except Exception:
-            return str(e)
-    except Exception as exc:
-        return str(exc)
+            yield
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+
+
+def _desistir(item: dict, motivo: str) -> None:
+    print(f"whatsapp: gave up resending {item.get('id')} to {(item.get('args') or {}).get('usuario')}: {motivo}", flush=True)
+    try:
+        _gravar_jsonl(SAIDA_DESISTIDA, _ler_jsonl(SAIDA_DESISTIDA)[-199:] + [{**item, "desistiu_em": time.time(),
+                                                                                 "motivo": motivo}])
+    except OSError:
+        pass
+
+
+def guardar_saida(args: dict, erro: str, incerto: bool, agora: float | None = None) -> str:
+    """Keep a message the bridge did not deliver for another try; returns its id ('' when not retried)."""
+    agora = agora or time.time()
+    if definitivo(erro) or str(args.get("usuario") or "").startswith("teste_") or not args.get("usuario"):
+        print(f"whatsapp: not retrying to {args.get('usuario')!r}: {str(erro)[:200]}", flush=True)
+        return ""
+    item = {"id": uuid.uuid4().hex[:12], "criado": agora, "proxima": agora + REENVIO_APOS[0], "tentativas": 1,
+            "incerto": bool(incerto), "erro": str(erro)[:300], "enviando": 0, "args": args}
+    try:
+        with _trava_saida():
+            _gravar_jsonl(SAIDA, _ler_jsonl(SAIDA) + [item])
+    except OSError as exc:
+        print(f"whatsapp: message to {args.get('usuario')} not kept for a retry: {exc}", flush=True)
+        return ""
+    return item["id"]
+
+
+def proxima_saida() -> float | None:
+    """When the next waiting message is due (None: nothing waiting)."""
+    vez = [float(i.get("proxima") or 0) for i in _ler_jsonl(SAIDA) if not i.get("enviando")]
+    return min(vez) if vez else None
+
+
+def reenviar_pendentes(agora: float | None = None) -> list[dict]:
+    """Try again the waiting messages that are due: [{"id", "resultado": entregue|de_novo|desistiu, "erro"}]."""
+    agora = agora or time.time()
+    vez = []
+    with _trava_saida():
+        itens = _ler_jsonl(SAIDA)
+        ficam = []
+        for i in itens:
+            if agora - float(i.get("criado") or 0) > REENVIO_VIDA:
+                _desistir(i, "mais de 24 h")
+                continue
+            if i.get("enviando") and agora - float(i["enviando"]) > REENVIO_TRAVADO:
+                i.update(enviando=0, incerto=True)  # the process died during that try: it may have gone out
+            if not i.get("enviando") and float(i.get("proxima") or 0) <= agora:
+                i["enviando"], i["tentativas"] = agora, int(i.get("tentativas") or 1) + 1
+                vez.append(dict(i))
+            ficam.append(i)
+        if vez or len(ficam) != len(itens):
+            _gravar_jsonl(SAIDA, ficam)
+    if not vez:
+        return []
+    resultados = {}
+    for i in vez:
+        a = dict(i["args"])
+        if i.get("incerto"):
+            if a.get("texto"):
+                a["texto"] = TALVEZ_REPETIDA + a["texto"]
+            elif a.get("legenda"):
+                a["legenda"] = TALVEZ_REPETIDA + a["legenda"]
+        erro, incerto = _postar(_corpo(a["usuario"], a.get("texto") or "", a.get("arquivo") or "", a.get("legenda") or "",
+                                       a.get("botoes"), a.get("tipo") or "", a.get("rotina") or "", a.get("app")))
+        if not erro and (a.get("tipo") or "resposta") != "resposta" and a.get("texto"):
+            _lembrar_aviso(a["usuario"], i["args"]["texto"], _chave_aviso(i["args"]["texto"], a.get("arquivo") or "",
+                                                                          a.get("botoes")))
+        resultados[i["id"]] = (erro, incerto)
+    saida = []
+    with _trava_saida():
+        ficam = []
+        for i in _ler_jsonl(SAIDA):
+            if i.get("id") not in resultados:
+                ficam.append(i)
+                continue
+            erro, incerto = resultados[i["id"]]
+            if not erro:
+                saida.append({"id": i["id"], "resultado": "entregue", "erro": ""})
+                continue
+            i.update(enviando=0, erro=str(erro)[:300], incerto=bool(i.get("incerto") or incerto))
+            if definitivo(erro) or int(i["tentativas"]) >= REENVIO_MAX:
+                _desistir(i, "destino inválido" if definitivo(erro) else f"{i['tentativas']} tentativas")
+                saida.append({"id": i["id"], "resultado": "desistiu", "erro": erro})
+                continue
+            i["proxima"] = agora + REENVIO_APOS[min(int(i["tentativas"]) - 1, len(REENVIO_APOS) - 1)]
+            saida.append({"id": i["id"], "resultado": "de_novo", "erro": erro})
+            ficam.append(i)
+        _gravar_jsonl(SAIDA, ficam)
+    return saida
+
+
+async def reenviar_depois(segundos: float) -> list[dict]:
+    """Wait, then try the due messages (the job loop runs once a minute; a 30 s retry cannot wait for it)."""
+    import asyncio
+
+    await asyncio.sleep(max(0.0, segundos))
+    return await asyncio.to_thread(reenviar_pendentes)
 
 
 # 12/10 review §6 (requests in parallel): one progress message per person that the bridge edits in place (Telegram),
@@ -262,8 +421,8 @@ def _ler_jsonl(arq: Path) -> list[dict]:
 
 
 def _gravar_jsonl(arq: Path, itens: list[dict]) -> None:
-    AVISOS.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=AVISOS, prefix=f".{arq.name}.", suffix=".tmp")
+    arq.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=arq.parent, prefix=f".{arq.name}.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write("".join(json.dumps(i, ensure_ascii=False) + "\n" for i in itens))

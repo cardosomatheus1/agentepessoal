@@ -48,6 +48,16 @@ def complemento():
     return carregar("whatsapp_complemento", Path(__file__).resolve().parents[1] / "helpers" / "complemento.py")
 
 
+def turnos():
+    """helpers/turnos.py: marks of the phone requests running (resumed after a restart)."""
+    return carregar("whatsapp_turnos", Path(__file__).resolve().parents[1] / "helpers" / "turnos.py")
+
+
+def voz():
+    """helpers/voz.py: answer in audio when he spoke (/voz)."""
+    return carregar("whatsapp_voz", Path(__file__).resolve().parents[1] / "helpers" / "voz.py")
+
+
 def _chave_ok(request: Request) -> bool:
     try:
         esperada = CHAVE.read_text().strip()
@@ -217,11 +227,12 @@ def _complementa(principal, texto: str) -> bool:
     return veredito
 
 
-def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str) -> dict:
+def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str, audio: bool = False) -> dict:
     """Deliver a phone message: to the main chat, as a merged correction, or to a parallel chat when busy."""
     from agent import UserMessage
     from helpers import message_queue as mq
 
+    original = texto
     principal, criada = _conversa(usuario, nova=False)
     if not criada:
         principal = _girar_se_velha(usuario, principal)
@@ -240,6 +251,13 @@ def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str) -> d
             ponte().enviar(usuario, "⚡ Ainda estou na tarefa anterior; este pedido já começo em paralelo.")
     alvo.set_data("whatsapp_ultima_entrada", time.time())
     alvo.set_data("whatsapp_ultimo_pedido", pedido)
+    alvo.set_data("whatsapp_entrada_audio", bool(audio))  # /voz answers in audio when his last message was audio
+    try:  # open-request mark: a restart in the middle resumes it (helpers/turnos.py)
+        cortado = turnos().abrir(alvo.id, usuario, original, anexos)
+        if cortado and not alvo.is_running():
+            texto = turnos().aviso_cortado(cortado) + texto
+    except Exception as exc:
+        print(f"whatsapp: open-request mark not written: {exc}", flush=True)
     mq.log_user_message(alvo, texto, anexos, mid or None, source=fonte)
     msg = UserMessage(message=texto, attachments=anexos, id=mid)
     if alvo.is_running():
@@ -294,6 +312,7 @@ AJUDA = """*Comandos*
 /senha NOME valor — guarda uma senha no seu cofre (o agente nunca vê; a mensagem é apagada)
 /silencio 23-7 — horário de silêncio: avisos de progresso esperam até de manhã (/silencio off desliga)
 /foco 15h — até as 15h só o urgente chega; o resto vem junto no fim (/foco off encerra)
+/voz — liga ou desliga a resposta em áudio quando você manda áudio (começa desligada)
 Áudio, foto e arquivo também valem. Os botões Aprovar/Recusar respondem pedidos de aprovação."""
 
 
@@ -529,6 +548,30 @@ async def _botao_prospeccao(usuario: str, botao: str) -> dict:
     return {"ok": True}
 
 
+async def _botao_retomar(usuario: str, botao: str) -> dict:
+    """▶️ Retomar / 🙈 Deixa, under the question about a request a restart cut short (helpers/turnos.py)."""
+    from agent import AgentContext
+
+    _, login, cid, acao = (botao.split(":") + ["", "", "", ""])[:4]
+    if login != usuario:
+        return {"ok": False}
+    t = turnos()
+    m = t.pergunta_de(cid)
+    if not m or m.get("usuario") != usuario:
+        await asyncio.to_thread(ponte().enviar, usuario, "Esse pedido já foi retomado ou encerrado.")
+        return {"ok": True}
+    if acao != "sim":
+        t.tirar_pergunta(cid)
+        await asyncio.to_thread(ponte().enviar, usuario, "🙈 Ok, deixei esse pedido de lado.")
+        return {"ok": True}
+    ctx = AgentContext.get(cid)
+    if ctx is None or ponte().dono(ctx) != usuario:
+        ctx, _ = _conversa(usuario, nova=False)
+    t.retomar(ctx, cid, m, entregar=_intervir)
+    await asyncio.to_thread(ponte().enviar, usuario, "▶️ Retomando. Antes de continuar eu confiro o que já tinha feito.")
+    return {"ok": True, "context": ctx.id}
+
+
 async def _botao_lead(usuario: str, botao: str) -> dict:
     """🙋 Deixa comigo, under a hot-lead notice: the automation stops for that @ (12/10 review §7 item 3)."""
     _, login, lid, _acao = (botao.split(":") + ["", "", "", ""])[:4]
@@ -600,6 +643,8 @@ class Receber(ApiHandler):
             return await _botao_prospeccao(usuario, botao)
         if botao.startswith("pl:"):  # "Deixa comigo" under a hot lead of plugins/prospeccao
             return await _botao_lead(usuario, botao)
+        if botao.startswith("rt:"):  # resume a request a restart cut short (helpers/turnos.py)
+            return await _botao_retomar(usuario, botao)
 
         pedido = ponte().PEDIDOS.get(usuario)
         if pedido and not pedido.get("codigo") and texto and len(texto) <= 40 and "\n" not in texto \
@@ -630,6 +675,10 @@ class Receber(ApiHandler):
             linhas, botoes = pn.esperando(usuario)
             texto_p = ("⏳ *Esperando você*\n" + "\n".join(linhas)) if linhas else "✅ Nada esperando você agora."
             await asyncio.to_thread(ponte().enviar, usuario, texto_p, "", "", botoes or None, "resposta", True)
+            return {"ok": True}
+        resposta_voz = voz().comando(usuario, comando)
+        if resposta_voz:
+            await asyncio.to_thread(ponte().enviar, usuario, resposta_voz)
             return {"ok": True}
         if comando in ("/ajuda", "/comandos", "/help"):
             await asyncio.to_thread(ponte().enviar, usuario, AJUDA)
@@ -664,4 +713,4 @@ class Receber(ApiHandler):
             principal, _ = _conversa(usuario, nova=False)
             if not principal.get_data("usuario_nome"):
                 principal.set_data("usuario_nome", nome)
-        return _entregar(usuario, _leitura(texto), anexos, str(input.get("id") or ""), " (WhatsApp)")
+        return _entregar(usuario, _leitura(texto), anexos, str(input.get("id") or ""), " (WhatsApp)", audio=bool(audio))
