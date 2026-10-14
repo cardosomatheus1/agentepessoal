@@ -180,6 +180,31 @@ class Suite:
         r = c.adiar_a_partir("2026-10-14", 2, agora)
         ok(r["ok"] and r["movidos"] == {"seg-pov": "2026-10-16"}, "só os pendentes se movem, e cabem dois dias depois")
 
+    def t_replanejar_troca_dias_e_legendas(self):
+        # 14/10: the week is redone around the new offer: days swap and captions change, all or nothing
+        c = _modulo()
+        agora = _ts(c, "2026-10-14", "16:00")
+        c.agendar([dict(ITEM, id="a", data="2026-10-15"), dict(CARR, id="b", data="2026-10-16"),
+                   dict(ITEM, id="pub", data="2026-10-17")], agora)
+        d = c.carregar()
+        d["itens"][2]["estado"] = "publicada"
+        c._gravar(d)
+        ok(not c.replanejar([{"id": "a", "data": "2026-10-16"}], agora)["ok"], "o agente sozinho não replaneja")
+        c.AUTOR["quem"] = "operador: semana nova da oferta"
+        r = c.replanejar([{"id": "a", "data": "2026-10-16"}], agora)
+        ok(not r["ok"] and "2026-10-16" in r["erro"], f"não deixa dois posts no mesmo dia: {r}")
+        r = c.replanejar([{"id": "a", "data": "2026-10-16", "legenda": "Nova legenda da oferta."},
+                          {"id": "b", "data": "2026-10-15"}], agora)
+        ok(r["ok"] and r["agenda"] == {"a": "2026-10-16", "b": "2026-10-15"}, f"troca os dois dias de uma vez: {r}")
+        itens = {i["id"]: i for i in c.carregar()["itens"]}
+        ok(itens["a"]["legenda"] == "Nova legenda da oferta." and itens["b"]["legenda"] == CARR["legenda"], "só a legenda pedida muda")
+        ok(not c.replanejar([{"id": "pub", "data": "2026-10-20"}], agora)["ok"], "post já publicado não muda")
+        r = c.replanejar([{"id": "a", "legenda": "Com emoji 🍰"}, {"id": "b", "data": "2026-10-20"}], agora)
+        ok(not r["ok"] and c.carregar()["itens"][1]["data"] == "2026-10-15", f"legenda ruim recusa tudo, nada se mexe: {r}")
+        ok(not c.replanejar([{"id": "b", "data": "2026-10-10"}], agora)["ok"], "data no passado")
+        diario = [json.loads(l) for l in (c.PASTA / "diario.jsonl").read_text().splitlines()]
+        ok(any(e.get("replanejado") and e["item"] == "a" and e["legenda_mudou"] for e in diario), "o diário registra")
+
     def t_link_do_arquivo_pelo_proxy(self):
         """13/10: the container has no AWS credentials; the link comes from the host proxy."""
         import io

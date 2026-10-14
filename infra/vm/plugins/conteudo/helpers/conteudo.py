@@ -211,6 +211,51 @@ def adiar_a_partir(data: str, dias: int = 1, agora: float | None = None) -> dict
     return {"ok": True, "movidos": {i["id"]: i["data"] for i in mover}}
 
 
+def replanejar(mudancas: list, agora: float | None = None) -> dict:
+    """Changes the day and/or caption of pending posts in one go: [{"id", "data"?, "legenda"?}] (14/10: Matheus asked
+    to redo the week around the new offer, which swaps days and rewrites captions). Only the operator; all or
+    nothing; the final calendar must still have one post per day, no day in the past and only valid captions."""
+    if not str(AUTOR["quem"]).startswith("operador:"):
+        return {"ok": False, "erro": "só o operador replaneja a agenda (AUTOR['quem'] = 'operador: <motivo>')"}
+    agora = time.time() if agora is None else agora
+    hoje = dt.datetime.fromtimestamp(agora, _tz()).date().isoformat()
+    with _exclusivo():
+        d = carregar()
+        por_id = {i["id"]: i for i in d["itens"]}
+        novo = {}
+        for m in mudancas:
+            it = por_id.get(m.get("id"))
+            if not it:
+                return {"ok": False, "erro": f"{m.get('id')}: não existe"}
+            if it["estado"] != "pendente":
+                return {"ok": False, "erro": f"{it['id']}: só post pendente muda (está {it['estado']})"}
+            if it["id"] in novo:
+                return {"ok": False, "erro": f"{it['id']}: repetido na lista"}
+            alvo = dict(it, **{k: m[k] for k in ("data", "legenda") if k in m})
+            alvo["legenda"] = str(alvo.get("legenda", "")).strip()
+            erro = _validar_item(alvo) or ("data no passado" if alvo["data"] < hoje else "")
+            if erro:
+                return {"ok": False, "erro": f"{it['id']}: {erro}"}
+            novo[it["id"]] = alvo
+        dias = {}
+        for i in d["itens"]:
+            final = novo.get(i["id"], i)
+            if final["estado"] in ("cancelada", "falhou"):
+                continue
+            if final["data"] in dias:
+                return {"ok": False, "erro": f"dois posts em {final['data']}: {dias[final['data']]} e {i['id']}"}
+            dias[final["data"]] = i["id"]
+        for i in d["itens"]:
+            if i["id"] not in novo:
+                continue
+            antes = dict(i)
+            i.update(data=novo[i["id"]]["data"], legenda=novo[i["id"]]["legenda"])
+            _diario({"item": i["id"], "replanejado": True, "de_data": antes["data"], "para_data": i["data"],
+                     "legenda_mudou": antes.get("legenda") != i["legenda"]})
+        _gravar(d)
+    return {"ok": True, "agenda": {i["id"]: i["data"] for i in d["itens"] if i["id"] in novo}}
+
+
 def devido(agora: float | None = None) -> dict | None:
     """Today's post when its hour has come, unless something was already published or attempted today."""
     agora = time.time() if agora is None else agora
