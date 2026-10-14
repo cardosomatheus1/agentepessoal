@@ -413,3 +413,61 @@ def api_do_cofre(login: str = "matheus"):
     s = m.carregar(login)
     token, ig = s.get("META_IG_TOKEN"), s.get("META_IG_USER_ID")
     return Api(token, ig) if token and ig else None
+
+
+# ------------------------------------------------------------------ reading (for the weekly marketing routine)
+
+METRICAS = ("reach", "saved", "likes", "comments", "shares", "views")
+
+
+def agenda_proxima(dias: int = 7, agora: float | None = None) -> dict:
+    """The next `dias` days of the calendar, one entry per day, with the empty days apart (14/10: the plan asks for
+    1 post a day; the weekly routine must see the gaps before they happen). Read only."""
+    agora = agora or time.time()
+    hoje = dt.datetime.fromtimestamp(agora, _tz()).date()
+    por_dia: dict = {}
+    for i in carregar()["itens"]:
+        if i["estado"] != "cancelada":
+            por_dia.setdefault(i["data"], []).append(i)
+    linhas, vazios = [], []
+    for k in range(max(1, int(dias))):
+        dia = (hoje + dt.timedelta(days=k)).isoformat()
+        its = por_dia.get(dia, [])
+        if not its:
+            vazios.append(dia)
+        linhas.append({"data": dia, "itens": [{"id": i["id"], "tipo": i["tipo"], "hora": i["hora"],
+                                               "estado": i["estado"]} for i in its]})
+    return {"dias": linhas, "vazios": vazios}
+
+
+def desempenho(api, dias: int = 7, agora: float | None = None) -> dict:
+    """Reach, saves, likes, comments, shares and views of every post of the last `dias` days, straight from the
+    Graph API (posts made outside this calendar count too), plus the follower count. Read only."""
+    agora = agora or time.time()
+    desde = agora - max(1, int(dias)) * 86400
+    r = api.get(f"{api.ig}/media", {"fields": "id,media_type,media_product_type,timestamp,permalink", "limit": "30"})
+    if not isinstance(r, dict) or r.get("error"):
+        return {"ok": False, "erro": ((r or {}).get("error") or {}).get("message", "sem resposta da Meta")}
+    nossos = {i.get("media_id"): i["id"] for i in carregar()["itens"] if i.get("media_id")}
+    posts, total = [], {m: 0 for m in METRICAS}
+    for m in r.get("data") or []:
+        try:
+            quando = dt.datetime.strptime(m["timestamp"], "%Y-%m-%dT%H:%M:%S%z")
+        except (KeyError, ValueError):
+            continue
+        if quando.timestamp() < desde:
+            continue
+        ins = api.get(f"{m['id']}/insights", {"metric": ",".join(METRICAS)}) or {}
+        valores = {} if ins.get("error") else {x.get("name"): (x.get("values") or [{}])[0].get("value", 0)
+                                              for x in ins.get("data") or []}
+        linha = {"id": nossos.get(m["id"], ""), "media_id": m["id"],
+                 "tipo": m.get("media_product_type") or m.get("media_type", ""),
+                 "data": quando.astimezone(_tz()).date().isoformat(), "permalink": m.get("permalink", ""),
+                 **{k: int(valores.get(k) or 0) for k in METRICAS}}
+        if ins.get("error"):
+            linha["erro"] = ins["error"].get("message", "métricas indisponíveis")
+        for k in METRICAS:
+            total[k] += linha[k]
+        posts.append(linha)
+    conta = api.get(api.ig, {"fields": "followers_count,media_count"}) or {}
+    return {"ok": True, "dias": int(dias), "posts": posts, "total": total, "seguidores": conta.get("followers_count")}

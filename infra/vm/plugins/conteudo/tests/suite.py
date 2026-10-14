@@ -286,6 +286,49 @@ class Suite:
         linhas = (c.PASTA / "diario.jsonl").read_text(encoding="utf-8").strip().splitlines()
         ok(linhas and '"operador: teste"' in linhas[-1], "o diário guarda quem mudou")
 
+    def t_agenda_mostra_os_dias_vazios(self):
+        # 14/10: the weekly routine must see the days with no post before they happen (the plan: 1 a day)
+        c = _modulo()
+        c.agendar([ITEM, CARR], _ts(c, "2026-10-13", "10:00"))
+        r = c.agenda_proxima(4, _ts(c, "2026-10-14", "08:00"))
+        ok([d["data"] for d in r["dias"]] == ["2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17"], "4 dias a partir de hoje")
+        ok(r["dias"][0]["itens"][0]["id"] == "seg-pov" and r["dias"][1]["itens"][0]["id"] == "ter-frases", "cada post no seu dia")
+        ok(r["vazios"] == ["2026-10-16", "2026-10-17"], f"os dias sem post aparecem: {r['vazios']}")
+
+    def t_desempenho_soma_a_semana(self):
+        # 14/10: the weekly numbers come from the Graph API; old posts stay out, a post without metrics does not break it
+        c = _modulo()
+
+        class ApiLeitura(ApiFalsa):
+            def get(self, caminho, params):
+                self.chamadas.append(("GET", caminho, dict(params)))
+                if caminho == "IG1/media":
+                    return {"data": [
+                        {"id": "M1", "media_product_type": "REELS", "timestamp": "2026-10-14T14:45:54+0000", "permalink": "p1"},
+                        {"id": "M2", "media_product_type": "FEED", "timestamp": "2026-10-12T14:45:54+0000", "permalink": "p2"},
+                        {"id": "M3", "media_product_type": "REELS", "timestamp": "2026-09-01T14:45:54+0000", "permalink": "p3"}]}
+                if caminho == "M1/insights":
+                    return {"data": [{"name": n, "values": [{"value": v}]} for n, v in
+                                     (("reach", 120), ("saved", 4), ("likes", 9), ("comments", 2), ("shares", 1), ("views", 300))]}
+                if caminho == "M2/insights":
+                    return {"error": {"message": "métrica indisponível"}}
+                if caminho == "IG1":
+                    return {"followers_count": 86}
+                return {}
+        api = ApiLeitura()
+        r = c.desempenho(api, 7, _ts(c, "2026-10-15", "09:00"))
+        ok(r["ok"] and [p["media_id"] for p in r["posts"]] == ["M1", "M2"], f"só os posts da semana: {r}")
+        ok(r["total"]["reach"] == 120 and r["total"]["saved"] == 4 and r["seguidores"] == 86, "soma e seguidores")
+        ok(r["posts"][1].get("erro") and r["posts"][1]["reach"] == 0, "post sem métricas não derruba o relatório")
+        ok(not any(m == "POST" for m, _, _ in api.chamadas), "desempenho só lê")
+
+    def t_ferramenta_so_le(self):
+        tool = (RAIZ / "tools" / "conteudo.py").read_text(encoding="utf-8")
+        ok("agenda_proxima" in tool and "desempenho" in tool, "a ferramenta usa o helper")
+        for proibido in ("agendar(", "replanejar(", "rodar(", "tentar_de_novo(", "adiar_a_partir("):
+            ok(proibido not in tool, f"a ferramenta não muda a agenda ({proibido})")
+        ok((RAIZ / "prompts" / "agent.system.tool.conteudo.md").exists(), "o agente sabe usar a ferramenta")
+
     def t_extensao_usa_o_helper(self):
         ext = (RAIZ / "extensions" / "python" / "job_loop" / "_46_publicar_conteudo.py").read_text(encoding="utf-8")
         ok("conteudo.rodar(" in ext and "run_in_executor" in ext, "a rotina publica fora do laço principal")
