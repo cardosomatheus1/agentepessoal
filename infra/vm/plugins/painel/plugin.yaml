@@ -1,0 +1,4 @@
+name: painel
+title: Painel vivo
+description: Página só de leitura com o funil da prospecção, o desempenho dos posts e a agenda dos próximos dias, cada um com a hora em que foi lido; fonte que falha mostra o último valor bom marcado "desatualizado".
+version: 1.0.0

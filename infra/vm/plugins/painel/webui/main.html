@@ -1,0 +1,124 @@
+<html>
+<head>
+  <title>Painel</title>
+</head>
+<body>
+  <!-- Read only: this page shows what the job saved (helpers/painel.py); it has nothing that changes anything. -->
+  <div x-data="{ p: null, msg: 'Carregando…', t: null,
+        async olhar() {
+          try { const r = await globalThis.sendJsonData('/plugins/painel/painel', {});
+                this.p = r.painel; this.msg = r.painel ? '' : 'O painel ainda não foi montado (o primeiro sai em até 1 minuto).'; }
+          catch (e) { this.msg = 'Não consegui abrir o painel agora.'; }
+        },
+        f(nome) { return (this.p && this.p.fontes && this.p.fontes[nome]) || null; },
+        num(v) { return (v === undefined || v === null) ? '—' : Number(v).toLocaleString('pt-BR'); },
+        dia(iso) { const [a, m, d] = String(iso).split('-'); const s = ['dom','seg','ter','qua','qui','sex','sáb'][new Date(+a, m - 1, +d).getDay()]; return s + ' ' + d + '/' + m; } }"
+       x-init="olhar(); t = setInterval(() => { if (document.visibilityState === 'visible') olhar(); }, 30000)"
+       x-destroy="clearInterval(t)" class="painel">
+    <p class="painel-msg" x-show="msg" x-text="msg"></p>
+
+    <template x-if="p">
+      <div class="painel-blocos">
+        <!-- funnel -->
+        <section class="painel-bloco">
+          <header>
+            <h3>Prospecção</h3>
+            <span class="painel-hora" x-show="f('funil')" x-text="f('funil') ? 'lido ' + f('funil').lido_as : ''"></span>
+            <span class="painel-velho" x-show="f('funil') && f('funil').desatualizado"
+                  :title="f('funil') && (f('funil').erro + ' (falhou ' + f('funil').falhou_as + ')')">desatualizado</span>
+          </header>
+          <template x-if="f('funil') && f('funil').valor">
+            <div>
+              <div class="painel-funil">
+                <template x-for="[k, nome] in [['proposto','propostas'],['lead','leads'],['demo','demos'],['teste','testes']]" :key="k">
+                  <div class="painel-etapa"><b x-text="num(f('funil').valor[k])"></b><span x-text="nome"></span></div>
+                </template>
+              </div>
+              <p class="painel-nota" x-text="f('funil').valor.resumo"></p>
+            </div>
+          </template>
+          <p class="painel-nota" x-show="!f('funil') || !f('funil').valor">Ainda sem leitura.</p>
+        </section>
+
+        <!-- posts -->
+        <section class="painel-bloco" x-show="f('desempenho')">
+          <header>
+            <h3>Posts (7 dias)</h3>
+            <span class="painel-hora" x-text="f('desempenho') ? 'lido ' + f('desempenho').lido_as : ''"></span>
+            <span class="painel-velho" x-show="f('desempenho') && f('desempenho').desatualizado"
+                  :title="f('desempenho') && (f('desempenho').erro + ' (falhou ' + f('desempenho').falhou_as + ')')">desatualizado</span>
+          </header>
+          <template x-if="f('desempenho') && f('desempenho').valor">
+            <div>
+              <p class="painel-nota">
+                Alcance <b x-text="num(f('desempenho').valor.total.reach)"></b> ·
+                salvos <b x-text="num(f('desempenho').valor.total.saved)"></b> ·
+                compartilhados <b x-text="num(f('desempenho').valor.total.shares)"></b> ·
+                seguidores <b x-text="num(f('desempenho').valor.seguidores)"></b>
+              </p>
+              <table class="painel-tabela">
+                <thead><tr><th>Dia</th><th>Tipo</th><th>Alcance</th><th>Salvos</th><th>Curtidas</th><th>Coment.</th><th>Compart.</th></tr></thead>
+                <tbody>
+                  <template x-for="post in f('desempenho').valor.posts" :key="post.media_id">
+                    <tr>
+                      <td><a :href="post.permalink" target="_blank" rel="noopener" x-text="dia(post.data)"></a></td>
+                      <td x-text="post.tipo"></td><td x-text="num(post.reach)"></td><td x-text="num(post.saved)"></td>
+                      <td x-text="num(post.likes)"></td><td x-text="num(post.comments)"></td><td x-text="num(post.shares)"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+          <p class="painel-nota" x-show="f('desempenho') && !f('desempenho').valor">Ainda sem leitura.</p>
+        </section>
+
+        <!-- calendar -->
+        <section class="painel-bloco" x-show="f('agenda')">
+          <header>
+            <h3>Agenda dos próximos dias</h3>
+            <span class="painel-hora" x-text="f('agenda') ? 'lido ' + f('agenda').lido_as : ''"></span>
+            <span class="painel-velho" x-show="f('agenda') && f('agenda').desatualizado"
+                  :title="f('agenda') && (f('agenda').erro + ' (falhou ' + f('agenda').falhou_as + ')')">desatualizado</span>
+          </header>
+          <template x-if="f('agenda') && f('agenda').valor">
+            <ul class="painel-agenda">
+              <template x-for="d in f('agenda').valor.dias" :key="d.data">
+                <li :class="d.itens.length ? '' : 'painel-vazio'">
+                  <span class="painel-dia" x-text="dia(d.data)"></span>
+                  <span x-text="d.itens.length ? d.itens.map(i => i.hora + ' ' + i.tipo.toLowerCase() + ' (' + i.estado + ')').join(' · ') : 'sem post'"></span>
+                </li>
+              </template>
+            </ul>
+          </template>
+          <p class="painel-nota" x-show="f('agenda') && !f('agenda').valor">Ainda sem leitura.</p>
+        </section>
+      </div>
+    </template>
+  </div>
+  <style>
+    .painel { display: flex; flex-direction: column; gap: 12px; min-width: min(640px, 90vw); max-width: 900px; }
+    .painel-blocos { display: flex; flex-direction: column; gap: 14px; }
+    .painel-bloco { border: 1px solid var(--color-border, #2b2b2b); border-radius: 12px; padding: 12px 14px; }
+    .painel-bloco header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+    .painel-bloco h3 { margin: 0; font-size: 1rem; }
+    .painel-hora { font-size: 0.78rem; opacity: 0.65; }
+    .painel-velho { font-size: 0.72rem; font-weight: 600; color: #fbbf24; border: 1px solid #fbbf24; border-radius: 999px;
+                    padding: 1px 8px; cursor: help; }
+    .painel-funil { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .painel-etapa { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 10px;
+                    background: color-mix(in srgb, var(--color-text, #fff) 5%, transparent); }
+    .painel-etapa b { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+    .painel-etapa span { font-size: 0.78rem; opacity: 0.75; }
+    .painel-nota, .painel-msg { font-size: 0.85rem; opacity: 0.8; margin: 6px 0 0; }
+    .painel-tabela { width: 100%; border-collapse: collapse; font-size: 0.82rem; font-variant-numeric: tabular-nums; margin-top: 8px; }
+    .painel-tabela th, .painel-tabela td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--color-border, #2b2b2b); }
+    .painel-tabela th:nth-child(-n+2), .painel-tabela td:nth-child(-n+2) { text-align: left; }
+    .painel-agenda { list-style: none; margin: 0; padding: 0; font-size: 0.85rem; }
+    .painel-agenda li { display: flex; gap: 10px; padding: 3px 0; }
+    .painel-dia { min-width: 74px; opacity: 0.75; }
+    .painel-vazio { color: #fbbf24; }
+    @media (max-width: 520px) { .painel-funil { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</body>
+</html>
