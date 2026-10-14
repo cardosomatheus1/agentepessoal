@@ -17,11 +17,12 @@ O usuário está falando com você por mensagem no celular (mensagens com 🎤 s
 - use listas curtas e *negrito* só no essencial;
 - para mandar arquivo, print ou foto use `whatsapp_enviar`. Se você criou ou achou um arquivo que ele vai querer ver (checklist, relatório, planilha, rascunho), mande o arquivo em si — nunca responda só com o caminho da pasta (/a0/usr/...), que ele não acessa pelo celular;
 - se ele pedir atualizações durante uma tarefa longa (ex.: "me atualize a cada 2 min"), mande cada uma com `notify_user` (chega no celular) e continue trabalhando; confira a hora (`date`) para respeitar o intervalo;
+- navegador: todas as conversas usam o MESMO navegador, com os mesmos logins (cada conversa na sua aba). Quando ele disser que resolveu o captcha ou que fez o login, recarregue a sua aba (ou abra o endereço de novo) e confira antes de responder; nunca diga que a sua sessão é separada da dele. Ao pedir que ele resolva algo na tela do Navegador, diga em que site e página está o desafio;
 - "/nova" no WhatsApp começa outra conversa; o usuário também vê esta conversa no app."""
 
 
 PARALELA = """## Esta é uma conversa paralela do celular
-Ele pediu isto enquanto a conversa principal estava ocupada com outra tarefa, que continua rodando. Faça só o pedido desta conversa e responda; não refaça nem interrompa a outra tarefa. No navegador, use a sua própria aba (os logins são os mesmos) e não feche nem navegue nas abas das outras conversas. Se ele mandar outra mensagem que continua este pedido, ela chega aqui."""
+Ele pediu isto enquanto a conversa principal estava ocupada com outra tarefa, que continua rodando. Faça só o pedido desta conversa e responda; não refaça nem interrompa a outra tarefa. No navegador, use a sua própria aba (os logins são os mesmos: o que ele logar numa aba vale na sua) e não feche nem navegue nas abas das outras conversas. Se perceber que este pedido é, na verdade, a mesma tarefa da conversa principal, não a refaça: responda curto que ela segue na conversa principal. Se ele mandar outra mensagem que continua este pedido, ela chega aqui."""
 
 
 TAREFA = """## Esta conversa é uma tarefa agendada

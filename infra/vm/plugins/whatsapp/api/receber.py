@@ -43,6 +43,11 @@ def ponte():
     return carregar(nome, caminho)
 
 
+def complemento():
+    """helpers/complemento.py: is a message a complement of the running request or a new one?"""
+    return carregar("whatsapp_complemento", Path(__file__).resolve().parents[1] / "helpers" / "complemento.py")
+
+
 def _chave_ok(request: Request) -> bool:
     try:
         esperada = CHAVE.read_text().strip()
@@ -110,8 +115,9 @@ def _conversa(usuario: str, nova: bool, chave: str = "whatsapp_de", nome: str = 
 # ---- more than one request at a time (11/10: "Ve exame de novo" was lost under "E kd resultados") ----
 # Agent Zero keeps ONE intervention slot per agent: a second message sent while the agent works overwrote the
 # first. Now a new request that arrives while the person's phone chat is busy runs in a parallel chat (its own
-# browser tab, same logins); a correction to what is running ("não, era…", "cancela", "também…") still goes in
-# as an intervention, merged with any intervention not yet read, never overwriting it.
+# browser tab, same logins); a correction or complement of what is running ("não, era…", "cancela", "também…", or
+# a detail the model reads as part of the same request, see _complementa) still goes in as an intervention, merged
+# with any intervention not yet read, never overwriting it.
 PARALELA = "whatsapp_paralela"  # ctx data: this phone chat is a parallel one (never picked as the main chat)
 MAX_PARALELAS = 3
 PARALELA_NOVA_APOS_S = 2 * 3600  # an idle parallel chat is reused for follow-ups within 2 h, then a fresh one
@@ -197,6 +203,20 @@ def _girar_se_velha(usuario: str, ctx):
     return nova
 
 
+COMPLEMENTO_SEM_MODELO_S = 180  # the model did not answer: a message this soon after the last one is a complement
+
+
+def _complementa(principal, texto: str) -> bool:
+    """A message that continues the running request goes to it (14/10: a detail about the gov.br task opened a second
+    chat that did the same task in another tab and contradicted the first). Only a request of its own runs in
+    parallel. The model reads the meaning; without it, a message within 3 min of the last one counts as complement."""
+    em_andamento = str(principal.get_data("whatsapp_ultimo_pedido") or "")
+    veredito = complemento().e_complemento(em_andamento, _historico(principal), texto or "")
+    if veredito is None:
+        veredito = time.time() - float(principal.get_data("whatsapp_ultima_entrada") or 0) < COMPLEMENTO_SEM_MODELO_S
+    return veredito
+
+
 def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str) -> dict:
     """Deliver a phone message: to the main chat, as a merged correction, or to a parallel chat when busy."""
     from agent import UserMessage
@@ -206,7 +226,7 @@ def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str) -> d
     if not criada:
         principal = _girar_se_velha(usuario, principal)
     alvo, paralela, pedido = principal, False, " ".join((texto or "").split())[:300]
-    if principal.is_running() and not CORRECAO.match(texto or ""):
+    if principal.is_running() and not CORRECAO.match(texto or "") and not _complementa(principal, texto):
         p = _paralela(usuario)
         if p is not None:
             alvo, paralela = p, True

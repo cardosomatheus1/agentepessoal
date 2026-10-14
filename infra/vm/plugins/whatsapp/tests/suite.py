@@ -339,6 +339,41 @@ class Suite:
         ok("Faça o que ele pediu" not in m._pedido(item), "não confirmado nunca vira ordem")
         ok("Faça o que ele pediu" in m._pedido({**item, "confirmado": True}), "confirmado segue como antes")
 
+    def t_complemento_vai_para_a_tarefa_em_andamento(self):
+        # 14/10: a detail about the running gov.br task opened a parallel chat that redid the task in another tab
+        spec = importlib.util.spec_from_file_location("complemento_teste", RAIZ / "helpers" / "complemento.py")
+        c = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(c)
+        vistos = []
+
+        def responde(texto):
+            def chamar(pergunta):
+                vistos.append(pergunta)
+                return texto
+            return chamar
+
+        andamento = "Quero que vc acesse meu gov, procure minhas empresas, mei e veja as dividas"
+        nova = "As dividas sao de das n pago"
+        eq(c.e_complemento(andamento, "", nova, chamar=responde('{"complemento": true}')), True, "complemento")
+        ok(andamento in vistos[-1] and nova in vistos[-1], "o modelo vê a tarefa e a mensagem nova")
+        eq(c.e_complemento("Rode sleep 70", "", "Quanto é 17 vezes 3?", chamar=responde('ok: {"complemento": false}')),
+           False, "pedido novo")
+        eq(c.e_complemento(andamento, "", nova, chamar=responde("não sei")), None, "resposta ilegível: decide o tempo")
+        eq(c.e_complemento(andamento, "", nova, chamar=responde('{"complemento": "talvez"}')), None, "valor torto")
+
+        def cai(pergunta):
+            raise TimeoutError("sem resposta")
+        eq(c.e_complemento(andamento, "", nova, chamar=cai), None, "modelo fora do ar: decide o tempo")
+        rec = (RAIZ / "api" / "receber.py").read_text(encoding="utf-8")
+        ok("not _complementa(principal, texto)" in rec, "a rota paralela só abre para pedido que não complementa")
+
+    def t_navegador_mesmo_login_em_todas_as_abas(self):
+        # 14/10: the agent said "a sessão que eu uso continua separada" while the login was shared; it never reloaded
+        regras = (RAIZ / "extensions" / "python" / "system_prompt" / "_60_conversa_whatsapp.py").read_text(encoding="utf-8")
+        ok("MESMO navegador" in regras and "recarregue a sua aba" in regras and "nunca diga que a sua sessão é separada" in regras,
+           "regra do navegador compartilhado")
+        ok("a mesma tarefa da conversa principal" in regras, "a paralela não refaz a tarefa da principal")
+
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             self._preparar()
