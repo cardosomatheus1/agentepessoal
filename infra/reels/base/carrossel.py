@@ -9,7 +9,7 @@ with sync_playwright() as pw:
     n=pg.evaluate("document.querySelectorAll('.slide').length")
     for i in range(n):
         pg.evaluate(f"document.querySelectorAll('.slide').forEach((s,k)=>s.style.display=k=={i}?'block':'none')")
-        pg.wait_for_timeout(150); pg.screenshot(path=f"{d}/slide{i+1}.png")
+        pg.evaluate("document.fonts.ready"); pg.wait_for_timeout(150); pg.screenshot(path=f"{d}/slide{i+1}.png")
     b.close()
 ins=sum([["-i",f"{d}/slide{i+1}.png"] for i in range(n)],[])
 subprocess.run(["ffmpeg","-v","error","-y"]+ins+["-filter_complex",f"hstack={n},scale={300*n}:-1",f"{d}/prev.png"],check=True)

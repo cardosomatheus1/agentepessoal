@@ -13,6 +13,16 @@
 > por slide, números com `tabular-nums`, "valores de exemplo" em todo número, sem emoji. Gere com
 > `python3 base/carrossel.py c_<nome>` (1080×1350). Para trocar as imagens de um post já agendado, suba os JPGs nos
 > mesmos endereços do S3 com a mesma quantidade (a agenda guarda o endereço, não a imagem).
+>
+> **Processo do kit nos carrosséis (pedido do Matheus, 14/10):**
+> - **B, materiais reais:** tela real do produto (`base/kit/tela-calculadora.jpg`, bloco `.cta-calc` no slide final).
+>   Foto de comida/produto é foto real ou gerada (Stability no Bedrock, como no kit), nunca desenhada em código, com
+>   "imagem ilustrativa" no slide. Tudo registrado em `base/kit/inventario.md`.
+> - **H, revisão:** folha de contato e notas de 1 a 10 (narrativa, identidade, composição, legibilidade, técnica,
+>   plano) por um revisor que não fez os slides; mínimo 8 em tudo; até 3 ciclos.
+> - **I, validação:** `python3 base/validar_carrossel.py c_<nome>` precisa sair limpo antes de subir: tamanho, fontes
+>   carregadas, nada fora da área ou encostando no rodapé, manchete ≤ 12 palavras, texto ≥ 20 px, sem emoji, imagem
+>   carregada, número em R$ com "valores de exemplo".
 
 
 Cada pasta é um Reel: `falas.json` (narração com a Carolina, do Amazon Nova 2 Sonic; `npm ci` em `moldes/motor/`) e `index.html` (animação com `render(t)`).

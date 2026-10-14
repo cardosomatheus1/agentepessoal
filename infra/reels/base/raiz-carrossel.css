@@ -76,3 +76,19 @@ p b,.p b{color:var(--txt);font-weight:700}
 .fita{display:flex;justify-content:space-between;align-items:center;border-top:1.5px solid var(--fio);padding-top:26px;margin-top:24px}
 .claro .fita{border-color:var(--borda)}
 .fita .n{font-size:64px}
+/* foto de fundo (gerada, ver kit/inventario.md) com véu night para o texto */
+.foto{position:absolute;inset:0;background-size:cover;background-position:center bottom;z-index:0}
+.foto:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,var(--night) 0%,rgba(16,29,24,.96) 34%,rgba(16,29,24,.6) 50%,rgba(16,29,24,.12) 68%,rgba(16,29,24,.2) 80%,rgba(16,29,24,.9) 100%)}
+.slide.com-foto:before{display:none}
+/* tela real do produto num celular */
+.celular{width:420px;border-radius:44px;border:10px solid #0b1410;background:#0b1410;box-shadow:0 30px 80px rgba(0,0,0,.45);overflow:hidden;flex:none}
+.celular img{display:block;width:100%}
+.selo-gerada{position:absolute;right:var(--m);bottom:118px;z-index:5;font-size:20px;font-weight:600;color:rgba(245,247,237,.55);letter-spacing:.04em}
+.cta-calc{display:flex;gap:44px;align-items:flex-start;margin-top:44px}
+.cta-calc .celular{height:560px}
+.cta-calc ul{list-style:none;display:flex;flex-direction:column;gap:26px;padding-top:30px}
+.cta-calc li{font-size:36px;font-weight:700;line-height:1.2;display:flex;gap:16px}
+.cta-calc li:before{content:'✓';color:var(--lima-b)}
+.claro .cta-calc li:before{color:var(--forest)}
+.cta-calc li small{display:block;font-size:26px;font-weight:500;color:var(--mut);margin-top:6px}
+.claro .cta-calc li small{color:var(--mutc)}

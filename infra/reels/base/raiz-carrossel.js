@@ -1,6 +1,12 @@
 // Topo (logo + rótulo da seção) e rodapé (progresso + perfil) iguais em todo slide.
 // Cada .slide pode ter data-rot="RÓTULO"; .claro usa o logo para fundo claro.
 (function () {
+  // bloco padrão do convite para a calculadora: a tela real do produto + o que ela entrega
+  document.querySelectorAll('.cta-calc').forEach(el => el.innerHTML =
+    `<div class="celular"><img src="../base/kit/tela-calculadora.jpg"></div><ul>` +
+    `<li><span>Sem cadastro<small>abre e já começa</small></span></li>` +
+    `<li><span>Produto por produto<small>custo, preço e onde vende</small></span></li>` +
+    `<li><span>Quanto sobra<small>o diagnóstico no fim</small></span></li></ul>`);
   const s = [...document.querySelectorAll('.slide')], n = s.length;
   s.forEach((el, i) => {
     const claro = el.classList.contains('claro');

@@ -2,9 +2,10 @@
 <link rel="stylesheet" href="../base/raiz-carrossel.css">
 <style>
 .opcoes{display:flex;flex-direction:column;gap:18px}
-.op{display:flex;align-items:center;gap:32px;padding:26px 36px}
+.op{display:flex;align-items:center;gap:32px;padding:20px 32px}
+.opcoes{flex-direction:row}.opcoes .op{flex:1;flex-direction:column;gap:14px}
 .op .letra{width:76px;height:76px;border-radius:999px;border:2px solid var(--fio);display:grid;place-items:center;font-weight:800;font-size:38px}
-.op .n{font-size:64px}
+.op .n{font-size:52px}
 .claro .op .letra{border-color:var(--borda)}
 .resp{display:flex;flex-direction:column;gap:16px;margin-top:40px}
 .resp .cartao{padding:24px 34px;display:flex;gap:28px;align-items:flex-start}
@@ -15,7 +16,9 @@
 </style></head><body>
 
 <!-- 1 pergunta -->
-<div class="slide" data-rot="Quiz">
+<div class="slide com-foto" data-rot="Quiz">
+ <div class="foto" style="background-image:url(../base/kit/fotos/bolo.jpg);background-position:center 70%"></div>
+ <div class="selo-gerada" style="bottom:auto;top:150px">imagem ilustrativa</div>
  <div class="area">
   <div class="etq">Bolo de 2 kg</div>
   <h2 style="margin-top:24px">Qual o preço <span class="it">mínimo</span> para não trabalhar de graça?</h2>
@@ -64,8 +67,8 @@
 <!-- 4 CTA -->
 <div class="slide" data-rot="Calculadora grátis" data-fim="salve e envie" style="--lx:100px;--ly:300px">
  <div class="area">
-  <h2>Acertou? Conte nos <span class="it">comentários.</span></h2>
-  <p style="margin-top:36px">Quer fazer essa conta com os <b>seus</b> números? A calculadora grátis da Raiz mostra <b>quanto sobra em cada produto</b> em 1 minuto.</p>
+  <h2>Acertou? Faça a conta com os <span class="it">seus</span> números.</h2>
+  <div class="cta-calc"></div>
   <div class="esp"></div>
   <div class="botao"><div>Calculadora grátis<small>link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
  </div>
