@@ -6,6 +6,13 @@
 > voz Carolina) e o modelo `marketing/_modelo-motion-html/`. Cada vídeo novo é um projeto em `marketing/<nome>/` lá.
 > Os Reels desta pasta e os moldes deste repositório **não** valem mais para vídeo da Raiz (ficam como histórico e,
 > no caso dos moldes, para outras marcas).
+>
+> **Carrosséis (`c_*`, 14/10/2026):** seguem a mesma identidade do kit (o Matheus achou os anteriores feios). Base
+> comum em `base/raiz-carrossel.css` + `base/raiz-carrossel.js` (topo com logo, rodapé com progresso) e fontes/logos
+> do kit em `base/kit/`. Fundo night com creme alternado, lima só para o que sobra, uma palavra em Instrument Serif
+> por slide, números com `tabular-nums`, "valores de exemplo" em todo número, sem emoji. Gere com
+> `python3 base/carrossel.py c_<nome>` (1080×1350). Para trocar as imagens de um post já agendado, suba os JPGs nos
+> mesmos endereços do S3 com a mesma quantidade (a agenda guarda o endereço, não a imagem).
 
 
 Cada pasta é um Reel: `falas.json` (narração com a Carolina, do Amazon Nova 2 Sonic; `npm ci` em `moldes/motor/`) e `index.html` (animação com `render(t)`).

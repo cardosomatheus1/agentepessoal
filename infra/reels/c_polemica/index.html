@@ -1,54 +1,72 @@
 <!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../base/raiz-carrossel.css">
 <style>
-@font-face{font-family:B;src:url(../base/gf/brico.woff2)}
-@font-face{font-family:A;src:url(../base/gf/anton.woff2)}
-@font-face{font-family:H;src:url(../base/gf/caveat.woff2)}
-@font-face{font-family:I;src:url(../base/fonts/Inter-Bold.otf);font-weight:700}
-@font-face{font-family:I;src:url(../base/fonts/Inter-Black.otf);font-weight:900}
-*{margin:0;padding:0;box-sizing:border-box}
-body{width:1080px;height:1350px;overflow:hidden;font-family:I;color:#fff;background:#111}
-.slide{position:absolute;inset:0;overflow:hidden;display:none}
-.grao{position:absolute;inset:0;background:url(../base/grao.png);opacity:.09;mix-blend-mode:overlay;z-index:9}
-.marca{position:absolute;left:70px;top:60px;background:#000a;border:1px solid #fff2;border-radius:22px;padding:10px 18px;z-index:10}.marca img{width:150px;display:block}
-.pe{position:absolute;left:70px;right:70px;bottom:56px;display:flex;justify-content:space-between;font-size:30px;font-weight:700;z-index:10}
-.A{background:#ff5d3a}.Bt{background:#2f6bff}
-.ttl{font-family:A;font-size:150px;line-height:.9;text-transform:uppercase;letter-spacing:1px}
-.args{display:flex;flex-direction:column;gap:30px}
-.arg{display:flex;gap:28px;align-items:flex-start;font-size:50px;font-weight:700;line-height:1.2}
-.arg i{flex:none;font-style:normal;width:80px;height:80px;border-radius:24px;background:#fff;color:#111;display:flex;align-items:center;justify-content:center;font-family:A;font-size:50px}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;gap:22px;align-items:stretch}
+.vs .cartao{padding:34px 32px}
+.vs .letra{font-weight:800;font-size:96px;letter-spacing:-.05em;line-height:1}
+.vs .p{font-size:34px;margin-top:16px}
+.vs .x{align-self:center;font-family:S;font-style:italic;font-size:64px;color:var(--mut)}
+.args{display:flex;flex-direction:column;gap:28px;margin-top:48px}
+.args div{display:flex;gap:26px;font-size:40px;font-weight:600;line-height:1.3}
+.args i{font-style:normal;font-weight:800;font-size:30px;min-width:52px;padding-top:8px;color:var(--mut)}
+.claro .args i{color:var(--mutc)}
+.lema{font-family:S;font-style:italic;font-size:60px;line-height:1.1}
 </style></head><body>
-<!-- 1: capa -->
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <img src="moto.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.4) saturate(1.2)">
- <div style="position:absolute;left:0;right:0;top:0;bottom:0;background:linear-gradient(180deg,#0000 30%,#000c)"></div>
- <div style="position:absolute;left:70px;right:70px;top:230px;font-family:H;font-size:70px;color:#ffd66b;transform:rotate(-3deg)">a briga do século:</div>
- <div class="ttl" style="position:absolute;left:70px;right:70px;top:330px">Taxa de entrega</div>
- <div style="position:absolute;left:70px;right:70px;top:640px;display:flex;flex-direction:column;gap:26px">
-  <div class="A" style="border-radius:36px;padding:34px 40px;font-size:60px;font-weight:900;transform:rotate(-1.5deg)">A · cobrar à parte</div>
-  <div style="text-align:center;font-family:A;font-size:80px">VS</div>
-  <div class="Bt" style="border-radius:36px;padding:34px 40px;font-size:60px;font-weight:900;transform:rotate(1.5deg)">B · embutir no preço</div></div>
- <div class="pe"><span style="font-family:H;font-size:46px;color:#ffd66b">escolhe o seu time →</span><span>1/4</span></div></div>
-<!-- 2: time A -->
-<div class="slide A"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="ttl" style="position:absolute;left:70px;right:70px;top:200px">Time A<br><span style="font-size:90px">cobrar à parte</span></div>
- <div class="args" style="position:absolute;left:70px;right:70px;top:560px">
-  <div class="arg"><i>1</i>O produto continua com o mesmo preço da vitrine.</div>
-  <div class="arg"><i>2</i>Quem vem buscar não paga a entrega de quem pede.</div>
-  <div class="arg"><i>3</i>Dá pra cobrar mais de quem mora longe.</div></div>
- <div class="pe"><span>“a entrega é um serviço”</span><span>2/4 →</span></div></div>
-<!-- 3: time B -->
-<div class="slide Bt"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="ttl" style="position:absolute;left:70px;right:70px;top:200px">Time B<br><span style="font-size:90px">embutir no preço</span></div>
- <div class="args" style="position:absolute;left:70px;right:70px;top:560px">
-  <div class="arg"><i>1</i>Cliente odeia ver taxa aparecendo no final.</div>
-  <div class="arg"><i>2</i>“Entrega grátis” chama atenção no cardápio.</div>
-  <div class="arg"><i>3</i>Um preço só: menos conversa, menos desistência.</div></div>
- <div class="pe"><span>“ninguém gosta de surpresa”</span><span>3/4 →</span></div></div>
-<!-- 4: voto -->
-<div class="slide" style="background:#fff3e3;color:#111"><div class="grao" style="mix-blend-mode:multiply;opacity:.06"></div><div class="marca"><img src="../base/logo.png"></div>
- <div style="position:absolute;left:70px;right:70px;top:220px;font-family:B;font-size:120px;line-height:.95;letter-spacing:-3px">E você, é time <span style="color:#ff5d3a">A</span> ou <span style="color:#2f6bff">B</span>? Comenta 👇</div>
- <div style="position:absolute;left:70px;right:70px;top:640px;font-size:46px;font-weight:700;line-height:1.35;color:#4a3f35">Seja qual for o seu time: <b style="color:#111">a entrega custa</b> (moto, gasolina, embalagem, tempo). Se ela não está na taxa, tem que estar no preço.</div>
- <div style="position:absolute;left:70px;right:70px;bottom:130px;background:#111;color:#fff;border-radius:40px;padding:36px 44px;display:flex;align-items:center;justify-content:space-between">
-  <img src="../base/logo.png" style="width:240px"><div style="font-size:36px;font-weight:900;text-align:right;line-height:1.25">Faz as duas contas<br><span style="color:#8fe08d">calculadora grátis · link na bio</span></div></div>
- <div class="pe" style="color:#7a6d60"><span>@raiz.connect</span><span>4/4</span></div></div>
+
+<!-- 1 capa -->
+<div class="slide" data-rot="A briga do século">
+ <div class="area">
+  <div class="etq">Taxa de entrega</div>
+  <h1 style="margin-top:24px">Cobrar à parte ou <span class="it">embutir?</span></h1>
+  <div class="esp"></div>
+  <div class="vs">
+   <div class="cartao"><div class="letra">A</div><div class="p"><b>Cobrar à parte</b></div></div>
+   <span class="x">ou</span>
+   <div class="cartao"><div class="letra">B</div><div class="p"><b>Embutir no preço</b></div></div>
+  </div>
+  <div class="ex" style="margin-top:28px">Escolha o seu time e arraste.</div>
+ </div>
+</div>
+
+<!-- 2 time A -->
+<div class="slide claro" data-rot="Time A" style="--lx:300px;--ly:-300px">
+ <div class="area">
+  <div class="etq">Time A</div>
+  <h2 style="margin-top:24px">Cobrar a entrega <span class="it">à parte.</span></h2>
+  <div class="args">
+   <div><i>01</i>O produto continua com o mesmo preço da vitrine.</div>
+   <div><i>02</i>Quem vem buscar não paga a entrega de quem pede.</div>
+   <div><i>03</i>Dá para cobrar mais de quem mora longe.</div>
+  </div>
+  <div class="esp"></div>
+  <div class="lema">“A entrega é um serviço.”</div>
+ </div>
+</div>
+
+<!-- 3 time B -->
+<div class="slide" data-rot="Time B" style="--lx:-400px;--ly:100px">
+ <div class="area">
+  <div class="etq">Time B</div>
+  <h2 style="margin-top:24px">Embutir a entrega <span class="it">no preço.</span></h2>
+  <div class="args">
+   <div><i>01</i>Cliente não gosta de ver taxa aparecendo no final.</div>
+   <div><i>02</i>“Entrega grátis” chama atenção no cardápio.</div>
+   <div><i>03</i>Um preço só: menos conversa, menos desistência.</div>
+  </div>
+  <div class="esp"></div>
+  <div class="lema">“Ninguém gosta de surpresa.”</div>
+ </div>
+</div>
+
+<!-- 4 CTA -->
+<div class="slide claro" data-rot="Calculadora grátis" data-fim="link na bio" style="--lx:-200px;--ly:-300px">
+ <div class="area">
+  <h2>E você, é time A ou <span class="it">time B?</span></h2>
+  <p style="margin-top:36px">Comente. Seja qual for o seu time: <b>a entrega custa</b> (moto, gasolina, embalagem, tempo). Se não está na taxa, precisa estar no preço.</p>
+  <div class="esp"></div>
+  <div class="botao"><div>Faça as duas contas<small>calculadora grátis · link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
+ </div>
+</div>
+
+<script src="../base/raiz-carrossel.js"></script>
 </body></html>

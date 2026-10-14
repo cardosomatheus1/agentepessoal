@@ -1,71 +1,98 @@
 <!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../base/raiz-carrossel.css">
 <style>
-@font-face{font-family:B;src:url(../base/gf/brico.woff2)}
-@font-face{font-family:A;src:url(../base/gf/anton.woff2)}
-@font-face{font-family:H;src:url(../base/gf/caveat.woff2)}
-@font-face{font-family:I;src:url(../base/fonts/Inter-Bold.otf);font-weight:700}
-@font-face{font-family:I;src:url(../base/fonts/Inter-Black.otf);font-weight:900}
-*{margin:0;padding:0;box-sizing:border-box}
-body{width:1080px;height:1350px;overflow:hidden;font-family:I;background:#0f0f10;color:#fff}
-.slide{position:absolute;inset:0;overflow:hidden;display:none;background:#0f0f10}
-.grao{position:absolute;inset:0;background:url(../base/grao.png);opacity:.09;mix-blend-mode:overlay;z-index:9}
-.marca{position:absolute;left:70px;top:60px;background:#000a;border:1px solid #fff2;border-radius:22px;padding:10px 18px;z-index:10}.marca img{width:150px;display:block}
-.num{position:absolute;right:70px;top:56px;font-family:A;font-size:64px;color:#ffffff40}
-.frase{position:absolute;left:70px;right:70px;top:230px;font-family:B;font-size:82px;line-height:1.02;letter-spacing:-2px}
-.frase:before{content:'“';display:block;font-family:A;font-size:170px;line-height:.6;color:#ffd66b}
-.selo{position:absolute;left:70px;top:720px;font-family:A;font-size:150px;line-height:1;padding:10px 40px 0;border-radius:24px;transform:rotate(-4deg);box-shadow:0 20px 60px #0008}
-.mito{background:#ff4d4f;color:#fff}.verd{background:#3fd16a;color:#0b2a12}.dep{background:#ffd66b;color:#2a1f00}
-.exp{position:absolute;left:70px;right:70px;top:960px;font-size:44px;font-weight:700;line-height:1.32;color:#e8e8e8}
-.exp b{color:#fff;font-weight:900}
-.pe{position:absolute;left:70px;right:70px;bottom:50px;display:flex;justify-content:space-between;font-size:30px;font-weight:700;color:#8a8a8a;z-index:10}
-.luz{position:absolute;width:900px;height:900px;border-radius:50%;filter:blur(120px);opacity:.35}
-
-<!-- capa -->
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#ff4d4f;left:-300px;top:-200px"></div><div class="luz" style="background:#3fd16a;right:-350px;bottom:-250px"></div>
-
-.passo{position:absolute;left:70px;top:200px;font-family:A;font-size:120px;color:#3fd16a;line-height:1}
-.tit{position:absolute;left:70px;right:70px;top:340px;font-family:B;font-size:76px;line-height:1.02;letter-spacing:-2px}
-.box{position:absolute;left:70px;right:70px;top:640px;background:#ffffff0d;border:1px solid #ffffff22;border-radius:36px;padding:40px 46px;font-size:42px;font-weight:700;line-height:1.5;color:#e8e8e8}
-.box .l{display:flex;justify-content:space-between}.box .t{border-top:2px solid #ffffff33;margin-top:14px;padding-top:14px;color:#fff;font-weight:900}
-.ex{position:absolute;left:70px;bottom:120px;font-family:H;font-size:46px;color:#ffd66b}
-.item{display:flex;justify-content:space-between;gap:30px;font-size:38px;font-weight:700;line-height:1.35;padding:16px 0;border-bottom:1px solid #ffffff1f}
-.item span:last-child{color:#3fd16a;white-space:nowrap}
+.lista{display:flex;flex-direction:column;gap:22px;margin-top:44px}
+.lista div{display:flex;gap:26px;align-items:baseline;font-size:40px;font-weight:600;line-height:1.3}
+.lista i{font-style:normal;font-weight:800;color:var(--mut);font-size:30px;min-width:52px;font-variant-numeric:tabular-nums}
+.claro .lista i{color:var(--mutc)}
+.cartao.oferta .linha{font-size:33px;padding:16px 0}
+.risco{text-decoration:line-through;text-decoration-thickness:3px;color:var(--mutc)}
+.passos{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:52px}
+.passos .cartao{padding:30px 28px}
+.passos .n{font-size:64px}
+.passos .p{font-size:30px;margin-top:10px}
 </style></head><body>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#3fd16a;left:-300px;top:-200px"></div><div style="position:absolute;left:70px;right:70px;top:230px;font-family:B;font-size:128px;line-height:.93;letter-spacing:-3px">Se a gente não achar, <span style="color:#3fd16a">você não paga.</span></div>
- <div style="position:absolute;left:70px;right:70px;top:860px;font-size:46px;font-weight:700;line-height:1.35;color:#e8e8e8">A garantia do Lucro na Mão em 30 Dias, o método da Raiz pra quem produz alimento.</div>
- <div style="position:absolute;left:70px;top:1140px;font-family:H;font-size:64px;color:#ffd66b;transform:rotate(-3deg)">arrasta →</div>
- <div class="pe"><span>@raiz.connect</span><span>1/6 →</span></div></div>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#3fd16a;right:-400px;top:300px"></div><div class="tit" style="top:220px">O que a gente procura</div>
- <div class="box" style="top:470px;font-size:46px">No Raio-X do seu negócio: <b style="color:#3fd16a">pelo menos um lugar onde o seu dinheiro está escapando.</b> Produto abaixo do custo, preço que pode subir, estoque perdendo validade ou compra acima do necessário.<br><br>Se em 30 dias não acharmos, você não paga o primeiro mês.</div>
- <div class="pe"><span>@raiz.connect</span><span>2/6 →</span></div></div>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#ffd66b;left:-400px;top:400px"></div><div class="tit" style="top:220px">Por que a gente arrisca</div>
- <div class="box" style="top:470px;font-size:46px">Insumo sobe toda hora. Estoque vence na prateleira. Compra sai no improviso. E o preço quase nunca acompanha.<br><br>E se o seu já estiver todo certo, ótimo: <b style="color:#3fd16a">você descobriu sem pagar.</b></div>
- <div class="pe"><span>@raiz.connect</span><span>3/6 →</span></div></div>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#3fd16a;right:-400px;top:300px"></div><div class="tit" style="top:200px;font-size:70px">O que entra</div>
- <div style="position:absolute;left:70px;right:70px;top:330px">
-  <div class="item"><span>Sistema Raiz completo</span><span>R$ 197/mês</span></div>
-  <div class="item"><span>Implementação grátis em 48h</span><span>R$ 600</span></div>
-  <div class="item"><span>Raio-X do negócio</span><span>R$ 400</span></div>
-  <div class="item"><span>Tabela de atacado x varejo</span><span>R$ 200</span></div>
-  <div class="item"><span>4 conversas comigo no 1º mês</span><span>R$ 300</span></div>
-  <div class="item" style="border:0"><span style="color:#fff;font-weight:900">Valor do 1º mês</span><span style="color:#fff">R$ 1.697</span></div>
+
+<!-- 1 capa -->
+<div class="slide" data-rot="Lucro na Mão em 30 Dias">
+ <div class="area">
+  <div class="etq">A garantia</div>
+  <h1 style="margin-top:28px">Se a gente não achar, você <span class="it">não paga.</span></h1>
+  <div class="esp"></div>
+  <p>A garantia do <b>Lucro na Mão em 30 Dias</b>, o método da Raiz para quem produz alimento.</p>
  </div>
- <div style="position:absolute;left:70px;right:70px;top:1010px;font-family:B;font-size:58px;line-height:1.05">Você paga <span style="color:#3fd16a">R$ 197/mês</span>, sem fidelidade.<br><span style="font-size:40px;color:#cfcfcf">15 dias grátis, sem cartão.</span></div>
- <div class="pe"><span>@raiz.connect</span><span>4/6 →</span></div></div>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#ff4d4f;right:-400px;top:200px"></div><div class="tit" style="top:220px">Você não faz o trabalho chato</div>
- <div class="box" style="top:500px;font-size:46px">Manda as receitas do jeito que você tem: <b style="color:#3fd16a">foto do caderno, áudio ou planilha.</b><br><br>Em 48 horas os seus 10 principais produtos, os insumos e o estoque estão no sistema, com o custo de cada produto.</div>
- <div class="pe"><span>@raiz.connect</span><span>5/6 →</span></div></div>
-<div class="slide" style="background:#3fd16a;color:#0b2a12"><div class="grao" style="mix-blend-mode:multiply;opacity:.08"></div><div class="marca"><img src="../base/logo.png"></div>
- <div style="position:absolute;left:70px;right:70px;top:230px;font-family:B;font-size:100px;line-height:.95;letter-spacing:-3px">5 implementações por semana.</div>
- <div style="position:absolute;left:70px;right:70px;top:480px;font-size:46px;font-weight:700;line-height:1.35">Porque sou eu que faço cada uma. Quando as vagas da semana acabam, a próxima abre na segunda.</div>
- <div style="position:absolute;left:70px;top:800px;font-family:H;font-size:60px;transform:rotate(-2deg)">Matheus, fundador da Raiz Connect</div>
- <div style="position:absolute;left:70px;right:70px;bottom:130px;background:#0f0f10;color:#fff;border-radius:40px;padding:36px 44px;display:flex;align-items:center;justify-content:space-between">
-  <img src="../base/logo.png" style="width:240px"><div style="font-size:36px;font-weight:900;text-align:right;line-height:1.25">Lucro na Mão em 30 Dias<br><span style="color:#3fd16a">link na bio</span></div></div>
- <div class="pe" style="color:#0b2a12aa"><span>@raiz.connect</span><span>6/6</span></div></div>
+</div>
+
+<!-- 2 o que procuramos -->
+<div class="slide claro" data-rot="Lucro na Mão em 30 Dias" style="--lx:300px;--ly:-300px">
+ <div class="area">
+  <div class="etq">O que o Raio-X do negócio procura</div>
+  <h2 style="margin-top:24px">Pelo menos um lugar onde o seu dinheiro está <span class="it">escapando.</span></h2>
+  <div class="lista">
+   <div><i>01</i>Produto vendido abaixo do custo</div>
+   <div><i>02</i>Preço que pode subir</div>
+   <div><i>03</i>Estoque perdendo validade</div>
+   <div><i>04</i>Compra acima do necessário</div>
+  </div>
+  <div class="esp"></div>
+  <p>Se em 30 dias o Raio-X não achar nenhum, <b>você não paga o primeiro mês.</b></p>
+ </div>
+</div>
+
+<!-- 3 por que arriscamos -->
+<div class="slide" data-rot="Lucro na Mão em 30 Dias" style="--lx:-300px;--ly:200px">
+ <div class="area">
+  <div class="etq">Por que a gente arrisca</div>
+  <h2 style="margin-top:24px">Em quem produz, o dinheiro quase sempre escapa em <span class="it">algum</span> lugar.</h2>
+  <p style="margin-top:40px">O insumo sobe e o preço não acompanha. O estoque vence na prateleira. A compra sai no improviso.</p>
+  <div class="esp"></div>
+  <div class="cartao"><p style="font-size:36px">E se estiver tudo certo no seu, ótimo: <b>você descobriu sem pagar.</b></p></div>
+ </div>
+</div>
+
+<!-- 4 o que entra -->
+<div class="slide claro" data-rot="O que entra" style="--lx:-200px;--ly:-400px">
+ <div class="area">
+  <h2>Tudo o que entra no <span class="it">primeiro</span> mês.</h2>
+  <div class="cartao oferta" style="margin-top:40px">
+   <div class="linha"><span class="l">Sistema Raiz completo</span><span class="v">R$ 197</span></div>
+   <div class="linha"><span class="l">Implementação feita por nós, em 48 h</span><span class="v">R$ 600</span></div>
+   <div class="linha"><span class="l">Raio-X do negócio</span><span class="v">R$ 400</span></div>
+   <div class="linha"><span class="l">Tabela de atacado x varejo</span><span class="v">R$ 200</span></div>
+   <div class="linha"><span class="l">4 conversas comigo no 1º mês</span><span class="v">R$ 300</span></div>
+   <div class="linha tot"><span class="l">Valor do 1º mês</span><span class="v risco">R$ 1.697</span></div>
+   <div class="linha tot"><span class="l">Você paga</span><span class="v">R$ 197/mês</span></div>
+  </div>
+  <div class="esp"></div>
+  <div class="ex">Sem fidelidade. 15 dias grátis, sem cartão. Valores de referência de cada parte.</div>
+ </div>
+</div>
+
+<!-- 5 implementação -->
+<div class="slide" data-rot="Implementação grátis" style="--lx:200px;--ly:-300px">
+ <div class="area">
+  <h2>Você não faz o trabalho <span class="it">chato.</span></h2>
+  <p style="margin-top:36px">Mande as receitas do jeito que você tem. A gente cadastra tudo para você.</p>
+  <div class="passos">
+   <div class="cartao"><div class="n">1</div><div class="p"><b>Foto do caderno,</b> áudio ou planilha</div></div>
+   <div class="cartao"><div class="n">48 h</div><div class="p"><b>10 produtos,</b> insumos e estoque no sistema</div></div>
+   <div class="cartao"><div class="n">✓</div><div class="p"><b>O custo de cada</b> produto já calculado</div></div>
+  </div>
+  <div class="esp"></div>
+  <div class="ex">Planilha pronta? A gente importa.</div>
+ </div>
+</div>
+
+<!-- 6 vagas + CTA -->
+<div class="slide" data-rot="Vagas da semana" style="--lx:100px;--ly:300px">
+ <div class="area">
+  <h2>5 implementações por <span class="it">semana.</span></h2>
+  <p style="margin-top:36px">Porque sou eu que faço cada uma. Quando as vagas da semana acabam, a próxima abre na segunda.</p>
+  <div class="etq" style="margin-top:36px">Matheus, fundador da Raiz Connect</div>
+  <div class="esp"></div>
+  <div class="botao"><div>Lucro na Mão em 30 Dias<small>link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
+ </div>
+</div>
+
+<script src="../base/raiz-carrossel.js"></script>
 </body></html>

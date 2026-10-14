@@ -1,71 +1,122 @@
 <!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../base/raiz-carrossel.css">
 <style>
-@font-face{font-family:B;src:url(../base/gf/brico.woff2)}
-@font-face{font-family:A;src:url(../base/gf/anton.woff2)}
-@font-face{font-family:H;src:url(../base/gf/caveat.woff2)}
-@font-face{font-family:I;src:url(../base/fonts/Inter-Bold.otf);font-weight:700}
-@font-face{font-family:I;src:url(../base/fonts/Inter-Black.otf);font-weight:900}
-*{margin:0;padding:0;box-sizing:border-box}
-body{width:1080px;height:1350px;overflow:hidden;font-family:I;background:#0f0f10;color:#fff}
-.slide{position:absolute;inset:0;overflow:hidden;display:none;background:#0f0f10}
-.grao{position:absolute;inset:0;background:url(../base/grao.png);opacity:.09;mix-blend-mode:overlay;z-index:9}
-.marca{position:absolute;left:70px;top:60px;background:#000a;border:1px solid #fff2;border-radius:22px;padding:10px 18px;z-index:10}.marca img{width:150px;display:block}
-.num{position:absolute;right:70px;top:56px;font-family:A;font-size:64px;color:#ffffff40}
-.frase{position:absolute;left:70px;right:70px;top:230px;font-family:B;font-size:82px;line-height:1.02;letter-spacing:-2px}
-.frase:before{content:'“';display:block;font-family:A;font-size:170px;line-height:.6;color:#ffd66b}
-.selo{position:absolute;left:70px;top:720px;font-family:A;font-size:150px;line-height:1;padding:10px 40px 0;border-radius:24px;transform:rotate(-4deg);box-shadow:0 20px 60px #0008}
-.mito{background:#ff4d4f;color:#fff}.verd{background:#3fd16a;color:#0b2a12}.dep{background:#ffd66b;color:#2a1f00}
-.exp{position:absolute;left:70px;right:70px;top:960px;font-size:44px;font-weight:700;line-height:1.32;color:#e8e8e8}
-.exp b{color:#fff;font-weight:900}
-.pe{position:absolute;left:70px;right:70px;bottom:50px;display:flex;justify-content:space-between;font-size:30px;font-weight:700;color:#8a8a8a;z-index:10}
-.luz{position:absolute;width:900px;height:900px;border-radius:50%;filter:blur(120px);opacity:.35}
-
-<!-- capa -->
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#ff4d4f;left:-300px;top:-200px"></div><div class="luz" style="background:#3fd16a;right:-350px;bottom:-250px"></div>
-
-.passo{position:absolute;left:70px;top:200px;font-family:A;font-size:120px;color:#3fd16a;line-height:1}
-.tit{position:absolute;left:70px;right:70px;top:340px;font-family:B;font-size:76px;line-height:1.02;letter-spacing:-2px}
-.box{position:absolute;left:70px;right:70px;top:640px;background:#ffffff0d;border:1px solid #ffffff22;border-radius:36px;padding:40px 46px;font-size:42px;font-weight:700;line-height:1.5;color:#e8e8e8}
-.box .l{display:flex;justify-content:space-between}.box .t{border-top:2px solid #ffffff33;margin-top:14px;padding-top:14px;color:#fff;font-weight:900}
-.ex{position:absolute;left:70px;bottom:120px;font-family:H;font-size:46px;color:#ffd66b}
-.item{display:flex;justify-content:space-between;gap:30px;font-size:38px;font-weight:700;line-height:1.35;padding:16px 0;border-bottom:1px solid #ffffff1f}
-.item span:last-child{color:#3fd16a;white-space:nowrap}
+.passo{font-weight:800;font-size:30px;letter-spacing:.14em;color:var(--lima-b)}
+.claro .passo{color:var(--forest)}
+.capa-conta .linha{font-size:36px;padding:20px 0}
+.cartao.compacto .linha{font-size:34px;padding:17px 0}
+.q{color:var(--txt)}
+.div12{font-size:320px;line-height:.8;font-weight:800;letter-spacing:-.06em;color:var(--ink)}
 </style></head><body>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#3fd16a;left:-300px;top:-200px"></div><div style="position:absolute;left:70px;right:70px;top:230px;font-family:B;font-size:120px;line-height:.95;letter-spacing:-3px">O custo real de <span style="color:#3fd16a">1 produto</span> em 10 minutos</div>
- <div style="position:absolute;left:70px;right:70px;top:820px;font-size:46px;font-weight:700;line-height:1.35;color:#e8e8e8">5 passos com papel e caneta. No exemplo, um molho de pimenta artesanal.</div>
- <div style="position:absolute;left:70px;top:1130px;font-family:H;font-size:64px;color:#ffd66b;transform:rotate(-3deg)">salva pra fazer hoje →</div>
- <div class="pe"><span>@raiz.connect</span><span>1/7 →</span></div></div>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#3fd16a;right:-400px;top:300px"></div><div class="passo">01</div><div class="tit">Escolha o produto que mais vende e anote quanto rende uma receita.</div>
- <div class="box"><div class="l"><span>1 receita</span><span>12 potes de 150 ml</span></div></div>
- <div class="ex">valores de exemplo</div>
- <div class="pe"><span>@raiz.connect</span><span>2/7 →</span></div></div>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#ffd66b;left:-400px;top:400px"></div><div class="passo">02</div><div class="tit">Some os ingredientes pelo preço da última compra.</div>
- <div class="box"><div class="l"><span>Pimentas</span><span>R$ 18,00</span></div><div class="l"><span>Vinagre</span><span>R$ 6,00</span></div><div class="l"><span>Alho e temperos</span><span>R$ 8,00</span></div><div class="l"><span>Óleo</span><span>R$ 4,00</span></div><div class="l t"><span>Ingredientes</span><span>R$ 36,00</span></div></div>
- <div class="ex">não use o preço de 6 meses atrás</div>
- <div class="pe"><span>@raiz.connect</span><span>3/7 →</span></div></div>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#3fd16a;right:-400px;top:300px"></div><div class="passo">03</div><div class="tit">Embalagem e rótulo contam por unidade.</div>
- <div class="box"><div class="l"><span>Pote e tampa</span><span>R$ 2,10</span></div><div class="l"><span>Rótulo</span><span>R$ 0,40</span></div><div class="l t"><span>× 12 potes</span><span>R$ 30,00</span></div></div>
- <div class="ex">valores de exemplo</div>
- <div class="pe"><span>@raiz.connect</span><span>4/7 →</span></div></div>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#ff4d4f;right:-400px;top:200px"></div><div class="passo">04</div><div class="tit">Gás e energia entram. Depois, divide pelo rendimento.</div>
- <div class="box"><div class="l"><span>Ingredientes</span><span>R$ 36,00</span></div><div class="l"><span>Embalagem e rótulo</span><span>R$ 30,00</span></div><div class="l"><span>Gás</span><span>R$ 6,00</span></div><div class="l t"><span>R$ 72,00 ÷ 12</span><span>R$ 6,00 por pote</span></div></div>
- <div class="ex">valores de exemplo</div>
- <div class="pe"><span>@raiz.connect</span><span>5/7 →</span></div></div>
-<div class="slide"><div class="grao"></div><div class="marca"><img src="../base/logo.png"></div>
- <div class="luz" style="background:#3fd16a;right:-400px;top:300px"></div><div class="passo">05</div><div class="tit">E o seu tempo também é custo.</div>
- <div class="box"><div class="l"><span>2 horas × R$ 15 (exemplo)</span><span>R$ 30,00</span></div><div class="l"><span>÷ 12 potes</span><span>+ R$ 2,50</span></div><div class="l t"><span>Custo real do pote</span><span>R$ 8,50</span></div><div class="l"><span>Vendendo a R$ 15,00</span><span style="color:#3fd16a">sobram R$ 6,50</span></div></div>
- <div class="ex">antes de taxas e impostos</div>
- <div class="pe"><span>@raiz.connect</span><span>6/7 →</span></div></div>
-<div class="slide" style="background:#3fd16a;color:#0b2a12"><div class="grao" style="mix-blend-mode:multiply;opacity:.08"></div><div class="marca"><img src="../base/logo.png"></div>
- <div style="position:absolute;left:70px;right:70px;top:230px;font-family:B;font-size:104px;line-height:.95;letter-spacing:-3px">Agora repete pra cada produto.</div>
- <div style="position:absolute;left:70px;right:70px;top:560px;font-size:46px;font-weight:700;line-height:1.35">Ou faz em 1 minuto: a calculadora grátis da Raiz faz essa mesma conta pra qualquer coisa que você produz.</div>
- <div style="position:absolute;left:70px;right:70px;bottom:130px;background:#0f0f10;color:#fff;border-radius:40px;padding:36px 44px;display:flex;align-items:center;justify-content:space-between">
-  <img src="../base/logo.png" style="width:240px"><div style="font-size:36px;font-weight:900;text-align:right;line-height:1.25">Calculadora grátis<br><span style="color:#3fd16a">link na bio</span></div></div>
- <div class="pe" style="color:#0b2a12aa"><span>salva e manda pra quem produz</span><span>7/7</span></div></div>
+
+<!-- 1 capa -->
+<div class="slide" data-rot="Custo real de um produto">
+ <div class="area">
+  <h1>O custo real de um produto em 10 <span class="it">minutos.</span></h1>
+  <p style="margin-top:44px">Com papel e caneta. No exemplo, um molho de pimenta artesanal: <b>12 potes de 150 ml.</b></p>
+  <div class="esp"></div>
+  <div class="cartao capa-conta" style="width:760px;align-self:flex-end">
+   <div class="linha"><span class="l">Custo real do pote</span><span class="v">R$ ?</span></div>
+   <div class="linha"><span class="l">Vendendo a</span><span class="v">R$ 15,00</span></div>
+   <div class="linha sobra"><span class="l">Quanto sobra</span><span class="v">R$ ?</span></div>
+  </div>
+ </div>
+</div>
+
+<!-- 2 passo 1 -->
+<div class="slide claro" data-rot="Custo real de um produto" style="--lx:300px;--ly:-300px">
+ <div class="area">
+  <div class="passo">PASSO 1 DE 5</div>
+  <h2 style="margin-top:24px">Comece pelo que mais vende. Anote quanto <span class="it">rende.</span></h2>
+  <p style="margin-top:36px">Uma receita do molho enche <b>12 potes de 150 ml.</b> Tudo o que vem a seguir é dividido por esse número.</p>
+  <div class="esp"></div>
+  <div style="display:flex;align-items:flex-end;justify-content:space-between">
+   <div class="div12">÷ 12</div>
+   <div class="ex" style="padding-bottom:18px">valores de exemplo</div>
+  </div>
+ </div>
+</div>
+
+<!-- 3 passo 2 -->
+<div class="slide" data-rot="Custo real de um produto" style="--lx:-500px;--ly:-300px">
+ <div class="area">
+  <div class="passo">PASSO 2 DE 5</div>
+  <h2 style="margin-top:24px">Some os ingredientes pelo preço da <span class="it">última</span> compra.</h2>
+  <div class="cartao compacto" style="margin-top:48px">
+   <div class="linha"><span class="l">Pimentas</span><span class="v">R$ 18,00</span></div>
+   <div class="linha"><span class="l">Vinagre</span><span class="v">R$ 6,00</span></div>
+   <div class="linha"><span class="l">Alho e temperos</span><span class="v">R$ 8,00</span></div>
+   <div class="linha"><span class="l">Óleo</span><span class="v">R$ 4,00</span></div>
+   <div class="linha tot"><span class="l">Ingredientes da receita</span><span class="v">R$ 36,00</span></div>
+  </div>
+  <div class="esp"></div>
+  <div class="fita"><div><div class="etq">Custo do pote até aqui</div><div class="ex" style="margin-top:8px">R$ 36,00 ÷ 12 · valores de exemplo</div></div><div class="n">R$ 3,00</div></div>
+ </div>
+</div>
+
+<!-- 4 passo 3 -->
+<div class="slide" data-rot="Custo real de um produto" style="--lx:200px;--ly:-200px">
+ <div class="area">
+  <div class="passo">PASSO 3 DE 5</div>
+  <h2 style="margin-top:24px">Pote, tampa e rótulo contam em <span class="it">cada</span> unidade.</h2>
+  <div class="cartao" style="margin-top:56px">
+   <div class="linha"><span class="l">Pote com tampa</span><span class="v">R$ 2,10</span></div>
+   <div class="linha"><span class="l">Rótulo</span><span class="v">R$ 0,40</span></div>
+   <div class="linha tot"><span class="l">Embalagem por pote</span><span class="v">+ R$ 2,50</span></div>
+  </div>
+  <div class="esp"></div>
+  <div class="fita"><div><div class="etq">Custo do pote até aqui</div><div class="ex" style="margin-top:8px">R$ 3,00 + R$ 2,50 · valores de exemplo</div></div><div class="n">R$ 5,50</div></div>
+ </div>
+</div>
+
+<!-- 5 passo 4 -->
+<div class="slide" data-rot="Custo real de um produto" style="--lx:-300px;--ly:200px">
+ <div class="area">
+  <div class="passo">PASSO 4 DE 5</div>
+  <h2 style="margin-top:24px">O gás do fogão também <span class="it">entra.</span></h2>
+  <p style="margin-top:36px">Estime quanto do botijão vai numa receita. No exemplo, <b>R$ 6,00 por receita.</b> Divida pelos 12 potes.</p>
+  <div class="cartao" style="margin-top:48px">
+   <div class="linha"><span class="l">Gás da receita</span><span class="v">R$ 6,00</span></div>
+   <div class="linha tot"><span class="l">Gás por pote</span><span class="v">+ R$ 0,50</span></div>
+  </div>
+  <div class="esp"></div>
+  <div class="fita"><div><div class="etq">Custo do pote até aqui</div><div class="ex" style="margin-top:8px">R$ 5,50 + R$ 0,50 · valores de exemplo</div></div><div class="n">R$ 6,00</div></div>
+ </div>
+</div>
+
+<!-- 6 passo 5 + resultado -->
+<div class="slide claro" data-rot="Custo real de um produto" style="--lx:-200px;--ly:-400px">
+ <div class="area">
+  <div class="passo">PASSO 5 DE 5</div>
+  <h2 style="margin-top:24px">O seu tempo é custo. <span class="it">Sempre.</span></h2>
+  <p style="margin-top:30px">2 horas de trabalho a R$ 15 a hora: <b>R$ 30 ÷ 12 = R$ 2,50 por pote.</b></p>
+  <div class="cartao compacto" style="margin-top:40px">
+   <div class="linha"><span class="l">Ingredientes, embalagem e gás</span><span class="v">R$ 6,00</span></div>
+   <div class="linha"><span class="l">Seu tempo</span><span class="v">+ R$ 2,50</span></div>
+   <div class="linha tot"><span class="l">Custo real do pote</span><span class="v">R$ 8,50</span></div>
+   <div class="linha"><span class="l">Vendendo a</span><span class="v">R$ 15,00</span></div>
+   <div class="linha sobra"><span class="l">Sobra em cada pote</span><span class="v">R$ 6,50</span></div>
+  </div>
+  <div class="esp"></div>
+  <div class="ex">valores de exemplo · antes de taxas e impostos</div>
+ </div>
+</div>
+
+<!-- 7 CTA -->
+<div class="slide" data-rot="Calculadora grátis" data-fim="salve e envie" style="--lx:100px;--ly:300px">
+ <div class="area">
+  <h2>Agora faça isso para <span class="it">cada</span> produto.</h2>
+  <p style="margin-top:36px">A calculadora grátis da Raiz faz essa conta em 1 minuto e mostra <b>quanto sobra em cada produto.</b> Sem cadastro.</p>
+  <div class="cartao compacto" style="margin-top:56px">
+   <div class="linha"><span class="l">Molho de pimenta 150 ml</span><span class="v" style="color:var(--lima)">sobra R$ 6,50</span></div>
+   <div class="linha"><span class="l">Geleia de morango 250 g</span><span class="v">?</span></div>
+   <div class="linha"><span class="l">Granola 500 g</span><span class="v">?</span></div>
+   <div class="linha"><span class="l">O seu próximo produto</span><span class="v">?</span></div>
+  </div>
+  <div class="esp"></div>
+  <div class="botao"><div>Calculadora grátis<small>link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
+ </div>
+</div>
+
+<script src="../base/raiz-carrossel.js"></script>
 </body></html>

@@ -1,0 +1,78 @@
+/* Carrosséis da Raiz (1080×1350) na identidade do kit de motion graphics
+   (erp-saas marketing/brand-system.md): night/creme, lima só para o que sobra, Manrope + Instrument Serif itálico. */
+@font-face{font-family:M;src:url(kit/manrope-latin-variable.woff2) format('woff2');font-weight:200 800}
+@font-face{font-family:S;src:url(kit/instrument-serif-italic-latin.woff2) format('woff2');font-style:italic}
+:root{
+ --night:#101d18;--card:#1b3026;--soft:#2b4433;--fio:#3b5043;--txt:#f5f7ed;--mut:#b5c2b6;
+ --lima:#c8f17a;--lima-b:#9bbb60;--btn:#245d38;--forest:#27613c;--tint:#e9f1df;
+ --bg:#f5f2e9;--paper:#fcfaf3;--cardc:#fdfbf6;--softc:#ece8dc;--borda:#d9d5c7;--ink:#182b23;--mutc:#58665e;
+ --perda:#e4674a;--perda-c:#8c2a17;--perda-f:#fbe3dd;--aten:#8a410e;--aten-f:#fff2e4;
+ --m:88px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1080px;height:1350px;overflow:hidden;font-family:M,sans-serif;background:var(--night);color:var(--txt);
+ font-feature-settings:"tnum" 0;-webkit-font-smoothing:antialiased}
+.slide{position:absolute;inset:0;overflow:hidden;display:none;background:var(--night);color:var(--txt)}
+.slide.claro{background:var(--bg);color:var(--ink)}
+/* luz de fundo discreta, do próprio verde */
+.slide:before{content:'';position:absolute;width:1300px;height:1300px;left:var(--lx,-420px);top:var(--ly,-520px);border-radius:50%;
+ background:radial-gradient(circle,rgba(39,97,60,.55),rgba(16,29,24,0) 62%);pointer-events:none}
+.slide.claro:before{background:radial-gradient(circle,rgba(233,241,223,.9),rgba(245,242,233,0) 62%)}
+.slide.liso:before{display:none}
+/* topo: logo + rótulo de seção */
+.topo{position:absolute;left:var(--m);right:var(--m);top:72px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+.topo img{height:64px;display:block}
+.rot{font-weight:700;font-size:24px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.claro .rot{color:var(--mutc)}
+/* rodapé: progresso + perfil */
+.pe{position:absolute;left:var(--m);right:var(--m);bottom:64px;display:flex;align-items:center;gap:28px;z-index:5}
+.pe .barras{display:flex;gap:8px;flex:1}
+.pe .barras i{height:6px;flex:1;border-radius:99px;background:var(--fio)}
+.pe .barras i.on{background:var(--txt)}
+.claro .pe .barras i{background:var(--borda)}.claro .pe .barras i.on{background:var(--ink)}
+.pe span{font-weight:700;font-size:26px;color:var(--mut);white-space:nowrap}
+.claro .pe span{color:var(--mutc)}
+/* tipografia */
+.area{position:absolute;left:var(--m);right:var(--m);top:200px;bottom:170px;display:flex;flex-direction:column;z-index:2}
+h1,h2{font-weight:800;letter-spacing:-.045em;text-wrap:balance}
+h1{font-size:118px;line-height:.98}
+h2{font-size:80px;line-height:1.02}
+h3{font-weight:800;letter-spacing:-.035em;font-size:56px;line-height:1.08;text-wrap:balance}
+.it{font-family:S;font-style:italic;font-weight:400;letter-spacing:-.01em;color:var(--lima);padding-right:.06em}
+.claro .it{color:var(--forest)}
+.it.cr{color:var(--txt)}
+p,.p{font-weight:500;font-size:40px;line-height:1.38;color:var(--mut);max-width:880px}
+.claro p,.claro .p{color:var(--mutc)}
+p b,.p b{color:var(--txt);font-weight:700}
+.claro p b,.claro .p b{color:var(--ink)}
+.etq{font-weight:700;font-size:26px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.claro .etq{color:var(--mutc)}
+.ex{font-weight:600;font-size:26px;color:var(--mut);letter-spacing:.02em}
+.claro .ex{color:var(--mutc)}
+.n{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;letter-spacing:-.05em;font-weight:800}
+.esp{flex:1}
+/* cartão no estilo do app */
+.cartao{background:var(--card);border:1.5px solid var(--fio);border-radius:16px;padding:14px 40px}
+.claro .cartao{background:var(--cardc);border-color:var(--borda);box-shadow:0 18px 50px rgba(24,43,35,.08)}
+.linha{display:flex;justify-content:space-between;align-items:baseline;gap:24px;padding:22px 0;font-size:38px;font-weight:600;border-bottom:1.5px solid var(--fio)}
+.claro .linha{border-color:var(--softc)}
+.linha:last-child{border-bottom:0}
+.linha .v{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.linha .l{color:var(--mut)}.claro .linha .l{color:var(--mutc)}
+.linha.tot{font-weight:800}.linha.tot .l{color:var(--txt)}.claro .linha.tot .l{color:var(--ink)}
+.cartao .linha.sobra{margin:10px -24px -2px;padding:22px 24px;border-radius:12px;background:rgba(200,241,122,.12);border:0}
+.linha.sobra .l,.linha.sobra .v{color:var(--lima)}
+.claro .linha.sobra{background:var(--tint)}.claro .linha.sobra .l,.claro .linha.sobra .v{color:var(--forest)}
+.menos{color:var(--perda)}.claro .menos{color:var(--perda-c)}
+/* pílulas e selos */
+.pilula{display:inline-flex;align-items:center;gap:14px;border-radius:999px;padding:14px 30px;font-weight:800;font-size:30px;letter-spacing:.1em;text-transform:uppercase}
+.selo-mito{background:var(--perda-f);color:var(--perda-c)}
+.selo-verd{background:var(--tint);color:var(--forest)}
+.selo-dep{background:var(--aten-f);color:var(--aten)}
+/* botão */
+.botao{display:flex;align-items:center;justify-content:space-between;background:var(--btn);color:#fff;border-radius:16px;padding:34px 44px;font-weight:800;font-size:40px;letter-spacing:-.02em}
+.botao small{display:block;font-weight:600;font-size:26px;letter-spacing:0;color:#cfe3d3;margin-top:6px}
+.botao .seta{font-size:56px;font-weight:600}
+/* fita do "custo até aqui" */
+.fita{display:flex;justify-content:space-between;align-items:center;border-top:1.5px solid var(--fio);padding-top:26px;margin-top:24px}
+.claro .fita{border-color:var(--borda)}
+.fita .n{font-size:64px}
