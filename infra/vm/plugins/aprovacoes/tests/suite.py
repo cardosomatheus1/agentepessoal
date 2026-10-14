@@ -122,10 +122,158 @@ class Suite:
         ok(not rv.livre_meta_raiz({"categoria": "chaves_acesso", "resumo": "token de acesso no Graph API"}, "browser", {},
                                   "", {"instagram_sem_perguntar": False}), "desligável na configuração")
 
+    # ------------------------------------------------------------------ "Nesta tarefa" (14/10)
+
+    def t_nesta_tarefa_so_a_categoria_e_so_esta_tarefa(self):
+        rv = self.rv
+        agora = 1_000_000.0
+        msg = {"categoria": "mensagem_terceiros", "resumo": "Enviar e-mail para a Ana"}
+        t = rv.liberar_tarefa(None, "mensagem_terceiros", "Enviar e-mail para a Ana", "m1", agora)
+        ok(rv.tarefa_vale(msg, t, "m1", agora + 60), "mesma categoria, mesma tarefa: vale")
+        ok(not rv.tarefa_vale({"categoria": "publicar", "resumo": "x"}, t, "m1", agora), "outra categoria: não vale")
+        ok(not rv.tarefa_vale(msg, t, "m2", agora), "outra tarefa (outra marca): não vale")
+        ok(not rv.tarefa_vale(msg, t, "", agora), "sem marca de tarefa: não vale")
+        ok(not rv.tarefa_vale(msg, t, "m1", agora + rv.TAREFA_MAX + 1), "nunca passa do limite, mesmo sem o fim da tarefa")
+        ok(not rv.tarefa_vale(msg, None, "m1", agora), "nada liberado")
+        t2 = rv.liberar_tarefa(t, "publicar", "Publicar post", "m1", agora + 5)
+        ok(set(t2["categorias"]) == {"mensagem_terceiros", "publicar"} and t2["inicio"] == agora, "acumula na mesma tarefa")
+        t3 = rv.liberar_tarefa(t2, "apagar", "Apagar arquivo", "m9", agora + 9)
+        ok(set(t3["categorias"]) == {"apagar"}, "tarefa nova começa do zero")
+        ok(rv.veredito({"mensagem_terceiros": "nunca"}, msg) == "nunca", "regra nunca continua acima de tudo")
+        ok(rv.resposta_digitada("Nesta tarefa") == "tarefa" and rv.resposta_digitada("só nesta tarefa.") == "tarefa",
+           "digitar 'nesta tarefa' na conversa vale")
+        p = rv.abrir("ctx-tarefa", msg, "browser")
+        ok(rv.decidir("ctx-tarefa", "tarefa", p["id"]), "o cartão aceita a decisão 'tarefa'")
+        rv.PENDENTES.pop("ctx-tarefa", None)
+        b = rv.botoes_celular("c1", "p1")
+        ok(len(b) == 3 and all(not x["id"].endswith(":tarefa") for x in b),
+           "celular: os 3 botões de sempre (Telegram e WhatsApp cortam no 3º; receber.py não responde 'tarefa')")
+        ok([x["titulo"] for x in b] == ["Aprovar", "Sempre permitir", "Recusar"], "na mesma ordem de antes")
+
+    def t_repeticao_ignora_o_que_foi_liberado_nesta_tarefa(self):
+        rv = self.rv
+        agora = 2_000_000.0
+        a = {"categoria": "mensagem_terceiros", "resumo": "Enviar e-mail para a Ana"}
+        n, h = rv.repeticoes([], a, agora)
+        n, h = rv.repeticoes(h, a, agora + 10)
+        ok(n == 1, "a 2ª parecida conta 1")
+        n3, _ = rv.repeticoes(h, a, agora + 20)
+        ok(n3 == 2, "a 3ª parecida seria recusada (regra antiga mantida)")
+        h = rv.marcar_tarefa(h)  # the 2nd one was approved "Nesta tarefa"
+        n, h = rv.repeticoes(h, a, agora + 20, liberada=True)
+        n, h = rv.repeticoes(h, a, agora + 30, liberada=True)
+        n, _ = rv.repeticoes(h, a, agora + 40)
+        ok(n == 1, f"o que 'Nesta tarefa' aprovou e liberou não conta (só a 1ª, com Aprovar): {n}")
+        n, _ = rv.repeticoes(h, a, agora + 700)
+        ok(n == 0, "depois de 10 min nada conta")
+        n, _ = rv.repeticoes([("mensagem_terceiros", agora, "enviar e-mail para a ana")], a, agora + 1)
+        ok(n == 1, "histórico antigo (3 campos) continua valendo")
+
+    async def t_nesta_tarefa_no_portao(self):
+        """The real extension with a fake agent: 'Nesta tarefa' lets the same category through for the rest of the task,
+        never another category, never a 'nunca' rule, and ends with the task."""
+        import asyncio
+        import sys
+        import types
+
+        class Intervencao(Exception):
+            pass
+
+        stubs = {"helpers": types.ModuleType("helpers"), "helpers.extension": types.ModuleType("helpers.extension"),
+                 "helpers.errors": types.ModuleType("helpers.errors"), "agent": types.ModuleType("agent")}
+
+        class Extension:
+            def __init__(self, agent=None, **kwargs):
+                self.agent = agent
+        stubs["helpers.extension"].Extension = Extension
+        stubs["helpers.errors"].InterventionException = Intervencao
+        stubs["agent"].UserMessage = lambda message="", attachments=None: types.SimpleNamespace(message=message)
+        antes = {n: sys.modules.get(n) for n in [*stubs, "aprovacoes_revisor"]}
+        sys.modules.update(stubs)
+        try:
+            ext = self._modulo("_05_revisar_teste", RAIZ / "extensions/python/tool_execute_before/_05_revisar_acao.py")
+            fim = self._modulo("_50_fim_teste", RAIZ / "extensions/python/process_chain_end/_50_fim_da_tarefa.py")
+            rv = ext.revisor()
+            enviados, proxima = [], {}
+            rv.classificar = lambda tool, args, intencao, sempre: dict(proxima)
+            rv.registrar_atividade = lambda *a, **k: None
+            rv.somente_leitura = lambda: set()
+            ext.whatsapp = lambda: types.SimpleNamespace(dono=lambda ctx: "teste_aprov",
+                                                         enviar=lambda *a: enviados.append(a[4]) or "")
+            regras = {}
+            ext._config = lambda agent: {"regras": regras, "espera_minutos": 1}
+
+            class Ctx:
+                id, name = "ctx-portao", "teste"
+
+                def __init__(self):
+                    self.data, self.task = {"dono": "teste_aprov"}, types.SimpleNamespace(_future=object())
+                    self.log = types.SimpleNamespace(log=lambda **k: None)
+
+                def get_data(self, k):
+                    return self.data.get(k)
+
+                def set_data(self, k, v):
+                    self.data[k] = v
+
+            ctx = Ctx()
+            agente = types.SimpleNamespace(context=ctx, intervention=None, hist_add_user_message=lambda *a, **k: None,
+                                           loop_data=types.SimpleNamespace(current_tool=types.SimpleNamespace(message="enviar")))
+
+            async def acao(categoria, resumo, responder=""):
+                """'' = ran without asking, 'pediu:<answer>' = asked and was answered, 'bloqueou' = did not run."""
+                proxima.update(categoria=categoria, resumo=resumo, sempre_permitida=False)
+                tarefa = asyncio.create_task(ext.RevisarAcao(agente).execute(tool_args={"action": "click"}, tool_name="browser"))
+                pediu = False
+                for _ in range(100):
+                    await asyncio.sleep(0.02)
+                    p = rv.PENDENTES.get(ctx.id)
+                    if p and responder:
+                        pediu = rv.decidir(ctx.id, responder, p["id"])
+                        break
+                    if tarefa.done():
+                        break
+                try:
+                    await asyncio.wait_for(tarefa, 5)
+                except Intervencao:
+                    return "bloqueou" + (f" (pediu:{responder})" if pediu else "")
+                return f"pediu:{responder}" if pediu else ""
+
+            eq = lambda a, b, m: ok(a == b, f"{m}: veio {a!r}")  # noqa: E731
+            eq(await acao("mensagem_terceiros", "Enviar e-mail para a Ana", "tarefa"), "pediu:tarefa", "1ª: pede, botão Nesta tarefa")
+            ok(enviados and len(enviados[-1]) == 3, "ao celular foram os 3 botões de sempre")
+            for i in range(4):  # the loop guard would refuse the 3rd: what the button let through does not count
+                eq(await acao("mensagem_terceiros", f"Enviar e-mail para a Ana, parte {i}"), "", f"mesma categoria {i + 2}ª: sem pedir")
+            eq(await acao("publicar", "Publicar post no Instagram", "recusar"), "bloqueou (pediu:recusar)", "outra categoria: pede")
+            regras["mensagem_terceiros"] = "nunca"
+            eq(await acao("mensagem_terceiros", "Enviar e-mail para a Ana"), "bloqueou", "regra nunca acima do Nesta tarefa")
+            regras.clear()
+            ctx.task = types.SimpleNamespace(_future=object())  # a new task in the same chat (the old one died)
+            eq(await acao("mensagem_terceiros", "Enviar e-mail para a Ana", "aprovar"), "pediu:aprovar", "tarefa nova: pede de novo")
+            ctx.data["_aprovacoes_tarefa"] = rv.liberar_tarefa(None, "mensagem_terceiros", "x", ext.marca_tarefa(ctx), __import__("time").time())
+            await fim.FimDaTarefa(agente).execute()
+            ok(not ctx.data.get("_aprovacoes_tarefa"), "fim da tarefa apaga a liberação")
+            eq(await acao("mensagem_terceiros", "Enviar e-mail para o Beto", "aprovar"), "pediu:aprovar", "depois do fim: pede")
+        finally:
+            for n, m in antes.items():
+                if m is None:
+                    sys.modules.pop(n, None)
+                else:
+                    sys.modules[n] = m
+
+    @staticmethod
+    def _modulo(nome, arquivo):
+        spec = importlib.util.spec_from_file_location(nome, arquivo)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m
+
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:
-                getattr(self, nome)()
+                r = getattr(self, nome)()
+                if hasattr(r, "__await__"):
+                    await r
                 self.resultados.append({"teste": nome, "ok": True})
             except Exception as exc:
                 self.resultados.append({"teste": nome, "ok": False, "erro": f"{type(exc).__name__}: {exc}",

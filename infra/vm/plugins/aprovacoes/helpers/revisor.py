@@ -245,6 +245,62 @@ def veredito(regras: dict, analise: dict) -> str:
     return "perguntar"
 
 
+# ------------------------------------------------------------------ "Nesta tarefa" (14/10, Hermes' session scope)
+# A 4th answer between "Aprovar" (this one action) and "Sempre permitir" (for good): the same CATEGORY goes without asking
+# until the task ends (process_chain_end clears it; a task that died without that end is told apart by its mark), never
+# for good and never above a "nunca" rule or a read-only chat. Kept in the chat's data under a "_" key, which Agent Zero
+# never saves to disk: a restart ends it too.
+DECISOES = ("aprovar", "tarefa", "sempre", "recusar")
+BOTOES = (("aprovar", "Aprovar"), ("tarefa", "Nesta tarefa"), ("sempre", "Sempre permitir"), ("recusar", "Recusar"))
+# Telegram (ponte_whatsapp.teclado) and WhatsApp (enviar_botoes: the API takes 3 reply buttons) send only the first 3
+# buttons, and plugins/whatsapp/api/receber.py has no answer text for "tarefa": until both change, the phone keeps the
+# 3 buttons it had and "Nesta tarefa" is on the chat card (and typed in the chat).
+CELULAR_TAREFA = False
+TAREFA_MAX = 12 * 3600  # a task that never reached its end (crash) does not keep it longer than this
+
+
+def botoes_celular(ctx_id: str, pid: str) -> list:
+    escolhas = [b for b in BOTOES if CELULAR_TAREFA or b[0] != "tarefa"]
+    return [{"id": f"aprov:{ctx_id}:{pid}:{d}", "titulo": t} for d, t in escolhas]
+
+
+def liberar_tarefa(tarefa: dict | None, categoria: str, resumo: str, marca: str, agora: float) -> dict:
+    """The task's approvals with `categoria` added (a different task's mark starts over)."""
+    atual = dict(tarefa or {}) if (tarefa or {}).get("marca") == marca else {}
+    categorias = dict(atual.get("categorias") or {})
+    categorias[categoria] = {"resumo": str(resumo or "")[:300], "em": agora}
+    return {"marca": marca, "inicio": atual.get("inicio") or agora, "categorias": categorias}
+
+
+def tarefa_vale(analise: dict, tarefa: dict | None, marca: str, agora: float) -> bool:
+    """This action's category was approved "nesta tarefa", in this same task, within TAREFA_MAX."""
+    if not tarefa or not marca or tarefa.get("marca") != marca or agora - float(tarefa.get("inicio") or 0) > TAREFA_MAX:
+        return False
+    categoria = analise.get("categoria")
+    return categoria not in (None, "", "nenhuma") and categoria in (tarefa.get("categorias") or {})
+
+
+def repeticoes(historico: list, analise: dict, agora: float, liberada: bool = False) -> tuple:
+    """Loop guard: (similar requests of the same kind in the last 10 min, the history with this one added). Entries
+    marked "tarefa" (let through, or approved, by "Nesta tarefa") never count: that is an approval, not a loop.
+    `liberada`: this action is one of those."""
+    import difflib
+
+    recentes = [tuple(h) for h in (historico or []) if agora - h[1] < 600]
+    parecidos = sum(1 for h in recentes if len(h) < 4 and h[0] == analise["categoria"]
+                    and difflib.SequenceMatcher(None, h[2], analise["resumo"].lower()).ratio() > 0.6)
+    nova = (analise["categoria"], agora, analise["resumo"].lower()) + (("tarefa",) if liberada else ())
+    return parecidos, recentes + [nova]
+
+
+def marcar_tarefa(historico: list) -> list:
+    """The request just approved with "Nesta tarefa" (the last entry) stops counting as a repeat."""
+    hist = [tuple(h) for h in historico or []]
+    if hist:
+        hist[-1] = tuple(hist[-1][:3]) + ("tarefa",)
+    return hist
+
+
 def abrir(ctx_id: str, analise: dict, tool: str) -> dict:
     pendente = {"id": uuid.uuid4().hex[:8], "contexto": ctx_id, "categoria": analise["categoria"],
                 "resumo": analise["resumo"] or f"usar {tool}", "decisao": None, "criado": time.time()}
@@ -259,7 +315,7 @@ def decidir(ctx_id: str, decisao: str, pid: str = "") -> bool:
     pendente = PENDENTES.get(ctx_id)
     if not pendente or pendente["decisao"] or not pid or pid != pendente["id"]:
         return False
-    if decisao not in ("aprovar", "sempre", "recusar"):
+    if decisao not in DECISOES:
         return False
     pendente["decisao"] = decisao
     return True
@@ -267,6 +323,7 @@ def decidir(ctx_id: str, decisao: str, pid: str = "") -> bool:
 
 RESPOSTAS = {
     "aprovar": {"aprovar", "aprovo", "aprovado", "sim", "pode", "ok", "pode fazer", "autorizo", "✅"},
+    "tarefa": {"nesta tarefa", "nessa tarefa", "só nesta tarefa", "so nesta tarefa", "pode nesta tarefa", "tarefa"},
     "sempre": {"sempre", "sempre permitir", "pode sempre"},
     "recusar": {"recusar", "recuso", "não", "nao", "negar", "não pode", "nao pode", "❌"},
 }
