@@ -4,52 +4,55 @@
 .quem{font-weight:700;font-size:26px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
 .claro .quem{color:var(--mutc)}
 .fala{font-weight:800;letter-spacing:-.045em;font-size:116px;line-height:.98;text-wrap:balance;margin-top:30px}
-.pensa{font-family:S;font-style:italic;font-size:64px;line-height:1.1;color:var(--lima-b);text-wrap:balance}
-.claro .pensa{color:var(--forest)}
+.pensa{font-weight:600;font-size:60px;line-height:1.15;letter-spacing:-.02em;color:var(--txt);text-wrap:balance}
+.claro .pensa{color:var(--ink)}
 .pac{display:flex;align-items:center;gap:26px}
 .pac .etq{white-space:nowrap}
 .pac .trilho{flex:1;height:18px;border-radius:99px;background:var(--soft);overflow:hidden}
 .claro .pac .trilho{background:var(--softc)}
 .pac .f{height:100%;border-radius:99px;background:var(--txt)}
 .claro .pac .f{background:var(--ink)}
-.pac .f.baixa{background:var(--perda)}
 .pac .n{font-size:44px;min-width:110px;text-align:right}
-.grade{display:grid;grid-template-columns:repeat(7,1fr);gap:14px;margin-top:44px}
+.grade{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:44px}
 .grade div{aspect-ratio:1;border:1.5px solid var(--fio);border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:44px;font-variant-numeric:tabular-nums}
 </style></head><body>
 <div id="raiz"></div>
 <script>
 const F=[
- ["Faz um precinho?","O precinho é o meu lucro.",90,"ontem"],
- ["Minha tia faz mais barato.","Então encomenda com a tia.",75,"toda semana"],
- ["Pago semana que vem, pode ser?","A semana que vem nunca chega.",60,"sempre"],
- ["É só um bolinho simples.","Simples é o bolo. O trabalho, não.",45,"agorinha"],
- ["Consegue pra hoje à tarde?","Claro, deixa eu parar o tempo aqui.",30,"hoje, 11h"],
- ["Me manda o cardápio!","Visualizou às 14:02.",15,"há 3 dias"],
- ["No mercado é mais barato.","E no mercado vem feito à mão?",3,"todo santo dia"],
+ ["Faz um precinho?","O precinho é o meu lucro.",90,"Cliente · ontem"],
+ ["Deixa em consignação?","E se não vender, volta vencido.",75,"Loja nova · toda semana"],
+ ["Faz 40% para revenda?","E sobra quanto pra mim?",55,"Revendedor · sempre"],
+ ["Pago em 60 dias.","O meu fornecedor quer à vista.",35,"Empório · hoje, 11h"],
+ ["Consegue pra hoje à tarde?","Claro, deixa eu parar o tempo.",15,"Cliente · agorinha"],
+ ["No mercado é mais barato.","E no mercado é feito à mão?",3,"Cliente · todo santo dia"],
 ];
-const pac=v=>`<div class="pac"><span class="etq">Paciência</span><div class="trilho"><div class="f ${v<30?'baixa':''}" style="width:${v}%"></div></div><span class="n">${v}%</span></div>`;
+const pac=v=>`<div class="pac"><span class="etq">Paciência</span><div class="trilho"><div class="f" style="width:${v}%"></div></div><span class="n">${v}%</span></div>`;
 let h=`<div class="slide" data-rot="Frases de cliente">
  <div class="area">
-  <h1>7 frases que quem vende comida <span class="it">já ouviu.</span></h1>
+  <h1>6 frases que quem produz comida <span class="it">já ouviu.</span></h1>
   <p style="margin-top:40px">E o que a gente pensa, mas não fala. <b>Arraste e vá contando quantas você já ouviu.</b></p>
   <div class="esp"></div>${pac(100)}
  </div></div>`;
-F.forEach((f,i)=>{h+=`<div class="slide ${i%2?'':'claro'}" data-rot="Frase ${i+1} de 7" style="--lx:${i%2?-400:300}px;--ly:${i%3?-300:200}px">
+F.forEach((f,i)=>{h+=`<div class="slide ${i%2?'':'claro'}" data-rot="Frase ${i+1} de 6" style="--lx:${i%2?-400:300}px;--ly:${i%3?-300:200}px">
  <div class="area">
-  <div class="quem">Cliente, ${f[3]}</div>
+  <div class="quem">${f[3]}</div>
   <div class="fala">“${f[0]}”</div>
-  <div class="esp"></div>
-  <div class="etq" style="margin-bottom:14px">O que a gente pensa</div>
+  <div class="etq" style="margin:90px 0 16px">O que a gente pensa</div>
   <div class="pensa">${f[1]}</div>
-  <div style="margin-top:60px">${pac(f[2])}</div>
+  <div class="esp"></div>
+  ${pac(f[2])}
  </div></div>`});
+h+=`<div class="slide claro" data-rot="O que fica" style="--lx:-200px;--ly:-300px">
+ <div class="area centro">
+  <h2>Em quase todas, o cliente não vê o seu <span class="it">custo.</span></h2>
+  <p style="margin-top:40px"><b>Você precisa ver.</b> Saber quanto sobra em cada produto, no varejo e para a loja, é o que diz se dá para aceitar o desconto, o prazo ou a consignação.</p>
+ </div></div>`;
 h+=`<div class="slide" data-rot="Calculadora grátis" data-fim="salve e envie" style="--lx:100px;--ly:300px">
  <div class="area">
   <h2>Qual você mais <span class="it">ouve?</span></h2>
   <p style="margin-top:30px">Comente o número.</p>
-  <div class="grade">${[1,2,3,4,5,6,7].map(n=>`<div>${n}</div>`).join('')}</div>
-  <p style="margin-top:56px">Preço justo não é caro: <b>é o preço que paga o seu trabalho.</b> Faça a conta antes de dar o desconto.</p>
+  <div class="grade">${[1,2,3,4,5,6].map(n=>`<div>${n}</div>`).join('')}</div>
+  <p style="margin-top:56px">Preço justo não é caro: <b>é o preço que paga o seu trabalho.</b> A calculadora grátis mostra quanto sobra antes de você dar o desconto.</p>
   <div class="esp"></div>
   <div class="botao"><div>Calculadora grátis<small>link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
  </div></div>`;

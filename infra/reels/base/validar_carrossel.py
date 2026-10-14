@@ -24,7 +24,7 @@ JS = r"""async (i) => {
     const fs = parseFloat(getComputedStyle(t).fontSize); if (fs < 20) erros.push(`texto pequeno (${fs}px): "${t.textContent.trim().slice(0,30)}"`);
   }
   if (/[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}]/u.test(el.innerText)) erros.push('emoji no slide');
-  if (/R\$\s?\d/.test(el.innerText) && !/exemplo|ilustrativ|R\$ ?197|R\$ ?1\.697|R\$ ?(600|400|200|300)\b/i.test(el.innerText) && !el.closest('[data-sem-exemplo]'))
+  if (/R\$\s?\d/.test(el.innerText) && !/exemplo|valores ilustrativos|R\$ ?197|R\$ ?1\.697|R\$ ?(600|400|200|300)\b/i.test(el.innerText) && !el.closest('[data-sem-exemplo]'))
     erros.push('número em R$ sem "valores de exemplo" no slide');
   for (const img of el.querySelectorAll('img')) if (!img.complete || !img.naturalWidth) erros.push('imagem não carregou: ' + img.src.split('/').pop());
   return [...new Set(erros)];

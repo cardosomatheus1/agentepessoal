@@ -6,7 +6,7 @@
     `<div class="celular"><img src="../base/kit/tela-calculadora.jpg"></div><ul>` +
     `<li><span>Sem cadastro<small>abre e já começa</small></span></li>` +
     `<li><span>Produto por produto<small>custo, preço e onde vende</small></span></li>` +
-    `<li><span>Quanto sobra<small>o diagnóstico no fim</small></span></li></ul>`);
+    `<li><span>Quanto sobra<small>em cada venda, na hora</small></span></li></ul>`);
   const s = [...document.querySelectorAll('.slide')], n = s.length;
   s.forEach((el, i) => {
     const claro = el.classList.contains('claro');

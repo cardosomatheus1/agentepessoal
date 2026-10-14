@@ -92,3 +92,11 @@ p b,.p b{color:var(--txt);font-weight:700}
 .claro .cta-calc li:before{color:var(--forest)}
 .cta-calc li small{display:block;font-size:26px;font-weight:500;color:var(--mut);margin-top:6px}
 .claro .cta-calc li small{color:var(--mutc)}
+/* revisão H, ciclo 1 */
+.cartao .linha.sobra.sobra{margin:10px -24px 0;padding:24px;border-radius:12px;background:var(--lima);border:0}
+.cartao .linha.sobra.sobra .l,.cartao .linha.sobra.sobra .v{color:var(--night);font-weight:800}
+.slide:not(.claro) .selo-mito{background:#3a1f1a;color:#f4b3a6}
+.slide:not(.claro) .selo-dep{background:#3b2a17;color:#f6c78f}
+.slide:not(.claro) .selo-verd{background:var(--forest);color:#fff}
+.area.centro{justify-content:center}
+.area.centro .esp{flex:0 0 72px}
