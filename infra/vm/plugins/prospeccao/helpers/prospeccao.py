@@ -319,7 +319,14 @@ FORA_DO_BRASIL = re.compile(r"\b(portugal|lisboa|porto, portugal|miami|orlando|e
 RADICAIS_SEGMENTO = (  # free text from the search round -> rubric key (the best-scoring match wins)
     (r"marmit|quentinha|fit ?food|refei[cç][aã]o (fit|saud)", "marmitaria"), (r"congelad", "congelados"),
     (r"cozinha|dark ?kitchen|produ[cç][aã]o pr[oó]pria|cozinha_producao", "cozinha_producao"),
-    (r"f[aá]brica|ind[uú]stria|fabrica[cç][aã]o", "fabrica"), (r"confeit|bolo|torta", "confeitaria"),
+    (r"f[aá]brica|ind[uú]stria|fabrica[cç][aã]o", "fabrica"),
+    # productions beyond the big branches (Matheus, 14/10: the client is whoever produces food; two closing make
+    # ice-cream syrup and granola): a small factory, whatever it makes
+    (r"geleia|conservas?\b|antepasto|molhos? (artesana|de pimenta)|pimentas? artesana|temperos? artesana|granola|"
+     r"caldas? (de|para|artesana)|cobertura para|sorvete|picol[eé]|gelato|kombucha|polpas? de fruta|"
+     r"fermenta[cç][aã]o natural|levain|massas? frescas?|queijo|latic[ií]nio|charcutaria|lingui[cç]a artesana|"
+     r"defumad|pasta de amendoim|biscoit|torrefa|caf[eé] (torrado|especial)|produ[cç][aã]o artesanal", "fabrica"),
+    (r"confeit|bolo|torta", "confeitaria"),
     (r"salgad", "salgados"), (r"doce|brigadeiro|bombom|chocolat", "doces"), (r"padari|panifica|p[aã]es", "padaria"),
     (r"restaurante|refei[cç]|almo[cç]o|comida", "restaurante"),
     (r"lanchonete|caf[eé]|aliment|food|gastronom|outro_alimento", "outro_alimento"))

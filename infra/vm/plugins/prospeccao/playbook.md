@@ -11,9 +11,14 @@ limites, prazos e o revisor, que confere cada texto contra este playbook.
 
 ## 1. Cliente ideal
 
-**Segmentos**, nesta ordem: marmitarias e marmitas fit; congelados (refeições, salgados, massas); confeitarias,
-doceiras, bolos e doces por encomenda; salgados para festa; cozinhas de produção e dark kitchens; pequenas fábricas de
-alimentos; restaurantes com produção própria e delivery.
+**Quem é:** quem **produz alimento de fato** e vende o que produz. Não são só os ramos grandes. Entram: marmitarias e
+marmitas fit; congelados (refeições, salgados, massas); confeitarias, doceiras, bolos e doces por encomenda; salgados
+para festa; cozinhas de produção e dark kitchens; restaurantes com produção própria e delivery; e as **pequenas
+fábricas de qualquer alimento**, inclusive as produções pouco comuns (caldas e coberturas, granolas, geleias,
+conservas, molhos e pimentas, temperos, chocolates, sorvetes e picolés artesanais, pães de fermentação natural, massas
+frescas, queijos, linguiças e defumados, kombucha e polpas, biscoitos, cafés torrados e o que mais for produzido).
+Procure também o que não está nesta lista: o sinal é **receita própria, lote, fornada, embalagem e rótulo**, e vender
+para cliente final ou para lojas, empórios e cafeterias revenderem.
 
 **Perfil:** um **negócio** que vende comida (perfil comercial, ou bio com cardápio, encomendas, WhatsApp, iFood ou
 endereço), com produção própria, **ativo** (post no feed nos últimos 30 dias, ou stories no ar na hora da visita), de
@@ -24,7 +29,7 @@ cliente ("Oi, {nome}!").
 **Sinais fortes:** fala de preço, aumento de insumo ou reajuste; cardápio novo com preços; vende no iFood; vende por
 kit, quilo ou encomenda; anuncia segunda unidade, contratação ou crescimento; reclama de custo ou margem.
 
-**Fora:** redes e franquias; quem não vende comida; revendedores; perfis parados há mais de 30 dias ou privados;
+**Fora:** redes e franquias; quem não vende comida; quem só revende o que outros produzem; perfis parados há mais de 30 dias ou privados;
 outros sistemas e concorrentes; menores de idade; fora do Brasil; quem já disse não. **Cursos, professores,
 influenciadores de culinária, consultores, contadores e fornecedores** não são clientes: são **parceiros** (canal
 "parceiro").

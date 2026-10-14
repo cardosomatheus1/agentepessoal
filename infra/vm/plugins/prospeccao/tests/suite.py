@@ -512,6 +512,40 @@ class Suite:
         eq(f._municipios(d, "5620104", "PE"), {"recife": "1234"}, "municípios de outro estado")
         ok(any("/uf/PE/cnae/5620104" in u for u in paginas), "lê a página do estado certo")
 
+    def t_cliente_e_quem_produz_alimento(self):
+        # Matheus, 14/10: "o icp é o produtor de alimentos de fato e não só esses ramos grandes" (two closing make
+        # ice-cream syrup and granola): small factories of any food enter the walk, the search words and the rubric
+        p, f = self.p, self._fontes()
+        segs = dict(f.CNAES)
+        for cnae in ("1099699", "1095300", "1093701", "1053800", "1031700", "1052000"):
+            eq(segs.get(cnae), "fabrica", f"atividade {cnae} entra como pequena fábrica")
+        ok(segs.get("5620104") == "marmitaria" and f.CNAES[0][0] == "5620104", "os ramos grandes continuam")
+        for nome in ("FABRICA DE SORVETES DONA BELA", "POLPAS DE ACAI DO NORTE", "GELATO DA VILA"):
+            ok(not f.FORA.search(nome), f"{nome}: quem produz sorvete ou polpa não é descartado pelo nome")
+        ok(f.FORA.search("BAR DO ZE") and f.FORA.search("MERCADINHO CENTRAL"), "bar e mercado continuam fora")
+        for bio in ("Caldas e coberturas para sorvete, atacado e varejo", "Granola artesanal sem açúcar",
+                    "Geleias e conservas da roça", "Molho de pimenta artesanal", "Pães de fermentação natural",
+                    "Queijo artesanal da serra", "Kombucha feita aqui"):
+            eq(p.segmento_rubrica(bio), "fabrica", f"bio de produtor vira pequena fábrica: {bio}")
+        eq(p.segmento_rubrica("Marmitas fit congeladas"), "marmitaria", "marmita continua marmitaria")
+        palavras = " ".join(f.PALAVRAS_INSTAGRAM)
+        ok(all(w in palavras for w in ("geleia", "chocolate artesanal", "sorvete artesanal", "queijo")),
+           "a busca do Instagram vai além dos ramos grandes")
+        comuns = {"marmita fit", "marmitaria", "marmitas congeladas", "confeitaria", "bolo caseiro", "salgados",
+                  "doces gourmet", "comida congelada"}
+        ok(f.PALAVRAS_INSTAGRAM[1] not in comuns, "as produções menos comuns se alternam com as grandes desde o início")
+        # the directory walk takes turns between activities: each run starts at the next one
+        paginas = []
+        f._baixar = lambda url: paginas.append(url) or (
+            re.sub(r".*/uf/BA/cnae/(\d+).*", r'<a href="/cnae/\1/municipio/3849">SALVADOR/BA</a>', url) if "/uf/BA/" in url else "")
+        primeiras = []
+        for _ in range(3):
+            antes = len(paginas)
+            f.coletar(LOGIN, paginas=1)
+            lidas = [u for u in paginas[antes:] if "/municipio/" in u]
+            primeiras.append(lidas[0].split("/cnae/")[1].split("/")[0] if lidas else "")
+        eq(primeiras, [c for c, _ in f.CNAES[:3]], f"cada rodada começa na próxima atividade: {primeiras}")
+
     def t_estoque_de_leads_e_teto_de_buscas(self):
         p, f = self.p, self._fontes()
         self.em(self.hora(10))

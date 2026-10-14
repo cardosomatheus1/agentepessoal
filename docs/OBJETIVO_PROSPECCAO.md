@@ -4,7 +4,7 @@ Texto fixo, passado igual a todo avaliador cego, para que as notas sejam compar�
 
 ## Objetivo final
 Fazer donos de pequenos negócios de comida no Brasil **abrirem o teste grátis de 15 dias da Raiz Connect**, a partir de
-conversas um a um no Direct da @raiz.connect. Meta de referência: de cada 100 primeiras mensagens, **15 respostas
+conversas um a um no Direct da @raiz.connect. O cliente é **quem produz alimento de fato** (marmitas, doces e salgados, mas também pequenas fábricas de produtos pouco comuns, como caldas, granolas, geleias, molhos e sorvetes artesanais), não só os ramos grandes. Meta de referência: de cada 100 primeiras mensagens, **15 respostas
 humanas, 5 leads (pediram a calculadora, o preço ou para testar) e 1 teste aberto**.
 
 ## Restrições que não se negociam

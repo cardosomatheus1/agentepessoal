@@ -31,11 +31,27 @@ PAUSA_BUSCA = 1.0    # seconds between search queries
 BUSCAS_DIA = 100     # search API calls per day (config "buscas_dia" in the fontes file): Tavily is billed per call
 
 # activity code -> rubric segment used when the bio says nothing better (order = priority)
+# Matheus, 14/10: the client is whoever PRODUCES food, not only the big branches (two about to close make ice-cream
+# syrup and granola). So the small food factories beyond the big three come in too; the walk takes turns between
+# activities (coletar), so none of them waits for the first one to run out.
 CNAES = (("5620104", "marmitaria"),      # alimentos preparados para consumo domiciliar
          ("1096100", "cozinha_producao"),  # fabricação de alimentos e pratos prontos
-         ("1091102", "confeitaria"),     # fabricação de produtos de padaria e confeitaria
-         ("4721102", "padaria"),         # padaria e confeitaria (revenda)
-         ("1092900", "outro_alimento"))  # massas alimentícias
+         ("1091102", "confeitaria"),     # fabricação de produtos de padaria e confeitaria (produção própria)
+         ("1099699", "fabrica"),         # outros produtos alimentícios (caldas, granolas, pastas, snacks...)
+         ("1095300", "fabrica"),         # especiarias, molhos, temperos e condimentos
+         ("1093701", "fabrica"),         # derivados do cacau e chocolates
+         ("1053800", "fabrica"),         # sorvetes e outros gelados comestíveis
+         ("1031700", "fabrica"),         # conservas de frutas (geleias, doces em calda)
+         ("1032599", "fabrica"),         # conservas de legumes e outros vegetais
+         ("1094500", "fabrica"),         # massas alimentícias
+         ("1092900", "fabrica"),         # biscoitos e bolachas
+         ("1093702", "fabrica"),         # frutas cristalizadas, balas e semelhantes
+         ("1052000", "fabrica"),         # laticínios (queijos, iogurtes)
+         ("1013901", "fabrica"),         # produtos de carne (linguiças, defumados)
+         ("1033302", "fabrica"),         # sucos de frutas e polpas
+         ("1122499", "fabrica"),         # outras bebidas não alcoólicas (kombucha, chás gelados)
+         ("1099607", "fabrica"),         # alimentos dietéticos e complementos (fit, sem glúten)
+         ("4721102", "padaria"))         # padaria e confeitaria (revenda)
 # cities walked in the directory, in order (uf, name): Bahia first (where it started), then the capitals and big
 # cities of Brazil (Matheus, 12/10: "é Brasil mesmo")
 CIDADES = (("BA", "salvador"), ("BA", "lauro de freitas"), ("BA", "camacari"), ("BA", "simoes filho"), ("BA", "candeias"),
@@ -45,8 +61,9 @@ CIDADES = (("BA", "salvador"), ("BA", "lauro de freitas"), ("BA", "camacari"), (
            ("AM", "manaus"), ("PA", "belem"), ("MA", "sao luis"), ("PB", "joao pessoa"), ("RN", "natal"),
            ("AL", "maceio"), ("SE", "aracaju"), ("PI", "teresina"), ("MT", "cuiaba"), ("MS", "campo grande"),
            ("SP", "ribeirao preto"), ("SP", "sorocaba"), ("SP", "santos"), ("PR", "londrina"), ("SC", "joinville"))
-# names that are clearly not a food producer: not worth a search query
-FORA = re.compile(r"\b(bar|bares|boteco|lanchonete|pizzari|espetinho|a[cç]a[ií]|sorvet|mercad|mercearia|dep[oó]sito|"
+# names that are clearly not a food producer: not worth a search query. Ice cream and açaí left this list on 14/10:
+# a fábrica de sorvete or de polpa produces (and the ice-cream activity is walked now); the visit decides the rest.
+FORA = re.compile(r"\b(bar|bares|boteco|lanchonete|pizzari|espetinho|mercad|mercearia|dep[oó]sito|"
                   r"distribuidora|churrascaria|pastelaria|hamburg|burger|cervej|adega|conveni[eê]ncia)", re.I)
 
 
@@ -136,10 +153,14 @@ def _municipios(d: dict, cnae: str, uf: str = "BA") -> dict:
 
 
 def coletar(login: str, paginas: int = 4) -> dict:
-    """Walk the next directory pages (activity x city, in priority order) into the company queue."""
+    """Walk the next directory pages into the company queue. Each run starts at the next activity (round robin, 14/10:
+    with the activity list grown to the small food factories, priority order would leave them waiting for the
+    marmitarias of every city to run out); inside an activity, cities go in priority order."""
     d = carregar(login)
     novas, lidas, erros = 0, 0, []
-    for cnae, _seg in CNAES:
+    vez = int(d.get("vez_cnae") or 0) % len(CNAES)
+    d["vez_cnae"] = (vez + 1) % len(CNAES)
+    for cnae, _seg in CNAES[vez:] + CNAES[:vez]:
         if lidas >= paginas:
             break
         for uf, cidade in CIDADES:
@@ -496,8 +517,14 @@ APIFY = "https://api.apify.com/v2/acts"
 APIFY_USD_MES = 5.0
 PAUSA_APIFY = 30  # seconds before the second try
 PRECO_APIFY = {"apify~instagram-search-scraper": 0.0027, "apify~instagram-profile-scraper": 0.0026}  # per item, free plan
-PALAVRAS_INSTAGRAM = ("marmita fit", "marmitaria", "marmitas congeladas", "confeitaria", "bolo caseiro", "salgados",
-                      "doces gourmet", "comida congelada")
+# the big branches alternate with less common productions (Matheus, 14/10: "pensar além em negócios de produção que
+# não são tão comuns"), so the rotation reaches both in the same week
+PALAVRAS_INSTAGRAM = ("marmita fit", "geleia artesanal", "marmitaria", "molho de pimenta artesanal",
+                      "marmitas congeladas", "chocolate artesanal", "confeitaria", "pão de fermentação natural",
+                      "bolo caseiro", "sorvete artesanal", "salgados", "massa fresca artesanal", "doces gourmet",
+                      "queijo artesanal", "comida congelada", "kombucha", "conservas artesanais",
+                      "temperos artesanais", "pasta de amendoim artesanal", "biscoito artesanal", "polpa de fruta",
+                      "linguiça artesanal", "picolé artesanal", "café torrado artesanal")
 
 
 def _apify_token() -> str:
