@@ -1,0 +1,4 @@
+name: concorrentes
+title: Vigia de concorrentes
+description: Lista de concorrentes com suas fontes (site, preços, blog/RSS, imprensa); a coleta lê os feeds, compara com a última rodada, junta por fato e devolve só o que é novo. Fonte que falhou é "sem cobertura", nunca "sem notícia".
+version: 1.0.0

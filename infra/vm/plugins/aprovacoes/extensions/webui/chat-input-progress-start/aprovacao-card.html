@@ -19,6 +19,8 @@
       <div class="apr-cat" x-text="'categoria: ' + p.categoria"></div>
       <div class="apr-botoes">
         <button class="apr-ok" @click="decidir('aprovar')">Aprovar</button>
+        <button class="apr-tarefa" title="Libera este tipo de ação até a tarefa terminar (nunca para sempre)"
+                @click="decidir('tarefa')">Nesta tarefa</button>
         <button class="apr-sempre" @click="decidir('sempre')">Sempre permitir</button>
         <button class="apr-nao" @click="decidir('recusar')">Recusar</button>
       </div>
@@ -33,6 +35,7 @@
     .apr-botoes { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .apr-botoes button { border: 0; border-radius: 999px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
     .apr-ok { background: #4ade80; color: #0d0d0d; }
+    .apr-tarefa { background: transparent; color: var(--color-text); border: 1px solid #4ade80 !important; }
     .apr-sempre { background: transparent; color: var(--color-text); border: 1px solid #4ade80 !important; }
     .apr-nao { background: transparent; color: #ff6b6b; border: 1px solid #ff6b6b !important; }
   </style>

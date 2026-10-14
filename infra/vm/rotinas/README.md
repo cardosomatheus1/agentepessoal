@@ -13,3 +13,6 @@ de fora (as de acompanhar o Claude Code, obsoletas).
 O portão (pular a rodada quando a fonte barata não mudou) é configurado por rotina em
 `infra/vm/plugins/rotinas/portao.json` (vai para a VM com `implantar.py rotinas`), não no JSON da rotina: o
 agendador não guarda campos extras.
+
+Arquivo sem `uuid` é rotina nova, ainda não criada na VM (`rotinas.py aplicar` só atualiza as que existem; quem cria é a
+sessão principal pela API do agendador): `concorrentes-semana.json` (vigia semanal do plugin `concorrentes`).

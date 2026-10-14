@@ -1,0 +1,8 @@
+<!-- Painel vivo (só leitura) -->
+<div x-data>
+  <button class="dropdown-item" id="painel-dropdown" title="Painel"
+          @click="ensureModalOpen('/plugins/painel/webui/main.html'); $store.sidebar.menuClose()">
+    <x-icon name="space_dashboard"></x-icon>
+    <span>Painel</span>
+  </button>
+</div>

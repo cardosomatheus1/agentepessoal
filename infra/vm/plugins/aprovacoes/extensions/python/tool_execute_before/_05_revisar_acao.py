@@ -1,7 +1,8 @@
 """Gate before risky actions: classify, then permit / ask the user / block per their rules.
 
 Asking shows a card with buttons in the chat and, when the person has WhatsApp, a message with
-buttons there; typing "aprovar" / "sempre" / "recusar" in the chat also works. Any other message
+buttons there; typing "aprovar" / "nesta tarefa" / "sempre" / "recusar" in the chat also works. "Nesta tarefa" lets the
+same category through until the task ends (never for good). Any other message
 cancels the action and goes to the agent as usual. While waiting the VM may hibernate; the wait
 resumes when it wakes (an answer on WhatsApp wakes it).
 """
@@ -41,6 +42,12 @@ def revisor():
 def whatsapp():
     caminho = RAIZ.parent / "whatsapp" / "helpers" / "ponte.py"
     return _carregar("whatsapp_ponte", caminho) if caminho.exists() else None
+
+
+def marca_tarefa(ctx) -> str:
+    """What tells this task apart from the next one in the same chat: Agent Zero starts a new future per task."""
+    futuro = getattr(getattr(ctx, "task", None), "_future", None)
+    return f"{id(futuro):x}" if futuro is not None else ""
 
 
 def _config(agent) -> dict:
@@ -87,6 +94,11 @@ class RevisarAcao(Extension):
             # them approve twice. Never overrides a "nunca" rule; minutes long; only in the browser on the Instagram.
             decisao = "permitir"
             analise["resumo"] = f"{analise['resumo']} — pré-aprovado: {liberadas.get('motivo', '')}"[:300]
+        tarefa, marca = agent.context.get_data("_aprovacoes_tarefa"), marca_tarefa(agent.context)
+        liberada_tarefa = decisao == "perguntar" and rv.tarefa_vale(analise, tarefa, marca, time.time())
+        if liberada_tarefa:  # "Nesta tarefa": this category was approved for the rest of this task
+            decisao = "permitir"
+            analise["resumo"] = f"{analise['resumo']} — aprovado nesta tarefa"[:300]
         if decisao == "perguntar" and rv.livre_instagram(analise, tool_name, args, intencao, cfg):
             decisao = "permitir"  # the person said Instagram messages need no approval; he gets told what was done
             analise["resumo"] = f"{analise['resumo']} — Instagram: liberado pelo Matheus"[:300]
@@ -114,6 +126,9 @@ class RevisarAcao(Extension):
         print(f"aprovacoes: {tool_name} -> {analise['categoria']}/{decisao}: {analise['resumo']}", flush=True)
         rv.registrar_atividade(agent.context, tool_name, analise, decisao)
         if decisao == "permitir":
+            if liberada_tarefa:  # kept in the loop guard's history, marked so it never counts as a repeat
+                agent.context.set_data("_aprovacoes_hist", rv.repeticoes(agent.context.get_data("_aprovacoes_hist"),
+                                                                         analise, time.time(), liberada=True)[1])
             return
 
         ctx = agent.context
@@ -125,13 +140,8 @@ class RevisarAcao(Extension):
 
         # Loop guard: the same kind of approval asked over and over (e.g. "send the verification
         # code" retried, each one texting the user) is refused on the 3rd time within 10 minutes.
-        import difflib
-
-        agora = time.time()
-        historico = [h for h in (ctx.get_data("_aprovacoes_hist") or []) if agora - h[1] < 600]
-        parecidos = sum(1 for c, _, r in historico if c == analise["categoria"]
-                        and difflib.SequenceMatcher(None, r, analise["resumo"].lower()).ratio() > 0.6)
-        historico.append((analise["categoria"], agora, analise["resumo"].lower()))
+        # What "Nesta tarefa" let through does not count (helpers/revisor.repeticoes).
+        parecidos, historico = rv.repeticoes(ctx.get_data("_aprovacoes_hist"), analise, time.time())
         ctx.set_data("_aprovacoes_hist", historico)
         if parecidos >= 2:  # 3rd similar request of the same kind (different steps of one task pass)
             self._registrar(agent, f"🔁 Recusado por repetição ({analise['categoria']}, 3ª vez em 10 min): {analise['resumo']}")
@@ -144,13 +154,12 @@ class RevisarAcao(Extension):
         onde = ctx.name if ctx.name and ctx.name.lower() not in ("conversa", "chat", "nova conversa") else "uma tarefa"
         texto = (f"🔐 *Preciso do seu ok* ({onde})\n\n{pendente['resumo']}\n\n"
                  f"_Tipo: {CATEGORIA_LEGIVEL.get(analise['categoria'], analise['categoria'])}_")
-        self._registrar(agent, texto.replace("*", "**", 2) + "\n\nResponda **aprovar**, **sempre** ou **recusar** (ou use os botões).")
+        self._registrar(agent, texto.replace("*", "**", 2) + "\n\nResponda **aprovar**, **nesta tarefa**, **sempre** ou **recusar** "
+                               "(ou use os botões).")
         try:  # a failed notice never lets the action through: it still waits for the chat card
             wa = whatsapp()
             if wa:
-                botoes = [{"id": f"aprov:{ctx.id}:{pendente['id']}:{d}", "titulo": t}
-                          for d, t in (("aprovar", "Aprovar"), ("sempre", "Sempre permitir"), ("recusar", "Recusar"))]
-                await asyncio.to_thread(wa.enviar, wa.dono(ctx), texto, "", "", botoes)
+                await asyncio.to_thread(wa.enviar, wa.dono(ctx), texto, "", "", rv.botoes_celular(ctx.id, pendente["id"]))
         except Exception as exc:
             print(f"aprovacoes: WhatsApp notice failed: {exc}", flush=True)
 
@@ -175,9 +184,16 @@ class RevisarAcao(Extension):
             rv.PENDENTES.pop(ctx.id, None)
         rv.registrar_atividade(ctx, tool_name, analise, f"resposta: {escolha or 'sem resposta'}")
 
-        if escolha in ("aprovar", "sempre"):
+        if escolha in ("aprovar", "sempre", "tarefa"):
             if escolha == "sempre":
                 self._lembrar_sempre(agent, cfg, pendente["resumo"])
+            if escolha == "tarefa":  # this category, until the task ends; this request no longer counts as a repeat
+                ctx.set_data("_aprovacoes_tarefa", rv.liberar_tarefa(ctx.get_data("_aprovacoes_tarefa"), analise["categoria"],
+                                                                     pendente["resumo"], marca_tarefa(ctx), time.time()))
+                ctx.set_data("_aprovacoes_hist", rv.marcar_tarefa(ctx.get_data("_aprovacoes_hist")))
+                self._registrar(agent, f"✅ Aprovado nesta tarefa ({CATEGORIA_LEGIVEL.get(analise['categoria'], analise['categoria'])}"
+                                       f", até ela terminar): {pendente['resumo']}")
+                return
             self._registrar(agent, f"✅ Aprovado: {pendente['resumo']}")
             return
         if escolha == "outra":
