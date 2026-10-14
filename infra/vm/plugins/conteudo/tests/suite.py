@@ -112,6 +112,25 @@ class Suite:
         ok(c.rodar(api, avisos.append, _ts(c, "2026-10-14", "12:30"), dormir=lambda s: None) is None, "não publica duas vezes")
         ok(c.carregar()["itens"][0]["permalink"].startswith("https://instagram.com/p/"), "guarda o link do post")
 
+    def t_reel_sai_com_capa(self):
+        # 14/10: "Raiz invisível" went out with a black cover (first frame); a Reel now always names its cover
+        c = _modulo()
+        agora = _ts(c, "2026-10-13", "10:00")
+        ok(c.agendar([dict(ITEM, capa="conteudo/semana2/capa.png")], agora)["ok"] is False, "capa tem de ser .jpg do S3")
+        ok(c.agendar([dict(CARR, capa="conteudo/semana1/capa.jpg")], agora)["ok"] is False, "carrossel não tem capa")
+        c.agendar([dict(ITEM, capa="conteudo/semana2/capa-pov.jpg"), dict(ITEM, id="sem-capa", data="2026-10-15")], agora)
+        api = ApiFalsa()
+        c.rodar(api, lambda t: None, _ts(c, "2026-10-14", "11:50"), dormir=lambda s: None)
+        ok(api.chamadas[0][2].get("cover_url") == "https://s3/conteudo/semana2/capa-pov.jpg?assinado", f"capa pela imagem: {api.chamadas[0]}")
+        api = ApiFalsa()
+        c.rodar(api, lambda t: None, _ts(c, "2026-10-15", "11:50"), dormir=lambda s: None)
+        ok(api.chamadas[0][2].get("thumb_offset") == str(c.CAPA_MS) and "cover_url" not in api.chamadas[0][2],
+           f"sem imagem, a capa é um quadro depois da abertura: {api.chamadas[0]}")
+        c.AUTOR["quem"] = "operador: capa"
+        c.agendar([dict(ITEM, id="depois", data="2026-10-20")], agora)
+        ok(c.replanejar([{"id": "depois", "capa": "conteudo/semana2/capa-depois.jpg"}], agora)["ok"], "o operador põe capa num Reel já agendado")
+        ok(next(i for i in c.carregar()["itens"] if i["id"] == "depois")["capa"] == "conteudo/semana2/capa-depois.jpg", "capa gravada")
+
     def t_publica_carrossel(self):
         c = _modulo()
         c.agendar([CARR], _ts(c, "2026-10-13", "10:00"))

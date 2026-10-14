@@ -23,6 +23,7 @@ PROXY = "http://host.docker.internal:8787"  # host proxy: the only holder of AWS
 FUSO = "America/Sao_Paulo"
 TIPOS = ("REELS", "CARROSSEL")
 MAX_LEGENDA, MAX_HASHTAGS, MAX_CARROSSEL = 2200, 30, 10
+CAPA_MS = 1500  # Reel cover frame when no cover image is given (ms)
 ESPERA_PROCESSAR = 600  # seconds Meta may take to process a video before we give up
 AUTOR = {"quem": "agente"}  # operator scripts set "operador: <why>"
 
@@ -127,6 +128,9 @@ def _validar_item(it: dict) -> str:
         return f"arquivos: chaves do S3 começando por {PREFIXO}"
     if it["tipo"] == "REELS" and (len(arqs) != 1 or not arqs[0].lower().endswith(".mp4")):
         return "Reel: um único .mp4"
+    capa = it.get("capa")
+    if capa and (it["tipo"] != "REELS" or not str(capa).startswith(PREFIXO) or not str(capa).lower().endswith((".jpg", ".jpeg"))):
+        return f"capa: só em Reel, uma .jpg do S3 começando por {PREFIXO}"
     if it["tipo"] == "CARROSSEL" and not (2 <= len(arqs) <= MAX_CARROSSEL and all(a.lower().endswith((".jpg", ".jpeg")) for a in arqs)):
         return f"carrossel: de 2 a {MAX_CARROSSEL} imagens .jpg"
     return validar_legenda(it.get("legenda", ""))
@@ -153,7 +157,7 @@ def agendar(itens: list, agora: float | None = None) -> dict:
                 return {"ok": False, "erro": f"{it.get('id', '?')}: {erro}"}
             novos.append({"id": it["id"], "data": it["data"], "hora": it["hora"], "tipo": it["tipo"],
                           "arquivos": list(it["arquivos"]), "legenda": it["legenda"].strip(), "estado": "pendente",
-                          "criado_em": agora})
+                          "criado_em": agora, **{k: it[k] for k in ("capa", "capa_ms") if it.get(k)}})
         d["itens"].extend(novos)
         _gravar(d)
         for n in novos:
@@ -212,7 +216,7 @@ def adiar_a_partir(data: str, dias: int = 1, agora: float | None = None) -> dict
 
 
 def replanejar(mudancas: list, agora: float | None = None) -> dict:
-    """Changes the day and/or caption of pending posts in one go: [{"id", "data"?, "legenda"?}] (14/10: Matheus asked
+    """Changes the day, caption and/or Reel cover of pending posts in one go: [{"id", "data"?, "legenda"?, "capa"?, "capa_ms"?}] (14/10: Matheus asked
     to redo the week around the new offer, which swaps days and rewrites captions). Only the operator; all or
     nothing; the final calendar must still have one post per day, no day in the past and only valid captions."""
     if not str(AUTOR["quem"]).startswith("operador:"):
@@ -231,7 +235,7 @@ def replanejar(mudancas: list, agora: float | None = None) -> dict:
                 return {"ok": False, "erro": f"{it['id']}: só post pendente muda (está {it['estado']})"}
             if it["id"] in novo:
                 return {"ok": False, "erro": f"{it['id']}: repetido na lista"}
-            alvo = dict(it, **{k: m[k] for k in ("data", "legenda") if k in m})
+            alvo = dict(it, **{k: m[k] for k in ("data", "legenda", "capa", "capa_ms") if k in m})
             alvo["legenda"] = str(alvo.get("legenda", "")).strip()
             erro = _validar_item(alvo) or ("data no passado" if alvo["data"] < hoje else "")
             if erro:
@@ -249,7 +253,8 @@ def replanejar(mudancas: list, agora: float | None = None) -> dict:
             if i["id"] not in novo:
                 continue
             antes = dict(i)
-            i.update(data=novo[i["id"]]["data"], legenda=novo[i["id"]]["legenda"])
+            i.update(data=novo[i["id"]]["data"], legenda=novo[i["id"]]["legenda"],
+                     **{k: novo[i["id"]][k] for k in ("capa", "capa_ms") if novo[i["id"]].get(k)})
             _diario({"item": i["id"], "replanejado": True, "de_data": antes["data"], "para_data": i["data"],
                      "legenda_mudou": antes.get("legenda") != i["legenda"]})
         _gravar(d)
@@ -346,8 +351,15 @@ def preparar(item: dict, api, dormir=time.sleep) -> str:
     """Creates the media container(s) and waits until Meta has processed them. Nothing is public yet."""
     ig = api.ig
     if item["tipo"] == "REELS":
-        cid = _ok(api.post(f"{ig}/media", {"media_type": "REELS", "video_url": api.url(item["arquivos"][0]),
-                                           "caption": item["legenda"], "share_to_feed": "true"}), "criar o Reel")["id"]
+        # 14/10: with no cover Meta took the first frame, and the "Raiz invisível" Reel opens on black: a black square
+        # in the grid. A cover image ("capa", S3 jpg) wins; else the frame at "capa_ms", 1.5 s by default.
+        params = {"media_type": "REELS", "video_url": api.url(item["arquivos"][0]), "caption": item["legenda"],
+                  "share_to_feed": "true"}
+        if item.get("capa"):
+            params["cover_url"] = api.url(item["capa"])
+        else:
+            params["thumb_offset"] = str(int(item.get("capa_ms") or CAPA_MS))
+        cid = _ok(api.post(f"{ig}/media", params), "criar o Reel")["id"]
     else:
         filhos = [_ok(api.post(f"{ig}/media", {"image_url": api.url(k), "is_carousel_item": "true"}), f"imagem {n + 1}")["id"]
                   for n, k in enumerate(item["arquivos"])]
