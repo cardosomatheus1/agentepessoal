@@ -75,7 +75,7 @@ A tabela no fim deste arquivo sai dele.
 | Parte | Como | Custo |
 |---|---|---|
 | Ficha | modelo de IA barato, texto curto | centavos |
-| Voz | AWS Polly | ~US$ 0,01 por Reel narrado |
+| Voz | Carolina, do Amazon Nova 2 Sonic (padrão de toda narração desde 14/10, pedido do Matheus): o roteiro vai no prompt e a transcrição do que ela disse é conferida palavra por palavra; leitura diferente é refeita, nunca usada (`motor/voz_sonic.mjs`, `npm ci` em `motor/`) | ~US$ 0,02 por Reel de 1 minuto |
 | Filmagem | banco por ramo feito uma vez (Wan 2.2 grátis ou Nova Reel ~US$ 0,50 por trecho) e reaproveitado | zero no dia a dia |
 | Geração | máquina do agente (já paga) | zero |
 | Refação | conferência automática antes da aprovação | zero |

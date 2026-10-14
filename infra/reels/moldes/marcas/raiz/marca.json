@@ -11,8 +11,8 @@
  "logo_claro": "logo_claro.png",
  "chamada": "Calculadora grátis na bio",
  "voz": {
-  "id": "Camila",
-  "motor": "generative"
+  "id": "carolina",
+  "motor": "nova-sonic"
  },
  "ramo": "software de preço para quem vende comida"
 }

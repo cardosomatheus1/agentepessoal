@@ -11,8 +11,8 @@
  "logo_claro": "logo_claro.png",
  "chamada": "Agende uma conversa",
  "voz": {
-  "id": "Camila",
-  "motor": "generative"
+  "id": "carolina",
+  "motor": "nova-sonic"
  },
  "ramo": "escritório de arquitetura residencial",
  "_teste": "marca fictícia para testar os moldes"

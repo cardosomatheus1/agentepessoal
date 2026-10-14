@@ -8,7 +8,7 @@ without it: the finished video (video.mp4, 1080x1920, 30 fps, audio at -14 LUFS)
 Exit codes: 0 ok, 2 ficha or template error, 3 the check found problems (text cut, small letters, outside the area
 Instagram covers). The report goes to <saida>/relatorio.json.
 """
-import argparse, hashlib, json, os, subprocess, sys, tempfile
+import argparse, hashlib, json, os, re, subprocess, sys, tempfile, unicodedata
 from multiprocessing import Pool
 from pathlib import Path
 
@@ -18,6 +18,8 @@ from validar import palavras_novas, validar  # noqa: E402
 
 FPS = 30
 CACHE_VOZ = Path(os.environ.get("MOLDES_CACHE", Path.home() / ".cache" / "moldes")) / "voz"
+# Matheus, 14/10: "sempre usar Carolina, voz feminina em português do Brasil do Amazon Nova 2 Sonic, como padrão".
+VOZ_PADRAO = {"id": "carolina", "motor": "nova-sonic"}
 
 
 def carregar(molde, ficha_path, formato=None):
@@ -54,21 +56,62 @@ def carregar(molde, ficha_path, formato=None):
     return pasta, esquema, ficha, marca, marca_dir, formato, erros
 
 
+def _palavras(t):
+    t = unicodedata.normalize("NFC", t or "").lower()
+    return re.findall(r"[\w$%]+", t)
+
+
+def mesma_fala(texto, transcricao):
+    """The voice said exactly the text (same words, same order; punctuation and case do not count)."""
+    return bool(_palavras(texto)) and _palavras(texto) == _palavras(transcricao)
+
+
+def narrar_sonic(fala, voz_id, destino, tentativas=3, rodar=subprocess.run):
+    """Nova 2 Sonic is a conversation model told to read the text aloud: the transcript of what it said is checked
+    word by word, and a reading that adds, drops or changes a word is redone (up to `tentativas`), never used."""
+    ultima = ""
+    env = dict(os.environ)
+    if not env.get("NODE_EXTRA_CA_CERTS") and env.get("AWS_CA_BUNDLE"):  # behind a TLS-terminating proxy (cloud session)
+        env["NODE_EXTRA_CA_CERTS"] = env["AWS_CA_BUNDLE"]
+    for _ in range(tentativas):
+        bruto = destino.with_suffix(".bruto.wav")
+        r = rodar(["node", str(RAIZ / "motor" / "voz_sonic.mjs"), str(bruto), fala, voz_id], capture_output=True, text=True,
+                  timeout=150, env=env)
+        if r.returncode != 0:
+            linhas = (r.stderr or r.stdout or "").strip().splitlines()
+            ultima = (linhas[-1] if linhas else "erro")[:200]
+            continue
+        ultima = json.loads(r.stdout.strip().splitlines()[-1]).get("transcricao", "")
+        if mesma_fala(fala, ultima):
+            # trims the silence the model leaves before and after the reading
+            rodar(["ffmpeg", "-v", "error", "-y", "-i", str(bruto), "-af",
+                   "silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse",
+                   str(destino)], check=True)
+            bruto.unlink(missing_ok=True)
+            return destino
+    raise RuntimeError(f"a voz {voz_id} não leu a fala certa depois de {tentativas} tentativas: {fala!r} (ouvido: {ultima!r})")
+
+
 def voz(ficha, esquema, marca):
     modo = esquema.get("voz", "nao")
     falas = ficha.get("falas")
     if modo == "nao" or not falas or (modo == "opcional" and not ficha.get("_voz", True)):
         return None, None
-    v = marca.get("voz") or {"id": "Camila", "motor": "generative"}
+    v = marca.get("voz") or VOZ_PADRAO
     CACHE_VOZ.mkdir(parents=True, exist_ok=True)
     arqs, dur = [], []
     for f in falas:
         h = hashlib.sha1(f"{v['id']}|{v.get('motor', 'generative')}|{f}".encode()).hexdigest()[:16]
-        mp = CACHE_VOZ / f"{h}.mp3"
-        if not mp.exists():
-            subprocess.run(["aws", "polly", "synthesize-speech", "--region", "us-east-1", "--engine", v.get("motor", "generative"),
-                            "--voice-id", v["id"], "--output-format", "mp3", "--sample-rate", "24000", "--text", f, str(mp)],
-                           check=True, capture_output=True)
+        if v.get("motor") == "nova-sonic":
+            mp = CACHE_VOZ / f"{h}.wav"
+            if not mp.exists():
+                narrar_sonic(f, v["id"], mp)
+        else:  # Polly (generative/neural): only when a brand asks for it explicitly
+            mp = CACHE_VOZ / f"{h}.mp3"
+            if not mp.exists():
+                subprocess.run(["aws", "polly", "synthesize-speech", "--region", "us-east-1", "--engine", v.get("motor", "generative"),
+                                "--voice-id", v["id"], "--output-format", "mp3", "--sample-rate", "24000", "--text", f, str(mp)],
+                               check=True, capture_output=True)
         d = float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(mp)]))
         arqs.append(mp); dur.append(d + 0.25)
     dur[-1] += 1.4

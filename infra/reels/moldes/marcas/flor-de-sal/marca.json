@@ -11,8 +11,8 @@
  "logo_claro": "logo_claro.png",
  "chamada": "Compre pelo site",
  "voz": {
-  "id": "Camila",
-  "motor": "generative"
+  "id": "carolina",
+  "motor": "nova-sonic"
  },
  "ramo": "cosméticos naturais (sabonetes e óleos artesanais)",
  "_teste": "marca fictícia para testar os moldes"

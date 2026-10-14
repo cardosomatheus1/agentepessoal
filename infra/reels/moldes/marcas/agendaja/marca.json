@@ -11,8 +11,8 @@
  "logo_claro": "logo_claro.png",
  "chamada": "Teste grátis pelo link",
  "voz": {
-  "id": "Camila",
-  "motor": "generative"
+  "id": "carolina",
+  "motor": "nova-sonic"
  },
  "ramo": "aplicativo de agendamento para salões e barbearias",
  "_teste": "marca fictícia para testar os moldes"

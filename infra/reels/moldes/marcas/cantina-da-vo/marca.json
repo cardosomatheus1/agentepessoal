@@ -1,3 +1,1 @@
-{"nome": "Cantina da Vó", "perfil": "@cantinadavo", "cores": ["#c2410c", "#fcd34d"], "fonte": "bricolage", "estilo": "vidro",
- "foto": "foto.jpg", "assinatura": "foto", "chamada": "Peça pelo WhatsApp",
- "voz": {"id": "Camila", "motor": "generative"}, "ramo": "comida caseira", "_teste": "marca fictícia sem logo, assinada com uma foto (forno a lenha)"}
+{"nome": "Cantina da Vó", "perfil": "@cantinadavo", "cores": ["#c2410c", "#fcd34d"], "fonte": "bricolage", "estilo": "vidro", "foto": "foto.jpg", "assinatura": "foto", "chamada": "Peça pelo WhatsApp", "voz": {"id": "carolina", "motor": "nova-sonic"}, "ramo": "comida caseira", "_teste": "marca fictícia sem logo, assinada com uma foto (forno a lenha)"}

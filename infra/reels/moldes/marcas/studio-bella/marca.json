@@ -10,8 +10,8 @@
  "logo_claro": "logo_claro.png",
  "chamada": "Agende seu horário",
  "voz": {
-  "id": "Camila",
-  "motor": "generative"
+  "id": "carolina",
+  "motor": "nova-sonic"
  },
  "ramo": "salão de beleza",
  "_teste": "marca fictícia; só tem logo para fundo claro"

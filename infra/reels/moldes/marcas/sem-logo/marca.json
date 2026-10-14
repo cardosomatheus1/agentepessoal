@@ -8,5 +8,9 @@
  "estilo": "claro",
  "chamada": "Chame no direct",
  "ramo": "ateliê de costura",
- "_teste": "marca fictícia sem logo: usa o nome"
+ "_teste": "marca fictícia sem logo: usa o nome",
+ "voz": {
+  "id": "carolina",
+  "motor": "nova-sonic"
+ }
 }

@@ -10,8 +10,8 @@
  "logo_claro": "logo_claro.png",
  "chamada": "Peça pelo link da bio",
  "voz": {
-  "id": "Thiago",
-  "motor": "neural"
+  "id": "carolina",
+  "motor": "nova-sonic"
  },
  "ramo": "hamburgueria",
  "_teste": "marca fictícia; logo só para fundo claro, vai sobre selo no escuro"

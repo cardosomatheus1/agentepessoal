@@ -11,8 +11,8 @@
  "logo_claro": "logo_claro.png",
  "chamada": "Agende pelo WhatsApp",
  "voz": {
-  "id": "Thiago",
-  "motor": "neural"
+  "id": "carolina",
+  "motor": "nova-sonic"
  },
  "ramo": "oficina mecânica",
  "_teste": "marca fictícia para testar os moldes"

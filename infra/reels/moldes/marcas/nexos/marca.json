@@ -11,8 +11,8 @@
  "logo_claro": "logo_claro.png",
  "chamada": "Agende sua demonstração",
  "voz": {
-  "id": "Camila",
-  "motor": "generative"
+  "id": "carolina",
+  "motor": "nova-sonic"
  },
  "ramo": "assistente de gestão para empresas e agências (marketing, conversas, vendas e margem)"
 }
