@@ -116,22 +116,185 @@ class Suite:
         ok(self._soltas([erro, recente, avulsa, ociosa]) == ["erro"],
            "só a recorrente em erro há mais de 5 min volta; tarefa avulsa e ociosa ficam como estão")
 
-    def t_erro_de_conexao_roda_de_novo_na_hora(self):
-        # 12/10 review: a round lost because the proxy was not up yet waited for its next time (hours)
-        def com_erro(uuid, texto, minutos):
-            t = self._tarefa(uuid, "error", atualizada_min=minutos, ultima_min=minutos)
-            t.last_result = texto
-            return t
-
-        conexao = com_erro("conexao", "ERROR: litellm.APIConnectionError: Connection error.", 12)
-        outro = com_erro("outro", "ERROR: KeyError: 'acao'", 12)
-        velha = com_erro("velha", "ERROR: Connection refused", 200)
+    def t_erro_de_conexao_tenta_de_novo_em_5_15_e_30_min(self):
+        # 12/10 review: a round lost because the proxy was not up yet waited for its next time (hours). 14/10: only a
+        # run that got no model call back is run again (it did nothing, so nothing is repeated), after 5, 15, 30 min
+        dr = self.dr
+        base = dt.datetime.now(dt.timezone.utc)
+        t0 = base.timestamp()
+        tarefa = types.SimpleNamespace(uuid="busca", name="busca", context_id="busca", schedule={"minute": "7"},
+                                       state="error", last_result="ERROR: litellm.APIConnectionError: Connection error.",
+                                       last_run=base, updated_at=base)
+        chamadas = {"busca": 0}
         repetidas = {}
-        agir = lambda: {s["tarefa"]: s.get("acao") for s in self.dr.destravar(  # noqa: E731
-            [conexao, outro, velha], {}, lambda cid: None, time.time(), "running", "error", None, {}, 0.0, repetidas)}
-        eq(agir(), {"conexao": "repetir", "outro": None, "velha": None},
-           "queda de conexão recente roda de novo já; outro erro e falha antiga só voltam a ociosa")
-        eq(agir(), {"conexao": None, "outro": None, "velha": None}, "a mesma falha não é repetida duas vezes")
+
+        def checar(minutos):
+            r = dr.destravar([tarefa], {}, lambda cid: None, t0 + minutos * 60, "running", "error", None, {}, 0.0,
+                             repetidas, lambda cid: chamadas.get(cid))
+            return [x.get("acao") for x in r]
+
+        def falhou_de_novo(minutos):
+            quando = base + dt.timedelta(minutes=minutos)
+            tarefa.state, tarefa.last_run, tarefa.updated_at = "error", quando, quando
+
+        eq(checar(1), [], "acabou de falhar: espera")
+        eq(checar(4), [], "4 min: ainda espera")
+        eq(checar(6), ["repetir"], "5 min depois: roda de novo")
+        tarefa.state = "running"
+        eq(checar(7), [], "rodando a nova tentativa: nada")
+        falhou_de_novo(8)
+        eq(checar(9), [], "falhou de novo sem chamar o modelo: espera 15 min")
+        eq(checar(14), [None], "volta a ociosa (pode rodar no horário dela) mas ainda não repete")
+        tarefa.state = "idle"
+        eq(checar(20), [], "ociosa esperando o degrau")
+        eq(checar(24), ["repetir"], "15 min depois da 2ª falha: roda de novo")
+        eq(checar(25), [], "uma vez só por degrau")
+        falhou_de_novo(26)
+        eq(checar(50), [None], "3ª falha: 30 min ainda não passaram")
+        tarefa.state = "idle"
+        eq(checar(57), ["repetir"], "30 min depois: última tentativa")
+        falhou_de_novo(58)
+        eq(checar(70), [None], "depois da 3ª nova tentativa, espera o próximo horário dela")
+        tarefa.state = "idle"
+        eq(checar(200), [], "e não repete mais")
+
+        agiu = types.SimpleNamespace(**{**vars(tarefa), "uuid": "exec", "context_id": "exec", "state": "error",
+                                        "last_run": base, "updated_at": base})
+        chamadas["exec"] = 3
+        outro = types.SimpleNamespace(**{**vars(agiu), "uuid": "outro", "context_id": "outro",
+                                         "last_result": "ERROR: KeyError: 'acao'"})
+        chamadas["outro"] = 0
+        sem_conta = types.SimpleNamespace(**{**vars(agiu), "uuid": "sumiu", "context_id": "sumiu"})
+        velha = types.SimpleNamespace(**{**vars(agiu), "uuid": "velha", "context_id": "velha",
+                                         "last_run": base - dt.timedelta(minutes=200)})
+        chamadas["velha"] = 0
+        r = {x["tarefa"]: x.get("acao") for x in dr.destravar(
+            [agiu, outro, sem_conta, velha], {}, lambda cid: None, t0 + 6 * 60, "running", "error", None, {}, 0.0,
+            repetidas, lambda cid: chamadas.get(cid))}
+        eq(r, {"exec": None, "outro": None, "sumiu": None, "velha": None},
+           "chamou o modelo (pode ter agido), outro erro, contagem desconhecida ou falha antiga: só volta a ociosa")
+
+    def t_sucesso_reinicia_a_escada(self):
+        dr = self.dr
+        base = dt.datetime.now(dt.timezone.utc)
+        t0 = base.timestamp()
+        tarefa = types.SimpleNamespace(uuid="r", name="r", context_id="r", schedule={"minute": "7"}, state="error",
+                                       last_result="ERROR: Connection refused", last_run=base, updated_at=base)
+        repetidas = {"r": "2026-10-12T10:00:00+00:00"}  # the old file format: a plain marker
+        checar = lambda m: [x.get("acao") for x in dr.destravar(  # noqa: E731
+            [tarefa], {}, lambda cid: None, t0 + m * 60, "running", "error", None, {}, 0.0, repetidas, lambda cid: 0)]
+        eq(checar(6), ["repetir"], "formato antigo do arquivo não atrapalha")
+        tarefa.state, tarefa.last_run, tarefa.last_result = "idle", base + dt.timedelta(minutes=8), "feito"
+        eq(checar(9), [], "rodou bem")
+        ok("r" not in repetidas, "a escada recomeça do zero")
+        dr.destravar([], {}, lambda cid: None, t0, "running", "error", None, {}, 0.0, repetidas, lambda cid: 0)
+        ok(repetidas == {}, "tarefa que sumiu sai do registro")
+
+    def t_rodada_viva_sem_novidade_ha_20_min_e_encerrada(self):
+        # a run the scheduler still holds was never touched: stuck mid-run (a call that never came back), it stayed
+        # "running" forever and the round never ran again
+        dr = self.dr
+        t0 = time.time()
+        rodada = self._tarefa("exec", "running", atualizada_min=5)
+        viva = {"exec": Vivo()}
+        estado = {"sig": "a", "longa": False}
+        paradas = {}
+
+        def checar(minutos):
+            r = dr.destravar([rodada], viva, lambda cid: None, t0 + minutos * 60, "running", "error", lambda cid: False,
+                             {}, 0.0, {}, lambda cid: 1, lambda cid: estado["sig"], lambda cid: estado["longa"], paradas)
+            return [(x["acao"], x.get("parada_min")) for x in r]
+
+        eq(checar(0), [], "primeira vez que vê")
+        eq(checar(15), [], "15 min sem novidade: espera")
+        estado["sig"] = "b"
+        eq(checar(16), [], "um item novo no log (ou chamada ao modelo) zera a conta")
+        eq(checar(35), [], "19 min depois do último item: espera")
+        eq(checar(37), [("encerrar", 21)], "20 min sem nada: encerra a rodada (roda de novo no horário dela)")
+        ok("exec" not in paradas, "o registro recomeça")
+        estado["longa"] = True
+        for m in (40, 70, 100):
+            eq(checar(m), [], f"comando de terminal (ou aprovação) em andamento: isenta ({m} min)")
+        estado["longa"] = False
+        eq(checar(115), [], "terminou o comando: conta a partir da última vez que o viu rodando")
+        eq(checar(121), [("encerrar", 21)], "e encerra 20 min depois dela")
+        sem = dr.destravar([rodada], viva, lambda cid: None, t0 + 999 * 60, "running", "error", lambda cid: False, {},
+                           0.0, {}, lambda cid: 1, lambda cid: None, lambda cid: False, paradas)
+        eq(sem, [], "chat não encontrado (atividade desconhecida): deixa quieta")
+        ociosa = self._tarefa("exec", "idle", atualizada_min=1)
+        paradas["exec"] = {"marca": "a", "desde": t0}
+        dr.destravar([ociosa], {}, lambda cid: None, t0, "running", "error", None, {}, 0.0, {}, None, None, None, paradas)
+        ok(paradas == {}, "terminou: o registro é da execução")
+
+    def t_atividade_conta_os_chats_dos_ajudantes(self):
+        dr = self.dr
+
+        class Ctx:
+            def __init__(self, cid, pai="", paralelo=False):
+                self.id, self.log = cid, types.SimpleNamespace(guid="g", updates=[])
+                self.dados, self.saida = {}, {}
+                (self.dados if paralelo else self.saida)["_parallel_parent_context_id" if paralelo else "parent_context_id"] = pai
+                self.agent0 = types.SimpleNamespace(data={}, loop_data=types.SimpleNamespace(current_tool=None))
+
+            def get_data(self, k):
+                return self.dados.get(k)
+
+            def get_output_data(self, k):
+                return self.saida.get(k)
+
+        rodada, ajudante, neto, paralelo, outra = (Ctx("rodada"), Ctx("aj", "rodada"), Ctx("neto", "aj"),
+                                                    Ctx("par", "rodada", paralelo=True), Ctx("outra"))
+        todos = [rodada, ajudante, neto, paralelo, outra]
+        fam = dr.familia("rodada", todos)
+        eq(sorted(c.id for c in fam), ["aj", "neto", "par", "rodada"], "a rodada e os chats que ela abriu, em qualquer nível")
+        antes = dr.assinatura(fam)
+        neto.log.updates.append(1)  # the helper of the helper is working: the round's own log stands still
+        ok(dr.assinatura(fam) != antes, "item novo no chat de um ajudante conta como atividade")
+        antes = dr.assinatura(fam)
+        ajudante.dados["_limpeza_chamadas"] = {"n": 4}
+        ok(dr.assinatura(fam) != antes, "chamada ao modelo que voltou conta como atividade")
+        ok(not dr.ferramenta_longa(fam), "nada demorado rodando")
+        neto.agent0.loop_data.current_tool = types.SimpleNamespace(name="code_execution_tool")
+        ok(dr.ferramenta_longa(fam), "comando de terminal num ajudante isenta a rodada")
+        neto.agent0.loop_data.current_tool = types.SimpleNamespace(name="browser")
+        ok(not dr.ferramenta_longa(fam), "navegador parado não isenta")
+        ok(dr.ferramenta_longa(fam, {"aj": {}}), "aprovação esperando o Matheus isenta")
+
+    def t_conta_chamadas_ao_modelo_por_conversa(self):
+        contar = _carregar("limpeza_contar_teste", RAIZ / "extensions" / "python" / "chat_model_call_after"
+                           / "_10_contar_chamadas.py")
+        zerar = _carregar("limpeza_zerar_teste", RAIZ / "extensions" / "python" / "_functions" / "agent" / "Agent"
+                          / "hist_add_user_message" / "start" / "_10_zerar_chamadas.py")
+        ctx = types.SimpleNamespace(dados={})
+        ctx.get_data, ctx.set_data = ctx.dados.get, ctx.dados.__setitem__
+        agente = types.SimpleNamespace(number=0, context=ctx)
+
+        def chamada():
+            ext = contar.ContarChamadas.__new__(contar.ContarChamadas)
+            ext.agent = agente
+            coro = ext.execute(call_data={}, response="ok")
+            try:
+                coro.send(None)
+            except StopIteration:
+                pass
+
+        def mensagem(no_meio=False):
+            ext = zerar.ZerarChamadas.__new__(zerar.ZerarChamadas)
+            ext.agent = agente
+            ext.execute(data={"args": (agente, "msg"), "kwargs": {"intervention": no_meio} if no_meio else {}})
+
+        mensagem()
+        eq(ctx.dados["_limpeza_chamadas"]["n"], 0, "tarefa nova começa do zero")
+        chamada()
+        chamada()
+        eq(ctx.dados["_limpeza_chamadas"]["n"], 2, "cada chamada que voltou conta")
+        ok(ctx.dados["_limpeza_chamadas"]["ultima"] > 0, "e guarda a hora")
+        mensagem(no_meio=True)
+        eq(ctx.dados["_limpeza_chamadas"]["n"], 2, "mensagem lida no meio da tarefa não zera")
+        mensagem()
+        eq(ctx.dados["_limpeza_chamadas"]["n"], 0, "a próxima rodada zera")
+        dr = (RAIZ / "extensions" / "python" / "job_loop" / "_41_destravar_rotinas.py").read_text(encoding="utf-8")
+        ok(f'CHAMADAS = "{contar.CHAVE}"' in dr and contar.CHAVE == zerar.CHAVE, "as três partes usam a mesma chave")
 
     def t_rodada_pausada_e_retomada_ou_cancelada(self):
         # 12/10: the loop detector paused the search round's chat; nobody resumes a scheduled round, so it stayed stuck
