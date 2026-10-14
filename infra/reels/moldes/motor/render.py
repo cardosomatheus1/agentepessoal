@@ -142,7 +142,7 @@ def folha(imagens, destino, largura=270, por_linha=6):
 def musica(ficha, esquema, marca):
     pasta = RAIZ / "motor" / "musica"
     lic = json.loads((pasta / "licencas.json").read_text()) if (pasta / "licencas.json").exists() else {}
-    nome = ficha.get("_musica") or marca.get("musica") or esquema.get("musica") or (sorted(lic) or [None])[0]
+    nome = ficha.get("_musica") or marca.get("musica") or esquema.get("musica") or ("animada" if "animada" in lic else (sorted(lic) or [None])[0])
     return (pasta / lic[nome]["arquivo"]) if nome in lic else None
 
 

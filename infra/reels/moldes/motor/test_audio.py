@@ -3,7 +3,7 @@ import json, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from render import misturar_musica  # noqa: E402
+from render import misturar_musica, musica  # noqa: E402
 
 ok = falhou = 0
 
@@ -29,6 +29,8 @@ def volume(caminho, ini, dur):
     return float(linha[0].split("mean_volume:")[1].split("dB")[0]) if linha else -999.0
 
 
+caso("sem música escolhida, a padrão continua a animada", musica({}, {}, {}).name == "animada.ogg")
+caso("a ficha escolhe a música", musica({"_musica": "tecnologica"}, {"musica": "leve"}, {}).name == "tecnologica.ogg")
 cmd = misturar_musica("v.m4a", "m.ogg", 60.0, "o.m4a")
 caso("mistura dura o vídeo inteiro", "-t" in cmd and cmd[cmd.index("-t") + 1] == "60.000")
 caso("música em laço (faixa mais curta que o vídeo)", "-stream_loop" in cmd)

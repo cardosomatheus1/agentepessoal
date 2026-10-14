@@ -1,5 +1,8 @@
 {
  "animada": {"arquivo": "animada.ogg", "origem": "OpenGameArt.org, faixa 'banana_track'", "licenca": "CC0", "clima": "animada, alegre (usada no Reel POV de 13/10)"},
  "engracada": {"arquivo": "engracada.ogg", "origem": "OpenGameArt.org, faixa 'stumble_around'", "licenca": "CC0", "clima": "atrapalhada, cômica (expectativa x realidade)"},
- "leve": {"arquivo": "leve.ogg", "origem": "OpenGameArt.org, faixa 'Summer Sunday'", "licenca": "CC0", "clima": "leve, ensolarada"}
+ "leve": {"arquivo": "leve.ogg", "origem": "OpenGameArt.org, faixa 'Summer Sunday'", "licenca": "CC0", "clima": "leve, ensolarada"},
+ "tecnologica": {"arquivo": "tecnologica.ogg", "origem": "OpenGameArt.org, faixa 'Magic Space' (https://opengameart.org/content/magic-space)", "licenca": "CC0", "clima": "tecnológica, sci-fi leve e para cima (lançamento de app ou software)"},
+ "inspiradora": {"arquivo": "inspiradora.ogg", "origem": "OpenGameArt.org, faixa 'Lifewave 2k' de The Cynic Project (https://opengameart.org/content/calm-ambient-3-lifewave-2k)", "licenca": "CC0", "clima": "inspiradora e calma, pads e piano (manifesto, marca de produto)"},
+ "amanhecer": {"arquivo": "amanhecer.ogg", "origem": "OpenGameArt.org, faixa 'Rise Of The Early Dawn' (https://opengameart.org/content/rise-of-the-early-dawn)", "licenca": "CC0", "clima": "orquestral, grandiosa e calorosa (inauguração, marco)"}
 }
