@@ -184,6 +184,24 @@ def tentar_de_novo(item_id: str) -> dict:
     return {"ok": True, "id": item_id, "data": alvo["data"], "hora": alvo["hora"]}
 
 
+def cancelar(item_id: str, motivo: str = "") -> dict:
+    """pendente → cancelada, only by the operator (14/10: the old brigadeiro Reel is replaced by the kit version and
+    replanejar() cannot change the files). The day becomes free for agendar(); nothing published is ever touched."""
+    if not str(AUTOR["quem"]).startswith("operador:"):
+        return {"ok": False, "erro": "só o operador cancela um post (AUTOR['quem'] = 'operador: <motivo>')"}
+    with _exclusivo():
+        d = carregar()
+        alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
+        if not alvo:
+            return {"ok": False, "erro": f"{item_id}: não existe"}
+        try:
+            _mudar(alvo, "cancelada", motivo=str(motivo)[:200])
+        except TransicaoInvalida as exc:
+            return {"ok": False, "erro": str(exc)}
+        _gravar(d)
+    return {"ok": True, "id": item_id, "data": alvo["data"]}
+
+
 def adiar_a_partir(data: str, dias: int = 1, agora: float | None = None) -> dict:
     """Moves every pending post on `data` or later `dias` days ahead, keeping their order and hour (13/10: Matheus put a
     new video on the 14th and wanted the rest to skip a day). Only the operator; nothing is published or cancelled.

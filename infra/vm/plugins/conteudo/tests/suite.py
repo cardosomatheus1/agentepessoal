@@ -167,6 +167,21 @@ class Suite:
         ok(not c.tentar_de_novo("seg-pov")["ok"], "publicada não volta para a fila")
         ok(not c.tentar_de_novo("nao-existe")["ok"], "id desconhecido")
 
+    def t_cancelar_libera_o_dia(self):
+        # 14/10: the old brigadeiro Reel gives its day to the kit version
+        c = _modulo()
+        c.agendar([ITEM], _ts(c, "2026-10-13", "10:00"))
+        ok(not c.cancelar("seg-pov")["ok"], "o agente sozinho não cancela")
+        c.AUTOR["quem"] = "operador: troca pelo vídeo do kit"
+        r = c.cancelar("seg-pov", "versão nova")
+        ok(r["ok"] and c.carregar()["itens"][0]["estado"] == "cancelada", r)
+        ok(c.devido(_ts(c, "2026-10-14", "11:50")) is None, "cancelado não é publicado")
+        novo = {**ITEM, "id": "seg-pov-v2"}
+        ok(c.agendar([novo], _ts(c, "2026-10-13", "11:00"))["ok"], "o dia ficou livre para o novo post")
+        ok(not c.cancelar("seg-pov")["ok"], "cancelado não cancela de novo")
+        c.rodar(ApiFalsa(), lambda t: None, _ts(c, "2026-10-14", "11:50"), dormir=lambda s: None)
+        ok(not c.cancelar("seg-pov-v2")["ok"], "publicado não se cancela")
+
     def t_adiar_a_partir_de_um_dia(self):
         c = _modulo()
         agora = _ts(c, "2026-10-13", "21:30")
