@@ -513,11 +513,12 @@ class Suite:
         ok(any("/uf/PE/cnae/5620104" in u for u in paginas), "lê a página do estado certo")
 
     def t_revisor_le_o_playbook_inteiro(self):
-        # 14/10: with the offer (Preço Certo em 30 Dias) the playbook passed the old 20000-character cut, and the
+        # 14/10: with the offer (Lucro na Mão em 30 Dias) the playbook passed the old 20000-character cut, and the
         # reviewer stopped seeing the facts at the end (section 7 and 8)
         texto = (RAIZ / "playbook.md").read_text(encoding="utf-8")
         ok(len(texto) <= self.p.LIMITE_PLAYBOOK, f"playbook com {len(texto)} caracteres passa do que o revisor lê")
-        ok("Preço Certo em 30 Dias" in texto and "não paga o primeiro mês" in texto, "a oferta e a garantia estão no playbook")
+        ok("Lucro na Mão em 30 Dias" in texto and "não paga o primeiro mês" in texto and "Preço Certo" not in texto,
+           "a oferta (nome novo, 14/10) e a garantia estão no playbook")
 
     def t_cliente_e_quem_produz_alimento(self):
         # Matheus, 14/10: "o icp é o produtor de alimentos de fato e não só esses ramos grandes" (two closing make
