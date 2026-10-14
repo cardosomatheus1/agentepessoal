@@ -62,8 +62,10 @@ def _palavras(t):
 
 
 def mesma_fala(texto, transcricao):
-    """The voice said exactly the text (same words, same order; punctuation and case do not count)."""
-    return bool(_palavras(texto)) and _palavras(texto) == _palavras(transcricao)
+    """The voice said exactly the text (same words, same order; punctuation and case do not count). Spaces do not
+    count either: Sonic's transcript sometimes glues two words it spoke apart ("quemmora", "raspaspor", 14/10)."""
+    a, b = "".join(_palavras(texto)), "".join(_palavras(transcricao))
+    return bool(a) and a == b
 
 
 def narrar_sonic(fala, voz_id, destino, tentativas=3, rodar=subprocess.run):
@@ -113,7 +115,7 @@ def voz(ficha, esquema, marca):
                                 "--voice-id", v["id"], "--output-format", "mp3", "--sample-rate", "24000", "--text", f, str(mp)],
                                check=True, capture_output=True)
         d = float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(mp)]))
-        arqs.append(mp); dur.append(d + 0.25)
+        arqs.append(mp); dur.append(d + esquema.get("pausa_fala", 0.25))  # long commercials breathe more between lines
     dur[-1] += 1.4
     tempos = [0.0]
     for x in dur: tempos.append(round(tempos[-1] + x, 3))

@@ -27,6 +27,7 @@ caso("palavra trocada reprova", not mesma_fala("Faltam 17 dias.", "Faltam 7 dias
 caso("palavra a menos reprova", not mesma_fala("Sete dias depois, o resultado volta.", "Sete dias depois o resultado"))
 caso("dinheiro e porcentagem contam", not mesma_fala("R$ 31,08 e 20%", "R$ 31,08 e 2%"))
 caso("transcrição vazia reprova", not mesma_fala("Oi.", ""))
+caso("palavras coladas na transcrição contam como ditas", mesma_fala("a cara de quem mora nele.", "a cara de quemmora nele"))
 
 
 class Falso:
@@ -63,6 +64,20 @@ with tempfile.TemporaryDirectory() as d:
         narrar_sonic("Chegou o NEXOS.", "carolina", Path(d) / "g.wav", rodar=f); caso("três leituras erradas falham", False)
     except RuntimeError as e:
         caso("três leituras erradas falham, nunca usam a errada", "3 tentativas" in str(e) and not (Path(d) / "g.wav").exists())
+
+# pause between narrated lines: 0.25 s by default, the schema can ask for more (launch commercials: 0.6 s)
+with tempfile.TemporaryDirectory() as d:
+    render.CACHE_VOZ = Path(d)
+    orig_narrar, orig_saida = render.narrar_sonic, render.subprocess.check_output
+    render.narrar_sonic = lambda fala, voz_id, destino, **kw: destino.write_bytes(b"RIFF")
+    render.subprocess.check_output = lambda *a, **kw: b"2.0"
+    try:
+        t_padrao, _ = render.voz({"falas": ["um", "dois", "tres"]}, {"voz": "sim"}, {})
+        t_longo, _ = render.voz({"falas": ["um", "dois", "tres"]}, {"voz": "sim", "pausa_fala": 0.6}, {})
+    finally:
+        render.narrar_sonic, render.subprocess.check_output = orig_narrar, orig_saida
+    caso("pausa padrão entre falas: 0,25 s", t_padrao[1] == 2.25)
+    caso("esquema pede pausa maior: 0,6 s", t_longo[1] == 2.6 and t_longo[2] == 5.2)
 
 print(f"voz: {ok} ok, {falhou} falharam")
 sys.exit(1 if falhou else 0)

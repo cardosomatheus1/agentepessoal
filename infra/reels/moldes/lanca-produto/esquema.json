@@ -257,5 +257,6 @@
  },
  "especiais": {
   "_hoje": "data de publicação (AAAA-MM-DD); sem ela, a data de hoje. A data de lançamento não pode ser anterior a ela."
- }
+ },
+ "pausa_fala": 0.6
 }

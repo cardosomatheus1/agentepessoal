@@ -321,5 +321,6 @@
    "obrigatorio": false,
    "dica": "Dados fictícios (prints de exemplo) ou valores de exemplo"
   }
- }
+ },
+ "pausa_fala": 0.6
 }

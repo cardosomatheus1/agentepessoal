@@ -165,5 +165,6 @@
    "max": 40,
    "obrigatorio": false
   }
- }
+ },
+ "pausa_fala": 0.6
 }
