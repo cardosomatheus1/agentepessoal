@@ -1,76 +1,94 @@
 <!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="../base/raiz-carrossel.css">
 <style>
-.opcoes{display:flex;flex-direction:column;gap:18px}
-.op{display:flex;align-items:center;gap:32px;padding:20px 32px}
-.opcoes{flex-direction:row}.opcoes .op{flex:1;flex-direction:column;gap:14px}
-.op .letra{width:76px;height:76px;border-radius:999px;border:2px solid var(--fio);display:grid;place-items:center;font-weight:800;font-size:38px}
-.op .n{font-size:52px}
-.claro .op .letra{border-color:var(--borda)}
-.resp{display:flex;flex-direction:column;gap:16px;margin-top:40px}
-.resp .cartao{padding:24px 34px;display:flex;gap:28px;align-items:flex-start}
-.resp .letra{font-weight:800;font-size:40px;min-width:40px}
-.resp .t{font-size:32px;font-weight:500;line-height:1.36;color:var(--mutc)}
-.resp .t b{color:var(--ink)}
-.resp .certa{border:2.5px solid var(--forest)}
+/* Conceito próprio: programa de perguntas. Palco verde com holofote, placas de resposta grandes, revelação no 3. */
+.slide{background:#163a25}
+.slide:before{display:none}
+.palco{position:absolute;inset:0;background:
+  radial-gradient(620px 520px at 50% 22%,rgba(245,247,237,.16),transparent 70%),
+  repeating-conic-gradient(from 0deg at 50% -10%,rgba(255,255,255,.035) 0 4deg,transparent 4deg 12deg),
+  linear-gradient(180deg,#1b4a2e,#0f2a1b)}
+.placa-p{background:var(--night);border:2px solid #2f6a45;border-radius:22px;padding:34px 40px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.placa-p .etq{color:#9fc7a9}
+.placa-p h2{font-size:72px;margin-top:14px}
+.placas{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.placa{background:var(--paper);color:var(--ink);border-radius:22px;padding:26px 20px 30px;text-align:center;box-shadow:0 14px 0 #c9c2ad,0 30px 50px rgba(0,0,0,.35)}
+.placa .letra{width:84px;height:84px;margin:0 auto;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-weight:800;font-size:44px}
+.placa .n{font-size:66px;margin-top:16px;display:block}
+.placa.fora{opacity:.62;filter:grayscale(.3)}
+.placa.certa{outline:6px solid var(--txt);outline-offset:6px}
+.placa .vered{font-weight:800;font-size:22px;letter-spacing:.14em;margin-top:10px}
+.foto-bolo{width:360px;height:360px;border-radius:50%;background:url(../base/kit/fotos/bolo.jpg) center 62%/cover;margin:34px auto 0;
+  box-shadow:0 0 0 10px rgba(245,247,237,.08),0 30px 60px rgba(0,0,0,.45)}
+.pista{display:flex;justify-content:space-between;align-items:baseline;background:rgba(16,29,24,.55);border:1.5px solid #2f6a45;border-radius:16px;padding:24px 32px;font-size:38px;font-weight:600}
+.pista .v{font-weight:800;font-variant-numeric:tabular-nums}
+.pistas{display:flex;flex-direction:column;gap:16px;margin-top:40px}
+.expl{font-size:30px;line-height:1.35;color:var(--mut);margin-top:16px;text-align:left}
+.expl b{color:var(--txt)}
+.legenda{font-size:22px;font-weight:600;color:var(--mut);margin-top:12px}
 </style></head><body>
 
 <!-- 1 pergunta -->
-<div class="slide com-foto" data-rot="Quiz">
- <div class="foto" style="background-image:url(../base/kit/fotos/bolo.jpg);background-position:center 70%"></div>
- <div class="selo-gerada" style="bottom:auto;top:150px">imagem ilustrativa</div>
+<div class="slide" data-rot="Quiz · valendo">
+ <div class="palco"></div>
  <div class="area">
-  <div class="etq">Bolo de 2 kg</div>
-  <h2 style="margin-top:24px">Quanto cobrar para pagar a sua hora de <span class="it">R$ 15?</span></h2>
+  <div class="placa-p"><div class="etq">PERGUNTA · BOLO DE 2 KG</div><h2>Quanto cobrar para pagar a sua <span class="it">hora</span> de R$ 15?</h2></div>
+  <div class="foto-bolo"></div>
   <div class="esp"></div>
-  <div class="ex" style="margin-bottom:22px;color:var(--txt)">Comente a letra antes de arrastar · valores de exemplo</div>
-  <div class="opcoes">
-   <div class="cartao op"><span class="letra">A</span><span class="n">R$ 85</span></div>
-   <div class="cartao op"><span class="letra">B</span><span class="n">R$ 120</span></div>
-   <div class="cartao op"><span class="letra">C</span><span class="n">R$ 145</span></div>
+  <div class="placas">
+   <div class="placa"><div class="letra">A</div><span class="n">R$ 85</span></div>
+   <div class="placa"><div class="letra">B</div><span class="n">R$ 120</span></div>
+   <div class="placa"><div class="letra">C</div><span class="n">R$ 145</span></div>
   </div>
+  <div class="ex" style="margin-top:34px;color:var(--txt);text-align:center">Comente a letra antes de arrastar · valores de exemplo</div>
  </div>
+ <div class="selo-gerada" style="bottom:auto;top:150px">imagem ilustrativa</div>
 </div>
 
-<!-- 2 dados -->
-<div class="slide claro" data-rot="Quiz" style="--lx:300px;--ly:-300px">
- <div class="area">
-  <div class="etq">Os dados</div>
-  <h2 style="margin-top:24px">O que entrou nesse <span class="it">bolo.</span></h2>
-  <div class="cartao" style="margin-top:48px">
-   <div class="linha"><span class="l">Ingredientes</span><span class="v">R$ 70</span></div>
-   <div class="linha"><span class="l">Caixa e embalagem</span><span class="v">R$ 8</span></div>
-   <div class="linha"><span class="l">Gás e luz</span><span class="v">R$ 7</span></div>
-   <div class="linha tot"><span class="l">O seu trabalho</span><span class="v">4 horas</span></div>
+<!-- 2 pistas -->
+<div class="slide" data-rot="Quiz · as pistas">
+ <div class="palco"></div>
+ <div class="area centro">
+  <div class="etq" style="color:#9fc7a9">AS PISTAS</div>
+  <h2 style="margin-top:18px">O que entrou nesse <span class="it">bolo.</span></h2>
+  <div class="pistas">
+   <div class="pista"><span>Ingredientes</span><span class="v">R$ 70</span></div>
+   <div class="pista"><span>Caixa e embalagem</span><span class="v">R$ 8</span></div>
+   <div class="pista"><span>Gás e luz</span><span class="v">R$ 7</span></div>
+   <div class="pista"><span>O seu trabalho</span><span class="v">4 horas</span></div>
   </div>
-  <div class="esp"></div>
-  <p>Se a sua hora vale <b>R$ 15</b>, qual letra você escolheu?</p>
-  <div class="ex" style="margin-top:20px">valores de exemplo</div>
+  <p style="margin-top:40px">Mudou de ideia? Ainda dá tempo de comentar. <span class="ex">valores de exemplo</span></p>
  </div>
 </div>
 
 <!-- 3 resposta -->
-<div class="slide claro" data-rot="Quiz" style="--lx:-300px;--ly:-200px">
+<div class="slide" data-rot="Quiz · resposta">
+ <div class="palco"></div>
  <div class="area">
-  <div class="etq">Resposta</div>
-  <h2 style="margin-top:24px">É a C, e mesmo assim só <span class="it">empata.</span></h2>
-  <div class="resp">
-   <div class="cartao"><span class="letra">A</span><span class="t">R$ 85 paga ingrediente, caixa e gás. <b>As suas 4 horas saem de graça.</b></span></div>
-   <div class="cartao"><span class="letra">B</span><span class="t">Sobram R$ 35 para 4 horas: <b>R$ 8,75 por hora,</b> não R$ 15.</span></div>
-   <div class="cartao certa"><span class="letra">C</span><span class="t">R$ 85 de custo + 4 h × R$ 15 = <b>R$ 145.</b> Paga tudo, mas ainda não sobra nada.</span></div>
+  <div class="etq" style="color:#9fc7a9">RESPOSTA</div>
+  <h2 style="margin-top:18px">É a C, e mesmo assim só <span class="it">empata.</span></h2>
+  <div class="placas" style="margin-top:40px">
+   <div class="placa fora"><div class="letra">A</div><span class="n">R$ 85</span><div class="vered" style="color:var(--perda-c)">✕ DE GRAÇA</div></div>
+   <div class="placa fora"><div class="letra">B</div><span class="n">R$ 120</span><div class="vered" style="color:var(--perda-c)">✕ R$ 8,75/H</div></div>
+   <div class="placa certa"><div class="letra">C</div><span class="n">R$ 145</span><div class="vered" style="color:var(--forest)">✓ EMPATA</div></div>
   </div>
+  <div class="expl" style="margin-top:44px"><b>A:</b> R$ 85 paga ingrediente, caixa e gás. As suas 4 horas saem de graça.</div>
+  <div class="expl"><b>B:</b> sobram R$ 35 para 4 horas, ou R$ 8,75 por hora, não R$ 15.</div>
+  <div class="expl"><b>C:</b> R$ 85 de custo + 4 h × R$ 15 = R$ 145. Paga tudo, mas não sobra nada.</div>
   <div class="esp"></div>
   <div class="ex">valores de exemplo · a sobra começa acima de R$ 145</div>
  </div>
 </div>
 
 <!-- 4 CTA -->
-<div class="slide" data-rot="Calculadora grátis" data-fim="salve e envie" style="--lx:100px;--ly:300px">
+<div class="slide" data-rot="Calculadora grátis" data-fim="salve e envie">
+ <div class="palco"></div>
  <div class="area">
-  <h2>Acertou? Faça a conta com os <span class="it">seus</span> números.</h2>
-  <div class="cta-calc"></div>
+  <h2>E a R$ 160? Sobram só R$ 15 por <span class="it">bolo.</span></h2>
+  <div class="cta-calc" data-tela="tela-calculadora-bolo.jpg"></div>
+  <div class="legenda">Na tela: a calculadora com esse bolo · valores de exemplo</div>
   <div class="esp"></div>
-  <div class="botao"><div>Calculadora grátis<small>link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
+  <div class="botao"><div>Faça a conta com os seus números<small>calculadora grátis · link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
  </div>
 </div>
 

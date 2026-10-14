@@ -3,7 +3,7 @@
 (function () {
   // bloco padrão do convite para a calculadora: a tela real do produto + o que ela entrega
   document.querySelectorAll('.cta-calc').forEach(el => el.innerHTML =
-    `<div class="celular"><img src="../base/kit/tela-calculadora.jpg"></div><ul>` +
+    `<div class="celular"><img src="../base/kit/${el.dataset.tela || 'tela-calculadora.jpg'}"></div><ul>` +
     `<li><span>Sem cadastro<small>abre e já começa</small></span></li>` +
     `<li><span>Produto por produto<small>custo, preço e onde vende</small></span></li>` +
     `<li><span>Quanto sobra<small>em cada venda, na hora</small></span></li></ul>`);

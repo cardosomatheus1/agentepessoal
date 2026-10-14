@@ -5,6 +5,7 @@
 | `manrope-*`, `instrument-serif-*` (+ OFL) | erp-saas `frontend/erp-saas/apps/web/public/fonts/` via kit `marketing/video-invisivel/assets/fonts/` | todo o texto | real (OFL) |
 | `rc-logo-dark-v26.png`, `rc-logo-light-v26.png`, `raiz-mark.webp` | erp-saas `frontend/erp-saas/apps/web/public/` | logo do topo | real |
 | `tela-calculadora.jpg` | captura da página pública raizconnect.com.br/materiais/precificacao/calculadora (430 px, 3x), 14/10/2026, preenchida com o exemplo do molho (custo R$ 3,00 + R$ 2,50 + R$ 3,00, preço R$ 15,00): o diagnóstico real mostra "sobram R$ 6,50 por venda" | slide final (tela real do produto) | real |
+| `tela-calculadora-bolo.jpg` | mesma página, preenchida com o bolo do quiz (R$ 70 + R$ 8 + R$ 67, preço R$ 160): "O preço atual deixa muito pouco... sobram R$ 15,00 por venda (9,4%)" | slide final do quiz | real |
 | `fotos/molho-pimenta.jpg` | **gerada por IA**: Stability Stable Image Ultra (Bedrock us-west-2), semente 23, prompt "pimenta" em scratchpad `carr_img/gerar.py`; escolhida entre 11, 23 e 37 (fundo mais escuro, espaço para título) | capa do custo em 10 minutos | gerada |
 | `fotos/bolo.jpg` | **gerada por IA**: Stable Image Ultra, semente 5 (entre 5 e 19: fundo verde da marca) | capa do quiz | gerada |
 | `fotos/entrega.jpg` | **gerada por IA**: Stable Image Ultra, semente 7 (entre 7 e 42) | capa da polêmica | gerada |
