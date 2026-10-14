@@ -1,0 +1,441 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* photo layers placed by code (cover + optional zoom/focus), so a detail point maps to the screen exactly */
+.ph{position:absolute;inset:0;overflow:hidden}
+.ph img{position:absolute;left:0;top:0;max-width:none}
+/* 0: cinematic opening. The hero photo is almost black; a beam of light sweeps across and reveals it */
+#aBase{filter:brightness(.09) saturate(.6)}
+#aLuz{position:absolute;inset:0}
+#aFeixe{position:absolute;inset:0;mix-blend-mode:screen;pointer-events:none}
+#aGrad{position:absolute;left:0;right:0;bottom:0;height:900px;background:linear-gradient(transparent,rgba(0,0,0,.82) 70%)}
+#aK{position:absolute;left:90px;top:1180px;font-size:34px;letter-spacing:4px;text-transform:uppercase}
+#aT{position:absolute;left:90px;width:800px;top:1262px;height:200px;font-size:86px;line-height:1.04;color:#fff}
+/* 1: brand name letter by letter, then the logo */
+#bN{position:absolute;left:90px;width:900px;top:610px;height:330px;font-size:176px;line-height:1.02;display:flex;align-items:center;justify-content:center;text-align:center}
+#bN .pw{display:inline-block;white-space:nowrap}
+#bN .lt{display:inline-block;will-change:transform,opacity,filter}
+#bLogo{position:absolute;left:170px;width:740px;top:610px;height:330px;display:flex;align-items:center;justify-content:center}
+#bLogo img{display:block;max-width:720px;max-height:240px;width:auto;height:auto}
+#bLogo .avatar{width:280px;height:280px;border-radius:50%;object-fit:cover;border:10px solid var(--destaque)}
+#bGlow{position:absolute;left:-160px;top:90px;width:1400px;height:1400px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--c1) 30%,transparent),color-mix(in srgb,var(--c2) 10%,transparent) 55%,transparent)}
+#bFio{position:absolute;left:340px;width:400px;top:1000px;height:6px;border-radius:3px;background:var(--destaque);transform-origin:50% 50%}
+#bS{position:absolute;left:170px;width:740px;top:1050px;height:150px;font-size:54px;font-weight:700;line-height:1.15;text-wrap:balance}
+/* 2: origin. Framed photo of who makes or the place, then the owner's sentence */
+#cMold{position:absolute;left:90px;width:900px;top:400px;height:690px;padding:16px}
+#cMold .ph{inset:16px;border-radius:calc(var(--raio) - 12px)}
+body.e-papel #cMold .ph{border-radius:4px}
+#cK{position:absolute;left:130px;top:1012px;font-size:32px;z-index:2}
+#cAsp{position:absolute;left:84px;top:1060px;font-size:220px;line-height:1;height:150px;color:var(--destaque);font-family:var(--ft);font-weight:900}
+#cF{position:absolute;left:190px;width:720px;top:1120px;height:270px;font-size:50px;text-wrap:pretty;line-height:1.16;font-weight:800;letter-spacing:-.01em}
+#cQ{position:absolute;left:190px;width:720px;top:1404px;height:48px;font-size:36px;font-weight:700}
+/* 3..: the hero product from 2 or 3 angles, with detail callouts (dot + thin line + label), one at a time */
+.ang .sTop{position:absolute;left:0;right:0;top:0;height:820px;background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.35) 55%,transparent)}
+.ang .sBai{position:absolute;left:0;right:0;bottom:0;height:520px;background:linear-gradient(transparent,rgba(0,0,0,.45))}
+.ang .aCh{position:absolute;left:90px;top:392px;font-size:32px;letter-spacing:3px;text-transform:uppercase}
+.ang .aTi{position:absolute;left:90px;width:820px;top:456px;height:180px;font-size:80px;line-height:1.04;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.45)}
+.ang svg{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:visible;pointer-events:none}
+.ang svg path{fill:none;stroke:#fff;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+.pt{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:#fff;box-shadow:0 0 0 7px color-mix(in srgb,var(--destaque) 80%,transparent),0 3px 14px rgba(0,0,0,.5)}
+.pt i{position:absolute;inset:-7px;border-radius:50%;border:3px solid #fff}
+.rot{position:absolute;padding:16px 24px 16px 30px;border-radius:18px;background:color-mix(in srgb,var(--fundo) 93%,transparent);box-shadow:0 14px 40px rgba(0,0,0,.35);backdrop-filter:blur(10px)}
+.rot:before{content:'';position:absolute;left:12px;top:16px;bottom:16px;width:6px;border-radius:3px;background:var(--destaque)}
+.rot .t{font-size:44px;font-weight:800;line-height:1.15;color:var(--texto);text-wrap:balance}
+body.e-papel .rot{border-radius:6px}
+/* feito com: 3 ingredients in round macro "lenses" */
+#eT{position:absolute;left:90px;width:820px;top:396px;height:110px;font-size:92px}
+.ing{position:absolute;left:90px;width:820px;height:330px}
+.ing .lente{position:absolute;left:0;top:0;width:330px;height:330px;border-radius:50%;overflow:hidden;border:10px solid var(--cartao);box-shadow:var(--sombra)}
+.ing .lente img{position:absolute;left:0;top:0;max-width:none}
+.ing .n{position:absolute;left:375px;top:70px;font-size:36px;font-weight:900;color:var(--destaque);letter-spacing:3px;height:48px;width:200px}
+.ing .nm{position:absolute;left:375px;top:124px;width:445px;height:160px;font-size:72px;line-height:1.06}
+.ing.dir .lente{left:470px}.ing.dir .n,.ing.dir .nm{left:0;text-align:right}.ing.dir .n{left:240px}
+#eFio{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:visible}
+#eFio path{fill:none;stroke:var(--destaque);stroke-width:4;stroke-dasharray:2 14;stroke-linecap:round;opacity:.7}
+/* line or collection grid */
+#fT{position:absolute;left:90px;width:820px;top:396px;height:110px;font-size:84px}
+.it{position:absolute;border-radius:28px;overflow:hidden;box-shadow:var(--sombra);background:var(--fundo2)}
+body.e-papel .it{border-radius:8px}
+.it img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.it .gr{position:absolute;left:0;right:0;bottom:0;height:62%;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.it .nm{position:absolute;left:22px;right:22px;bottom:20px;height:84px;font-size:36px;font-weight:800;line-height:1.12;color:#fff;display:flex;align-items:flex-end}
+.it .nm div{width:100%}
+.it .pr{position:absolute;right:16px;top:16px;font-size:34px;padding:8px 18px}
+/* use / who it is for */
+#gGrad{position:absolute;left:0;right:0;bottom:0;height:1100px;background:linear-gradient(transparent,rgba(0,0,0,.85) 72%)}
+#gK{position:absolute;left:90px;top:1080px;font-size:32px;letter-spacing:3px;text-transform:uppercase}
+#gF{position:absolute;left:90px;width:810px;top:1150px;height:300px;font-size:84px;line-height:1.05;color:#fff}
+/* where to buy (+ launch date) */
+#hT{position:absolute;left:90px;width:820px;top:396px;height:110px;font-size:88px}
+#hP{position:absolute;left:90px;width:820px;top:540px;height:380px;padding:14px}
+#hP .ph{inset:14px;border-radius:calc(var(--raio) - 10px)}
+body.e-papel #hP .ph{border-radius:4px}
+#hP .chip{position:absolute;left:44px;bottom:34px;font-size:36px;z-index:2}
+#hD{position:absolute;left:90px;width:820px;top:540px;height:300px;padding:36px 40px;display:flex;gap:36px;align-items:center}
+#hCal{flex:none;width:220px;height:228px;border-radius:26px;background:var(--destaque);color:var(--sobre-destaque);text-align:center;overflow:hidden}
+#hCal .m{height:56px;line-height:56px;font-size:34px;font-weight:900;letter-spacing:3px;background:color-mix(in srgb,var(--sobre-destaque) 18%,transparent)}
+#hCal .d{font-family:var(--ft);font-weight:900;font-size:136px;line-height:170px;height:170px}
+#hInfo{flex:1;height:228px;position:relative}
+#hInfo .k{position:absolute;left:0;top:4px;width:480px;height:46px;font-size:36px;font-weight:700}
+#hInfo .w{position:absolute;left:0;top:54px;width:480px;height:92px;font-size:78px}
+#hInfo .f{position:absolute;left:0;top:160px;font-size:36px;padding:8px 22px}
+.cn{position:absolute;left:90px;width:820px;height:172px;padding:0 32px 0 28px;display:flex;align-items:center;gap:28px}
+.cn .ic{flex:none;width:108px;height:108px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:58px}
+.cn .tx{flex:1;height:130px;position:relative}
+.cn .k{position:absolute;left:0;top:6px;width:600px;height:44px;font-size:34px;font-weight:700}
+.cn .v{position:absolute;left:0;top:54px;width:600px;height:72px;font-size:56px;font-weight:900;white-space:nowrap}
+#nota{top:1456px;bottom:auto}
+</style></head><body><div id="palco">
+
+<div class="cena" id="cA"><div class="cam full">
+ <div class="ph" id="aBaseW"><img id="aBase" alt=""></div>
+ <div class="ph" id="aLuz"><img id="aLuzI" alt=""></div>
+ <div id="aFeixe"></div>
+ <div id="aGrad"></div>
+ <div class="chip t seg" id="aK"></div>
+ <div class="tit t seg rv" id="aT"></div>
+</div></div>
+
+<div class="cena" id="cB"><div class="cam full">
+ <div id="bGlow"></div>
+ <div class="tit t seg" id="bN"></div>
+ <div class="seg" id="bLogo"></div>
+ <div id="bFio"></div>
+ <div class="ctr t t2 seg rv" id="bS"></div>
+</div></div>
+
+<div class="cena" id="cC"><div class="cam full">
+ <div class="cartao" id="cMold"><div class="ph"><img id="cI" alt=""></div></div>
+ <div class="chip t seg" id="cK"></div>
+ <div id="cAsp">&ldquo;</div>
+ <div class="t seg rv" id="cF"></div>
+ <div class="t t2 seg" id="cQ"></div>
+</div></div>
+
+<div id="angulos"></div>
+
+<div class="cena" id="cE"><div class="cam full">
+ <div class="tit t seg rv" id="eT"></div>
+ <svg id="eFio" viewBox="0 0 1080 1920"><path id="eFioP" d="M255 865 C 255 960, 725 920, 725 1015 M725 1185 C 725 1280, 255 1240, 255 1335"/></svg>
+ <div id="ings"></div>
+</div></div>
+
+<div class="cena" id="cF2"><div class="cam full">
+ <div class="tit t seg rv" id="fT"></div>
+ <div id="grade"></div>
+</div></div>
+
+<div class="cena" id="cG"><div class="cam full">
+ <div class="ph"><img id="gI" alt=""></div>
+ <div id="gGrad"></div>
+ <div class="chip t seg" id="gK"></div>
+ <div class="tit t seg rv" id="gF"></div>
+</div></div>
+
+<div class="cena" id="cH"><div class="cam full">
+ <div class="tit t seg rv" id="hT"></div>
+ <div class="cartao" id="hD"><div id="hCal"><div class="m t" id="hM"></div><div class="d t seg" id="hDia"></div></div>
+  <div id="hInfo"><div class="k t t2 seg" id="hK"></div><div class="w tit t seg" id="hW"></div><div class="f chip t seg" id="hFal"></div></div></div>
+ <div class="cartao" id="hP"><div class="ph"><img id="hPI" alt=""></div><div class="chip t seg" id="hPN"></div></div>
+ <div id="canais"></div>
+</div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Lançamento de marca de produto": a 1-minute narrated launch of a product brand (cosmetics, fashion, packaged food,
+// crafts). Scenes follow the narration (falas), one each: 0 opening (a beam of light sweeps the dark screen and
+// reveals the hero product), 1 brand name letter by letter, then the logo and the slogan, 2 origin in the owner's own
+// sentence with a photo of who makes it, 3.. the hero product from 2 or 3 angles with detail callouts (a dot on the
+// product, a thin line, a label; one at a time; the main moment), then "feito com" (3 macro lenses), the line in a
+// grid, the moment of use (optional), where to buy (+ launch date: weekday and days left computed here, a past date
+// refused), and the engine's final scene with the call. Every photo, price, channel and date comes from the ficha.
+const DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+const dt = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const dias = (a, b) => Math.round((dt(b) - dt(a)) / 86400000);
+const CANAIS = { site: ['link', 'No site'], loja: ['local', 'Na loja'], marketplace: ['carrinho', 'No marketplace'], whatsapp: ['chat', 'Pelo WhatsApp'], instagram: ['camera', 'No Instagram'] };
+const DUR_MIN = 55, DUR_MAX = 65;
+let D = {};
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+
+// photo placed like object-fit:cover, with optional zoom and focus (0..1); returns the mapping of photo % to screen px
+function encaixe(img, W, H, zoom = 1, fx = 0.5, fy = 0.5) {
+  const nw = img.naturalWidth || W, nh = img.naturalHeight || H, s = Math.max(W / nw, H / nh) * zoom;
+  const dw = nw * s, dh = nh * s, cl = Motor.cl;
+  const ox = cl(W / 2 - fx * dw, W - dw, 0), oy = cl(H / 2 - fy * dh, H - dh, 0);
+  Object.assign(img.style, { width: dw + 'px', height: dh + 'px', left: ox + 'px', top: oy + 'px' });
+  return { dw, dh, ox, oy, pt: (x, y) => [ox + x / 100 * dw, oy + y / 100 * dh] };
+}
+
+// where a callout label goes for a dot at (px, py): beside it (lado 1 right, -1 left, dy above/below) or centered
+// over/under it (lado 0); always inside the free area (below y 880 only up to x 890, the Reel buttons)
+function lugar(o, px, py, sp, H) {
+  const cl = Motor.cl, xmax = y => (y > 880 ? 890 : 990), lim = [690, H - 460 - o.h];
+  let x, y, ax, ay, ex;
+  if (sp.lado) { y = cl(py + sp.dy - o.h / 2, lim[0], lim[1]); x = cl(sp.lado > 0 ? px + 110 : px - 110 - o.w, 80, xmax(y + o.h) - o.w);
+    ax = sp.lado > 0 ? x : x + o.w; ay = y + o.h / 2; ex = ax - sp.lado * 34; }
+  else { y = cl(py + sp.dy, lim[0], lim[1]); x = cl(px - o.w / 2, 80, xmax(y + o.h) - o.w);
+    ax = cl(px, x + 30, x + o.w - 30); ay = y > py ? y : y + o.h; ex = ax; }
+  return { x, y, ax, ay, ex };
+}
+
+Motor.molde({
+  id: 'lanca-produto', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m, H = $m.H, nA = F.angulos.length, uso = !!F.uso;
+    // scene indexes
+    const iE = 3 + nA, iF = iE + 1, iG = uso ? iF + 1 : -1, iH = (uso ? iG : iF) + 1;
+    D = { nA, uso, iE, iF, iG, iH, ang: [] };
+    // narration: one line per scene plus the call; the whole video lasts 55 to 65 s
+    const esperadas = iH + 2;
+    if (F.falas.length !== esperadas) $m.erro(`falas: são ${esperadas} (abertura, marca, origem, ${nA} ângulos, feito com, linha${uso ? ', uso' : ''}, onde comprar, chamada); vieram ${F.falas.length}`);
+    if (window.TEMPOS && window.TEMPOS.length > 1) {
+      const dur = window.TEMPOS[window.TEMPOS.length - 1];
+      if (dur < DUR_MIN || dur > DUR_MAX) $m.erro(`a narração dura ${dur.toFixed(1)} s; o lançamento dura de ${DUR_MIN} a ${DUR_MAX} s (${dur < DUR_MIN ? 'alongue' : 'encurte'} as falas)`);
+    }
+    // a scene never repeats another scene's photo (the line may show the hero again, it is one of its products)
+    const angF = F.angulos.map(a => a.foto);
+    const outras = [['origem', F.origem.foto], ...F.feito_com.map((x, k) => [`feito_com[${k + 1}]`, x.foto]), ...(uso ? [['uso', F.uso.foto]] : [])];
+    outras.forEach(([n, f]) => { if (angF.includes(f)) $m.erro(`${n}: a foto é a mesma de um ângulo do produto (cena repetida)`); });
+    if (new Set(angF).size !== angF.length) $m.erro('angulos: cada ângulo precisa de uma foto diferente');
+    const fc = F.feito_com.map(x => x.foto); if (new Set(fc).size !== fc.length) $m.erro('feito_com: cada ingrediente precisa da sua foto');
+    // prices: all or none (a grid with some prices reads as "the rest is missing")
+    const comPreco = F.linha.itens.filter(x => x.preco != null).length;
+    if (comPreco && comPreco !== F.linha.itens.length) $m.erro('linha: ou todos os itens têm preço, ou nenhum');
+    // launch date: weekday and days left are computed here; a past date is refused; a weekday in the narration must match
+    const hoje = F._hoje || iso(new Date());
+    if (F.onde.lancamento) {
+      const L = F.onde.lancamento;
+      if (L < hoje) $m.erro(`lançamento em ${L.slice(8, 10)}/${L.slice(5, 7)} já passou: o post não sai depois da data`);
+      D.dia = DIAS[dt(L).getDay()]; D.falta = dias(hoje, L);
+      const ditos = F.falas.join(' ').toLowerCase().match(/\b(segunda|terça|quarta|quinta|sexta|sábado|domingo)\b/g) || [];
+      ditos.forEach(w => { if (!D.dia.startsWith(w)) $m.erro(`falas: dizem "${w}", mas ${L.slice(8, 10)}/${L.slice(5, 7)} cai ${/^(sábado|domingo)/.test(D.dia) ? 'num' : 'numa'} ${D.dia}`); });
+    }
+
+    // 0 opening
+    $('#aBase').src = $m.midia(F.angulos[0].foto); $('#aLuzI').src = $m.midia(F.angulos[0].foto);
+    $('#aK').textContent = 'Lançamento';
+    $('#aT').textContent = F.gancho || 'Vem coisa nova aí';
+    // 1 brand: the name as letters (words never break inside), then the logo
+    const bN = $('#bN'), inner = mk('div', null, null, bN);
+    (M.nome || '').split(' ').forEach((w, k) => { if (k) inner.appendChild(document.createTextNode(' ')); const s = mk('span', 'pw', null, inner); [...w].forEach(c => mk('span', 'lt', c, s)); });
+    D.temLogo = !!(M.logo_claro || M.logo_escuro) && M.assinatura !== 'foto';
+    D.temFoto = !!M.foto && (M.assinatura === 'foto' || !D.temLogo);
+    if (D.temLogo || D.temFoto) { const lg = $m._logo(true); if (D.temFoto) { lg.querySelector('.nome') && lg.querySelector('.nome').remove(); } $('#bLogo').appendChild(lg); }
+    else $('#bLogo').remove();
+    $('#bS').textContent = F.slogan;
+    // 2 origin
+    $('#cI').src = $m.midia(F.origem.foto);
+    $('#cK').textContent = 'Como começou';
+    $('#cF').textContent = F.origem.frase;
+    $('#cQ').textContent = F.origem.quem;
+    // 3.. angles
+    const pai = $('#angulos');
+    F.angulos.forEach((a, k) => {
+      const c = mk('div', 'cena ang', null, pai); c.id = 'cD' + k; const cam = mk('div', 'cam full', null, c);
+      const ph = mk('div', 'ph', null, cam), img = mk('img', null, null, ph); img.src = $m.midia(a.foto); img.alt = '';
+      mk('div', 'sTop', null, cam); mk('div', 'sBai', null, cam);
+      mk('div', 'aCh chip t seg', k === 0 ? 'O primeiro' : (k + 1) + ' de ' + nA, cam);
+      mk('div', 'aTi tit t seg rv', k === 0 ? F.produto : (a.titulo || (k === 1 ? 'De perto' : 'Cada detalhe')), cam);
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', `0 0 1080 ${H}`); cam.appendChild(svg);
+      const det = a.detalhes.map(d => {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); svg.appendChild(path);
+        const pt = mk('div', 'pt', null, cam); mk('i', null, null, pt);
+        const r = mk('div', 'rot', null, cam), tx = mk('div', 't seg', d.texto, r);
+        // label size from the text length (Inter 800 at 40px is about 23px a letter), one line when it fits
+        const est = d.texto.length * 25.5, uma = est <= 400, w = uma ? Math.max(160, Math.round(est * 1.1)) : 420;
+        Object.assign(tx.style, { width: w + 'px', height: (uma ? 52 : 104) + 'px' });
+        return { d, path, pt, r, w: w + 54, h: (uma ? 52 : 104) + 32 };
+      });
+      D.ang.push({ c, img, ph, det, a });
+    });
+    // feito com
+    $('#eT').textContent = 'Feito com';
+    F.feito_com.forEach((x, k) => {
+      const r = mk('div', 'ing' + (k % 2 ? ' dir' : ''), null, $('#ings')); r.style.top = (535 + k * 320) + 'px';
+      const l = mk('div', 'lente', null, r), i = mk('img', null, null, l); i.src = $m.midia(x.foto); i.alt = '';
+      mk('div', 'n t seg', '0' + (k + 1), r); const nm = mk('div', 'nm tit t seg', null, r); mk('div', 'rv', x.nome, nm);
+    });
+    // line grid: 3 = one big + two, 4 = 2x2, 5 = two + three, 6 = 3x2; inside x 90..910, y 530..1430
+    $('#fT').textContent = F.linha.titulo;
+    const n = F.linha.itens.length, G = 22, X0 = 90, LW = 820, Y0 = 530, Y1 = F.nota ? 1430 : 1450;
+    const filas = { 3: [1, 2], 4: [2, 2], 5: [2, 3], 6: [3, 3] }[n];
+    const alt = n === 3 ? [(Y1 - Y0 - G) * 0.54, (Y1 - Y0 - G) * 0.46] : [(Y1 - Y0 - G) / 2, (Y1 - Y0 - G) / 2];
+    let idx = 0, y = Y0;
+    filas.forEach((q, fi) => { const w = (LW - G * (q - 1)) / q;
+      for (let j = 0; j < q; j++) { const it = F.linha.itens[idx++]; const c = mk('div', 'it', null, $('#grade'));
+        Object.assign(c.style, { left: X0 + j * (w + G) + 'px', top: y + 'px', width: w + 'px', height: alt[fi] + 'px' });
+        const i = mk('img', null, null, c); i.src = $m.midia(it.foto); i.alt = ''; mk('div', 'gr', null, c);
+        const nm = mk('div', 'nm t seg', null, c); mk('div', null, it.nome, nm); nm.dataset.min = 30;
+        if (it.preco != null) mk('div', 'pr chip tit t seg', $m.brl(it.preco, Number.isInteger(it.preco) ? 0 : 2), c); }
+      y += alt[fi] + G; });
+    // use
+    if (uso) { $('#gI').src = $m.midia(F.uso.foto); $('#gK').textContent = F.uso.rotulo || 'Para quem é'; $('#gF').textContent = F.uso.frase; }
+    else $('#cG').remove();
+    // where to buy
+    $('#hT').textContent = F.onde.lancamento ? 'Onde e quando' : 'Onde comprar';
+    if (F.onde.lancamento) {
+      const L = dt(F.onde.lancamento);
+      $('#hM').textContent = MESES[L.getMonth()]; $('#hDia').textContent = String(L.getDate());
+      $('#hK').textContent = 'Lançamento';
+      $('#hW').textContent = D.dia.charAt(0).toUpperCase() + D.dia.slice(1);
+      $('#hFal').textContent = D.falta === 0 ? 'é hoje' : D.falta === 1 ? 'é amanhã' : `faltam ${D.falta} dias`;
+      $('#hP').remove();
+    } else { $('#hD').remove(); $('#hPI').src = $m.midia(F.angulos[0].foto); $('#hPN').textContent = F.produto; }
+    // the block (date card + channels) sits centered between the title and the bottom of the free area
+    const nc = F.onde.canais.length, topo = F.onde.lancamento ? 340 : 420, bloco = topo + nc * 192 - 20, b0 = Math.round(560 + (1440 - 560 - bloco) / 2);
+    ($('#hD') || $('#hP')).style.top = b0 + 'px';
+    const y0 = b0 + topo;
+    F.onde.canais.forEach((c, k) => {
+      const r = mk('div', 'cn cartao', null, $('#canais')); r.style.top = (y0 + k * 192) + 'px';
+      const ic = mk('div', 'ic', null, r); ic.innerHTML = $m.icone(CANAIS[c.canal][0]);
+      const tx = mk('div', 'tx', null, r); mk('div', 'k t t2 seg', CANAIS[c.canal][1], tx); mk('div', 'v t seg', c.texto, tx);
+    });
+    $('#nota').textContent = F.nota || '';
+  },
+
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini, fim, H } = $m;
+    // lay out the angle photos and their callouts once the photos are loaded (needs their real size)
+    if (!D.feito && $$('#angulos img').every(i => i.naturalWidth)) { D.feito = true;
+      D.ang.forEach((A, k) => {
+        const a = A.a, m = encaixe(A.img, 1080, H, a.zoom || 1, a.foco ? a.foco.x / 100 : 0.5, a.foco ? a.foco.y / 100 : 0.5);
+        A.m = m; const pts = a.detalhes.map(d => m.pt(d.x, d.y));
+        A.cx = pts.reduce((s, q) => s + q[0], 0) / pts.length; A.cy = pts.reduce((s, q) => s + q[1], 0) / pts.length;
+        A.det.forEach((o, j) => { const [x, y] = pts[j];
+          if (x < 70 || x > 1010 || y < 700 || y > H - 400) $m.erro(`angulos[${k + 1}].detalhes[${j + 1}]: o ponto (${a.detalhes[j].x}, ${a.detalhes[j].y}) cai fora da área do produto na tela; escolha um ponto mais ao centro`);
+          o.dir = x < 540 ? 1 : -1; });
+        // each label gets a place once: beside its dot (the roomier side first), else above or below it; never
+        // over its own dot nor over an earlier label
+        // fonts are loaded now: shrink each label to its real (balanced) lines, so no card has empty space
+        A.det.forEach(o => { const tx = o.r.firstChild, rg = document.createRange(); rg.selectNodeContents(tx);
+          const ws = [...rg.getClientRects()].map(r => r.width), w = Math.ceil(Math.max(...ws, 60)) + 6;
+          if (w < tx.clientWidth) { tx.style.width = w + 'px'; o.w = w + 54; } });
+        const feitos = [];
+        A.det.forEach((o, j) => { const [x, y] = pts[j];
+          const specs = [];
+          for (const lado of [o.dir, -o.dir]) for (const dy of [-80, 10, -210, 120]) specs.push({ lado, dy });
+          specs.push({ lado: 0, dy: -150 - o.h }, { lado: 0, dy: 150 });
+          const ok = sp => { const L = lugar(o, x, y, sp, H);
+            const tapa = x > L.x - 24 && x < L.x + o.w + 24 && y > L.y - 24 && y < L.y + o.h + 24;
+            const bate = feitos.some(q => L.x < q.x + q.w + 16 && L.x + o.w > q.x - 16 && L.y < q.y + q.h + 18 && L.y + o.h > q.y - 18);
+            return [!tapa, !bate, L]; };
+          let esc = specs.find(sp => { const [a, b] = ok(sp); return a && b; }) || specs.find(sp => ok(sp)[0]) || specs[0];
+          o.spec = esc; const L = ok(esc)[2]; feitos.push({ x: L.x, y: L.y, w: o.w, h: o.h }); });
+      });
+      [['#aBase', 0], ['#aLuzI', 0]].forEach(([s]) => encaixe($(s), 1080, H));
+      encaixe($('#cI'), 868, 658);
+      $$('#ings img').forEach((im, k) => { const x = F.feito_com[k], m = encaixe(im, 310, 310, x.zoom || 1, x.foco ? x.foco.x / 100 : 0.5, x.foco ? x.foco.y / 100 : 0.5); im.style.transformOrigin = `${155 - m.ox}px ${155 - m.oy}px`; });
+      if ($('#hPI')) encaixe($('#hPI'), 792, 352); if ($('#gI')) encaixe($('#gI'), 1080, H);
+    }
+    // the watermark stays hidden until the brand has been revealed (scene 2); the engine owns its opacity
+    const mk2 = $('#marca'); if (mk2) { mk2.style.visibility = t < ini(2) ? 'hidden' : 'visible'; mk2.style.filter = `opacity(${eo(p(t, ini(2), 0.6))})`; }
+
+    // 0 opening: dark screen, a beam sweeps across and lights the product, then it all lights up
+    $m.cena('#cA', t, 0, 0, { push: 0.07, trans: 'fade', ent: 0.001 });
+    const sw = p(t, 0.1, 2.3), P = lerp(-30, 125, sw), full = eio(p(t, 2.0, 1.1));
+    const mask = full >= 1 ? 'none' : `linear-gradient(105deg, rgba(0,0,0,${full}) ${P - 34}%, #000 ${P - 13}%, #000 ${P + 13}%, rgba(0,0,0,${full}) ${P + 34}%)`;
+    $('#aLuz').style.webkitMaskImage = mask; $('#aLuz').style.maskImage = mask;
+    $('#aLuz').style.filter = `brightness(${1.12 - 0.12 * full})`;
+    $('#aFeixe').style.background = `linear-gradient(105deg, transparent ${P - 16}%, rgba(255,246,230,${0.42 * (1 - full)}) ${P}%, transparent ${P + 16}%)`;
+    const zA = 1.12 - 0.08 * eo(p(t, 0, 3.5)); $('#aBaseW').style.transform = $('#aLuz').style.transform = `scale(${zA})`;
+    $('#aGrad').style.opacity = eo(p(t, 2.0, 0.8));
+    const kq = eo5(p(t, 2.3, 0.5)); $('#aK').style.opacity = kq; $('#aK').style.transform = `translateY(${(1 - kq) * 30}px)`;
+    $m.revela('#aT', t, 2.5, 0.08);
+
+    // 1 brand: letters arrive one by one (blur to sharp), then the logo takes their place, then the slogan
+    $m.cena('#cB', t, 1, 1, { trans: 'fade', push: 0.03 });
+    const b0 = ini(1), lts = $$('#bN .lt'), passo = Math.min(0.11, 1.5 / Math.max(1, lts.length));
+    lts.forEach((l, i) => { const q = eo5(p(t, b0 + 0.25 + i * passo, 0.6)); l.style.opacity = q; l.style.filter = `blur(${(1 - q) * 14}px)`; l.style.transform = `translateY(${(1 - q) * 50}px) scale(${1.25 - 0.25 * q})`; });
+    const tl = b0 + 0.25 + lts.length * passo + 0.5;
+    const lq = $('#bLogo') ? eio(p(t, tl, 0.7)) : 0;
+    $('#bN').style.opacity = 1 - lq; $('#bN').style.transform = `scale(${1 - 0.08 * lq})`;
+    if ($('#bLogo')) { $('#bLogo').style.opacity = lq; $('#bLogo').style.transform = `scale(${1.1 - 0.1 * lq})`; }
+    const sq = $('#bLogo') ? tl + 0.5 : tl;
+    $('#bFio').style.transform = `scaleX(${eo5(p(t, sq, 0.7))})`;
+    $m.revela('#bS', t, sq + 0.2, 0.07);
+
+    // 2 origin
+    $m.cena('#cC', t, 2, 2, { push: 0.04 });
+    const c0 = ini(2), mq = eo5(p(t, c0 + 0.1, 0.8));
+    $('#cMold').style.transform = `translateY(${(1 - mq) * 140}px) rotate(${(1 - mq) * -3 + ($m.ESTILO === 'papel' ? -1.2 : 0)}deg)`; $('#cMold').style.opacity = cl(mq * 2);
+    $('#cI').style.scale = String(1 + 0.08 * p(t, c0, fim(2) - c0 + 0.5));
+    const kk = eb(p(t, c0 + 0.6, 0.5)); $('#cK').style.transform = `scale(${kk}) rotate(-3deg)`; $('#cK').style.opacity = cl(kk * 3);
+    const aq = eo5(p(t, c0 + 0.7, 0.6)); $('#cAsp').style.opacity = aq; $('#cAsp').style.transform = `translateY(${(1 - aq) * 40}px)`;
+    $m.revela('#cF', t, c0 + 0.9, 0.06);
+    $m.entra('#cQ', t, c0 + 1.2 + 0.06 * F.origem.frase.split(' ').length, 0.5, 20);
+
+    // 3.. angles: callouts one at a time; the photo leans in slowly towards the details
+    D.ang.forEach((A, k) => {
+      const i = 3 + k; $m.cena(A.c, t, i, i, { push: 0.02 });
+      if (A.c.style.visibility === 'hidden' || !A.m) return;
+      const a0 = ini(i), dur = fim(i) - a0, z = 1 + 0.07 * eio(p(t, a0, dur + 0.5));
+      A.ph.style.transformOrigin = `${A.cx}px ${A.cy}px`; A.ph.style.transform = `scale(${z})`;
+      const tq = eo5(p(t, a0 + 0.15, 0.5)); const ch = A.c.querySelector('.aCh'); ch.style.opacity = tq; ch.style.transform = `translateY(${(1 - tq) * 20}px)`;
+      $m.revela(A.c.querySelector('.aTi'), t, a0 + 0.25, 0.07);
+      const n = A.det.length, st = Math.min(1.6, (dur - 1.3) / n);
+      A.det.forEach((o, j) => {
+        const t0 = a0 + 0.9 + j * st;
+        const [px0, py0] = A.m.pt(o.d.x, o.d.y), px = A.cx + (px0 - A.cx) * z, py = A.cy + (py0 - A.cy) * z;
+        // label beside the dot, on the side with more room, above it when there is space; inside the free area
+        const L0 = lugar(o, px, py, o.spec, H), lx = L0.x, ly = L0.y, ax = L0.ax, ay = L0.ay, ex = L0.ex;
+        const dq = eb(p(t, t0, 0.45)), pulso = p(t, t0 + 0.2, 0.9);
+        Object.assign(o.pt.style, { left: px + 'px', top: py + 'px', opacity: cl(dq * 3), transform: `scale(${dq})` });
+        o.pt.firstChild.style.transform = `scale(${1 + 1.6 * pulso})`; o.pt.firstChild.style.opacity = pulso > 0 && pulso < 1 ? 1 - pulso : 0;
+        const d = `M${px.toFixed(1)} ${py.toFixed(1)} L${ex.toFixed(1)} ${ay.toFixed(1)} L${ax.toFixed(1)} ${ay.toFixed(1)}`;
+        o.path.setAttribute('d', d); const L = Math.hypot(ex - px, ay - py) + Math.abs(ax - ex);
+        o.path.style.strokeDasharray = L; o.path.style.strokeDashoffset = L * (1 - eo(p(t, t0 + 0.2, 0.45)));
+        const rq = eo5(p(t, t0 + 0.55, 0.5));
+        Object.assign(o.r.style, { left: lx + 'px', top: ly + 'px', opacity: rq, transform: o.spec.lado ? `translateX(${(1 - rq) * -o.spec.lado * 40}px)` : `translateY(${(1 - rq) * (ay > py ? -30 : 30)}px)` });
+        // the latest callout is the bright one; earlier ones step back a little
+        const prox = j < n - 1 ? p(t, a0 + 0.9 + (j + 1) * st, 0.4) : 0;
+        o.r.style.filter = `opacity(${1 - 0.25 * prox})`; o.path.style.opacity = 1 - 0.35 * prox;
+      });
+    });
+
+    // feito com: lenses open one by one, the macro photo comes into focus
+    const iE = D.iE, e0 = ini(iE); $m.cena('#cE', t, iE, iE, { push: 0.03 });
+    $m.revela('#eT', t, e0 + 0.1);
+    const st3 = Math.min(0.9, (fim(iE) - e0 - 1) / 3);
+    $('#eFio').style.opacity = eo(p(t, e0 + 0.5 + st3, 0.6)); $('#eFio').style.clipPath = `inset(0 0 ${1920 - lerp(860, 1345, eio(p(t, e0 + 0.5 + 0.5 * st3, st3 * 2)))}px 0)`;
+    $$('#ings .ing').forEach((r, k) => { const t0 = e0 + 0.5 + k * st3, q = eb(p(t, t0, 0.6)), f = eo(p(t, t0, 1.1));
+      const l = r.querySelector('.lente'); l.style.transform = `scale(${q})`; l.style.opacity = cl(q * 3);
+      const im = l.querySelector('img'); im.style.transform = `scale(${1.35 - 0.25 * f + 0.06 * p(t, t0, 6)})`; im.style.filter = `blur(${(1 - f) * 10}px)`;
+      $m.entra(r.querySelector('.n'), t, t0 + 0.25, 0.4, 16); $m.revela(r.querySelector('.nm .rv'), t, t0 + 0.3, 0.08); });
+
+    // line grid: cards land one by one, the photos drift slowly
+    const iF = D.iF, f0 = ini(iF); $m.cena('#cF2', t, iF, iF, { push: 0.03 });
+    $m.revela('#fT', t, f0 + 0.1);
+    const its = $$('#grade .it'), sp = Math.min(0.35, (fim(iF) - f0 - 1.5) / its.length);
+    its.forEach((c, k) => { const t0 = f0 + 0.45 + k * sp, q = eo5(p(t, t0, 0.7));
+      c.style.opacity = q; c.style.transform = `translateY(${(1 - q) * 90}px) scale(${0.9 + 0.1 * q})`;
+      c.querySelector('img').style.transform = `scale(${1.12 - 0.08 * eo(p(t, t0, 4))})`;
+      const pr = c.querySelector('.pr'); if (pr) { const s = eb(p(t, t0 + 0.6, 0.45)); pr.style.transform = `scale(${s})`; pr.style.opacity = cl(s * 3); } });
+
+    // use
+    if (D.uso) { const iG = D.iG, g0 = ini(iG); $m.cena('#cG', t, iG, iG, { push: 0.06 });
+      $m.filmagem($('#gI'), F.uso.foto, t - g0 + 6);
+      $('#gGrad').style.opacity = eo(p(t, g0 + 0.2, 0.8));
+      const q = eo5(p(t, g0 + 0.5, 0.5)); $('#gK').style.opacity = q; $('#gK').style.transform = `translateY(${(1 - q) * 24}px)`;
+      $m.revela('#gF', t, g0 + 0.7, 0.08); }
+
+    // where to buy: date card drops in, channels slide in one by one
+    const iH = D.iH, h0 = ini(iH); $m.cena('#cH', t, iH, iH, { push: 0.03 });
+    $m.revela('#hT', t, h0 + 0.1);
+    if ($('#hD')) { const q = eo5(p(t, h0 + 0.35, 0.7)); $('#hD').style.opacity = q; $('#hD').style.transform = `translateY(${(1 - q) * -60}px)`;
+      const c = el(p(t, h0 + 0.6, 0.9)); $('#hCal').style.transform = `rotate(${(1 - c) * -10}deg) scale(${0.6 + 0.4 * c})`;
+      $m.entra('#hK', t, h0 + 0.7, 0.4, 16); $m.entra('#hW', t, h0 + 0.85, 0.5, 20);
+      const fq = eb(p(t, h0 + 1.3, 0.5)); $('#hFal').style.transform = `scale(${fq})`; $('#hFal').style.opacity = cl(fq * 3); }
+    if ($('#hP')) { const q = eo5(p(t, h0 + 0.35, 0.7)); $('#hP').style.opacity = q; $('#hP').style.transform = `translateY(${(1 - q) * -60}px)`;
+      $('#hPI').style.scale = String(1.12 - 0.08 * eo(p(t, h0, 5)));
+      const c = eb(p(t, h0 + 0.8, 0.5)); $('#hPN').style.transform = `scale(${c})`; $('#hPN').style.opacity = cl(c * 3); }
+    const cb = h0 + 1.2;
+    $$('#canais .cn').forEach((r, k) => { const q = eo5(p(t, cb + k * 0.35, 0.6)); r.style.opacity = q; r.style.transform = `translateX(${(1 - q) * -120}px)`;
+      const ic = r.querySelector('.ic'); const s = eb(p(t, cb + k * 0.35 + 0.2, 0.5)); ic.style.transform = `scale(${s})`; });
+    $('#nota').style.opacity = t >= ini(iF) && t < fim(iF) ? 1 : 0;
+  },
+});
+</script></body></html>

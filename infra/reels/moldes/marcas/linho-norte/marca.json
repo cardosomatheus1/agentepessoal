@@ -1,0 +1,19 @@
+{
+ "nome": "Linho Norte",
+ "perfil": "@linhonorte",
+ "cores": [
+  "#c9b28f",
+  "#6f93b3"
+ ],
+ "fonte": "anton",
+ "estilo": "vidro",
+ "logo_escuro": "logo_escuro.png",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Garanta a sua no site",
+ "voz": {
+  "id": "Camila",
+  "motor": "generative"
+ },
+ "ramo": "moda: roupas de linho feitas em ateliê",
+ "_teste": "marca fictícia para testar os moldes"
+}

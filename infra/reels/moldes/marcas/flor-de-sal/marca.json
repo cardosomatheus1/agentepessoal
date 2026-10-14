@@ -1,0 +1,19 @@
+{
+ "nome": "Flor de Sal",
+ "perfil": "@flordesal.natural",
+ "cores": [
+  "#b5655a",
+  "#7d9a7e"
+ ],
+ "fonte": "bricolage",
+ "estilo": "papel",
+ "logo_escuro": "logo_escuro.png",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Compre pelo site",
+ "voz": {
+  "id": "Camila",
+  "motor": "generative"
+ },
+ "ramo": "cosméticos naturais (sabonetes e óleos artesanais)",
+ "_teste": "marca fictícia para testar os moldes"
+}

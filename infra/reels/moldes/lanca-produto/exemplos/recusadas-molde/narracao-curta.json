@@ -1,0 +1,142 @@
+{
+ "_marca": "flor-de-sal",
+ "_formato": "reel",
+ "_hoje": "2026-10-14",
+ "gancho": "Vem coisa nova aí",
+ "slogan": "Cosméticos naturais feitos à mão",
+ "produto": "Sabonete de Argila Rosa",
+ "origem": {
+  "frase": "Comecei fazendo sabonete para a pele sensível da minha filha. Hoje faço para você.",
+  "quem": "Marina, fundadora",
+  "foto": "fotos/lanca-produto_fds_atelie.jpg"
+ },
+ "angulos": [
+  {
+   "foto": "fotos/lanca-produto_fds_sabonete.jpg",
+   "detalhes": [
+    {
+     "texto": "Cortado à mão",
+     "x": 58,
+     "y": 39
+    },
+    {
+     "texto": "Com flores de calêndula",
+     "x": 77,
+     "y": 45
+    },
+    {
+     "texto": "Argila rosa brasileira",
+     "x": 48,
+     "y": 62
+    }
+   ]
+  },
+  {
+   "foto": "fotos/lanca-produto_fds_sabonete_textura.jpg",
+   "titulo": "De perto",
+   "detalhes": [
+    {
+     "texto": "Cristais de flor de sal",
+     "x": 69,
+     "y": 53
+    },
+    {
+     "texto": "Pétalas de calêndula",
+     "x": 35,
+     "y": 68
+    }
+   ]
+  },
+  {
+   "foto": "fotos/lanca-produto_fds_sabonete_embrulho.jpg",
+   "titulo": "Pronto para presente",
+   "detalhes": [
+    {
+     "texto": "Lavanda e alecrim",
+     "x": 43,
+     "y": 41
+    },
+    {
+     "texto": "Laço de barbante",
+     "x": 61,
+     "y": 57
+    },
+    {
+     "texto": "Papel kraft, sem plástico",
+     "x": 40,
+     "y": 73
+    }
+   ]
+  }
+ ],
+ "feito_com": [
+  {
+   "foto": "fotos/lanca-produto_fds_argila.jpg",
+   "nome": "Argila rosa"
+  },
+  {
+   "foto": "fotos/lanca-produto_fds_flor_de_sal.jpg",
+   "nome": "Flor de sal"
+  },
+  {
+   "foto": "fotos/lanca-produto_fds_oleo_amendoas.jpg",
+   "nome": "Óleo de amêndoas"
+  }
+ ],
+ "linha": {
+  "titulo": "A linha completa",
+  "itens": [
+   {
+    "foto": "fotos/lanca-produto_fds_sabonete.jpg",
+    "nome": "Sabonete de argila",
+    "preco": 32
+   },
+   {
+    "foto": "fotos/lanca-produto_fds_oleo_corporal.jpg",
+    "nome": "Óleo corporal",
+    "preco": 59
+   },
+   {
+    "foto": "fotos/lanca-produto_fds_sal_banho.jpg",
+    "nome": "Sal de banho",
+    "preco": 45
+   }
+  ]
+ },
+ "uso": {
+  "foto": "fotos/lanca-produto_fds_banho.jpg",
+  "frase": "Para um banho com calma, no fim do dia."
+ },
+ "onde": {
+  "canais": [
+   {
+    "canal": "site",
+    "texto": "flordesal.com.br"
+   },
+   {
+    "canal": "whatsapp",
+    "texto": "Pedidos pelo link da bio"
+   }
+  ],
+  "lancamento": "2026-10-23"
+ },
+ "falas": [
+  "Feito devagar.",
+  "Prazer.",
+  "A Marina conta: comecei fazendo sabonete para a pele sensível da minha filha.",
+  "O primeiro é o sabonete de argila rosa.",
+  "De perto.",
+  "E ele chega embrulhado em papel kraft.",
+  "Feito com argila rosa.",
+  "E a linha já nasce completa: o sabonete.",
+  "Para quem quer um banho com calma.",
+  "O lançamento é no dia vinte e três de outubro.",
+  "Flor de Sal."
+ ],
+ "nota": "valores de exemplo",
+ "_origem": {
+  "origem": "dono",
+  "linha": "dono",
+  "onde": "dono"
+ }
+}

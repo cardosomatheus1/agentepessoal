@@ -1,0 +1,261 @@
+{
+ "publico": "cliente_final",
+ "nota": "Lançamento de marca de produto (cosmético, moda, alimento embalado, bebida, artesanato, doces): fala com quem compra. Narrado, 55 a 65 s. Momento principal: o produto herói em 2 ou 3 ângulos, com chamadas de detalhe que saem do produto com uma linha fina e um ponto, uma de cada vez.",
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "sim",
+ "musica": "inspiradora",
+ "musica_sob_voz": true,
+ "campos": {
+  "gancho": {
+   "tipo": "texto",
+   "max": 30,
+   "obrigatorio": false,
+   "dica": "frase da abertura, sob o feixe de luz; sem ela, 'Vem coisa nova aí'"
+  },
+  "slogan": {
+   "tipo": "texto",
+   "max": 40,
+   "min": 8,
+   "dica": "o que a marca é, embaixo do logo: Cosméticos naturais feitos à mão"
+  },
+  "produto": {
+   "tipo": "texto",
+   "max": 30,
+   "dica": "nome do produto herói (aparece no primeiro ângulo)"
+  },
+  "origem": {
+   "tipo": "objeto",
+   "dica": "a origem em uma frase, dita pelo dono (real: _origem.origem), com foto de quem faz ou do lugar",
+   "campos": {
+    "frase": {
+     "tipo": "texto",
+     "min": 10,
+     "max": 90,
+     "real": true,
+     "dica": "frase do dono, sem editar o sentido"
+    },
+    "quem": {
+     "tipo": "texto",
+     "max": 30,
+     "dica": "quem disse: Marina, fundadora"
+    },
+    "foto": {
+     "tipo": "foto",
+     "dica": "quem faz ou o lugar (ateliê, cozinha, loja); não pode ser foto de outra cena"
+    }
+   }
+  },
+  "angulos": {
+   "tipo": "lista",
+   "min": 2,
+   "max": 3,
+   "dica": "o produto herói em 2 ou 3 fotos (ângulos); cada uma com 1 a 3 detalhes que aparecem um de cada vez",
+   "item": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "o MESMO produto herói em outro ângulo ou mais de perto"
+    },
+    "titulo": {
+     "tipo": "texto",
+     "max": 24,
+     "obrigatorio": false,
+     "dica": "título do ângulo (do segundo em diante; no primeiro vai o nome do produto): De perto, Pronto para presente"
+    },
+    "zoom": {
+     "tipo": "numero",
+     "min": 1,
+     "max": 2,
+     "obrigatorio": false,
+     "dica": "aproxima a foto (1 a 2) para enquadrar o detalhe ou tirar algo do quadro"
+    },
+    "foco": {
+     "tipo": "objeto",
+     "obrigatorio": false,
+     "dica": "centro do enquadramento com zoom, em % da foto",
+     "campos": {
+      "x": {
+       "tipo": "numero",
+       "min": 0,
+       "max": 100
+      },
+      "y": {
+       "tipo": "numero",
+       "min": 0,
+       "max": 100
+      }
+     }
+    },
+    "detalhes": {
+     "tipo": "lista",
+     "min": 1,
+     "max": 3,
+     "item": {
+      "texto": {
+       "tipo": "texto",
+       "max": 28
+      },
+      "x": {
+       "tipo": "numero",
+       "min": 0,
+       "max": 100,
+       "dica": "onde o ponto encosta no produto, em % da largura da foto"
+      },
+      "y": {
+       "tipo": "numero",
+       "min": 0,
+       "max": 100,
+       "dica": "em % da altura da foto"
+      }
+     }
+    }
+   }
+  },
+  "feito_com": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "dica": "3 ingredientes ou materiais, cada um com foto de perto (macro) do próprio ingrediente",
+   "item": {
+    "foto": {
+     "tipo": "foto"
+    },
+    "nome": {
+     "tipo": "texto",
+     "max": 22
+    },
+    "zoom": {
+     "tipo": "numero",
+     "min": 1,
+     "max": 3,
+     "obrigatorio": false,
+     "dica": "aproxima a foto dentro da lente (1 a 3), para mostrar só o ingrediente"
+    },
+    "foco": {
+     "tipo": "objeto",
+     "obrigatorio": false,
+     "dica": "onde está o ingrediente na foto, em %",
+     "campos": {
+      "x": {
+       "tipo": "numero",
+       "min": 0,
+       "max": 100
+      },
+      "y": {
+       "tipo": "numero",
+       "min": 0,
+       "max": 100
+      }
+     }
+    }
+   }
+  },
+  "linha": {
+   "tipo": "objeto",
+   "dica": "a linha ou coleção: 3 a 6 produtos com foto e nome; preço opcional (real)",
+   "campos": {
+    "titulo": {
+     "tipo": "texto",
+     "max": 26,
+     "dica": "A linha completa, Os sabores, A coleção"
+    },
+    "itens": {
+     "tipo": "lista",
+     "min": 3,
+     "max": 6,
+     "item": {
+      "foto": {
+       "tipo": "foto"
+      },
+      "nome": {
+       "tipo": "texto",
+       "max": 22
+      },
+      "preco": {
+       "tipo": "dinheiro",
+       "real": true,
+       "obrigatorio": false,
+       "dica": "preço praticado, com _origem.linha; ou todos os itens com preço, ou nenhum"
+      }
+     }
+    }
+   }
+  },
+  "uso": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "dica": "momento de uso ou para quem é: foto do produto em uso + frase",
+   "campos": {
+    "foto": {
+     "tipo": "foto"
+    },
+    "frase": {
+     "tipo": "texto",
+     "min": 10,
+     "max": 60
+    },
+    "rotulo": {
+     "tipo": "texto",
+     "max": 18,
+     "obrigatorio": false,
+     "dica": "etiqueta acima da frase; sem ela, 'Para quem é'"
+    }
+   }
+  },
+  "onde": {
+   "tipo": "objeto",
+   "dica": "onde comprar (canais reais, com _origem.onde) e, se houver, a data do lançamento",
+   "campos": {
+    "canais": {
+     "tipo": "lista",
+     "min": 1,
+     "max": 3,
+     "item": {
+      "canal": {
+       "tipo": "escolha",
+       "opcoes": [
+        "site",
+        "loja",
+        "marketplace",
+        "whatsapp",
+        "instagram"
+       ]
+      },
+      "texto": {
+       "tipo": "texto",
+       "max": 30,
+       "real": true,
+       "dica": "o endereço do canal: flordesal.com.br, Rua das Flores, 120, (71) 9..."
+      }
+     }
+    },
+    "lancamento": {
+     "tipo": "data",
+     "obrigatorio": false,
+     "real": true,
+     "dica": "dia do lançamento (AAAA-MM-DD); o dia da semana e os dias que faltam são do código; data passada é recusada"
+    }
+   }
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 9,
+   "max": 12,
+   "item": {
+    "tipo": "texto",
+    "max": 170
+   },
+   "dica": "uma fala por cena, na ordem: abertura, marca, origem, uma por ângulo, feito com, linha, uso (se houver), onde comprar, chamada. Juntas dão 55 a 65 s; sem dia da semana diferente do calculado"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ },
+ "especiais": {
+  "_hoje": "data de publicação (AAAA-MM-DD); sem ela, a data de hoje. A data de lançamento não pode ser anterior a ela."
+ }
+}

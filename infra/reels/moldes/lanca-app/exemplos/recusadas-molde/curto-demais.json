@@ -1,0 +1,101 @@
+{
+ "_marca": "nexos",
+ "_formato": "reel",
+ "nome": "NEXOS",
+ "gancho": "Frases que todo gestor já disse.",
+ "dores": [
+  "Não sei por que estou vendendo menos.",
+  "Minha equipe esquece de retornar.",
+  "Invisto em anúncio, mas não vejo o retorno."
+ ],
+ "pergunta": "E se uma tela só mostrasse onde a venda trava?",
+ "tema": "Da decisão à execução.",
+ "aparelho": "celular",
+ "telas": [
+  {
+   "imagem": "../demonstracao/exemplos/telas/nexos-1.png",
+   "nome": "Hoje",
+   "legenda": "Mostra onde a venda travou",
+   "destaque": {
+    "x": 13,
+    "y": 25,
+    "largura": 78,
+    "altura": 24
+   }
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/nexos-conversas.png",
+   "nome": "Conversas",
+   "legenda": "Responde com o cliente ainda na conversa",
+   "destaque": {
+    "x": 10,
+    "y": 36,
+    "largura": 80,
+    "altura": 26
+   }
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/nexos-clientes.png",
+   "nome": "Clientes",
+   "legenda": "Cada oportunidade com o próximo passo",
+   "destaque": {
+    "x": 10,
+    "y": 25.5,
+    "largura": 80,
+    "altura": 20
+   }
+  }
+ ],
+ "beneficios": [
+  {
+   "icone": "lupa",
+   "texto": "Sabe onde a venda trava"
+  },
+  {
+   "icone": "cadeado",
+   "texto": "Nada muda antes do seu clique"
+  },
+  {
+   "icone": "grafico",
+   "texto": "Fato separado de estimativa"
+  }
+ ],
+ "passos": [
+  "Agende uma demonstração",
+  "Conecte anúncios e conversas",
+  "Aprove a primeira ação"
+ ],
+ "para_quem": [
+  {
+   "icone": "pessoa",
+   "perfil": "Empresa",
+   "detalhe": "Vende com anúncio, conversa e equipe"
+  },
+  {
+   "icone": "pessoas",
+   "perfil": "Agência",
+   "detalhe": "Vê qual cliente precisa de atenção"
+  },
+  {
+   "icone": "casa",
+   "perfil": "Franquia ou grupo",
+   "detalhe": "Leva para uma loja o que deu certo na outra"
+  }
+ ],
+ "falas": [
+  "Vendo menos e não sei por quê.",
+  "E se uma tela mostrasse?",
+  "Chegou o NEXOS.",
+  "Mostra onde travou.",
+  "Responde rápido.",
+  "Próximo passo.",
+  "Três benefícios.",
+  "Três passos.",
+  "Para quem é.",
+  "Agende sua demonstração."
+ ],
+ "nota": "Dados fictícios",
+ "_origem": {
+  "telas": "sistema"
+ }
+}

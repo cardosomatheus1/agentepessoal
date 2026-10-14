@@ -1,0 +1,325 @@
+{
+ "publico": "cliente_final",
+ "nota": "Lançamento de produto DIGITAL (SaaS, aplicativo, plataforma, sistema, curso ou serviço online). Fala com quem vai usar o produto (o cliente do anunciante: o dono de salão que vai usar o app de agenda, o gestor que vai usar o software). Comercial completo de 55 a 65 s; para mostrar só uma ferramenta em 20 s, use o molde demonstracao.",
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "sim",
+ "musica": "tecnologica",
+ "musica_sob_voz": true,
+ "campos": {
+  "nome": {
+   "tipo": "texto",
+   "max": 24,
+   "min": 2,
+   "dica": "nome do produto (se for igual ao da marca, a revelação mostra só o logo e a frase-tema)"
+  },
+  "gancho": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false,
+   "dica": "título acima das notificações: Frases que todo gestor já disse"
+  },
+  "dores": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "item": {
+    "tipo": "texto",
+    "max": 44,
+    "min": 8
+   },
+   "dica": "3 dores do público, curtas, do jeito que ele fala; chegam como notificações"
+  },
+  "pergunta": {
+   "tipo": "texto",
+   "max": 70,
+   "min": 10,
+   "dica": "a virada: E se tudo isso coubesse numa tela só?"
+  },
+  "tema": {
+   "tipo": "texto",
+   "max": 44,
+   "min": 6,
+   "dica": "frase-tema do produto, entra com o logo"
+  },
+  "aparelho": {
+   "tipo": "escolha",
+   "opcoes": [
+    "celular",
+    "computador"
+   ],
+   "dica": "celular (prints em pé, 780x1687) ou computador (prints deitados 16:10, 2880x1800) para SaaS de computador"
+  },
+  "telas": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 5,
+   "dica": "prints REAIS do produto, em ordem do tour; dados fictícios pedem nota",
+   "item": {
+    "imagem": {
+     "tipo": "foto",
+     "real": true,
+     "dica": "print da tela (PNG/JPG), caminho relativo a midia/ ou file://"
+    },
+    "nome": {
+     "tipo": "texto",
+     "max": 16,
+     "dica": "nome da tela no produto: Conversas, Agenda, Resultado"
+    },
+    "legenda": {
+     "tipo": "texto",
+     "max": 44,
+     "min": 6,
+     "dica": "o que essa tela resolve, aparece ao lado do contorno"
+    },
+    "destaque": {
+     "tipo": "objeto",
+     "dica": "o ponto da tela que importa, em % do print (x e y do canto de cima à esquerda); a câmera mergulha nele",
+     "campos": {
+      "x": {
+       "tipo": "numero",
+       "min": 0,
+       "max": 100,
+       "dica": "da esquerda"
+      },
+      "y": {
+       "tipo": "numero",
+       "min": 0,
+       "max": 100,
+       "dica": "do topo"
+      },
+      "largura": {
+       "tipo": "numero",
+       "min": 8,
+       "max": 100
+      },
+      "altura": {
+       "tipo": "numero",
+       "min": 4,
+       "max": 100
+      }
+     }
+    }
+   }
+  },
+  "beneficios": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "dica": "3 benefícios curtos com ícone grande",
+   "item": {
+    "icone": {
+     "tipo": "escolha",
+     "opcoes": [
+      "check",
+      "relogio",
+      "calendario",
+      "chat",
+      "balao",
+      "grafico",
+      "lupa",
+      "cadeado",
+      "dinheiro",
+      "cartao",
+      "pessoa",
+      "pessoas",
+      "casa",
+      "megafone",
+      "brilho",
+      "trofeu",
+      "percentual",
+      "etiqueta",
+      "link",
+      "telefone",
+      "alerta",
+      "coracao",
+      "estrela",
+      "tesoura",
+      "garfo",
+      "bolo",
+      "carrinho",
+      "moto",
+      "caixa",
+      "folha",
+      "presente",
+      "fogo",
+      "camera",
+      "chave",
+      "seta",
+      "carro",
+      "haltere",
+      "dente",
+      "vestido",
+      "pata",
+      "xicara"
+     ]
+    },
+    "texto": {
+     "tipo": "texto",
+     "max": 34,
+     "min": 6
+    },
+    "numero": {
+     "tipo": "numero",
+     "real": true,
+     "obrigatorio": false,
+     "min": 0,
+     "max": 1000000,
+     "dica": "número opcional, só com _origem (o código conta até ele)"
+    },
+    "antes": {
+     "tipo": "texto",
+     "max": 4,
+     "obrigatorio": false,
+     "dica": "antes do número: R$, +"
+    },
+    "depois": {
+     "tipo": "texto",
+     "max": 10,
+     "obrigatorio": false,
+     "dica": "depois do número: %, h, min"
+    }
+   }
+  },
+  "passos": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "item": {
+    "tipo": "texto",
+    "max": 36,
+    "min": 6
+   },
+   "dica": "como começar em 3 passos"
+  },
+  "oferta": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "dica": "oferta de lançamento REAL (com _origem e prazo); sem oferta, use para_quem",
+   "campos": {
+    "titulo": {
+     "tipo": "texto",
+     "max": 30,
+     "min": 4
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false,
+     "dica": "preço de lançamento (0 = grátis)"
+    },
+    "preco_de": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false,
+     "dica": "só se esse preço foi praticado de verdade; o desconto é calculado pelo código"
+    },
+    "periodo": {
+     "tipo": "texto",
+     "max": 14,
+     "obrigatorio": false,
+     "dica": "por mês, por ano"
+    },
+    "condicao": {
+     "tipo": "texto",
+     "max": 60,
+     "obrigatorio": false
+    },
+    "ate": {
+     "tipo": "data",
+     "real": true,
+     "dica": "prazo real da oferta; o molde recusa prazo vencido e escreve o dia da semana"
+    }
+   }
+  },
+  "para_quem": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "obrigatorio": false,
+   "dica": "sem oferta: 3 perfis de quem usa",
+   "item": {
+    "perfil": {
+     "tipo": "texto",
+     "max": 22,
+     "min": 3
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 48,
+     "obrigatorio": false
+    },
+    "icone": {
+     "tipo": "escolha",
+     "opcoes": [
+      "check",
+      "relogio",
+      "calendario",
+      "chat",
+      "balao",
+      "grafico",
+      "lupa",
+      "cadeado",
+      "dinheiro",
+      "cartao",
+      "pessoa",
+      "pessoas",
+      "casa",
+      "megafone",
+      "brilho",
+      "trofeu",
+      "percentual",
+      "etiqueta",
+      "link",
+      "telefone",
+      "alerta",
+      "coracao",
+      "estrela",
+      "tesoura",
+      "garfo",
+      "bolo",
+      "carrinho",
+      "moto",
+      "caixa",
+      "folha",
+      "presente",
+      "fogo",
+      "camera",
+      "chave",
+      "seta",
+      "carro",
+      "haltere",
+      "dente",
+      "vestido",
+      "pata",
+      "xicara"
+     ],
+     "obrigatorio": false
+    },
+    "foto": {
+     "tipo": "foto",
+     "obrigatorio": false,
+     "dica": "foto que mostra exatamente esse perfil (registrada em midia/fotos/indice.json)"
+    }
+   }
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 10,
+   "max": 12,
+   "item": {
+    "tipo": "texto",
+    "max": 170
+   },
+   "dica": "telas + 7 falas: dores, pergunta, revelação, uma por tela, benefícios, como começar, oferta ou para quem, chamada; 55 a 65 s no total"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false,
+   "dica": "Dados fictícios (prints de exemplo) ou valores de exemplo"
+  }
+ }
+}

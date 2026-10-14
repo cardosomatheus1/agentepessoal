@@ -1,0 +1,126 @@
+{
+ "_marca": "nexos",
+ "_formato": "reel",
+ "_estilo": "vidro",
+ "nome": "NEXOS",
+ "gancho": "Frases que todo gestor já disse.",
+ "dores": [
+  "Tenho números, mas não sei o que fazer.",
+  "Minha equipe esquece de retornar.",
+  "Vendo, mas não sei quanto sobra."
+ ],
+ "pergunta": "E se o dia inteiro da operação coubesse numa tela?",
+ "tema": "Da decisão à execução.",
+ "aparelho": "computador",
+ "telas": [
+  {
+   "imagem": "../lanca-app/exemplos/telas/nexos-pc-hoje.png",
+   "nome": "Hoje",
+   "legenda": "O que trava a venda, já com a ação",
+   "destaque": {
+    "x": 16.5,
+    "y": 36,
+    "largura": 38,
+    "altura": 31
+   }
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/nexos-pc-conversas.png",
+   "nome": "Conversas",
+   "legenda": "O assistente responde nas suas regras",
+   "destaque": {
+    "x": 17.5,
+    "y": 20.5,
+    "largura": 45,
+    "altura": 39
+   }
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/nexos-pc-clientes.png",
+   "nome": "Clientes",
+   "legenda": "O próximo passo de cada oportunidade",
+   "destaque": {
+    "x": 16.5,
+    "y": 31.5,
+    "largura": 30,
+    "altura": 25
+   }
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/nexos-pc-resultados.png",
+   "nome": "Resultados",
+   "legenda": "Veja o que voltou depois da mudança",
+   "destaque": {
+    "x": 17.5,
+    "y": 21.5,
+    "largura": 23,
+    "altura": 33
+   }
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/nexos-pc-sobra.png",
+   "nome": "Margem",
+   "legenda": "Quanto sobra de cada venda",
+   "destaque": {
+    "x": 17.5,
+    "y": 20,
+    "largura": 41,
+    "altura": 30
+   }
+  }
+ ],
+ "beneficios": [
+  {
+   "icone": "lupa",
+   "texto": "Prioridade com o motivo"
+  },
+  {
+   "icone": "cadeado",
+   "texto": "A IA só faz o que você autorizou"
+  },
+  {
+   "icone": "dinheiro",
+   "texto": "Margem de cada venda"
+  }
+ ],
+ "passos": [
+  "Agende uma demonstração",
+  "Conecte anúncios e conversas",
+  "Aprove a primeira ação"
+ ],
+ "para_quem": [
+  {
+   "icone": "pessoa",
+   "perfil": "Empresa",
+   "detalhe": "Leads, equipe e resultados da operação"
+  },
+  {
+   "icone": "pessoas",
+   "perfil": "Agência",
+   "detalhe": "Cada cliente com acesso separado"
+  },
+  {
+   "icone": "casa",
+   "perfil": "Franquia ou grupo",
+   "detalhe": "O que deu certo numa loja vai para a outra"
+  }
+ ],
+ "falas": [
+  "Tenho números, mas não sei o que fazer. Minha equipe esquece de retornar. Vendo, mas não sei quanto sobra.",
+  "E se o dia inteiro da operação coubesse numa tela só?",
+  "Chegou o NEXOS. Da decisão à execução.",
+  "Você começa o dia pelo que trava a venda, com a ação pronta.",
+  "Nas conversas, o assistente responde dentro das regras da empresa.",
+  "Cada oportunidade tem o próximo passo e quem cuida.",
+  "Depois da mudança, você vê o que voltou.",
+  "E sabe quanto sobra de cada venda, já sem mídia, taxa e entrega.",
+  "Cada alerta chega com o motivo, a IA só faz o que você autorizou, e a margem aparece venda a venda.",
+  "Para começar: agende uma demonstração, conecte anúncios e conversas, e aprove a primeira ação.",
+  "Serve para a empresa, para a agência e para franquias e grupos.",
+  "Veja o NEXOS com os dados da sua empresa. Agende sua demonstração."
+ ],
+ "nota": "Dados fictícios",
+ "_origem": {
+  "telas": "sistema"
+ }
+}

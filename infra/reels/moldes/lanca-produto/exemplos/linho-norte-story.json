@@ -1,0 +1,130 @@
+{
+ "_marca": "linho-norte",
+ "_formato": "story",
+ "_hoje": "2026-10-14",
+ "gancho": "Tem coisa nova no ateliê",
+ "slogan": "Roupa de linho feita no nosso ateliê",
+ "produto": "Camisa Aurora",
+ "origem": {
+  "frase": "Aprendi a costurar com a minha avó. Até hoje, cada peça passa pelas minhas mãos.",
+  "quem": "Joana, costureira",
+  "foto": "fotos/atelie_maquina.jpg"
+ },
+ "angulos": [
+  {
+   "foto": "fotos/lanca-produto_linho_camisa.jpg",
+   "detalhes": [
+    {
+     "texto": "Bolso no peito",
+     "x": 66,
+     "y": 40
+    },
+    {
+     "texto": "Botões de coco",
+     "x": 49,
+     "y": 48
+    },
+    {
+     "texto": "Punho que dobra fácil",
+     "x": 21,
+     "y": 77
+    }
+   ]
+  },
+  {
+   "foto": "fotos/lanca-produto_linho_detalhe.jpg",
+   "titulo": "De perto",
+   "zoom": 1.45,
+   "foco": {
+    "x": 55,
+    "y": 80
+   },
+   "detalhes": [
+    {
+     "texto": "Botão de coco",
+     "x": 40,
+     "y": 71
+    },
+    {
+     "texto": "Trama de linho puro",
+     "x": 72,
+     "y": 82
+    }
+   ]
+  }
+ ],
+ "feito_com": [
+  {
+   "foto": "fotos/atelie_tecidos.jpg",
+   "nome": "Tecidos selecionados",
+   "zoom": 1.8,
+   "foco": {
+    "x": 75,
+    "y": 30
+   }
+  },
+  {
+   "foto": "fotos/atelie_aviamentos.jpg",
+   "nome": "Linhas e botões",
+   "zoom": 1.5,
+   "foco": {
+    "x": 45,
+    "y": 55
+   }
+  },
+  {
+   "foto": "fotos/atelie_barra.jpg",
+   "nome": "Barra feita à mão",
+   "zoom": 1.6,
+   "foco": {
+    "x": 40,
+    "y": 50
+   }
+  }
+ ],
+ "linha": {
+  "titulo": "A coleção do ateliê",
+  "itens": [
+   {
+    "foto": "fotos/lanca-produto_linho_camisa.jpg",
+    "nome": "Camisa Aurora"
+   },
+   {
+    "foto": "fotos/atelie_vestido.jpg",
+    "nome": "Vestido Mar"
+   },
+   {
+    "foto": "fotos/atelie_noiva.jpg",
+    "nome": "Vestido de noiva"
+   }
+  ]
+ },
+ "onde": {
+  "canais": [
+   {
+    "canal": "site",
+    "texto": "linhonorte.com.br"
+   },
+   {
+    "canal": "instagram",
+    "texto": "@linhonorte"
+   }
+  ],
+  "lancamento": "2026-10-31"
+ },
+ "falas": [
+  "Tem coisa nova chegando no ateliê. E ela é feita de linho, do jeito que a gente sempre quis.",
+  "Linho Norte. Roupa de linho cortada, costurada e passada no nosso ateliê.",
+  "A Joana conta: aprendi a costurar com a minha avó. Até hoje, cada peça passa pelas minhas mãos.",
+  "A primeira é a camisa Aurora, com botões de coco, bolso no peito e um punho que dobra fácil.",
+  "De perto, dá para ver a trama do linho puro e o acabamento de cada botão de coco.",
+  "Feita com tecidos selecionados, linhas e botões firmes, e a barra feita à mão.",
+  "Ela chega junto com a coleção do ateliê: o vestido Mar e o vestido de noiva sob medida.",
+  "O lançamento é no sábado, dia trinta e um de outubro, no nosso site e também no Instagram.",
+  "Linho Norte. Garanta a sua no site, antes que acabe o primeiro lote."
+ ],
+ "_origem": {
+  "origem": "dono",
+  "onde": "dono"
+ }
+}

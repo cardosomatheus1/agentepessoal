@@ -1,0 +1,101 @@
+{
+ "_marca": "raiz",
+ "_formato": "reel",
+ "nome": "Calculadora Raiz",
+ "gancho": "Quem vende comida já disse isso.",
+ "dores": [
+  "Calculo o preço do doce no caderno.",
+  "Vendo muito e não sobra nada.",
+  "O gás subiu e o meu preço não."
+ ],
+ "pergunta": "E se o preço certo saísse na hora, no celular?",
+ "tema": "Preço certo, com o seu lucro dentro.",
+ "aparelho": "celular",
+ "telas": [
+  {
+   "imagem": "../demonstracao/exemplos/telas/raiz-1.png",
+   "nome": "Meus produtos",
+   "legenda": "Cada produto com custo e preço",
+   "destaque": {
+    "x": 4.5,
+    "y": 13,
+    "largura": 91,
+    "altura": 27.5
+   }
+  },
+  {
+   "imagem": "../demonstracao/exemplos/telas/raiz-2.png",
+   "nome": "Novo cálculo",
+   "legenda": "O custo de cada ingrediente, até o gás",
+   "destaque": {
+    "x": 8.5,
+    "y": 27.5,
+    "largura": 83,
+    "altura": 31
+   }
+  },
+  {
+   "imagem": "../demonstracao/exemplos/telas/raiz-3.png",
+   "nome": "Resultado",
+   "legenda": "O preço sugerido sai na hora",
+   "destaque": {
+    "x": 5,
+    "y": 26,
+    "largura": 90,
+    "altura": 12
+   }
+  }
+ ],
+ "beneficios": [
+  {
+   "icone": "relogio",
+   "texto": "Preço pronto na hora"
+  },
+  {
+   "icone": "dinheiro",
+   "texto": "Seu lucro já entra na conta"
+  },
+  {
+   "icone": "folha",
+   "texto": "Adeus caderno e planilha"
+  }
+ ],
+ "passos": [
+  "Toque no link da bio",
+  "Cadastre o seu produto",
+  "Coloque os custos e pronto"
+ ],
+ "para_quem": [
+  {
+   "perfil": "Confeitaria",
+   "detalhe": "Bolo, doce e encomenda",
+   "foto": "fotos/doce_vitrine.jpg"
+  },
+  {
+   "perfil": "Salgados",
+   "detalhe": "Cento de salgado para festa",
+   "foto": "fotos/cantina_coxinhas.jpg"
+  },
+  {
+   "perfil": "Marmita",
+   "detalhe": "Marmita do dia e da semana",
+   "foto": "fotos/cantina_marmita.jpg"
+  }
+ ],
+ "falas": [
+  "Calculo o preço do doce no caderno. Vendo muito e não sobra nada. O gás subiu e o meu preço não.",
+  "E se o preço certo saísse na hora, direto no celular?",
+  "Chegou a calculadora da Raiz, feita para quem vende comida. Preço certo, com o seu lucro dentro.",
+  "Na tela de produtos, cada doce aparece com o custo e o preço de venda.",
+  "Em novo cálculo, você coloca o custo de cada ingrediente, até o gás e a embalagem.",
+  "E o preço sugerido sai na hora, já com a margem que você escolheu.",
+  "É rápido, o seu lucro já entra na conta, e você aposenta o caderno e a planilha.",
+  "Para começar: toque no link da bio, cadastre o seu produto e coloque os custos.",
+  "Serve para a confeitaria, para quem faz salgado de festa e para quem vende marmita.",
+  "A calculadora é grátis. O link está na bio."
+ ],
+ "nota": "valores de exemplo",
+ "_origem": {
+  "telas": "sistema"
+ }
+}

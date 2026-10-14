@@ -1,0 +1,19 @@
+{
+ "nome": "AgendaJá",
+ "perfil": "@agendaja.app",
+ "cores": [
+  "#6d28d9",
+  "#ff7a59"
+ ],
+ "fonte": "bricolage",
+ "estilo": "claro",
+ "logo_escuro": "logo_escuro.png",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Teste grátis pelo link",
+ "voz": {
+  "id": "Camila",
+  "motor": "generative"
+ },
+ "ramo": "aplicativo de agendamento para salões e barbearias",
+ "_teste": "marca fictícia para testar os moldes"
+}

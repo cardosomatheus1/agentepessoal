@@ -1,0 +1,109 @@
+{
+ "_marca": "agendaja",
+ "_formato": "story",
+ "_hoje": "2026-10-14",
+ "nome": "AgendaJá",
+ "gancho": "Todo salão já passou por isso.",
+ "dores": [
+  "Cliente marca no direct e some.",
+  "Perdi a tarde remarcando horário.",
+  "Esqueceram de vir de novo."
+ ],
+ "pergunta": "E se o cliente marcasse sozinho, a qualquer hora?",
+ "tema": "Agenda cheia, cadeira ocupada.",
+ "aparelho": "celular",
+ "telas": [
+  {
+   "imagem": "../lanca-app/exemplos/telas/agendaja-1.png",
+   "nome": "Agenda",
+   "legenda": "O dia todo, com os horários livres à vista",
+   "destaque": {
+    "x": 6,
+    "y": 26,
+    "largura": 88,
+    "altura": 26.5
+   }
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/agendaja-2.png",
+   "nome": "Agendar",
+   "legenda": "O cliente marca sozinho, pelo seu link",
+   "destaque": {
+    "x": 6,
+    "y": 47,
+    "largura": 88,
+    "altura": 18.5
+   }
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/agendaja-3.png",
+   "nome": "Lembretes",
+   "legenda": "O lembrete sai sozinho, um dia antes",
+   "destaque": {
+    "x": 6,
+    "y": 16.5,
+    "largura": 88,
+    "altura": 31
+   }
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/agendaja-4.png",
+   "nome": "Caixa",
+   "legenda": "Atendimentos, faturamento e faltas",
+   "destaque": {
+    "x": 6,
+    "y": 16.5,
+    "largura": 88,
+    "altura": 23.5
+   }
+  }
+ ],
+ "beneficios": [
+  {
+   "icone": "relogio",
+   "texto": "Agenda aberta o dia inteiro",
+   "numero": 24,
+   "depois": " h"
+  },
+  {
+   "icone": "chat",
+   "texto": "Lembrete automático"
+  },
+  {
+   "icone": "calendario",
+   "texto": "Menos falta na cadeira"
+  }
+ ],
+ "passos": [
+  "Crie a sua conta",
+  "Cadastre serviços e horários",
+  "Mande o link para os clientes"
+ ],
+ "oferta": {
+  "titulo": "Plano anual de lançamento",
+  "preco_de": 59.9,
+  "preco": 39.9,
+  "periodo": "por mês",
+  "condicao": "Com o primeiro mês grátis",
+  "ate": "2026-10-10"
+ },
+ "falas": [
+  "Cliente marca no direct e some. Perdi a tarde remarcando horário. Esqueceram de vir de novo.",
+  "E se o cliente marcasse sozinho, a qualquer hora?",
+  "Chegou o AgendaJá, o app de agenda para salões e barbearias.",
+  "Logo cedo, você vê a agenda do dia e os horários que ainda estão livres.",
+  "O cliente escolhe o serviço e o horário pelo seu link, sem precisar te chamar.",
+  "Um dia antes, o lembrete sai sozinho, e o cliente confirma ou remarca.",
+  "No fim da semana, você vê atendimentos, faturamento e faltas numa tela só.",
+  "Sua agenda fica aberta vinte e quatro horas, com lembrete automático e menos falta na cadeira.",
+  "Para começar: crie a sua conta, cadastre serviços e horários e mande o link para os clientes.",
+  "No lançamento, o plano anual sai por trinta e nove e noventa por mês, com o primeiro mês grátis. Só até quinze de novembro.",
+  "Teste grátis pelo link da bio."
+ ],
+ "nota": "valores de exemplo",
+ "_origem": {
+  "telas": "sistema",
+  "beneficios": "dono",
+  "oferta": "dono"
+ }
+}

@@ -1,0 +1,334 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* "Lançamento de app ou software": a full launch commercial for a digital product. The pains arrive as
+   notifications, a question turns the mood, the logo assembles and lights up, then the tour: real screens inside a
+   phone or a laptop, and on each one the camera dives into the spot that matters while an outline lights up and the
+   caption lands beside it. Then benefits, how to start, the launch offer (or who it is for) and the engine's final. */
+#nota{top:342px;bottom:auto;left:50%;right:auto;transform:translateX(-50%);padding:4px 20px;border-radius:999px;white-space:nowrap;background:color-mix(in srgb,var(--fundo) 80%,transparent)}
+/* 0 hook: notifications stacking */
+#gT{position:absolute;left:90px;width:820px;top:400px;height:170px;font-size:74px;line-height:1.08}
+#pilha{position:absolute;left:0;top:0;width:1080px;height:1920px}
+.noti{position:absolute;left:96px;width:808px;height:226px;padding:28px 32px 28px 156px;border-radius:40px;background:var(--cartao);border:1.5px solid var(--borda);box-shadow:var(--sombra);backdrop-filter:blur(24px)}
+body.e-noite .noti{background:color-mix(in srgb,var(--texto) 8%,var(--fundo));box-shadow:0 0 0 1.5px color-mix(in srgb,var(--destaque) 40%,transparent)}
+body.e-pop .noti{border:5px solid var(--texto);box-shadow:10px 10px 0 var(--texto)}
+.noti .ic{position:absolute;left:30px;top:32px;width:100px;height:100px;border-radius:28px;background:var(--ruim);color:var(--sobre-ruim);font-size:60px;display:flex;align-items:center;justify-content:center}
+.noti .cab{height:40px;font-size:30px;font-weight:700;display:flex;justify-content:space-between;color:var(--texto2)}
+.noti .tx{width:620px;height:132px;font-size:50px;font-weight:800;line-height:1.2;margin-top:6px}
+#vP{position:absolute;left:110px;width:770px;top:640px;height:600px;font-size:104px;line-height:1.04;display:flex;align-items:center}
+#vP>div{width:100%}
+#fant{position:absolute;left:310px;top:1330px;width:460px;height:900px;border-radius:70px;border:14px solid var(--destaque);opacity:0}
+#fant.pc{left:110px;width:860px;height:560px;border-radius:26px;top:1420px}
+/* 2 reveal */
+#rSelo{position:absolute;left:50%;top:430px;font-size:38px;transform:translateX(-50%);white-space:nowrap}
+#rLogo{position:absolute;left:160px;top:540px;width:760px;height:300px}
+#rLogo img.tira{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#rLogo .unico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+#rLogo .unico img{max-width:760px;max-height:300px}
+#rLogo .unico .nome{font-family:var(--ft);font-weight:900;font-size:120px;line-height:1;color:var(--texto)}
+#rLogo .unico.com-foto{flex-direction:column;gap:14px}#rLogo .unico.com-foto .avatar{width:220px;height:220px;border:8px solid var(--destaque)}
+#rLogo .unico.com-foto .nome{font-size:60px}
+#rLogo .unico.selo{padding:20px 36px;border-radius:999px;background:var(--selo);left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%)}
+#rLogo .unico.selo img{max-height:200px}
+#rBrilho{position:absolute;inset:0;pointer-events:none;-webkit-mask-size:contain;-webkit-mask-repeat:no-repeat;-webkit-mask-position:center;mask-size:contain;mask-repeat:no-repeat;mask-position:center}
+#rAnel{position:absolute;left:540px;top:690px;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;border:10px solid var(--destaque);opacity:0}
+#rNome{position:absolute;left:130px;width:750px;top:920px;height:96px;font-size:76px;text-align:center}
+#rTema{position:absolute;left:130px;width:750px;top:1030px;height:300px;font-size:100px;line-height:1.04;text-align:center}
+#rTema .ww:last-child .wi{color:var(--destaque)}
+/* 3.. tour */
+#tTop{position:absolute;left:90px;width:820px;top:396px;height:100px;display:flex;align-items:center;gap:26px;z-index:3}
+#tNum{flex:none;width:92px;height:92px;border-radius:28px;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900;font-size:50px;display:flex;align-items:center;justify-content:center;box-shadow:var(--sombra)}
+#tNome{flex:1;height:96px;font-size:76px;line-height:1.2;white-space:nowrap}
+#dev{position:absolute;left:0;top:0;transform-origin:0 0;z-index:1}
+#dev .corpo{position:absolute;inset:0;background:var(--texto);box-shadow:0 40px 90px rgba(0,0,0,.35),inset 0 0 0 4px color-mix(in srgb,var(--fundo) 30%,var(--texto))}
+#dev.cel .corpo{border-radius:74px}
+#dev.pc .corpo{border-radius:30px 30px 10px 10px}
+#dev .tela{position:absolute;overflow:hidden;background:var(--fundo)}
+#dev.cel .tela{border-radius:58px}
+#dev.pc .tela{border-radius:8px}
+#dev .tela img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:fill}
+#dev .ilha{position:absolute;left:50%;top:14px;width:120px;height:34px;margin-left:-60px;border-radius:17px;background:rgba(0,0,0,.92);z-index:5}
+#dev .base{position:absolute;left:-60px;right:-60px;height:36px;background:color-mix(in srgb,var(--texto) 82%,var(--fundo));clip-path:polygon(4% 0,96% 0,100% 70%,98% 100%,2% 100%,0 70%);border-radius:0 0 30px 30px}
+#dev .base i{position:absolute;left:50%;top:0;width:180px;height:12px;margin-left:-90px;border-radius:0 0 12px 12px;background:color-mix(in srgb,var(--texto) 60%,var(--fundo))}
+#spot{position:absolute;border-radius:18px;box-shadow:0 0 0 4000px color-mix(in srgb,var(--fundo) 84%,transparent);opacity:0;z-index:3}
+#cont{position:absolute;left:0;top:0;overflow:visible;z-index:4;pointer-events:none}
+#cont rect{fill:none;stroke:var(--destaque);stroke-linecap:round}
+#call{position:absolute;left:110px;width:780px;height:176px;padding:26px 36px;border-radius:34px;background:var(--destaque);color:var(--sobre-destaque);z-index:6;opacity:0;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+body.e-pop #call{border:5px solid var(--texto);box-shadow:10px 10px 0 var(--texto)}
+#call:before{content:'';position:absolute;left:var(--px,390px);top:-22px;width:44px;height:44px;margin-left:-22px;background:var(--destaque);transform:rotate(45deg);border-radius:8px}
+#callT{position:relative;width:708px;height:124px;font-family:var(--ft);font-weight:900;font-size:54px;line-height:1.13;display:flex;align-items:center}
+/* benefits */
+.ben{position:absolute;left:90px;width:820px;height:290px}
+.ben .bi{position:absolute;left:0;top:50%;width:184px;height:184px;margin-top:-92px;border-radius:56px;background:var(--destaque);color:var(--sobre-destaque);font-size:110px;display:flex;align-items:center;justify-content:center;box-shadow:var(--sombra)}
+body.e-pop .ben .bi{border:5px solid var(--texto);box-shadow:8px 8px 0 var(--texto)}
+.ben .bt{position:absolute;left:224px;width:570px;display:flex;flex-direction:column;justify-content:center;top:0;height:290px}
+.ben .bn{height:110px;font-size:104px;line-height:1.05;white-space:nowrap}
+.ben .bx{height:150px;font-size:62px;line-height:1.1}
+.ben .bn+.bx{height:140px;font-size:52px}
+/* steps */
+#pT{position:absolute;left:90px;top:410px;font-size:40px;white-space:nowrap}
+#pLinha{position:absolute;left:154px;top:640px;width:12px;height:0;border-radius:6px;background:var(--destaque);opacity:.35}
+.pas{position:absolute;left:90px;width:820px;height:250px}
+.pas .pn{position:absolute;left:0;top:50%;width:140px;height:140px;margin-top:-70px;border-radius:50%;border:8px solid var(--destaque);background:var(--fundo);color:var(--texto);font-family:var(--ft);font-weight:900;font-size:76px;display:flex;align-items:center;justify-content:center}
+.pas .pn.on{background:var(--destaque);color:var(--sobre-destaque)}
+.pas .px{position:absolute;left:180px;width:600px;top:50%;height:150px;margin-top:-75px;font-size:62px;line-height:1.1;display:flex;align-items:center}
+.pas .px>div{width:100%}
+/* offer */
+#oSelo{position:absolute;left:90px;top:410px;font-size:40px;white-space:nowrap;transform-origin:20% 50%}
+#oCard{position:absolute;left:90px;width:820px;top:520px;height:880px;padding:50px 54px}
+#oTit{height:200px;font-size:96px;line-height:1.04}
+#oPreco{position:relative;height:250px;margin-top:20px}
+#oDe{position:absolute;left:0;top:0;height:64px;font-size:52px;font-weight:800;white-space:nowrap}
+#oDeR{position:absolute;left:0;top:34px;height:10px;width:0;border-radius:5px;background:var(--ruim);transform:rotate(-4deg)}
+#oPor{position:absolute;left:0;top:64px;width:712px;height:160px;font-size:150px;line-height:1.05;white-space:nowrap}
+#oPer{position:absolute;left:0;top:214px;height:44px;font-size:36px;font-weight:700}
+#oPct{position:absolute;right:0;top:-6px;font-size:54px;padding:12px 28px;border-radius:24px;background:var(--bom);color:var(--sobre-bom);font-weight:900;transform-origin:50% 50%}
+#oCond{height:120px;margin-top:22px;font-size:44px;line-height:1.3;font-weight:700}
+#oAte{display:flex;align-items:center;gap:20px;height:96px;margin-top:22px;padding:0 30px;border-radius:26px;background:color-mix(in srgb,var(--destaque) 16%,transparent);color:var(--texto)}
+#oAte .ico{font-size:52px;color:var(--destaque);flex:none}
+#oAteT{flex:1;height:64px;font-size:48px;font-weight:900;white-space:nowrap}
+/* who it is for */
+#qT{position:absolute;left:90px;top:410px;font-size:40px;white-space:nowrap}
+.quem{position:absolute;left:90px;width:820px;height:260px;padding:30px}
+.quem .qf{position:absolute;left:30px;top:30px;width:200px;height:200px;border-radius:30px;overflow:hidden;background:var(--destaque);color:var(--sobre-destaque);font-size:120px;display:flex;align-items:center;justify-content:center}
+.quem .qf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.quem .qt{position:absolute;left:266px;width:524px;top:30px;height:200px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.quem .qp{height:68px;font-size:56px;line-height:1.2;white-space:nowrap}
+.quem .qd{height:100px;font-size:38px;line-height:1.3;font-weight:700}
+.quem .qp:only-child{height:140px;white-space:normal;font-size:60px;line-height:1.12}
+</style></head><body><div id="palco">
+
+<div class="cena" id="cG"><div class="cam full">
+ <div class="tit t seg rv" id="gT"></div>
+ <div id="pilha"></div>
+ <div id="fant"></div>
+ <div class="tit t seg" id="vP"><div class="rv" id="vPt"></div></div>
+</div></div>
+
+<div class="cena" id="cR"><div class="cam full">
+ <div id="rAnel"></div>
+ <div id="rLogo"></div>
+ <div class="chip t seg" id="rSelo">Lançamento</div>
+ <div class="tit t seg" id="rNome"></div>
+ <div class="tit t seg rv" id="rTema"></div>
+</div></div>
+
+<div class="cena" id="cT"><div class="cam full">
+ <div id="tTop"><div id="tNum"></div><div class="tit t seg" id="tNome"></div></div>
+ <div id="dev"><div class="corpo"></div><div class="tela" id="tela"><div id="spot"></div><svg id="cont"><rect id="contR" pathLength="1"/></svg></div></div>
+ <div id="call"><div class="t seg" id="callT"></div></div>
+</div></div>
+
+<div class="cena" id="cB"><div class="cam full" id="bens"></div></div>
+
+<div class="cena" id="cP"><div class="cam full">
+ <div class="chip t seg" id="pT">Como começar</div>
+ <div id="pLinha"></div>
+ <div id="passos"></div>
+</div></div>
+
+<div class="cena" id="cO"><div class="cam full" id="oW"></div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// Scenes follow the narration (falas): 0 pains as notifications, 1 the question, 2 logo reveal, 3..3+n-1 one per
+// screen (n = 3 to 5), then benefits, how to start, offer or who it is for; the last line is the call (engine's
+// final scene). So falas = n + 7. Every number on screen comes from the ficha; discount and deadline are computed here.
+let D = {};
+// scene with the style's entry, but the old scene also fades out (in the fade style the engine keeps it whole while
+// the new one fades in on top, and two layouts mix)
+const cena = ($m, sel, t, i, j, o) => { const q = $m.cena(sel, t, i, j, o), b = $m.fim(j), e = $m.$(sel); if (t >= b) e.style.opacity = Math.min(+e.style.opacity, 1 - $m.p(t, b, 0.25)); return q; };
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+// device geometry (stage px at scale 1): body box and the screen inside it
+const APAR = {
+  celular: { x: 305, y: 540, w: 470, h: 970, sx: 18, sy: 18, sw: 434, sh: 934, smax: 2.5, larg: 840 },
+  computador: { x: 70, y: 660, w: 940, h: 610, sx: 22, sy: 22, sw: 896, sh: 560, smax: 3.1, larg: 960 },
+};
+const ICO_NOTI = ['alerta', 'relogio', 'balao'];
+const HORA_NOTI = ['agora', 'agora', 'agora'];
+const SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const dia = s => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+const ddmm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+// moments inside a scene for items read one after the other in its line: proportional to the text before each one
+const marcos = (a, b, textos, ini = 0.15, fimFrac = 0.82) => { const L = textos.map(s => s.length + 12), tot = L.reduce((x, y) => x + y, 0); let acc = 0;
+  return L.map(l => { const t = a + ini + (b - a - ini) * fimFrac * (acc / tot); acc += l; return t; }); };
+
+Motor.molde({
+  id: 'lanca-app', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $, brl } = $m, n = F.telas.length;
+    if (F.falas.length !== n + 7) $m.erro(`falas: são ${n + 7} (dores, pergunta, revelação, uma por tela (${n}), benefícios, como começar, ${F.oferta ? 'oferta' : 'para quem é'}, chamada); vieram ${F.falas.length}`);
+    if (!F.oferta && !F.para_quem) $m.erro('falta a cena 10: oferta de lançamento (com prazo real) ou para_quem (3 perfis)');
+    if (F.oferta && F.para_quem) $m.erro('escolha uma: oferta ou para_quem');
+    F.telas.forEach((s, k) => { const d = s.destaque; if (d.x + d.largura > 100.5 || d.y + d.altura > 100.5) $m.erro(`telas[${k + 1}].destaque: passa da borda da tela (x + largura e y + altura até 100)`); });
+    // the video must stay a one-minute commercial
+    if (window.TEMPOS && window.TEMPOS.length > 1) { const dur = window.TEMPOS[window.TEMPOS.length - 1];
+      if (dur < 55 || dur > 65) $m.erro(`duração ${dur.toFixed(1)} s: o molde pede 55 a 65 s (encurte ou alongue as falas)`); }
+    const A = APAR[F.aparelho];
+    D = { n, A, B: 3 + n, P: 4 + n, O: 5 + n };
+    // 0 hook + 1 question
+    if (F.gancho) $('#gT').textContent = F.gancho; else $('#gT').remove();
+    F.dores.forEach((s, k) => { const c = mk('div', 'noti', null, $('#pilha')); c.innerHTML = `<div class="ic">${$m.icone(ICO_NOTI[k % 3])}</div>`;
+      const cab = mk('div', 'cab', null, c); mk('span', null, F.nome, cab); mk('span', null, HORA_NOTI[k], cab); mk('div', 'tx t seg', s, c); });
+    $('#vPt').textContent = F.pergunta; if (F.aparelho === 'computador') $('#fant').classList.add('pc');
+    // 2 reveal: the logo in strips (or the name/photo when the brand has no logo version for this background)
+    const lg = $m._logo(true), im = lg.querySelector('img:not(.avatar)');
+    if (im && !lg.classList.contains('selo')) {
+      D.tiras = 7; for (let i = 0; i < D.tiras; i++) { const t = mk('img', 'tira', null, $('#rLogo')); t.src = im.src; t.alt = '';
+        t.style.clipPath = `inset(0 ${(100 - (i + 1) * 100 / D.tiras).toFixed(3)}% 0 ${(i * 100 / D.tiras).toFixed(3)}%)`; }
+      const br = mk('div', null, null, $('#rLogo')); br.id = 'rBrilho'; br.style.webkitMaskImage = br.style.maskImage = `url("${im.src}")`;
+    } else { D.tiras = 0; lg.classList.add('unico'); lg.classList.remove('logo'); $('#rLogo').appendChild(lg); }
+    const mesmo = (F.nome || '').trim().toLowerCase() === (M.nome || '').trim().toLowerCase();
+    if (mesmo) { $('#rNome').remove(); $('#rTema').style.top = '960px'; } else $('#rNome').textContent = F.nome;
+    $('#rTema').textContent = F.tema;
+    // tour
+    const dev = $('#dev'); dev.classList.add(F.aparelho === 'computador' ? 'pc' : 'cel');
+    Object.assign(dev.style, { width: A.w + 'px', height: A.h + 'px' });
+    Object.assign($('#tela').style, { left: A.sx + 'px', top: A.sy + 'px', width: A.sw + 'px', height: A.sh + 'px' });
+    if (F.aparelho === 'computador') { const b = mk('div', 'base', null, dev); b.style.top = (A.h - 4) + 'px'; mk('i', null, null, b); }
+    else mk('div', 'ilha', null, $('#tela'));
+    const cont = $('#cont'); cont.setAttribute('width', A.sw); cont.setAttribute('height', A.sh); cont.setAttribute('viewBox', `0 0 ${A.sw} ${A.sh}`);
+    F.telas.forEach((s, k) => { const i = document.createElement('img'); i.src = $m.midia(s.imagem); i.alt = ''; i.dataset.k = k; $('#tela').insertBefore(i, $('#spot')); });
+    D.rect = F.telas.map(s => { const d = s.destaque, pad = 1.2;
+      const x = Math.max(0, d.x - pad), y = Math.max(0, d.y - pad * A.sw / A.sh), w = Math.min(100 - x, d.largura + 2 * pad), h = Math.min(100 - y, d.altura + 2 * pad * A.sw / A.sh);
+      return { x: x / 100 * A.sw, y: y / 100 * A.sh, w: w / 100 * A.sw, h: h / 100 * A.sh }; });
+    // zoom target of each screen: the spot fits 840 x 520 px, centred with the caption under it
+    D.alvo = D.rect.map(r => { const s = Math.max(1, Math.min(A.smax, A.larg / r.w, 520 / r.h)); const H = r.h * s, grupo = H + 46 + 176;
+      const top = Math.max(430, 950 - grupo / 2); return { s, cx: 520, cy: top + H / 2, callY: top + H + 46 }; });
+    $('#tNome').textContent = F.telas.reduce((a, s) => s.nome.length > a.length ? s.nome : a, '');
+    $('#callT').textContent = F.telas.reduce((a, s) => s.legenda.length > a.length ? s.legenda : a, '');
+    // benefits
+    F.beneficios.forEach((b, k) => { const e = mk('div', 'ben', null, $('#bens')); e.style.top = (420 + k * 330) + 'px';
+      e.innerHTML = `<div class="bi">${$m.icone(b.icone)}</div>`; const tx = mk('div', 'bt', null, e);
+      if (b.numero != null) { const nn = mk('div', 'bn tit grad t seg', null, tx); nn.dataset.v = b.numero; nn.textContent = (b.antes || '') + $m.num(b.numero, Number.isInteger(b.numero) ? 0 : 1) + (b.depois || ''); }
+      mk('div', 'bx tit t seg', b.texto, tx); });
+    // steps
+    F.passos.forEach((s, k) => { const e = mk('div', 'pas', null, $('#passos')); e.style.top = (520 + k * 290) + 'px';
+      mk('div', 'pn', String(k + 1), e); const x = mk('div', 'px tit t seg', null, e); mk('div', 'rv', s, x); });
+    $('#pLinha').style.top = '645px';
+    // offer or who it is for
+    const W = $('#oW');
+    if (F.oferta) {
+      const O = F.oferta, hoje = dia(F._hoje) || new Date(), h0 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()), ate = dia(O.ate);
+      if (!ate) $m.erro('oferta.ate: data no formato AAAA-MM-DD');
+      else if (ate < h0) $m.erro(`oferta.ate: o prazo (${ddmm(ate)}) já passou; oferta vencida não vai ao ar`);
+      if (O.preco_de != null && O.preco == null) $m.erro('oferta: preco_de sem preco');
+      if (O.preco_de != null && O.preco != null && O.preco >= O.preco_de) $m.erro('oferta: o preço de lançamento precisa ser menor que o preço "de"');
+      mk('div', 'chip t seg', 'Oferta de lançamento', W).id = 'oSelo';
+      const c = mk('div', 'cartao', null, W); c.id = 'oCard';
+      mk('div', 'tit t seg rv', O.titulo, c).id = 'oTit';
+      if (O.preco != null) { const pr = mk('div', null, null, c); pr.id = 'oPreco';
+        if (O.preco_de != null) { mk('div', 't t2 seg', brl(O.preco_de), pr).id = 'oDe'; mk('div', null, null, pr).id = 'oDeR';
+          mk('div', null, '−' + Math.round((1 - O.preco / O.preco_de) * 100) + '%', pr).id = 'oPct'; }
+        mk('div', 'tit grad t seg', O.preco === 0 ? 'Grátis' : brl(O.preco), pr).id = 'oPor';
+        if (O.periodo) mk('div', 't t2 seg', O.periodo, pr).id = 'oPer';
+        if (O.preco_de == null) { $('#oPor').style.top = '0px'; if ($('#oPer')) $('#oPer').style.top = '160px'; pr.style.height = '210px'; } }
+      if (O.condicao) mk('div', 't t2 seg', O.condicao, c).id = 'oCond';
+      const at = mk('div', null, null, c); at.id = 'oAte'; at.innerHTML = $m.icone('calendario');
+      const dd = ate ? Math.round((ate - h0) / 864e5) : 0;
+      mk('div', 't seg', ate ? (dd === 0 ? `Só hoje, ${ddmm(ate)}` : dd === 1 ? `Só até amanhã, ${ddmm(ate)}` : `Só até ${SEMANA[ate.getDay()]}, ${ddmm(ate)}`) : '', at).id = 'oAteT';
+      // card height follows what it holds
+      const hc = 100 + 200 + (O.preco != null ? 20 + (O.preco_de != null ? 250 : 210) : 0) + (O.condicao ? 142 : 0) + 118;
+      c.style.height = hc + 'px'; c.style.top = Math.max(500, 960 - hc / 2) + 'px';
+    } else if (F.para_quem) {
+      mk('div', 'chip t seg', 'Para quem é', W).id = 'qT';
+      F.para_quem.forEach((q, k) => { const c = mk('div', 'quem cartao', null, W); c.style.top = (520 + k * 300) + 'px';
+        const f = mk('div', 'qf', null, c); if (q.foto) { const i = mk('img', null, null, f); i.src = $m.midia(q.foto); i.alt = ''; } else f.innerHTML = $m.icone(q.icone || 'pessoa');
+        const t = mk('div', 'qt', null, c); mk('div', 'qp tit t seg', q.perfil, t); if (q.detalhe) mk('div', 'qd t t2 seg', q.detalhe, t); });
+    }
+    $('#nota').textContent = F.nota || '';
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, ini, fim } = $m, n = D.n, A = D.A;
+    // 0 + 1: notifications drop in and stack; on the question they are swiped away
+    cena($m, '#cG', t, 0, 1, { push: 0.03 });
+    const a1 = ini(1), cards = $$('.noti'), chega = marcos(0, a1, F.dores, 0.25, 0.85);
+    if ($('#gT')) { $m.revela('#gT', t, 0.05, 0.06); $('#gT').style.opacity = 1 - eo(p(t, a1, 0.35)); }
+    const topo = $('#gT') ? 640 : 540;
+    cards.forEach((c, k) => {
+      const q = eb(p(t, chega[k], 0.5)), depois = cards.filter((_, j) => j > k && t >= chega[j]).length;
+      const desce = cards.reduce((acc, _, j) => acc + (j > k ? eo5(p(t, chega[j], 0.45)) : 0), 0);
+      const y = topo + desce * 252 - (1 - q) * 40, fora = eio(p(t, a1 + 0.05 + (2 - k) * 0.08, 0.5));
+      const tre = Math.sin((t - chega[k]) * 40) * 10 * Math.exp(-(t - chega[k]) * 5) * (t > chega[k] ? 1 : 0);
+      c.style.transform = `translate(${fora * 1200 + tre}px, ${y}px) rotate(${fora * 8}deg) scale(${1 - 0.03 * depois})`;
+      c.style.top = '0px'; c.style.opacity = cl(q * 2) * (1 - fora); c.style.scale = String(0.92 + 0.08 * cl(q));
+    });
+    const fq = eo(p(t, a1 + 0.3, Math.max(1, ini(2) - a1 - 0.3))); $('#fant').style.opacity = 0.22 * cl(fq * 3); $('#fant').style.transform = `translateY(${-220 * fq}px)`;
+    $('#vP').style.opacity = t >= a1 ? 1 : 0; $m.revela('#vPt', t, a1 + 0.45, 0.07);
+    // 2: logo assembles in strips, lights up, then the theme
+    const a2 = ini(2); cena($m, '#cR', t, 2, 2, { push: 0.04 });
+    const mkW = $('#marca'); if (mkW) mkW.style.visibility = t >= a2 - 0.1 && t < fim(2) ? 'hidden' : 'visible';
+    if (D.tiras) $$('#rLogo img.tira').forEach((e, i) => { const q = eo5(p(t, a2 + 0.2 + i * 0.05, 0.6)); const s = i % 2 ? 1 : -1;
+      e.style.transform = `translateY(${(1 - q) * 260 * s}px) scaleY(${1 + (1 - q) * 0.4})`; e.style.opacity = cl(q * 2); });
+    else { const q = el(p(t, a2 + 0.2, 1)); const u = $('#rLogo .unico'); u.style.opacity = cl(q * 3); u.style.scale = String(q); }
+    const aceso = a2 + 0.2 + (D.tiras || 1) * 0.05 + 0.45, luz = Math.exp(-Math.max(0, t - aceso) * 1.6) * (t > aceso ? 1 : 0);
+    $('#rLogo').style.filter = `drop-shadow(0 0 ${8 + 50 * luz}px color-mix(in srgb, var(--destaque) ${Math.round(30 + 60 * luz)}%, transparent))`;
+    const br = $('#rBrilho'); if (br) { const k = p(t, aceso - 0.1, 0.9); br.style.background = `linear-gradient(105deg, transparent ${k * 140 - 30}%, var(--destaque) ${k * 140 - 15}%, transparent ${k * 140}%)`; br.style.opacity = k > 0 && k < 1 ? 0.9 : 0; }
+    const an = p(t, aceso, 0.9); $('#rAnel').style.opacity = an > 0 && an < 1 ? (1 - an) * 0.8 : 0; $('#rAnel').style.transform = `scale(${1 + an * 5})`;
+    $m.entra('#rSelo', t, a2 + 0.05, 0.5, -30); $('#rSelo').style.transform += ' translateX(-50%)';
+    if ($('#rNome')) $m.entra('#rNome', t, aceso, 0.5, 40);
+    $m.revela('#rTema', t, aceso + 0.2, 0.07);
+    // tour: device in, then per screen: slide in, dive to the spot, outline, caption, pull back
+    const T0 = ini(3), TN = fim(2 + n);
+    cena($m, '#cT', t, 3, 2 + n, { push: 0.01 });
+    let k = 0; for (let j = 0; j < n; j++) if (t >= ini(3 + j)) k = j;
+    const a = ini(3 + k), b = fim(3 + k), R = D.rect[k], G = D.alvo[k];
+    const zin = eio(p(t, a + 0.6, 0.8)), zout = eio(p(t, b - 0.65, 0.6)), z = zin * (1 - zout);
+    const ent = eo5(p(t, T0 - 0.1, 1.0));
+    const s = lerp(1, G.s, z), pcx = A.sx + R.x + R.w / 2, pcy = A.sy + R.y + R.h / 2;
+    const cx = lerp(A.x + pcx, G.cx, z), cy = lerp(A.y + pcy, G.cy, z);
+    const tx = cx - s * pcx, ty = cy - s * pcy + (1 - ent) * 1100;
+    $('#dev').style.transform = `translate(${tx}px, ${ty}px) scale(${s}) rotate(${(1 - ent) * -8}deg)`;
+    $('#dev').style.opacity = cl(ent * 2);
+    $$('#tela img').forEach(i => { const j = +i.dataset.k, q = j === 0 ? 1 : eio(p(t, ini(3 + j), 0.5)), nx = j < n - 1 ? eio(p(t, ini(4 + j), 0.5)) : 0;
+      i.style.transform = `translateX(${(1 - q) * 100 - nx * 30}%)`; i.style.filter = nx > 0 ? `brightness(${1 - 0.5 * nx})` : ''; i.style.zIndex = j; i.style.visibility = q > 0 && nx < 1 ? 'visible' : 'hidden'; });
+    Object.assign($('#spot').style, { left: R.x + 'px', top: R.y + 'px', width: R.w + 'px', height: R.h + 'px', opacity: z, borderRadius: 18 / s + 'px' });
+    const cr = $('#contR'), dq = eo(p(t, a + 1.2, 0.5)) * (1 - zout), pul = 0.5 + 0.5 * Math.sin((t - a) * 5);
+    Object.entries({ x: R.x, y: R.y, width: R.w, height: R.h, rx: 18 / s, 'stroke-width': 7 / s, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1 - dq }).forEach(([k2, v]) => cr.setAttribute(k2, v));
+    cr.style.opacity = dq > 0 ? 1 : 0;
+    $('#cont').style.filter = `drop-shadow(0 0 ${(10 + 14 * pul * dq) / s}px var(--destaque))`;
+    // top title (wide view) and the caption beside the spot (zoomed)
+    if ($('#tNome').dataset.k !== String(k)) { $('#tNome').dataset.k = k; $('#tNome').textContent = F.telas[k].nome; $('#tNum').textContent = k + 1; $('#callT').textContent = F.telas[k].legenda; }
+    const tq = eo5(p(t, a + 0.1, 0.45)); $('#tTop').style.opacity = tq * (1 - eo(p(t, a + 0.7, 0.4))) * (t < TN ? 1 : 0); $('#tTop').style.transform = `translateY(${(1 - tq) * -30}px)`;
+    const cq = eb(p(t, a + 1.3, 0.5)), cfo = 1 - eo(p(t, b - 0.7, 0.3)), call = $('#call');
+    call.style.top = G.callY + 'px'; call.style.setProperty('--px', (Math.min(860, Math.max(150, G.cx)) - 110) + 'px');
+    call.style.opacity = cl(cq * 2) * cfo; call.style.transform = `translateY(${(1 - cq) * 40}px) scale(${0.9 + 0.1 * cq})`;
+    // benefits: each row arrives as the line names it
+    const aB = ini(D.B); cena($m, '#cB', t, D.B, D.B, { push: 0.03 });
+    const mb = marcos(aB, fim(D.B), F.beneficios.map(x => x.texto), 0.1, 0.8);
+    $$('.ben').forEach((e, i) => { const q = eo5(p(t, mb[i], 0.6)); e.style.opacity = cl(q * 2); e.style.transform = `translateX(${(1 - q) * -120}px)`;
+      const ic = e.querySelector('.bi'), iq = el(p(t, mb[i] + 0.1, 0.9)); ic.style.transform = `scale(${iq}) rotate(${(1 - iq) * -25}deg)`;
+      const nn = e.querySelector('.bn'); if (nn) { const v = +nn.dataset.v, B0 = F.beneficios[i]; $m.conta(nn, t, mb[i] + 0.2, 1.1, v, x => (B0.antes || '') + $m.num(x, Number.isInteger(v) ? 0 : 1) + (B0.depois || '')); } });
+    // steps light up along a growing line
+    const aP = ini(D.P); cena($m, '#cP', t, D.P, D.P, { push: 0.03 });
+    $m.entra('#pT', t, aP + 0.05, 0.5, -20);
+    const mp = marcos(aP, fim(D.P), F.passos, 0.35, 0.7);
+    $('#pLinha').style.height = 580 * eio(p(t, mp[0] + 0.2, mp[2] - mp[0])) + 'px';
+    $$('.pas').forEach((e, i) => { const q = eo5(p(t, mp[i], 0.5)); e.style.opacity = cl(q * 2); e.style.transform = `translateY(${(1 - q) * 50}px)`;
+      const pn = e.querySelector('.pn'), on = t >= mp[i] + 0.25; pn.classList.toggle('on', on); pn.style.transform = `scale(${on ? 1 + 0.18 * Math.exp(-(t - mp[i] - 0.25) * 6) : 0.85})`;
+      $m.revela(e.querySelector('.rv'), t, mp[i] + 0.1, 0.06); });
+    // offer or who it is for
+    const aO = ini(D.O); cena($m, '#cO', t, D.O, D.O, { push: 0.03 });
+    if (F.oferta) {
+      $m.carimbo('#oSelo', t, aO + 0.1); const sel = $('#oSelo'); sel.style.transform = sel.style.transform.replace('rotate(-8deg)', 'rotate(-3deg)');
+      const cq2 = eo5(p(t, aO + 0.3, 0.7)); $('#oCard').style.opacity = cq2; $('#oCard').style.transform = `translateY(${(1 - cq2) * 140}px)`;
+      $m.revela('#oTit', t, aO + 0.55, 0.07);
+      if ($('#oDe')) { $m.entra('#oDe', t, aO + 1.0, 0.4, 20); $('#oDeR').style.width = eo(p(t, aO + 1.4, 0.4)) * ($('#oDe').scrollWidth + 16) + 'px';
+        const pc = el(p(t, aO + 2.1, 0.9)); $('#oPct').style.opacity = cl(pc * 3); $('#oPct').style.transform = `scale(${pc}) rotate(-6deg)`; }
+      if ($('#oPor')) { const pq = eb(p(t, aO + ($('#oDe') ? 1.6 : 1.0), 0.6)); $('#oPor').style.opacity = cl(pq * 2); $('#oPor').style.transform = `scale(${0.7 + 0.3 * pq})`; $('#oPor').style.transformOrigin = '0 60%'; }
+      if ($('#oPer')) $m.entra('#oPer', t, aO + 1.9, 0.4, 20);
+      if ($('#oCond')) $m.entra('#oCond', t, aO + 2.2, 0.5, 20);
+      const aq = eb(p(t, aO + 2.6, 0.5)); $('#oAte').style.opacity = cl(aq * 2); $('#oAte').style.transform = `scale(${0.85 + 0.15 * aq})`;
+      const ic = $('#oAte .ico svg'); if (ic) ic.style.transform = `rotate(${Math.sin((t - aO) * 16) * 12 * Math.exp(-Math.max(0, t - aO - 2.6) * 2)}deg)`;
+    } else if (F.para_quem) {
+      $m.entra('#qT', t, aO + 0.05, 0.5, -20);
+      const mq = marcos(aO, fim(D.O), F.para_quem.map(x => x.perfil + ' ' + (x.detalhe || '')), 0.3, 0.8);
+      $$('.quem').forEach((e, i) => { const q = eo5(p(t, mq[i], 0.6)); e.style.opacity = cl(q * 2); e.style.transform = `translateX(${(1 - q) * (i % 2 ? 140 : -140)}px)`;
+        const f = e.querySelector('.qf'), fq = eb(p(t, mq[i] + 0.15, 0.6)); f.style.transform = `scale(${fq})`; });
+    }
+    $('#nota').style.opacity = (t >= T0 && t < TN) || (F.oferta && t >= aO && t < fim(D.O)) ? 1 : 0;
+  },
+});
+</script></body></html>
