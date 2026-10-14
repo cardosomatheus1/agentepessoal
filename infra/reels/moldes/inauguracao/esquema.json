@@ -1,0 +1,169 @@
+{
+ "publico": "cliente_final",
+ "nota": "Inauguração de um ponto físico (restaurante, hamburgueria, salão, barbearia, clínica, academia, oficina, loja de bairro): fala com os vizinhos e clientes da região. Os dias que faltam, o dia da semana e a validade da condição são do código; data passada ou condição vencida, o molde recusa.",
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "sim",
+ "musica": "amanhecer",
+ "musica_sob_voz": true,
+ "especiais": {
+  "_hoje": "data de publicação (AAAA-MM-DD); sem ela, a data de hoje. Os dias que faltam saem dela."
+ },
+ "campos": {
+  "data": {
+   "tipo": "data",
+   "real": true,
+   "dica": "dia da inauguração (AAAA-MM-DD); data passada o molde recusa"
+  },
+  "abertura": {
+   "tipo": "hora",
+   "real": true,
+   "dica": "hora em que as portas abrem no dia (HH:MM)"
+  },
+  "fachada": {
+   "tipo": "foto",
+   "dica": "foto da fachada do próprio negócio; aparece atrás da fita que a tesoura corta"
+  },
+  "tipo_negocio": {
+   "tipo": "texto",
+   "max": 22,
+   "dica": "o que é, como o vizinho fala: hamburgueria, oficina, salão de beleza"
+  },
+  "espaco": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 5,
+   "dica": "fotos do lugar por dentro, uma cena cada, em ordem de quem entra",
+   "item": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do lugar; mostra exatamente o que a legenda diz"
+    },
+    "legenda": {
+     "tipo": "texto",
+     "max": 26,
+     "dica": "Mesa para a turma toda"
+    }
+   }
+  },
+  "equipe": {
+   "tipo": "lista",
+   "min": 1,
+   "max": 3,
+   "obrigatorio": false,
+   "real": true,
+   "dica": "quem atende (opcional): só pessoas que autorizaram o uso da imagem; precisa de _origem.equipe",
+   "item": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "retrato da pessoa"
+    },
+    "nome": {
+     "tipo": "texto",
+     "max": 14,
+     "dica": "primeiro nome ou apelido"
+    },
+    "funcao": {
+     "tipo": "texto",
+     "max": 20,
+     "dica": "chapeiro, cabeleireira, mecânico"
+    },
+    "permissao": {
+     "tipo": "texto",
+     "min": 12,
+     "max": 120,
+     "dica": "registro da autorização de uso da imagem: quem autorizou, quando e onde está guardada"
+    }
+   }
+  },
+  "titulo_itens": {
+   "tipo": "texto",
+   "max": 20,
+   "dica": "No cardápio, Serviços, O que tem"
+  },
+  "itens": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 6,
+   "dica": "cardápio ou serviços, com foto do próprio item",
+   "item": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto do item; mostra exatamente o que o nome diz"
+    },
+    "nome": {
+     "tipo": "texto",
+     "max": 18
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false,
+     "dica": "opcional; se vier, precisa de _origem.itens"
+    }
+   }
+  },
+  "condicao": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "real": true,
+   "dica": "condição de inauguração (opcional), combinada com o dono; precisa de _origem.condicao; vencida o molde recusa",
+   "campos": {
+    "titulo": {
+     "tipo": "texto",
+     "max": 34,
+     "dica": "Milkshake em dobro"
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 60,
+     "obrigatorio": false,
+     "dica": "regra clara: na compra de qualquer burger"
+    },
+    "ate": {
+     "tipo": "data",
+     "dica": "último dia em que vale (AAAA-MM-DD)"
+    },
+    "foto": {
+     "tipo": "foto",
+     "obrigatorio": false,
+     "dica": "foto do que a condição dá (opcional); mostra exatamente o item"
+    }
+   }
+  },
+  "endereco": {
+   "tipo": "texto",
+   "max": 34,
+   "real": true,
+   "dica": "Rua das Acácias, 120"
+  },
+  "bairro": {
+   "tipo": "texto",
+   "max": 24,
+   "dica": "bairro ou referência curta"
+  },
+  "horario": {
+   "tipo": "texto",
+   "max": 30,
+   "real": true,
+   "dica": "horário de funcionamento: Ter a dom, 18h às 23h"
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 9,
+   "max": 13,
+   "item": {
+    "tipo": "texto",
+    "max": 150
+   },
+   "dica": "uma fala por cena, na ordem: contagem, fita, uma por foto do espaço, equipe (se houver), itens, condição (se houver), onde fica, data, chamada. Número de dias e dia da semana iguais aos do código (o molde confere)."
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ }
+}

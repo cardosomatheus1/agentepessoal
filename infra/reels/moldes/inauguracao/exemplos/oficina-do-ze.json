@@ -1,0 +1,73 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "_hoje": "2026-10-14",
+ "data": "2026-11-03",
+ "abertura": "08:00",
+ "fachada": "fotos/oficina_fachada.jpg",
+ "tipo_negocio": "Oficina mecânica",
+ "espaco": [
+  {
+   "foto": "fotos/inauguracao_oficina_recepcao.jpg",
+   "legenda": "Recepção sem enrolação"
+  },
+  {
+   "foto": "fotos/inauguracao_oficina_espera.jpg",
+   "legenda": "Sofá e café na espera"
+  },
+  {
+   "foto": "fotos/oficina_interior.jpg",
+   "legenda": "Box com elevador"
+  },
+  {
+   "foto": "fotos/oficina_alinhamento.jpg",
+   "legenda": "Alinhamento ali do lado"
+  },
+  {
+   "foto": "fotos/inauguracao_oficina_ferramentas.jpg",
+   "legenda": "Cada ferramenta no lugar"
+  }
+ ],
+ "titulo_itens": "Serviços",
+ "itens": [
+  {
+   "foto": "fotos/oficina_oleo.jpg",
+   "nome": "Troca de óleo"
+  },
+  {
+   "foto": "fotos/oficina_freio.jpg",
+   "nome": "Freios"
+  },
+  {
+   "foto": "fotos/oficina_ar.jpg",
+   "nome": "Ar-condicionado"
+  },
+  {
+   "foto": "fotos/oficina_pneu.jpg",
+   "nome": "Pneus e calibragem"
+  }
+ ],
+ "endereco": "Avenida dos Ipês, 845",
+ "bairro": "Vila Industrial",
+ "horario": "Seg a sáb, 8h às 18h",
+ "falas": [
+  "Faltam 20 dias. Vai abrir uma oficina mecânica nova aqui na Vila Industrial, pertinho de você.",
+  "É a Oficina do Zé, que abre as portas no bairro com casa nova, tudo limpo e arrumado.",
+  "Na recepção, você conversa direto com quem vai cuidar do seu carro, sem enrolação.",
+  "Enquanto espera, tem sofá, café fresquinho e vista para a oficina.",
+  "Os boxes têm elevador, pra olhar o seu carro por baixo com calma.",
+  "A máquina de alinhamento e balanceamento fica ali do lado.",
+  "E cada ferramenta tem o seu lugar na parede, do jeito que o Zé gosta.",
+  "Os serviços: troca de óleo, freios, ar-condicionado, pneus e calibragem.",
+  "Fica na Avenida dos Ipês, 845, na Vila Industrial. De segunda a sábado, das 8h às 18h.",
+  "A inauguração é na terça, 3 de novembro, a partir das 8h. Passa lá pra tomar um café com a gente.",
+  "Agende pelo WhatsApp e venha conhecer a Oficina do Zé."
+ ],
+ "nota": "dados de exemplo",
+ "_origem": {
+  "data": "dono",
+  "abertura": "dono",
+  "endereco": "dono",
+  "horario": "dono"
+ }
+}

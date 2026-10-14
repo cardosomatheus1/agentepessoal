@@ -207,6 +207,110 @@
   "mostra": "brigadeiros em forminhas (filmagem)",
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
  },
+ "inauguracao_burger_atendente.jpg": {
+  "mostra": "atendente da hamburgueria, retrato sorrindo no balcão",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "inauguracao_burger_balcao.jpg": {
+  "mostra": "balcão da hamburgueria com banquetas, de frente para a cozinha",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "inauguracao_burger_chapeiro.jpg": {
+  "mostra": "chapeiro da hamburgueria, retrato sorrindo na cozinha",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "inauguracao_burger_salao.jpg": {
+  "mostra": "salão de mesas da hamburgueria, vazio e arrumado, luz baixa",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "inauguracao_oficina_espera.jpg": {
+  "mostra": "sala de espera da oficina com sofá e café",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "inauguracao_oficina_ferramentas.jpg": {
+  "mostra": "parede de ferramentas organizadas da oficina mecânica",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "inauguracao_oficina_recepcao.jpg": {
+  "mostra": "recepção da oficina mecânica com balcão de atendimento",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "inauguracao_salao_cabeleireira.jpg": {
+  "mostra": "cabeleireira do salão, retrato sorrindo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "inauguracao_salao_fachada.jpg": {
+  "mostra": "fachada do salão de beleza, de dia",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "inauguracao_salao_lavatorio.jpg": {
+  "mostra": "lavatório do salão com as cadeiras de lavar cabelo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "inauguracao_salao_manicure.jpg": {
+  "mostra": "manicure do salão, retrato sorrindo",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_doce_pote_chocolate.jpg": {
+  "mostra": "bolo de pote de chocolate com camadas de massa, brigadeiro e creme rosado, raspas e pedaços de chocolate por cima, colher espetada",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_doce_pote_maracuja.jpg": {
+  "mostra": "bolo de pote de maracujá: mousse amarela com polpa e sementes de maracujá por cima",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_doce_pote_morango.jpg": {
+  "mostra": "bolo de pote de morango: camadas de massa, chantilly e morangos, com chantilly e um morango por cima",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_fds_argila.jpg": {
+  "mostra": "argila rosa em pó numa colher de madeira, macro",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_fds_atelie.jpg": {
+  "mostra": "prateleiras de madeira do ateliê com barras de sabonete artesanal rosa secando e potes de ervas secas",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_fds_banho.jpg": {
+  "mostra": "sabonete de argila rosa sobre toalha branca numa bandeja de madeira, na beira da banheira, com planta verde",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_fds_flor_de_sal.jpg": {
+  "mostra": "cristais grandes de sal marinho (flor de sal) numa tigela de cerâmica, macro",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_fds_oleo_amendoas.jpg": {
+  "mostra": "gota de óleo de amêndoas escorrendo do frasco sobre amêndoas, macro",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_fds_oleo_corporal.jpg": {
+  "mostra": "frasco âmbar de óleo corporal com conta-gotas, sem rótulo, sobre pedra clara com flores de calêndula",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_fds_sabonete.jpg": {
+  "mostra": "duas barras de sabonete artesanal de argila rosa sobre pedra escura, com flores e pétalas de calêndula em volta, fundo escuro",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_fds_sabonete_embrulho.jpg": {
+  "mostra": "sabonete artesanal embrulhado em papel kraft com barbante e raminhos de lavanda e alecrim, sobre tecido de linho",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_fds_sabonete_textura.jpg": {
+  "mostra": "close do topo do sabonete de argila rosa: textura da argila, cristais de sal e flores de calêndula por cima",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_fds_sal_banho.jpg": {
+  "mostra": "pote de vidro com sal de banho rosado e pétalas de rosa, com colher de madeira",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_linho_camisa.jpg": {
+  "mostra": "camisa de linho cru de manga longa no cabide de madeira, contra parede de reboco",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "lanca-produto_linho_detalhe.jpg": {
+  "mostra": "close da frente da camisa de linho: trama do tecido, gola e botões de coco (no alto, etiqueta da gola com letras: usar com zoom nos botões)",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
  "lanche.jpg": {
   "mostra": "hambúrguer com batata",
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
@@ -214,6 +318,30 @@
  "leite.jpg": {
   "mostra": "leite condensado escorrendo",
   "origem": "quadro de filmagem Nova Reel / FLUX (teste)"
+ },
+ "manifesto_celular_resultado.jpg": {
+  "mostra": "mão segurando o celular com um gráfico de vendas subindo na tela, escritório escuro à noite",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "manifesto_escritorio_contabil.jpg": {
+  "mostra": "escritório de contabilidade claro e organizado, com mesas, plantas e estantes de pastas",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "manifesto_papelada_balcao.jpg": {
+  "mostra": "pilha bagunçada de notas fiscais, boletos e recibos de papel no balcão de uma pequena loja",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "manifesto_planta_mesa.jpg": {
+  "mostra": "planta baixa de casa sobre a mesa do arquiteto, com lápis e escalímetro",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "manifesto_sala_luz.jpg": {
+  "mostra": "sala de estar clara com a luz da manhã entrando pela janela grande",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
+ },
+ "manifesto_telas_espalhadas.jpg": {
+  "mostra": "mesa de escritório à noite com notebook, celular e tablet mostrando gráficos de anúncios, conversas e planilhas espalhadas",
+  "origem": "gerada (stability.stable-image-core-v1:1)"
  },
  "maquina.jpg": {
   "mostra": "maquininha de cartão",

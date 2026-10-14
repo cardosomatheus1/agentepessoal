@@ -1,0 +1,485 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+#nota{top:1462px;bottom:auto;left:90px;right:auto;width:810px;text-align:left;font-size:28px}
+/* 0: countdown, the number falls until the days left */
+#raios{position:absolute;left:-460px;top:-60px;width:2000px;height:2000px;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg,var(--fundo2) 0 5deg,transparent 5deg 15deg);
+  -webkit-mask:radial-gradient(closest-side,rgba(0,0,0,1) 15%,rgba(0,0,0,0) 100%);mask:radial-gradient(closest-side,rgba(0,0,0,1) 15%,rgba(0,0,0,0) 100%)}
+#c0a{left:90px;right:170px;top:440px;height:120px;font-size:100px;font-weight:900}
+#c0n{position:absolute;left:90px;right:170px;top:560px;height:600px;overflow:hidden}
+#c0n>div{position:absolute;left:0;right:0;top:0;height:600px;line-height:600px;font-size:500px;text-align:center;padding:0;white-space:nowrap}
+#c0h{left:90px;right:170px;top:600px;height:700px;font-size:300px;line-height:.98;display:flex;align-items:center;justify-content:center}
+#c0b{left:90px;right:170px;top:1160px;height:180px;font-size:160px;line-height:1.1}
+#c0c{left:90px;right:170px;top:1350px;height:70px;font-size:50px;font-weight:700}
+/* 1: the storefront behind the ribbon; scissors cut it, the ends fall, the lights come on */
+#fBox{position:absolute;left:0;top:0;width:1080px;height:1480px;overflow:hidden;-webkit-mask-image:linear-gradient(rgba(0,0,0,1) 72%,rgba(0,0,0,0));mask-image:linear-gradient(rgba(0,0,0,1) 72%,rgba(0,0,0,0))}
+#fImg{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
+#fDim{position:absolute;inset:0;background:rgba(0,0,0,1)}
+#fTop{position:absolute;left:0;right:0;top:0;height:460px;background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,0))}
+#fBase{position:absolute;left:0;right:0;bottom:0;height:620px;background:linear-gradient(rgba(0,0,0,0),var(--fundo) 80%)}
+#fChip{position:absolute;left:90px;top:410px;font-size:44px;white-space:nowrap}
+.fita{position:absolute;top:760px;height:124px;width:600px;background:var(--destaque);
+  box-shadow:0 18px 30px rgba(0,0,0,.4);overflow:hidden}
+.fita:before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28) 0,rgba(0,0,0,0) 16%,rgba(255,255,255,.32) 38%,rgba(255,255,255,0) 58%,rgba(0,0,0,0) 80%,rgba(0,0,0,.3) 100%)}
+.fita:after{content:'';position:absolute;left:0;right:0;top:12px;bottom:12px;border-top:3px dashed rgba(255,255,255,.35);border-bottom:3px dashed rgba(255,255,255,.35)}
+#fL{left:-60px;transform-origin:0 50%;clip-path:polygon(0 0,100% 0,calc(100% - 34px) 50%,100% 100%,0 100%)}
+#fR{left:540px;transform-origin:100% 50%;clip-path:polygon(0 0,100% 0,100% 100%,0 100%,34px 50%)}
+#laco{position:absolute;left:370px;top:690px;width:340px;height:270px;overflow:visible}
+#tes{position:absolute;left:430px;top:700px;width:220px;height:440px;overflow:visible;transform-origin:110px 220px;scale:1.25;filter:drop-shadow(0 14px 18px rgba(0,0,0,.45))}
+#conf{position:absolute;inset:0;pointer-events:none}
+#conf i{position:absolute;left:0;top:0;width:22px;height:34px;border-radius:4px}
+#placa{position:absolute;left:170px;width:740px;top:1120px;height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:28px 40px}
+#placa .logo img{display:block;max-width:600px;max-height:170px;width:auto;height:auto}
+#placa .logo.selo{padding:16px 30px;border-radius:999px;background:var(--selo)}
+#placa .logo .nome{font-family:var(--ft);font-weight:900;font-size:96px;line-height:1;max-width:640px;text-align:center}
+#placa .logo.com-foto .avatar{width:150px;height:150px;border:6px solid var(--destaque)}
+#placa .logo.com-foto{gap:24px}#placa .logo.com-foto .nome{font-size:64px}
+#pTipo{width:640px;height:56px;font-size:42px;font-weight:800;text-align:center;white-space:nowrap}
+/* 2..: the place, one photo per scene, wiping in */
+.esp{position:absolute;inset:0;overflow:hidden;visibility:hidden}
+.esp .ew{position:absolute;left:-60px;top:-40px;width:1200px;height:2000px}
+.esp .ew img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.esp .eg{position:absolute;left:0;right:0;height:900px}
+.esp.baixo .eg{bottom:0;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.82) 70%)}
+.esp.cima .eg{top:0;background:linear-gradient(rgba(0,0,0,.85) 30%,rgba(0,0,0,0))}
+.esp .et{position:absolute;left:0;right:0;top:0;height:420px;background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,0))}
+.esp .eL{position:absolute;left:90px;width:810px}
+.esp.baixo .eL{top:1110px}.esp.cima .eL{top:410px}
+/* text on a photo darkened by a black gradient: white is allowed here (LEIAME) */
+.esp .ek{width:810px;height:60px;font-size:50px;color:#fff;margin-bottom:6px}
+.esp .ek b{color:#fff;font-family:var(--ft);font-weight:900;margin-right:16px;padding-left:16px;border-left:8px solid var(--c1)}
+.esp .ex{width:810px;height:216px;font-size:100px;line-height:1.04;color:#fff}
+.esp .eb{height:14px;width:240px;border-radius:7px;background:var(--c1);margin-top:22px;transform-origin:0 50%}
+/* team */
+#qT{left:90px;right:170px;top:400px;height:90px;font-size:74px}
+.pc{position:absolute;padding:14px 14px 0}
+.pc .pf{position:relative;width:100%;overflow:hidden;border-radius:calc(var(--raio) * .6)}
+.pc .pf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pc .pn{margin-top:18px;text-align:center}
+.pc .pg{text-align:center;margin-top:4px;font-weight:700}
+/* items */
+#iT{left:90px;right:170px;top:400px;height:90px;font-size:76px}
+.it{position:absolute;border-radius:calc(var(--raio) * .7);overflow:hidden;box-shadow:var(--sombra)}
+.it img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.it .ig{position:absolute;left:0;right:0;bottom:0;height:62%;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.84))}
+.it .in{position:absolute;left:24px;right:24px;bottom:20px;height:54px;font-size:44px;font-weight:900;color:#fff;white-space:nowrap}
+.it .ip{position:absolute;left:20px;top:20px;font-size:36px;padding:8px 20px;white-space:nowrap}
+/* condition: a ticket */
+#tk{position:absolute;left:150px;width:720px;top:420px;background:var(--cartao);border-radius:36px;box-shadow:var(--sombra);overflow:hidden}
+body.e-pop #tk{border:6px solid var(--texto);box-shadow:14px 14px 0 var(--texto)}
+body.e-noite #tk{box-shadow:0 0 0 2px var(--destaque),0 0 40px color-mix(in srgb,var(--destaque) 45%,transparent)}
+body.e-vidro #tk{background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.06))}
+#tkF{position:relative;height:330px;overflow:hidden}
+#tkF img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#tkK{position:absolute;left:36px;top:30px;font-size:36px;white-space:nowrap}
+#tkB{padding:34px 44px 30px}
+#tkT{width:632px;height:180px;font-size:84px;line-height:1.04}
+#tkD{width:632px;height:100px;font-size:40px;font-weight:700;margin-top:14px;line-height:1.2}
+#tkP{position:relative;height:0;border-top:5px dashed var(--borda);margin:0 34px}
+#tkS{padding:30px 44px 36px;display:flex;align-items:center;gap:22px}
+#tkS .ico{font-size:58px;color:var(--destaque);flex:none}
+#tkA{flex:1;height:64px;font-size:46px;font-weight:900;white-space:nowrap}
+.fur{position:absolute;width:64px;height:64px;border-radius:50%;background:var(--fundo)}
+/* where: drawn streets, a pin drops */
+#mp{position:absolute;left:60px;top:390px;width:960px;height:620px;overflow:hidden;border-radius:var(--raio);box-shadow:var(--sombra);background:var(--fundo2)}
+body.e-pop #mp{border:6px solid var(--texto);box-shadow:14px 14px 0 var(--texto)}
+body.e-noite #mp{box-shadow:0 0 0 2px var(--destaque),0 0 40px color-mix(in srgb,var(--destaque) 45%,transparent)}
+#mpS{position:absolute;left:0;top:0;width:960px;height:620px}
+#pin{position:absolute;left:420px;top:150px;width:120px;height:160px;transform-origin:60px 160px;overflow:visible}
+#mEnd{position:absolute;left:90px;width:810px;top:1040px;height:200px;font-size:84px;line-height:1.04}
+#mEndT{position:absolute;left:0;right:0;bottom:16px}
+#mBai{position:absolute;left:90px;top:1262px;font-size:40px;white-space:nowrap;max-width:810px}
+#mHor{position:absolute;left:90px;width:810px;top:1360px;height:70px;font-size:46px;font-weight:800;display:flex;align-items:center;gap:16px}
+#mHor .ico{color:var(--destaque);font-size:52px;flex:none}
+#mHorT{flex:1;height:64px;line-height:64px;white-space:nowrap}
+/* the date on a tear-off calendar */
+#cal{position:absolute;left:200px;width:580px;top:440px;height:700px;perspective:2200px}
+.pgC{position:absolute;inset:0;border-radius:34px;overflow:hidden;background:var(--cartao);box-shadow:var(--sombra);transform-origin:50% 0;backface-visibility:hidden}
+body.e-noite .pgC,body.e-vidro .pgC{background:var(--fundo2)}
+body.e-pop .pgC{border:6px solid var(--texto)}
+.pgC .h{height:160px;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center}
+.pgC .h div{width:520px;height:76px;font-size:66px;text-align:center;text-transform:uppercase;letter-spacing:.04em}
+.pgC .d{height:390px;font-size:350px;line-height:390px;text-align:center;margin-top:20px;white-space:nowrap}
+.pgC .s{width:520px;margin:0 auto;height:80px;font-size:62px;font-weight:900;text-align:center;white-space:nowrap}
+.argola{position:absolute;top:-34px;width:36px;height:86px;border-radius:18px;background:var(--texto);z-index:20;box-shadow:0 6px 12px rgba(0,0,0,.3)}
+#dAb{position:absolute;left:0;width:980px;top:1200px;text-align:center}
+#dAb span{display:inline-block;font-size:60px;padding:18px 44px;white-space:nowrap}
+#dTx{left:90px;right:170px;top:1340px;height:70px;font-size:48px;font-weight:700}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="raios"></div>
+ <div class="ctr t seg rv" id="c0a"></div>
+ <div id="c0n"><div class="tit grad" id="nB"></div><div class="tit grad t seg" id="nA"></div></div>
+ <div class="ctr tit grad t seg" id="c0h"></div>
+ <div class="ctr tit t seg" id="c0b"></div>
+ <div class="ctr t t2 seg rv" id="c0c"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="fBox"><img id="fImg" alt=""><div id="fDim"></div><div id="fTop"></div><div id="fBase"></div></div>
+ <div class="chip t seg" id="fChip"></div>
+ <div class="fita" id="fL"></div><div class="fita" id="fR"></div>
+ <svg id="laco" viewBox="0 0 340 270">
+  <path d="M150 112 C 120 150 92 210 70 262 L 112 250 L 128 268 C 140 214 152 160 166 124 Z" fill="var(--destaque)"/>
+  <path d="M190 112 C 220 150 248 210 270 262 L 228 250 L 212 268 C 200 214 188 160 174 124 Z" fill="var(--destaque)"/>
+  <path d="M150 112 C 120 150 92 210 70 262 L 112 250 L 128 268 C 140 214 152 160 166 124 Z" fill="rgba(0,0,0,.22)"/>
+  <path d="M190 112 C 220 150 248 210 270 262 L 228 250 L 212 268 C 200 214 188 160 174 124 Z" fill="rgba(0,0,0,.22)"/>
+  <path d="M170 110 C 120 40 30 20 22 74 C 14 128 110 140 170 120 Z" fill="var(--destaque)"/>
+  <path d="M170 110 C 220 40 310 20 318 74 C 326 128 230 140 170 120 Z" fill="var(--destaque)"/>
+  <path d="M170 112 C 128 66 64 52 54 80 C 90 76 132 92 168 118 Z" fill="rgba(0,0,0,.25)"/>
+  <path d="M170 112 C 212 66 276 52 286 80 C 250 76 208 92 172 118 Z" fill="rgba(0,0,0,.25)"/>
+  <path d="M60 60 C 90 40 130 60 160 98" stroke="rgba(255,255,255,.45)" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M280 60 C 250 40 210 60 180 98" stroke="rgba(255,255,255,.35)" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <rect x="146" y="88" width="48" height="52" rx="14" fill="var(--destaque)"/>
+  <rect x="146" y="88" width="48" height="52" rx="14" fill="rgba(0,0,0,.18)"/>
+  <rect x="152" y="94" width="20" height="10" rx="5" fill="rgba(255,255,255,.4)"/>
+ </svg>
+ <svg id="tes" viewBox="0 0 200 400">
+  <g id="tesA">
+   <path d="M93 206 L 104 8 C 112 60 118 140 116 206 Z" fill="rgba(255,255,255,.96)" stroke="rgba(0,0,0,.35)" stroke-width="3"/>
+   <path d="M100 206 L 72 286" stroke="var(--c2)" stroke-width="20" stroke-linecap="round"/>
+   <ellipse cx="62" cy="320" rx="40" ry="46" fill="none" stroke="var(--c2)" stroke-width="18"/>
+  </g>
+  <g id="tesB">
+   <path d="M107 206 L 96 8 C 88 60 82 140 84 206 Z" fill="rgba(235,238,242,.98)" stroke="rgba(0,0,0,.35)" stroke-width="3"/>
+   <path d="M100 206 L 128 286" stroke="var(--c2)" stroke-width="20" stroke-linecap="round"/>
+   <ellipse cx="138" cy="320" rx="40" ry="46" fill="none" stroke="var(--c2)" stroke-width="18"/>
+  </g>
+  <circle cx="100" cy="206" r="11" fill="rgba(120,124,130,1)" stroke="rgba(255,255,255,.9)" stroke-width="4"/>
+ </svg>
+ <div id="conf"></div>
+ <div id="placa" class="cartao"><div class="t seg" id="pTipo"></div></div>
+</div></div>
+
+<div class="cena" id="cQ"><div class="cam full">
+ <div class="ctr tit t seg rv" id="qT"></div>
+ <div id="qG"></div>
+</div></div>
+
+<div class="cena" id="cI"><div class="cam full">
+ <div class="ctr tit t seg rv" id="iT"></div>
+ <div id="iG"></div>
+</div></div>
+
+<div class="cena" id="cC"><div class="cam full">
+ <div id="tk">
+  <div id="tkF"><img id="tkI" alt=""><div class="chip t seg" id="tkK"></div></div>
+  <div id="tkB"><div class="tit t seg rv" id="tkT"></div><div class="t t2 seg" id="tkD"></div></div>
+  <div id="tkP"></div>
+  <div id="tkS"><span id="tkIc"></span><div class="t seg" id="tkA"></div></div>
+  <div class="fur" id="fur1"></div><div class="fur" id="fur2"></div>
+ </div>
+</div></div>
+
+<div class="cena" id="cM"><div class="cam full">
+ <div id="mp"><svg id="mpS" viewBox="0 0 960 620"></svg>
+  <svg id="pin" viewBox="0 0 120 160">
+   <ellipse id="pinSh" cx="60" cy="158" rx="30" ry="9" fill="rgba(0,0,0,.35)"/>
+   <path d="M60 156 C 52 128 8 96 8 56 A 52 52 0 0 1 112 56 C 112 96 68 128 60 156 Z" fill="var(--destaque)" stroke="var(--sobre-destaque)" stroke-width="5"/>
+   <circle cx="60" cy="56" r="20" fill="var(--sobre-destaque)"/>
+  </svg>
+ </div>
+ <div class="tit t seg" id="mEnd"><div class="rv" id="mEndT"></div></div>
+ <div class="chip t seg" id="mBai"></div>
+ <div id="mHor"><span id="mHorI"></span><div class="t seg" id="mHorT"></div></div>
+</div></div>
+
+<div class="cena" id="cD"><div class="cam full">
+ <div id="cal"></div>
+ <div id="dAb"><span class="chip t seg" id="dAbT"></span></div>
+ <div class="ctr t t2 seg rv" id="dTx"></div>
+</div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Inauguração de negócio local": a physical place (restaurant, salon, workshop, shop) opening in the neighbourhood.
+// Público: cliente_final (the neighbours). Narrated: scene i lasts line i; the last line is the call (engine's final).
+// Scenes: 0 countdown (days left computed here), 1 THE MOMENT: storefront behind a ribbon, scissors cut it, the ends
+// fall and the lights come on with the logo, 2.. one photo of the place per scene, team (optional, with permission),
+// menu or services grid, opening offer (optional, real, refused when expired), where (address + drawn streets + pin
+// dropping), the date on a tear-off calendar (weekday computed here) + opening time.
+const DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
+const dt = s => { const m = ISO.exec(s || ''); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : null; };
+const hojeLocal = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
+const ddmm = d => `${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
+const hora = h => { const [a, b] = h.split(':'); return +a + 'h' + (b === '00' ? '' : b); };
+const curto = d => DIAS[d.getUTCDay()].replace('-feira', '');
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const hash = s => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const NUMS = s => (s.match(/\d+/g) || []).map(Number);
+const SEMANA = /\b(domingo|segunda|terça|terca|quarta|quinta|sexta|sábado|sabado)\b/gi;
+const sem = w => w.toLowerCase().replace('terca', 'terça').replace('sabado', 'sábado');
+let D = {};
+
+// a line that names a weekday or "N de <mês>" must agree with the date the code computed
+function conferirFala(fala, d, onde, $m) {
+  const certo = curto(d);
+  for (const w of fala.match(SEMANA) || []) if (sem(w) !== certo) $m.erro(`${onde}: a fala diz "${w}", mas ${ddmm(d)} é ${DIAS[d.getUTCDay()]}`);
+  const re = /(\d{1,2}) de (janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/gi;
+  let m; while ((m = re.exec(fala))) if (+m[1] !== d.getUTCDate() || m[2].toLowerCase() !== MESES[d.getUTCMonth()]) $m.erro(`${onde}: a fala diz "${m[0]}", mas a data é ${d.getUTCDate()} de ${MESES[d.getUTCMonth()]}`);
+}
+
+// streets drawn from the address (same address, same drawing): a tilted grid, one avenue, a small square
+function ruas(svg, semente) {
+  let s = semente || 1; const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+  const NS = 'http://www.w3.org/2000/svg', el = (n, a, pai) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); pai.appendChild(e); return e; };
+  const g = el('g', { transform: `rotate(${(r() * 16 - 8).toFixed(1)} 480 310)` }, svg);
+  const xs = [], ys = [];
+  for (let x = -260 + r() * 60; x < 1220; x += 150 + r() * 70) xs.push(x);
+  for (let y = -240 + r() * 50; y < 860; y += 130 + r() * 60) ys.push(y);
+  // blocks of houses between the streets, a square (park) with trees in one of them, away from the pin
+  const quadras = el('g', { class: 'qd' }, g);
+  for (let i = 0; i + 1 < xs.length; i++) for (let j = 0; j + 1 < ys.length; j++) {
+    const w = xs[i + 1] - xs[i] - 30, h = ys[j + 1] - ys[j] - 30;
+    if (r() < .5) el('rect', { x: xs[i] + 15, y: ys[j] + 15, width: w, height: h, rx: 12, fill: 'var(--texto)', opacity: (.04 + r() * .05).toFixed(3) }, quadras);
+    else { const hw = (w - 10) / 2; [0, 1].forEach(m => el('rect', { x: xs[i] + 15 + m * (hw + 10), y: ys[j] + 15, width: hw, height: h, rx: 10, fill: 'var(--texto)', opacity: (.04 + r() * .05).toFixed(3) }, quadras)); }
+  }
+  const bx = Math.min(xs.length - 2, r() < .5 ? 2 : 5), by = Math.min(ys.length - 2, r() < .5 ? 2 : 4);
+  const pq = el('g', { class: 'pq' }, g), px = xs[bx] + 15, py = ys[by] + 15, pw = xs[bx + 1] - xs[bx] - 30, ph = ys[by + 1] - ys[by] - 30;
+  el('rect', { x: px, y: py, width: pw, height: ph, rx: 18, fill: 'var(--bom)', opacity: .35 }, pq);
+  for (let k = 0; k < 6; k++) el('circle', { cx: px + 22 + r() * (pw - 44), cy: py + 22 + r() * (ph - 44), r: 12 + r() * 8, fill: 'var(--bom)', opacity: .55 }, pq);
+  const linhas = [];
+  xs.forEach(x => linhas.push(el('line', { x1: x, y1: -300, x2: x + (r() - .5) * 40, y2: 920, stroke: 'var(--texto)', 'stroke-width': 16, opacity: .16, 'stroke-linecap': 'round', pathLength: 1 }, g)));
+  ys.forEach(y => linhas.push(el('line', { x1: -300, y1: y, x2: 1260, y2: y + (r() - .5) * 40, stroke: 'var(--texto)', 'stroke-width': 16, opacity: .16, 'stroke-linecap': 'round', pathLength: 1 }, g)));
+  // the avenue crosses near the pin
+  const ay = 300 + (r() - .5) * 120;
+  linhas.push(el('line', { x1: -200, y1: ay + 260, x2: 1160, y2: ay - 260, stroke: 'var(--c2)', 'stroke-width': 30, opacity: .55, 'stroke-linecap': 'round', pathLength: 1 }, g));
+  // the business block, under the pin
+  el('rect', { x: 430, y: 250, width: 100, height: 100, rx: 14, fill: 'var(--destaque)', opacity: .22, class: 'lote' }, svg);
+  linhas.forEach(l => { l.setAttribute('stroke-dasharray', '1 1'); });
+  return linhas;
+}
+
+Motor.molde({
+  id: 'inauguracao', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $, $$, icone } = $m;
+    // ---- dates: everything counted here, never in the ficha
+    const hojeS = F._hoje || hojeLocal();
+    if (!ISO.test(hojeS) || !dt(hojeS)) $m.erro('_hoje: data no formato AAAA-MM-DD');
+    const hoje = dt(hojeS) || new Date(), d = dt(F.data);
+    const N = Math.round((d - hoje) / 864e5);
+    if (N < 0) $m.erro(`a inauguração (${ddmm(d)}) já passou: este molde é para antes da data (use Aviso ou Bastidores)`);
+    let fimCond = null;
+    if (F.condicao) {
+      fimCond = dt(F.condicao.ate);
+      if (fimCond < hoje) $m.erro(`a condição de inauguração venceu em ${ddmm(fimCond)}: tire a condição ou peça um prazo novo ao dono`);
+      if (fimCond < d) $m.erro(`a condição termina (${ddmm(fimCond)}) antes da inauguração (${ddmm(d)})`);
+    }
+    // ---- scenes and lines
+    const I = {}; let k = 0;
+    I.conta = k++; I.fita = k++; I.esp = F.espaco.map(() => k++);
+    if (F.equipe && F.equipe.length) I.eq = k++;
+    I.it = k++; if (F.condicao) I.cond = k++; I.mapa = k++; I.data = k++;
+    const ordem = 'contagem, fita, ' + F.espaco.length + ' do espaço' + (I.eq != null ? ', equipe' : '') + ', itens' + (I.cond != null ? ', condição' : '') + ', onde fica, data, chamada';
+    if (F.falas.length !== k + 1) $m.erro(`falas: são ${k + 1} (${ordem}); vieram ${F.falas.length}`);
+    else {
+      const f0 = NUMS(F.falas[I.conta]);
+      if (N > 0 && f0.some(x => x !== N)) $m.erro(`falas[1]: faltam ${N} dias (contado pelo código), mas a fala diz ${f0.join(', ')}`);
+      if (N > 0 && !f0.length) $m.erro(`falas[1]: diga quantos dias faltam, em algarismos (${N})`);
+      conferirFala(F.falas[I.data], d, `falas[${I.data + 1}]`, $m);
+      if (I.cond != null) conferirFala(F.falas[I.cond], fimCond, `falas[${I.cond + 1}]`, $m);
+      F.falas.forEach((f, i) => { if (i !== I.data && i !== I.cond && i !== I.conta) conferirFala(f, d, `falas[${i + 1}]`, { erro: () => {} }); });
+    }
+    D = { I, N, d, fimCond, esp: [] };
+    // ---- 0 countdown
+    if (N === 0) {
+      $('#c0a').textContent = 'A espera acabou'; $('#c0h').textContent = 'É hoje!'; $('#c0n').remove(); $('#c0b').remove();
+      $('#c0c').textContent = 'portas abertas às ' + hora(F.abertura);
+    } else {
+      $('#c0h').remove();
+      $('#c0a').textContent = N === 1 ? 'Falta' : 'Faltam'; $('#nA').textContent = String(N); $('#c0b').textContent = N === 1 ? 'dia' : 'dias';
+      $('#c0c').textContent = 'para a inauguração';
+      D.K = Math.min(9, Math.max(3, N));
+    }
+    // gradient text only where both brand colors read on the background (dark styles)
+    if (!['noite', 'vidro'].includes($m.ESTILO)) $$('#c0 .grad').forEach(e => { e.classList.remove('grad'); e.classList.add('dest'); });
+    // ---- 1 storefront + ribbon
+    $('#fChip').innerHTML = icone('tesoura') + ' '; $('#fChip').append('Inauguração');
+    const lg = $m._logo(true); lg.id = 'pLogo'; lg.classList.add('seg'); $('#placa').prepend(lg);
+    $('#pTipo').textContent = F.tipo_negocio + ' · ' + F.bairro;
+    const cores = ['var(--destaque)', 'var(--c2)', 'var(--c1)', 'var(--texto)'];
+    for (let i = 0; i < 54; i++) { const c = mk('i', null, null, $('#conf')); c.style.background = cores[i % 4]; c.dataset.i = i; }
+    // ---- 2.. the place
+    const ref = $('#cQ');
+    F.espaco.forEach((e, j) => {
+      const c = mk('div', 'esp ' + (j % 2 ? 'cima' : 'baixo')); c.style.zIndex = 5 + j;
+      const w = mk('div', 'ew', null, c); mk('img', null, null, w).alt = '';
+      mk('div', 'eg', null, c); if (j % 2 === 0) mk('div', 'et', null, c);
+      const L = mk('div', 'eL', null, c);
+      const kq = mk('div', 'ek t seg', null, L); mk('b', null, `${j + 1}/${F.espaco.length}`, kq); kq.append(j === 0 ? 'Conheça o espaço' : 'O espaço');
+      mk('div', 'ex tit t seg rv', e.legenda, L); mk('div', 'eb', null, L);
+      ref.before(c); D.esp.push(c);
+    });
+    // ---- team
+    if (I.eq != null) {
+      $('#qT').textContent = F.equipe.length > 1 ? 'Quem vai te atender' : 'Quem vai te atender';
+      const n = F.equipe.length, w = [0, 560, 390, 256][n], h = [0, 800, 700, 560][n], gap = n === 3 ? 21 : 30;
+      const x0 = 490 - (n * w + (n - 1) * gap) / 2, fs = [0, 76, 64, 48][n], fs2 = [0, 44, 40, 32][n];
+      F.equipe.forEach((p, j) => {
+        const c = mk('div', 'pc cartao', null, $('#qG')); Object.assign(c.style, { left: x0 + j * (w + gap) + 'px', top: 530 + (n === 2 ? j * 40 : n === 3 ? (j % 2) * 50 : 0) + 'px', width: w + 'px' });
+        const f = mk('div', 'pf', null, c); f.style.height = (h - 28) + 'px'; mk('img', null, null, f).src = $m.midia(p.foto);
+        const nm = mk('div', 'pn tit t seg', p.nome, c); Object.assign(nm.style, { fontSize: fs + 'px', height: fs * 1.15 + 'px' });
+        const fn = mk('div', 'pg t t2 seg', p.funcao, c); Object.assign(fn.style, { fontSize: fs2 + 'px', height: fs2 * 1.3 + 'px', marginBottom: '18px' });
+        c.dataset.r = [-3, 2.5, -1.5][j];
+      });
+    } else $('#cQ').remove();
+    // ---- items grid
+    $('#iT').textContent = F.titulo_itens;
+    const L = { 3: [[0, 0, 810, 430], [0, 460, 390, 440], [420, 460, 390, 440]],
+      4: [[0, 0, 390, 435], [420, 0, 390, 435], [0, 465, 390, 435], [420, 465, 390, 435]],
+      5: [[0, 0, 810, 340], [0, 370, 390, 250], [420, 370, 390, 250], [0, 650, 390, 250], [420, 650, 390, 250]],
+      6: [[0, 0, 390, 280], [420, 0, 390, 280], [0, 310, 390, 280], [420, 310, 390, 280], [0, 620, 390, 280], [420, 620, 390, 280]] }[F.itens.length];
+    F.itens.forEach((it, j) => {
+      const [x, y, w, h] = L[j], c = mk('div', 'it', null, $('#iG')); Object.assign(c.style, { left: 90 + x + 'px', top: 510 + y + 'px', width: w + 'px', height: h + 'px' });
+      mk('img', null, null, c).src = $m.midia(it.foto); mk('div', 'ig', null, c);
+      const nm = mk('div', 'in t seg', it.nome, c); if (w > 600) { nm.style.fontSize = '56px'; nm.style.height = '68px'; }
+      if (it.preco != null) mk('div', 'ip chip tit t seg', $m.brl(it.preco, Number.isInteger(it.preco) ? 0 : 2), c);
+    });
+    // ---- opening offer (ticket)
+    if (I.cond != null) {
+      const C = F.condicao;
+      if (C.foto) $('#tkI').src = $m.midia(C.foto); else { $('#tkF').style.height = '120px'; $('#tkI').remove(); }
+      $('#tkK').innerHTML = icone('presente') + ' '; $('#tkK').append('Só na inauguração');
+      $('#tkT').textContent = C.titulo; $('#tkD').textContent = C.detalhe || ''; if (!C.detalhe) $('#tkD').remove();
+      $('#tkIc').innerHTML = icone('relogio');
+      $('#tkA').textContent = `Vale até ${curto(fimCond)}, ${ddmm(fimCond)}`;
+    } else $('#cC').remove();
+    // ---- where
+    D.ruas = ruas($('#mpS'), hash(F.endereco + F.bairro));
+    $('#mEndT').textContent = F.endereco;
+    $('#mBai').innerHTML = icone('local') + ' '; $('#mBai').append(F.bairro);
+    $('#mHorI').innerHTML = icone('relogio'); $('#mHorT').textContent = F.horario;
+    // ---- the date: tear-off pages from a few days before up to the day
+    const nPg = Math.min(N, 4), cal = $('#cal');
+    for (let j = nPg; j >= 0; j--) {
+      const dj = new Date(d.getTime() - j * 864e5), pg = mk('div', 'pgC'); pg.dataset.j = j;
+      const h = mk('div', 'h', null, pg), ht = mk('div', 'tit' + (j ? '' : ' t seg'), MESES[dj.getUTCMonth()], h);
+      mk('div', 'd tit' + (j ? '' : ' t seg'), String(dj.getUTCDate()), pg);
+      mk('div', 's' + (j ? '' : ' t seg'), DIAS[dj.getUTCDay()], pg);
+      cal.prepend(pg); // the day itself is at the bottom of the pile
+    }
+    [56, 488].forEach(x => { const a = mk('div', 'argola', null, cal); a.style.left = x + 'px'; });
+    $('#dAbT').textContent = 'Abertura às ' + hora(F.abertura);
+    $('#dTx').textContent = N === 0 ? 'É hoje, vem com a gente' : 'Venha para a inauguração';
+    // the final scene repeats the date (computed)
+    if (!F.final_extra) F.final_extra = `Inauguração ${N === 0 ? 'hoje' : curto(d) + ', ' + ddmm(d)}, às ${hora(F.abertura)}`;
+    $('#nota').textContent = F.nota || '';
+    return { duracoes: Array(k).fill(5) };
+  },
+
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, lerp, rnd, ini, fim } = $m, I = D.I;
+    // ---- 0 countdown: the number falls from N+K down to N
+    $m.cena('#c0', t, I.conta);
+    $('#raios').style.transform = `rotate(${t * 6}deg) scale(${0.9 + 0.1 * eo(p(t, 0, 1.2))})`;
+    $m.revela('#c0a', t, 0.05);
+    if (D.N !== 0) {
+      const q = eo5(p(t, 0.25, 1.6)), v = D.N + D.K * (1 - q), lo = Math.floor(v + 1e-6), fr = v - lo;
+      $('#nA').textContent = String(lo); $('#nB').textContent = String(lo + 1);
+      $('#nA').style.transform = `translateY(${-fr * 600}px)`; $('#nB').style.transform = `translateY(${(1 - fr) * 600}px)`;
+      $('#nB').style.opacity = fr > 0.001 ? 1 : 0;
+      const pop = el(p(t, 1.75, 0.9)); $('#c0n').style.transform = `scale(${1 + 0.08 * (1 - pop) * (t > 1.75 ? 1 : 0)})`;
+      $('#c0n').style.opacity = eo(p(t, 0.15, 0.3));
+      $m.entra('#c0b', t, 1.6, 0.5, 50);
+    } else {
+      const q = eb(p(t, 0.3, 0.7)); $('#c0h').style.transform = `scale(${0.6 + 0.4 * q}) rotate(${(1 - q) * -6}deg)`; $('#c0h').style.opacity = cl(q * 2);
+    }
+    $m.revela('#c0c', t, 2.0);
+
+    // ---- 1 THE MOMENT: ribbon cut
+    $m.cena('#c1', t, I.fita);
+    const a = ini(I.fita), dur = fim(I.fita) - a, u = t - a, tc = Math.max(1.3, Math.min(1.9, dur * 0.36));
+    $m.filmagem($('#fImg'), F.fachada, Math.max(0, u));
+    $('#fDim').style.opacity = 0.58 - 0.58 * eo(p(u, tc + 0.05, 0.7));
+    $('#fChip').style.opacity = eo(p(u, 0.2, 0.4)) * (1 - eo(p(u, tc + 0.2, 0.3)));
+    // ribbon stretches in from both posts, then the halves swing down from where they are tied
+    const st = eo5(p(u, 0.05, 0.6)), uc = u - tc;
+    const sw = uc <= 0 ? 0 : 84 * (1 - Math.exp(-3.2 * uc) * Math.cos(7 * uc)) + 3 * Math.sin(uc * 2.2) * Math.min(1, uc);
+    $('#fL').style.transform = `scaleX(${st}) rotate(${sw}deg)`; $('#fR').style.transform = `scaleX(${st}) rotate(${-sw}deg)`;
+    // the bow pops in, then drops away after the cut
+    const lb = eb(p(u, 0.45, 0.5)), fall = uc > 0 ? uc : 0;
+    $('#laco').style.transform = `translate(${fall * 60}px, ${1400 * fall * fall}px) rotate(${fall * 70}deg) scale(${lb})`;
+    $('#laco').style.opacity = cl(lb * 2) * (1 - p(uc, 0.9, 0.2));
+    // scissors: come up from the corner opening, snip at tc, leave
+    const ent = eo5(p(u, 0.55, Math.max(0.5, tc - 0.75))), sai = eio(p(uc, 0.25, 0.5));
+    const abre = uc < 0 ? 22 * Math.min(1, ent * 1.3) * (1 - eo(p(u, tc - 0.18, 0.18))) : 6 * eo(p(uc, 0.15, 0.3));
+    $('#tesA').setAttribute('transform', `rotate(${-abre} 100 206)`); $('#tesB').setAttribute('transform', `rotate(${abre} 100 206)`);
+    $('#tes').style.transform = `translate(${(1 - ent) * 420 + sai * 520}px, ${(1 - ent) * 700 + sai * 300}px) rotate(${(1 - ent) * 35 - 8 + sai * 30}deg)`;
+    $('#tes').style.opacity = cl(ent * 3) * (1 - sai);
+    // confetti from the cut
+    $$('#conf i').forEach(c => { const i = +c.dataset.i, v = uc;
+      if (v <= 0 || v > 2.6) { c.style.opacity = 0; return; }
+      const ang = -Math.PI / 2 + (rnd(i) - .5) * 2.6, sp = 900 + rnd(i * 3) * 1300;
+      const x = 540 + Math.cos(ang) * sp * v * 0.8, y = 822 + Math.sin(ang) * sp * v + 1500 * v * v;
+      c.style.opacity = 1 - p(v, 1.8, 0.8); c.style.transform = `translate(${x - 11}px,${y - 17}px) rotate(${(rnd(i * 7) * 900 + v * 600) | 0}deg) scaleY(${0.4 + 0.6 * Math.abs(Math.sin(v * 9 + i))})`; });
+    // plaque with the logo rises
+    const pq = eo5(p(uc, 0.45, 0.7)); $('#placa').style.opacity = cl(pq * 1.5); $('#placa').style.transform = `translateY(${(1 - pq) * 140}px) scale(${0.94 + 0.06 * pq})`;
+
+    // ---- the place: each photo wipes in over the previous one, slow push, legend rising
+    D.esp.forEach((c, j) => {
+      const i = I.esp[j], a = ini(i), b = fim(i), on = t >= a && t < b + 0.6;
+      c.style.visibility = on ? 'visible' : 'hidden'; if (!on) return;
+      const q = eio(p(t, a, 0.6));
+      c.style.clipPath = j % 2 ? `inset(0 ${(1 - q) * 100}% 0 0)` : `inset(0 0 0 ${(1 - q) * 100}%)`;
+      const w = c.querySelector('.ew'), uu = t - a, dir = j % 2 ? 1 : -1;
+      $m.filmagem(w.querySelector('img'), F.espaco[j].foto, uu);
+      w.style.transform = `translateX(${dir * (1 - q) * -220 + dir * uu * 6}px) scale(${1 + 0.012 * uu})`;
+      $m.entra(c.querySelector('.ek'), t, a + 0.3, 0.5, 30);
+      $m.revela(c.querySelector('.ex'), t, a + 0.45, 0.08);
+      c.querySelector('.eb').style.transform = `scaleX(${eo5(p(t, a + 0.7, 0.6))})`;
+    });
+
+    // ---- team
+    if (I.eq != null) {
+      $m.cena('#cQ', t, I.eq); const a = ini(I.eq);
+      $m.revela('#qT', t, a + 0.1);
+      $$('#qG .pc').forEach((c, j) => { const q = eb(p(t, a + 0.35 + j * 0.3, 0.6)); c.style.opacity = cl(q * 2);
+        c.style.transform = `translateY(${(1 - q) * 160}px) rotate(${(+c.dataset.r) * q}deg) scale(${0.85 + 0.15 * q})`;
+        const im = c.querySelector('img'); im.style.transform = `scale(${1.12 - 0.08 * eo(p(t, a, fim(I.eq) - a))})`; });
+    }
+    // ---- items
+    { $m.cena('#cI', t, I.it); const a = ini(I.it), n = F.itens.length, passo = Math.min(0.32, (fim(I.it) - a - 1.4) / n);
+      $m.revela('#iT', t, a + 0.1);
+      $$('#iG .it').forEach((c, j) => { const q = eb(p(t, a + 0.35 + j * passo, 0.55)); c.style.opacity = cl(q * 2); c.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.85 + 0.15 * q})`;
+        c.querySelector('img').style.transform = `scale(${1.15 - 0.1 * eo(p(t, a, 4))})`;
+        const pr = c.querySelector('.ip'); if (pr) { const s = eb(p(t, a + 0.8 + j * passo, 0.45)); pr.style.transform = `scale(${s}) rotate(-4deg)`; } }); }
+    // ---- opening offer
+    if (I.cond != null) {
+      $m.cena('#cC', t, I.cond); const a = ini(I.cond), tk = $('#tk');
+      const q = eo5(p(t, a + 0.1, 0.8)); tk.style.transform = `translateY(${(1 - q) * 500}px) rotate(${(1 - q) * 8 - 1.5}deg)`; tk.style.opacity = cl(q * 2);
+      const img = $('#tkI'); if (img && img.isConnected) img.style.transform = `scale(${1.15 - 0.1 * eo(p(t, a, 4))})`;
+      $m.entra('#tkK', t, a + 0.6, 0.4, 20); $m.revela('#tkT', t, a + 0.7, 0.07); if ($('#tkD')) $m.entra('#tkD', t, a + 1.1, 0.5, 20);
+      $m.carimbo('#tkS', t, a + 1.5); $('#tkS').style.transform = $('#tkS').style.transform.replace('rotate(-8deg)', 'rotate(-2deg)');
+      // notches on the perforation line
+      const pTop = $('#tkP').offsetTop; $('#fur1').style.cssText = `left:-32px;top:${pTop - 32}px`; $('#fur2').style.cssText = `right:-32px;top:${pTop - 32}px`;
+    }
+    // ---- where: streets draw, pin drops, address
+    { $m.cena('#cM', t, I.mapa); const a = ini(I.mapa);
+      D.ruas.forEach((l, j) => l.setAttribute('stroke-dashoffset', 1 - eo(p(t, a + 0.1 + j * 0.035, 0.7))));
+      const lt = $('#mpS .lote'); lt.style.opacity = 0.22 * eo(p(t, a + 1.0, 0.4));
+      $('#mpS .pq').style.opacity = eo(p(t, a + 0.5, 0.6)); $('#mpS .qd').style.opacity = eo(p(t, a, 0.6));
+      const dq = p(t, a + 0.75, 0.55), y = dq < 1 ? -520 * (1 - dq * dq) : 0, bq = p(t, a + 1.3, 0.5);
+      const sq = bq > 0 && bq < 1 ? Math.sin(bq * Math.PI) * 0.18 * (1 - bq) : 0;
+      $('#pin').style.opacity = dq > 0 ? 1 : 0; $('#pin').style.transform = `translateY(${y}px) scale(${1 + sq}, ${1 - sq})`;
+      $('#pinSh').style.opacity = dq;
+      $('#mpS').style.transform = `scale(${1 + 0.06 * eio(p(t, a + 1.2, fim(I.mapa) - a))})`; $('#mpS').style.transformOrigin = '480px 300px';
+      $m.revela('#mEndT', t, a + 0.5, 0.07); $m.entra('#mBai', t, a + 1.1, 0.5, 30); $m.entra('#mHor', t, a + 1.5, 0.5, 30); }
+    // ---- the date: pages tear off until the day
+    { $m.cena('#cD', t, I.data); const a = ini(I.data);
+      const cq = eo5(p(t, a + 0.05, 0.6)); $('#cal').style.transform = `translateY(${(1 - cq) * 300}px) rotate(${(1 - cq) * -6}deg)`; $('#cal').style.opacity = cl(cq * 2);
+      const pgs = $$('#cal .pgC'), n = pgs.length - 1;
+      pgs.forEach(pg => { const j = +pg.dataset.j; if (!j) { const s = eb(p(t, a + 0.55 + n * 0.22, 0.5)); pg.querySelector('.d').style.transform = `scale(${0.9 + 0.1 * s})`; return; }
+        const q = eio(p(t, a + 0.5 + (n - j) * 0.22, 0.35)); pg.style.transform = `rotateX(${q * 120}deg) translateY(${q * -40}px)`; pg.style.opacity = 1 - p(q, 0.7, 0.3); });
+      const ab = eb(p(t, a + 0.9 + n * 0.22, 0.6)); $('#dAbT').style.transform = `scale(${ab}) rotate(-2deg)`; $('#dAbT').style.opacity = cl(ab * 2);
+      $m.revela('#dTx', t, a + 1.4 + n * 0.22); }
+    $('#nota').style.opacity = t >= ini(I.it) && t < fim(I.data) ? 1 : 0;
+  },
+});
+</script></body></html>

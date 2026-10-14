@@ -1,0 +1,98 @@
+{
+ "_marca": "burger-noite",
+ "_formato": "reel",
+ "_hoje": "2026-10-14",
+ "data": "2026-10-31",
+ "abertura": "18:00",
+ "fachada": "fotos/burger_fachada.jpg",
+ "tipo_negocio": "Hamburgueria",
+ "espaco": [
+  {
+   "foto": "fotos/inauguracao_burger_salao.jpg",
+   "legenda": "Mesa para a turma toda"
+  },
+  {
+   "foto": "fotos/inauguracao_burger_balcao.jpg",
+   "legenda": "Balcão de frente pra chapa"
+  },
+  {
+   "foto": "fotos/burger_chapa.jpg",
+   "legenda": "Chapa sempre quente"
+  }
+ ],
+ "equipe": [
+  {
+   "foto": "fotos/inauguracao_burger_atendente.jpg",
+   "nome": "Bia",
+   "funcao": "atendimento",
+   "permissao": "autorização de uso de imagem assinada em 10/10/2026, guardada na pasta da loja (exemplo de teste)"
+  },
+  {
+   "foto": "fotos/inauguracao_burger_chapeiro.jpg",
+   "nome": "Rafa",
+   "funcao": "chapeiro",
+   "permissao": "autorização de uso de imagem assinada em 10/10/2026, guardada na pasta da loja (exemplo de teste)"
+  }
+ ],
+ "titulo_itens": "No cardápio",
+ "itens": [
+  {
+   "foto": "fotos/burger_smash.jpg",
+   "nome": "Smash duplo",
+   "preco": 32
+  },
+  {
+   "foto": "fotos/burger_costela.jpg",
+   "nome": "Burger de costela",
+   "preco": 38
+  },
+  {
+   "foto": "fotos/burger_batata.jpg",
+   "nome": "Batata rústica",
+   "preco": 18
+  },
+  {
+   "foto": "fotos/burger_onion.jpg",
+   "nome": "Onion rings",
+   "preco": 22
+  },
+  {
+   "foto": "fotos/burger_milkshake.jpg",
+   "nome": "Milkshake",
+   "preco": 19
+  }
+ ],
+ "condicao": {
+  "titulo": "Milkshake em dobro",
+  "detalhe": "Na compra de qualquer burger",
+  "ate": "2026-11-07",
+  "foto": "fotos/burger_milkshake.jpg"
+ },
+ "endereco": "Rua das Acácias, 120",
+ "bairro": "Jardim Aurora",
+ "horario": "Ter a dom, 18h às 23h",
+ "falas": [
+  "Faltam 17 dias. Vem aí uma hamburgueria nova aqui no Jardim Aurora.",
+  "No dia, a gente corta a fita e acende as luzes da Burger Noite, a sua hamburgueria de bairro.",
+  "Lá dentro — salão com mesa para a turma toda.",
+  "Tem balcão de frente para a cozinha, pra quem gosta de ver o lanche nascer.",
+  "E a chapa bem quente, com a carne moída e bolada na hora.",
+  "Quem vai te receber é a Bia. E quem comanda a chapa é o Rafa.",
+  "No cardápio: smash duplo, burger de costela, batata rústica, onion rings e milkshake.",
+  "E na semana de inauguração, o milkshake sai em dobro na compra de qualquer burger, até sábado, 7 de novembro.",
+  "Fica na Rua das Acácias, 120, no Jardim Aurora. Abre de terça a domingo, das 18h às 23h.",
+  "Anota aí: sábado, 31 de outubro, a partir das 18h. A primeira mordida é sua.",
+  "Chama a turma e segue a Burger Noite, pra não perder a estreia."
+ ],
+ "chamada": "Siga e venha na estreia",
+ "nota": "dados de exemplo",
+ "_origem": {
+  "data": "dono",
+  "abertura": "dono",
+  "equipe": "dono",
+  "itens": "dono",
+  "condicao": "dono",
+  "endereco": "dono",
+  "horario": "dono"
+ }
+}

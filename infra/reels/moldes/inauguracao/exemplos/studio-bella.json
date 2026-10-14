@@ -1,0 +1,90 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "_hoje": "2026-10-14",
+ "data": "2026-11-07",
+ "abertura": "09:00",
+ "fachada": "fotos/inauguracao_salao_fachada.jpg",
+ "tipo_negocio": "Salão de beleza",
+ "espaco": [
+  {
+   "foto": "fotos/salao_interior.jpg",
+   "legenda": "Espelhos com luz boa"
+  },
+  {
+   "foto": "fotos/inauguracao_salao_lavatorio.jpg",
+   "legenda": "Lavatório reclinável"
+  },
+  {
+   "foto": "fotos/salao_produtos.jpg",
+   "legenda": "Produtos que a gente usa"
+  }
+ ],
+ "equipe": [
+  {
+   "foto": "fotos/inauguracao_salao_cabeleireira.jpg",
+   "nome": "Carla",
+   "funcao": "cabeleireira",
+   "permissao": "autorização de uso de imagem por mensagem em 09/10/2026, print guardado (exemplo de teste)"
+  },
+  {
+   "foto": "fotos/inauguracao_salao_manicure.jpg",
+   "nome": "Jéssica",
+   "funcao": "manicure",
+   "permissao": "autorização de uso de imagem por mensagem em 09/10/2026, print guardado (exemplo de teste)"
+  }
+ ],
+ "titulo_itens": "Serviços",
+ "itens": [
+  {
+   "foto": "fotos/salao_corte.jpg",
+   "nome": "Corte"
+  },
+  {
+   "foto": "fotos/salao_escova.jpg",
+   "nome": "Escova"
+  },
+  {
+   "foto": "fotos/salao_mechas.jpg",
+   "nome": "Mechas"
+  },
+  {
+   "foto": "fotos/salao_cachos.jpg",
+   "nome": "Cachos"
+  },
+  {
+   "foto": "fotos/salao_unhas.jpg",
+   "nome": "Manicure"
+  }
+ ],
+ "condicao": {
+  "titulo": "Hidratação de cortesia",
+  "detalhe": "Para quem fizer corte ou escova na primeira semana",
+  "ate": "2026-11-14"
+ },
+ "endereco": "Rua das Hortênsias, 58",
+ "bairro": "Jardim das Flores",
+ "horario": "Ter a sáb, 9h às 19h",
+ "falas": [
+  "Faltam 24 dias. Um salão de beleza novinho vai abrir no Jardim das Flores.",
+  "É o Studio Bella. E você está convidada para o corte da fita.",
+  "Lá dentro, cadeiras confortáveis e espelhos com luz boa.",
+  "O lavatório tem cadeira reclinável, pra lavar o cabelo relaxando.",
+  "E na prateleira, os produtos que a gente usa e indica.",
+  "Quem te atende é a Carla, no cabelo, e a Jéssica, nas unhas.",
+  "Tem corte, escova, mechas, finalização de cachos e manicure.",
+  "Na primeira semana, quem fizer corte ou escova ganha uma hidratação, até sábado, 14 de novembro.",
+  "Fica na Rua das Hortênsias, 58, no Jardim das Flores. De terça a sábado, das 9h às 19h.",
+  "A inauguração é no sábado, 7 de novembro, às 9h. Vem tomar um café com a gente.",
+  "Agende seu horário e venha conhecer o Studio Bella."
+ ],
+ "nota": "dados de exemplo",
+ "_origem": {
+  "data": "dono",
+  "abertura": "dono",
+  "equipe": "dono",
+  "condicao": "dono",
+  "endereco": "dono",
+  "horario": "dono"
+ }
+}
