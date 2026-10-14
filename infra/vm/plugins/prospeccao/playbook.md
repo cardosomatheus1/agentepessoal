@@ -58,7 +58,7 @@ mais é quente e vai primeiro).
   vencer, insumos que subiram, quanto sobrou no mês); tabela de atacado x varejo; 4 conversas com o Matheus no 1º mês.
   R$ 197 por mês, sem fidelidade, começando pelos 15 dias grátis sem cartão. **Garantia:** se em 30 dias o Raio-X não
   achar pelo menos um lugar onde o dinheiro dela está escapando (produto abaixo do custo, preço que pode subir, estoque
-  perdendo validade ou compra acima do necessário), ela não paga o primeiro mês. São **5 implementações por semana**
+  perdendo validade ou compra acima do necessário), a gente não cobra a próxima mensalidade dela. São **5 implementações por semana**
   (é o Matheus que faz); nunca diga que há vaga ou que acabou: quem topar, nota "pendente: Lucro na Mão: <nome>" e o
   Matheus confirma a data.
 - **Nunca peça a receita antes de ela topar a oferta** (soa como se quiséssemos a receita da pessoa). Depois que ela
@@ -171,7 +171,7 @@ seguimento. **Lead** é só quem pediu o link, o preço ou o teste: mandar o lin
   se perguntarem; link só se ainda não foi). Etapa "respondeu" ("lead" se ela pedir o link).
 - **Perguntou o preço:** "É R$ 197 por mês, sem fidelidade: você me manda as receitas do jeito que tiver, eu cadastro
   seus 10 principais produtos em 48 horas e te mostro quanto sobra em cada um e onde o dinheiro escapa. Se em 30 dias
-  a gente não achar nada, você não paga o primeiro mês. Quer começar pelos 15 dias grátis?"
+  a gente não achar nada, a gente não cobra a sua próxima mensalidade. Quer começar pelos 15 dias grátis?"
   Etapa "lead", nota "ofereci Lucro na Mão". (Só se ela quiser algo menor: o Básico é R$ 97, sem a implantação.)
 - **Respondeu só "oi", "pode falar", "quem é?" ou "como assim?":** uma frase de quem fala e por quê, e a pergunta da
   variante de novo, mais curta. Ex.: "Sou o Matheus, da Raiz Connect, um sistema de custo pra quem produz comida.
@@ -198,7 +198,7 @@ seguimento. **Lead** é só quem pediu o link, o preço ou o teste: mandar o lin
 - **Agora não, sem tempo, depois vejo** (não é "não"): "Tranquilo! Deixo o link e você abre quando der: {link}. Começa
   sem cadastro." Etapa "respondeu", nota "agora não" (em 30 dias, um retorno leve, sem link).
 - **Achou caro:** "Entendo! Por isso tem a garantia: se em 30 dias a gente não achar pelo menos um lugar onde o seu
-  dinheiro está escapando, você não paga o primeiro mês. E os 15 primeiros dias são grátis, sem cartão. Quer tentar?"
+  dinheiro está escapando, a gente não cobra a sua próxima mensalidade. E os 15 primeiros dias são grátis, sem cartão. Quer tentar?"
   Etapa "lead", nota "ofereci Lucro na Mão".
 - **Perguntou como achamos o perfil:** "Achei vocês procurando {segmento} pra conversar sobre custo e preço. Se
   preferir que eu não mande mais nada, é só falar." Etapa "respondeu".
@@ -219,7 +219,7 @@ seguimento. **Lead** é só quem pediu o link, o preço ou o teste: mandar o lin
   produtos, custo real e teórico, relatórios completos; o recomendado pra acompanhar o custo); Enterprise R$ 397 (até
   100 usuários, produtos sem limite, API).
 - **Lucro na Mão em 30 Dias:** a oferta da seção 2 (implementação gratuita feita pelo Matheus em 48 horas, Raio-X do
-  negócio, tabela de atacado x varejo, 4 conversas no 1º mês, garantia do primeiro mês, 5 implementações por semana),
+  negócio, tabela de atacado x varejo, 4 conversas no 1º mês, garantia de não cobrar a próxima mensalidade, 5 implementações por semana),
   no plano Profissional de R$ 197 por mês, sem fidelidade.
 - **Teste:** 15 dias grátis em qualquer plano, sem cartão e sem contratação automática; a conta se cria em
   raizconnect.com.br/#/register.

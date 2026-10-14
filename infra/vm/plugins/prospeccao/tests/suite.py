@@ -517,8 +517,11 @@ class Suite:
         # reviewer stopped seeing the facts at the end (section 7 and 8)
         texto = (RAIZ / "playbook.md").read_text(encoding="utf-8")
         ok(len(texto) <= self.p.LIMITE_PLAYBOOK, f"playbook com {len(texto)} caracteres passa do que o revisor lê")
-        ok("Lucro na Mão em 30 Dias" in texto and "não paga o primeiro mês" in texto and "Preço Certo" not in texto,
-           "a oferta (nome novo, 14/10) e a garantia estão no playbook")
+        ok("Lucro na Mão em 30 Dias" in texto and "Preço Certo" not in texto,
+           "a oferta (nome novo, 14/10) está no playbook")
+        # 14/10, Matheus: the guarantee is not charging the next monthly fee (not "not paying the first month")
+        ok("não cobra a sua próxima mensalidade" in texto and "não paga o primeiro mês" not in texto,
+           "a garantia do playbook é não cobrar a próxima mensalidade")
 
     def t_cliente_e_quem_produz_alimento(self):
         # Matheus, 14/10: "o icp é o produtor de alimentos de fato e não só esses ramos grandes" (two closing make
