@@ -14,6 +14,15 @@
 > `python3 base/carrossel.py c_<nome>` (1080×1350). Para trocar as imagens de um post já agendado, suba os JPGs nos
 > mesmos endereços do S3 com a mesma quantidade (a agenda guarda o endereço, não a imagem).
 >
+> **Padrão x liberdade criativa (Matheus, 14/10, mais tarde):** a qualidade é a do kit, mas nem todo vídeo ou
+> carrossel segue o mesmo molde, "senão fica repetitivo e sem graça". **Fixo** (é o que faz reconhecer a marca):
+> logo, Manrope + Instrument Serif, a família de cores do brand-system (night, creme, verdes, lima para o que sobra),
+> as regras de comunicação (valores de exemplo, sem promessa, sem jargão, sem emoji), a voz Carolina e o processo
+> (materiais reais, revisão com nota ≥ 8, validação). **Livre** (muda de peça para peça): o conceito visual, a
+> composição e o grid, o formato do slide/cena (foto, tipografia gigante, tela do produto, conversa, caderno,
+> etiqueta, recibo...), o ritmo, a textura, as cores de apoio dentro da família, a trilha e as transições. Duas
+> peças seguidas não usam o mesmo conceito. A base `raiz-carrossel.css` é ponto de partida, não molde.
+>
 > **Processo do kit nos carrosséis (pedido do Matheus, 14/10):**
 > - **B, materiais reais:** tela real do produto (`base/kit/tela-calculadora.jpg`, bloco `.cta-calc` no slide final).
 >   Foto de comida/produto é foto real ou gerada (Stability no Bedrock, como no kit), nunca desenhada em código, com
