@@ -1,58 +1,77 @@
 <!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="../base/raiz-carrossel.css">
 <style>
-.quem{font-weight:700;font-size:26px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
-.claro .quem{color:var(--mutc)}
-.fala{font-weight:800;letter-spacing:-.045em;font-size:116px;line-height:.98;text-wrap:balance;margin-top:30px}
-.pensa{font-weight:600;font-size:60px;line-height:1.15;letter-spacing:-.02em;color:var(--txt);text-wrap:balance}
-.claro .pensa{color:var(--ink)}
-.pac{display:flex;align-items:center;gap:26px}
-.pac .etq{white-space:nowrap}
-.pac .trilho{flex:1;height:18px;border-radius:99px;background:var(--soft);overflow:hidden}
-.claro .pac .trilho{background:var(--softc)}
-.pac .f{height:100%;border-radius:99px;background:var(--txt)}
-.claro .pac .f{background:var(--ink)}
-.pac .n{font-size:44px;min-width:110px;text-align:right}
-.grade{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:44px}
+/* Conceito próprio: a conversa no celular. O cliente manda a frase; a gente pensa (balão de pensamento); a paciência cai. */
+.slide{background:#0e1914}
+.slide:before{display:none}
+.fundo-chat{position:absolute;inset:0;background:
+  radial-gradient(700px 500px at 85% 15%,rgba(39,97,60,.28),transparent 70%),
+  radial-gradient(circle at 1px 1px,rgba(245,247,237,.05) 1.5px,transparent 2px) 0 0/34px 34px}
+.cab{display:flex;align-items:center;gap:22px;padding-bottom:26px;border-bottom:1.5px solid var(--fio)}
+.av{width:84px;height:84px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:800;font-size:34px;color:var(--txt)}
+.cab .nome{font-weight:800;font-size:36px;letter-spacing:-.02em}
+.cab .st{font-weight:500;font-size:24px;color:var(--mut);margin-top:4px}
+.bat{margin-left:auto;display:flex;align-items:center;gap:12px;font-weight:800;font-size:30px;font-variant-numeric:tabular-nums}
+.bat .corpo{width:92px;height:42px;border:3px solid var(--mut);border-radius:9px;padding:4px;position:relative}
+.bat .corpo:after{content:'';position:absolute;right:-10px;top:12px;width:6px;height:14px;background:var(--mut);border-radius:0 3px 3px 0}
+.bat .carga{height:100%;border-radius:4px;background:var(--txt)}
+.bat small{display:block;font-size:20px;font-weight:700;letter-spacing:.12em;color:var(--mut)}
+.bolha{align-self:flex-start;max-width:860px;background:var(--card);border:1.5px solid var(--fio);border-radius:12px 40px 40px 40px;
+  padding:44px 50px 30px;margin-top:84px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.bolha .t{font-weight:800;font-size:104px;line-height:1.02;letter-spacing:-.045em;text-wrap:balance}
+.bolha .h{font-weight:600;font-size:22px;color:var(--mut);text-align:right;margin-top:14px}
+.pensa{align-self:flex-end;position:relative;max-width:800px;margin-top:100px;background:var(--paper);color:var(--ink);
+  border-radius:60px;padding:32px 46px}
+.pensa:before,.pensa:after{content:'';position:absolute;background:var(--paper);border-radius:50%}
+.pensa:before{width:34px;height:34px;left:70px;top:-40px}
+.pensa:after{width:18px;height:18px;left:46px;top:-64px}
+.pensa .etq{color:var(--mutc);font-size:20px}
+.pensa .t{font-weight:700;font-size:56px;line-height:1.15;letter-spacing:-.02em;margin-top:8px}
+.minha{align-self:flex-end;max-width:860px;background:var(--btn);border-radius:40px 12px 40px 40px;padding:36px 44px 28px;margin-top:40px}
+.minha .t{font-weight:800;font-size:64px;line-height:1.05;letter-spacing:-.04em;text-wrap:balance}
+.minha .h{font-weight:600;font-size:22px;color:#cfe3d3;text-align:right;margin-top:14px}
+.mini{display:flex;flex-direction:column;gap:24px;margin-top:64px}
+.mini div{align-self:flex-start;background:var(--card);border:1.5px solid var(--fio);border-radius:10px 30px 30px 30px;padding:22px 36px;font-weight:700;font-size:44px}
+.mini div:nth-child(even){margin-left:120px}
+.grade{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:40px}
 .grade div{aspect-ratio:1;border:1.5px solid var(--fio);border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:44px;font-variant-numeric:tabular-nums}
 </style></head><body>
 <div id="raiz"></div>
 <script>
 const F=[
- ["Faz um precinho?","O precinho é o meu lucro.",90,"Cliente · ontem"],
- ["Deixa em consignação?","E se não vender, volta vencido.",75,"Loja nova · toda semana"],
- ["Faz 40% para revenda?","E sobra quanto pra mim?",55,"Revendedor · sempre"],
- ["Pago em 60 dias.","O meu fornecedor quer à vista.",35,"Empório · hoje, 11h"],
- ["Consegue pra hoje à tarde?","Claro, deixa eu parar o tempo.",15,"Cliente · agorinha"],
- ["No mercado é mais barato.","E no mercado é feito à mão?",3,"Cliente · todo santo dia"],
+ ["Faz um precinho?","O precinho é o meu lucro.",90,"Cliente","C","ontem, 21:47"],
+ ["Deixa em consignação?","E se não vender, volta vencido.",75,"Loja nova","L","segunda, 10:12"],
+ ["Faz 40% para revenda?","E sobra quanto pra mim?",55,"Revendedor","R","terça, 15:30"],
+ ["Pago em 60 dias.","O meu fornecedor quer à vista.",35,"Empório","E","hoje, 11:02"],
+ ["Consegue pra hoje à tarde?","Claro, deixa eu parar o tempo.",15,"Cliente","C","hoje, 12:58"],
+ ["No mercado é mais barato.","E no mercado é feito à mão?",3,"Cliente","C","agora"],
 ];
-const pac=v=>`<div class="pac"><span class="etq">Paciência</span><div class="trilho"><div class="f" style="width:${v}%"></div></div><span class="n">${v}%</span></div>`;
-let h=`<div class="slide" data-rot="Frases de cliente">
+const bat=v=>`<div class="bat"><div><small>PACIÊNCIA</small>${v}%</div><div class="corpo"><div class="carga" style="width:${v}%"></div></div></div>`;
+const cab=(n,a,st,v)=>`<div class="cab"><div class="av">${a}</div><div><div class="nome">${n}</div><div class="st">${st}</div></div>${bat(v)}</div>`;
+let h=`<div class="slide" data-rot="Frases de cliente"><div class="fundo-chat"></div>
  <div class="area">
-  <h1>6 frases que quem produz comida <span class="it">já ouviu.</span></h1>
-  <p style="margin-top:40px">E o que a gente pensa, mas não fala. <b>Arraste e vá contando quantas você já ouviu.</b></p>
-  <div class="esp"></div>${pac(100)}
+  <h1>6 frases que quem produz comida já <span class="it">ouviu.</span></h1>
+  <p style="margin-top:32px">E o que a gente pensa, mas não fala. <b>Conte quantas você já ouviu.</b></p>
+  <div class="mini">${F.slice(0,3).map(f=>`<div>${f[0]}</div>`).join('')}</div>
  </div></div>`;
-F.forEach((f,i)=>{h+=`<div class="slide ${i%2?'':'claro'}" data-rot="Frase ${i+1} de 6" style="--lx:${i%2?-400:300}px;--ly:${i%3?-300:200}px">
+F.forEach((f,i)=>{h+=`<div class="slide" data-rot="Frase ${i+1} de 6"><div class="fundo-chat"></div>
  <div class="area">
-  <div class="quem">${f[3]}</div>
-  <div class="fala">“${f[0]}”</div>
-  <div class="etq" style="margin:90px 0 16px">O que a gente pensa</div>
-  <div class="pensa">${f[1]}</div>
-  <div class="esp"></div>
-  ${pac(f[2])}
+  ${cab(f[3],f[4],f[5],f[2])}
+  <div class="bolha"><div class="t">${f[0]}</div><div class="h">${f[5]}</div></div>
+  <div class="pensa"><div class="etq">O QUE A GENTE PENSA</div><div class="t">${f[1]}</div></div>
  </div></div>`});
-h+=`<div class="slide claro" data-rot="O que fica" style="--lx:-200px;--ly:-300px">
+h+=`<div class="slide" data-rot="O que fica"><div class="fundo-chat"></div>
  <div class="area centro">
-  <h2>Em quase todas, o cliente não vê o seu <span class="it">custo.</span></h2>
-  <p style="margin-top:40px"><b>Você precisa ver.</b> Saber quanto sobra em cada produto, no varejo e para a loja, é o que diz se dá para aceitar o desconto, o prazo ou a consignação.</p>
+  <div class="etq">A resposta que vale para todas</div>
+  <div class="minha"><div class="t">Em quase todas, o cliente não vê o seu custo. Você precisa ver.</div><div class="h">você · agora</div></div>
+  <p style="margin-top:56px">Saber quanto sobra em cada produto, no varejo e para a loja, é o que diz se dá para aceitar <b>o desconto, o prazo ou a consignação.</b></p>
  </div></div>`;
-h+=`<div class="slide" data-rot="Calculadora grátis" data-fim="salve e envie" style="--lx:100px;--ly:300px">
+h+=`<div class="slide" data-rot="Calculadora grátis" data-fim="salve e envie"><div class="fundo-chat"></div>
  <div class="area">
   <h2>Qual você mais <span class="it">ouve?</span></h2>
-  <p style="margin-top:30px">Comente o número.</p>
+  <p style="margin-top:24px">Comente o número.</p>
   <div class="grade">${[1,2,3,4,5,6].map(n=>`<div>${n}</div>`).join('')}</div>
-  <p style="margin-top:56px">Preço justo não é caro: <b>é o preço que paga o seu trabalho.</b> A calculadora grátis mostra quanto sobra antes de você dar o desconto.</p>
+  <p style="margin-top:50px">Preço justo não é caro: <b>é o preço que paga o seu trabalho.</b> A calculadora grátis mostra quanto sobra antes de você dar o desconto.</p>
   <div class="esp"></div>
   <div class="botao"><div>Calculadora grátis<small>link na bio de @raiz.connect</small></div><span class="seta">→</span></div>
  </div></div>`;
