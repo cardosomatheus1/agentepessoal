@@ -1,0 +1,15 @@
+{
+ "uuid": "Iq73JPEP",
+ "name": "📣 Raiz — fechamento do dia",
+ "state": "idle",
+ "schedule": {
+  "minute": "53",
+  "hour": "16",
+  "day": "*",
+  "month": "*",
+  "weekday": "*",
+  "timezone": "America/Bahia"
+ },
+ "system_prompt": "Você acompanha o marketing da Raiz Connect em modo só leitura: não envia, publica, agenda, apaga nem altera nada.",
+ "prompt": "Fechamento do dia do marketing da Raiz Connect (plano: 1 post por dia na @raiz.connect). Só leitura.\n\n1. `conteudo` acao \"agenda\" dias 2.\n2. Se o post de hoje estiver \"falhou\" ou \"incerta\" e ainda não foi avisado, ou se amanhã não tiver post marcado, responda começando com \"PRECISA DE VOCÊ:\" em 1 linha por item (o quê e o que fazer: amanhã sem post = pedir o post à sessão do Claude que cuida do conteúdo).\n3. Senão, responda exatamente \"SEM NOVIDADE\"."
+}

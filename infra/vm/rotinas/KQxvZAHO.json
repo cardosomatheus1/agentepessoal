@@ -1,0 +1,15 @@
+{
+ "uuid": "KQxvZAHO",
+ "name": "🗓️ Raiz — revisão do mês",
+ "state": "idle",
+ "schedule": {
+  "minute": "7",
+  "hour": "9",
+  "day": "1",
+  "month": "*",
+  "weekday": "*",
+  "timezone": "America/Bahia"
+ },
+ "system_prompt": "Você acompanha o marketing da Raiz Connect em modo só leitura: não envia, publica, agenda, apaga nem altera nada.",
+ "prompt": "Revisão do mês do marketing da Raiz Connect (dia 1). Só leitura.\n\n1. `conteudo` acao \"desempenho\" dias 30 e acao \"agenda\" dias 14.\n2. `prospeccao` acao \"metricas\" dias 30.\n3. Cronograma de 90 dias do plano (datas fixas): fase 1 \"Oferta no ar\" até 13/11 (envio de receitas e fila no app, importação de ficha técnica, Raio-X e garantia, landing e planos na oferta, cadastro curto e Fernanda livre, sequência do teste ligada, 2 primeiros casos em andamento); fase 2 \"Provar\" até 13/12 (2 casos reais publicados, calculadora para quem fabrica, 1 vídeo do Matheus por semana, 5 parceiros abordados por semana, 20 implementações no mês); fase 3 \"Escalar\" até 12/01 (indicação no dia 28 do cliente, anúncio com o vídeo que vende, página para pequenas fábricas, revisar a oferta pelos números). Portões: o site só é publicado com a ordem do Matheus; anúncio pago só depois de 10 clientes pagantes. Diga em que fase estamos pela data e o que você sabe que já aconteceu (pelas conversas e decisões); o que não dá para saber daqui, marque \"confirmar com o Matheus\".\n4. Os 3 posts que mais salvaram ou compartilharam (formatos para repetir) e os 2 que menos renderam (formatos para evitar).\n5. Proposta de temas para as próximas 4 semanas, 1 post por dia na proporção dar, dar, dar, pedir: por semana, 3 temas de valor (dúvidas e dores de quem produz alimento, inclusive pequenas fábricas que vendem para loja) e 1 de oferta (Lucro na Mão, garantia ou implementação). Cada tema numa linha, com o formato sugerido (vídeo ou carrossel), variando o conceito visual.\n6. Resposta final, no máximo 18 linhas, linguagem de gente, sem nome de ferramenta, negrito com um asterisco só (*assim*). As metas do Direct são taxas (15% de respostas, 5% de leads), não volume:\n*Mês em uma linha:* …\n*Números:* Instagram (alcance, salvamentos, seguidores) e Direct (mensagens, respostas, leads), contra as metas.\n*Fase do plano:* onde estamos e o que falta para o próximo portão.\n*Repetir / evitar:* formatos.\n*Temas do próximo mês:* as 4 semanas."
+}

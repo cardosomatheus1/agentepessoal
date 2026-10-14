@@ -28,10 +28,10 @@ SEMANA = """Números da semana do marketing da Raiz Connect (segunda de manhã).
 
 1. `conteudo` acao "desempenho" dias 7 e acao "agenda" dias 7.
 2. `prospeccao` acao "metricas" dias 7.
-3. Compare com as metas do plano: de 100 primeiras mensagens no Direct, 15 respostas (15%), 5 leads (5%) e 1 teste aberto; pelo menos 5 salvamentos por post de "como fazer"; 5 testes com receitas enviadas por semana (o limite de implementações). O que você não consegue medir daqui (usos da calculadora, testes, assinaturas), diga "sem dado" em vez de inventar.
+3. Compare com as metas do plano, que são TAXAS: a cada 100 primeiras mensagens no Direct, 15 respostas (15%), 5 leads (5%) e 1 teste aberto (o 100 é só a base da conta, NÃO é meta de volume: o volume é o limite seguro da conta, que a ferramenta controla); pelo menos 5 salvamentos por post de "como fazer"; 5 testes com receitas enviadas por semana (o limite de implementações). O que você não consegue medir daqui (usos da calculadora, testes, assinaturas), diga "sem dado" em vez de inventar.
 4. Leia as decisões em vigor (oferta Lucro na Mão em 30 Dias, garantia, cliente, conteúdo): a mudança proposta tem de caber nelas.
-5. Escreva um roteiro curto (30 a 45 s, 5 a 7 frases faladas) para o vídeo do Matheus falando para a câmera, tema tirado da dúvida, objeção ou resposta mais comum da semana na prospecção, no tom de "dar" (ensinar algo útil), sem vender, sem jargão e terminando na calculadora grátis.
-6. Resposta final (vai ao celular), no máximo 14 linhas, linguagem de gente, sem nome de ferramenta:
+5. Escreva um roteiro curto (30 a 45 s, 5 a 7 frases faladas) para o vídeo do Matheus falando para a câmera. Quem assiste é o DONO do negócio que produz e vende comida (marmita, doce, salgado, pequena fábrica que vende para loja), nunca o consumidor: nada de receita, dica de preparo ou de como comer. O tema sai da dúvida, objeção ou resposta mais comum da semana na prospecção e fala de dinheiro do negócio (custo de verdade, preço, quanto sobra, insumo que subiu, estoque que vence, compra, vender para loja, desconto, prazo). Tom de "dar": ensina uma conta ou um cuidado concreto, com um número de exemplo dito como exemplo, sem vender e sem jargão, e termina na calculadora grátis do link da bio.
+6. Resposta final (vai ao celular), no máximo 14 linhas, linguagem de gente, sem nome de ferramenta, negrito com um asterisco só (*assim*):
 *Semana em uma linha:* …
 *Instagram:* alcance, salvamentos e seguidores (e o melhor post, pelo salvamento).
 *Direct:* mensagens, respostas e leads, com as taxas contra a meta.
@@ -47,7 +47,7 @@ MES = """Revisão do mês do marketing da Raiz Connect (dia 1). Só leitura.
 3. Cronograma de 90 dias do plano (datas fixas): fase 1 "Oferta no ar" até 13/11 (envio de receitas e fila no app, importação de ficha técnica, Raio-X e garantia, landing e planos na oferta, cadastro curto e Fernanda livre, sequência do teste ligada, 2 primeiros casos em andamento); fase 2 "Provar" até 13/12 (2 casos reais publicados, calculadora para quem fabrica, 1 vídeo do Matheus por semana, 5 parceiros abordados por semana, 20 implementações no mês); fase 3 "Escalar" até 12/01 (indicação no dia 28 do cliente, anúncio com o vídeo que vende, página para pequenas fábricas, revisar a oferta pelos números). Portões: o site só é publicado com a ordem do Matheus; anúncio pago só depois de 10 clientes pagantes. Diga em que fase estamos pela data e o que você sabe que já aconteceu (pelas conversas e decisões); o que não dá para saber daqui, marque "confirmar com o Matheus".
 4. Os 3 posts que mais salvaram ou compartilharam (formatos para repetir) e os 2 que menos renderam (formatos para evitar).
 5. Proposta de temas para as próximas 4 semanas, 1 post por dia na proporção dar, dar, dar, pedir: por semana, 3 temas de valor (dúvidas e dores de quem produz alimento, inclusive pequenas fábricas que vendem para loja) e 1 de oferta (Lucro na Mão, garantia ou implementação). Cada tema numa linha, com o formato sugerido (vídeo ou carrossel), variando o conceito visual.
-6. Resposta final, no máximo 18 linhas, linguagem de gente, sem nome de ferramenta:
+6. Resposta final, no máximo 18 linhas, linguagem de gente, sem nome de ferramenta, negrito com um asterisco só (*assim*). As metas do Direct são taxas (15% de respostas, 5% de leads), não volume:
 *Mês em uma linha:* …
 *Números:* Instagram (alcance, salvamentos, seguidores) e Direct (mensagens, respostas, leads), contra as metas.
 *Fase do plano:* onde estamos e o que falta para o próximo portão.
