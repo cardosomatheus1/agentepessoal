@@ -5,6 +5,9 @@
   scheduled task, they get a short notice — the agent finished, or stopped to ask something.
 Intermediate answers during a /goal (the goal plugin turns them into "keep going") are not sent, nor
 a scheduled round whose answer starts with "SEM NOVIDADE".
+A send the bridge refuses waits for a retry (ponte.SAIDA, job loop _58_reenviar_saida); a phone request's answer
+closes its open-request mark (helpers/turnos.py); with /voz on and a voice note as his last message, the answer
+also goes as audio (helpers/voz.py).
 """
 
 import asyncio
@@ -35,10 +38,19 @@ def carregar(nome: str, caminho: Path):
     return sys.modules[nome]
 
 
-def ponte():
-    nome = "whatsapp_ponte"
+def _helper(nome: str, arquivo: str):
     caminho = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
-    return carregar(nome, caminho / "helpers" / "ponte.py")
+    return carregar(nome, caminho / "helpers" / arquivo)
+
+
+def ponte():
+    return _helper("whatsapp_ponte", "ponte.py")
+
+
+def _depois_da_falha(p, erro: str) -> None:
+    """A failed send waits in the outbox (ponte.SAIDA); its first retry is 30 s away, sooner than the job loop."""
+    if erro and not p.definitivo(erro):
+        asyncio.create_task(p.reenviar_depois(p.REENVIO_APOS[0] + 1))
 
 
 # Rounds written to be read on the phone (proactive ones): sent whole, under their own name, instead of
@@ -77,6 +89,11 @@ def _contar_na_principal(paralela, usuario: str, texto: str) -> None:
         print(f"whatsapp: parallel answer not recorded in the main chat: {exc}", flush=True)
 
 
+async def _responder_em_audio(voz, p, destino: str, texto: str, ctx_id: str) -> None:
+    erro = await asyncio.to_thread(voz.responder, destino, texto, ctx_id, p.enviar)
+    print(f"whatsapp: voice answer from {ctx_id} to {destino}: {erro or 'ok'}", flush=True)
+
+
 class EnviarResposta(Extension):
     async def execute(self, response=None, tool_name: str = "", **kwargs):
         agent = self.agent
@@ -95,9 +112,11 @@ class EnviarResposta(Extension):
         ctx.set_data("_avisos_do_evento", [])
         if avisos and texto.strip().upper().startswith(p.SILENCIO):  # the notices were the outcome: one message
             tipo = "urgente" if any(t == "urgente" for _, t in avisos) else "progresso"
-            erro = await asyncio.to_thread(p.enviar, p.dono(ctx), "\n\n".join(m for m, _ in avisos), "", "", None, tipo)
+            erro = await asyncio.to_thread(p.enviar, p.dono(ctx), "\n\n".join(m for m, _ in avisos), "", "", None, tipo,
+                                           reenviar=True)
             if erro:
                 print(f"whatsapp: event notice from {ctx.id} not delivered: {erro}", flush=True)
+                _depois_da_falha(p, erro)
             return
         # with a real outcome, the outcome alone goes (it covers what the held notices said)
         if (tarefa or ctx.get_data("avisar_sempre")) and texto.strip().upper().startswith(p.SILENCIO):
@@ -123,8 +142,21 @@ class EnviarResposta(Extension):
         urgente = p.urgente(texto) or any(t == "urgente" for _, t in avisos)
         tipo = "resposta" if de_whatsapp else ("urgente" if urgente else "progresso")
         erro = await asyncio.to_thread(p.enviar, destino, mensagem, "", "", None, tipo, False,
-                                       nome_tarefa if tarefa and not de_whatsapp else "", app)
+                                       nome_tarefa if tarefa and not de_whatsapp else "", app, reenviar=True)
+        if de_whatsapp:
+            try:  # the request has its answer (sent, or waiting for a retry): no resume after a restart
+                _helper("whatsapp_turnos", "turnos.py").fechar(ctx.id)
+            except Exception as exc:
+                print(f"whatsapp: open-request mark of {ctx.id} not closed: {exc}", flush=True)
         if erro:
             print(f"whatsapp: answer from {ctx.id} not delivered: {erro}", flush=True)
+            _depois_da_falha(p, erro)
         elif tarefa:
             print(f"whatsapp: scheduled task {ctx.id} result sent to {destino}", flush=True)
+        if de_whatsapp and not erro:
+            try:
+                voz = _helper("whatsapp_voz", "voz.py")
+                if voz.quer_audio(destino, ctx):  # he spoke and /voz is on: the answer also as a voice note
+                    asyncio.create_task(_responder_em_audio(voz, p, destino, texto, ctx.id))
+            except Exception as exc:
+                print(f"whatsapp: voice answer from {ctx.id} skipped: {exc}", flush=True)
