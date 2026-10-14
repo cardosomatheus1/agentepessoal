@@ -50,6 +50,7 @@ class Suite:
         api = (RAIZ / "api" / "tela.py").read_text(encoding="utf-8")
         ok("conferir(token" in api and 'get_data("dono")' in api, "a API confere o link e o dono da conversa")
         ok('("Enter", "Backspace", "Tab", "Escape")' in api, "só teclas de edição")
+        ok('acao == "abrir"' in api and 'url.startswith("https://")' in api, "abrir endereço só https")
 
     async def rodar(self, so=""):
         resultados = []

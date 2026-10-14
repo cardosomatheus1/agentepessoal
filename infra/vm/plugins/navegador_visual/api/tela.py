@@ -120,6 +120,11 @@ class Tela(ApiHandler):
             await runtime.call("keyboard", bid, key=tecla)
         elif acao == "recarregar":
             await runtime.call("reload", bid)
+        elif acao == "abrir":  # the operator (or the person) taking over a task needs to change page
+            url = str(input.get("url") or "")
+            if not url.startswith("https://"):
+                return _erro("só endereço https", 400)
+            await runtime.call("navigate", bid, url)
         else:
             return _erro("ação desconhecida", 400)
         return {"ok": True}
