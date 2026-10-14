@@ -1,53 +1,134 @@
 [
- {"tema": "aprovacoes.instagram", "tipo": "permissao",
+ {
+  "tema": "aprovacoes.instagram",
+  "tipo": "permissao",
   "decisao": "Ações no Instagram da Raiz (@raiz.connect) e os passos na Meta para ler esse Instagram não precisam do ok do Matheus; ele só é avisado do que foi feito. Continuam pedindo: anúncios e campanhas, pagamentos, app Barber Dock e WhatsApp Business, portfólio e parceiros, apagar ou revogar, senha e 2FA",
-  "citacao": "aprovo tudo lá do Instagram"},
- {"tema": "prospeccao.envio", "tipo": "permissao",
+  "citacao": "aprovo tudo lá do Instagram"
+ },
+ {
+  "tema": "prospeccao.envio",
+  "tipo": "permissao",
   "decisao": "Prospecção da Raiz pré-aprovada dentro dos limites do dia: seguir, curtir, comentar, 1ª mensagem, lembrete e respostas saem sem o ✅ do Matheus; todo texto passa pelo revisor e, se ele reprovar, o agente reescreve até passar; o Matheus só é avisado do que saiu",
-  "citacao": ""},
- {"tema": "prospeccao.conta", "tipo": "proibicao",
+  "citacao": ""
+ },
+ {
+  "tema": "prospeccao.conta",
+  "tipo": "proibicao",
   "decisao": "Prospecção só pelo Instagram da Raiz (@raiz.connect); nunca pelo Instagram pessoal @cardosomatheus1 e nunca pelo WhatsApp",
-  "citacao": ""},
- {"tema": "prospeccao.alcance", "tipo": "decisao",
+  "citacao": ""
+ },
+ {
+  "tema": "prospeccao.alcance",
+  "tipo": "decisao",
   "decisao": "Prospecção no Brasil todo; estoque de 100 leads prontos dividido Instagram 60 e planilha 40 (catálogo fora da divisão); Apify e API da Meta para achar e conferir perfis",
-  "citacao": "Mas se a planilha rende pouco Instagram, como ela vai ficar com 60%?"},
- {"tema": "prospeccao.texto", "tipo": "decisao",
-  "decisao": "A oferta é a calculadora grátis; nunca pedir a receita; saudação \"Oi, pessoal da {nome}!\"; links curtos, sem https e sem parâmetros",
-  "citacao": ""},
- {"tema": "travas", "tipo": "decisao",
+  "citacao": "Mas se a planilha rende pouco Instagram, como ela vai ficar com 60%?"
+ },
+ {
+  "tema": "prospeccao.texto",
+  "tipo": "decisao",
+  "decisao": "A isca é a calculadora grátis (dar antes de pedir); o próximo passo de quem se interessa é a oferta Lucro na Mão em 30 Dias; nunca pedir a receita antes de a pessoa topar a oferta; saudação \"Oi, pessoal da {nome}!\"; links curtos, sem https e sem parâmetros",
+  "citacao": ""
+ },
+ {
+  "tema": "travas",
+  "tipo": "decisao",
   "decisao": "Poucas travas de segurança, todas com saída automática; bloquear só o que é irreversível e externo; não propor travas que parem o trabalho",
-  "citacao": "Eu quero evitar tantas travas de segurança pq sempre acaba travando demais o sistema"},
- {"tema": "aws.acesso", "tipo": "decisao",
+  "citacao": "Eu quero evitar tantas travas de segurança pq sempre acaba travando demais o sistema"
+ },
+ {
+  "tema": "aws.acesso",
+  "tipo": "decisao",
   "decisao": "A chave AWS das sessões do Claude mantém acesso total; não propor restringir a chave nem exigir MFA",
-  "citacao": "O aws quero de fato dar acesso total"},
- {"tema": "tela-celular", "tipo": "decisao",
+  "citacao": "O aws quero de fato dar acesso total"
+ },
+ {
+  "tema": "tela-celular",
+  "tipo": "decisao",
   "decisao": "A tela do celular virtual fica como está (sem login extra)",
-  "citacao": "a tela pode manter como tá"},
- {"tema": "senhas", "tipo": "decisao",
+  "citacao": "a tela pode manter como tá"
+ },
+ {
+  "tema": "senhas",
+  "tipo": "decisao",
   "decisao": "Não trocar senhas nem apagar backups; só garantir que nada fique público (bucket fechado, repositório do GitHub privado)",
-  "citacao": "Não vou trocar senha, nem precisa deletar, só precisa evitar que isso fique público, inclusive pode mudar repositório pra privado"},
- {"tema": "apify", "tipo": "permissao",
+  "citacao": "Não vou trocar senha, nem precisa deletar, só precisa evitar que isso fique público, inclusive pode mudar repositório pra privado"
+ },
+ {
+  "tema": "apify",
+  "tipo": "permissao",
   "decisao": "Apify liberado (token APIFY_API no cofre) para achar e conferir perfis do Instagram, com teto de US$ 5 por mês",
-  "citacao": "APIFY_API salva lá"},
- {"tema": "avisos", "tipo": "preferencia",
+  "citacao": "APIFY_API salva lá"
+ },
+ {
+  "tema": "avisos",
+  "tipo": "preferencia",
   "decisao": "Menos avisos e mais claros: avisar só o que importa, uma vez; não perguntar de novo o que já foi decidido",
-  "citacao": ""},
- {"tema": "respostas", "tipo": "preferencia",
+  "citacao": ""
+ },
+ {
+  "tema": "respostas",
+  "tipo": "preferencia",
   "decisao": "Responder em português, curto e sem jargão; ele quer a coisa feita e testada, não plano; perguntar só o que é decisão dele",
-  "citacao": ""},
- {"tema": "pagamentos", "tipo": "proibicao",
+  "citacao": ""
+ },
+ {
+  "tema": "pagamentos",
+  "tipo": "proibicao",
   "decisao": "Nada de pagamento, campanha com gasto ou meio de pagamento; contas de anúncio reais (act_1384895845137880 e act_1749449932839674) e o app Barber Dock: só leitura",
-  "citacao": ""},
- {"tema": "captcha", "tipo": "proibicao",
+  "citacao": ""
+ },
+ {
+  "tema": "captcha",
+  "tipo": "proibicao",
   "decisao": "Não resolver nem contornar captcha; o Matheus resolve pela tela do navegador do agente",
-  "citacao": ""},
- {"tema": "segredos", "tipo": "proibicao",
+  "citacao": ""
+ },
+ {
+  "tema": "segredos",
+  "tipo": "proibicao",
   "decisao": "Senhas e tokens só no cofre; nunca repetir senha ou token no chat, em arquivo ou em mensagem",
-  "citacao": ""},
- {"tema": "mensagens-terceiros", "tipo": "proibicao",
+  "citacao": ""
+ },
+ {
+  "tema": "mensagens-terceiros",
+  "tipo": "proibicao",
   "decisao": "Mensagem a terceiros (e-mail, WhatsApp, outras redes) só com o ok do Matheus; a exceção é a prospecção pré-aprovada da Raiz",
-  "citacao": ""},
- {"tema": "nexos.hums", "tipo": "decisao",
+  "citacao": ""
+ },
+ {
+  "tema": "nexos.hums",
+  "tipo": "decisao",
   "decisao": "Nexos: a Main Opus decide sozinha cada decisão humana (HUM), pela opção que recomendaria, sob delegação permanente do Matheus; a orquestradora só observa; não trazer HUMs para o Matheus decidir",
-  "citacao": ""}
+  "citacao": ""
+ },
+ {
+  "tema": "marketing.oferta",
+  "tipo": "decisao",
+  "decisao": "Oferta da Raiz: Lucro na Mão em 30 Dias (o nome Preço Certo saiu de tudo). Promessa: em 30 dias a pessoa sabe quanto sobra em cada produto e onde o dinheiro escapa, e a implementação é por conta da Raiz. Entra: sistema completo, implementação grátis em 48 h feita pelo Matheus (10 produtos, insumos e estoque), Raio-X do negócio, tabela de atacado x varejo, 4 conversas no primeiro mês e a Fernanda. Valor de referência R$ 1.697, sem preço riscado; R$ 197/mês sem fidelidade, 15 dias grátis sem cartão; 5 implementações por semana, sem urgência falsa",
+  "citacao": "Lucro na Mão em 30 Dias (Recomendado)"
+ },
+ {
+  "tema": "marketing.garantia",
+  "tipo": "decisao",
+  "decisao": "Garantia do Lucro na Mão: se em 30 dias o Raio-X não achar pelo menos um lugar onde o dinheiro do cliente está escapando, a Raiz não cobra a próxima mensalidade (não é devolução de dinheiro)",
+  "citacao": "Não cobrar proxima mensalidade"
+ },
+ {
+  "tema": "marketing.cliente",
+  "tipo": "decisao",
+  "decisao": "Cliente da Raiz é quem produz alimento de fato e vende o que produz, inclusive pequenas fábricas pouco comuns (caldas, granolas, geleias, molhos, temperos, chocolates, sorvetes), não só marmita, doce e salgado; vende para o cliente final e/ou para lojas revenderem",
+  "citacao": "o icp é o produtor de alimentos de fato e não so esses ramos grandes"
+ },
+ {
+  "tema": "marketing.conteudo",
+  "tipo": "decisao",
+  "decisao": "Instagram da Raiz: 1 post por dia, na proporção dar, dar, dar, pedir (3 de valor para 1 de oferta); benefício antes de função, sem jargão, sem emoji, número sempre com \"valores de exemplo\", nunca \"aumente seu lucro\". Vídeos e carrosséis com a qualidade do kit de motion graphics (revisão com nota 8 ou mais e validação), mas cada peça com conceito próprio: fixos são logo, fontes, cores, regras e a voz Carolina; livres são conceito, composição e formato",
+  "citacao": "os videos e os carrosseis devem ter una qualidade tão boa quanto a do kit mas precisa... liberdade criativa"
+ },
+ {
+  "tema": "marketing.plano",
+  "tipo": "decisao",
+  "decisao": "Plano de marketing da Raiz: doc \"Plano de marketing Raiz Connect — Lucro na Mão em 30 Dias\" (claude.ai/code/artifact/f87c240e-d311-4098-9e32-0b5c1aad0d1b), com oferta, roteiro de vendas, funil e cronograma; a agenda de posts vale pelo que está em /a0/usr/conteudo/agenda.json",
+  "citacao": ""
+ }
 ]
