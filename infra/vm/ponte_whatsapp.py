@@ -328,6 +328,21 @@ def tg_baixar(file_id: str, destino: Path) -> Path:
     return destino
 
 
+def com_citacao(msg: dict, texto: str) -> str:
+    """A Telegram reply that quotes one of the agent's messages carries that message along. 14/10: Matheus answered
+    "Pode" quoting the question about the Simples Nacional access code; the quote was dropped, so the agent read
+    "Pode" as an answer to the latest notice (the deploy approvals) and acted on the wrong thing."""
+    citada = msg.get("reply_to_message") or {}
+    trecho = (msg.get("quote") or {}).get("text") or citada.get("text") or citada.get("caption") or ""
+    trecho = " ".join(str(trecho).split())
+    if not trecho or not texto:
+        return texto
+    if len(trecho) > 700:
+        trecho = trecho[:700].rsplit(" ", 1)[0] + "…"
+    quem = "à sua mensagem" if (citada.get("from") or {}).get("is_bot") else "à mensagem"
+    return f"{texto}\n\n(Ele respondeu citando {quem}: «{trecho}». A mensagem dele é sobre isso.)"
+
+
 def preparar_tg(item: dict) -> dict:
     """Telegram update -> what the plugin needs (same shape as preparar)."""
     update = item["update"]
@@ -360,6 +375,7 @@ def preparar_tg(item: dict) -> dict:
         texto = f"Minha localização: {msg['location'].get('latitude')}, {msg['location'].get('longitude')}"
     if not (texto or anexos or audio):
         texto = "(mensagem de um tipo que eu ainda não sei abrir)"
+    texto = com_citacao(msg, texto)
     return {"usuario": item["usuario"], "texto": texto, "audio": audio, "anexos": anexos, "botao": "",
             "id": f"tg-{update.get('update_id')}"}
 

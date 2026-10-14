@@ -374,6 +374,7 @@ class Suite:
         ok("MESMO navegador" in regras and "recarregue a sua aba" in regras and "nunca diga que a sua sessão é separada" in regras,
            "regra do navegador compartilhado")
         ok("a mesma tarefa da conversa principal" in regras, "a paralela não refaz a tarefa da principal")
+        ok("respondeu citando" in regras and "vale mais que qualquer aviso" in regras, "citação vence o aviso recente")
 
     def t_pedido_no_navegador_vira_botao_resolver_aqui(self):
         # 14/10, Matheus: resolve the captcha from Telegram, nothing extra (the app panel showed another chat)
