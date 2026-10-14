@@ -1,0 +1,35 @@
+{
+ "_marca": "prumo-contabil",
+ "_formato": "reel",
+ "manifesto": [
+  {"frase": "Pequena empresa não pode perder o dia com papelada.", "chaves": ["papelada"], "foto": "fotos/manifesto_papelada_balcao.jpg"},
+  {"frase": "Imposto certo, no dia certo, sem susto no fim do mês.", "chaves": ["sem susto"]},
+  {"frase": "Porque quem cuida das contas cuida do seu sossego.", "chaves": ["sossego"]}
+ ],
+ "contraste": [
+  {"nao": "guardar papel", "sim": "entender seus números"},
+  {"nao": "só cumprir prazo", "sim": "crescer com segurança"}
+ ],
+ "valores": [
+  {"icone": "lupa", "nome": "Clareza", "texto": "Relatório que você entende de primeira"},
+  {"icone": "relogio", "nome": "Pontualidade", "texto": "Guia e declaração antes do prazo"},
+  {"icone": "balao", "nome": "Proximidade", "texto": "Contador que responde no mesmo dia"}
+ ],
+ "retrato": {"foto": "fotos/manifesto_escritorio_contabil.jpg", "legenda": "Um escritório de portas abertas"},
+ "assinatura": "Suas contas no prumo.",
+ "falas": [
+  "Pequena empresa não pode perder o dia com papelada.",
+  "Imposto certo, no dia certo, sem susto no fim do mês.",
+  "Porque quem cuida das contas cuida do seu sossego.",
+  "Não é sobre guardar papel. É sobre entender seus números. Não é sobre só cumprir prazo. É sobre crescer com segurança.",
+  "A gente acredita em clareza, em pontualidade e em estar perto: contador que responde no mesmo dia.",
+  "Foi assim que nasceu a nova Prumo Contábil, com uma marca que mostra o que a gente faz: deixar tudo no prumo.",
+  "O verde da confiança e o azul-escuro da seriedade são as cores de quem cuida das suas contas.",
+  "No cartão, na fachada, no aplicativo e no seu feed, a mesma Prumo em todo lugar.",
+  "E o nosso escritório continua de portas abertas, para você tomar um café com a gente.",
+  "Prumo Contábil. Suas contas no prumo.",
+  "Fale com a gente pelo link da bio."
+ ],
+ "nota": "marca e foto de exemplo",
+ "_origem": {"retrato": "dono"}
+}

@@ -1,0 +1,238 @@
+{
+ "publico": "cliente_final",
+ "nota": "Lançamento ou troca de identidade de uma marca de serviço, B2B ou institucional (agência, consultoria, contabilidade, advocacia, tecnologia, clínica, arquitetura). Fala com o cliente que a marca quer atrair. O símbolo se monta a partir do logo PNG da marca (as partes do próprio desenho; sem partes separadas, recortes em faixas); sem logo, a foto de assinatura ou o nome.",
+ "formatos": [
+  "reel"
+ ],
+ "voz": "sim",
+ "musica": "inspiradora",
+ "musica_sob_voz": true,
+ "campos": {
+  "manifesto": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 4,
+   "dica": "3 ou 4 frases curtas do manifesto, em ordem (começo, meio, virada)",
+   "item": {
+    "frase": {
+     "tipo": "texto",
+     "min": 12,
+     "max": 70,
+     "dica": "frase curta e forte: Uma casa começa muito antes da obra."
+    },
+    "chaves": {
+     "tipo": "lista",
+     "min": 1,
+     "max": 2,
+     "item": {
+      "tipo": "texto",
+      "max": 20
+     },
+     "dica": "1 ou 2 palavras da frase (escritas igual) que acendem na cor da marca"
+    },
+    "foto": {
+     "tipo": "foto",
+     "obrigatorio": false,
+     "dica": "foto de fundo opcional, do que a frase fala (registrada em midia/fotos/indice.json)"
+    }
+   }
+  },
+  "contraste": {
+   "tipo": "lista",
+   "min": 2,
+   "max": 2,
+   "dica": "2 pares 'Não é sobre X. É sobre Y.'",
+   "item": {
+    "nao": {
+     "tipo": "texto",
+     "min": 4,
+     "max": 30,
+     "dica": "o X, que aparece riscado"
+    },
+    "sim": {
+     "tipo": "texto",
+     "min": 4,
+     "max": 30,
+     "dica": "o Y, que aparece em destaque"
+    }
+   }
+  },
+  "valores_titulo": {
+   "tipo": "texto",
+   "max": 26,
+   "obrigatorio": false,
+   "dica": "padrão: No que acreditamos"
+  },
+  "valores": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "dica": "o que a marca acredita: ícone, nome e uma linha",
+   "item": {
+    "icone": {
+     "tipo": "escolha",
+     "opcoes": [
+      "check",
+      "estrela",
+      "relogio",
+      "calendario",
+      "local",
+      "telefone",
+      "chat",
+      "cartao",
+      "dinheiro",
+      "presente",
+      "coracao",
+      "fogo",
+      "etiqueta",
+      "caixa",
+      "camera",
+      "chave",
+      "casa",
+      "pessoa",
+      "pessoas",
+      "megafone",
+      "brilho",
+      "seta",
+      "info",
+      "cadeado",
+      "folha",
+      "link",
+      "grafico",
+      "percentual",
+      "trofeu",
+      "balao",
+      "lupa",
+      "carro",
+      "haltere",
+      "dente",
+      "tesoura",
+      "pata",
+      "garfo",
+      "xicara"
+     ]
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 16
+    },
+    "texto": {
+     "tipo": "texto",
+     "min": 8,
+     "max": 44
+    }
+   }
+  },
+  "selo": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "etiqueta na montagem do símbolo (padrão: Nova identidade)"
+  },
+  "paleta": {
+   "tipo": "lista",
+   "min": 2,
+   "max": 5,
+   "obrigatorio": false,
+   "dica": "cores do manual da marca, na ordem; sem este campo entram as cores cadastradas na marca, com nome automático",
+   "item": {
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 18
+    },
+    "hex": {
+     "tipo": "texto",
+     "min": 7,
+     "max": 7,
+     "dica": "#RRGGBB"
+    }
+   }
+  },
+  "aplicacoes": {
+   "tipo": "lista",
+   "min": 2,
+   "max": 4,
+   "obrigatorio": false,
+   "item": {
+    "tipo": "escolha",
+    "opcoes": [
+     "cartao",
+     "fachada",
+     "app",
+     "feed"
+    ]
+   },
+   "dica": "mockups na ordem da fala (padrão: cartao, fachada, app, feed); sem loja física, tire a fachada"
+  },
+  "fato": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "dica": "prova real opcional (anos, clientes, projetos); use fato OU retrato, não os dois",
+   "campos": {
+    "numero": {
+     "tipo": "numero",
+     "real": true,
+     "min": 1,
+     "max": 9999999
+    },
+    "prefixo": {
+     "tipo": "texto",
+     "max": 3,
+     "obrigatorio": false,
+     "dica": "+ (só se o dono disse 'mais de')"
+    },
+    "sufixo": {
+     "tipo": "texto",
+     "max": 6,
+     "obrigatorio": false,
+     "dica": "anos, mil"
+    },
+    "rotulo": {
+     "tipo": "texto",
+     "min": 4,
+     "max": 40,
+     "dica": "projetos entregues desde 2015"
+    }
+   }
+  },
+  "retrato": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "dica": "foto real opcional da equipe ou do lugar; use fato OU retrato, não os dois",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "real": true
+    },
+    "legenda": {
+     "tipo": "texto",
+     "min": 4,
+     "max": 40
+    }
+   }
+  },
+  "assinatura": {
+   "tipo": "texto",
+   "min": 6,
+   "max": 40,
+   "dica": "a frase-tema da marca: Da decisão à execução."
+  },
+  "falas": {
+   "tipo": "lista",
+   "min": 10,
+   "max": 12,
+   "item": {
+    "tipo": "texto",
+    "max": 160
+   },
+   "dica": "na ordem das cenas: uma por frase do manifesto (a própria frase), o contraste (os dois pares), os valores, o símbolo (apresenta a marca), as cores, as aplicações (na ordem dos mockups), o fato ou o retrato (se houver), a assinatura e a chamada. Total de 55 a 65 s: umas 800 letras"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false
+  }
+ }
+}

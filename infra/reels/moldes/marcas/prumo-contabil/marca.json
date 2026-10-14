@@ -1,0 +1,19 @@
+{
+ "nome": "Prumo Contábil",
+ "perfil": "@prumocontabil",
+ "cores": [
+  "#1f7a6d",
+  "#16324f"
+ ],
+ "fonte": "inter",
+ "estilo": "claro",
+ "logo_escuro": "logo_escuro.png",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Fale com a gente",
+ "voz": {
+  "id": "Camila",
+  "motor": "generative"
+ },
+ "ramo": "escritório de contabilidade para pequenas empresas",
+ "_teste": "marca fictícia para testar os moldes"
+}

@@ -1,0 +1,519 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* manifesto: kinetic type in sync with the voice */
+.ft{position:absolute;inset:0;overflow:hidden}
+.ft img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ft .vel{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.62) 0%,rgba(0,0,0,.48) 40%,rgba(0,0,0,.8) 100%)}
+.fan{position:absolute;left:40px;top:1180px;font-family:var(--ft);font-weight:900;font-size:430px;line-height:1;white-space:nowrap;color:transparent;-webkit-text-stroke:3px var(--texto);opacity:.07;letter-spacing:-.02em}
+.idx{position:absolute;left:90px;top:396px;width:520px;height:52px;font-size:36px;font-weight:800;letter-spacing:.12em;display:flex;align-items:center;gap:22px;white-space:nowrap}
+.idx b{color:var(--destaque)}
+.idx i{display:block;width:110px;height:4px;border-radius:2px;background:var(--destaque);transform-origin:0 50%}
+.fr{position:absolute;left:90px;width:780px;top:480px;height:900px;padding-bottom:16px;font-size:120px;line-height:1.04;display:flex;flex-direction:column}
+.fr.v0{justify-content:flex-start}.fr.v1{justify-content:safe center;text-align:center;left:110px;width:760px}.fr.v2{justify-content:safe flex-end}.fr.v3{justify-content:safe center}
+.ck{background-image:linear-gradient(90deg,var(--dest-m) 50%,currentColor 50%);background-size:202% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent}
+.sf .fr,.sf .idx{color:#fff}
+.sf .idx b{color:var(--dest-m)}.sf .idx i{background:var(--dest-m)}
+/* contrast */
+.par{position:absolute;inset:0}
+.nl{position:absolute;left:90px;top:470px;width:800px;height:66px;font-size:50px;font-weight:800}
+.nx{position:absolute;left:90px;top:548px;width:780px;height:280px;font-size:104px;line-height:1.06}
+.risco{position:absolute;height:16px;border-radius:8px;background:var(--ruim);transform-origin:0 50%}
+.sl{position:absolute;left:90px;top:880px;font-size:46px}
+.sy{position:absolute;left:90px;top:968px;width:780px;height:400px;font-size:120px;line-height:1.04;color:var(--destaque)}
+#zl .lg{inset:0}
+/* values */
+#vt{position:absolute;left:90px;top:398px;width:820px;height:64px;font-size:48px;font-weight:800}
+.vr{position:absolute;left:90px;width:780px;height:270px}
+.vi{position:absolute;left:0;top:30px;width:190px;height:190px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);font-size:104px;display:flex;align-items:center;justify-content:center;box-shadow:var(--sombra)}
+.vi .ico{width:104px;height:104px}
+.vo{position:absolute;left:-14px;top:16px;width:218px;height:218px;border-radius:50%;border:4px solid var(--destaque);opacity:0}
+.vn{position:absolute;left:236px;top:34px;width:544px;height:86px;font-size:74px}
+.vx{position:absolute;left:236px;top:128px;width:544px;height:106px;font-size:42px;line-height:1.25;font-weight:600}
+/* symbol assembly */
+#selo{position:absolute;left:0;right:0;top:404px;text-align:center;height:76px}
+#selo span{font-size:40px}
+#luz{position:absolute;left:40px;top:330px;width:1000px;height:1000px;border-radius:50%;background:radial-gradient(closest-side,var(--destaque),transparent);opacity:0}
+#guias{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:visible}
+#guias *{fill:none;stroke:var(--texto);stroke-width:2.5;vector-effect:non-scaling-stroke}
+#sim{position:absolute}
+#sim canvas,#nomeB canvas{position:absolute;left:0;top:0;width:100%;height:100%}
+#nomeB{position:absolute}
+.brilhoL{position:absolute;inset:0;-webkit-mask-size:100% 100%;mask-size:100% 100%;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.9) 50%,transparent 62%);background-size:300% 100%;opacity:.9}
+#flare{position:absolute;left:290px;width:500px;height:500px;border-radius:50%;border:6px solid var(--destaque);opacity:0}
+#placa{position:absolute;border-radius:48px;background:var(--texto);opacity:0}
+#nomeT{position:absolute;left:110px;width:760px;top:1150px;height:150px;font-size:118px;text-align:center}
+/* palette */
+#pt{position:absolute;left:90px;top:398px;width:820px;height:64px;font-size:48px;font-weight:800}
+.bd{position:absolute;left:-40px;width:1160px;border-radius:0 34px 34px 0;box-shadow:inset 0 0 0 2px var(--borda),var(--sombra);overflow:hidden}
+.bd .bn{position:absolute;left:130px;width:560px;font-family:var(--ft);font-weight:900;white-space:nowrap}
+.bd .bh{position:absolute;left:130px;width:560px;font-weight:700;letter-spacing:.14em;white-space:nowrap;opacity:.8}
+.bd .tn{position:absolute;top:0;bottom:0;width:120px}
+/* applications */
+#trilho{position:absolute;inset:0}
+.camada{position:absolute;left:-400px;top:470px;width:4000px;height:1000px;background-image:radial-gradient(circle,var(--borda) 3px,transparent 3.5px);background-size:60px 60px;opacity:.9}
+.mk1{position:absolute;left:90px;top:540px;width:900px;height:880px}
+.rot{position:absolute;left:90px;top:400px;font-size:44px}
+.lg{position:absolute;background-repeat:no-repeat;background-position:center;background-size:contain}
+/* card */
+.cards{position:absolute;inset:0;transform-style:preserve-3d}
+.card{position:absolute;width:620px;height:354px;border-radius:22px;box-shadow:0 50px 70px rgba(0,0,0,.35),0 10px 18px rgba(0,0,0,.2)}
+.card .lg{left:14%;right:14%;top:22%;bottom:22%}
+/* facade */
+.parede{position:absolute;left:30px;right:30px;top:40px;bottom:0;border-radius:18px 18px 0 0;overflow:hidden}
+.parede:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 3px,transparent 3px 46px)}
+.letreiro{position:absolute;left:70px;right:70px;top:70px;height:230px;border-radius:16px}
+.letreiro .lg{left:9%;right:9%;top:18%;bottom:18%}
+.vidro{position:absolute;left:110px;right:110px;top:380px;bottom:0;border-radius:10px 10px 0 0;background:linear-gradient(120deg,rgba(255,255,255,.22),rgba(255,255,255,.06) 40%,rgba(255,255,255,.14) 60%,rgba(255,255,255,.04));border:10px solid rgba(0,0,0,.35);border-bottom:0}
+.vidro:after{content:'';position:absolute;left:50%;top:0;bottom:0;width:10px;margin-left:-5px;background:rgba(0,0,0,.35)}
+.lamp{position:absolute;top:304px;width:76px;height:20px;border-radius:10px;background:var(--m-luz)}
+.lamp:after{content:'';position:absolute;left:-90px;top:14px;width:256px;height:300px;background:radial-gradient(ellipse 50% 100% at 50% 0,color-mix(in srgb,var(--m-luz) 38%,transparent),transparent 80%)}
+/* phone */
+.fone{position:absolute;left:220px;top:0;width:460px;height:880px;border-radius:70px;background:var(--texto);box-shadow:0 40px 90px rgba(0,0,0,.4)}
+.fone .tl{position:absolute;left:16px;top:16px;right:16px;bottom:16px;border-radius:56px;overflow:hidden}
+.fone .il{position:absolute;left:50%;top:26px;width:110px;height:30px;margin-left:-55px;border-radius:15px;background:rgba(0,0,0,.92);z-index:5}
+.ap{position:absolute;width:78px;height:78px;border-radius:22px;opacity:.16}
+.ic{position:absolute;left:111px;top:300px;width:206px;height:206px;border-radius:52px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.ic .lg{left:16%;right:16%;top:16%;bottom:16%}
+.ic .aro{position:absolute;inset:-14px;border-radius:64px;border:5px solid var(--m-luz);opacity:0}
+.bar{position:absolute;height:16px;border-radius:8px;opacity:.28}
+.post{position:absolute;left:0;right:0;top:170px;height:428px;overflow:hidden}
+.post .lg{left:12%;right:12%;top:26%;bottom:26%}
+.av{position:absolute;left:24px;top:84px;width:70px;height:70px;border-radius:50%;overflow:hidden}
+.av .lg{left:14%;right:14%;top:14%;bottom:14%}
+.acoes{position:absolute;left:24px;top:618px;display:flex;gap:26px;font-size:56px}
+.acoes .ico{width:56px;height:56px}
+.cor{transform-origin:50% 60%}
+/* proof */
+#fk{position:absolute;left:90px;top:470px;width:820px;height:64px;font-size:48px;font-weight:800;text-align:center}
+#fn{position:absolute;left:90px;width:820px;top:560px;height:380px;font-size:330px;line-height:1.1;text-align:center;white-space:nowrap}
+#fr{position:absolute;left:150px;width:720px;top:980px;height:250px;font-size:84px;line-height:1.04;text-align:center}
+#fl{position:absolute;left:390px;top:960px;width:300px;height:8px;border-radius:4px;background:var(--destaque);transform-origin:50% 50%}
+#rq{position:absolute;left:70px;top:400px;width:940px;height:800px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+#rq img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#rl{position:absolute;left:90px;width:780px;top:1236px;height:200px;font-size:80px;line-height:1.04}
+/* signature */
+#zl{position:absolute;left:240px;top:450px;width:600px;height:170px}
+#zf{position:absolute;left:110px;width:760px;top:690px;height:620px;font-size:130px;line-height:1.02;text-align:center;display:flex;flex-direction:column;justify-content:safe center}
+#zr{position:absolute;left:440px;top:1350px;width:200px;height:10px;border-radius:5px;background:var(--destaque);transform-origin:50% 50%}
+body.f-reel #nota{bottom:auto;top:1420px}
+</style></head><body><div id="palco">
+<div id="cenas"></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Manifesto de marca e nova identidade". Narrated, one scene per line of the voice:
+// 0..m-1 manifesto lines (kinetic type, 1 or 2 key words light up in the brand colour, optional photo behind),
+// m contrast ("Não é sobre X. É sobre Y.", two pairs, X struck through), m+1 three values with big icons,
+// m+2 THE moment: the brand symbol assembles from its own pieces (connected parts of the logo PNG; strips when the
+// drawing is one piece), the name wipes in and the logo lights up; m+3 the palette (name + HEX), m+4 the logo on
+// CSS mockups (card, facade, app icon, feed post) with parallax, [m+5 real proof (number) or real photo],
+// then the brand's theme line; the last line is the call (engine's final scene).
+let D = {};
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const letras = s => s.replace(/\s+/g, '').length;
+const HEX = /^#[0-9a-fA-F]{6}$/;
+const APLIC = { cartao: 'Cartão de visita', fachada: 'Fachada', app: 'Ícone do aplicativo', feed: 'Post no feed' };
+
+// ---------- colour helpers (brand colours come from data; nothing is a fixed colour) ----------
+const rgb = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+const lumi = c => { const [r, g, b] = rgb(c).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
+const escura = c => lumi(c) < .18;
+// readable name for a colour without one (palette taken from the brand)
+function nomeCor(c) {
+  const [r, g, b] = rgb(c).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  if (s < .12 || d < .06) return l < .12 ? 'Preto' : l > .92 ? 'Branco' : l < .45 ? 'Grafite' : 'Cinza';
+  let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360;
+  const base = h < 15 || h >= 345 ? 'Vermelho' : h < 40 ? (l < .5 ? 'Terracota' : 'Laranja') : h < 65 ? 'Amarelo' : h < 160 ? 'Verde' : h < 195 ? 'Verde-água' : h < 255 ? 'Azul' : h < 290 ? 'Roxo' : 'Rosa';
+  return base + (l < .3 ? ' escuro' : l > .75 ? ' claro' : '');
+}
+
+// ---------- the logo cut into pieces ----------
+// draws the brand's logo (or round photo, or name) into a canvas, finds the symbol and the name (largest empty
+// gap), splits the symbol into its connected parts and returns one canvas per part
+async function prepararLogo($m) {
+  const M = Motor.M, T = Motor.T, escuro = Motor.contraste('#ffffff', T.fundo) > Motor.contraste('#000000', T.fundo);
+  const certo = escuro ? M.logo_escuro : M.logo_claro, outro = escuro ? M.logo_claro : M.logo_escuro;
+  let cv, tipo;
+  const carrega = async src => { const i = new Image(); i.src = src; await i.decode(); return i; };
+  if (M.foto && (M.assinatura === 'foto' || !(certo || outro))) {
+    const i = await carrega(Motor.logoSrc(M.foto)), n = 640; cv = document.createElement('canvas'); cv.width = cv.height = n;
+    const c = cv.getContext('2d'); c.beginPath(); c.arc(n / 2, n / 2, n / 2 - 2, 0, 7); c.clip();
+    const k = Math.max(n / i.naturalWidth, n / i.naturalHeight); c.drawImage(i, (n - i.naturalWidth * k) / 2, (n - i.naturalHeight * k) / 2, i.naturalWidth * k, i.naturalHeight * k);
+    tipo = 'foto';
+  } else if (certo || outro) {
+    const i = await carrega(Motor.logoSrc(certo || outro)); cv = document.createElement('canvas'); cv.width = i.naturalWidth; cv.height = i.naturalHeight; cv.getContext('2d').drawImage(i, 0, 0);
+    tipo = certo ? 'logo' : 'logo-placa';
+  } else {
+    await document.fonts.load('900 200px D'); await document.fonts.load('900 200px B'); await document.fonts.load('400 200px A');
+    const fam = getComputedStyle(document.documentElement).getPropertyValue('--ft').trim() || 'D';
+    const c0 = document.createElement('canvas').getContext('2d'); c0.font = `900 200px ${fam}`; const w = Math.ceil(c0.measureText(M.nome || 'Marca').width) + 40;
+    cv = document.createElement('canvas'); cv.width = w; cv.height = 260; const c = cv.getContext('2d'); c.font = `900 200px ${fam}`; c.fillStyle = T.texto; c.textBaseline = 'middle'; c.fillText(M.nome || 'Marca', 20, 135);
+    tipo = 'nome';
+  }
+  const W = cv.width, H = cv.height, px = cv.getContext('2d').getImageData(0, 0, W, H), A = px.data;
+  const cheio = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) cheio[i] = A[i * 4 + 3] > 28 ? 1 : 0;
+  // bounding box and empty columns/rows
+  let x0 = W, x1 = -1, y0 = H, y1 = -1; const col = new Uint32Array(W), lin = new Uint32Array(H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (cheio[y * W + x]) { col[x]++; lin[y]++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) throw new Error('logo vazio');
+  const vaos = (v, a, b) => { const r = []; let s = -1; for (let i = a; i <= b; i++) { if (!v[i]) { if (s < 0) s = i; } else if (s >= 0) { r.push([s, i - 1]); s = -1; } } return r; };
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+  let sim = [x0, y0, x1, y1], nome = null;
+  const escolhe = (gs, tam, a, lo, hi) => {
+    if (!gs.length) return null;
+    const ord = gs.map(g => [g[1] - g[0] + 1, g]).sort((p, q) => q[0] - p[0]);
+    const [lg, g] = ord[0], seg = ord[1] ? ord[1][0] : 0, frac = (g[0] - a) / tam;
+    return frac >= lo && frac <= hi && lg >= 1.5 * seg && lg >= tam * 0.03 ? g : null;
+  };
+  if (tipo !== 'foto' && tipo !== 'nome') {
+    if (bw / bh >= 1.6) { const g = escolhe(vaos(col, x0, x1), bw, x0, .08, .5); if (g) { sim = [x0, y0, g[0] - 1, y1]; nome = [g[1] + 1, y0, x1, y1]; } }
+    else if (bh / bw >= 1.1) { const g = escolhe(vaos(lin, y0, y1), bh, y0, .3, .82); if (g) { sim = [x0, y0, x1, g[0] - 1]; nome = [x0, g[1] + 1, x1, y1]; } }
+  }
+  // tighten each box
+  const aperta = b => { let [a, c, d, e] = [W, H, -1, -1]; for (let y = b[1]; y <= b[3]; y++) for (let x = b[0]; x <= b[2]; x++) if (cheio[y * W + x]) { if (x < a) a = x; if (x > d) d = x; if (y < c) c = y; if (y > e) e = y; } return [a, c, d, e]; };
+  sim = aperta(sim); if (nome) nome = aperta(nome);
+  const sw = sim[2] - sim[0] + 1, sh = sim[3] - sim[1] + 1;
+  // connected parts of the symbol (8-neighbourhood)
+  const rot = new Int32Array(sw * sh).fill(-1); const partes = [];
+  const fila = new Int32Array(sw * sh);
+  for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
+    const i = y * sw + x; if (rot[i] >= 0 || !cheio[(y + sim[1]) * W + x + sim[0]]) continue;
+    const id = partes.length; let n = 0, h = 0, t = 0, sx = 0, sy = 0; fila[t++] = i; rot[i] = id;
+    while (h < t) { const j = fila[h++], jx = j % sw, jy = (j / sw) | 0; n++; sx += jx; sy += jy;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = jx + dx, ny = jy + dy; if (nx < 0 || ny < 0 || nx >= sw || ny >= sh) continue; const k = ny * sw + nx; if (rot[k] < 0 && cheio[(ny + sim[1]) * W + nx + sim[0]]) { rot[k] = id; fila[t++] = k; } } }
+    partes.push({ id, n, cx: sx / n, cy: sy / n });
+  }
+  const area = partes.reduce((a, q) => a + q.n, 0);
+  const grandes = partes.filter(q => q.n >= area * 0.02);
+  let grupo; // pixel index -> piece number
+  if (grandes.length >= 2 && grandes.length <= 7) {
+    const mapa = {}; grandes.forEach((q, k) => { mapa[q.id] = k; });
+    partes.forEach(q => { if (mapa[q.id] == null) { let best = 0, bd = 1e18; grandes.forEach((g, k) => { const d = (g.cx - q.cx) ** 2 + (g.cy - q.cy) ** 2; if (d < bd) { bd = d; best = k; } }); mapa[q.id] = best; } });
+    grupo = i => rot[i] < 0 ? -1 : mapa[rot[i]]; D.nPecas = grandes.length; D.corte = 'partes';
+  } else if (sw / sh > 1.4) {  // a wide drawing in one piece: diagonal strips
+    const n = 5; D.nPecas = n; D.corte = 'faixas';
+    grupo = i => { if (rot[i] < 0) return -1; const x = i % sw, y = (i / sw) | 0; return Math.min(n - 1, Math.max(0, Math.floor((x + (sh - y) * 0.35) / (sw + sh * 0.35) * n))); };
+  } else {  // compact drawing in one piece: wedges around the centre
+    const n = 6; D.nPecas = n; D.corte = 'fatias';
+    grupo = i => { if (rot[i] < 0) return -1; const x = i % sw - sw / 2, y = ((i / sw) | 0) - sh / 2; return Math.floor(((Math.atan2(y, x) + Math.PI + 0.3) % (2 * Math.PI)) / (2 * Math.PI) * n) % n; };
+  }
+  const pecas = [];
+  for (let k = 0; k < D.nPecas; k++) { const c = document.createElement('canvas'); c.width = sw; c.height = sh; pecas.push({ c, d: c.getContext('2d').createImageData(sw, sh), n: 0, sx: 0, sy: 0 }); }
+  for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
+    const g = grupo(y * sw + x); if (g < 0) continue; const P = pecas[g], s = ((y + sim[1]) * W + x + sim[0]) * 4, o = (y * sw + x) * 4;
+    P.d.data[o] = A[s]; P.d.data[o + 1] = A[s + 1]; P.d.data[o + 2] = A[s + 2]; P.d.data[o + 3] = A[s + 3]; P.n++; P.sx += x; P.sy += y;
+  }
+  const vivas = pecas.filter(P => P.n > 0);
+  vivas.forEach(P => { P.c.getContext('2d').putImageData(P.d, 0, 0); P.cx = P.sx / P.n / sw - .5; P.cy = P.sy / P.n / sh - .5; delete P.d; });
+  // order: largest first, then around the circle, so the drawing builds up
+  vivas.sort((a, b) => b.n - a.n);
+  let nomeCv = null;
+  if (nome) { const nw = nome[2] - nome[0] + 1, nh = nome[3] - nome[1] + 1; nomeCv = document.createElement('canvas'); nomeCv.width = nw; nomeCv.height = nh; nomeCv.getContext('2d').drawImage(cv, nome[0], nome[1], nw, nh, 0, 0, nw, nh); }
+  const symCv = document.createElement('canvas'); symCv.width = sw; symCv.height = sh; symCv.getContext('2d').drawImage(cv, sim[0], sim[1], sw, sh, 0, 0, sw, sh);
+  return { tipo, W, H, sim, nome, sw, sh, pecas: vivas, nomeCv, symCv, src: certo || outro };
+}
+
+// lays the pieces on the stage (called once the logo is ready)
+function montarSimbolo($m, L) {
+  const { $ } = $m, cena = $('#cS .cam');
+  const temNome = !!L.nomeCv, nomeTexto = !temNome && (L.tipo === 'foto' || (L.tipo !== 'nome' && L.sw / L.sh < 1.6));
+  // symbol box: centre (540, 840), up to 540 x 440 (bigger when the logo has no separate name)
+  const dois = temNome || nomeTexto, maxW = dois ? 520 : 680, maxH = dois ? 430 : 480;
+  const k = Math.min(maxW / L.sw, maxH / L.sh), w = L.sw * k, h = L.sh * k, cy = dois ? 820 : 900;
+  const box = $('#sim'); Object.assign(box.style, { left: (540 - w / 2) + 'px', top: (cy - h / 2) + 'px', width: w + 'px', height: h + 'px' });
+  D.simBox = { x: 540 - w / 2, y: cy - h / 2, w, h, cy };
+  L.pecas.forEach((P, j) => {
+    box.appendChild(P.c);
+    let ang = Math.atan2(P.cy, P.cx); if (Math.hypot(P.cx, P.cy) < .08) ang = -Math.PI / 2 + j * 2.1;
+    P.ang = ang; P.rot = (j % 2 ? 1 : -1) * (14 + 9 * (j % 3));
+    const sh = mk('div', 'brilhoL', null, box); const url = P.c.toDataURL(); sh.style.webkitMaskImage = sh.style.maskImage = `url(${url})`; P.sh = sh;
+  });
+  if (L.tipo === 'logo-placa') { const pl = $('#placa'); Object.assign(pl.style, { left: (D.simBox.x - 50) + 'px', top: (D.simBox.y - 50) + 'px', width: (w + 100) + 'px', height: (h + 100) + 'px' }); }
+  if (L.tipo === 'foto') box.style.borderRadius = '50%';
+  if (temNome) {
+    const nb = $('#nomeB'), kn = Math.min(700 / L.nomeCv.width, 190 / L.nomeCv.height), nw = L.nomeCv.width * kn, nh = L.nomeCv.height * kn;
+    Object.assign(nb.style, { left: (540 - nw / 2) + 'px', top: (cy + h / 2 + 70) + 'px', width: nw + 'px', height: nh + 'px' });
+    nb.appendChild(L.nomeCv); const sh = mk('div', 'brilhoL', null, nb); sh.style.webkitMaskImage = sh.style.maskImage = `url(${L.nomeCv.toDataURL()})`; D.nomeSh = sh;
+    $('#nomeT').remove();
+  } else if (nomeTexto) { $('#nomeB').remove(); $('#nomeT').style.top = (cy + h / 2 + 60) + 'px'; }
+  else { $('#nomeT').remove(); $('#nomeB').remove(); }
+  // construction guides around the symbol
+  const g = $('#guias'), NS = 'http://www.w3.org/2000/svg', r = Math.max(w, h) * 0.62, X = 540;
+  const add = (tag, at) => { const e = document.createElementNS(NS, tag); Object.entries(at).forEach(([a, b]) => e.setAttribute(a, b)); e.setAttribute('pathLength', 1); e.style.strokeDasharray = 1; g.appendChild(e); return e; };
+  D.guias = [add('circle', { cx: X, cy, r }), add('circle', { cx: X, cy, r: r * 0.62 }),
+    add('line', { x1: X - r - 120, y1: cy, x2: X + r + 120, y2: cy }), add('line', { x1: X, y1: cy - r - 120, x2: X, y2: cy + r + 120 }),
+    add('line', { x1: X - r, y1: cy - r, x2: X + r, y2: cy + r }), add('line', { x1: X + r, y1: cy - r, x2: X - r, y2: cy + r }),
+    add('rect', { x: D.simBox.x - 16, y: D.simBox.y - 16, width: w + 32, height: h + 32 })];
+  D.L = L;
+}
+
+// ---------- application mockups ----------
+// a logo element for a surface colour: the version made for it, or the other one over a plate
+function logoEm(pai, cls, sup, soSimbolo) {
+  const M = Motor.M, L = D.L, esc = escura(sup);
+  const certo = esc ? M.logo_escuro : M.logo_claro, outro = esc ? M.logo_claro : M.logo_escuro, src = certo || outro;
+  const e = mk('div', 'lg ' + (cls || ''), null, pai);
+  if (!src || !L || L.tipo === 'foto' || L.tipo === 'nome') {   // no logo: the symbol canvas (photo or name)
+    if (L) e.style.backgroundImage = `url(${L.symCv.toDataURL()})`;
+    if (L && L.tipo === 'foto') e.style.borderRadius = '50%';
+    return e;
+  }
+  const url = Motor.logoSrc(src);
+  if (soSimbolo && L.nome) {   // crop the symbol out of the full logo (same drawing in both versions)
+    const [a, b, c, d] = L.sim, bw = c - a + 1, bh = d - b + 1;
+    e.style.backgroundSize = 'auto'; e.dataset.crop = JSON.stringify({ a, b, bw, bh, W: L.W, H: L.H });
+  }
+  e.style.backgroundImage = `url("${url}")`;
+  if (!certo) { e.style.filter = 'drop-shadow(0 0 0 transparent)'; e.style.background = `url("${url}") center/contain no-repeat, radial-gradient(closest-side, ${esc ? Motor.T.texto : Motor.T.fundo}, transparent)`; }
+  return e;
+}
+// symbol crops are sized once the element has its final box
+function ajustarCortes() {
+  $$('[data-crop]').forEach(e => { const c = JSON.parse(e.dataset.crop), r = e.offsetWidth, s = e.offsetHeight, k = Math.min(r / c.bw, s / c.bh);
+    e.style.backgroundSize = `${c.W * k}px ${c.H * k}px`; e.style.backgroundPosition = `${(r - c.bw * k) / 2 - c.a * k}px ${(s - c.bh * k) / 2 - c.b * k}px`; });
+}
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+function mockups($m, F) {
+  const { $ } = $m, pal = D.paleta.map(c => c.hex), T = Motor.T;
+  const ord = pal.slice().sort((a, b) => lumi(a) - lumi(b));
+  let esc = ord[0]; if (lumi(esc) > .06) esc = Motor.mix(esc, '#000000', .55);
+  let cla = ord[ord.length - 1]; cla = Motor.mix(cla, '#f6f4ef', lumi(cla) > .7 ? .3 : .88);
+  const princ = Motor.M.cores && Motor.M.cores[0] || pal[0];
+  const tr = $('#trilho'), camada = mk('div', 'camada', null, tr);
+  D.mocks = [];
+  D.aplic.forEach((tipo, i) => {
+    const w = mk('div', 'mk1', null, tr); w.dataset.tipo = tipo;
+    w.style.setProperty('--m-esc', esc); w.style.setProperty('--m-cla', cla); w.style.setProperty('--m-luz', T.destaque);
+    const rot = mk('div', 'rot chip t seg', APLIC[tipo], $('#cA .cam'));
+    const m = { w, tipo, rot, par: [] };
+    if (tipo === 'cartao') {
+      w.style.perspective = '2400px';
+      const g = mk('div', 'cards', null, w); g.style.transform = 'rotateX(38deg) rotateZ(-22deg)';
+      const b = mk('div', 'card', null, g); Object.assign(b.style, { left: '170px', top: '150px', background: cla });
+      logoEm(b, '', cla);
+      const f = mk('div', 'card', null, g); Object.assign(f.style, { left: '110px', top: '430px', background: esc });
+      const lf = logoEm(f, '', esc, true); lf.style.left = lf.style.right = '30%'; lf.style.top = lf.style.bottom = '20%';
+      m.par = [b, f]; m.g = g;
+    } else if (tipo === 'fachada') {
+      const p = mk('div', 'parede', null, w); p.style.background = `linear-gradient(180deg, ${Motor.mix(esc, '#7a7a7a', .22)}, ${Motor.mix(esc, '#7a7a7a', .1)})`;
+      const l = mk('div', 'letreiro', null, p); l.style.background = esc; logoEm(l, '', esc);
+      [130, 694].forEach(x => { const a = mk('div', 'lamp', null, p); a.style.left = x + 'px'; });
+      const v = mk('div', 'vidro', null, p); v.style.backgroundColor = Motor.mix(esc, princ, .25);
+      m.letreiro = l; m.par = [l];
+    } else {
+      const f = mk('div', 'fone', null, w); mk('div', 'il', null, f); const tl = mk('div', 'tl', null, f);
+      if (tipo === 'app') {
+        tl.style.background = `linear-gradient(160deg, ${Motor.mix(esc, princ, .35)}, ${esc})`;
+        for (let r = 0; r < 6; r++) for (let c = 0; c < 4; c++) { if (r >= 2 && r <= 3 && c >= 1 && c <= 2) continue; const a = mk('div', 'ap', null, tl); Object.assign(a.style, { left: (34 + c * 98) + 'px', top: (90 + r * 118) + 'px', background: T.texto === '#ffffff' ? '#ffffff' : cla }); }
+        const ic = mk('div', 'ic', null, tl); ic.style.background = esc; ic.style.border = '2px solid ' + Motor.mix(esc, '#ffffff', .18);
+        logoEm(ic, '', esc, true); mk('div', 'aro', null, ic); m.ic = ic; m.par = [ic];
+      } else {
+        tl.style.background = cla;
+        const av = mk('div', 'av', null, tl); av.style.background = esc; logoEm(av, '', esc, true);
+        [[110, 92, 170], [110, 124, 110]].forEach(([x, y, l]) => { const b = mk('div', 'bar', null, tl); Object.assign(b.style, { left: x + 'px', top: y + 'px', width: l + 'px', background: esc }); });
+        const po = mk('div', 'post', null, tl); po.style.background = `linear-gradient(150deg, ${princ}, ${Motor.mix(princ, esc, .55)})`; logoEm(po, '', Motor.mix(princ, esc, .25));
+        const ac = mk('div', 'acoes', null, tl); ac.style.color = esc; ac.innerHTML = $m.icone('coracao', 'cor') + $m.icone('balao') + $m.icone('seta');
+        [[24, 700, 300], [24, 732, 220], [24, 764, 260]].forEach(([x, y, l]) => { const b = mk('div', 'bar', null, tl); Object.assign(b.style, { left: x + 'px', top: y + 'px', width: l + 'px', background: esc }); });
+        m.cor = ac.querySelector('.cor'); m.post = po; m.par = [po];
+      }
+    }
+    D.mocks.push(m);
+  });
+  D.camada = camada;
+}
+
+Motor.molde({
+  id: 'manifesto', formatos: ['reel'],
+  montar(F, M, $m) {
+    const { $, icone } = $m, m = F.manifesto.length, extra = F.fato || F.retrato ? 1 : 0;
+    const total = m + 7 + extra;
+    if (F.fato && F.retrato) $m.erro('use fato OU retrato (uma prova só), não os dois');
+    if (window.TEMPOS && window.TEMPOS.length > 1 && F.falas.length !== total) $m.erro(`falas: são ${total} (${m} do manifesto, contraste, valores, símbolo, cores, aplicações${extra ? ', prova' : ''}, assinatura, chamada); vieram ${F.falas.length}`);
+    D = { m, extra, cS: m + 2, cP: m + 3, cA: m + 4, cF: extra ? m + 5 : -1, cZ: m + 5 + extra };
+    // palette: from the ficha, else the brand colours with automatic names
+    if (F.paleta) { F.paleta.forEach((c, i) => { if (!HEX.test(c.hex)) $m.erro(`paleta[${i + 1}].hex: use #RRGGBB (veio ${c.hex})`); }); D.paleta = F.paleta.map(c => ({ nome: c.nome, hex: c.hex.toUpperCase() })); }
+    else { let cs = (M.cores || []).filter(c => HEX.test(c)); if (!cs.length) cs = [Motor.T.c1];
+      if (cs.length < 2) cs = [cs[0], Motor.mix(cs[0], '#000000', .62), Motor.mix(cs[0], '#ffffff', .82)];  // one brand colour: its dark and light tones
+      D.paleta = cs.map(c => ({ nome: nomeCor(c), hex: c.toUpperCase() })); }
+    if (D.paleta.length < 2) $m.erro('paleta: a marca precisa de 2 cores (campo paleta ou cores da marca)');
+    if (Motor.erros.length) return;
+    D.aplic = F.aplicacoes || ['cartao', 'fachada', 'app', 'feed'];
+    if (new Set(D.aplic).size !== D.aplic.length) $m.erro('aplicacoes: sem repetir');
+    const cenas = $('#cenas'), cena = id => { const c = mk('div', 'cena', null, cenas); c.id = id; return mk('div', 'cam full', null, c); };
+    // destaque over a dark photo: the brand colour lifted until it reads on black
+    let dm = M.cores && M.cores[0] || Motor.T.destaque; for (let k = 0; k < 20 && Motor.contraste(dm, '#111111') < 4.8; k++) dm = Motor.mix(dm, '#ffffff', 0.12);
+    document.documentElement.style.setProperty('--dest-m', Motor.T.destaque);
+    // 0..m-1 manifesto
+    F.manifesto.forEach((L, i) => {
+      const c = cena('cM' + i), v = L.foto ? [0, 2, 0, 2][i] : [0, 1, 2, 3][i];
+      if (L.foto) { c.parentNode.classList.add('sf'); c.parentNode.style.setProperty('--dest-m', dm); const f = mk('div', 'ft', null, c); mk('img', null, null, f).alt = ''; mk('div', 'vel', null, f); }
+      else { const w0 = L.chaves[0].trim(), fa = mk('div', 'fan', w0, c); fa.style.fontSize = Math.round(Math.min(380, 1500 / Math.max(3, w0.length))) + 'px'; fa.style.top = '1260px'; }
+      const ix = mk('div', 'idx t', null, c); mk('b', null, String(i + 1).padStart(2, '0'), ix); mk('i', null, null, ix); ix.append('MANIFESTO');
+      const fr = mk('div', 'fr tit t seg v' + v, null, c), fi = mk('div', 'rv', null, fr);
+      // key words: wrapped in .chave (found case-insensitively; a key that is not in the line refuses the ficha)
+      const low = L.frase.toLocaleLowerCase('pt-BR'), na = new Uint8Array(L.frase.length);
+      L.chaves.forEach(k => { const j = low.indexOf(k.trim().toLocaleLowerCase('pt-BR')); if (j < 0 || !k.trim()) $m.erro(`manifesto[${i + 1}].chaves: "${k}" não está na frase`); else na.fill(1, j, j + k.trim().length); });
+      // words built here (not by the engine) so a key word keeps its comma on the same line
+      fi.dataset.pal = 1; const re = /\S+/g; let mt, ult = 0;
+      while ((mt = re.exec(L.frase))) { if (mt.index > ult) fi.append(' '); ult = mt.index + mt[0].length;
+        const ww = mk('span', 'ww', null, fi), wi = mk('span', 'wi', null, ww); let a = mt.index;
+        while (a < ult) { let b = a; while (b < ult && na[b] === na[a]) b++; if (na[a]) mk('span', 'ck', L.frase.slice(a, b), wi); else wi.append(L.frase.slice(a, b)); a = b; } }
+    });
+    // m contrast
+    { const c = cena('cC'); F.contraste.forEach((P, j) => { const g = mk('div', 'par', null, c);
+        mk('div', 'nl t t2 seg', 'Não é sobre', g); const nx = mk('div', 'nx tit t seg', null, g); mk('div', 'rv', P.nao, nx);
+        mk('div', 'sl chip t seg', 'É sobre', g); const sy = mk('div', 'sy tit t seg', null, g); mk('div', 'rv', P.sim, sy); }); }
+    // m+1 values
+    { const c = cena('cV'); mk('div', 't t2 seg', F.valores_titulo || 'No que acreditamos', c).id = 'vt';
+      F.valores.forEach((V, j) => { const r = mk('div', 'vr', null, c); r.style.top = (500 + j * 314) + 'px';
+        mk('div', 'vo', null, r); const ic = mk('div', 'vi', null, r); ic.innerHTML = icone(V.icone);
+        mk('div', 'vn tit t seg', V.nome, r); mk('div', 'vx t t2 seg', V.texto, r); }); }
+    // m+2 the symbol assembles
+    { const c = cena('cS'); mk('div', null, null, c).id = 'luz';
+      c.insertAdjacentHTML('beforeend', '<svg id="guias" viewBox="0 0 1080 1920"></svg>');
+      mk('div', null, null, c).id = 'flare'; mk('div', null, null, c).id = 'placa'; mk('div', 'seg', null, c).id = 'sim'; mk('div', 'seg', null, c).id = 'nomeB';
+      mk('div', 'tit t seg', M.nome || '', c).id = 'nomeT';
+      const s = mk('div', null, null, c); s.id = 'selo'; mk('span', 'chip t seg', F.selo || 'Nova identidade', s); }
+    // m+3 palette
+    { const c = cena('cP'); mk('div', 't t2 seg', 'Nossas cores', c).id = 'pt';
+      const n = D.paleta.length, y0 = 486, y1 = 1440, gap = 18, h = (y1 - y0 - gap * (n - 1)) / n;
+      const fn = Math.min(84, h * 0.34), fh = Math.min(44, h * 0.2);
+      D.paleta.forEach((P, j) => { const b = mk('div', 'bd', null, c); Object.assign(b.style, { top: (y0 + j * (h + gap)) + 'px', height: h + 'px', background: P.hex, color: Motor.sobre(P.hex) });
+        // tints on the right side: the colour mixed with white and black
+        [[.5, '#ffffff'], [.25, '#ffffff'], [.3, '#000000']].forEach(([k, a], q) => { const tn = mk('div', 'tn', null, b); tn.style.left = (880 + q * 120) + 'px'; tn.style.background = Motor.mix(P.hex, a, k); });
+        const bn = mk('div', 'bn t seg', P.nome, b), bh = mk('div', 'bh t seg', P.hex, b);
+        const tot = fn * 1.15 + 10 + fh * 1.2; Object.assign(bn.style, { fontSize: fn + 'px', height: fn * 1.15 + 'px', top: (h - tot) / 2 + 'px' }); Object.assign(bh.style, { fontSize: Math.max(30, fh) + 'px', height: Math.max(30, fh) * 1.25 + 'px', top: (h - tot) / 2 + fn * 1.15 + 10 + 'px' }); }); }
+    // m+4 applications
+    { const c = cena('cA'); mk('div', null, null, c).id = 'trilho'; }
+    // m+5 proof: real number or real photo
+    if (F.fato) { const c = cena('cF'); mk('div', 't t2 seg', 'Em números', c).id = 'fk';
+      const n = mk('div', 'tit grad t seg', null, c); n.id = 'fn'; D.fmt = v => (F.fato.prefixo || '') + $m.num(Math.round(v)) + (F.fato.sufixo ? ' ' + F.fato.sufixo : ''); n.textContent = D.fmt(F.fato.numero);
+      mk('div', null, null, c).id = 'fl'; const r = mk('div', 'tit t seg', null, c); r.id = 'fr'; mk('div', 'rv', F.fato.rotulo, r); }
+    if (F.retrato) { const c = cena('cF'); const q = mk('div', null, null, c); q.id = 'rq'; mk('img', null, null, q).alt = '';
+      const r = mk('div', 'tit t seg', null, c); r.id = 'rl'; mk('div', 'rv', F.retrato.legenda, r); }
+    // signature
+    { const c = cena('cZ'); mk('div', null, null, c).id = 'zl'; const z = mk('div', 'tit t seg', null, c); z.id = 'zf'; mk('div', 'rv', F.assinatura, z); mk('div', null, null, c).id = 'zr'; }
+    $('#nota').textContent = F.nota || '';
+    D.prometa = prepararLogo($m).then(L => { montarSimbolo($m, L); mockups($m, F); logoEm($('#zl'), '', Motor.T.fundo); ajustarCortes(); D.pronto = true; }).catch(e => { Motor.erro('logo: ' + (e && e.message || e)); D.pronto = true; });
+  },
+  quadro(t, F, $m) {
+    const { $, p, eo, eo5, eio, eb, el, cl, lerp, ini, fim } = $m;
+    if (!D.pronto) { Motor._espera.push(D.prometa); }
+    const dur = i => fim(i) - ini(i);
+    // words appear in step with the voice: each word when its share of the letters has been spoken
+    const sincroniza = (el, t, a, d) => { const ws = [...el.querySelectorAll('.wi')], L = ws.map(w => letras(w.textContent)), tot = L.reduce((x, y) => x + y, 0) || 1; let acc = 0;
+      ws.forEach((w, k) => { const s = a + d * acc / tot; acc += L[k]; const q = eo5(p(t, s, 0.5)); w.style.transform = `translateY(${(1 - q) * 112}%) rotate(${(1 - q) * 6}deg)`;
+        const ck = w.querySelector('.ck'); if (ck) ck.style.backgroundPosition = `${100 - 100 * eio(p(t, s + 0.25, 0.5))}% 0`; }); };
+    // hide the watermark until the symbol has been revealed (the logo is the surprise)
+    const mk0 = $('#marca'); if (mk0) mk0.style.visibility = t < fim(D.cS) + 0.3 || (t > ini(D.cZ) + 0.2 && t < fim(D.cZ)) ? 'hidden' : 'visible';
+    // manifesto
+    F.manifesto.forEach((L, i) => {
+      const s = '#cM' + i, a = ini(i), d = dur(i);
+      if (!$m.cena(s, t, i)) return;
+      const c = $(s);
+      if (L.foto) { const img = c.querySelector('.ft img'); $m.filmagem(img, L.foto, t - a + 2); }
+      const fa = c.querySelector('.fan'); if (fa) fa.style.transform = `translateX(${60 - (t - a) * 40}px)`;
+      const ix = c.querySelector('.idx'); ix.style.opacity = eo(p(t, a + 0.1, 0.4)); ix.querySelector('i').style.transform = `scaleX(${eo5(p(t, a + 0.15, 0.6))})`;
+      sincroniza(c.querySelector('.fr .rv'), t, a + 0.12, Math.max(0.8, (d - 0.25) * 0.86));
+    });
+    // contrast: two pairs, split by length
+    if ($m.cena('#cC', t, D.m)) {
+      const a = ini(D.m), d = dur(D.m), C = F.contraste, l0 = letras(C[0].nao + C[0].sim) + 18, l1 = letras(C[1].nao + C[1].sim) + 18, meio = a + (d - 0.25) * l0 / (l0 + l1);
+      $$('#cC .par').forEach((g, j) => {
+        const s = j ? meio : a, e = j ? fim(D.m) - 0.25 : meio, L = e - s;
+        const sai = j ? 0 : eio(p(t, meio - 0.25, 0.45)), ent = j ? eo5(p(t, meio - 0.1, 0.55)) : 1;
+        g.style.opacity = (j ? ent : 1) * (1 - sai); g.style.transform = `translateY(${(1 - ent) * 140 - sai * 160}px)`;
+        $m.entra(g.querySelector('.nl'), t, s + 0.05, 0.4, 30);
+        const nx = g.querySelector('.nx .rv'); sincroniza(nx, t, s + 0.15, L * 0.3);
+        if (!g._riscos) { // one strike bar per line of X (from word positions, unaffected by transforms)
+          g._riscos = []; const lin = {}; nx.querySelectorAll('.ww').forEach(w => { const k = w.offsetTop; (lin[k] = lin[k] || []).push(w); });
+          Object.values(lin).forEach(ws => { const x0 = Math.min(...ws.map(w => w.offsetLeft)), x1 = Math.max(...ws.map(w => w.offsetLeft + w.offsetWidth)), y = ws[0].offsetTop + ws[0].offsetHeight * 0.5;
+            const r = mk('div', 'risco', null, g.querySelector('.nx')); Object.assign(r.style, { left: (x0 - 8) + 'px', top: (y - 8) + 'px', width: (x1 - x0 + 16) + 'px' }); g._riscos.push(r); });
+          g.querySelector('.nx').style.overflow = 'visible';
+        }
+        g._riscos.forEach((r, k) => { r.style.transform = `scaleX(${eio(p(t, s + L * 0.36 + k * 0.18, 0.35))}) rotate(-2deg)`; });
+        nx.style.opacity = 1 - 0.35 * eo(p(t, s + L * 0.4, 0.4));
+        const sl = g.querySelector('.sl'), sq = eb(p(t, s + L * 0.46, 0.45)); sl.style.opacity = cl(sq * 3); sl.style.transform = `scale(${sq})`;
+        sincroniza(g.querySelector('.sy .rv'), t, s + L * 0.52, L * 0.4);
+      });
+    }
+    // values: one row per third of the line
+    if ($m.cena('#cV', t, D.m + 1)) {
+      const a = ini(D.m + 1), d = dur(D.m + 1) - 0.25;
+      $m.entra('#vt', t, a + 0.05, 0.4, 30);
+      $$('#cV .vr').forEach((r, j) => { const s = a + 0.25 + j * (d - 0.4) / 3;
+        const iq = el(p(t, s, 0.9)); const ic = r.querySelector('.vi'); ic.style.opacity = cl(iq * 3); ic.style.transform = `scale(${iq}) rotate(${(1 - iq) * -40}deg)`;
+        const o = p(t, s + 0.2, 0.8); r.querySelector('.vo').style.opacity = o > 0 && o < 1 ? 1 - o : 0; r.querySelector('.vo').style.transform = `scale(${1 + 0.4 * o})`;
+        const nq = eo5(p(t, s + 0.15, 0.5)); const vn = r.querySelector('.vn'); vn.style.opacity = nq; vn.style.transform = `translateX(${(1 - nq) * 60}px)`;
+        $m.entra(r.querySelector('.vx'), t, s + 0.35, 0.5, 24); });
+    }
+    // THE moment: the symbol assembles, the name wipes in, the logo lights up
+    if ($m.cena('#cS', t, D.cS, D.cS, { push: 0.03 }) && D.L) {
+      const a = ini(D.cS), d = dur(D.cS), k = cl((d - 0.4) / 5.2, 0.6, 1.25);   // the choreography stretches with the line
+      const n = D.L.pecas.length, tg = a + 0.15 * k, tp = a + 0.6 * k, passo = 1.9 * k / Math.max(1, n), tv = 1.1 * k, tn = tp + passo * (n - 1) + tv, ta = tn + 0.9 * k;
+      D.guias.forEach((g, j) => { g.style.strokeDashoffset = 1 - eio(p(t, tg + j * 0.08, 0.8 * k)); g.style.opacity = 0.32 * (1 - eo(p(t, ta - 0.2, 0.6))); });
+      D.L.pecas.forEach((P, j) => {
+        const s = tp + j * passo, q = p(t, s, tv), e = eb(q), dist = 760;
+        P.c.style.transform = `translate(${Math.cos(P.ang) * dist * (1 - e)}px, ${Math.sin(P.ang) * dist * (1 - e)}px) rotate(${P.rot * (1 - eo5(q))}deg) scale(${1 + 0.25 * (1 - eo(q))})`;
+        P.c.style.opacity = cl(q * 4); P.sh.style.transform = P.c.style.transform;
+        const enc = p(t, s + tv * 0.72, 0.35); // the snap: a flash on landing
+        P.c.style.filter = enc > 0 && enc < 1 ? `drop-shadow(0 0 ${30 * Math.sin(Math.PI * enc)}px var(--destaque)) brightness(${1 + 0.6 * Math.sin(Math.PI * enc)})` : 'none';
+        P.sh.style.opacity = cl(q * 4); P.sh.style.backgroundPosition = `${lerp(110, -10, eio(p(t, ta, 0.9)))}% 0`;
+      });
+      const pl = $('#placa'); if (D.L.tipo === 'logo-placa') pl.style.opacity = 0.95 * eo(p(t, tp - 0.3, 0.5));
+      const nb = $('#nomeB'); if (nb && nb.isConnected) { const q = eio(p(t, tn, 0.8 * k)); nb.style.clipPath = `inset(-10% ${(1 - q) * 100}% -10% 0)`; nb.style.transform = `translateX(${(1 - q) * -30}px)`; if (D.nomeSh) D.nomeSh.style.backgroundPosition = `${lerp(110, -10, eio(p(t, ta + 0.15, 0.9)))}% 0`; }
+      const nt = $('#nomeT'); if (nt && nt.isConnected) { nt.style.opacity = eo(p(t, tn, 0.5)); nt.style.transform = `translateY(${(1 - eo5(p(t, tn, 0.7))) * 40}px)`; nt.style.letterSpacing = `${lerp(0.2, -0.02, eo5(p(t, tn, 1)))}em`; }
+      // light up: halo behind and glow on the whole logo
+      const ac = p(t, ta, 1.2), h = Math.sin(Math.PI * Math.min(1, ac * 1.4)) * (ac < 1 ? 1 : 0);
+      $('#luz').style.opacity = 0.05 * eo(p(t, tp, 1)) + 0.22 * eo(ac) + 0.25 * h; $('#luz').style.transform = `scale(${0.6 + 0.4 * eo(ac)})`;
+      $('#sim').style.filter = ac > 0 ? `drop-shadow(0 0 ${12 + 40 * h}px color-mix(in srgb, var(--destaque) ${30 + 50 * h}%, transparent))` : 'none';
+      const fl = $('#flare'), fq = p(t, ta, 1.1); fl.style.top = (D.simBox.cy - 250) + 'px'; fl.style.opacity = fq > 0 && fq < 1 ? 0.8 * (1 - fq) : 0; fl.style.transform = `scale(${0.6 + 1.6 * eo(fq)})`;
+      const resp = 1 + 0.03 * eio(p(t, tn, Math.max(1, fim(D.cS) - tn))); $('#sim').style.scale = resp; if (nb && nb.isConnected) nb.style.scale = resp;
+      const se = $('#selo'), sq = eb(p(t, a + 0.55, 0.5)); se.style.opacity = cl(sq * 3) * (1 - 0.25 * eo(ac)); se.style.transform = `scale(${sq})`;
+    }
+    // palette: bands slide in one by one, name and HEX after
+    if ($m.cena('#cP', t, D.cP)) {
+      const a = ini(D.cP), d = dur(D.cP) - 0.25, n = D.paleta.length; $m.entra('#pt', t, a + 0.05, 0.4, 30);
+      $$('#cP .bd').forEach((b, j) => { const s = a + 0.2 + j * Math.min(0.9, (d - 1.2) / n), q = eo5(p(t, s, 0.8)); b.style.transform = `translateX(${(1 - q) * -1200}px)`;
+        $m.entra(b.querySelector('.bn'), t, s + 0.35, 0.5, 30); $m.entra(b.querySelector('.bh'), t, s + 0.5, 0.5, 20);
+        b.querySelectorAll('.tn').forEach((x, q2) => { const z = eo5(p(t, s + 0.6 + q2 * 0.1, 0.5)); x.style.transform = `translateY(${(1 - z) * 100}%)`; }); });
+    }
+    // applications: the track moves from mockup to mockup; the logo layer moves a little more (parallax)
+    if ($m.cena('#cA', t, D.cA, D.cA, { push: 0.02 }) && D.mocks) {
+      const a = ini(D.cA), d = dur(D.cA) - 0.15, n = D.mocks.length, sg = d / n;
+      let pos = -1; for (let j = 0; j < n; j++) pos += eio(p(t, a + j * sg - (j ? 0.35 : 0), j ? 0.75 : 0.6));
+      D.camada.style.transform = `translateX(${-((pos + 1) * 260) % 60 - 60}px)`;
+      D.mocks.forEach((m, j) => {
+        const o = j - pos; m.w.style.transform = `translateX(${o * 1080}px) rotate(${o * 4}deg) scale(${1 - 0.12 * Math.min(1, Math.abs(o))})`;
+        m.w.style.opacity = cl(1.6 - Math.abs(o) * 1.4);
+        m.par.forEach(e => { e.style.translate = `${o * -220}px 0`; });
+        m.rot.style.opacity = cl(1 - Math.abs(o) * 2.5); m.rot.style.transform = `translateY(${o * 60}px)`;
+        const s = a + j * sg; const u = t - s;
+        if (m.tipo === 'cartao') m.g.style.transform = `rotateX(${38 - 6 * eo(p(u, 0, 1.6))}deg) rotateZ(${-22 + 8 * eo(p(u, 0, 1.6))}deg)`;
+        if (m.tipo === 'fachada') { const on = p(u, 0.25, 0.5), fl = on > 0 && on < 1 ? (Math.sin(on * 40) > 0 ? 1 : 0.3) : on >= 1 ? 1 : 0.25;
+          m.letreiro.style.boxShadow = `0 0 ${80 * fl}px color-mix(in srgb, var(--m-luz) ${45 * fl}%, transparent)`; m.letreiro.querySelector('.lg').style.opacity = fl; m.letreiro.querySelector('.lg').style.filter = fl > .9 ? 'drop-shadow(0 0 14px color-mix(in srgb, var(--m-luz) 60%, transparent))' : 'none'; }
+        if (m.tipo === 'app') { const q = el(p(u, 0.15, 1)); m.ic.style.transform = `scale(${0.4 + 0.6 * q})`; const r = p(u, 0.5, 0.9); m.ic.querySelector('.aro').style.opacity = r > 0 && r < 1 ? 1 - r : 0; m.ic.querySelector('.aro').style.transform = `scale(${1 + 0.35 * r})`; }
+        if (m.tipo === 'feed') { m.post.style.backgroundPosition = '0 0'; const q = eb(p(u, 0.5, 0.45)); if (m.cor) { m.cor.style.color = u > 0.5 ? 'var(--m-luz)' : 'inherit'; m.cor.style.transform = `scale(${u > 0.5 ? 0.6 + 0.6 * q : 1})`; } }
+      });
+    }
+    // proof
+    if (D.cF >= 0 && $m.cena('#cF', t, D.cF)) {
+      const a = ini(D.cF), d = dur(D.cF);
+      if (F.fato) { $m.entra('#fk', t, a + 0.05, 0.4, 30); const q = eo5(p(t, a + 0.2, Math.min(2.2, d * 0.5))); $('#fn').textContent = D.fmt(F.fato.numero * q); $('#fn').style.transform = `scale(${0.85 + 0.15 * eo(p(t, a + 0.2, 0.6))})`; $('#fn').style.opacity = eo(p(t, a + 0.2, 0.3));
+        $('#fl').style.transform = `scaleX(${eio(p(t, a + 0.9, 0.6))})`; sincroniza($('#fr .rv'), t, a + 1.0, Math.max(0.8, d * 0.45)); }
+      else { const q = eo5(p(t, a + 0.05, 0.8)); $('#rq').style.transform = `translateY(${(1 - q) * 120}px) scale(${0.94 + 0.06 * q})`; $('#rq').style.opacity = q; $m.filmagem($('#rq img'), F.retrato.foto, t - a);
+        sincroniza($('#rl .rv'), t, a + 0.5, Math.max(0.8, d * 0.5)); }
+      $('#nota').style.opacity = 1;
+    } else $('#nota').style.opacity = 0;
+    // signature: the theme line, word by word, under the logo
+    if ($m.cena('#cZ', t, D.cZ)) {
+      const a = ini(D.cZ), d = dur(D.cZ); const lq = eo5(p(t, a + 0.05, 0.7)); $('#zl').style.opacity = lq; $('#zl').style.transform = `translateY(${(1 - lq) * -40}px)`;
+      sincroniza($('#zf .rv'), t, a + 0.2, Math.max(0.8, (d - 0.25) * 0.8)); $('#zr').style.transform = `scaleX(${eio(p(t, a + d * 0.6, 0.6))})`;
+    }
+  },
+});
+</script></body></html>

@@ -1,0 +1,44 @@
+{
+ "_marca": "nexos",
+ "_formato": "reel",
+ "_musica": "tecnologica",
+ "manifesto": [
+  {"frase": "A informação existe, espalhada entre anúncios, conversas e planilhas.", "chaves": ["espalhada"], "foto": "fotos/manifesto_telas_espalhadas.jpg"},
+  {"frase": "Falta juntar tudo e transformar em decisão.", "chaves": ["decisão"]},
+  {"frase": "Mas decidir, sozinho, é só metade do caminho.", "chaves": ["metade"]},
+  {"frase": "A outra metade é executar, e ver o resultado voltar.", "chaves": ["executar", "resultado"]}
+ ],
+ "contraste": [
+  {"nao": "ter mais relatórios", "sim": "saber o que fazer agora"},
+  {"nao": "fazer tudo sozinho", "sim": "aprovar e ver acontecer"}
+ ],
+ "valores": [
+  {"icone": "lupa", "nome": "Clareza", "texto": "Mostrar onde a venda trava, e por quê"},
+  {"icone": "seta", "nome": "Ação", "texto": "A proposta chega pronta para você aprovar"},
+  {"icone": "grafico", "nome": "Resultado", "texto": "O efeito volta para a mesma tela"}
+ ],
+ "paleta": [
+  {"nome": "Verde NEXOS", "hex": "#00FF66"},
+  {"nome": "Preto profundo", "hex": "#0A0A0A"},
+  {"nome": "Grafite", "hex": "#1F1F1F"},
+  {"nome": "Branco", "hex": "#FFFFFF"}
+ ],
+ "aplicacoes": ["app", "feed", "cartao", "fachada"],
+ "fato": {"numero": 12, "rotulo": "módulos, um ciclo só"},
+ "assinatura": "Da decisão à execução.",
+ "falas": [
+  "A informação existe, espalhada entre anúncios, conversas e planilhas.",
+  "Falta juntar tudo e transformar em decisão.",
+  "Mas decidir, sozinho, é só metade do caminho.",
+  "A outra metade é executar, e ver o resultado voltar.",
+  "Não é sobre ter mais relatórios. É sobre saber o que fazer agora. Não é sobre fazer tudo sozinho. É sobre aprovar e ver acontecer.",
+  "A gente acredita em clareza para ver onde a venda trava, em ação pronta para aprovar e em resultado que volta.",
+  "Por isso nasceu o NEXOS: a inteligência que conecta a decisão à execução.",
+  "O verde que acende, sobre o preto profundo e o grafite, com o branco para respirar.",
+  "No aplicativo, no feed, no cartão e na fachada: a mesma marca em todo lugar.",
+  "São doze módulos sobre os mesmos dados, num ciclo só.",
+  "NEXOS. Da decisão à execução.",
+  "Chegou o NEXOS. Agende sua demonstração."
+ ],
+ "_origem": {"fato": "dono"}
+}

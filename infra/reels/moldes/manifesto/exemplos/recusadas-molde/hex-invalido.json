@@ -1,0 +1,100 @@
+{
+ "_marca": "norte-arquitetura",
+ "_formato": "reel",
+ "manifesto": [
+  {
+   "frase": "Uma casa começa muito antes da obra.",
+   "chaves": [
+    "antes"
+   ],
+   "foto": "fotos/manifesto_planta_mesa.jpg"
+  },
+  {
+   "frase": "Começa no jeito que a luz entra de manhã.",
+   "chaves": [
+    "luz"
+   ],
+   "foto": "fotos/manifesto_sala_luz.jpg"
+  },
+  {
+   "frase": "E em quem vai viver ali todos os dias.",
+   "chaves": [
+    "viver"
+   ]
+  }
+ ],
+ "contraste": [
+  {
+   "nao": "metro quadrado",
+   "sim": "como você vive nele"
+  },
+  {
+   "nao": "seguir a moda",
+   "sim": "durar décadas"
+  }
+ ],
+ "valores_titulo": "O que guia cada projeto",
+ "valores": [
+  {
+   "icone": "balao",
+   "nome": "Escuta",
+   "texto": "Primeiro, entender a sua rotina"
+  },
+  {
+   "icone": "brilho",
+   "nome": "Luz",
+   "texto": "Cada ambiente pensado com luz natural"
+  },
+  {
+   "icone": "casa",
+   "nome": "Tempo",
+   "texto": "Projeto feito para envelhecer bem"
+  }
+ ],
+ "selo": "Nova marca",
+ "paleta": [
+  {
+   "nome": "Terracota",
+   "hex": "#B5523B"
+  },
+  {
+   "nome": "Oliva",
+   "hex": "#5B6B4Z"
+  },
+  {
+   "nome": "Areia",
+   "hex": "#E9DCC6"
+  },
+  {
+   "nome": "Grafite",
+   "hex": "#2B2B2A"
+  }
+ ],
+ "aplicacoes": [
+  "cartao",
+  "fachada",
+  "feed"
+ ],
+ "fato": {
+  "numero": 140,
+  "rotulo": "projetos entregues"
+ },
+ "assinatura": "Projetar é ouvir primeiro.",
+ "falas": [
+  "Uma casa começa muito antes da obra.",
+  "Começa no jeito que a luz entra de manhã.",
+  "E em quem vai viver ali, todos os dias.",
+  "Não é sobre metro quadrado. É sobre como você vive nele. Não é sobre seguir a moda. É sobre durar décadas.",
+  "O que guia cada projeto: escutar primeiro a sua rotina, desenhar cada ambiente com luz natural e pensar no tempo.",
+  "Por isso a Norte Arquitetura ganhou uma nova marca: uma seta que aponta o caminho da sua casa.",
+  "Terracota, oliva, areia e grafite: as cores da terra, da madeira e da luz.",
+  "No cartão de visita, na fachada do escritório e no seu feed: a mesma Norte, em todo lugar.",
+  "São cento e quarenta projetos entregues, cada um com a cara de quem mora nele.",
+  "Norte Arquitetura. Projetar é ouvir primeiro.",
+  "Agende uma conversa pelo link da bio."
+ ],
+ "nota": "valores de exemplo",
+ "_origem": {
+  "fato": "dono"
+ }
+}

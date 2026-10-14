@@ -1,0 +1,19 @@
+{
+ "nome": "Norte Arquitetura",
+ "perfil": "@nortearquitetura",
+ "cores": [
+  "#b5523b",
+  "#5b6b4e"
+ ],
+ "fonte": "bricolage",
+ "estilo": "papel",
+ "logo_escuro": "logo_escuro.png",
+ "logo_claro": "logo_claro.png",
+ "chamada": "Agende uma conversa",
+ "voz": {
+  "id": "Camila",
+  "motor": "generative"
+ },
+ "ramo": "escritório de arquitetura residencial",
+ "_teste": "marca fictícia para testar os moldes"
+}
