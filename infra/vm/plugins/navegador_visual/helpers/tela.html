@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Navegador do agente</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root { --fundo: #0f1115; --texto: #e9ecf1; --borda: #2a2f3a; --botao: #1d2230; --verde: #22c55e; --suave: #9aa3b2; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--fundo); color: var(--texto);
+    font: 15px/1.35 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { padding: 8px 12px; border-bottom: 1px solid var(--borda); }
+  header .url { font-size: 12px; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  header .dica { font-size: 13px; }
+  #palco { flex: 1; overflow: hidden; display: flex; align-items: flex-start; justify-content: center; touch-action: none; }
+  #tela { max-width: 100%; max-height: 100%; user-select: none; -webkit-user-drag: none; }
+  #toque { position: fixed; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%;
+    border: 2px solid var(--verde); pointer-events: none; opacity: 0; transition: opacity .4s; }
+  footer { padding: 8px; border-top: 1px solid var(--borda); display: grid; gap: 6px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+  .linha { display: flex; gap: 6px; }
+  button { flex: 1; min-height: 40px; border: 1px solid var(--borda); background: var(--botao); color: var(--texto);
+    border-radius: 10px; font-size: 14px; }
+  button.pronto { background: var(--verde); color: #04160a; border-color: transparent; font-weight: 600; }
+  input { flex: 3; min-width: 0; min-height: 40px; border-radius: 10px; border: 1px solid var(--borda);
+    background: #151922; color: var(--texto); padding: 0 10px; font-size: 16px; }
+  #aviso { font-size: 12px; color: var(--suave); min-height: 16px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="dica">Toque na imagem como se fosse a página. Para arrastar, segure e arraste.</div>
+  <div class="url" id="url">carregando…</div>
+</header>
+<div id="palco"><img id="tela" alt="tela do navegador do agente"></div>
+<div id="toque"></div>
+<footer>
+  <div class="linha">
+    <input id="texto" placeholder="Digitar na página" autocomplete="off">
+    <button id="enviar">Digitar</button>
+  </div>
+  <div class="linha">
+    <button data-tecla="Enter">Enter</button>
+    <button data-tecla="Backspace">⌫</button>
+    <button data-rolar="-0.6">▲</button>
+    <button data-rolar="0.6">▼</button>
+    <button id="recarregar">⟳</button>
+  </div>
+  <div class="linha"><button class="pronto" id="pronto">✅ Terminei, pode seguir</button></div>
+  <div id="aviso"></div>
+</footer>
+<script>
+const TOKEN = "__TOKEN__";
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+const tela = document.getElementById("tela"), aviso = document.getElementById("aviso");
+let ocupado = false, proximo = null;
+
+async function api(acao, extra = {}) {
+  const r = await fetch(location.pathname, { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ t: TOKEN, acao, ...extra }) });
+  if (r.status === 403) { aviso.textContent = "O link expirou. Peça de novo ao agente."; throw new Error("expirou"); }
+  return r.json();
+}
+
+async function quadro() {
+  if (ocupado || document.hidden) return;
+  ocupado = true;
+  try {
+    const q = await api("quadro");
+    if (q.imagem) { tela.src = "data:image/jpeg;base64," + q.imagem; document.getElementById("url").textContent = q.url || ""; }
+    else if (q.erro) aviso.textContent = q.erro;
+  } catch (e) {} finally { ocupado = false; }
+}
+function logo() { clearTimeout(proximo); proximo = setTimeout(quadro, 350); }
+setInterval(quadro, 900);
+quadro();
+
+function fracao(ev) {
+  const r = tela.getBoundingClientRect();
+  return [(ev.clientX - r.left) / r.width, (ev.clientY - r.top) / r.height];
+}
+function marcar(ev) {
+  const m = document.getElementById("toque");
+  m.style.left = ev.clientX + "px"; m.style.top = ev.clientY + "px"; m.style.opacity = 1;
+  setTimeout(() => (m.style.opacity = 0), 350);
+}
+let inicio = null, pontos = [], segurou = null;
+tela.addEventListener("pointerdown", (ev) => {
+  ev.preventDefault(); inicio = ev; pontos = [fracao(ev)];
+  segurou = setTimeout(() => (segurou = "sim"), 450);
+});
+tela.addEventListener("pointermove", (ev) => { if (inicio) pontos.push(fracao(ev)); });
+tela.addEventListener("pointerup", async (ev) => {
+  if (!inicio) return;
+  const longe = Math.hypot(ev.clientX - inicio.clientX, ev.clientY - inicio.clientY) > 12;
+  const arrastou = longe && segurou === "sim";
+  clearTimeout(segurou); segurou = null; inicio = null;
+  marcar(ev);
+  try {
+    if (arrastou) await api("arrastar", { pontos });
+    else if (longe) await api("rolar", { dy: -(pontos[pontos.length - 1][1] - pontos[0][1]) });
+    else { const [fx, fy] = fracao(ev); await api("toque", { fx, fy }); }
+  } catch (e) {}
+  logo();
+});
+document.getElementById("enviar").onclick = async () => {
+  const c = document.getElementById("texto");
+  if (!c.value) return;
+  await api("texto", { texto: c.value }); c.value = ""; logo();
+};
+document.querySelectorAll("[data-tecla]").forEach((b) => (b.onclick = async () => { await api("tecla", { tecla: b.dataset.tecla }); logo(); }));
+document.querySelectorAll("[data-rolar]").forEach((b) => (b.onclick = async () => { await api("rolar", { dy: Number(b.dataset.rolar) }); logo(); }));
+document.getElementById("recarregar").onclick = async () => { await api("recarregar"); logo(); };
+document.getElementById("pronto").onclick = async () => {
+  await api("pronto");
+  aviso.textContent = "Avisei o agente. Pode fechar.";
+  if (tg) setTimeout(() => tg.close(), 700);
+};
+</script>
+</body>
+</html>

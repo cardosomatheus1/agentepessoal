@@ -8,6 +8,7 @@ import sys
 import tempfile
 import time
 import traceback
+import types
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -374,21 +375,22 @@ class Suite:
            "regra do navegador compartilhado")
         ok("a mesma tarefa da conversa principal" in regras, "a paralela não refaz a tarefa da principal")
 
-    def t_pedido_no_navegador_leva_link_da_conversa(self):
-        # 14/10: the Navegador showed the browser of another chat (the one selected in the app); no captcha there
+    def t_pedido_no_navegador_vira_botao_resolver_aqui(self):
+        # 14/10, Matheus: resolve the captcha from Telegram, nothing extra (the app panel showed another chat)
         arq = self._tmp / "url.txt"
         arq.write_text("https://agente.exemplo.com/\n")
+        tela = types.SimpleNamespace(link=lambda base, ctx, usuario: f"{base.rstrip('/')}/tela?t={ctx}.{usuario}.assinado")
         pedido = "O portal mostrou um hCaptcha. Resolva na aba Browser, na página da Redesim, e me avise."
-        com = self.p.com_link_do_navegador(pedido, "S2keHNv0", arq)
-        ok(com.startswith(pedido) and com.endswith("https://agente.exemplo.com/?ctxid=S2keHNv0"), com)
-        eq(self.p.com_link_do_navegador(com, "S2keHNv0", arq), com, "não repete o link")
-        eq(self.p.com_link_do_navegador("Achei 3 empresas no seu CPF.", "x", arq), "Achei 3 empresas no seu CPF.",
-           "resposta sem pedido no navegador fica igual")
-        eq(self.p.com_link_do_navegador(pedido, "x", self._tmp / "nao-existe.txt"), pedido, "sem endereço, sem link")
-        arq.write_text("starting")
-        eq(self.p.com_link_do_navegador(pedido, "x", arq), pedido, "endereço ainda subindo: sem link")
+        b = self.p.botao_do_navegador(pedido, "S2keHNv0", "matheus", arq, tela)
+        eq(b, {"titulo": "🖥️ Resolver aqui", "url": "https://agente.exemplo.com/tela?t=S2keHNv0.matheus.assinado"}, "botão")
+        eq(self.p.botao_do_navegador("Achei 3 empresas no seu CPF.", "x", "matheus", arq, tela), None, "sem pedido, sem botão")
+        eq(self.p.botao_do_navegador(pedido, "x", "matheus", self._tmp / "nao-existe.txt", tela), None, "sem endereço")
+        eq(self.p.botao_do_navegador(pedido, "x", "matheus", arq, types.SimpleNamespace(link=lambda *a: "")), None,
+           "sem link assinado, sem botão")
+        self.p.enviar(LOGIN, pedido, app=b)
+        eq(self.enviados[-1].get("app"), b, "o botão vai para a ponte")
         envio = (RAIZ / "extensions" / "python" / "tool_execute_after" / "_50_enviar_resposta.py").read_text(encoding="utf-8")
-        ok("com_link_do_navegador(mensagem, ctx.id)" in envio, "toda resposta ao celular passa pelo link")
+        ok("botao_do_navegador(mensagem, ctx.id, destino)" in envio, "toda resposta ao celular passa pelo botão")
 
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):

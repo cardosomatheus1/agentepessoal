@@ -48,7 +48,7 @@ def main() -> int:
         p.sqs, p.VISTOS, p.NAO_ENTREGUES, p.ATIVIDADE = fila, tmp / "vistos.json", tmp / "nao_entregues.jsonl", tmp / "a"
         p.PAUSA_ENTREGA, p.log = 0, logs.append
         p.tg = lambda metodo, dados: {}
-        p.tg_texto = lambda chat, texto, botoes=None: ditos.append(("tg", texto))
+        p.tg_texto = lambda chat, texto, botoes=None, app=None: ditos.append(("tg", texto))
         p.enviar_texto = lambda numero, texto: ditos.append(("wa", texto))
         p.lido_e_digitando = lambda mid: None
         p.comando_cofre = p.comando_silencio = lambda usuario, texto: None

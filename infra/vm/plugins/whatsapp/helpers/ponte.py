@@ -5,6 +5,7 @@ their login name, so the agent can reach no one but the registered users.
 """
 
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -63,23 +64,30 @@ BLOQUEIO = re.compile(r"(pediu|pede|precisa de|fazer|refazer|entrar com) (o |um 
 
 
 URL_AGENTE = Path("/a0/usr/agente/url.txt")  # the app's public address, kept current by the VM's report_url.py
+TELA = Path("/a0/usr/plugins/navegador_visual/helpers/tela.py")  # signed links to one chat's browser tab
 PEDE_NAVEGADOR = re.compile(r"\b(navegador|browser)\b", re.I)
 PEDE_ACAO = re.compile(r"captcha|desafio|login|logar|entrar|entre |resolv|conclu|confirm|c[oó]digo|verifica", re.I)
 
 
-def com_link_do_navegador(texto: str, ctx_id: str, arquivo: Path | None = None) -> str:
-    """A reply that asks the person to do something in the Navegador carries a link that opens the app on this very
-    chat. 14/10: the panel shows the browser of the chat selected in the app; Matheus had another chat open there, saw
-    no captcha, and the agent kept saying it was still there."""
-    if not ctx_id or "?ctxid=" in texto or not (PEDE_NAVEGADOR.search(texto) and PEDE_ACAO.search(texto)):
-        return texto
+def _modulo_tela(caminho: Path = TELA):
+    spec = importlib.util.spec_from_file_location("navegador_visual_tela_ponte", caminho)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def botao_do_navegador(texto: str, ctx_id: str, usuario: str, arquivo: Path | None = None, tela=None) -> dict | None:
+    """A reply that asks the person to do something in the Navegador (captcha, login, code) gets a "🖥️ Resolver aqui"
+    button that opens, inside Telegram, the live tab of this very chat (14/10, Matheus: "quero conseguir resolver
+    pelo Telegram, sem nada extra"; before, the app's panel showed whichever chat was selected there)."""
+    if not ctx_id or not usuario or not (PEDE_NAVEGADOR.search(texto) and PEDE_ACAO.search(texto)):
+        return None
     try:
-        url = (arquivo or URL_AGENTE).read_text(encoding="utf-8").strip().rstrip("/")
-    except OSError:
-        return texto
-    if not url.startswith("https://"):
-        return texto
-    return f"{texto}\n\n🖥️ Abrir o Navegador desta conversa: {url}/?ctxid={ctx_id}"
+        base = (arquivo or URL_AGENTE).read_text(encoding="utf-8").strip()
+        link = (tela or _modulo_tela()).link(base, ctx_id, usuario)
+    except Exception:
+        return None
+    return {"titulo": "🖥️ Resolver aqui", "url": link} if link else None
 
 
 def urgente(texto: str) -> bool:
@@ -88,23 +96,27 @@ def urgente(texto: str) -> bool:
 
 
 def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", botoes: list | None = None,
-           tipo: str = "", sempre: bool = False, rotina: str = "") -> str:
+           tipo: str = "", sempre: bool = False, rotina: str = "", app: dict | None = None) -> str:
     """'' when sent, else the reason it was not. botoes: up to 3 [{"id", "titulo"}] reply buttons.
     tipo: "resposta" (default: answer to the person), "urgente" (needs them now: goes even in quiet hours) or
     "progresso" (held during their quiet hours and delivered together afterwards).
     sempre: send even when identical to a recent notice (a new request that happens to read the same, e.g. a code).
-    rotina: the scheduled task that wrote it (the bridge puts the night's held notices inside the morning summary)."""
+    rotina: the scheduled task that wrote it (the bridge puts the night's held notices inside the morning summary).
+    app: {"titulo", "url"}: a button that opens a page inside Telegram (WhatsApp gets the link in the text)."""
     if not usuario:
         return "conversa sem dono"
     if usuario.startswith("teste_"):  # test logins: what would reach the phone is recorded, nothing is sent
         CAIXA_TESTES.parent.mkdir(parents=True, exist_ok=True)
         with CAIXA_TESTES.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"em": time.time(), "usuario": usuario, "texto": texto, "arquivo": arquivo,
-                                "legenda": legenda, "botoes": botoes or [], "tipo": tipo, "rotina": rotina},
+                                "legenda": legenda, "botoes": botoes or [], "tipo": tipo, "rotina": rotina,
+                                "app": app},
                                ensure_ascii=False) + "\n")
         return ""
     corpo = {"usuario": usuario, "texto": formatar(texto) if texto else "", "arquivo": arquivo, "legenda": legenda,
              "botoes": botoes or [], "tipo": tipo or ("urgente" if botoes else "resposta"), "rotina": rotina}
+    if app:
+        corpo["app"] = app
     marca = _chave_aviso(texto, arquivo, botoes)
     janela = REPETIDO_H.get(corpo["tipo"])
     if janela and texto and not sempre and _ja_avisado(usuario, marca, janela):

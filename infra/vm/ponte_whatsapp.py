@@ -226,14 +226,32 @@ def tg_chat(usuario: str) -> str:
     return next((c for c, u in (cfg().get("tg_chats") or {}).items() if u == usuario), "")
 
 
-def tg_texto(chat: str, texto: str, botoes: list | None = None) -> None:
+def teclado(botoes: list | None = None, app: dict | None = None) -> dict | None:
+    """Inline keyboard: reply buttons in one row, and an "app" button ({"titulo", "url"}) in its own row that opens the
+    page inside Telegram (14/10: "🖥️ Resolver aqui" opens the chat's browser tab to solve a captcha there)."""
+    linhas = []
+    if botoes:
+        linhas.append([{"text": b["titulo"], "callback_data": str(b["id"])[:64]} for b in botoes[:3]])
+    if app and str(app.get("url") or "").startswith("https://"):
+        linhas.append([{"text": str(app.get("titulo") or "Abrir")[:40], "web_app": {"url": str(app["url"])}}])
+    return {"inline_keyboard": linhas} if linhas else None
+
+
+def texto_com_app(texto: str, app: dict | None) -> str:
+    """WhatsApp has no in-app pages: the link goes in the text."""
+    if app and str(app.get("url") or "").startswith("https://"):
+        return f"{texto}\n\n{app.get('titulo') or 'Abrir'}: {app['url']}"
+    return texto
+
+
+def tg_texto(chat: str, texto: str, botoes: list | None = None, app: dict | None = None) -> None:
     DIGITANDO.pop(chat, None)  # an answer went out: stop "typing…"
     partes = [texto[i:i + TG_LIMITE] for i in range(0, len(texto), TG_LIMITE)] or [""]
     for i, parte in enumerate(partes):
         dados = {"chat_id": chat, "text": parte, "parse_mode": "Markdown", "disable_web_page_preview": True}
-        if botoes and i == len(partes) - 1:
-            dados["reply_markup"] = {"inline_keyboard": [[{"text": b["titulo"], "callback_data": str(b["id"])[:64]}
-                                                          for b in botoes[:3]]]}
+        marcacao = teclado(botoes, app) if i == len(partes) - 1 else None
+        if marcacao:
+            dados["reply_markup"] = marcacao
         try:
             tg("sendMessage", dados)
         except RuntimeError:  # unbalanced * or _ in the text: send it plain
@@ -1427,7 +1445,7 @@ class Saida(http.server.BaseHTTPRequestHandler):
                 pedido["texto"], da_noite = resumo_com_a_noite(usuario, str(pedido["texto"]))
             if chat:
                 if pedido.get("texto"):
-                    tg_texto(chat, str(pedido["texto"]), pedido.get("botoes") or None)
+                    tg_texto(chat, str(pedido["texto"]), pedido.get("botoes") or None, pedido.get("app") or None)
                 if da_noite is not None:
                     resumo_entregue(usuario, da_noite)
                 if pedido.get("arquivo"):
@@ -1445,7 +1463,7 @@ class Saida(http.server.BaseHTTPRequestHandler):
                 except RuntimeError:  # outside the 24 h window buttons cannot go: plain notice
                     enviar_texto(numero, str(pedido["texto"]) + "\n\nResponda: aprovar, sempre ou recusar.")
             elif pedido.get("texto"):
-                enviar_texto(numero, str(pedido["texto"]))
+                enviar_texto(numero, texto_com_app(str(pedido["texto"]), pedido.get("app") or None))
                 if da_noite is not None:
                     resumo_entregue(usuario, da_noite)
             if pedido.get("arquivo"):

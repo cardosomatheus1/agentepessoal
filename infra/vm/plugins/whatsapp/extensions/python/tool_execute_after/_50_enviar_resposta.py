@@ -117,13 +117,13 @@ class EnviarResposta(Extension):
             if not (tarefa or ausente):
                 return
             destino, mensagem = p.dono(ctx), _aviso(ctx, texto, tarefa, nome_tarefa)
-        mensagem = p.com_link_do_navegador(mensagem, ctx.id)  # "resolva na tela": a link to this chat's browser
+        app = p.botao_do_navegador(mensagem, ctx.id, destino)  # "resolva na tela": opens this chat's tab in Telegram
         # a phone chat is a conversation (answer now); a task round or an away notice is progress, held during
         # the person's quiet hours unless it says it needs them
         urgente = p.urgente(texto) or any(t == "urgente" for _, t in avisos)
         tipo = "resposta" if de_whatsapp else ("urgente" if urgente else "progresso")
         erro = await asyncio.to_thread(p.enviar, destino, mensagem, "", "", None, tipo, False,
-                                       nome_tarefa if tarefa and not de_whatsapp else "")
+                                       nome_tarefa if tarefa and not de_whatsapp else "", app)
         if erro:
             print(f"whatsapp: answer from {ctx.id} not delivered: {erro}", flush=True)
         elif tarefa:
