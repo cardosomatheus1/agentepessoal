@@ -45,7 +45,8 @@ ENTRADA = "/opt/agentepessoal/entrada.sh"
 CHAT_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 MAX_UPLOAD = 5 * 1024**3
 
-HOP_HEADERS = {"host", "authorization", "content-length", "connection", "accept-encoding", "transfer-encoding"}
+HOP_HEADERS = {"host", "authorization", "content-length", "connection", "accept-encoding", "transfer-encoding",
+               "x-a0-dono"}  # X-A0-Dono: whose chat made the call (logged, never sent upstream)
 SKIP_RESPONSE_HEADERS = {"transfer-encoding", "connection", "content-length", "content-encoding"}
 
 _token = {"value": "", "at": 0.0}
@@ -235,7 +236,7 @@ def _last_usage(tail: bytes) -> dict:
     return {}
 
 
-def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: float) -> None:
+def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: float, dono: str = "") -> None:
     """One JSON line per model call: model, input/cached/output tokens and duration (for the
     context-economy measurements). Never breaks the proxied call."""
     try:
@@ -262,6 +263,8 @@ def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: 
             "segundos": round(seconds, 1),
             "bytes_pedido": len(body or b""),
         }
+        if re.fullmatch(r"[a-z0-9_-]{1,32}", dono or ""):  # whose chat (login_usuarios: spending per person)
+            row["dono"] = dono
         with _usage_lock, USAGE_FILE.open("a") as f:
             f.write(json.dumps(row) + "\n")
         if body and DUMP_DIR.is_dir():  # debugging only: `mkdir` the folder to capture request bodies
@@ -415,7 +418,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b"0\r\n\r\n")
             self.wfile.flush()
             if upstream != TYPESAFE_HOST:
-                log_usage(path, body, resp.status, tail, time.time() - started)
+                log_usage(path, body, resp.status, tail, time.time() - started,
+                          (self.headers.get("X-A0-Dono") or "").strip().lower())
         except (BrokenPipeError, ConnectionResetError):
             pass
         finally:

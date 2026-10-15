@@ -49,14 +49,16 @@ def main() -> int:
     p = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(p)
     p.ESPERA_MAX = p.ESPERA_CONEXAO = 0
+    log_usage_real = p.log_usage
     p.mark_activity = p.log_usage = lambda *a, **k: None
-    roteiro, pedidos = [], []
+    roteiro, pedidos, cabecalhos = [], [], []
 
     class ConexaoFalsa:
         def __init__(self, host, timeout=0, context=None):
             self.host = host
 
         def request(self, metodo, path, body=None, headers=None):
+            cabecalhos.append({k.lower() for k in headers})
             pedidos.append((self.host, path, headers.get("Authorization")))
             self._proximo = roteiro.pop(0)
             if isinstance(self._proximo, Exception):
@@ -127,6 +129,22 @@ def main() -> int:
         req = urllib.request.Request(f"{base}/arquivos/conteudo", data=b'{"chave": "conteudo/a.mp4"}', method="POST")
         with urllib.request.urlopen(req, timeout=5) as r:
             ok(json.loads(r.read())["url"].endswith("conteudo/a.mp4?get_object&3600"), "rota /arquivos/conteudo")
+        # 15/10 guests: whose chat made the call goes in the usage log, never to Bedrock
+        estado["token_ok"] = True
+        pedidos.clear(); cabecalhos.clear(); roteiro[:] = [RespostaFalsa(200, b'{"ok": 1}')]
+        req = urllib.request.Request(f"{base}/openai/v1/chat/completions", data=b"{}", method="POST",
+                                     headers={"X-A0-Dono": "ilia"})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            r.read()
+        ok(cabecalhos and "x-a0-dono" not in cabecalhos[0], f"X-A0-Dono não sobe para a AWS ({cabecalhos})")
+        import tempfile
+        p.USAGE_FILE = Path(tempfile.mkdtemp(prefix="uso-")) / "uso.jsonl"
+        uso = b'data: {"usage": {"prompt_tokens": 10, "completion_tokens": 2}}'
+        log_usage_real("/v1/chat/completions", b'{"model": "m"}', 200, uso, 1.0, "ilia")
+        log_usage_real("/v1/chat/completions", b'{"model": "m"}', 200, uso, 1.0, "../x")
+        log_usage_real("/v1/chat/completions", b'{"model": "m"}', 200, uso, 1.0)
+        linhas = [json.loads(x) for x in p.USAGE_FILE.read_text().splitlines()]
+        ok([x.get("dono") for x in linhas] == ["ilia", None, None], f"dono no uso, só login válido ({linhas})")
     finally:
         servidor.shutdown()
     for f in falhas:

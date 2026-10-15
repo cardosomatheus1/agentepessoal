@@ -35,6 +35,29 @@ def main() -> int:
         esperado = 0.55 + 11.0 + 2.75 + 1.60 + (0.055 + 0.1375)
         if abs(hoje - esperado) > 1e-6 or abs(mes - esperado) > 1e-6:
             falhas.append(f"gasto: esperado US$ {esperado:.4f}, veio hoje {hoje:.4f} / mês {mes:.4f}")
+        # 15/10 guests: spending per person (the proxy logs X-A0-Dono) and the guest's daily limit
+        mais = [{"em": agora, "modelo": "openai.gpt-6.1-sol", "entrada": 0, "saida": 400_000, "dono": "ilia"},
+                {"em": agora, "modelo": "openai.gpt-6.1-sol", "entrada": 0, "saida": 100_000, "dono": "matheus"}]
+        p.USO.write_text("\n".join(json.dumps(l) for l in linhas + mais) + "\n")
+        so_ilia, _ = p.gasto("ilia")
+        if abs(so_ilia - 4.4) > 1e-6:
+            falhas.append(f"gasto só do Ilia: esperado 4.40, veio {so_ilia:.4f}")
+        if abs(p.gasto()[0] - (esperado + 5.5)) > 1e-6:
+            falhas.append("sem dono, o total soma todo mundo")
+        if p.limite_convidado("ilia") or p.limite_convidado("matheus"):
+            falhas.append("abaixo do teto (US$ 4.40 de 5), a mensagem do convidado passa; o dono nunca tem teto")
+        mais.append({"em": agora, "modelo": "openai.gpt-6.1-sol", "entrada": 0, "saida": 100_000, "dono": "ilia"})
+        p.USO.write_text("\n".join(json.dumps(l) for l in linhas + mais) + "\n")
+        if "limite de uso de hoje" not in p.limite_convidado("ilia") or p.limite_convidado("matheus"):
+            falhas.append("passou de US$ 5 no dia: o convidado é avisado e a mensagem não vai ao agente")
+        if "de US$ 5 por dia" not in p.texto_gasto("ilia") or "Hoje: US$ 5.50" not in p.texto_gasto("ilia"):
+            falhas.append(f"/gasto do convidado mostra só o dele: {p.texto_gasto('ilia')!r}")
+        spec_c = importlib.util.spec_from_file_location(
+            "convidados_gasto_teste", RAIZ / "infra" / "vm" / "plugins" / "login_usuarios" / "helpers" / "convidados.py")
+        c = importlib.util.module_from_spec(spec_c)
+        spec_c.loader.exec_module(c)
+        if {k: v["teto_dia_usd"] for k, v in c.CONVIDADOS.items()} != p.CONVIDADOS_TETO:
+            falhas.append("tetos da ponte e do plugin login_usuarios diferentes")
         if p.preco("us.amazon.nova-2-lite-v1:0") != p.PRECOS["luna"]:
             falhas.append("modelo sem preço próprio cai no da Luna")
     finally:

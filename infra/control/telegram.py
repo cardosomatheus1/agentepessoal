@@ -51,7 +51,7 @@ def configurar(token: str, base_url: str, logins: list[str]) -> dict:
     return status()
 
 
-def status(logins: tuple = ("matheus", "fernanda")) -> dict:
+def status(logins: tuple = ("matheus", "fernanda", "ilia")) -> dict:
     cfg = whatsapp.config()
     chats = list((cfg.get("tg_chats") or {}).values())
     return {"tg_bot": cfg.get("tg_bot", ""), "tg_logins": list(logins), "tg_ligados": sorted(set(chats)),

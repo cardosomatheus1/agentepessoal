@@ -100,6 +100,114 @@ class Suite:
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    # ---- 15/10: guests (Ilia, Matheus's friend): own project, only personal tools, own files, spending tagged ----
+    def _c(self):
+        return _carregar("login_usuarios_convidados_teste", RAIZ / "helpers" / "convidados.py")
+
+    def t_convidado_so_ferramentas_pessoais(self):
+        c = self._c()
+        proj = c.projeto("ilia")
+        ok(c.bloqueio("matheus", "prospeccao", {}, None) == "", "o dono nunca é barrado aqui")
+        ok(c.bloqueio("fernanda", "code_execution_tool", {}, None) == "", "quem não é convidado também não")
+        for f in ("prospeccao", "conteudo", "code_execution_tool", "text_editor", "scheduler", "livro", "contas",
+                  "skills_tool", "parallel", "whatsapp_guardar_token", "google.gmail_listar"):
+            ok("não está disponível" in c.bloqueio("ilia", f, {}, proj), f"convidado sem {f}")
+        for f in ("response", "search_engine", "pesquisar", "browser", "lembrar", "memory_load", "document_query"):
+            ok(c.bloqueio("Ilia", f, {"query": "previsão do tempo em Salvador"}, proj) == "", f"convidado usa {f}")
+        ok("fora do projeto" in c.bloqueio("ilia", "search_engine", {}, None), "conversa dele fora do projeto: nada roda")
+        ok("fora do projeto" in c.bloqueio("ilia", "response", {}, "meta-nexos"), "nem em projeto de outra pessoa")
+
+    def t_convidado_so_os_arquivos_dele(self):
+        c = self._c()
+        proj = c.projeto("ilia")
+        meu = "/a0/usr/whatsapp/ilia/2026-10/15-101010-tg5.jpg"
+        ok(c.bloqueio("ilia", "document_query", {"document": meu}, proj) == "", "arquivo que ele mandou")
+        ok(c.bloqueio("ilia", "whatsapp_enviar", {"arquivo": "/a0/usr/projects/convidado-ilia/resumo.pdf"}, proj) == "",
+           "arquivo criado no projeto dele")
+        for ruim in ("/a0/usr/prospeccao/leads.json", "/a0/usr/whatsapp/matheus/2026-10/x.jpg", "/a0/usr/segredos/matheus.json",
+                     "/a0/usr/whatsapp/ilia/../matheus/x.jpg", "file:///a0/usr/usuarios.json", "/etc/passwd",
+                     "usr/prospeccao/leads.json", "../usr/segredos/matheus.json", "/a0/usr/whatsapp/ilia-falso/x"):
+            ok("fora dos arquivos" in c.bloqueio("ilia", "document_query", {"document": ruim}, proj), f"recusado: {ruim}")
+        ok("fora dos arquivos" in c.bloqueio("ilia", "whatsapp_enviar", {"arquivo": "/a0/usr/conteudo/agenda.json"}, proj),
+           "não manda arquivo do Matheus para o celular dele")
+        ok(c.bloqueio("ilia", "browser", {"message": "abra https://g1.globo.com/home/ultimas e resuma"}, proj) == "",
+           "o /home dentro de um site não é caminho local")
+        for interno in ("http://host.docker.internal:8787/arquivos/conteudo", "http://localhost/api/chats",
+                        "http://169.254.169.254/latest/meta-data/", "http://127.0.0.1:8789/andamento"):
+            ok("internos" in c.bloqueio("ilia", "browser", {"message": f"abra {interno}"}, proj), f"interno: {interno}")
+        ok(c.bloqueio("ilia", "response", {"text": "salvei em /a0/usr/whatsapp/matheus"}, proj) == "",
+           "responder com texto nunca é barrado por caminho")
+
+    def t_convidado_projeto_preparado(self):
+        c = self._c()
+        tmp = Path(tempfile.mkdtemp(prefix="convidado-"))
+        try:
+            criados, headers = [], {}
+
+            class Projetos:
+                def get_project_folder(self, nome):
+                    return str(tmp / nome)
+
+                def create_project(self, nome, dados):
+                    criados.append(nome)
+                    (tmp / nome / ".a0proj").mkdir(parents=True)
+                    (tmp / nome / ".a0proj" / "project.json").write_text(json.dumps(dados))
+
+                def load_basic_project_data(self, nome):
+                    return json.loads((tmp / nome / ".a0proj" / "project.json").read_text())
+
+                def save_project_header(self, nome, dados):
+                    (tmp / nome / ".a0proj" / "project.json").write_text(json.dumps(dados))
+
+            pj = Projetos()
+            nome = c.preparar("ilia", pj, ["local:response", "plugin:pesquisa:pesquisar"])
+            meta = tmp / nome / ".a0proj"
+            ok(nome == "convidado-ilia" and criados == [nome], "projeto criado uma vez")
+            ok((meta / "dono.txt").read_text() == "ilia", "o projeto é dele (some da lista do Matheus)")
+            pol = json.loads((meta / "plugins" / "_tool_access" / "config.json").read_text())
+            ok(pol == {"mode": "custom", "default": "block", "mcp_default": "block",
+                       "allowed": ["local:response", "plugin:pesquisa:pesquisar"], "blocked": []}, f"política: {pol}")
+            ok("Ilia" in json.loads((meta / "project.json").read_text())["instructions"], "instruções com o nome dele")
+            dados = json.loads((meta / "project.json").read_text()); dados["instructions"] = "velha"
+            (meta / "project.json").write_text(json.dumps(dados))
+            ok(c.preparar("ilia", pj, ["local:response"]) == nome and criados == [nome], "de novo: não recria")
+            ok("Ilia" in json.loads((meta / "project.json").read_text())["instructions"], "instruções atualizadas")
+            ok(json.loads((meta / "plugins" / "_tool_access" / "config.json").read_text())["allowed"] == ["local:response"],
+               "política atualizada")
+            try:
+                c.preparar("matheus", pj, [])
+                ok(False, "o dono não vira convidado")
+            except ValueError:
+                pass
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def t_convidado_ids_das_ferramentas(self):
+        c = self._c()
+        tmp = Path(tempfile.mkdtemp(prefix="ferramentas-"))
+        try:
+            for arq in ("usr/pesquisa/tools/pesquisar.py", "core/_browser/tools/browser.py", "usr/_browser/tools/x.py",
+                        "nucleo/response.py"):
+                (tmp / arq).parent.mkdir(parents=True, exist_ok=True); (tmp / arq).write_text("")
+            ids = c.ids_ferramentas(("pesquisar", "browser", "response", "sumiu"), (tmp / "usr", tmp / "core"), tmp / "nucleo")
+            ok(ids == ["plugin:pesquisa:pesquisar", "plugin:_browser:browser", "local:response", "local:sumiu"], f"{ids}")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def t_gasto_marcado_com_o_dono(self):
+        c = self._c()
+
+        class Modelo:
+            def __init__(self):
+                self.kwargs = {"temperature": 0, "extra_headers": {"X-Outro": "1"}}
+
+        m = Modelo()
+        n = c.com_dono(m, "Ilia")
+        ok(n is not m and n.kwargs["extra_headers"] == {"X-Outro": "1", "X-A0-Dono": "ilia"} and n.kwargs["temperature"] == 0,
+           f"cópia com o cabeçalho: {n.kwargs}")
+        ok(m.kwargs == {"temperature": 0, "extra_headers": {"X-Outro": "1"}}, "o modelo original (compartilhado) não muda")
+        ok(c.com_dono(m, "../x") is m and c.com_dono(m, "") is m and c.com_dono(None, "ilia") is None, "dono inválido: nada muda")
+
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:

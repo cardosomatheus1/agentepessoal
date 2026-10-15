@@ -37,7 +37,7 @@ s3 = boto3.client(
 )
 
 
-LOGINS = ("matheus", "fernanda")  # people who can link a Telegram chat
+LOGINS = ("matheus", "fernanda", "ilia")  # people who can link a Telegram chat (ilia: guest, see login_usuarios convidados)
 
 
 def _authorized(password: str) -> bool:

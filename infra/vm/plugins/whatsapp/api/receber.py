@@ -58,6 +58,23 @@ def voz():
     return carregar("whatsapp_voz", Path(__file__).resolve().parents[1] / "helpers" / "voz.py")
 
 
+def _no_projeto_do_convidado(ctx, usuario: str) -> None:
+    """A guest's phone chat runs inside the guest's own project (login_usuarios/helpers/convidados.py: own memory,
+    only personal tools). If this fails the chat stays outside it, where the guest guard refuses every tool."""
+    caminho = Path(__file__).resolve().parents[2] / "login_usuarios" / "helpers" / "convidados.py"
+    if not caminho.exists():
+        return
+    c = carregar("login_usuarios_convidados", caminho)
+    if not c.convidado(usuario):
+        return
+    from helpers import projects
+
+    try:
+        projects.activate_project(ctx.id, c.preparar(usuario, projects), mark_dirty=False)
+    except Exception as exc:
+        print(f"whatsapp: projeto do convidado {usuario} não ativado: {exc}", flush=True)
+
+
 def _chave_ok(request: Request) -> bool:
     try:
         esperada = CHAVE.read_text().strip()
@@ -117,6 +134,7 @@ def _conversa(usuario: str, nova: bool, chave: str = "whatsapp_de", nome: str = 
     ctx.set_data("dono", usuario)
     ctx.set_data("usuario", usuario)
     ctx.set_data(chave, usuario)
+    _no_projeto_do_convidado(ctx, usuario)
     if chave == "gatilhos_de":
         ctx.set_data("avisar_sempre", True)  # nobody is watching: every outcome goes to WhatsApp
     return ctx, True
@@ -193,6 +211,7 @@ def _paralela(usuario: str):
     projects.reconcile_agent_profile(ctx, projects.get_context_project_name(ctx))
     for chave, valor in (("dono", usuario), ("usuario", usuario), ("whatsapp_de", usuario), (PARALELA, True)):
         ctx.set_data(chave, valor)
+    _no_projeto_do_convidado(ctx, usuario)
     return ctx
 
 

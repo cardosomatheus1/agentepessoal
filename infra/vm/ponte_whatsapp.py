@@ -888,8 +888,9 @@ def avisar(usuario: str, texto: str) -> None:
 
 # ------------------------------------------------------------------ spending
 
-def gasto() -> tuple[float, float]:
-    """(today, this month) in US$, by Bahia time, from the proxy's usage log."""
+def gasto(dono: str | None = None) -> tuple[float, float]:
+    """(today, this month) in US$, by Bahia time, from the proxy's usage log; with `dono`, only that person's chats
+    (the proxy logs X-A0-Dono since 15/10)."""
     from zoneinfo import ZoneInfo
     import datetime as dt
 
@@ -906,6 +907,8 @@ def gasto() -> tuple[float, float]:
         except Exception:
             continue
         if (quando.year, quando.month) != (agora.year, agora.month):
+            continue
+        if dono and u.get("dono") != dono:
             continue
         p = preco(u.get("modelo", ""))
         p_in, p_cache, p_out = p[:3]
@@ -928,7 +931,7 @@ def texto_painel(usuario: str) -> str:
             corpo = json.loads(r.read() or b"{}").get("texto") or ""
     except Exception as exc:
         corpo = f"(não consegui ler o agente agora: {str(exc)[:120]})"
-    partes = [corpo, linha_livro(usuario)] + ([linha_saude()] if usuario == DONO else []) + [texto_gasto()]
+    partes = [corpo, linha_livro(usuario)] + ([linha_saude()] if usuario == DONO else []) + [texto_gasto(usuario)]
     return "📊 *Painel*\n\n" + "\n\n".join(partes)
 
 
@@ -1050,7 +1053,27 @@ def texto_livro(usuario: str, agora: float | None = None) -> str:
     return f"📒 *Livro de hoje* (registrado na hora; não se altera)\n{topo}\n\n" + "\n".join(detalhe)
 
 
-def texto_gasto() -> str:
+# Guests (login_usuarios/helpers/convidados.py, same numbers; a test checks): daily limit in US$ of their own chats.
+CONVIDADOS_TETO = {"ilia": 5.0}
+
+
+def limite_convidado(usuario: str) -> str:
+    """The notice for a guest past today's limit ("" = deliver the message as usual; never for the owner)."""
+    teto = CONVIDADOS_TETO.get(str(usuario or "").lower())
+    if teto is None:
+        return ""
+    hoje, _ = gasto(str(usuario).lower())
+    if hoje < teto:
+        return ""
+    return (f"Você chegou no limite de uso de hoje (US$ {teto:.0f}). Amanhã libera de novo. "
+            "Se for urgente, fale com o Matheus.")
+
+
+def texto_gasto(usuario: str = DONO) -> str:
+    if usuario in CONVIDADOS_TETO:
+        hoje, mes = gasto(usuario)
+        return (f"💰 *Seu uso*\nHoje: US$ {hoje:.2f} de US$ {CONVIDADOS_TETO[usuario]:.0f} por dia\n"
+                f"Este mês: US$ {mes:.2f}")
     hoje, mes = gasto()
     limite = float(cfg().get("limite_dia_usd") or LIMITE_DIA_PADRAO)
     return (f"💰 *Gasto com modelos*\nHoje: US$ {hoje:.2f} (limite de alerta: US$ {limite:.0f})\n"
@@ -1293,7 +1316,9 @@ def tratar(url: str, m: dict) -> None:
                         resposta_cofre += "\n(Não consegui apagar sua mensagem: apague você no chat.)"
                 tg_texto(item["chat"], resposta_cofre)
             elif (msg.get("text") or "").strip().lower() == "/gasto":
-                tg_texto(item["chat"], texto_gasto())
+                tg_texto(item["chat"], texto_gasto(item["usuario"]))
+            elif limite_convidado(item["usuario"]):
+                tg_texto(item["chat"], limite_convidado(item["usuario"]))
             elif (msg.get("text") or "").strip().lower().split("@")[0] in ("/decisoes", "/decisões"):
                 tg_texto(item["chat"], texto_decisoes(item["usuario"]))
             elif (msg.get("text") or "").strip().lower().split("@")[0] == "/livro":
@@ -1350,7 +1375,7 @@ def tratar(url: str, m: dict) -> None:
             sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
             return
         if (item["mensagem"].get("text") or {}).get("body", "").strip().lower() == "/gasto":
-            enviar_texto(item["numero"], texto_gasto())  # answered here: the usage log is on the host
+            enviar_texto(item["numero"], texto_gasto(item["usuario"]))  # answered here: the usage log is on the host
             _lembrar(mid)
             sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
             return
@@ -1358,6 +1383,11 @@ def tratar(url: str, m: dict) -> None:
         if comando in ("/decisoes", "/decisões", "/livro"):  # answered here, from the files (no model)
             enviar_texto(item["numero"], texto_livro(item["usuario"]) if comando == "/livro"
                          else texto_decisoes(item["usuario"]))
+            _lembrar(mid)
+            sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
+            return
+        if limite_convidado(item["usuario"]):
+            enviar_texto(item["numero"], limite_convidado(item["usuario"]))
             _lembrar(mid)
             sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
             return
