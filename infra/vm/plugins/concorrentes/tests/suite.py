@@ -361,10 +361,14 @@ class Suite:
                ("reels", "https://www.instagram.com/reel/reels1100/"), "formato e link")
             k = an["conjunto"]
             eq(k["perfis"], 2, "conta com menos de 1.000 seguidores fica fora do conjunto")
+            # each post over its own profile's 30-day average: a 2,62x, b "Planilha" 2,12x, a "3 erros" 1,31x (fotos < 1,2x)
             eq([x["gancho"] for x in k["melhores_semana"]],
-               ["Quanto custa um brigadeiro?", "3 erros no preço da marmita", "Planilha x sistema"], "os 3 da semana no conjunto")
-            eq([x["gancho"] for x in k["reels_top"]], ["Quanto custa um brigadeiro?", "O custo escondido do gás", "Reel antigo"],
-               "reels por views ÷ seguidores (9000/2000 > 40000/10000 > 2000/2000)")
+               ["Quanto custa um brigadeiro?", "Planilha x sistema", "3 erros no preço da marmita"],
+               "os 3 da semana pelo quanto renderam acima da média do próprio perfil")
+            eq(round(k["melhores_semana"][0]["acima"], 2), 2.62, "110/2000 ÷ média 0,021")
+            # a: 9000 vs reel average 5500 = 1,64x (the 2000 one is below: out); b has one reel: no average, after
+            eq([x["gancho"] for x in k["reels_top"]], ["Quanto custa um brigadeiro?", "O custo escondido do gás"],
+               "reels acima da média de views do próprio perfil; perfil de 1 reel só vem depois")
             # a: reels 1,67x and carrossel 1,31x its average; b: carrossel 2,12x, reels 0,71x -> carrossel 1,71x, reels 1,19x
             eq([(d["formato"], round(d["rende"], 2), d["perfis"]) for d in k["formatos"]],
                [("carrossel", 1.71, 2), ("reels", 1.19, 2), ("foto", 0.18, 2)], "o formato que mais rende sobre a média de cada perfil")

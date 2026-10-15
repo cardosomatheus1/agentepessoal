@@ -760,13 +760,23 @@ def analisar_instagram(agora: float | None = None, lista: list | None = None, fa
     def _com_perfil(p, x):
         return {**x, "id": p["id"], "nome": p["nome"], "handle": p["handle"], "seguidores": p["seguidores"]}
 
+    # 15/10: "what worked" is a post far above ITS OWN profile's average (engagement over followers favoured
+    # mid-size accounts: «E vamos de terça-feira» came out as a top post). Needs 3+ posts (2+ reels) to compare.
     semana = []
     reels = []
     for p in grandes:
         retrato = posts_de[p["id"]][0]
-        semana += [_com_perfil(p, _post(x, e, p["seguidores"])) for x, e in _posts(retrato, 7) if e is not None]
-        reels += [_com_perfil(p, _post(x, e, p["seguidores"])) for x, e in _posts(retrato, 30)
-                  if x["formato"] == "reels" and x.get("views") is not None]
+        engs30 = [e for _, e in _posts(retrato, 30) if e is not None]
+        media = statistics.mean(engs30) if len(engs30) >= 3 else 0
+        views30 = [x["views"] for x, _ in _posts(retrato, 30) if x["formato"] == "reels" and x.get("views") is not None]
+        media_views = statistics.mean(views30) if len(views30) >= 2 else 0
+        for x, e in _posts(retrato, 7):
+            if e is not None and media:
+                semana.append({**_com_perfil(p, _post(x, e, p["seguidores"])), "acima": e / media})
+        for x, e in _posts(retrato, 30):
+            if x["formato"] == "reels" and x.get("views") is not None:
+                reels.append({**_com_perfil(p, _post(x, e, p["seguidores"])),
+                              "acima_views": (x["views"] / media_views) if media_views else None})
     cresceram = sorted((p for p in grandes if p["crescimento"] and p["crescimento"]["pct"] is not None),
                        key=lambda p: -p["crescimento"]["pct"])
     freq = [p["d30"]["posts_semana"] for p in grandes]
@@ -780,8 +790,10 @@ def analisar_instagram(agora: float | None = None, lista: list | None = None, fa
     conjunto = {
         "perfis": len(grandes),
         "formatos": formatos, "melhor_formato": melhor_formato,
-        "melhores_semana": sorted(semana, key=lambda x: -x["engajamento"])[:3],
-        "reels_top": sorted(reels, key=lambda x: -x["views_por_seguidor"])[:5],
+        "melhores_semana": sorted((x for x in semana if x["acima"] >= 1.2), key=lambda x: -x["acima"])[:3],
+        # reels above their profile's own reel average first; a profile with a single reel has no average to beat
+        "reels_top": sorted((x for x in reels if x["acima_views"] is None or x["acima_views"] >= 1.2),
+                            key=lambda x: (x["acima_views"] is None, -(x["acima_views"] or 0), -x["views_por_seguidor"]))[:5],
         "postou_mais": [{"id": p["id"], "nome": p["nome"], "handle": p["handle"], "posts": p["d7"]["posts"],
                          "formatos": p["d7"]["formatos"]} for p in sorted(atuais, key=lambda p: -p["d7"]["posts"])
                         if p["d7"]["posts"]][:3],
@@ -832,12 +844,15 @@ def texto_instagram(an: dict, cid: str = "", grupo: str = "") -> str:
             linhas.append("- formato que mais rende (engajamento do formato ÷ média do próprio perfil, 30 dias): " + "; ".join(
                 f"{d['formato']} {_dec(d['rende'], 2)}x em {d['perfis']} perfis ({d['posts']} posts, "
                 f"eng. médio {_pct(d['engajamento'])})" for d in k["formatos"]))
-        linhas.append("- posts da semana que mais deram certo (engajamento = curtidas + comentários ÷ seguidores):")
-        linhas += [f"  {x['nome']} @{x['handle']}: {_linha_post(x)}" for x in k["melhores_semana"]] or ["  nenhum post nos últimos 7 dias"]
-        linhas.append("- reels com mais views por seguidor (30 dias):")
-        linhas += [f"  {x['nome']} @{x['handle']}: {_n(x['views'])} views para {_n(x['seguidores'])} seguidores "
-                   f"({_dec(x['views_por_seguidor'], 2)}x) «{x['gancho']}» {x['link']}"
-                   for x in k["reels_top"]] or ["  nenhum reel com views nos últimos 30 dias"]
+        linhas.append("- posts da semana que mais deram certo (rendeu Nx o engajamento médio do PRÓPRIO perfil em 30 dias):")
+        linhas += [f"  {x['nome']} @{x['handle']}: rendeu {_dec(x['acima'], 1)}x a média do perfil; {_linha_post(x)}"
+                   for x in k["melhores_semana"]] or ["  nenhum post da semana ficou bem acima da média do próprio perfil"]
+        linhas.append("- reels que mais deram certo (30 dias; views ÷ média de views dos reels do próprio perfil):")
+        linhas += [f"  {x['nome']} @{x['handle']}: {_n(x['views'])} views"
+                   + (f", {_dec(x['acima_views'], 1)}x a média dos reels do perfil" if x["acima_views"] else
+                      f" para {_n(x['seguidores'])} seguidores (perfil com 1 reel só, sem média)")
+                   + f" «{x['gancho']}» {x['link']}"
+                   for x in k["reels_top"]] or ["  nenhum reel ficou bem acima da média do próprio perfil"]
         linhas.append("- quem postou mais (7 dias): " + ("; ".join(
             f"{x['nome']} {x['posts']} ({_fmts(x['formatos'])})" for x in k["postou_mais"]) or "ninguém postou"))
         if k["cresceu_mais"]:
