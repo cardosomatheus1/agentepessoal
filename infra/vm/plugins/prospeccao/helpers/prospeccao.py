@@ -2347,7 +2347,8 @@ def pode_comentar(lead: dict) -> bool:
     return lead.get("etapa") not in FINAIS
 
 
-LIMITE_COMENTARIOS = 20  # a day (15/10: one per warm-up, 15 a day, plus the catch-up) (blind review 3: public, and among the actions Instagram blocks most); half after a block
+LIMITE_COMENTARIOS = 30  # a day (15/10: one per warm-up, 15 a day, plus the catch-up, which Matheus wants faster)
+ATRASADOS_POR_RODADA = 3  # 15/10 Matheus: "acelera os atrasados, faz mais de um por rodada" (blind review 3: public, and among the actions Instagram blocks most); half after a block
 POST_COMENTARIO_DIAS = 7  # blind review 2, item 5: a comment on a post weeks old looks like digging and is rarely answered
 _MESES = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6, "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12}
 
@@ -2427,6 +2428,8 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
         return False, ("REESCREVA a base: copie entre aspas o trecho escrito do post que você comenta e ponha a data dele "
                        "(AAAA-MM-DD)")
     if idade > POST_COMENTARIO_DIAS:
+        if not em_visita:  # catch-up: this profile has nothing recent to comment on; it leaves the list
+            pular_comentario(login, aid, f"último post de {idade} dias")
         return False, f"o post é de {idade} dias atrás: só comente em post de até {POST_COMENTARIO_DIAS} dias"
     tentativas = (a.get("comentario") or {}).get("tentativas", 0)
     if tentativas >= TENTATIVAS_COMENTARIO:
@@ -2475,6 +2478,19 @@ def comentado(login: str, aid: str, ok: bool, detalhe: str = "") -> dict | None:
     return a
 
 
+@_transacao
+def pular_comentario(login: str, aid: str, motivo: str = "") -> dict | None:
+    """A warm-up that will get no comment (no recent post with something written): out of the catch-up list."""
+    d = carregar(login)
+    a = next((x for x in d["acoes"] if x["id"] == aid and x["tipo"] == "aquecer"), None)
+    if not a or (a.get("comentario") or {}).get("estado") in ("aprovado", "publicado"):
+        return None
+    a["comentario"] = {**(a.get("comentario") or {}), "estado": "pulado", "detalhe": str(motivo)[:200], "em_pulo": agora()}
+    _evento(d, a, a["estado"], a["estado"], f"comentário pulado: {motivo}")
+    salvar(login, d)
+    return a
+
+
 def sem_comentario(login: str) -> list[dict]:
     """Warm-ups of the last days with no comment, newest first (catch-up list)."""
     d = carregar(login)
@@ -2482,7 +2498,8 @@ def sem_comentario(login: str) -> list[dict]:
     for a in d["acoes"]:
         lead = _lead(d, a["lead_id"]) or {}
         if (a["tipo"] == "aquecer" and a["estado"] == "executada" and not a.get("texto")
-                and not (a.get("comentario") or {}).get("estado") in ("aprovado", "publicado")
+                and not (a.get("comentario") or {}).get("estado") in ("aprovado", "publicado", "pulado")
+                and (a.get("comentario") or {}).get("tentativas", 0) < TENTATIVAS_COMENTARIO
                 and _dias_desde(a.get("executada_em") or 0) <= DIAS_COMENTARIO and lead.get("etapa") not in FINAIS):
             out.append({"acao_id": a["id"], "handle": lead.get("handle"), "url": lead.get("url"), "executada_em": a["executada_em"]})
     return sorted(out, key=lambda x: -x["executada_em"])
@@ -2573,12 +2590,15 @@ def aviso_comentarios_pendentes(login: str, motivo: str) -> str:
     pendentes = sem_comentario(login)
     if not pendentes:
         return ""
-    x = pendentes[0]
-    return (f"ANTES DE TERMINAR — comentário atrasado ({len(pendentes)} aquecido(s) sem comentário; regra do Matheus de 15/10): "
-            f"abra {x['url'] or '@' + str(x['handle'])} e o post mais recente. Se for de até {POST_COMENTARIO_DIAS} dias e tiver "
-            f"algo ESCRITO, chame `prospeccao` acao \"comentar\" com acao_id \"{x['acao_id']}\", texto e base (trecho entre aspas "
-            "e a data); só publique se vier COMENTÁRIO APROVADO e depois chame \"comentado\". Se não houver post recente, "
-            "siga sem comentar. Um por rodada; termine depois.")
+    lista = "\n".join(f"- acao_id \"{x['acao_id']}\": {x['url'] or '@' + str(x['handle'])}" for x in pendentes[:ATRASADOS_POR_RODADA])
+    return (f"ANTES DE TERMINAR — comentários atrasados ({len(pendentes)} aquecido(s) sem comentário; regra do Matheus de 15/10). "
+            f"Faça até {ATRASADOS_POR_RODADA} nesta rodada, um de cada vez:\n{lista}\n"
+            f"Para cada um: abra o perfil e o post mais recente. Se for de até {POST_COMENTARIO_DIAS} dias e tiver algo ESCRITO, "
+            "chame `prospeccao` acao \"comentar\" (acao_id, texto, base = trecho entre aspas e a data); só publique se vier "
+            "COMENTÁRIO APROVADO e depois chame \"comentado\". Sem post recente ou sem nada escrito: acao \"pular_comentario\" "
+            "(acao_id, detalhe) e vá ao próximo. Se \"comentar\" disser \"espaçamento: próxima a partir de HH:MM\", espere até "
+            f"esse horário (`{COMANDO_ESPERA}`) e tente de novo, sem passar do início da próxima rodada (minutos 8 e 38). "
+            "Depois termine.")
 
 
 def _registrar_bloqueio(d: dict, detalhe: str = "") -> bool:

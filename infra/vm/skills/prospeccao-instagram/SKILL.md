@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Como fazer a prospecção da Raiz Connect pela conta @raiz.connect no navegador: achar e avaliar leads, aquecer (seguir, curtir, comentar), mandar mensagens no Direct, ler e registrar respostas, sempre pela ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 5.4.0
+version: 5.4.1
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct"]
 trigger_patterns:
   - "prospec"
@@ -129,7 +129,8 @@ atenção do Instagram.
 
 `prospeccao` acao "proxima" com `conta_ativa` = o @ ativo. A ação que ela entrega é só desta rodada. "ESPERE":
 espere (regras) e chame de novo. "NADA AGORA" ou 3 ações feitas: termine; se o "NADA AGORA" trouxer
-"ANTES DE TERMINAR — comentário atrasado", faça esse um comentário (item 4) e só então termine.
+"ANTES DE TERMINAR — comentários atrasados", faça os da lista (até 3, item 4; sem post recente: `pular_comentario`)
+e só então termine.
 
 **"CONFIRA ANTES DE QUALQUER ENVIO"**: uma rodada anterior pegou essa ação e não registrou o resultado; ela pode ter
 saído. Só olhe a tela (a conversa ou o botão «Seguindo») e chame `resultado` com o que viu. Não envie nem refaça.

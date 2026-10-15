@@ -2534,7 +2534,9 @@ class Suite:
         p.salvar(LOGIN, d)
         ok([x["acao_id"] for x in p.sem_comentario(LOGIN)] == ["aqvelho"], f"aquecido de 10 dias na lista: {p.sem_comentario(LOGIN)}")
         aviso = p.aviso_comentarios_pendentes(LOGIN, "nenhuma ação aprovada esperando")
-        ok("aqvelho" in aviso and "comentar" in aviso, f"a rodada sem ação comenta o atrasado: {aviso}")
+        ok("aqvelho" in aviso and "comentar" in aviso and f"até {p.ATRASADOS_POR_RODADA}" in aviso,
+           f"a rodada sem ação comenta até {p.ATRASADOS_POR_RODADA} atrasados: {aviso}")
+        ok("pular_comentario" in aviso and "espaçamento" in aviso, "diz como pular e como esperar entre um e outro")
         ok(p.aviso_comentarios_pendentes(LOGIN, "espaçamento: próxima a partir de 10:30") == "", "na espera, não")
         self.em(self.hora(22))
         ok(p.aviso_comentarios_pendentes(LOGIN, "nenhuma ação aprovada esperando") == "", "fora do horário, não")
@@ -2542,6 +2544,20 @@ class Suite:
         r, m = p.comentar(LOGIN, "aqvelho", "Esse kit de marmitas da semana ficou caprichado! Sai mais de frango ou de carne?",
                           f"\"Kit da semana\", {ontem}")
         ok(r, f"comentário atrasado de aquecido antigo aprovado: {m}")
+        # a catch-up profile whose last post is old, or skipped by the round, leaves the list (no loop on it)
+        velho2, velho3 = self._lead("velho2"), self._lead("velho3")
+        d = p.carregar(LOGIN)
+        for aid, lid in (("aqvelho2", velho2), ("aqvelho3", velho3)):
+            d["acoes"].append({"id": aid, "tipo": "aquecer", "lead_id": lid, "estado": "executada", "texto": "",
+                               "executada_em": self.relogio - 5 * 86400, "historico": []})
+        p.salvar(LOGIN, d)
+        self.em(self.relogio + 7 * 60)
+        antigo = dt.datetime.fromtimestamp(self.relogio - 20 * 86400, p._tz()).date().isoformat()
+        r, m = p.comentar(LOGIN, "aqvelho2", "Que capricho nesse bolo de aniversário de vocês!", f"\"Bolo\", {antigo}")
+        ok(not r and "dias atrás" in m, f"post antigo: não comenta ({m})")
+        ok(p.pular_comentario(LOGIN, "aqvelho3", "sem nada escrito"), "a rodada pula o perfil sem post bom")
+        ids = [x["acao_id"] for x in p.sem_comentario(LOGIN)]
+        ok("aqvelho2" not in ids and "aqvelho3" not in ids, f"os dois saem da lista de atrasados: {ids}")
         p.revisor = None
 
     def t_datas_de_pico(self):

@@ -441,6 +441,9 @@ class Prospeccao(Tool):
             if not a or a["estado"] != "aprovada":  # catch-up comment: close the window; on a visit it stays until resultado
                 p.encerrar_liberacao(self.agent.context)
             return r("Registrado." if a else "Não havia comentário aprovado para essa ação.")
+        if acao == "pular_comentario":
+            a = await asyncio.to_thread(p.pular_comentario, login, acao_id, detalhe or nota or "sem post recente")
+            return r("Registrado: esse aquecido sai da lista de comentários atrasados." if a else "Ação não encontrada ou já comentada.")
         if acao == "sem_comentario":
             itens = p.sem_comentario(login)
             return r(json.dumps(itens, ensure_ascii=False) if itens else "Nenhum aquecimento recente sem comentário.")
