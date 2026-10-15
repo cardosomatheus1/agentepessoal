@@ -80,11 +80,17 @@ def _modulo_tela(caminho: Path = TELA):
     return m
 
 
+def pede_tela(texto: str) -> bool:
+    """The answer asks the person to do something in the Navegador (captcha, login, code)."""
+    texto = str(texto or "")
+    return bool(PEDE_NAVEGADOR.search(texto) and PEDE_ACAO.search(texto))
+
+
 def botao_do_navegador(texto: str, ctx_id: str, usuario: str, arquivo: Path | None = None, tela=None) -> dict | None:
     """A reply that asks the person to do something in the Navegador (captcha, login, code) gets a "🖥️ Resolver aqui"
     button that opens, inside Telegram, the live tab of this very chat (14/10, Matheus: "quero conseguir resolver
     pelo Telegram, sem nada extra"; before, the app's panel showed whichever chat was selected there)."""
-    if not ctx_id or not usuario or not (PEDE_NAVEGADOR.search(texto) and PEDE_ACAO.search(texto)):
+    if not ctx_id or not usuario or not pede_tela(texto):
         return None
     try:
         base = (arquivo or URL_AGENTE).read_text(encoding="utf-8").strip()

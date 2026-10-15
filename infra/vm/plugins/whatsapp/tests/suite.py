@@ -587,6 +587,24 @@ class Suite:
         ok(tarefas, "um reenvio daqui a 30 s fica marcado (o job loop roda de minuto em minuto)")
         eq(self.t.obter("ctxA"), None, "o pedido teve resposta: a marca sai")
 
+    async def t_pedido_de_captcha_vai_ao_celular_mesmo_de_conversa_do_app(self):
+        # 15/10, Matheus: "só ele mandar p eu resolver no telegram" (an app chat he never left stayed silent)
+        for resposta, quer in (("Parei numa verificação do Cloudflare. Deixei aberta no **Browser**; conclua e me avise.", 1),
+                               ("Achei 3 opções de loja.", 0)):
+            ctx = _Ctx("ctxT", dono=LOGIN)
+            agente = types.SimpleNamespace(number=0, context=ctx, get_data=lambda k, r=resposta: r if k == "_whatsapp_resposta" else None)
+            self.enviados = []
+            with self._modulos(**self._agent_zero({"ctxT": ctx})):
+                ext = self._extensao("tool_execute_after", "_50_enviar_resposta.py", "EnviarResposta")
+                ext.agent = agente
+                self._ponte_responde(None)
+                await ext.execute(response=types.SimpleNamespace(break_loop=True), tool_name="response")
+                await asyncio.gather(*[x for x in asyncio.all_tasks() if x is not asyncio.current_task()])
+            eq(len(self.enviados), quer, f"{resposta[:30]}: {self.enviados}")
+            if quer:
+                ok("Browser" in self.enviados[0]["texto"] and self.enviados[0]["tipo"] == "urgente",
+                   f"vai urgente, com o pedido: {self.enviados[0]}")
+
     async def t_voz_responde_em_audio_quando_ele_fala(self):
         # 14/10 (Hermes voice_only): /voz on + his last message was audio -> text, then a voice note
         v = self.v

@@ -133,13 +133,15 @@ class EnviarResposta(Extension):
             ultima = float(ctx.get_data("_whatsapp_ultima_do_usuario") or 0)
             ausente = bool(ultima) and time.time() - ultima > AUSENTE
             tarefa = tarefa or bool(ctx.get_data("avisar_sempre"))  # the "Gatilhos" chat
-            if not (tarefa or ausente):
+            # 15/10, Matheus: a captcha or login only he can clear goes to the phone even from an app chat, with the
+            # "Resolver aqui" button ("só ele mandar p eu resolver no telegram")
+            if not (tarefa or ausente or p.pede_tela(texto)):
                 return
             destino, mensagem = p.dono(ctx), _aviso(ctx, texto, tarefa, nome_tarefa)
         app = p.botao_do_navegador(mensagem, ctx.id, destino)  # "resolva na tela": opens this chat's tab in Telegram
         # a phone chat is a conversation (answer now); a task round or an away notice is progress, held during
         # the person's quiet hours unless it says it needs them
-        urgente = p.urgente(texto) or any(t == "urgente" for _, t in avisos)
+        urgente = p.urgente(texto) or p.pede_tela(texto) or any(t == "urgente" for _, t in avisos)
         tipo = "resposta" if de_whatsapp else ("urgente" if urgente else "progresso")
         erro = await asyncio.to_thread(p.enviar, destino, mensagem, "", "", None, tipo, False,
                                        nome_tarefa if tarefa and not de_whatsapp else "", app, reenviar=True)
