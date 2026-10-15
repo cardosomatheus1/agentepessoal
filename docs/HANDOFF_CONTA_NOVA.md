@@ -53,6 +53,95 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
   subagente, porque a guarda ROS-F0-036 compara a raiz do projeto com a árvore do cwd. A ordem de cada trilha limita a
   autoridade dela à trilha. O relatório final vai para `~/recados/novos/trilha-<nome>-fim.txt`, que chega à Main Opus.
 
+## De volta para a sejaorbyte (15/10): o que mudou de 13/10 a 15/10
+
+A conta `falhanosistema1111` está com o limite semanal em aviso; ele só volta em **20/10, 09h UTC**. O agente pessoal e
+o NEXOS voltam para a **sejaorbyte**. Esta seção resume o que a sessão da conta do Matheus
+(session_01UTvBiAzFcrQDUnzLfUCPvH) fez. O detalhe de cada ponto está no `git log` do branch e nos READMEs dos plugins.
+
+**Quem cuida de quê:** até o Matheus avisar que a troca acabou, a sessão antiga ainda opera. A sessão da sejaorbyte só
+lê e se atualiza. Depois do aviso, ela volta a ser a única que mexe no agente e na prospecção. Antes de mexer em um
+plugin, confira no `git log` quem mexeu por último.
+
+**Agente (VM), plugins no ar** (todos pelo `implantar.py`, 290/290 testes locais em 15/10):
+
+- **Ideias do Hermes Agent** (NousResearch, MIT), todas implantadas em 14–15/10:
+  - `rotinas`: o portão (`portao.json`) pula a rodada do Radar (HL76nfIg) e da Iniciativa (2FIQTI0o) quando e-mail,
+    agenda e fios soltos não mudaram, com uma rodada completa por dia. As correções de rotina não se repetem, existe a
+    ação `ajustar` (exige a rotina relida pelo hash) e, depois de 8 correções, o agente pede a reescrita. Helper
+    público: `rotinas/helpers/rotinas.py`.
+  - `whatsapp`:
+    - pedido do celular cortado por reinício é retomado; com mais de 15 min vira pergunta, e há freio contra laço de
+      reinícios;
+    - resposta que a ponte recusa vai para `saida_pendente.jsonl`, com até 3 tentativas;
+    - `/voz` liga resposta em áudio quando ele manda áudio (desligado por padrão);
+    - a conversa que gira leva as âncoras da antiga.
+  - `controle_agente`: aviso na 3ª falha seguida da mesma ferramenta, teto de 40 passos para ajudante (150 nas rodadas
+    da prospecção, A0 sem teto) e resultado repetido grande vira referência.
+  - `limpeza`: rodada sem atividade há 20 min é encerrada (terminal e aprovação ficam isentos). Nova tentativa por
+    conexão só se o modelo não foi chamado, em 5, 15 e 30 min.
+  - `resumo_seguro` (novo): quando o histórico é resumido, os @, ids e caminhos de `saidas/` e as últimas falas dele
+    vão junto.
+  - `memoria_pessoal`:
+    - o revisor depois da conversa grava decisões, correções de rotina e fatos da ficha, sempre com a frase literal
+      dele, e sugere salvar como rotina no fim de uma tarefa longa (no máximo 1 por dia);
+    - a ficha tem teto de 4.000 caracteres e filtro anti-injeção (migrada em 15/10; o original ficou em
+      `usuarios/matheus.antes-ficha-*.md`);
+    - a ferramenta `lembrar` busca nas conversas antigas (FTS5, filtrada por login).
+  - `pesquisa`: página bloqueada vira cópia arquivada (Wayback, archive.today, Jina).
+  - `aprovacoes`: botão "Nesta tarefa", só no computador; o celular segue com 3 botões, porque o Telegram e o WhatsApp
+    limitam a 3.
+  - `painel` (novo): item "Painel" no menu, só leitura, com funil, posts e agenda.
+  - `concorrentes` (novo):
+    - 27 concorrentes em 3 grupos (direto, gestão, conteúdo), 25 com Instagram conferido pela Business Discovery da
+      Graph;
+    - análise do Instagram: frequência, formatos, engajamento e os posts que mais renderam em relação à média do
+      próprio perfil;
+    - rotina "🔭 Concorrentes — semana" (qt0dNXtu), quarta às 8h23;
+    - stories de outras contas não dá: a Meta não libera.
+- **Conteúdo da @raiz.connect** (`conteudo`): a ferramenta `Conteudo` (só leitura) mostra a agenda e o desempenho. O
+  operador cancela com `cancelar_conteudo.py`.
+- **Rotinas de marketing** (`infra/operador/rotinas_marketing.py`): fechamento do dia, números da semana (segunda) e
+  revisão do mês (dia 1). Rotina nova do git: `rotinas.py criar <arquivo>`.
+- **Decisões do agente** #20–#25: texto da prospecção, oferta, garantia, cliente, conteúdo e plano.
+
+**Raiz Connect, marketing e oferta:**
+
+- **Oferta "Lucro na Mão em 30 Dias", R$ 197/mês.** Garantia: *se o Raio-X não achar onde o dinheiro escapa, a gente não
+  cobra a próxima mensalidade*. Isso não é reembolso: é a regra no site, no sistema, no playbook, nos carrosséis e no
+  plano. A landing e o Lucro na Mão no sistema foram para produção em 14/10 (erp-saas master `97b7ce5a`), com ordem
+  dele.
+- **Plano de marketing:** doc no Claude Docs e PDF em `docs/plano-marketing/`.
+- **Carrosséis e vídeos** seguem o kit de motion da Raiz (erp-saas, skill `motion-graphics`, `marketing/brand-system.md`)
+  com **liberdade criativa**:
+  - fixo: logo, fontes, cores, regras, voz Carolina e processo;
+  - livre: conceito, composição e formato.
+  - Agenda de 15 a 24/10 marcada às 11h45, com capas; os carrosséis ficam em `infra/reels/c_*`.
+- **Vídeo do Matheus falando:** a edição de teste "desconto" ficou pronta (erp-saas `feat/video-raiz-desconto-matheus`,
+  `marketing/desconto-matheus/`). Leva corte de silêncio, recorte vertical seguindo o rosto, zooms, a conta animada na
+  tela e legenda palavra por palavra. Ele ainda vai dizer se aprova o estilo. O roteiro da semana sai da rotina de
+  segunda.
+- **Branches do erp-saas sem push** (fora do escopo da sessão): `feat/video-raiz-*` (atacado-varejo, brigadeiro,
+  oferta-lucro-na-mao, expectativa, desconto-matheus).
+
+**Pendências do Matheus** (não fazer sem ele):
+
+- link da agenda para as 4 conversas, canal de alerta e e-mail da equipe: variáveis no Coolify;
+- confirmar a meta de margem de 30% e o início da garantia;
+- logo sem "DATA MANAGEMENT ERP";
+- MEI: páginas 2–4, sem pagar nada antes de conferir;
+- credenciais da Contabo;
+- resposta da PayGo (SCP-4645);
+- GAP-6900 do NEXOS (empresa do piloto enviar sem aprovação);
+- apagar a cópia da Hetzner (lembrete em 24/10).
+
+**Investigar:** a contagem de respostas no Direct diverge entre as métricas e as etapas da prospecção (0 x 1).
+
+**Clone de rosto e voz na AWS:** avaliado e não recomendado para o vídeo semanal. O risco é parecer IA e a Meta marcar o
+vídeo como feito com IA. O Matheus grava; a edição é nossa.
+
+**O crédito da OpenAI acabou:** transcrição pelo AWS Transcribe (pt-BR).
+
 ## Quem cuida de quê (decisão do Matheus, 11/10 tarde)
 
 - **A sessão da conta nova (agente pessoal) é a única que cuida do agente e da prospecção.** A sessão da conta antiga
