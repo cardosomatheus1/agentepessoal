@@ -1054,7 +1054,7 @@ def texto_livro(usuario: str, agora: float | None = None) -> str:
 
 
 # Guests (login_usuarios/helpers/convidados.py, same numbers; a test checks): daily limit in US$ of their own chats.
-CONVIDADOS_TETO = {"ilia": 5.0}
+CONVIDADOS_TETO = {"ilia": 5.0, "will": 5.0}
 
 
 def limite_convidado(usuario: str) -> str:

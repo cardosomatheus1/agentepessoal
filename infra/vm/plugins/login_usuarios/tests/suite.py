@@ -116,6 +116,9 @@ class Suite:
             ok(c.bloqueio("Ilia", f, {"query": "previsão do tempo em Salvador"}, proj) == "", f"convidado usa {f}")
         ok("fora do projeto" in c.bloqueio("ilia", "search_engine", {}, None), "conversa dele fora do projeto: nada roda")
         ok("fora do projeto" in c.bloqueio("ilia", "response", {}, "meta-nexos"), "nem em projeto de outra pessoa")
+        # 15/10: Will, same rules as Ilia; one guest never runs in the other's project
+        ok(c.convidado("will") and "não está disponível" in c.bloqueio("will", "prospeccao", {}, c.projeto("will")), "Will é convidado")
+        ok("fora do projeto" in c.bloqueio("will", "response", {}, proj), "Will não roda no projeto do Ilia")
 
     def t_convidado_so_os_arquivos_dele(self):
         c = self._c()

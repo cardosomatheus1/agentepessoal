@@ -18,6 +18,7 @@ from pathlib import Path
 
 CONVIDADOS = {
     "ilia": {"nome": "Ilia", "teto_dia_usd": 5.0, "idioma": None},  # idioma: Whisper language, None = detect (he speaks Russian)
+    "will": {"nome": "Will", "teto_dia_usd": 5.0, "idioma": None},  # 15/10, friend of Matheus: same rules as Ilia
 }
 
 # What a guest's agent may use: conversation, research, the browser (own profile), files the guest sent, own
