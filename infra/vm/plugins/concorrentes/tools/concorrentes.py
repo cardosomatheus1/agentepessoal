@@ -39,24 +39,34 @@ def executar(c, acao: str, kwargs: dict) -> str:
     acao = str(acao or "lista").lower()
     if acao == "lista":
         d = c.carregar()
-        linhas = [f"{x['id']}: {x['nome']} — {x.get('segmento', '')}\n" + "\n".join(f"    {f['tipo']}: {f['url']}" for f in x["fontes"])
-                  for x in d["concorrentes"]]
+        linhas = [f"{x['id']} [{x.get('grupo') or 'sem grupo'}]: {x['nome']} — {x.get('segmento', '')}\n" + "\n".join(
+            f"    {f['tipo']}: {f['url']}" + (f" (conferido {f['conferido']})" if f.get("conferido") else "") for f in x["fontes"])
+            + (f"\n    instagram: {x['instagram']}" if x.get("instagram") else "") for x in d["concorrentes"]]
         return "\n".join(linhas) or "A lista está vazia."
     if acao == "adicionar":
         novo = c.adicionar(kwargs.get("nome", ""), kwargs.get("segmento", ""), _fontes(kwargs.get("fontes")),
-                           kwargs.get("pesquisa") if isinstance(kwargs.get("pesquisa"), list) else None)
+                           kwargs.get("pesquisa") if isinstance(kwargs.get("pesquisa"), list) else None,
+                           str(kwargs.get("grupo") or ""))
         return f"Adicionado: {novo['id']} ({len(novo['fontes'])} fonte(s)). A primeira coleta dele vira a base da comparação."
     if acao in ("fonte", "tirar_fonte"):
         c.mudar_fonte(str(kwargs.get("id") or ""), {"tipo": kwargs.get("tipo", ""), "url": kwargs.get("url", "")},
                       tirar=acao == "tirar_fonte")
         return "Fonte tirada." if acao == "tirar_fonte" else "Fonte adicionada."
+    if acao == "grupo":
+        x = c.mudar_grupo(str(kwargs.get("id") or ""), str(kwargs.get("grupo") or ""))
+        return f"{x['nome']} agora está no grupo {x['grupo']}."
+    if acao == "instagram":
+        # read only: the analysis over the stored history (no call to the Meta here)
+        return c.texto_instagram(c.analisar_instagram(), str(kwargs.get("id") or ""), str(kwargs.get("grupo") or "")) \
+            or "Ainda não há Instagram na lista."
     if acao == "remover":
         x = c.remover(str(kwargs.get("id") or ""), str(kwargs.get("motivo") or ""))
         return f"{x['nome']} saiu da vigia (fica guardado em 'removidos')."
     if acao == "ultima":
         r = c.ultima()
         return c.texto(r) if r else "Ainda não houve coleta."
-    raise ValueError(f"acao '{acao}' não existe (lista, adicionar, fonte, tirar_fonte, remover, coletar, ultima)")
+    raise ValueError(f"acao '{acao}' não existe (lista, adicionar, fonte, tirar_fonte, grupo, remover, coletar, ultima, "
+                     "instagram)")
 
 
 class Concorrentes(Tool):

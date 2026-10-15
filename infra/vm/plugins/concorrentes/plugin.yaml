@@ -1,4 +1,4 @@
 name: concorrentes
 title: Vigia de concorrentes
-description: Lista de concorrentes com suas fontes (site, preços, blog/RSS, imprensa); a coleta lê os feeds, compara com a última rodada, junta por fato e devolve só o que é novo. Fonte que falhou é "sem cobertura", nunca "sem notícia".
-version: 1.0.0
+description: Lista de concorrentes em 3 grupos (direto, gestão, conteúdo) com suas fontes (site, preços, blog/RSS, imprensa, Instagram); a coleta lê os feeds e o Instagram (Business Discovery), compara com a última rodada, junta por fato e devolve só o que é novo, mais a análise do Instagram (frequência, formatos, engajamento, melhores posts, crescimento). Fonte que falhou é "sem cobertura", nunca "sem notícia".
+version: 1.1.0
