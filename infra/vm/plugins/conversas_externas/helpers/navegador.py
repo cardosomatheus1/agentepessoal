@@ -4,6 +4,7 @@ Never runs on a profile of someone else: the owner of the tab's chat is checked 
 
 import asyncio
 import json
+import re
 import sys
 import urllib.parse
 
@@ -111,17 +112,24 @@ async def _conectar(ex, login: str, nome: str, tel: str) -> dict:
     rt = await _runtime(ex, login, nome)
     aba = await _aba(rt)
     est = await _esperar(rt, aba, ex, lambda e: e.get("logado") or e.get("qr") or e.get("pede_numero"), 40)
+    await asyncio.sleep(3)  # the login page settles a moment after it shows
     if est.get("logado"):
         return {"logado": True}
     if not est.get("pede_numero"):
         await _js(rt, aba, ex.SCRIPT_ENTRAR_COM_NUMERO)
-        await asyncio.sleep(2)
+        await _esperar(rt, aba, ex, lambda e: e.get("pede_numero"), 10)
     if await _js(rt, aba, ex.SCRIPT_CAMPO_TELEFONE) != "foco":
         raise SemWhatsApp(f"não achei o campo do número no WhatsApp Web (tela: {json.dumps(est)[:200]})")
     await rt.call("key_chord", aba, ["Control", "a"])
-    await rt.call("keyboard", aba, key="Backspace")
+    for _ in range(4):  # the field starts with "+1 "; cleared, "+55…" switches the country by itself
+        await rt.call("keyboard", aba, key="Backspace")
     await rt.call("keyboard", aba, text="+" + numero)
-    await _js(rt, aba, ex.SCRIPT_AVANCAR)
+    await asyncio.sleep(1)
+    valor = re.sub(r"\D", "", str(await _js(rt, aba, ex.SCRIPT_VALOR_TELEFONE) or ""))
+    if valor != numero:
+        raise SemWhatsApp(f"o número não entrou certo no WhatsApp Web (ficou {valor or 'vazio'}, esperado {numero})")
+    if await _js(rt, aba, ex.SCRIPT_AVANCAR) != "clicado":
+        raise SemWhatsApp("não achei o botão Avançar/Next no WhatsApp Web")
     est = await _esperar(rt, aba, ex, lambda e: e.get("codigo") or e.get("logado"), 30)
     if est.get("codigo"):
         return {"codigo": est["codigo"]}

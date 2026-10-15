@@ -235,11 +235,23 @@ class Suite:
                f"mensagens: {msgs}")
             ok(msgs[0]["hora"].startswith("10:31"), f"hora: {msgs[0]}")
             ok(pg.evaluate(e.SCRIPT_ENVIAR) == "clicado" and pg.evaluate("window.foi") == 1, "clica em enviar")
-            pg.set_content('<div><span>Entrar com número de telefone</span></div><input type="text" aria-label="Número de telefone">'
-                           '<div data-link-code="ABCD,1234"></div>')
-            ok(pg.evaluate(e.SCRIPT_ENTRAR_COM_NUMERO) == "clicado", "acha 'Entrar com número de telefone'")
+            # as the real login page showed on 15/10
+            pg.set_content('<div>Scan to log in</div><div role="button" onmousedown="window.desceu=1" onclick="window.foi2=1">'
+                           '<span>Link with phone number instead.</span></div>')
+            est = json.loads(pg.evaluate(e.SCRIPT_ESTADO))
+            ok(est["qr"] and not est["pede_numero"] and not est["logado"], f"tela do QR: {est}")
+            ok(pg.evaluate(e.SCRIPT_ENTRAR_COM_NUMERO) == "clicado" and pg.evaluate("window.desceu") == 1
+               and pg.evaluate("window.foi2") == 1, "clica no 'Link with phone number' com o mouse inteiro")
+            pg.set_content('<div>Enter phone number</div><input type="text" aria-label="Type your phone number to log in to WhatsApp" '
+                           'value="+55 71 90000-0000"><div role="button" onclick="window.foi3=1"><div>Next</div></div>')
+            ok(json.loads(pg.evaluate(e.SCRIPT_ESTADO))["pede_numero"], "tela do número")
             ok(pg.evaluate(e.SCRIPT_CAMPO_TELEFONE) == "foco", "acha o campo do número")
+            ok(pg.evaluate(e.SCRIPT_VALOR_TELEFONE) == "+55 71 90000-0000", "lê o número digitado")
+            ok(pg.evaluate(e.SCRIPT_AVANCAR) == "clicado" and pg.evaluate("window.foi3") == 1, "clica em Next")
+            pg.set_content('<div data-link-code="ABCD,1234"></div>')
             ok(json.loads(pg.evaluate(e.SCRIPT_ESTADO))["codigo"] == "ABCD1234", "lê o código de 8 letras")
+            pg.set_content('<div>Enter code on phone</div><div>K7QP-2XRT</div>')
+            ok(json.loads(pg.evaluate(e.SCRIPT_ESTADO))["codigo"] == "K7QP2XRT", "lê o código escrito na tela")
             b.close()
 
     def t_convidado_pode_usar(self):

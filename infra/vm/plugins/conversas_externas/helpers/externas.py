@@ -284,23 +284,40 @@ def aviso_silencio(c: dict) -> str:
 
 
 # ------------------------------------------------------------------ scripts run in the WhatsApp Web tab
+# Checked on the real WhatsApp Web (15/10, English UI of the agent's browser): the login page says "Log in with phone
+# number" / "Link with phone number instead."; a plain .click() does nothing there, the full pointer/mouse sequence
+# works; the phone field starts with "+1 " (United States) and typing "+55…" after clearing it switches to Brazil.
+_CLICAR = r"""const clicar = (re) => {
+  const el = [...document.querySelectorAll('span, div, button, a')].filter(e => re.test((e.innerText || '').trim())
+    && ![...e.children].some(c => re.test((c.innerText || '').trim())))[0];
+  if (!el) return 'não achei';
+  const alvo = el.closest('[role="button"], button, a') || el;
+  const r = alvo.getBoundingClientRect(); const x = r.x + r.width / 2, y = r.y + r.height / 2;
+  for (const t of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'])
+    alvo.dispatchEvent(new (t.startsWith('pointer') ? PointerEvent : MouseEvent)(t, {bubbles: true, cancelable: true, clientX: x, clientY: y, view: window}));
+  return 'clicado';
+};"""
+
 SCRIPT_ESTADO = r"""(() => {
   const txt = (document.body && document.body.innerText) || '';
   const tem = (s) => !!document.querySelector(s);
-  const codigo = (document.querySelector('[data-link-code]') || {}).getAttribute
-    ? document.querySelector('[data-link-code]').getAttribute('data-link-code') : '';
+  const el = document.querySelector('[data-link-code]');
+  let codigo = el ? el.getAttribute('data-link-code') : '';
+  if (!codigo && /(enter code|insira o c[oó]digo|digite o c[oó]digo|c[oó]digo no (seu )?celular|code on (your )?phone)/i.test(txt)) {
+    const m = txt.replace(/\s+/g, ' ').match(/\b([A-Z0-9]{4})[ -]?([A-Z0-9]{4})\b/);
+    codigo = m ? m[1] + m[2] : '';
+  }
   const invalido = /(inv[aá]lido|invalid)/i.test(txt) && /(url|n[uú]mero|phone)/i.test(txt) && !tem('#main');
   return JSON.stringify({
     logado: tem('#pane-side') || tem('[aria-label="Chat list"]') || tem('[aria-label="Lista de conversas"]') || tem('#side'),
     conversa_aberta: tem('#main'),
-    codigo: (codigo || '').replace(/,/g, ''),
-    pede_numero: /(n[uú]mero de telefone|phone number)/i.test(txt) && !tem('#pane-side'),
-    qr: tem('canvas[aria-label]') || tem('[data-ref]'),
+    codigo: (codigo || '').replace(/[, -]/g, ''),
+    pede_numero: tem('input[aria-label*="phone" i]') || tem('input[aria-label*="telefone" i]'),
+    qr: tem('canvas[aria-label]') || tem('[data-ref]') || /scan (the qr|to log in)|escaneie|ler o (c[oó]digo )?qr/i.test(txt),
     invalido: invalido,
     titulo: document.title
   });
 })()"""
-
 SCRIPT_MENSAGENS = r"""(() => {
   const main = document.querySelector('#main');
   if (!main) return JSON.stringify({erro: 'conversa não aberta'});
@@ -331,25 +348,20 @@ SCRIPT_ENVIAR = r"""(() => {
   return 'clicado';
 })()"""
 
-SCRIPT_ENTRAR_COM_NUMERO = r"""(() => {
-  const alvos = [...document.querySelectorAll('span, div[role="button"], button, a')]
-    .filter(el => /^(entrar|conectar|link|log in) com (o )?n[uú]mero de telefone$|^(link|log in) with phone number$/i
-      .test((el.innerText || '').trim()));
-  if (!alvos.length) return 'não achei';
-  (alvos[0].closest('[role="button"], button, a') || alvos[0]).click();
-  return 'clicado';
+SCRIPT_ENTRAR_COM_NUMERO = "(() => {" + _CLICAR + r"""
+  return clicar(/^(log in|link) with phone number( instead)?\.?$|^(entrar|conectar)( com o| com)? n[uú]mero de telefone( em vez disso)?\.?$/i);
 })()"""
 
 SCRIPT_CAMPO_TELEFONE = r"""(() => {
-  const campo = document.querySelector('input[aria-label*="telefone" i], input[aria-label*="phone" i], input[type="text"]');
+  const campo = document.querySelector('input[aria-label*="phone" i], input[aria-label*="telefone" i]');
   if (!campo) return 'sem campo';
-  campo.focus(); campo.select && campo.select();
+  campo.focus();
   return 'foco';
 })()"""
 
-SCRIPT_AVANCAR = r"""(() => {
-  const b = [...document.querySelectorAll('button, div[role="button"]')]
-    .find(el => /^(avançar|próximo|next)$/i.test((el.innerText || '').trim()));
-  if (!b) return 'não achei';
-  b.click(); return 'clicado';
+SCRIPT_VALOR_TELEFONE = r"""(() => { const c = document.querySelector('input[aria-label*="phone" i], input[aria-label*="telefone" i]');
+  return c ? c.value : ''; })()"""
+
+SCRIPT_AVANCAR = "(() => {" + _CLICAR + r"""
+  return clicar(/^(next|avançar|próximo|seguinte)$/i);
 })()"""
