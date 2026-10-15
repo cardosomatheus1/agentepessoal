@@ -1,0 +1,4 @@
+name: conversas_externas
+title: Conversas com lojas e clínicas
+description: O agente conversa com lojas, clínicas e outros negócios pelo WhatsApp da própria pessoa (WhatsApp Web no navegador dela), pergunta e informa, e vigia as respostas sem gastar modelo até alguém responder.
+version: 1.0.0

@@ -28,6 +28,7 @@ FERRAMENTAS = (
     "assistir_video", "videos_em_alta",
     "memory_save", "memory_load", "memory_delete", "memory_forget",  # project memory: the guest's own
     "lembrar", "ficha", "cofre_descrever",  # per person
+    "conversa_externa",  # 15/10: talk to stores/clinics on the guest's OWN WhatsApp (plugin conversas_externas)
     "whatsapp_enviar",  # always to the chat's owner, and only the guest's own files (see caminho_proibido)
 )
 
