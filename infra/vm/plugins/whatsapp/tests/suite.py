@@ -93,8 +93,9 @@ class Suite:
         self.v.CONFIG, self.v.PASTA = self._tmp / "voz.json", self._tmp / "voz"
         self.falados = []
 
-        def tts_falso(texto, destino):
+        def tts_falso(texto, destino, idioma="pt"):
             self.falados.append(texto)
+            self.idiomas_falados = getattr(self, "idiomas_falados", []) + [idioma]
             destino.parent.mkdir(parents=True, exist_ok=True)
             destino.write_bytes(b"OggS")
             return ""
@@ -111,10 +112,20 @@ class Suite:
         p.chave = lambda: "x"
 
     def t_audio_na_lingua_da_pessoa(self):
-        # 15/10: Ilia spoke Russian; Whisper forced to "pt" wrote nonsense Portuguese
+        # 15/10: Ilia spoke Russian and Whisper forced to "pt" wrote nonsense; Matheus: "ele precisa se adaptar pra cada
+        # idioma". Every voice note is detected, the answer comes in that language, the voice answer too.
         rec = (RAIZ / "api" / "receber.py").read_text(encoding="utf-8")
-        ok("_transcrever(audio, idioma_do_audio(usuario))" in rec, "a transcrição usa a língua de quem mandou")
-        ok('language="pt"' not in rec and "language=idioma" in rec, "nada fixo em português")
+        ok("transcribe(audio, language=None" in rec and "CERTEZA_IDIOMA" in rec, "cada áudio tem a língua detectada")
+        ok('language="pt"' not in rec, "nada fixo em português")
+        ok("[áudio em {idioma_audio}]" in rec and 'set_data("whatsapp_idioma"' in rec, "a língua vai para a conversa")
+        regras = (RAIZ / "extensions" / "python" / "system_prompt" / "_60_conversa_whatsapp.py").read_text(encoding="utf-8")
+        ok("responda SEMPRE na língua da última mensagem" in regras, "responde na língua de quem fala")
+        v = self.v
+        eq(v.idioma_da_resposta("Привет, Илия, магазин рядом.", "pt"), "ru", "texto em russo: voz russa")
+        eq(v.idioma_da_resposta("Hi, the store is near.", "en"), "en", "áudio em inglês: voz inglesa")
+        eq(v.idioma_da_resposta("Oi, a loja fica perto.", ""), "pt", "sem áudio: português")
+        envio = (RAIZ / "extensions" / "python" / "tool_execute_after" / "_50_enviar_resposta.py").read_text(encoding="utf-8")
+        ok('ctx.get_data("whatsapp_idioma")' in envio, "a resposta em áudio usa a língua da pessoa")
 
     def t_aviso_igual_nao_sai_de_novo(self):
         p = self.p
@@ -628,7 +639,7 @@ class Suite:
         enviados = []
         eq(v.responder(LOGIN, "Pronto, feito.", "ctx/../x", lambda *a: enviados.append(a) or ""), "", "manda")
         ok(enviados and Path(enviados[0][2]).parent == v.PASTA, f"o arquivo fica na pasta de voz: {enviados}")
-        v.sintetizar = lambda texto, destino: "voz generativa indisponível"
+        v.sintetizar = lambda texto, destino, idioma="pt": "voz generativa indisponível"
         eq(v.responder(LOGIN, "Pronto, feito.", "c", lambda *a: enviados.append(a) or ""), "voz generativa indisponível",
            "TTS fora: não manda nada (o texto já foi)")
         eq(len(enviados), 1, "nenhum áudio a mais")

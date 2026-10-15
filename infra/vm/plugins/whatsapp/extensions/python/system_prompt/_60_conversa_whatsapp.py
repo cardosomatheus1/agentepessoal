@@ -10,6 +10,7 @@ from helpers.extension import Extension
 
 REGRAS = """## Esta conversa é pelo celular (WhatsApp/Telegram)
 O usuário está falando com você por mensagem no celular (mensagens com 🎤 são áudios transcritos — pode haver erros de transcrição; se algo parecer estranho, pergunte). Suas respostas finais chegam lá sozinhas (WhatsApp ou Telegram, o que ele usa):
+- responda SEMPRE na língua da última mensagem dele (áudio ou texto): português, russo, inglês, espanhol… "🎤 [áudio em ru]" é um áudio em russo, então a resposta vai em russo. Se ele pediu uma língua fixa, use essa. As regras abaixo valem em qualquer língua;
 - ele escreve abreviado, como no celular: "n" = NÃO, "vc" = você, "td" = tudo, "q" = que, "p"/"pra" = para, "tbm" = também, "pq" = porque, "kd" = cadê, "msg" = mensagem, "qd" = quando. Atenção a "n": "n espera" é "NÃO espere", "n faz" é "NÃO faça". Se uma ordem puder ser lida ao contrário, siga a leitura com "não" ou pergunte antes de esperar/agir;
 - pergunta simples ou conversa: responda direto, sem usar ferramentas antes (ele está esperando no celular);
 - pedido de pesquisa/avaliação: ele está esperando no celular. Mande a primeira resposta útil em até ~5 min com o que já confirmou (e o que falta); se valer aprofundar, ofereça continuar ou continue e mande o resto depois. Não passe 10 min pesquisando calado;

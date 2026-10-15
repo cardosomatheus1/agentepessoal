@@ -87,7 +87,8 @@ _RAPIDO = None  # faster-whisper model, loaded once (~2x faster than Agent Zero'
 
 
 def idioma_do_audio(usuario: str) -> str | None:
-    """Whisper language for the person's voice notes: Portuguese, or the guest's own setting (None = detect).
+    """The person's usual language, used only when Whisper is unsure which one a voice note is in (every note is
+    detected, 15/10: "ele precisa se adaptar pra cada idioma"): Portuguese, or the guest's setting (None = trust Whisper).
     15/10: Ilia spoke Russian, forced "pt" turned it into nonsense Portuguese and the agent searched the wrong places."""
     caminho = Path(__file__).resolve().parents[2] / "login_usuarios" / "helpers" / "convidados.py"
     try:
@@ -98,8 +99,12 @@ def idioma_do_audio(usuario: str) -> str | None:
     return conv.get("idioma", "pt") if conv else "pt"
 
 
-def _transcrever_rapido(caminho: str, idioma: str | None = "pt") -> str:
-    """faster-whisper (int8) on audio decoded by ffmpeg — its own PyAV clashes with Agent Zero's."""
+CERTEZA_IDIOMA = 0.6  # below this, Whisper's guess is not trusted and the person's usual language is used
+
+
+def _transcrever_rapido(caminho: str, idioma: str | None = "pt") -> tuple[str, str]:
+    """(text, language) with faster-whisper (int8) on audio decoded by ffmpeg — its own PyAV clashes with Agent
+    Zero's. The language is detected; `idioma` (the person's usual one) only when the detection is unsure."""
     global _RAPIDO
     import subprocess
 
@@ -111,11 +116,15 @@ def _transcrever_rapido(caminho: str, idioma: str | None = "pt") -> str:
     bruto = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-i", caminho, "-f", "s16le", "-ac", "1",
                             "-ar", "16000", "-"], capture_output=True, check=True).stdout
     audio = np.frombuffer(bruto, np.int16).astype(np.float32) / 32768.0
-    segmentos, _ = _RAPIDO.transcribe(audio, language=idioma, beam_size=1, vad_filter=True)
-    return " ".join(s.text.strip() for s in segmentos).strip()
+    segmentos, info = _RAPIDO.transcribe(audio, language=None, beam_size=1, vad_filter=True)
+    texto = " ".join(s.text.strip() for s in segmentos).strip()  # the generator runs here
+    if idioma and info.language != idioma and float(info.language_probability or 0) < CERTEZA_IDIOMA:
+        segmentos, _ = _RAPIDO.transcribe(audio, language=idioma, beam_size=1, vad_filter=True)
+        return " ".join(s.text.strip() for s in segmentos).strip(), idioma
+    return texto, info.language
 
 
-async def _transcrever(caminho: str, idioma: str | None = "pt") -> str:
+async def _transcrever(caminho: str, idioma: str | None = "pt") -> tuple[str, str]:
     import asyncio
 
     try:
@@ -124,8 +133,8 @@ async def _transcrever(caminho: str, idioma: str | None = "pt") -> str:
         from plugins._whisper_stt.helpers import runtime
 
         dados = base64.b64encode(Path(caminho).read_bytes()).decode()
-        resultado = await runtime._transcribe(MODELO_WHISPER, dados, language=idioma)
-        return str(resultado.get("text") or "").strip()
+        resultado = await runtime._transcribe(MODELO_WHISPER, dados, language=None)
+        return str(resultado.get("text") or "").strip(), str(resultado.get("language") or idioma or "")
 
 
 def _conversa(usuario: str, nova: bool, chave: str = "whatsapp_de", nome: str = "WhatsApp"):
@@ -280,7 +289,8 @@ def _complementa(principal, texto: str) -> bool:
     return veredito
 
 
-def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str, audio: bool = False) -> dict:
+def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str, audio: bool = False,
+              idioma: str = "") -> dict:
     """Deliver a phone message: to the main chat, as a merged correction, or to a parallel chat when busy."""
     from agent import UserMessage
     from helpers import message_queue as mq
@@ -305,6 +315,7 @@ def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str, audi
     alvo.set_data("whatsapp_ultima_entrada", time.time())
     alvo.set_data("whatsapp_ultimo_pedido", pedido)
     alvo.set_data("whatsapp_entrada_audio", bool(audio))  # /voz answers in audio when his last message was audio
+    alvo.set_data("whatsapp_idioma", idioma if audio else "")  # ...in the language he spoke (helpers/voz.py)
     try:  # open-request mark: a restart in the middle resumes it (helpers/turnos.py)
         cortado = turnos().abrir(alvo.id, usuario, original, anexos)
         if cortado and not alvo.is_running():
@@ -742,14 +753,16 @@ class Receber(ApiHandler):
             await asyncio.to_thread(ponte().enviar, usuario, "🆕 Conversa nova começada. Pode mandar.")
             return {"ok": True, "context": ctx.id}
 
+        idioma_audio = ""
         if audio:
             try:
-                transcrito = await _transcrever(audio, idioma_do_audio(usuario))
+                transcrito, idioma_audio = await _transcrever(audio, idioma_do_audio(usuario))
             except Exception as exc:
                 transcrito = ""
                 print(f"whatsapp: transcription failed: {exc}", flush=True)
-            if transcrito:
-                texto = f"🎤 {transcrito}" + (f"\n\n{texto}" if texto else "")
+            if transcrito:  # a language other than Portuguese is named, so the answer comes in it
+                rotulo = f"🎤 [áudio em {idioma_audio}] " if idioma_audio and idioma_audio != "pt" else "🎤 "
+                texto = f"{rotulo}{transcrito}" + (f"\n\n{texto}" if texto else "")
             else:
                 anexos.append(audio)
                 texto = texto or "(mandei um áudio, mas a transcrição falhou — o arquivo está anexado)"
@@ -766,4 +779,5 @@ class Receber(ApiHandler):
             principal, _ = _conversa(usuario, nova=False)
             if not principal.get_data("usuario_nome"):
                 principal.set_data("usuario_nome", nome)
-        return _entregar(usuario, _leitura(texto), anexos, str(input.get("id") or ""), " (WhatsApp)", audio=bool(audio))
+        return _entregar(usuario, _leitura(texto), anexos, str(input.get("id") or ""), " (WhatsApp)", audio=bool(audio),
+                         idioma=idioma_audio)

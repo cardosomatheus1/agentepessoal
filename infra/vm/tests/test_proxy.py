@@ -129,6 +129,29 @@ def main() -> int:
         req = urllib.request.Request(f"{base}/arquivos/conteudo", data=b'{"chave": "conteudo/a.mp4"}', method="POST")
         with urllib.request.urlopen(req, timeout=5) as r:
             ok(json.loads(r.read())["url"].endswith("conteudo/a.mp4?get_object&3600"), "rota /arquivos/conteudo")
+        # 15/10: voice answers in the person's language
+        class PollyFalsa:
+            def __init__(self):
+                self.pedidos = []
+
+            def synthesize_speech(self, **kw):
+                self.pedidos.append(kw)
+                if kw["Engine"] == "generative" and kw["VoiceId"] == "Danielle":
+                    raise RuntimeError("sem generativa")
+                import io
+                return {"AudioStream": io.BytesIO(b"mp3")}
+        pf = PollyFalsa()
+        p._aws["polly"] = pf
+        p.time = types.SimpleNamespace(sleep=lambda s: None, time=__import__("time").time,
+                                       strftime=__import__("time").strftime, gmtime=__import__("time").gmtime)
+        r = p.voz("Привет", "ru")
+        ok(r.get("voz") == "Tatyana" and pf.pedidos[-1]["LanguageCode"] == "ru-RU", f"russo com voz russa ({r})")
+        r = p.voz("Oi", "pt")
+        ok(r.get("voz") == "Camila" and r.get("motor") == "generative", f"português segue com a Camila ({r})")
+        r = p.voz("Hi", "en")
+        ok(r.get("motor") == "neural" and r.get("voz") == "Danielle", f"sem a generativa, a neural da mesma voz ({r})")
+        ok("sem voz" in p.voz("x", "zz").get("error", ""), "língua sem voz: erro claro (o texto ainda vai)")
+        p.time = __import__("time")
         # 15/10 guests: whose chat made the call goes in the usage log, never to Bedrock
         estado["token_ok"] = True
         pedidos.clear(); cabecalhos.clear(); roteiro[:] = [RespostaFalsa(200, b'{"ok": 1}')]

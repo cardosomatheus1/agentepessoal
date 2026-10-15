@@ -170,8 +170,16 @@ def pegasus(arquivo: str, prompt: str) -> dict:
         _aws["s3"].delete_object(Bucket=BUCKET, Key=chave)
 
 
-def voz(texto: str) -> dict:
-    """Text → MP3 (Polly, Camila, pt-BR) for voice notes; the agent container has no AWS credentials."""
+# 15/10: answers in the language the person spoke. (voice, language code, engines tried in order). pt-BR keeps only
+# the generative Camila (the neural one reads like a robot); Russian has only standard voices on Polly.
+VOZES = {"pt": ("Camila", "pt-BR", ("generative",)), "ru": ("Tatyana", "ru-RU", ("standard",)),
+         "en": ("Danielle", "en-US", ("generative", "neural")), "es": ("Lupe", "es-US", ("generative", "neural")),
+         "fr": ("Lea", "fr-FR", ("generative", "neural")), "de": ("Vicki", "de-DE", ("generative", "neural")),
+         "it": ("Bianca", "it-IT", ("generative", "neural"))}
+
+
+def voz(texto: str, idioma: str = "pt") -> dict:
+    """Text → MP3 (Polly, the voice of `idioma`) for voice notes; the agent container has no AWS credentials."""
     texto = str(texto or "").strip()[:2900]
     if not texto:
         return {"error": "texto vazio"}
@@ -181,18 +189,21 @@ def voz(texto: str) -> dict:
 
     if "polly" not in _aws:
         _aws["polly"] = boto3.client("polly", region_name=REGION)
-    # only the generative engine sounds natural in pt-BR (Camila is the one generative pt-BR voice); the neural
-    # one reads like a robot, so there is no silent fallback to it: two tries, then an error (the text still goes)
+    if str(idioma or "pt") not in VOZES:
+        return {"error": f"sem voz para o idioma {str(idioma)[:8]}"}
+    nome, lingua, motores = VOZES[str(idioma or "pt")]
+    # two tries per engine, then an error (the text answer still goes)
     erro = ""
-    for tentativa in range(2):
-        try:
-            r = _aws["polly"].synthesize_speech(Text=texto, VoiceId="Camila", LanguageCode="pt-BR", Engine="generative",
-                                                OutputFormat="mp3", SampleRate="24000")
-            return {"mp3": base64.b64encode(r["AudioStream"].read()).decode(), "motor": "generative", "voz": "Camila"}
-        except Exception as exc:
-            erro = str(exc)[:200]
-            time.sleep(1 + tentativa)
-    return {"error": f"voz generativa indisponível: {erro}"}
+    for motor in motores:
+        for tentativa in range(2):
+            try:
+                r = _aws["polly"].synthesize_speech(Text=texto, VoiceId=nome, LanguageCode=lingua, Engine=motor,
+                                                    OutputFormat="mp3", SampleRate="24000" if motor != "standard" else "22050")
+                return {"mp3": base64.b64encode(r["AudioStream"].read()).decode(), "motor": motor, "voz": nome}
+            except Exception as exc:
+                erro = str(exc)[:200]
+                time.sleep(1 + tentativa)
+    return {"error": f"voz indisponível ({nome}): {erro}"}
 
 
 GCP_WIF = Path("/opt/a0/usr/segredos/vertex_matheus_wif.json")  # external_account config (no secret in it)
@@ -353,7 +364,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 out = link_conteudo(data.get("chave", ""))
                 return self._reply(400 if "error" in out else 200, out)
             if self.path == "/arquivos/voz":
-                out = voz(data.get("texto", ""))
+                out = voz(data.get("texto", ""), str(data.get("idioma") or "pt"))
                 return self._reply(400 if "error" in out else 200, out)
             return self._reply(404, {"error": "not found"})
         except Exception as exc:

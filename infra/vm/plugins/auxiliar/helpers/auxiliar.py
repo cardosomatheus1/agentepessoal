@@ -655,13 +655,15 @@ def pronuncia(texto: str) -> str:
     return texto
 
 
-def audio(texto: str, destino: Path) -> str:
-    """Synthesize `texto` (Polly, voice Camila) into an OGG/Opus voice note at `destino`; '' or the error."""
+def audio(texto: str, destino: Path, idioma: str = "pt") -> str:
+    """Synthesize `texto` (Polly; Camila in Portuguese, the proxy's voice for another `idioma`) into an OGG/Opus voice
+    note at `destino`; '' or the error."""
     import base64
     import urllib.request
 
     try:  # the VM's proxy holds the AWS role (Polly); the container has no AWS credentials
-        req = urllib.request.Request("http://host.docker.internal:8787/arquivos/voz", data=json.dumps({"texto": pronuncia(texto)}).encode(),
+        req = urllib.request.Request("http://host.docker.internal:8787/arquivos/voz", data=json.dumps({"texto": pronuncia(texto) if idioma == "pt" else texto,
+                                                                                          "idioma": idioma}).encode(),
                                      headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=120) as r:
             resposta = json.loads(r.read())

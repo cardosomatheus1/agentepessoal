@@ -89,8 +89,8 @@ def _contar_na_principal(paralela, usuario: str, texto: str) -> None:
         print(f"whatsapp: parallel answer not recorded in the main chat: {exc}", flush=True)
 
 
-async def _responder_em_audio(voz, p, destino: str, texto: str, ctx_id: str) -> None:
-    erro = await asyncio.to_thread(voz.responder, destino, texto, ctx_id, p.enviar)
+async def _responder_em_audio(voz, p, destino: str, texto: str, ctx_id: str, idioma: str = "") -> None:
+    erro = await asyncio.to_thread(voz.responder, destino, texto, ctx_id, p.enviar, None, idioma)
     print(f"whatsapp: voice answer from {ctx_id} to {destino}: {erro or 'ok'}", flush=True)
 
 
@@ -157,6 +157,7 @@ class EnviarResposta(Extension):
             try:
                 voz = _helper("whatsapp_voz", "voz.py")
                 if voz.quer_audio(destino, ctx):  # he spoke and /voz is on: the answer also as a voice note
-                    asyncio.create_task(_responder_em_audio(voz, p, destino, texto, ctx.id))
+                    asyncio.create_task(_responder_em_audio(voz, p, destino, texto, ctx.id,
+                                                            str(ctx.get_data("whatsapp_idioma") or "")))
             except Exception as exc:
                 print(f"whatsapp: voice answer from {ctx.id} skipped: {exc}", flush=True)

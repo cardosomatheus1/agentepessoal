@@ -113,15 +113,24 @@ def _auxiliar():
     return sys.modules[nome]
 
 
-def sintetizar(texto: str, destino: Path) -> str:
+def idioma_da_resposta(texto: str, entrada: str | None = "") -> str:
+    """Language of the spoken answer: Cyrillic text is Russian whatever came in; otherwise the language of the person's
+    last voice note (receber stores it), Portuguese by default (15/10: every person in their own language)."""
+    letras = [c for c in str(texto or "") if c.isalpha()]
+    if letras and sum("\u0400" <= c <= "\u04ff" for c in letras) / len(letras) > 0.3:
+        return "ru"
+    return str(entrada or "pt")[:5]
+
+
+def sintetizar(texto: str, destino: Path, idioma: str = "pt") -> str:
     """Text -> OGG/Opus voice note at `destino` (the auxiliar plugin's Polly); '' or the error. Tests replace it."""
     try:
-        return _auxiliar().audio(texto, destino)
+        return _auxiliar().audio(texto, destino, idioma)
     except Exception as exc:
         return f"voz indisponível: {str(exc)[:150]}"
 
 
-def responder(usuario: str, texto: str, ctx_id: str, enviar, agora: float | None = None) -> str:
+def responder(usuario: str, texto: str, ctx_id: str, enviar, agora: float | None = None, idioma: str | None = "") -> str:
     """Synthesize the answer and send it as a voice note with enviar (ponte.enviar); '' or the reason it did not go."""
     agora = agora or time.time()
     falado = texto_falado(texto)
@@ -134,7 +143,7 @@ def responder(usuario: str, texto: str, ctx_id: str, enviar, agora: float | None
     except OSError:
         pass
     destino = PASTA / f"{re.sub(r'[^A-Za-z0-9_-]', '', ctx_id) or 'resposta'}-{int(agora)}.ogg"
-    erro = sintetizar(falado, destino)
+    erro = sintetizar(falado, destino, idioma_da_resposta(falado, idioma))
     if erro:
         return erro
     if not destino.exists():
