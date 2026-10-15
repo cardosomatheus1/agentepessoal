@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Como fazer a prospecção da Raiz Connect pela conta @raiz.connect no navegador: achar e avaliar leads, aquecer (seguir, curtir, comentar), mandar mensagens no Direct, ler e registrar respostas, sempre pela ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 5.3.0
+version: 5.3.1
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct"]
 trigger_patterns:
   - "prospec"
@@ -91,8 +91,8 @@ atenção do Instagram.
 
 1. **Direct:** a lista de conversas NÃO aparece no texto da página (`content`): "Primary vazio" por ele não quer dizer
    nada (13/10: seis conversas na tela, uma delas resposta). Por isso, toda rodada:
-   - abra https://www.instagram.com/direct/inbox/, pegue o script com `prospeccao` acao "direct_script", rode com
-     `browser` action "evaluate" e passe o JSON para acao "ler_direct". Ele lê a lista de Principal, Geral e
+   - abra https://www.instagram.com/direct/inbox/ e chame `prospeccao` acao "ler_direct" SEM `dados` (a ferramenta
+     roda o script na própria aba; não copie JSON). Ele lê a lista de Principal, Geral e
      Solicitações (a última mensagem de cada conversa), registra as respostas de leads (o Matheus é avisado por ela),
      separa as automáticas e, quando o `contexto` pede **VARREDURA COMPLETA**, já a registra. Abra só o que ele
      mandar abrir: clique no nome na lista (pelo print, se a referência falhar);

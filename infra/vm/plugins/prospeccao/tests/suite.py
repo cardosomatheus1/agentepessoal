@@ -2274,6 +2274,20 @@ class Suite:
         a, motivo = p.proxima(LOGIN, "raizconnect")
         ok(a is None and "pausado" in motivo, f"pausa tudo por 48 h: {motivo}")
 
+    def t_ler_direct_sem_repassar_json(self):
+        p = self.p
+        caixa = {"principal": {"erro": "", "linhas": []}, "geral": {"erro": "", "linhas": []}, "pedidos": {"erro": "", "linhas": []}}
+        ok(p.json_de_caixa(json.dumps(caixa)) and p.json_de_caixa(caixa), "o JSON da caixa vale")
+        for ruim in ("", None, "§§include(/a0/usr/workdir/direct_scan.json)", '{"principal": {"linhas": [', "[]"):
+            ok(not p.json_de_caixa(ruim), f"13-15/10: vazio, cortado ou placeholder não vale: {ruim!r}")
+        abas = [{"id": 1, "currentUrl": "https://www.instagram.com/marmitas/"},
+                {"id": 2, "currentUrl": "https://www.instagram.com/direct/inbox/"}]
+        eq(p.aba_direct(abas)["id"], 2, "a ferramenta lê a aba do Direct")
+        ok(p.aba_direct(abas[:1]) is None, "sem a aba do Direct: pede para abrir")
+        fonte = (RAIZ / "tools" / "prospeccao.py").read_text(encoding="utf-8")
+        ok("_ler_direct_da_tela(self.agent.context.id)" in fonte and "p.SCRIPT_DIRECT" not in fonte.split("acao == \"direct_script\"")[1][:400],
+           "sem `dados` válidos a ferramenta roda o script na aba; direct_script não manda mais copiar o JSON")
+
     def t_varredura_do_direct(self):
         p = self.p
         self.em(self.hora(10))
@@ -2283,7 +2297,7 @@ class Suite:
         p.conferido(LOGIN, "1 conversa conferida: sem resposta", "Notificações: nada novo do registro hoje à tarde.", [], True)
         ctx = p.resumo_contexto(LOGIN)
         ok("Direct nesta rodada" in ctx and "VARREDURA COMPLETA" not in ctx and "@var1" in ctx
-           and "direct_script" in ctx, f"logo depois: a lista lida pelo script e as conversas recentes: {ctx[-400:]}")
+           and "ler_direct" in ctx and "SEM `dados`" in ctx, f"logo depois: a lista lida pelo script e as conversas recentes: {ctx[-400:]}")
         ok("Todas as conversas em andamento (1): @var1" in ctx, "e a lista inteira das conversas em andamento")
         self.em(self.relogio + p.VARREDURA_H * 3600 + 60)
         ok("VARREDURA COMPLETA" in p.resumo_contexto(LOGIN), "4 h depois: de novo")

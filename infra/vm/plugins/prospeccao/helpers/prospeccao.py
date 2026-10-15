@@ -770,6 +770,21 @@ SCRIPT_DIRECT = """(async () => {
 })()"""
 
 
+def json_de_caixa(dados) -> bool:
+    """True when what the agent passed is the Direct list itself (a JSON object), not empty, cut or a placeholder."""
+    if isinstance(dados, dict):
+        return bool(dados)
+    try:
+        return isinstance(json.loads(str(dados or "")), dict)
+    except ValueError:
+        return False
+
+
+def aba_direct(abas: list) -> dict | None:
+    """The browser tab to read the Direct from: an open instagram.com/direct page."""
+    return next((a for a in abas or [] if "instagram.com/direct" in str(a.get("currentUrl", ""))), None)
+
+
 def processar_direct(login: str, dados) -> dict:
     """Reads the Direct inbox JSON (from SCRIPT_DIRECT): every known lead whose newest message is theirs is marked
     "respondeu" with what they wrote (recorded once per message). Returns the new answers and a count for conferido."""
@@ -3088,9 +3103,8 @@ def resumo_contexto(login: str) -> str:
         linhas += [f"- {a['tipo']}: «{a['texto'][:80]}»" for a in hoje_txt[-12:]]
         linhas += [f"- comentário: «{c[:80]}»" for c in comentarios_hoje[-6:]]
     conversas = [l for l in d["leads"] if l["etapa"] in ("abordado", "lembrado", "respondeu", "lead", "demo")]
-    ler_lista = ("abra https://www.instagram.com/direct/inbox/, rode o script de `prospeccao` acao \"direct_script\" "
-                 "(`browser` evaluate) e passe o resultado para `ler_direct`: ele lê a lista inteira (a lista não aparece no "
-                 "texto da página) e diz o que abrir")
+    ler_lista = ("abra https://www.instagram.com/direct/inbox/ e chame `prospeccao` acao \"ler_direct\" SEM `dados`: a "
+                 "ferramenta lê a lista inteira na própria aba (a lista não aparece no texto da página) e diz o que abrir")
     if conversas and varredura_devida(d):
         linhas.append(f"\n## VARREDURA COMPLETA do Direct agora ({len(conversas)}): {ler_lista}; com a lista lida, a varredura "
                       "fica registrada. Abra só o que ele mandar abrir.")

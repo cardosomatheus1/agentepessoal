@@ -125,6 +125,23 @@ async def _ler_tokens_da_tela(context_id: str) -> list:
     return list(dict.fromkeys(melhores))
 
 
+async def _ler_direct_da_tela(context_id: str) -> str:
+    """Runs SCRIPT_DIRECT in the open Instagram Direct tab and returns its JSON text, so the list never goes through
+    the model (13-15/10: the round read 25 conversations but handing the JSON to ler_direct failed five times:
+    empty, cut, or a literal §§include)."""
+    from plugins._browser.helpers import runtime as modulo
+
+    rt = await modulo.get_runtime(context_id, create=False)
+    if rt is None:
+        return ""
+    aba = pr().aba_direct((await rt.call("list")).get("browsers") or [])
+    if not aba:
+        return ""
+    res = await rt.call("evaluate", aba["id"], pr().SCRIPT_DIRECT)
+    valor = res.get("result", res.get("value")) if isinstance(res, dict) else res
+    return valor if isinstance(valor, str) else json.dumps(valor or {}, ensure_ascii=False)
+
+
 class Prospeccao(Tool):
     async def execute(self, **kwargs) -> Response:
         """A state change the rules forbid comes back as a plain refusal (the journal keeps the state honest)."""
@@ -549,11 +566,17 @@ class Prospeccao(Tool):
             erro = p.definir_conta(login, texto or conta_ativa)
             return r(erro or f"Prospecção configurada para @{p.conta(login)}.")
         if acao == "direct_script":
-            return r("Abra https://www.instagram.com/direct/inbox/ (`browser` navigate), rode este script com `browser` action "
-                     "\"evaluate\" nessa aba e passe o JSON INTEIRO para `prospeccao` acao \"ler_direct\" com `dados` = o texto. A lista "
-                     "de conversas não aparece no texto da página (`content`): não conclua \"caixa vazia\" por ele.\n\n" + p.SCRIPT_DIRECT)
+            return r("Abra https://www.instagram.com/direct/inbox/ (`browser` navigate) e chame `prospeccao` acao \"ler_direct\" SEM "
+                     "`dados`: a ferramenta lê a lista de conversas direto na aba. A lista não aparece no texto da página "
+                     "(`content`): não conclua \"caixa vazia\" por ele.")
         if acao == "ler_direct":
-            out = await asyncio.to_thread(p.processar_direct, login, kwargs.get("dados") or texto)
+            dados = kwargs.get("dados") or texto
+            if not p.json_de_caixa(dados):
+                dados = await _ler_direct_da_tela(self.agent.context.id)
+                if not dados:
+                    return r("Não achei a aba do Direct aberta. Abra https://www.instagram.com/direct/inbox/ (`browser` navigate) "
+                             "e chame `ler_direct` de novo, sem `dados`.")
+            out = await asyncio.to_thread(p.processar_direct, login, dados)
             for n in out["novas"]:
                 await asyncio.to_thread(p.enviar, login, f"💬 *{n['nome']}* (@{n['handle']}) respondeu no Direct\n\n«{n['texto'][:500]}»\n\n"
                          "Vou responder pela @raiz.connect (o revisor confere o texto antes) e te aviso do que saiu. Se preferir "

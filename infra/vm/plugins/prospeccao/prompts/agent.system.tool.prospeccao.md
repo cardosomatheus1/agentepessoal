@@ -21,7 +21,7 @@ Prospecção de clientes da Raiz Connect, um a um, pela conta @raiz.connect. Tud
 - "comentado": `acao_id`, `ok`, `detalhe` → registra se o comentário aprovado saiu
 - "editar": `acao_id`, `texto` → nova versão de uma ação ainda não executada (volta ao revisor)
 - "caixa_lida": `direct` (quantas conversas com mensagem nova e de quem), `notificacoes` (as primeiras linhas copiadas da página de notificações), `interagiram` (os @ do registro que seguiram de volta, curtiram ou comentaram), `varredura` (true quando o `ler_direct` disser que a varredura ficou registrada) → obrigatória antes da "proxima" em cada rodada de execução
-- "direct_script" → o script que lê a lista do Direct (rode com `browser` evaluate em https://www.instagram.com/direct/inbox/); "ler_direct": `dados` = o JSON que ele devolveu → registra as respostas, a varredura e diz o que abrir
+- "ler_direct": com https://www.instagram.com/direct/inbox/ aberto no navegador, chame SEM `dados` → a ferramenta lê a lista de conversas na própria aba, registra as respostas e a varredura e diz o que abrir ("direct_script" só explica isso)
 - "falha": `texto` = o problema da rodada que não é do Matheus (página que não carrega, conversa que não abre, script que falha, clique errado) → vai ao operador; a rodada segue e termina SEM NOVIDADE se nada mais mudou
 - "proxima": `conta_ativa` (o @ ativo agora; skill, seção 1) → a próxima ação aprovada, com o texto exato e como fazer; ou "ESPERE" (espere e chame de novo), "NADA AGORA" (termine) ou "CONFIRA ANTES DE QUALQUER ENVIO" (só olhe a tela e registre)
 - "resultado": `acao_id`, `ok`, `detalhe` (o que apareceu na tela), `bloqueio` (true se o Instagram bloqueou ou pediu verificação: a prospecção pausa; sem `acao_id` quando apareceu fora de uma ação)
