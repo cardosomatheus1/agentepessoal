@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Como fazer a prospecção da Raiz Connect pela conta @raiz.connect no navegador: achar e avaliar leads, aquecer (seguir, curtir, comentar), mandar mensagens no Direct, ler e registrar respostas, sempre pela ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 5.3.1
+version: 5.4.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct"]
 trigger_patterns:
   - "prospec"
@@ -128,7 +128,8 @@ atenção do Instagram.
 ## 3. Executar (rodada de execução, uma ação por vez)
 
 `prospeccao` acao "proxima" com `conta_ativa` = o @ ativo. A ação que ela entrega é só desta rodada. "ESPERE":
-espere (regras) e chame de novo. "NADA AGORA" ou 3 ações feitas: termine.
+espere (regras) e chame de novo. "NADA AGORA" ou 3 ações feitas: termine; se o "NADA AGORA" trouxer
+"ANTES DE TERMINAR — comentário atrasado", faça esse um comentário (item 4) e só então termine.
 
 **"CONFIRA ANTES DE QUALQUER ENVIO"**: uma rodada anterior pegou essa ação e não registrou o resultado; ela pode ter
 saído. Só olhe a tela (a conversa ou o botão «Seguindo») e chame `resultado` com o que viu. Não envie nem refaça.
@@ -144,7 +145,7 @@ saído. Só olhe a tela (a conversa ou o botão «Seguindo») e chame `resultado
    mudou de @ ou nos bloqueou: `etapa` descartado, nota "perfil sumiu". Todo descarte já encerra a ação (sem
    `resultado`): chame `proxima` de novo. Depois de seguir: veja os stories, se houver anel colorido (sem reagir), e
    curta 1 post que você leu.
-4. **Comentário:** só se a ação disser **PODE COMENTAR** (lead quente) e houver post de até 7 dias com algo escrito
+4. **Comentário:** todo aquecido recebe (regra do Matheus, 15/10), se a ação disser **PODE COMENTAR** e houver post de até 7 dias com algo escrito
    sobre o qual você tenha algo próprio a dizer. `comentar` (acao_id, texto, base) ANTES do `resultado`; publique só
    com **COMENTÁRIO APROVADO** e depois chame `comentado` (ok, detalhe). "NÃO COMENTE" ou reprovado duas vezes: siga
    sem comentário. Para publicar: abra o link do post (`https://www.instagram.com/p/<código>/`), clique em "Adicione um

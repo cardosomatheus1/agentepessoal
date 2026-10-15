@@ -2366,7 +2366,8 @@ class Suite:
         d["config"].update({"executar_em_teste": True, "conta_instagram": "raizconnect"})
         for i in range(p.LIMITE_COMENTARIOS):  # comments already approved today
             d["acoes"].append({"id": f"cm-{i}", "lead_id": "x", "tipo": "aquecer", "texto": "", "estado": "executada",
-                               "criada": p.agora(), "comentario": {"estado": "publicado", "em": p.agora() - 60, "texto": "x"}})
+                               "criada": p.agora(), "executada_em": p.agora() - 2 * 86400,  # warm-ups of other days
+                               "comentario": {"estado": "publicado", "em": p.agora() - 60, "texto": "x"}})
         p.salvar(LOGIN, d)
         self._lead("teto1")
         a, motivo = p.proxima(LOGIN, "raizconnect")
@@ -2374,13 +2375,13 @@ class Suite:
         ontem = dt.datetime.fromtimestamp(self.relogio - 86400, p._tz()).date().isoformat()
         texto = "Kit de 10 com duas proteínas resolve a semana de quem congela, capricho na montagem!"
         r, m = p.comentar(LOGIN, a["id"], texto, f"\"Kit fit da semana\", {ontem}")
-        ok(not r and "teto" in m and not m.startswith("REESCREVA"), f"o 11º comentário do dia não sai: {m}")
+        ok(not r and "teto" in m and not m.startswith("REESCREVA"), f"passou do teto do dia, não sai: {m}")
         d = p.carregar(LOGIN)
         d["acoes"] = [x for x in d["acoes"] if not x["id"].startswith("cm-") or int(x["id"][3:]) < p.LIMITE_COMENTARIOS // 2]
         d["bloqueios"] = [{"em": p.agora() - 86400}]
         p.salvar(LOGIN, d)
         r, m = p.comentar(LOGIN, a["id"], texto, f"\"Kit fit da semana\", {ontem}")
-        ok(not r and "teto 5" in m, f"depois de um bloqueio, metade: {m}")
+        ok(not r and f"teto {p.LIMITE_COMENTARIOS // 2}" in m, f"depois de um bloqueio, metade: {m}")
         p.revisor = None
 
     def t_scripts_com_a_conta_desligados(self):
@@ -2502,7 +2503,8 @@ class Suite:
         a, motivo = p.proxima(LOGIN, "raizconnect")
         ok("pausado" not in motivo, f"liberado: {motivo}")
 
-    def t_comentario_so_em_lead_quente(self):
+    def t_comentario_em_todo_aquecido(self):
+        # 15/10 Matheus: "todos aquecidos devem receber comentários, inclusive dos outros dias" (was hot leads only)
         p = self.p
         self.em(self.hora(10))
         self._revisor(reprovar=())
@@ -2517,7 +2519,29 @@ class Suite:
         ok(a and a["lead_id"] == frio, f"visita ao morno ({motivo})")
         ontem = dt.datetime.fromtimestamp(self.relogio - 86400, p._tz()).date().isoformat()
         r, m = p.comentar(LOGIN, a["id"], "Kit de 10 com duas proteínas resolve a semana de quem congela!", f"\"Kit\", {ontem}")
-        ok(not r and "lead quente" in m, f"comentário só em lead quente: {m}")
+        ok(r, f"lead morno também recebe comentário: {m}")
+        p.resultado(LOGIN, a["id"], True, "seguiu, curtiu e comentou")
+        p.comentado(LOGIN, a["id"], True, "apareceu")
+        # an earlier warm-up (10 days ago) with no comment: the round is told to comment it when there is nothing else
+        velho = self._lead("velho1")
+        d = p.carregar(LOGIN)
+        d["acoes"].append({"id": "aqvelho", "tipo": "aquecer", "lead_id": velho, "estado": "executada", "texto": "",
+                           "executada_em": self.relogio - 10 * 86400, "historico": []})
+        for x in d["leads"]:
+            if x["id"] == velho:
+                x["etapa"] = "aquecido"
+        d["config"]["fila_repor"] = []
+        p.salvar(LOGIN, d)
+        ok([x["acao_id"] for x in p.sem_comentario(LOGIN)] == ["aqvelho"], f"aquecido de 10 dias na lista: {p.sem_comentario(LOGIN)}")
+        aviso = p.aviso_comentarios_pendentes(LOGIN, "nenhuma ação aprovada esperando")
+        ok("aqvelho" in aviso and "comentar" in aviso, f"a rodada sem ação comenta o atrasado: {aviso}")
+        ok(p.aviso_comentarios_pendentes(LOGIN, "espaçamento: próxima a partir de 10:30") == "", "na espera, não")
+        self.em(self.hora(22))
+        ok(p.aviso_comentarios_pendentes(LOGIN, "nenhuma ação aprovada esperando") == "", "fora do horário, não")
+        self.em(self.hora(11))
+        r, m = p.comentar(LOGIN, "aqvelho", "Esse kit de marmitas da semana ficou caprichado! Sai mais de frango ou de carne?",
+                          f"\"Kit da semana\", {ontem}")
+        ok(r, f"comentário atrasado de aquecido antigo aprovado: {m}")
         p.revisor = None
 
     def t_datas_de_pico(self):

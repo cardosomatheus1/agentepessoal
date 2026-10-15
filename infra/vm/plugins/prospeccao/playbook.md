@@ -83,7 +83,7 @@ mais é quente e vai primeiro).
 
 | Quando | O quê | Regra |
 |---|---|---|
-| dia 0 | **aquecer**: ler o perfil, seguir, ver os stories e curtir 1 post; comentário só em lead quente (a ferramenta diz PODE COMENTAR), num post de até 7 dias | o comentário nunca cita a Raiz |
+| dia 0 | **aquecer**: ler o perfil, seguir, ver os stories e curtir 1 post; comentário em todo aquecido (regra do Matheus, 15/10), num post de até 7 dias com algo escrito; os aquecidos sem comentário recebem o seu nas rodadas seguintes | o comentário nunca cita a Raiz |
 | dia 2 (dia 1 se interagiu) | **primeira mensagem**, na variante que a ferramenta indicar (A ou B) | quem respondeu ao comentário ou seguiu de volta vai primeiro e pode citar a troca |
 | 3 dias depois da 1ª | **lembrete**, 1 só | só para quem segue a Raiz ou interagiu: para os outros, a 1ª mensagem está em Solicitações |
 | 5 dias depois do lembrete (8 depois da 1ª, sem lembrete) | **sem resposta**: parar | nunca mais de 2 mensagens sem resposta |

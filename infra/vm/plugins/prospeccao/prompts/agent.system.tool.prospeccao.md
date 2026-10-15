@@ -17,7 +17,7 @@ Prospecção de clientes da Raiz Connect, um a um, pela conta @raiz.connect. Tud
 - "liberar_bloqueio": o Matheus libera a prospecção depois de um segundo bloqueio em 30 dias (volta pela metade por 7 dias)
 - "scripts_conta": `texto` "ligar" ou "desligar" → busca e avaliação por script com a @raiz.connect (desligadas por padrão para proteger a conta; só com ordem do Matheus)
 - "propor": `acoes` = lista de até 5 {lead_id (@ ou id), tipo (dm_abertura | dm_lembrete | seguimento | resposta | parceiro), texto, base (o trecho copiado entre aspas e a data do post; numa resposta, a fala da pessoa entre aspas)}; deixe `variante` em branco (a ferramenta sorteia A ou B e o contexto diz qual escrever) → as aprovadas ficam prontas; as recusadas voltam com o motivo
-- "comentar": `acao_id` (o aquecer em execução que disse PODE COMENTAR), `texto` (pelo playbook), `base` (o trecho escrito do post, entre aspas, e a data) → só publique se vier COMENTÁRIO APROVADO
+- "comentar": `acao_id` (o aquecer em execução, ou um aquecido atrasado da lista "sem_comentario"), `texto` (pelo playbook), `base` (o trecho escrito do post, entre aspas, e a data) → só publique se vier COMENTÁRIO APROVADO
 - "comentado": `acao_id`, `ok`, `detalhe` → registra se o comentário aprovado saiu
 - "editar": `acao_id`, `texto` → nova versão de uma ação ainda não executada (volta ao revisor)
 - "caixa_lida": `direct` (quantas conversas com mensagem nova e de quem), `notificacoes` (as primeiras linhas copiadas da página de notificações), `interagiram` (os @ do registro que seguiram de volta, curtiram ou comentaram), `varredura` (true quando o `ler_direct` disser que a varredura ficou registrada) → obrigatória antes da "proxima" em cada rodada de execução

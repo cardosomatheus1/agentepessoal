@@ -2337,16 +2337,17 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
 # 11/10: warm-ups from the sources and the automatic refill go with no text (nobody had seen the posts), so the 8
 # warm-ups of the day had no comment. Now, on the visit, the agent reads the latest post and may write one; the
 # reviewer checks it; only an approved comment is published. Also for warm-ups done in the last days (catch-up).
-DIAS_COMENTARIO = 3
+DIAS_COMENTARIO = 30  # 15/10 Matheus: the warm-ups of the previous days get their comment too (catch-up window)
 TENTATIVAS_COMENTARIO = 2  # the reviewer said no twice: no comment, just follow and like (12/10 blind review, item 3)
 
 
 def pode_comentar(lead: dict) -> bool:
-    """Blind review 5, item 4: a public comment from a software brand is the exception — hot leads only."""
-    return (lead.get("nota") or 0) >= NOTA_QUENTE
+    """15/10 Matheus: "todos aquecidos devem receber comentários, inclusive dos outros dias". Every open lead (the
+    blind review 5 limited it to hot leads; his decision wins). The post must still be recent and the reviewer approve."""
+    return lead.get("etapa") not in FINAIS
 
 
-LIMITE_COMENTARIOS = 10  # a day (blind review 3: public, and among the actions Instagram blocks most); half after a block
+LIMITE_COMENTARIOS = 20  # a day (15/10: one per warm-up, 15 a day, plus the catch-up) (blind review 3: public, and among the actions Instagram blocks most); half after a block
 POST_COMENTARIO_DIAS = 7  # blind review 2, item 5: a comment on a post weeks old looks like digging and is rarely answered
 _MESES = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6, "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12}
 
@@ -2399,12 +2400,12 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
     em_visita = a["estado"] == "aprovada" and a.get("em_execucao")
     recente = a["estado"] == "executada" and _dias_desde(a.get("executada_em") or 0) <= DIAS_COMENTARIO
     if not (em_visita or recente):
-        return False, "só durante a visita do aquecimento ou até 3 dias depois dele"
+        return False, f"só durante a visita do aquecimento ou até {DIAS_COMENTARIO} dias depois dele"
     lead = _lead(d, a["lead_id"])
     if not lead or lead["etapa"] in FINAIS:
         return False, "lead encerrado: não comente"
     if not pode_comentar(lead):
-        return False, f"comentário só em lead quente (nota {NOTA_QUENTE}+): siga sem comentário"
+        return False, "lead encerrado: não comente"
     t = (texto or "").strip()
     motivo = validar_texto("aquecer", t, d, a["lead_id"]) or ("" if len(t) >= 15 else "comentário vazio ou curto demais")
     if not motivo and not em_visita:  # catch-up comments follow the same pace as any action
@@ -2562,6 +2563,22 @@ def aviso_sem_acao(motivo: str) -> str:
                 "novo. Se o horário passar do início da próxima rodada (minutos 8 e 38), termine. A rodada só termina com "
                 "NADA AGORA ou depois de 3 ações feitas.")
     return f"NADA AGORA: {motivo}. Termine a rodada."
+
+
+def aviso_comentarios_pendentes(login: str, motivo: str) -> str:
+    """15/10: nothing told the rounds to comment on earlier warm-ups. When `proxima` has nothing (not a wait, not out
+    of hours, not paused), the round comments one earlier warm-up per spacing instead of just ending."""
+    if not motivo.startswith(("nenhuma ação", "primeiras mensagens")) or not HORARIO[0] <= _hora_local() < HORARIO[1]:
+        return ""
+    pendentes = sem_comentario(login)
+    if not pendentes:
+        return ""
+    x = pendentes[0]
+    return (f"ANTES DE TERMINAR — comentário atrasado ({len(pendentes)} aquecido(s) sem comentário; regra do Matheus de 15/10): "
+            f"abra {x['url'] or '@' + str(x['handle'])} e o post mais recente. Se for de até {POST_COMENTARIO_DIAS} dias e tiver "
+            f"algo ESCRITO, chame `prospeccao` acao \"comentar\" com acao_id \"{x['acao_id']}\", texto e base (trecho entre aspas "
+            "e a data); só publique se vier COMENTÁRIO APROVADO e depois chame \"comentado\". Se não houver post recente, "
+            "siga sem comentar. Um por rodada; termine depois.")
 
 
 def _registrar_bloqueio(d: dict, detalhe: str = "") -> bool:

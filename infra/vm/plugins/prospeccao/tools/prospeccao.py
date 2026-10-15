@@ -376,7 +376,8 @@ class Prospeccao(Tool):
             a, motivo = await asyncio.to_thread(p.proxima, login, conta_ativa, quem=self.agent.context.id)
             if not a:
                 p.encerrar_liberacao(self.agent.context)
-                return r(p.aviso_sem_acao(motivo))
+                pendente = await asyncio.to_thread(p.aviso_comentarios_pendentes, login, motivo)
+                return r(p.aviso_sem_acao(motivo) + (f"\n\n{pendente}" if pendente else ""))
             if a.get("conferir"):  # handed out before and never reported: it may have gone out
                 p.encerrar_liberacao(self.agent.context)
                 lead = a["lead"]
@@ -405,8 +406,9 @@ class Prospeccao(Tool):
                             "encerra esta visita — e chame \"proxima\" de novo.\n")
             if a["tipo"] == "aquecer":
                 conferir += ("COMENTÁRIO JÁ APROVADO: publique EXATAMENTE o texto abaixo no post mais recente.\n" if a.get("texto")
-                             else "PODE COMENTAR (lead quente), se houver o que dizer.\n" if p.pode_comentar(lead)
-                             else "SEM COMENTÁRIO nesta visita (só lead quente): siga, veja os stories e curta 1 post.\n")
+                             else "PODE COMENTAR: comente o post mais recente se for de até 7 dias e tiver algo escrito (regra do "
+                                  "Matheus: todo aquecido recebe comentário).\n" if p.pode_comentar(lead)
+                             else "SEM COMENTÁRIO nesta visita: siga, veja os stories e curta 1 post.\n")
             return r(f"Conta conferida: @{p.conta(login)}. Ação {a['id']} ({a['tipo']}) {'PRÉ-APROVADA (autorização do Matheus, dentro do limite do dia; texto revisado)' if a.get('auto') else 'APROVADA pelo Matheus'} para @{lead['handle']} — {lead['url']}\n"
                      f"{conferir}{COMO_EXECUTAR[a['tipo']]}\nTexto aprovado:\n«{a['texto']}»\n\n"
                      + (("PARA ABRIR A CONVERSA: no perfil, rode com `browser` action \"evaluate\" o script abaixo; ele acha o botão "
