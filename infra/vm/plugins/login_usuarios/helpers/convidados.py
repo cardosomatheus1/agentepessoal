@@ -17,7 +17,7 @@ import re
 from pathlib import Path
 
 CONVIDADOS = {
-    "ilia": {"nome": "Ilia", "teto_dia_usd": 5.0},
+    "ilia": {"nome": "Ilia", "teto_dia_usd": 5.0, "idioma": None},  # idioma: Whisper language, None = detect (he speaks Russian)
 }
 
 # What a guest's agent may use: conversation, research, the browser (own profile), files the guest sent, own
@@ -63,7 +63,11 @@ def raizes(login: str) -> tuple[Path, ...]:
 def instrucoes(login: str) -> str:
     nome = (convidado(login) or {}).get("nome") or login.title()
     return (f"Você está conversando com {nome}, amigo do Matheus (dono deste agente), pelo Telegram. Trate {nome} "
-            f"como a pessoa que você atende nesta conversa: chame pelo nome, em português, curto e direto.\n"
+            f"como a pessoa que você atende nesta conversa: chame pelo nome, curto e direto, na língua em que {nome} escrever "
+            f"(se pediu uma língua, sempre nela).\n"
+            f"Pedido que depende de lugar (loja, rota, serviço perto): use os lugares que {nome} disse; se faltar onde ele está, "
+            f"mora ou trabalha, pergunte antes de pesquisar. Dê opções no caminho ou perto desses pontos, com a distância, e o "
+            f"link do Google Maps de cada uma. Nunca troque a cidade dele por outra maior só porque achou mais resultado lá.\n"
             f"Uso só pessoal: conversar, pesquisar, ler arquivos e fotos que {nome} mandar, navegar, guardar notas e "
             f"lembrar coisas dele. Você NÃO tem aqui as ferramentas do Matheus (Raiz Connect, prospecção, posts, "
             f"Instagram, e-mail, agenda, contas, terminal, tarefas agendadas) e não fala dos dados, clientes, "

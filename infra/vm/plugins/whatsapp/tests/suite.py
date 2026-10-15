@@ -110,6 +110,12 @@ class Suite:
         p._abrir = falso_urlopen
         p.chave = lambda: "x"
 
+    def t_audio_na_lingua_da_pessoa(self):
+        # 15/10: Ilia spoke Russian; Whisper forced to "pt" wrote nonsense Portuguese
+        rec = (RAIZ / "api" / "receber.py").read_text(encoding="utf-8")
+        ok("_transcrever(audio, idioma_do_audio(usuario))" in rec, "a transcrição usa a língua de quem mandou")
+        ok('language="pt"' not in rec and "language=idioma" in rec, "nada fixo em português")
+
     def t_aviso_igual_nao_sai_de_novo(self):
         p = self.p
         texto = "💬 *@zen.marmitas respondeu* no comentário: «oieeee….entra sim!!!»"

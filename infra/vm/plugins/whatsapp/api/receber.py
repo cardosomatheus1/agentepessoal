@@ -86,7 +86,19 @@ def _chave_ok(request: Request) -> bool:
 _RAPIDO = None  # faster-whisper model, loaded once (~2x faster than Agent Zero's Whisper on this CPU)
 
 
-def _transcrever_rapido(caminho: str) -> str:
+def idioma_do_audio(usuario: str) -> str | None:
+    """Whisper language for the person's voice notes: Portuguese, or the guest's own setting (None = detect).
+    15/10: Ilia spoke Russian, forced "pt" turned it into nonsense Portuguese and the agent searched the wrong places."""
+    caminho = Path(__file__).resolve().parents[2] / "login_usuarios" / "helpers" / "convidados.py"
+    try:
+        c = carregar("login_usuarios_convidados", caminho)
+        conv = c.convidado(usuario)
+    except Exception:
+        conv = None
+    return conv.get("idioma", "pt") if conv else "pt"
+
+
+def _transcrever_rapido(caminho: str, idioma: str | None = "pt") -> str:
     """faster-whisper (int8) on audio decoded by ffmpeg — its own PyAV clashes with Agent Zero's."""
     global _RAPIDO
     import subprocess
@@ -99,20 +111,20 @@ def _transcrever_rapido(caminho: str) -> str:
     bruto = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-i", caminho, "-f", "s16le", "-ac", "1",
                             "-ar", "16000", "-"], capture_output=True, check=True).stdout
     audio = np.frombuffer(bruto, np.int16).astype(np.float32) / 32768.0
-    segmentos, _ = _RAPIDO.transcribe(audio, language="pt", beam_size=1, vad_filter=True)
+    segmentos, _ = _RAPIDO.transcribe(audio, language=idioma, beam_size=1, vad_filter=True)
     return " ".join(s.text.strip() for s in segmentos).strip()
 
 
-async def _transcrever(caminho: str) -> str:
+async def _transcrever(caminho: str, idioma: str | None = "pt") -> str:
     import asyncio
 
     try:
-        return await asyncio.to_thread(_transcrever_rapido, caminho)
+        return await asyncio.to_thread(_transcrever_rapido, caminho, idioma)
     except ImportError:  # faster-whisper missing: Agent Zero's own Whisper (slower)
         from plugins._whisper_stt.helpers import runtime
 
         dados = base64.b64encode(Path(caminho).read_bytes()).decode()
-        resultado = await runtime._transcribe(MODELO_WHISPER, dados, language="pt")
+        resultado = await runtime._transcribe(MODELO_WHISPER, dados, language=idioma)
         return str(resultado.get("text") or "").strip()
 
 
@@ -732,7 +744,7 @@ class Receber(ApiHandler):
 
         if audio:
             try:
-                transcrito = await _transcrever(audio)
+                transcrito = await _transcrever(audio, idioma_do_audio(usuario))
             except Exception as exc:
                 transcrito = ""
                 print(f"whatsapp: transcription failed: {exc}", flush=True)

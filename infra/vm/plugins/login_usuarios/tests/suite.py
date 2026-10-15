@@ -194,6 +194,14 @@ class Suite:
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    def t_convidado_lingua_e_lugar(self):
+        # 15/10: Ilia's Russian voice notes were forced into Portuguese and the agent searched far from his route
+        c = self._c()
+        ok("idioma" in c.CONVIDADOS["ilia"] and c.CONVIDADOS["ilia"]["idioma"] is None, "áudio do Ilia: língua detectada")
+        txt = c.instrucoes("ilia")
+        ok("na língua em que Ilia escrever" in txt and "em português" not in txt, "responde na língua dele")
+        ok("Google Maps" in txt and "pergunte antes de pesquisar" in txt, "pedido de lugar: pontos dele, distância e mapa")
+
     def t_gasto_marcado_com_o_dono(self):
         c = self._c()
 
