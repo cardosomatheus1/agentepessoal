@@ -70,6 +70,9 @@ BLOQUEIO = re.compile(r"(pediu|pede|precisa de|fazer|refazer|entrar com) (o |um 
 URL_AGENTE = Path("/a0/usr/agente/url.txt")  # the app's public address, kept current by the VM's report_url.py
 TELA = Path("/a0/usr/plugins/navegador_visual/helpers/tela.py")  # signed links to one chat's browser tab
 PEDE_NAVEGADOR = re.compile(r"\b(navegador|browser)\b", re.I)
+# a block only solved on the screen, even when the answer does not name the Navegador (15/10: "resolva a verificação
+# do Cloudflare pelo botão Resolver aqui" never reached the phone)
+SO_NA_TELA = re.compile(r"captcha|cloudflare|resolver aqui|verifica[cç][aã]o (de seguran[cç]a|humana)|n[aã]o sou um rob", re.I)
 PEDE_ACAO = re.compile(r"captcha|desafio|login|logar|entrar|entre |resolv|conclu|confirm|c[oó]digo|verifica", re.I)
 
 
@@ -83,7 +86,7 @@ def _modulo_tela(caminho: Path = TELA):
 def pede_tela(texto: str) -> bool:
     """The answer asks the person to do something in the Navegador (captcha, login, code)."""
     texto = str(texto or "")
-    return bool(PEDE_NAVEGADOR.search(texto) and PEDE_ACAO.search(texto))
+    return bool(PEDE_NAVEGADOR.search(texto) and PEDE_ACAO.search(texto) or SO_NA_TELA.search(texto))
 
 
 def botao_do_navegador(texto: str, ctx_id: str, usuario: str, arquivo: Path | None = None, tela=None) -> dict | None:

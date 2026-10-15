@@ -590,6 +590,8 @@ class Suite:
     async def t_pedido_de_captcha_vai_ao_celular_mesmo_de_conversa_do_app(self):
         # 15/10, Matheus: "só ele mandar p eu resolver no telegram" (an app chat he never left stayed silent)
         for resposta, quer in (("Parei numa verificação do Cloudflare. Deixei aberta no **Browser**; conclua e me avise.", 1),
+                               ("A verificação do Cloudflare continua após recarregar. Matheus, resolva-a pelo botão "
+                                "**Resolver aqui** no Telegram.", 1),
                                ("Achei 3 opções de loja.", 0)):
             ctx = _Ctx("ctxT", dono=LOGIN)
             agente = types.SimpleNamespace(number=0, context=ctx, get_data=lambda k, r=resposta: r if k == "_whatsapp_resposta" else None)
@@ -602,7 +604,7 @@ class Suite:
                 await asyncio.gather(*[x for x in asyncio.all_tasks() if x is not asyncio.current_task()])
             eq(len(self.enviados), quer, f"{resposta[:30]}: {self.enviados}")
             if quer:
-                ok("Browser" in self.enviados[0]["texto"] and self.enviados[0]["tipo"] == "urgente",
+                ok("Cloudflare" in self.enviados[0]["texto"] and self.enviados[0]["tipo"] == "urgente",
                    f"vai urgente, com o pedido: {self.enviados[0]}")
 
     async def t_voz_responde_em_audio_quando_ele_fala(self):
