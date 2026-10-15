@@ -40,6 +40,8 @@ class Conteudo(Tool):
             if not api:
                 return Response(message="Sem o token da Meta no cofre (META_IG_TOKEN / META_IG_USER_ID).", break_loop=False)
             r = await asyncio.get_event_loop().run_in_executor(None, c.desempenho, api, _dias(dias, 7))
+        elif acao == "arquivos":
+            r = await asyncio.get_event_loop().run_in_executor(None, c.baixar_post, str(kwargs.get("data") or ""))
         else:
             r = c.agenda_proxima(_dias(dias, 7))
         return Response(message=json.dumps(r, ensure_ascii=False), break_loop=False)

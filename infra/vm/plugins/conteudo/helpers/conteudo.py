@@ -489,3 +489,27 @@ def desempenho(api, dias: int = 7, agora: float | None = None) -> dict:
         posts.append(linha)
     conta = api.get(api.ig, {"fields": "followers_count,media_count"}) or {}
     return {"ok": True, "dias": int(dias), "posts": posts, "total": total, "seguidores": conta.get("followers_count")}
+
+
+def baixar_post(data: str = "", url=None, baixar=None, agora: float | None = None) -> dict:
+    """The files of the day's post, downloaded to /a0/usr/conteudo/cache/<id>/ so the agent can send them to Matheus
+    (15/10: asked for today's carousel, the agent looked for local files that only exist in S3 and said "não achei").
+    Read-only: nothing is scheduled, changed or published."""
+    import urllib.request
+    agora = time.time() if agora is None else agora
+    data = data or dt.datetime.fromtimestamp(agora, _tz()).date().isoformat()
+    item = next((i for i in carregar()["itens"] if i["data"] == data and i["estado"] != "cancelada"), None)
+    if not item:
+        return {"ok": False, "erro": f"nenhum post marcado para {data}"}
+    url = url or Api("", "").url
+    baixar = baixar or (lambda link, caminho: urllib.request.urlretrieve(link, caminho))
+    pasta = PASTA / "cache" / item["id"]
+    pasta.mkdir(parents=True, exist_ok=True)
+    caminhos = []
+    for chave in item["arquivos"]:
+        destino = pasta / chave.rsplit("/", 1)[-1]
+        if not destino.exists() or destino.stat().st_size == 0:
+            baixar(url(chave), str(destino))
+        caminhos.append(str(destino))
+    return {"ok": True, "id": item["id"], "data": data, "hora": item["hora"], "tipo": item["tipo"], "estado": item["estado"],
+            "legenda": item["legenda"], "arquivos": caminhos}

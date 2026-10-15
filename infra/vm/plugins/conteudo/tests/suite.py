@@ -344,6 +344,25 @@ class Suite:
             ok(proibido not in tool, f"a ferramenta não muda a agenda ({proibido})")
         ok((RAIZ / "prompts" / "agent.system.tool.conteudo.md").exists(), "o agente sabe usar a ferramenta")
 
+    def t_arquivos_do_post_do_dia(self):
+        c = _modulo()
+        c.agendar([CARR], _ts(c, "2026-10-13", "10:00"))
+        links, baixados = [], []
+        def url(chave):
+            links.append(chave); return f"https://s3/{chave}?assinado"
+        def baixar(link, caminho):
+            baixados.append(link); Path(caminho).write_bytes(b"jpg")
+        r = c.baixar_post("2026-10-15", url, baixar)
+        ok(r["ok"] and r["tipo"] == "CARROSSEL" and len(r["arquivos"]) == 9 and r["legenda"] == CARR["legenda"], r)
+        ok(all(Path(a).exists() and "/cache/ter-frases/" in a for a in r["arquivos"]), "arquivos baixados no disco do agente")
+        ok(links == CARR["arquivos"], "pelo link assinado de cada arquivo do S3")
+        c.baixar_post("2026-10-15", url, baixar)
+        ok(len(baixados) == 9, "já baixado não baixa de novo")
+        ok(not c.baixar_post("2026-10-16", url, baixar)["ok"], "dia sem post: diz que não tem")
+        ok(c.carregar()["itens"][0]["estado"] == "pendente", "só leitura: não muda o post")
+        fonte = (RAIZ / "tools" / "conteudo.py").read_text(encoding="utf-8")
+        ok('acao == "arquivos"' in fonte and "baixar_post" in fonte, "a ferramenta oferece a ação")
+
     def t_extensao_usa_o_helper(self):
         ext = (RAIZ / "extensions" / "python" / "job_loop" / "_46_publicar_conteudo.py").read_text(encoding="utf-8")
         ok("conteudo.rodar(" in ext and "run_in_executor" in ext, "a rotina publica fora do laço principal")
