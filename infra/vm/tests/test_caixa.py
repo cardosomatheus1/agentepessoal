@@ -32,7 +32,7 @@ if "terminal_isolado" not in conv.FERRAMENTAS or "code_execution_tool" in conv.F
 a = c.argumentos_run("will")
 linha = " ".join(a)
 for preciso in ("--cap-drop ALL", "--security-opt no-new-privileges", "--user 1000:1000", "--network caixas",
-                "--memory 1g", "--pids-limit 256", "--dns 1.1.1.1", "--cpus 1", "--restart no", f"/opt/caixas/will:{c.HOME}"):
+                "--memory 2g", "--memory-swap 2g", f"--label caixa-versao={c.VERSAO}", "--pids-limit 256", "--dns 1.1.1.1", "--cpus 1", "--restart no", f"/opt/caixas/will:{c.HOME}"):
     if preciso not in linha:
         falhas.append(f"caixa sem {preciso!r}: {linha}")
 volumes = [a[i + 1] for i, x in enumerate(a) if x in ("-v", "--volume", "--mount")]

@@ -40,7 +40,8 @@ USR_A0 = "/a0/usr"
 SEGREDO = USR_HOST / "caixa" / "segredo.txt"
 HOME = "/home/node"
 UID = "1000:1000"
-LIMITES = ["--memory", "1g", "--memory-swap", "1g", "--cpus", "1", "--pids-limit", "256"]
+LIMITES = ["--memory", "2g", "--memory-swap", "2g", "--cpus", "1", "--pids-limit", "256"]  # 16/10, Matheus: 2 GB
+VERSAO = "2"  # bump when the box's flags change: a box of another version is recreated (the home stays)
 TEMPO_MAX = 180
 SAIDA_MAX = 8000
 ARQUIVO_MAX = 25 * 1024 * 1024
@@ -78,6 +79,7 @@ def argumentos_run(login: str) -> list:
     """The `docker run` of a guest's box (kept in one place so a test can read every flag)."""
     # public DNS: the VPC's resolver is in a private range the box may not reach
     return ["run", "-d", "--name", nome(login), "--hostname", f"caixa-{login}", "--network", REDE,
+            "--label", f"caixa-versao={VERSAO}",
             "--dns", "1.1.1.1", "--dns", "8.8.8.8",
             *LIMITES, "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--user", UID,
             "-v", f"{CASAS / login}:{HOME}", "-w", HOME, "-e", f"HOME={HOME}",
@@ -123,8 +125,8 @@ def garantir_caixa(login: str) -> None:
         os.chown(casa, 1000, 1000)
         os.chmod(casa, 0o700)
         garantir_imagem()
-        imagem = docker("inspect", "-f", "{{.Config.Image}}", nome(login))
-        if imagem.returncode == 0 and imagem.stdout.decode().strip() != IMAGEM:  # new image: new box, same home
+        atual = docker("inspect", "-f", '{{.Config.Image}}|{{index .Config.Labels "caixa-versao"}}', nome(login))
+        if atual.returncode == 0 and atual.stdout.decode().strip() != f"{IMAGEM}|{VERSAO}":  # new box, same home
             docker("rm", "-f", nome(login))
         estado = docker("inspect", "-f", "{{.State.Running}}", nome(login))
         if estado.returncode == 0 and estado.stdout.decode().strip() == "true":
