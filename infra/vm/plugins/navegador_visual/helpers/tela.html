@@ -15,7 +15,8 @@
   header .url { font-size: 12px; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   header .dica { font-size: 13px; }
   #palco { flex: 1; overflow: hidden; display: flex; align-items: flex-start; justify-content: center; touch-action: none; }
-  #tela { max-width: 100%; max-height: 100%; user-select: none; -webkit-user-drag: none; }
+  #tela { max-width: 100%; max-height: 100%; user-select: none; -webkit-user-drag: none; -webkit-touch-callout: none; pointer-events: none; }
+  #palco { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
   #toque { position: fixed; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%;
     border: 2px solid var(--verde); pointer-events: none; opacity: 0; transition: opacity .4s; }
   footer { padding: 8px; border-top: 1px solid var(--borda); display: grid; gap: 6px;
@@ -55,7 +56,7 @@
 const TOKEN = "__TOKEN__";
 const tg = window.Telegram && window.Telegram.WebApp;
 if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
-const tela = document.getElementById("tela"), aviso = document.getElementById("aviso");
+const tela = document.getElementById("tela"), palco = document.getElementById("palco"), aviso = document.getElementById("aviso");
 let ocupado = false, proximo = null;
 
 async function api(acao, extra = {}) {
@@ -88,13 +89,13 @@ function marcar(ev) {
   setTimeout(() => (m.style.opacity = 0), 350);
 }
 let inicio = null, pontos = [], segurou = null;
-tela.addEventListener("contextmenu", (ev) => ev.preventDefault());  // a long press must not open the phone's menu
-tela.addEventListener("pointerdown", (ev) => {
+palco.addEventListener("contextmenu", (ev) => ev.preventDefault());  // a long press must not open the phone's menu
+palco.addEventListener("pointerdown", (ev) => {
   ev.preventDefault(); inicio = ev; inicio.quando = Date.now(); pontos = [fracao(ev)];
   segurou = setTimeout(() => (segurou = "sim"), 450);
 });
-tela.addEventListener("pointermove", (ev) => { if (inicio) pontos.push(fracao(ev)); });
-tela.addEventListener("pointerup", async (ev) => {
+palco.addEventListener("pointermove", (ev) => { if (inicio) pontos.push(fracao(ev)); });
+palco.addEventListener("pointerup", async (ev) => {
   if (!inicio) return;
   const longe = Math.hypot(ev.clientX - inicio.clientX, ev.clientY - inicio.clientY) > 12;
   const arrastou = longe && segurou === "sim";
