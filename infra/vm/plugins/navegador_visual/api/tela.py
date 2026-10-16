@@ -50,12 +50,13 @@ ESCOLHER = r"""(() => { const alvo = __TEXTO__;
   return 'opção não encontrada em ' + todos.length + ' listas: ' + todos.map(s => [...s.options].map(o => o.text).join('/')).join(' | ');
 })()"""
 RAIZ_API = r"""async ({metodo, caminho, corpo}) => {
-  const r = await fetch('/api/v1/auth/refresh', {method: 'POST', credentials: 'include',
+  const base = 'https://api.raizconnect.com.br';  // where the site's session cookie lives
+  const r = await fetch(base + '/api/v1/auth/refresh', {method: 'POST', credentials: 'include',
     headers: {'Content-Type': 'application/json'}, body: '{}'});
   const d = await r.json().catch(() => ({}));
   if (!d.accessToken) return {erro: 'sem sessão na Raiz', status: r.status};
   const p = JSON.parse(atob(d.accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-  const x = await fetch(caminho, {method: metodo, credentials: 'include', headers: {'Content-Type': 'application/json',
+  const x = await fetch(base + caminho, {method: metodo, credentials: 'include', headers: {'Content-Type': 'application/json',
     Authorization: 'Bearer ' + d.accessToken, 'X-Tenant-ID': p.tenant_id || p.tenantId || ''},
     body: corpo ? JSON.stringify(corpo) : undefined});
   return {status: x.status, corpo: (await x.text()).slice(0, 20000)};
