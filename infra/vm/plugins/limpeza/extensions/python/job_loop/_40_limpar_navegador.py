@@ -69,6 +69,8 @@ def escolher(contextos: dict, livre_mb: int) -> list[tuple[str, str]]:
     for cid, ctx in contextos.items():
         if ctx is None:
             fechar.append((cid, "conversa não existe mais"))
+        elif float(ctx.get_data("navegador_em_uso_ate") or 0) > time.time():
+            continue  # 16/10: someone is driving this tab through the live view (navegador_visual): never close it
         elif not _rodando(ctx) and _minutos_parada(ctx) >= limite:
             fechar.append((cid, f"parada há {int(_minutos_parada(ctx))} min (limite {limite} min, {livre_mb} MB livres)"))
     return fechar

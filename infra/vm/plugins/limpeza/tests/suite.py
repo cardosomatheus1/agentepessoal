@@ -323,6 +323,23 @@ class Suite:
         dr.destravar([], {}, lambda cid: None, agora, "running", "error", lambda cid: True, pausas3)
         ok(pausas3 == {}, "registro velho some")
 
+    def t_aba_em_uso_pela_tela_nao_fecha(self):
+        # 16/10: the cleanup closed the tab of a chat that looked idle while the operator was creating an app through
+        # the live view (navegador_visual marks navegador_em_uso_ate)
+        m = _carregar("limpeza_aba_em_uso", RAIZ / "extensions" / "python" / "job_loop" / "_40_limpar_navegador.py")
+
+        class Ctx:
+            def __init__(self, dados):
+                self.dados, self.task = dados, None
+                self.last_message = dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=2)
+
+            def get_data(self, k):
+                return self.dados.get(k)
+
+        ctxs = {"usada": Ctx({"navegador_em_uso_ate": time.time() + 600}), "parada": Ctx({}),
+                "vencida": Ctx({"navegador_em_uso_ate": time.time() - 1})}
+        ok([c for c, _ in m.escolher(ctxs, 99999)] == ["parada", "vencida"], "a aba em uso pela tela fica aberta")
+
     def t_intervalo_vale_mesmo_recarregando_o_modulo(self):
         # 12/10 review: job-loop extensions are loaded again on every pass, so the "every 10 minutes" kept in a module
         # variable ran every minute; the time now lives in a marker file

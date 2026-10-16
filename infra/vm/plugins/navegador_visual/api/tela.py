@@ -147,13 +147,20 @@ class Tela(ApiHandler):
             mq.log_user_message(ctx, "✅ Resolvi na tela (botão do Telegram)", [], None, source=" (Telegram)")
             ctx.communicate(UserMessage(message=PRONTO, attachments=[]))
             return {"ok": True}
-        runtime = await get_runtime(dados["contexto"], create=False)
+        import time as _t
+
+        ctx.set_data("navegador_em_uso_ate", _t.time() + 20 * 60)  # the cleanup (limpeza) leaves this tab alone
+        abrir_nova = acao == "abrir" and str(input.get("url") or "").startswith("https://")
+        runtime = await get_runtime(dados["contexto"], create=abrir_nova)
         if runtime is None:
             return _erro("esta conversa não tem navegador aberto", 404)
         lista = await runtime.call("list")
         bid = (lista or {}).get("last_interacted_browser_id")
         if bid is None and (lista or {}).get("browsers"):
             bid = lista["browsers"][-1].get("id")
+        if bid is None and abrir_nova:  # the tab was closed (e.g. by the cleanup): the operator opens a new one
+            await runtime.call("open", str(input.get("url")))
+            return {"ok": True, "nova_aba": True}
         if bid is None:
             return _erro("esta conversa não tem aba aberta", 404)
         if acao == "elementos":  # the page as the agent's browser tool sees it, with the reference of each element
