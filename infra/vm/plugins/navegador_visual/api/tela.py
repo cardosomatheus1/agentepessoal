@@ -63,6 +63,33 @@ PRONTO = ("(Ele resolveu o que você pediu na tela do navegador, pelo botão do 
           "endereço de novo, confira e siga com a tarefa.)")
 
 
+async def _na_pagina(runtime, bid, op: str, valor: str) -> str:
+    """Runs on the browser's own thread (where its Playwright page lives) and works across every frame."""
+    sessao = getattr(runtime, "_runtime", runtime)
+    nucleo = sessao._core
+
+    async def fazer():
+        pagina = nucleo._page(nucleo._resolve_browser_id(bid))
+        for quadro in pagina.frames:
+            if op == "arquivo":
+                campo = await quadro.query_selector('input[type="file"]')
+                if campo:
+                    await campo.set_input_files(valor)
+                    return f"arquivo posto em {quadro.url[:80]}"
+            else:
+                for lista in await quadro.query_selector_all("select"):
+                    try:
+                        await lista.select_option(label=valor)
+                        return f"escolhido {valor!r} em {quadro.url[:80]}"
+                    except Exception:
+                        continue
+        return "não achei o campo em nenhum quadro da página"
+
+    futuro = sessao._worker.event_loop_thread.run_coroutine(fazer())
+    import asyncio
+    return await asyncio.wrap_future(futuro)
+
+
 def _erro(msg: str, status: int = 403) -> Response:
     return Response(f'{{"erro": "{msg}"}}', status=status, mimetype="application/json")
 
@@ -139,6 +166,15 @@ class Tela(ApiHandler):
                 return _erro("arquivo fora da pasta de anexos", 400)
             r = await runtime.call("upload_file", bid, input.get("ref"), path=str(caminho))
             return {"ok": True, "resultado": str(r)[:500]}
+        if acao == "pagina":  # straight on the page (all frames, cross-origin too) when the reference tools can't reach
+            op, valor = str(input.get("op") or ""), str(input.get("valor") or "")
+            if op not in ("arquivo", "escolher"):
+                return _erro("operação não permitida", 400)
+            if op == "arquivo":
+                caminho = Path(valor).resolve()
+                if ANEXOS not in caminho.parents or not caminho.is_file():
+                    return _erro("arquivo fora da pasta de anexos", 400)
+            return {"ok": True, "resultado": await _na_pagina(runtime, bid, op, valor)}
         if acao == "conteudo":
             r = await runtime.call("evaluate", bid, CONTEUDO)
             valor = (r or {}).get("result", (r or {}).get("value")) if isinstance(r, dict) else r
