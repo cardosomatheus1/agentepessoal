@@ -607,6 +607,26 @@ class Suite:
                 ok("Cloudflare" in self.enviados[0]["texto"] and self.enviados[0]["tipo"] == "urgente",
                    f"vai urgente, com o pedido: {self.enviados[0]}")
 
+    async def t_cartao_da_ferramenta_e_a_resposta(self):
+        # 16/10 (responder por mim): the tool sent the draft with its buttons; the agent's closing "ok" must not follow it
+        ctx = _Ctx("ctxR", whatsapp_de=LOGIN, dono=LOGIN)
+        dados = {"_whatsapp_resposta": "ok", "_resposta_ja_enviada": True}
+        agente = types.SimpleNamespace(number=0, context=ctx, get_data=dados.get, set_data=dados.__setitem__)
+        self.enviados = []
+        with self._modulos(**self._agent_zero({"ctxR": ctx})):
+            ext = self._extensao("tool_execute_after", "_50_enviar_resposta.py", "EnviarResposta")
+            ext.agent = agente
+            self._ponte_responde(None)
+            await ext.execute(response=types.SimpleNamespace(break_loop=True), tool_name="response")
+            eq(self.enviados, [], "o 'ok' não sai")
+            ok(not dados["_resposta_ja_enviada"], "a marca vale uma vez")
+            await ext.execute(response=types.SimpleNamespace(break_loop=True), tool_name="response")
+            await asyncio.gather(*[x for x in asyncio.all_tasks() if x is not asyncio.current_task()])
+        eq(len(self.enviados), 1, "a resposta seguinte sai normal")
+        receber = (RAIZ / "api" / "receber.py").read_text(encoding="utf-8")
+        ok('botao.startswith("rp:")' in receber and "if login != usuario" in receber.split("def _botao_responder")[1][:400],
+           "botões da sugestão: só a própria pessoa decide")
+
     async def t_voz_responde_em_audio_quando_ele_fala(self):
         # 14/10 (Hermes voice_only): /voz on + his last message was audio -> text, then a voice note
         v = self.v

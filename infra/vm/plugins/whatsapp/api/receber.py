@@ -547,6 +547,55 @@ async def _botao_rascunho(usuario: str, botao: str) -> dict:
     return {"ok": True}
 
 
+def _externas():
+    """plugins/conversas_externas helpers (rules and WhatsApp Web), loaded by path."""
+    raiz = Path("/a0/usr/plugins/conversas_externas/helpers")
+    return (carregar("conversas_externas_helper", raiz / "externas.py"),
+            carregar("conversas_externas_navegador", raiz / "navegador.py"))
+
+
+async def _botao_responder(usuario: str, botao: str) -> dict:
+    """✅ Enviar / ✏️ Mudar / 🙈 Ignorar under a drafted answer to someone on the person's own WhatsApp (16/10)."""
+    _, login, pid, acao = (botao.split(":") + ["", "", "", ""])[:4]
+    if login != usuario:
+        return {"ok": False}
+    ex, nav = _externas()
+    try:
+        p = ex.pedido(login, pid)
+    except ex.Recusa:
+        p = None
+    if not p or p["estado"] not in ex.PEDIDOS_ABERTOS:
+        await asyncio.to_thread(ponte().enviar, usuario, "Essa sugestão já foi resolvida.")
+        return {"ok": True}
+    if acao == "ignorar":
+        ex.decidir(login, pid, "ignorado", "ignorada pela pessoa")
+        await asyncio.to_thread(ponte().enviar, usuario, f"🙈 Ok, não respondo {p['titulo']}.")
+        return {"ok": True}
+    if acao == "mudar":
+        return _para_a_conversa(usuario, (
+            f"✏️ Quero mudar a resposta para {p['titulo']} (pedido {pid}):\n\n{p['sugestao']}\n\n"
+            "Pergunte em uma linha o que eu quero mudar (ou mande o meu texto). Depois reescreva e chame "
+            f"conversa_externa acao sugerir_resposta, pedido \"{pid}\", com o novo texto. Não envie nada sem o meu ✅."))
+    nome = ((sys.modules.get("login_usuarios_convidados").convidado(login) or {}).get("nome")
+            if sys.modules.get("login_usuarios_convidados") else "") or login.title()
+
+    async def mandar():  # the browser takes a while; the bridge does not wait for it
+        try:
+            lidas = await nav.responder(ex, login, nome, p, p["sugestao"])
+        except Exception as exc:
+            await asyncio.to_thread(ponte().enviar, usuario, f"⚠️ Não mandei para {p['titulo']}: {exc}")
+            if "já respondeu" in str(exc):
+                ex.decidir(login, pid, "ignorado", "respondida pela pessoa")
+            return
+        ex.decidir(login, pid, "enviado")
+        mais = ex.chegaram_depois(p, lidas)
+        await asyncio.to_thread(ponte().enviar, usuario, f"✅ Enviado para {p['titulo']}." + (
+            " Enquanto você aprovava, chegou também: " + " / ".join(f"«{t[:150]}»" for t in mais[-3:]) if mais else ""))
+
+    asyncio.get_running_loop().create_task(mandar())
+    return {"ok": True}
+
+
 async def _botao_conta(usuario: str, botao: str) -> dict:
     """✅ Já paguei, ⏰ Amanhã (remind again tomorrow), 🙈 Não é minha."""
     _, login, cid, acao = (botao.split(":") + ["", "", "", ""])[:4]
@@ -701,6 +750,8 @@ class Receber(ApiHandler):
             return await _botao_iniciativa(usuario, botao)
         if botao.startswith("rd:"):  # a drafted e-mail reply of plugins/auxiliar
             return await _botao_rascunho(usuario, botao)
+        if botao.startswith("rp:"):  # a drafted answer on the person's WhatsApp (plugins/conversas_externas)
+            return await _botao_responder(usuario, botao)
         if botao.startswith("ct:"):  # a bill reminder of plugins/auxiliar
             return await _botao_conta(usuario, botao)
         if botao.startswith("pa:"):  # a prospecting action of plugins/prospeccao

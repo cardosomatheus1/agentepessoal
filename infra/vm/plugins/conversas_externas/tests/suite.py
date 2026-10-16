@@ -248,6 +248,17 @@ class Suite:
             ok(pg.evaluate(e.SCRIPT_CAMPO_TELEFONE) == "foco", "acha o campo do número")
             ok(pg.evaluate(e.SCRIPT_VALOR_TELEFONE) == "+55 71 90000-0000", "lê o número digitado")
             ok(pg.evaluate(e.SCRIPT_AVANCAR) == "clicado" and pg.evaluate("window.foi3") == 1, "clica em Next")
+            pg.set_content('<div id="pane-side">'
+                           '<div role="listitem" onclick="window.abriu=\'Ana\'"><span title="Ana">Ana</span><span aria-label="2 unread messages">2</span></div>'
+                           '<div role="listitem"><span title="Bruno">Bruno</span></div>'
+                           '<div role="listitem"><span title="Loja \'X\'">Loja</span><span aria-label="1 mensagem não lida">1</span></div>'
+                           '</div><div id="main"><header><span title="Ana">Ana</span></header><footer><div contenteditable="true"></div></footer></div>')
+            ok(json.loads(pg.evaluate(e.SCRIPT_NAO_LIDAS))["chats"] == [{"titulo": "Ana", "nao_lidas": 2}, {"titulo": "Loja 'X'", "nao_lidas": 1}],
+               "acha as conversas com mensagem não lida")
+            ok(pg.evaluate(e.script_abrir_titulo("Ana")) == "clicado" and pg.evaluate("window.abriu") == "Ana", "abre pelo nome")
+            ok(pg.evaluate(e.script_abrir_titulo("Loja 'X'")) == "clicado", "nome com aspas")
+            ok(pg.evaluate(e.script_abrir_titulo("Carla")) == "não achei", "nome que não está na lista")
+            ok(pg.evaluate(e.SCRIPT_TITULO_ABERTO) == "Ana" and pg.evaluate(e.SCRIPT_CAIXA) == "foco", "conversa aberta e caixa vazia")
             pg.set_content('<div data-link-code="ABCD,1234"></div>')
             ok(json.loads(pg.evaluate(e.SCRIPT_ESTADO))["codigo"] == "ABCD1234", "lê o código de 8 letras")
             pg.set_content('<div>Enter code on phone</div><div>K7QP-2XRT</div>')
@@ -270,9 +281,105 @@ class Suite:
         txt = e.texto_preferencias("Will", reg)
         ok(txt.startswith("📝 Will") and all(f"• {k}:" in txt for k, _ in e.QUESTIONARIO), f"aviso ao Matheus completo: {txt}")
         prompt = (RAIZ / "prompts" / "agent.system.tool.conversa_externa.md").read_text(encoding="utf-8")
-        ok("AINDA NÃO EXISTE" in prompt and "UMA pergunta por mensagem" in prompt and "✅ Enviar" in prompt,
-           "regra: sugere aprovar antes e faz o questionário")
+        ok("UMA pergunta por mensagem" in prompt and "✅ Enviar" in prompt and "sem o ✅ dela" in prompt,
+           "regra: começa aprovando e faz o questionário")
         ok(all(k in prompt for k, _ in e.QUESTIONARIO), "prompt e ferramenta pedem as mesmas respostas")
+
+    def t_responder_fluxo(self):
+        # 16/10, Matheus: "então construa" — unread chat -> draft -> the person approves -> sent; changes teach
+        e = _ex()
+        ok(not e.varrer_agora("will", _ts(e, 10)), "desligado: não olha nada")
+        e.ligar_responder("will", True, ["Mãe", " Grupo da família "], False)
+        ok(e.varrer_agora("will", _ts(e, 10)) and not e.varrer_agora("will", _ts(e, 10) + 60), "a cada 3 min")
+        ok(e.varrer_agora("will", _ts(e, 10) + 200) and not e.varrer_agora("will", _ts(e, 23)), "só no horário")
+        ok(e.jid_de([{"id": "false_5571999990000@c.us_ABC"}]) == ("5571999990000@c.us", "5571999990000"), "telefone do id")
+        ok(e.jid_de([{"id": "false_1203630@g.us_X_557199@c.us"}])[0].endswith("@g.us"), "grupo")
+        ok(e.jid_de([{"id": "true_98765@lid_X"}]) == ("98765@lid", ""), "lid: sem telefone (abre pelo nome)")
+        ana = [{"id": "true_5571988887777@c.us_A1", "de": "eu", "texto": "Oi Ana"},
+               {"id": "false_5571988887777@c.us_B1", "de": "eles", "texto": "Oi Will, amanhã você pode às 15h?"}]
+        ok(e.novo_pedido("will", "Mãe", ana) is None, "excluída fica de fora")
+        grupo = [{"id": "false_1203@g.us_C1_5571@c.us", "de": "eles", "texto": "bom dia"}]
+        ok(e.novo_pedido("will", "Pelada", grupo) is None, "grupo fica de fora")
+        ok(e.novo_pedido("will", "Ana", ana[:1]) is None, "a última é minha: nada a responder")
+        p = e.novo_pedido("will", "Ana", ana, _ts(e, 10))
+        ok(p and p["telefone"] == "5571988887777" and [m["texto"] for m in p["recebidas"]] == ["Oi Will, amanhã você pode às 15h?"],
+           f"pedido: {p}")
+        mais = ana + [{"id": "false_5571988887777@c.us_B2", "de": "eles", "texto": "?"}]
+        ok(e.novo_pedido("will", "Ana", mais, _ts(e, 10)) is None, "já tem sugestão aberta para a Ana: não repete")
+        aviso = e.aviso_pedido(p, "Will", {"tom": "informal"}, [])
+        ok(f'pedido "{p["id"]}"' in aviso and "Will: Oi Ana" in aviso and "nada sai sem ele" in aviso and "tom: informal" in aviso, aviso)
+        for ruim in ("", "x" * (e.TAMANHO_MAX + 1)):
+            try:
+                e.sugerir("will", p["id"], ruim)
+                ok(False, "sugestão inválida aceita")
+            except e.Recusa:
+                pass
+        e.sugerir("will", p["id"], "Opa, posso sim! 15h fechado.")
+        e.sugerir("will", p["id"], "Posso sim, Ana. Te vejo 15h")
+        texto, botoes = e.cartao("will", e.pedido("will", p["id"]))
+        ok("Ana" in texto and "Te vejo 15h" in texto and [b["titulo"] for b in botoes] == ["✅ Enviar", "✏️ Mudar", "🙈 Ignorar"]
+           and all(b["id"].startswith(f"rp:will:{p['id']}:") and len(b["id"]) <= 64 for b in botoes), f"cartão: {texto} {botoes}")
+        e.decidir("will", p["id"], "enviado")
+        ex = e.carregar("will")["exemplos_resposta"]
+        ok(ex[-1]["sugerida"] == "Opa, posso sim! 15h fechado." and ex[-1]["enviada"] == "Posso sim, Ana. Te vejo 15h", "aprende com a mudança")
+        try:
+            e.decidir("will", p["id"], "enviado")
+            ok(False, "enviou duas vezes")
+        except e.Recusa:
+            pass
+        ok(e.novo_pedido("will", "Ana", mais, _ts(e, 11))["recebidas"][-1]["texto"] == "?", "depois de resolvida, a nova vem")
+        ok("ele mandou «Posso sim, Ana. Te vejo 15h»" in e.aviso_pedido(p, "Will", {}, ex), "a correção vai no próximo pedido")
+        ok("will" in e.logins() and e.ligar_responder("will", False)["ativo"] is False, "desliga")
+        lidas = [{"id": "R1", "de": "eles", "texto": "a"}, {"id": "R2", "de": "eles", "texto": "e o preço?"}, {"id": "M", "de": "eu", "texto": "ok"}]
+        ok(e.chegaram_depois({"recebidas": [{"id": "R1"}]}, lidas) == ["e o preço?"], "avisa o que chegou enquanto ele aprovava")
+        vigia = (RAIZ / "extensions" / "python" / "job_loop" / "_48_vigiar_conversas.py").read_text(encoding="utf-8")
+        ok("ex.PEDIDOS_ABERTOS}" in vigia and "abertos)" in vigia, "conversa com sugestão pendente não é reaberta (marcaria lida)")
+
+    def t_responder_navegador(self):
+        e = _ex()
+        n = _carregar("navegador_teste_resp", "navegador.py")
+        n.asyncio = type("A", (), {"sleep": staticmethod(lambda s: asyncio.sleep(0)), "Lock": asyncio.Lock})
+
+        class Rt(RtFalso):
+            def __init__(self, e, ja_respondi=False):
+                super().__init__(e)
+                self.ja, self.digitado = ja_respondi, []
+
+            async def call(self, metodo, *args, **kw):
+                if metodo == "keyboard" and kw.get("text"):
+                    self.digitado.append(kw["text"])
+                if metodo == "evaluate" and args[1] == self.e.SCRIPT_CAIXA:
+                    return {"result": "foco"}
+                if metodo == "evaluate" and args[1] == self.e.SCRIPT_MENSAGENS:
+                    msgs = [{"id": "false_557199@c.us_R1", "de": "eles", "texto": "Pode às 15h?"}]
+                    if self.ja:
+                        msgs.append({"id": "true_557199@c.us_M0", "de": "eu", "texto": "pode sim"})
+                    if self.enviado:
+                        msgs.append({"id": "true_557199@c.us_M1", "de": "eu", "texto": "Posso sim, Ana. Te vejo 15h"})
+                    return {"result": json.dumps({"mensagens": msgs})}
+                return await super().call(metodo, *args, **kw)
+
+        p = {"id": "a1", "titulo": "Ana", "telefone": "557199", "recebidas": [{"id": "false_557199@c.us_R1", "texto": "Pode às 15h?"}]}
+        rt = Rt(e)
+
+        async def rt1(*a):
+            return rt
+        n._runtime = rt1
+        asyncio.run(n.responder(e, "will", "Will", p, "Posso sim, Ana.\nTe vejo 15h"))
+        ok(rt.digitado == ["Posso sim, Ana.", "Te vejo 15h"] and any(c[0] == "key_chord" for c in rt.chamadas),
+           f"digita as linhas com Shift+Enter: {rt.digitado}")
+        nav = [c for c in rt.chamadas if c[0] == "navigate"][0][1][1]
+        ok(nav == "https://web.whatsapp.com/send?phone=557199", f"abre a conversa sem texto pronto: {nav}")
+        rt2 = Rt(e, ja_respondi=True)
+
+        async def rt2f(*a):
+            return rt2
+        n._runtime = rt2f
+        try:
+            asyncio.run(n.responder(e, "will", "Will", p, "Posso sim"))
+            ok(False, "mandou depois de ele já ter respondido")
+        except n.SemWhatsApp as exc:
+            ok("já respondeu" in str(exc) and not rt2.digitado, str(exc))
 
     def t_convidado_pode_usar(self):
         arq = next((x for x in (RAIZ.parent / "login_usuarios" / "helpers" / "convidados.py",

@@ -31,6 +31,26 @@ def _nome(login: str) -> str:
     return ((conv.convidado(login) or {}).get("nome") if conv else "") or login.title()
 
 
+async def _responder_por_mim(ex, nav, login: str, nome: str) -> None:
+    """16/10: unread chats on the person's WhatsApp become drafts the agent writes and the person approves."""
+    if not ex.varrer_agora(login):
+        return
+    abertos = {p["titulo"] for p in ex.carregar(login).get("pedidos_resposta", []) if p["estado"] in ex.PEDIDOS_ABERTOS}
+    try:
+        chats = await nav.nao_lidas(ex, login, nome, ex.CHATS_POR_VARREDURA, abertos)
+    except Exception as exc:
+        print(f"conversas_externas: {login}: sem varredura: {exc}", flush=True)
+        return
+    d = ex.carregar(login)
+    for titulo, mensagens in chats:
+        p = ex.novo_pedido(login, titulo, mensagens)
+        if p:
+            receber = _carregar("whatsapp_receber_vigia", Path("/a0/usr/plugins/whatsapp/api/receber.py"))
+            receber._para_a_conversa(login, ex.aviso_pedido(p, nome, d.get("responder_por_mim") or {},
+                                                            d.get("exemplos_resposta") or []))
+            print(f"conversas_externas: {login}: mensagem nova de {titulo} (pedido {p['id']})", flush=True)
+
+
 async def _passo() -> None:
     ex = _carregar("conversas_externas_helper", RAIZ / "helpers" / "externas.py")
     nav = _carregar("conversas_externas_navegador", RAIZ / "helpers" / "navegador.py")
@@ -54,8 +74,11 @@ async def _passo() -> None:
                 atual = ex._conversa(ex.carregar(login), c["id"])
                 receber._para_a_conversa(login, ex.aviso_ao_agente(atual, novas, nome))
                 print(f"conversas_externas: {login}/{c['id']}: {len(novas)} resposta(s) de {c['nome']}", flush=True)
-        if any(c["estado"] in ex.ABERTAS and time.time() - float(c.get("ultima_atividade") or 0) < ACORDADO_S
-               for c in ex.carregar(login)["conversas"]):
+        await _responder_por_mim(ex, nav, login, nome)
+        d = ex.carregar(login)
+        if (ex.responder_config(d)["ativo"] and ex.HORARIO[0] <= ex._hora_local() < ex.HORARIO[1]) or any(
+                c["estado"] in ex.ABERTAS and time.time() - float(c.get("ultima_atividade") or 0) < ACORDADO_S
+                for c in d["conversas"]):
             try:
                 nav.manter_acordado(ex, login)
             except Exception as exc:

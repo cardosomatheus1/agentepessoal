@@ -107,13 +107,37 @@ class ConversaExterna(Tool):
                 c = e.encerrar(login, conversa, motivo or "concluída")
                 return r(f"Conversa com {c['nome']} encerrada ({c['motivo']}). Não vigio mais.")
             if acao == "responder_por_mim":
+                if not (await n.estado(e, login, dono)).get("logado"):
+                    return r(f"NÃO FEITO: o WhatsApp de {dono} não está conectado. Conecte primeiro (acao \"conectar\").")
                 reg = e.salvar_preferencias(login, kwargs.get("respostas") or {})
+                excluir = kwargs.get("excluir")
+                cfg = e.ligar_responder(login, True, excluir if isinstance(excluir, list) else None,
+                                        bool(kwargs.get("grupos")) if "grupos" in kwargs else None)
                 avisado = avisar_matheus(e.texto_preferencias(dono, reg)) if login != "matheus" else ""
-                return r(f"Preferências de {dono} guardadas{avisado}. Diga a ele, na língua dele, que o Matheus vai montar "
-                         "isso com essas respostas e que você avisa quando estiver pronto. Não prometa data e não comece a "
-                         "responder ninguém por ele.")
-            return r("acao desconhecida: use listar, estado, conectar, abrir, enviar, ler, esperar_dono, encerrar ou "
-                     "responder_por_mim")
+                return r(f"Ligado para {dono}{avisado}: a cada {e.VARREDURA_S // 60} min (das {e.HORARIO[0]}h às "
+                         f"{e.HORARIO[1]}h) olho as conversas com mensagem não lida"
+                         + (f", menos {', '.join(cfg['excluir'])}" if cfg["excluir"] else "")
+                         + ("" if cfg["grupos"] else ", sem grupos") + ". Para cada uma ele recebe aqui a resposta sugerida "
+                         "com ✅ Enviar / ✏️ Mudar / 🙈 Ignorar; nada sai sem ele. Diga isso a ele em 2 linhas, na língua "
+                         "dele, e avise que abrir a conversa no WhatsApp Web marca as mensagens como lidas no celular.")
+            if acao == "responder_desligar":
+                e.ligar_responder(login, False)
+                return r(f"Desligado: não olho mais as mensagens de {dono}.")
+            if acao == "sugerir_resposta":
+                p = e.sugerir(login, conversa or kwargs.get("pedido") or "", texto)
+                cartao, botoes = e.cartao(login, p)
+                ponte = sys.modules.get("whatsapp_ponte")
+                erro = ponte.enviar(login, cartao, "", "", botoes, "resposta", reenviar=True) if ponte else "ponte indisponível"
+                if erro:
+                    return r(f"NÃO FEITO: a sugestão não chegou a {dono} ({str(erro)[:150]}). Tente de novo em seguida.")
+                self.agent.set_data("_resposta_ja_enviada", True)  # the card was the answer: no extra message
+                return r("Sugestão enviada com os botões. Termine agora com a ferramenta response e texto \"ok\" "
+                         "(não vai para ele). Se ele pedir mudança, chame sugerir_resposta de novo com o mesmo pedido.")
+            if acao == "pular_mensagem":
+                p = e.decidir(login, conversa or kwargs.get("pedido") or "", "ignorado", motivo or "pulada pelo agente")
+                return r(f"Mensagem de {p['titulo']} não será respondida. Se ele precisa saber, diga em uma linha.")
+            return r("acao desconhecida: use listar, estado, conectar, abrir, enviar, ler, esperar_dono, encerrar, "
+                     "responder_por_mim, responder_desligar, sugerir_resposta ou pular_mensagem")
         except StopIteration:
             return r(f"conversa {conversa} não encontrada (veja acao \"listar\")")
         except (e.Recusa, n.SemWhatsApp) as exc:

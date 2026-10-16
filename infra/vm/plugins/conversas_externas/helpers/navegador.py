@@ -188,6 +188,92 @@ async def _ler(ex, login: str, nome: str, numero: str) -> dict:
     return r if isinstance(r, dict) else {"mensagens": []}
 
 
+async def _na_lista(rt, aba, ex) -> None:
+    """WhatsApp Web on its main screen (a send?phone= page or another chat may be open; the list is always there)."""
+    est = await _js(rt, aba, ex.SCRIPT_ESTADO) or {}
+    if not (isinstance(est, dict) and est.get("logado")):
+        await rt.call("navigate", aba, WEB)
+        est = await _esperar(rt, aba, ex, lambda e: e.get("logado") or e.get("qr") or e.get("pede_numero"), 45)
+        if not est.get("logado"):
+            raise SemWhatsApp("o WhatsApp da pessoa não está conectado: chame acao \"conectar\"")
+
+
+async def _abrir_titulo(rt, aba, ex, titulo: str) -> None:
+    await _na_lista(rt, aba, ex)
+    if await _js(rt, aba, ex.script_abrir_titulo(titulo)) != "clicado":
+        raise SemWhatsApp(f"não achei a conversa «{titulo}» na lista do WhatsApp Web")
+    for _ in range(10):
+        await asyncio.sleep(1)
+        if await _js(rt, aba, ex.SCRIPT_TITULO_ABERTO) == titulo:
+            return
+    raise SemWhatsApp(f"a conversa «{titulo}» não abriu no WhatsApp Web")
+
+
+async def _nao_lidas(ex, login: str, nome: str, maximo: int, pular: set) -> list:
+    """[(titulo, mensagens)] of the chats with unread messages (opening one marks it read on the phone too, so a chat
+    whose draft waits for the person, `pular`, stays closed and unread until then)."""
+    rt = await _runtime(ex, login, nome)
+    aba = await _aba(rt)
+    await _na_lista(rt, aba, ex)
+    chats = [c for c in ((await _js(rt, aba, ex.SCRIPT_NAO_LIDAS)) or {}).get("chats") or [] if c["titulo"] not in pular]
+    out = []
+    for c in chats[:maximo]:
+        try:
+            await _abrir_titulo(rt, aba, ex, c["titulo"])
+            await asyncio.sleep(1.5)
+            r = await _js(rt, aba, ex.SCRIPT_MENSAGENS)
+            out.append((c["titulo"], (r or {}).get("mensagens") or [] if isinstance(r, dict) else []))
+        except SemWhatsApp as exc:
+            print(f"conversas_externas: {login}: {exc}", flush=True)
+    return out
+
+
+async def _responder(ex, login: str, nome: str, p: dict, texto: str) -> list:
+    """Send the approved `texto` in the chat of request `p`; refuses when the person already answered it themselves."""
+    rt = await _runtime(ex, login, nome)
+    aba = await _aba(rt)
+    if p.get("telefone"):
+        await _abrir_conversa(rt, aba, ex, p["telefone"])
+    else:
+        await _abrir_titulo(rt, aba, ex, p["titulo"])
+    await asyncio.sleep(1.5)
+    antes = ((await _js(rt, aba, ex.SCRIPT_MENSAGENS)) or {}).get("mensagens") or []
+    ids = [m["id"] for m in antes]
+    ultima = (p.get("recebidas") or [{}])[-1].get("id")
+    if ultima in ids and any(m["de"] == "eu" for m in antes[ids.index(ultima) + 1:]):
+        raise SemWhatsApp("você já respondeu essa conversa pelo celular; não mandei a sugestão")
+    if await _js(rt, aba, ex.SCRIPT_CAIXA) != "foco":
+        raise SemWhatsApp("a caixa de mensagem não estava vazia ou não apareceu; não mandei")
+    for i, linha in enumerate(texto.split("\n")):
+        if i:
+            await rt.call("key_chord", aba, ["Shift", "Enter"])
+        if linha:
+            await rt.call("keyboard", aba, text=linha)
+    await asyncio.sleep(0.5)
+    r = await _js(rt, aba, ex.SCRIPT_ENVIAR)
+    if r == "foco":
+        await rt.call("keyboard", aba, key="Enter")
+    elif r != "clicado":
+        raise SemWhatsApp(f"não consegui enviar ({r})")
+    inicio = " ".join(texto.split())[:25]
+    for _ in range(8):
+        await asyncio.sleep(1.5)
+        lidas = ((await _js(rt, aba, ex.SCRIPT_MENSAGENS)) or {}).get("mensagens") or []
+        if any(m["de"] == "eu" and m["id"] not in ids and inicio in " ".join(m["texto"].split()) for m in lidas[-5:]):
+            return lidas
+    raise SemWhatsApp("cliquei em enviar, mas a mensagem não apareceu na conversa: confira antes de mandar de novo")
+
+
+async def nao_lidas(ex, login: str, nome: str, maximo: int = 3, pular: set | None = None) -> list:
+    async with trava(login):
+        return await _nao_lidas(ex, login, nome, maximo, pular or set())
+
+
+async def responder(ex, login: str, nome: str, p: dict, texto: str) -> list:
+    async with trava(login):
+        return await _responder(ex, login, nome, p, texto)
+
+
 async def estado(ex, login: str, nome: str) -> dict:
     async with trava(login):
         return await _estado(ex, login, nome)

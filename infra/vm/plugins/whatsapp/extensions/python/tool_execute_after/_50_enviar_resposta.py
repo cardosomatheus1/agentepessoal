@@ -106,6 +106,14 @@ class EnviarResposta(Extension):
             return
         ctx = agent.context
         p = ponte()
+        if agent.get_data("_resposta_ja_enviada"):  # a tool already sent this turn's message (e.g. a draft with buttons)
+            agent.set_data("_resposta_ja_enviada", None)
+            if ctx.get_data("whatsapp_de"):
+                try:
+                    _helper("whatsapp_turnos", "turnos.py").fechar(ctx.id)
+                except Exception as exc:
+                    print(f"whatsapp: open-request mark of {ctx.id} not closed: {exc}", flush=True)
+            return
         nome_tarefa = p.tarefa(ctx) or ""
         tarefa = bool(nome_tarefa)
         avisos = ctx.get_data("_avisos_do_evento") or []  # notices held during an event (_52_avisar_celular)

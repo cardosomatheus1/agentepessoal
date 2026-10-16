@@ -16,3 +16,14 @@ horários", com a conversa seguindo, não só a primeira mensagem.
   externa …]" e o agente responde. 3 dias sem resposta: encerra e avisa. Mantém a VM acordada 6 h depois da última
   mensagem.
 - Estado: `/a0/usr/conversas_externas/<login>.json`, só pelas funções de `helpers/externas.py`.
+
+## Responder por mim (16/10, pedido do Will)
+- A pessoa pede; o agente explica, faz o questionário (quem, aprovar, assuntos, tom, horário, quando não souber) e chama
+  `responder_por_mim` (guarda as respostas, liga, avisa o Matheus).
+- Ligado: o vigia (`_48_vigiar_conversas.py`) olha a cada 3 min, das 7h às 21h, as conversas com mensagem não lida
+  (sem grupos e sem as excluídas, a não ser que ela peça), no máximo 3 por vez e 40 por dia. Abrir a conversa no
+  WhatsApp Web marca como lida no celular; conversa com sugestão pendente não é reaberta.
+- Cada mensagem nova vira um pedido; o agente escreve no jeito da pessoa (com as correções dela de antes) e
+  `sugerir_resposta` manda o cartão com ✅ Enviar / ✏️ Mudar / 🙈 Ignorar (botões `rp:`, tratados em
+  `whatsapp/api/receber.py`). Só o ✅ envia; se ela já respondeu pelo celular, não manda.
+- Enquanto está ligado, a máquina fica acordada no horário (para ver as mensagens).
