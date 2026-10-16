@@ -6,6 +6,7 @@ No app login: the signed link is the key, and it opens only the tab of the chat 
 """
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -29,6 +30,17 @@ def _tela():
 
 
 PAGINA = Path(__file__).resolve().parents[1] / "helpers" / "tela.html"
+ESCOLHER = r"""(() => { const alvo = __TEXTO__;
+  for (const s of document.querySelectorAll('select')) {
+    const o = [...s.options].find(o => o.text.trim() === alvo);
+    if (!o) continue;
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(s, o.value);
+    s.dispatchEvent(new Event('input', {bubbles: true}));
+    s.dispatchEvent(new Event('change', {bubbles: true}));
+    return 'escolhido: ' + o.text;
+  }
+  return 'opção não encontrada';
+})()"""
 ANEXOS = Path("/a0/usr/navegador_visual/anexos")  # what "anexar" may attach (put there by the operator)
 TAMANHO = """(() => [innerWidth, innerHeight])()"""
 # 16/10: the operator taking over a task reads the page as text (a picture cuts long fields, e.g. app credentials):
@@ -108,6 +120,8 @@ class Tela(ApiHandler):
                 r = await runtime.call("set_checked", bid, ref, checked=bool(valor))
             elif metodo == "click":
                 r = await runtime.call("click", bid, ref)
+            elif metodo == "escolher":  # a <select> by the visible text of an option (sites that ignore select_option)
+                r = await runtime.call("evaluate", bid, ESCOLHER.replace("__TEXTO__", json.dumps(str(valor or ""))))
             else:
                 return _erro("método não permitido", 400)
             return {"ok": True, "resultado": str(r)[:500]}
