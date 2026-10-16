@@ -90,6 +90,13 @@ async def _na_pagina(runtime, bid, op: str, valor: str) -> str:
                         return f"escolhido {valor!r} em {quadro.url[:80]}"
                     except Exception:
                         continue
+        if op == "escolher":  # a list the site draws itself: open it first (toque), then click the option by its text
+            for quadro in pagina.frames:
+                opcao = quadro.get_by_text(valor, exact=True)
+                for i in range(await opcao.count()):
+                    if await opcao.nth(i).is_visible():
+                        await opcao.nth(i).click()
+                        return f"cliquei na opção {valor!r}"
         return "não achei o campo em nenhum quadro da página"
 
     futuro = sessao._worker.event_loop_thread.run_coroutine(fazer())
