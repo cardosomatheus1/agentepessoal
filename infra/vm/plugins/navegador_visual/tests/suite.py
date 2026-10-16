@@ -51,6 +51,8 @@ class Suite:
         ok("conferir(token" in api and 'get_data("dono")' in api, "a API confere o link e o dono da conversa")
         ok('("Enter", "Backspace", "Tab", "Escape")' in api, "só teclas de edição")
         ok('acao == "abrir"' in api and 'url.startswith("https://")' in api, "abrir endereço só https")
+        ok('acao == "abas"' in api and 'runtime.call("open"' in api and 'input.get("nova")' in api, "abre aba nova e lista as abas da conversa")
+        ok('"aba não encontrada nesta conversa"' in api and 'str(pedida) not in ids' in api, "aba escolhida só entre as da própria conversa")
         # 16/10: page text for the operator, behind the same signed link; never password fields
         ok('acao == "conteudo"' in api and "c.type !== 'password'" in api
            and api.index("conferir(token") < api.index('acao == "conteudo"'), "texto da página só com o link e sem senha")

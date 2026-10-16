@@ -177,9 +177,22 @@ class Tela(ApiHandler):
         if runtime is None:
             return _erro("esta conversa não tem navegador aberto", 404)
         lista = await runtime.call("list")
+        abas = (lista or {}).get("browsers") or []
+        if acao == "abas":  # the tabs of this chat, so the operator can keep two sites open side by side
+            return {"abas": [{"id": a.get("id"), "url": a.get("currentUrl") or a.get("url"), "titulo": a.get("title")}
+                             for a in abas], "atual": (lista or {}).get("last_interacted_browser_id")}
+        if acao == "abrir" and input.get("nova") and str(input.get("url") or "").startswith("https://"):
+            r = await runtime.call("open", str(input.get("url")))  # a new tab; the others stay as they are
+            return {"ok": True, "nova_aba": True, "aba": (r or {}).get("id")}
         bid = (lista or {}).get("last_interacted_browser_id")
-        if bid is None and (lista or {}).get("browsers"):
-            bid = lista["browsers"][-1].get("id")
+        pedida = input.get("aba")
+        if pedida is not None:  # only a tab of this same chat
+            ids = {str(a.get("id")): a.get("id") for a in abas}
+            if str(pedida) not in ids:
+                return _erro("aba não encontrada nesta conversa", 404)
+            bid = ids[str(pedida)]
+        if bid is None and abas:
+            bid = abas[-1].get("id")
         if bid is None and abrir_nova:  # the tab was closed (e.g. by the cleanup): the operator opens a new one
             await runtime.call("open", str(input.get("url")))
             return {"ok": True, "nova_aba": True}
