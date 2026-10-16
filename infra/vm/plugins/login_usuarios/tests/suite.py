@@ -242,6 +242,18 @@ class Suite:
         ok((RAIZ / "extensions" / "python" / "tool_execute_after" / "_05_agenda_convidado.py").exists()
            and (RAIZ / "extensions" / "python" / "job_loop" / "_20_limite_convidados.py").exists(), "filtro e pausa ligados")
 
+    def t_convidado_computador_isolado(self):
+        # 16/10, Matheus: terminal, código e arquivos "precisa ser isolado, de forma alguma acessar nada meu"
+        c = self._c()
+        proj = c.projeto("will")
+        ok(c.bloqueio("will", "terminal_isolado", {"comando": "ls /etc"}, proj) == "", "a caixa dele roda o que ele quiser")
+        for f in ("code_execution_tool", "text_editor", "input"):
+            ok("não está disponível" in c.bloqueio("will", f, {}, proj), f"nunca o {f} do agente")
+        tool = (RAIZ / "tools" / "terminal_isolado.py").read_text(encoding="utf-8")
+        ok("host.docker.internal:8790" in tool and "convidado(login)" in tool and "subprocess" not in tool,
+           "a ferramenta só pede à caixa do convidado; não roda nada aqui")
+        ok("computador próprio" in c.instrucoes("will"), "ele sabe que tem")
+
     def t_tarefa_e_do_dono_do_projeto(self):
         # 16/10: a routine's own chat has no "dono"; it belongs to its project's owner (a guest's routine reports to him)
         if "agent" in sys.modules:

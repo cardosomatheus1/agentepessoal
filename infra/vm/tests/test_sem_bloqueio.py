@@ -29,8 +29,13 @@ class Achar(ast.NodeVisitor):
     def visit_Lambda(self, no):
         self._func(no, False)
 
+    def visit_Await(self, no):  # `await x.enviar(…)` is a coroutine (e.g. the WhatsApp Web driver), not a blocking call
+        if isinstance(no.value, ast.Call):
+            no.value._aguardada = True
+        self.generic_visit(no)
+
     def visit_Call(self, no):
-        if self.pilha and self.pilha[-1] and BLOQUEANTES.search(ast.unparse(no.func)):
+        if self.pilha and self.pilha[-1] and not getattr(no, "_aguardada", False) and BLOQUEANTES.search(ast.unparse(no.func)):
             self.achados.append(no.lineno)
         self.generic_visit(no)
 

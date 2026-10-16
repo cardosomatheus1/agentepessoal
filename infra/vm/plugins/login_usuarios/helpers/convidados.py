@@ -22,8 +22,8 @@ CONVIDADOS = {
 }
 
 # What a guest's agent may use: conversation, research, the browser (own profile), files the guest sent, own
-# memory/notes/vault, and (16/10, Matheus: "os convidados devem poder") their own scheduled tasks, within limits.
-# Nothing of the Raiz, of Matheus's accounts, no shell, no file editor.
+# memory/notes/vault, and (16/10, Matheus: "os convidados devem poder") their own scheduled tasks, within limits, and
+# their own isolated computer. Nothing of the Raiz, of Matheus's accounts, and never the agent's own shell or editor.
 FERRAMENTAS = (
     "response", "call_subordinate", "wait", "notify_user",  # no "parallel": its chats have no project
     "search_engine", "pesquisar", "browser", "document_query", "vision_load", "analisar_imagens",
@@ -33,6 +33,7 @@ FERRAMENTAS = (
     "conversa_externa",  # 15/10: talk to stores/clinics on the guest's OWN WhatsApp (plugin conversas_externas)
     "whatsapp_enviar",  # always to the chat's owner, and only the guest's own files (see caminho_proibido)
     "scheduler",  # 16/10: own routines only (regra_agenda / filtrar_agenda); they run in the guest's project
+    "terminal_isolado",  # 16/10: the guest's own separate container (infra/vm/caixa_convidados.py), never this one
 )
 
 # Guests' scheduled tasks: few, at most hourly, only their own; paused while the guest is past the day's limit.
@@ -81,8 +82,9 @@ def instrucoes(login: str) -> str:
             f"link do Google Maps de cada uma. Nunca troque a cidade dele por outra maior só porque achou mais resultado lá.\n"
             f"Uso só pessoal: conversar, pesquisar, ler arquivos e fotos que {nome} mandar, navegar, guardar notas, "
             f"lembrar coisas dele e criar rotinas (tarefas agendadas, até {TAREFAS_MAX}, no máximo de hora em hora; o "
-            f"resultado chega no Telegram dele). Você NÃO tem aqui as ferramentas do Matheus (Raiz Connect, prospecção, "
-            f"posts, Instagram, e-mail, agenda, contas, terminal) e não fala dos dados, clientes, "
+            f"resultado chega no Telegram dele) e usar o computador próprio dele (terminal_isolado: rodar código, "
+            f"editar arquivos, instalar pacotes, separado de tudo do agente). Você NÃO tem aqui as ferramentas do Matheus "
+            f"(Raiz Connect, prospecção, posts, Instagram, e-mail, agenda, contas, o terminal do agente) e não fala dos dados, clientes, "
             f"conversas ou negócios do Matheus. Se {nome} pedir algo disso, diga com educação que este acesso é só "
             f"para uso pessoal dele.\nCada conversa dele tem um limite de uso por dia; se acabar, o próprio celular avisa.")
 

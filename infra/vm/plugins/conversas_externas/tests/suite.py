@@ -418,8 +418,8 @@ class Suite:
             ok(False, "aprovou sem proposta")
         except e.Recusa:
             pass
-        e.propor("will", "perfil", "- tudo minúsculo\n- risada é kkk\n- frases curtas, sem ponto final")
-        e.propor("will", "fatos", "- diária 250 (sábado), 300 (domingo)\n- endereço da obra: manda depois")
+        e.propor_aprendizado("will", "perfil", "- tudo minúsculo\n- risada é kkk\n- frases curtas, sem ponto final")
+        e.propor_aprendizado("will", "fatos", "- diária 250 (sábado), 300 (domingo)\n- endereço da obra: manda depois")
         ok(e.contexto_aprendido("will", {"recebidas": [{"texto": "diária?"}], "titulo": "Carlos"})["perfil"] == "",
            "proposta pendente ainda não vale")
         txt, bot = e.cartao_proposta("will", "fatos", e.carregar_aprendizado("will")["fatos"]["pendente"])

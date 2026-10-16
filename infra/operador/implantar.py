@@ -2,6 +2,8 @@
 
     python3 infra/operador/implantar.py prospeccao [--skill prospeccao-instagram] [--forcar]
     python3 infra/operador/implantar.py --host ponte_whatsapp.py [--reiniciar agentepessoal-whatsapp.service] [--forcar]
+    python3 infra/operador/implantar.py --host caixa_convidados.py --unidade agentepessoal-caixas.service
+        (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it)
     python3 infra/operador/implantar.py --controle [--forcar]   (the control page / webhooks Lambda, infra/control)
 
 Why (11/10): two Claude sessions deployed the same plugin over each other and one edited the live data by hand; a
@@ -50,7 +52,7 @@ def vm(comando: str, timeout: int = 600) -> str:
 # host scripts installed by setup.sh in /opt/agentepessoal (12/10 review: they were copied to the VM by hand)
 HOST_ARQUIVOS = ("bedrock_proxy.py", "report_url.py", "watchdog.sh", "memguard.sh", "backup.sh", "hibernate.sh",
                  "entrada.sh", "credenciais_meta.py", "ponte_whatsapp.py", "proximo_despertar.py", "agent_tools.sh",
-                 "saude.py", "firewall.sh", "usuarios.py")
+                 "saude.py", "firewall.sh", "usuarios.py", "caixa_convidados.py")
 
 
 def _conferir_git(caminhos: list) -> str:
@@ -71,21 +73,28 @@ def host(args: list) -> None:
     if arquivo not in HOST_ARQUIVOS:
         raise SystemExit(f"script de host desconhecido: {arquivo!r} (conhecidos: {', '.join(HOST_ARQUIVOS)})")
     caminho = f"infra/vm/{arquivo}"
-    head = _conferir_git([caminho])
+    unidade_nova = args[args.index("--unidade") + 1] if "--unidade" in args else ""
+    caminhos = [caminho] + ([f"infra/vm/unidades/{unidade_nova}"] if unidade_nova else [])
+    if unidade_nova and not (RAIZ / caminhos[1]).exists():
+        raise SystemExit(f"unidade desconhecida: {unidade_nova} (esperada em infra/vm/unidades/)")
+    head = _conferir_git(caminhos)
     versao = f"/opt/agentepessoal/.versao-{arquivo}"
     no_ar = vm(f"cat {versao} 2>/dev/null | head -1").split(" ")[0]
     if no_ar and "--forcar" not in args and subprocess.run(["git", "merge-base", "--is-ancestor", no_ar, head], cwd=RAIZ).returncode:
         raise SystemExit(f"a VM roda {arquivo} de {no_ar[:8]}, que não está no seu histórico: faça git pull (ou --forcar).")
-    pacote = subprocess.run(["git", "archive", "--format=tar.gz", "HEAD", caminho], cwd=RAIZ, check=True, capture_output=True).stdout
+    pacote = subprocess.run(["git", "archive", "--format=tar.gz", "HEAD", *caminhos], cwd=RAIZ, check=True, capture_output=True).stdout
     chave = f"tmp/implantar-host-{arquivo}-{head[:8]}.tgz"
     boto3.client("s3", region_name="us-east-1").put_object(Bucket=BUCKET, Key=chave, Body=pacote)
     checar = f"bash -n {{f}}" if arquivo.endswith(".sh") else "python3 -m py_compile {f}"
-    unidade = args[args.index("--reiniciar") + 1] if "--reiniciar" in args else ""
+    unidade = args[args.index("--reiniciar") + 1] if "--reiniciar" in args else unidade_nova
+    instalar = (f" && install -m 644 {{e}}/infra/vm/unidades/{unidade_nova} /etc/systemd/system/{unidade_nova} && "
+                f"systemctl daemon-reload && systemctl enable -q {unidade_nova}") if unidade_nova else ""
     estagio = "/tmp/implantar-host"
     saida = vm(f"rm -rf {estagio} && mkdir -p {estagio} && aws s3 cp --quiet s3://{BUCKET}/{chave} - | tar xz -C {estagio} && "
                f"{checar.format(f=f'{estagio}/{caminho}')} && echo SINTAXE_OK && "
                f"install -m 755 {estagio}/{caminho} /opt/agentepessoal/{arquivo} && "
                f"echo '{head} {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}' > {versao} && cat {versao}"
+               + instalar.format(e=estagio)
                + (f" && systemctl restart {unidade} && systemctl is-active {unidade}" if unidade else ""))
     print(saida[-800:])
     if "SINTAXE_OK" not in saida:

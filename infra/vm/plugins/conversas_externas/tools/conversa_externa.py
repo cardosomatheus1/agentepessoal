@@ -139,7 +139,8 @@ class ConversaExterna(Tool):
                 excluir = kwargs.get("excluir")
                 cfg = e.ligar_responder(login, True, excluir if isinstance(excluir, list) else None,
                                         bool(kwargs.get("grupos")) if "grupos" in kwargs else None)
-                avisado = avisar_matheus(e.texto_preferencias(dono, reg)) if login != "matheus" else ""
+                avisado = (await asyncio.to_thread(avisar_matheus, e.texto_preferencias(dono, reg))
+                           if login != "matheus" else "")
                 return r(f"Ligado para {dono}{avisado}: a cada {e.VARREDURA_S // 60} min (das {e.HORARIO[0]}h às "
                          f"{e.HORARIO[1]}h) olho as conversas com mensagem não lida"
                          + (f", menos {', '.join(cfg['excluir'])}" if cfg["excluir"] else "")
@@ -157,10 +158,11 @@ class ConversaExterna(Tool):
                          "recebe \"[Aprendizado pronto]\". Diga isso a ele em uma linha.")
             if acao in ("propor_perfil", "propor_fatos"):
                 tipo = acao.split("_")[1]
-                prop = e.propor(login, tipo, texto if tipo == "perfil" else (kwargs.get("fatos") or texto))
+                prop = e.propor_aprendizado(login, tipo, texto if tipo == "perfil" else (kwargs.get("fatos") or texto))
                 cartao, botoes = e.cartao_proposta(login, tipo, prop["pendente"])
                 ponte = sys.modules.get("whatsapp_ponte")
-                erro = ponte.enviar(login, cartao, "", "", botoes, "resposta", reenviar=True) if ponte else "ponte indisponível"
+                erro = (await asyncio.to_thread(ponte.enviar, login, cartao, "", "", botoes, "resposta", reenviar=True)
+                        if ponte else "ponte indisponível")
                 if erro:
                     return r(f"NÃO FEITO: a proposta não chegou a {dono} ({str(erro)[:150]}).")
                 self.agent.set_data("_resposta_ja_enviada", True)
@@ -176,7 +178,8 @@ class ConversaExterna(Tool):
                 p = e.sugerir(login, conversa or kwargs.get("pedido") or "", texto)
                 cartao, botoes = e.cartao(login, p)
                 ponte = sys.modules.get("whatsapp_ponte")
-                erro = ponte.enviar(login, cartao, "", "", botoes, "resposta", reenviar=True) if ponte else "ponte indisponível"
+                erro = (await asyncio.to_thread(ponte.enviar, login, cartao, "", "", botoes, "resposta", reenviar=True)
+                        if ponte else "ponte indisponível")
                 if erro:
                     return r(f"NÃO FEITO: a sugestão não chegou a {dono} ({str(erro)[:150]}). Tente de novo em seguida.")
                 self.agent.set_data("_resposta_ja_enviada", True)  # the card was the answer: no extra message

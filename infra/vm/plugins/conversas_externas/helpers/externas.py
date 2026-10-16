@@ -679,7 +679,7 @@ def amostra_respostas(login: str, n: int = 40) -> list:
     return out
 
 
-def propor(login: str, tipo: str, conteudo, ts: float | None = None) -> dict:
+def propor_aprendizado(login: str, tipo: str, conteudo, ts: float | None = None) -> dict:
     """The agent's proposal of the profile (text) or the facts (list): pending until the person approves it."""
     if tipo == "perfil":
         valor = str(conteudo or "").strip()[:2000]
