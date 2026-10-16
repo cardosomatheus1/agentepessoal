@@ -27,7 +27,12 @@ from pathlib import Path
 
 CONVIDADOS = ("ilia", "will")  # same list as login_usuarios/helpers/convidados.py (a test checks)
 PORTA = 8790
-IMAGEM = "node:22-bookworm"  # Node, Python 3, git, curl, build tools; already on the VM
+BASE = "node:22-bookworm"  # Node, Python 3, git, curl, build tools; already on the VM
+IMAGEM = "agentepessoal-caixa:1"  # BASE + pip/venv/zip/jq (built here once; bump the tag when DOCKERFILE changes)
+DOCKERFILE = f"""FROM {BASE}
+RUN apt-get update && apt-get install -y --no-install-recommends python3-pip python3-venv zip unzip jq \\
+    && rm -rf /var/lib/apt/lists/*
+"""
 REDE = "caixas"
 CASAS = Path("/opt/caixas")
 USR_HOST = Path("/opt/a0/usr")
@@ -103,12 +108,24 @@ def isolada() -> bool:
                                  for regra in regras_isolamento(subrede))
 
 
+def garantir_imagem() -> None:
+    if docker("image", "inspect", IMAGEM).returncode:
+        r = docker("build", "-q", "-t", IMAGEM, "-", timeout=1200, entrada=DOCKERFILE.encode())
+        if r.returncode:
+            raise Recusa(f"imagem da caixa não construída: {r.stderr.decode()[-300:]}")
+        log(f"imagem {IMAGEM} construída")
+
+
 def garantir_caixa(login: str) -> None:
     with _TRAVA:
         casa = CASAS / login
         casa.mkdir(parents=True, exist_ok=True)
         os.chown(casa, 1000, 1000)
         os.chmod(casa, 0o700)
+        garantir_imagem()
+        imagem = docker("inspect", "-f", "{{.Config.Image}}", nome(login))
+        if imagem.returncode == 0 and imagem.stdout.decode().strip() != IMAGEM:  # new image: new box, same home
+            docker("rm", "-f", nome(login))
         estado = docker("inspect", "-f", "{{.State.Running}}", nome(login))
         if estado.returncode == 0 and estado.stdout.decode().strip() == "true":
             if not isolada():  # e.g. rules lost after a docker restart: stop the box rather than run unprotected
@@ -307,6 +324,7 @@ def main() -> None:
     CASAS.mkdir(parents=True, exist_ok=True)
     os.chmod(CASAS, 0o711)
     threading.Thread(target=ciclo_desligar, daemon=True).start()
+    threading.Thread(target=garantir_imagem, daemon=True).start()  # ready before the first guest command
     # on the docker bridge's gateway only: the agent's container reaches it as host.docker.internal
     ThreadingHTTPServer(("172.17.0.1", PORTA), Pedido).serve_forever()
 
