@@ -54,6 +54,7 @@ class Suite:
         # 16/10: page text for the operator, behind the same signed link; never password fields
         ok('acao == "conteudo"' in api and "c.type !== 'password'" in api
            and api.index("conferir(token") < api.index('acao == "conteudo"'), "texto da página só com o link e sem senha")
+        ok('acao == "anexar"' in api and "ANEXOS not in caminho.parents" in api, "anexar só da pasta de anexos do operador")
 
     async def rodar(self, so=""):
         resultados = []

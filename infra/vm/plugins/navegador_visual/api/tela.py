@@ -1,7 +1,7 @@
 """The live view of one chat's browser tab, opened from Telegram ("🖥️ Resolver aqui"); see helpers/tela.py.
 
 GET ?t=<signed link>  → the page (works inside Telegram: a tap on the picture is a click on the page).
-POST {"t", "acao", …}  → quadro (picture of the tab), conteudo (its text and filled fields), toque, arrastar, rolar, texto, tecla, recarregar, pronto.
+POST {"t", "acao", …}  → quadro (picture of the tab), conteudo (its text and filled fields), elementos (with refs), anexar (a file from ANEXOS), toque, arrastar, rolar, texto, tecla, recarregar, pronto.
 No app login: the signed link is the key, and it opens only the tab of the chat it names, for its owner, for 30 min.
 """
 
@@ -29,6 +29,7 @@ def _tela():
 
 
 PAGINA = Path(__file__).resolve().parents[1] / "helpers" / "tela.html"
+ANEXOS = Path("/a0/usr/navegador_visual/anexos")  # what "anexar" may attach (put there by the operator)
 TAMANHO = """(() => [innerWidth, innerHeight])()"""
 # 16/10: the operator taking over a task reads the page as text (a picture cuts long fields, e.g. app credentials):
 # the visible text plus the value of each filled field, nothing the screenshot of the same tab would not show
@@ -94,6 +95,15 @@ class Tela(ApiHandler):
             bid = lista["browsers"][-1].get("id")
         if bid is None:
             return _erro("esta conversa não tem aba aberta", 404)
+        if acao == "elementos":  # the page as the agent's browser tool sees it, with the reference of each element
+            r = await runtime.call("content", bid)
+            return {"elementos": str((r or {}).get("content") or r)[:30000]}
+        if acao == "anexar":  # attach a file to a file field (e.g. a logo); only from the operator's attachments folder
+            caminho = Path(str(input.get("arquivo") or "")).resolve()
+            if ANEXOS not in caminho.parents or not caminho.is_file():
+                return _erro("arquivo fora da pasta de anexos", 400)
+            r = await runtime.call("upload_file", bid, input.get("ref"), path=str(caminho))
+            return {"ok": True, "resultado": str(r)[:500]}
         if acao == "conteudo":
             r = await runtime.call("evaluate", bid, CONTEUDO)
             valor = (r or {}).get("result", (r or {}).get("value")) if isinstance(r, dict) else r
