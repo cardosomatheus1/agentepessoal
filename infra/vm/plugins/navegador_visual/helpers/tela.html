@@ -31,7 +31,7 @@
 </head>
 <body>
 <header>
-  <div class="dica">Toque na imagem como se fosse a página. Para arrastar, segure e arraste.</div>
+  <div class="dica">Toque na imagem como se fosse a página. Para arrastar, segure e arraste. Para "segurar o botão", segure parado pelo tempo pedido.</div>
   <div class="url" id="url">carregando…</div>
 </header>
 <div id="palco"><img id="tela" alt="tela do navegador do agente"></div>
@@ -88,8 +88,9 @@ function marcar(ev) {
   setTimeout(() => (m.style.opacity = 0), 350);
 }
 let inicio = null, pontos = [], segurou = null;
+tela.addEventListener("contextmenu", (ev) => ev.preventDefault());  // a long press must not open the phone's menu
 tela.addEventListener("pointerdown", (ev) => {
-  ev.preventDefault(); inicio = ev; pontos = [fracao(ev)];
+  ev.preventDefault(); inicio = ev; inicio.quando = Date.now(); pontos = [fracao(ev)];
   segurou = setTimeout(() => (segurou = "sim"), 450);
 });
 tela.addEventListener("pointermove", (ev) => { if (inicio) pontos.push(fracao(ev)); });
@@ -97,10 +98,12 @@ tela.addEventListener("pointerup", async (ev) => {
   if (!inicio) return;
   const longe = Math.hypot(ev.clientX - inicio.clientX, ev.clientY - inicio.clientY) > 12;
   const arrastou = longe && segurou === "sim";
+  const segurado = !longe && segurou === "sim" ? Date.now() - inicio.quando : 0;  // press-and-hold buttons ("não sou um robô")
   clearTimeout(segurou); segurou = null; inicio = null;
   marcar(ev);
   try {
     if (arrastou) await api("arrastar", { pontos });
+    else if (segurado) { const [fx, fy] = fracao(ev); await api("segurar", { fx, fy, ms: segurado }); }
     else if (longe) await api("rolar", { dy: -(pontos[pontos.length - 1][1] - pontos[0][1]) });
     else { const [fx, fy] = fracao(ev); await api("toque", { fx, fy }); }
   } catch (e) {}

@@ -1,7 +1,7 @@
 """The live view of one chat's browser tab, opened from Telegram ("🖥️ Resolver aqui"); see helpers/tela.py.
 
 GET ?t=<signed link>  → the page (works inside Telegram: a tap on the picture is a click on the page).
-POST {"t", "acao", …}  → quadro (picture of the tab), conteudo (its text and filled fields), elementos (with refs), anexar (a file from ANEXOS), toque, arrastar, rolar, texto, tecla, recarregar, pronto.
+POST {"t", "acao", …}  → quadro (picture of the tab), conteudo (its text and filled fields), elementos (with refs), anexar (a file from ANEXOS), toque, segurar, arrastar, rolar, texto, tecla, recarregar, pronto.
 No app login: the signed link is the key, and it opens only the tab of the chat it names, for its owner, for 30 min.
 """
 
@@ -250,6 +250,14 @@ class Tela(ApiHandler):
         if acao == "toque":
             x, y = ponto((input.get("fx"), input.get("fy")))
             await runtime.call("mouse", bid, "click", x, y)
+        elif acao == "segurar":  # press-and-hold (the person holds on the picture; the same hold is replayed on the page)
+            import asyncio
+
+            x, y = ponto((input.get("fx"), input.get("fy")))
+            await runtime.call("mouse", bid, "move", x, y)
+            await runtime.call("mouse", bid, "down", x, y)
+            await asyncio.sleep(max(0.5, min(15.0, float(input.get("ms") or 0) / 1000)))
+            await runtime.call("mouse", bid, "up", x, y)
         elif acao == "arrastar":
             pontos = [ponto(p) for p in (input.get("pontos") or [])][:200]
             if len(pontos) < 2:
