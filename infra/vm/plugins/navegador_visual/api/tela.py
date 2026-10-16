@@ -1,7 +1,7 @@
 """The live view of one chat's browser tab, opened from Telegram ("🖥️ Resolver aqui"); see helpers/tela.py.
 
 GET ?t=<signed link>  → the page (works inside Telegram: a tap on the picture is a click on the page).
-POST {"t", "acao", …}  → quadro (picture of the tab), toque, arrastar, rolar, texto, tecla, recarregar, pronto.
+POST {"t", "acao", …}  → quadro (picture of the tab), conteudo (its text and filled fields), toque, arrastar, rolar, texto, tecla, recarregar, pronto.
 No app login: the signed link is the key, and it opens only the tab of the chat it names, for its owner, for 30 min.
 """
 
@@ -30,6 +30,14 @@ def _tela():
 
 PAGINA = Path(__file__).resolve().parents[1] / "helpers" / "tela.html"
 TAMANHO = """(() => [innerWidth, innerHeight])()"""
+# 16/10: the operator taking over a task reads the page as text (a picture cuts long fields, e.g. app credentials):
+# the visible text plus the value of each filled field, nothing the screenshot of the same tab would not show
+CONTEUDO = r"""(() => {
+  const campos = [...document.querySelectorAll('input, textarea')].filter(c => c.type !== 'password' && c.value)
+    .map(c => ({rotulo: (c.labels && c.labels[0] ? c.labels[0].innerText : '') || c.name || c.id || c.placeholder || '',
+                valor: c.value}));
+  return JSON.stringify({texto: (document.body.innerText || '').slice(0, 20000), campos: campos.slice(0, 50)});
+})()"""
 PRONTO = ("(Ele resolveu o que você pediu na tela do navegador, pelo botão do Telegram. Recarregue a sua aba ou abra o "
           "endereço de novo, confira e siga com a tarefa.)")
 
@@ -86,6 +94,10 @@ class Tela(ApiHandler):
             bid = lista["browsers"][-1].get("id")
         if bid is None:
             return _erro("esta conversa não tem aba aberta", 404)
+        if acao == "conteudo":
+            r = await runtime.call("evaluate", bid, CONTEUDO)
+            valor = (r or {}).get("result", (r or {}).get("value")) if isinstance(r, dict) else r
+            return {"conteudo": valor}
         if acao == "quadro":
             foto = await runtime.call("screenshot", bid, quality=int(input.get("qualidade") or 60))
             estado = foto.get("state") or {}
