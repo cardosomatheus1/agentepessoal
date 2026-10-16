@@ -69,6 +69,13 @@ async def _na_pagina(runtime, bid, op: str, valor: str) -> str:
     nucleo = sessao._core
 
     async def fazer():
+        marca = nucleo.request_context_id.set(str(getattr(runtime, "context_id", "") or sessao.context_id))
+        try:
+            return await _fazer()
+        finally:
+            nucleo.request_context_id.reset(marca)
+
+    async def _fazer():
         pagina = nucleo._page(nucleo._resolve_browser_id(bid))
         for quadro in pagina.frames:
             if op == "arquivo":
