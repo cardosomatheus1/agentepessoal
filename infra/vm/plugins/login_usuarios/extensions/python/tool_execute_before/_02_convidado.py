@@ -38,6 +38,14 @@ class Convidado(Extension):
         from helpers import projects
 
         motivo = c.bloqueio(login, tool_name, tool_args or {}, projects.get_context_project_name(self.agent.context))
+        if not motivo and tool_name.partition(":")[0] == "scheduler":  # 16/10: own routines only, within limits
+            from helpers.task_scheduler import TaskScheduler
+
+            tarefas = TaskScheduler.get().get_tasks()
+            minhas = [t for t in tarefas if t.project_name == c.projeto(login)]
+            uuid = str((tool_args or {}).get("uuid") or "")
+            motivo = c.regra_agenda(login, c.acao_agenda(tool_name, tool_args), tool_args or {}, minhas,
+                                    any(t.uuid == uuid for t in minhas))
         if motivo:
             from helpers.errors import RepairableException
 

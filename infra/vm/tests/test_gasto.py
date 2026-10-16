@@ -52,6 +52,14 @@ def main() -> int:
             falhas.append("passou de US$ 5 no dia: o convidado é avisado e a mensagem não vai ao agente")
         if "de US$ 5 por dia" not in p.texto_gasto("ilia") or "Hoje: US$ 5.50" not in p.texto_gasto("ilia"):
             falhas.append(f"/gasto do convidado mostra só o dele: {p.texto_gasto('ilia')!r}")
+        # 16/10: guests' scheduled tasks stop too — the agent reads <login>/limite_hoje.txt
+        marcas = tmp / "marcas"
+        (marcas / "will").mkdir(parents=True)
+        (marcas / "will" / "limite_hoje.txt").write_text("2026-10-15")
+        estado = p.marcar_limites(marcas)
+        if not (estado.get("ilia") and (marcas / "ilia" / "limite_hoje.txt").read_text().count("-") == 2
+                and estado.get("will") is False and not (marcas / "will" / "limite_hoje.txt").exists()):
+            falhas.append(f"marca de limite: quem passou ganha a data de hoje, quem não passou fica sem: {estado}")
         spec_c = importlib.util.spec_from_file_location(
             "convidados_gasto_teste", RAIZ / "infra" / "vm" / "plugins" / "login_usuarios" / "helpers" / "convidados.py")
         c = importlib.util.module_from_spec(spec_c)

@@ -18,4 +18,8 @@
   `tool_execute_before/_02_convidado.py` (também recusa caminho local fora das pastas dele e endereço interno).
 - Gasto por pessoa: toda chamada de modelo leva `X-A0-Dono`; o proxy grava `dono` em `uso.jsonl`. Passou do teto
   no dia, a ponte avisa o convidado e não entrega a mensagem até o dia seguinte. `/gasto` do convidado mostra só o dele.
+- Rotinas (16/10, Matheus: "os convidados devem poder"): o convidado cria tarefas agendadas no projeto dele (até 5,
+  no máximo de hora em hora); só vê e mexe nas dele (`regra_agenda`, `filtrar_agenda`); a conversa da rotina é dele
+  (dono = dono do projeto, `separacao.dono_contexto`), então gasta e avisa como ele. Passou do teto do dia, a ponte
+  grava `whatsapp/<login>/limite_hoje.txt` e `job_loop/_20_limite_convidados.py` pausa as rotinas até o dia seguinte.
 - Novo convidado: some em `CONVIDADOS` e `CONVIDADOS_TETO`, em `LOGINS` de `infra/control/index.py`, teste, implante.

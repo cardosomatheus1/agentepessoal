@@ -46,6 +46,13 @@ def dono_contexto(ctx) -> str:
             if pai is None:
                 break
             ctx = pai
+        # 16/10: a scheduled task's own chat has no "dono" (no one is logged in when it runs); it belongs to the owner
+        # of its project, so a guest's routine runs, spends and reports as the guest
+        from helpers import projects
+
+        nome = projects.get_context_project_name(ctx)
+        if nome:
+            return dono_projeto(nome)
     except Exception:
         pass
     return DONO

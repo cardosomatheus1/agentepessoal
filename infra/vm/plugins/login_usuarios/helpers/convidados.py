@@ -22,7 +22,8 @@ CONVIDADOS = {
 }
 
 # What a guest's agent may use: conversation, research, the browser (own profile), files the guest sent, own
-# memory/notes/vault. Nothing of the Raiz, of Matheus's accounts, no shell, no file editor, no scheduled tasks.
+# memory/notes/vault, and (16/10, Matheus: "os convidados devem poder") their own scheduled tasks, within limits.
+# Nothing of the Raiz, of Matheus's accounts, no shell, no file editor.
 FERRAMENTAS = (
     "response", "call_subordinate", "wait", "notify_user",  # no "parallel": its chats have no project
     "search_engine", "pesquisar", "browser", "document_query", "vision_load", "analisar_imagens",
@@ -31,7 +32,15 @@ FERRAMENTAS = (
     "lembrar", "ficha", "cofre_descrever",  # per person
     "conversa_externa",  # 15/10: talk to stores/clinics on the guest's OWN WhatsApp (plugin conversas_externas)
     "whatsapp_enviar",  # always to the chat's owner, and only the guest's own files (see caminho_proibido)
+    "scheduler",  # 16/10: own routines only (regra_agenda / filtrar_agenda); they run in the guest's project
 )
+
+# Guests' scheduled tasks: few, at most hourly, only their own; paused while the guest is past the day's limit.
+TAREFAS_MAX = 5
+PLANO_MAX = 24  # runs in one planned task
+AGENDA_LER = {"list_tasks", "find_task_by_name", "show_task"}
+AGENDA_ALVO = {"show_task", "run_task", "delete_task", "update_task", "wait_for_task"}
+AGENDA_CRIAR = {"create_scheduled_task", "create_planned_task", "create_adhoc_task"}
 
 LEEM_ARQUIVO = {"document_query", "vision_load", "analisar_imagens", "whatsapp_enviar", "browser", "assistir_video"}
 
@@ -70,9 +79,10 @@ def instrucoes(login: str) -> str:
             f"Pedido que depende de lugar (loja, rota, serviço perto): use os lugares que {nome} disse; se faltar onde ele está, "
             f"mora ou trabalha, pergunte antes de pesquisar. Dê opções no caminho ou perto desses pontos, com a distância, e o "
             f"link do Google Maps de cada uma. Nunca troque a cidade dele por outra maior só porque achou mais resultado lá.\n"
-            f"Uso só pessoal: conversar, pesquisar, ler arquivos e fotos que {nome} mandar, navegar, guardar notas e "
-            f"lembrar coisas dele. Você NÃO tem aqui as ferramentas do Matheus (Raiz Connect, prospecção, posts, "
-            f"Instagram, e-mail, agenda, contas, terminal, tarefas agendadas) e não fala dos dados, clientes, "
+            f"Uso só pessoal: conversar, pesquisar, ler arquivos e fotos que {nome} mandar, navegar, guardar notas, "
+            f"lembrar coisas dele e criar rotinas (tarefas agendadas, até {TAREFAS_MAX}, no máximo de hora em hora; o "
+            f"resultado chega no Telegram dele). Você NÃO tem aqui as ferramentas do Matheus (Raiz Connect, prospecção, "
+            f"posts, Instagram, e-mail, agenda, contas, terminal) e não fala dos dados, clientes, "
             f"conversas ou negócios do Matheus. Se {nome} pedir algo disso, diga com educação que este acesso é só "
             f"para uso pessoal dele.\nCada conversa dele tem um limite de uso por dia; se acabar, o próprio celular avisa.")
 
@@ -160,6 +170,64 @@ def caminho_proibido(login: str, args) -> str:
     return ""
 
 
+def acao_agenda(ferramenta: str, args) -> str:
+    metodo = str(ferramenta or "").partition(":")[2]
+    return str((args or {}).get("action") or metodo or "").strip().lower().replace("-", "_")
+
+
+def regra_agenda(login: str, acao: str, args, minhas: list, dona_do_alvo: bool) -> str:
+    """Why a guest's scheduler call is refused ("" = allowed). minhas: the guest's tasks; dona_do_alvo: the task named
+    by `uuid` is the guest's."""
+    args = args or {}
+    if acao not in AGENDA_LER | AGENDA_ALVO | AGENDA_CRIAR:
+        return f"A ação '{acao}' do agendador não está disponível aqui."
+    if acao in AGENDA_ALVO and not dona_do_alvo:
+        return "Essa tarefa não é desta pessoa (ou não existe). Use acao list_tasks para ver as dela."
+    if acao in AGENDA_CRIAR and len(minhas) >= TAREFAS_MAX:
+        return (f"Esta pessoa já tem {len(minhas)} rotinas (o máximo é {TAREFAS_MAX}). Pergunte qual apagar "
+                "(delete_task) antes de criar outra.")
+    agenda = args.get("schedule")
+    if acao == "create_scheduled_task" or (acao == "update_task" and agenda):
+        if isinstance(agenda, dict):
+            minuto = str(agenda.get("minute", "")).strip()
+        else:  # a cron line, "0 9 * * *"
+            minuto = (str(agenda or "").split() or [""])[0]
+        if not re.fullmatch(r"\d{1,2}", minuto):
+            return ("Rotinas de convidado rodam no máximo de hora em hora: use um minuto fixo em schedule.minute "
+                    "(por exemplo \"0\"), não \"*\" nem \"*/n\".")
+    if acao == "create_planned_task":
+        plano = args.get("plan") or {}
+        datas = plano.get("todo", plano) if isinstance(plano, dict) else plano
+        if isinstance(datas, list) and len(datas) > PLANO_MAX:
+            return f"No máximo {PLANO_MAX} execuções numa tarefa planejada."
+    return ""
+
+
+def filtrar_agenda(login: str, mensagem: str) -> str:
+    """What a guest sees of list_tasks / find_task_by_name / show_task: only the tasks of the guest's project."""
+    meu = projeto(login)
+    try:
+        dados = json.loads(mensagem)
+    except (TypeError, ValueError):
+        return mensagem if str(mensagem).startswith(("Task not found", "Task name is required")) else \
+            "Nenhuma tarefa encontrada."
+    if isinstance(dados, list):
+        return json.dumps([t for t in dados if isinstance(t, dict) and t.get("project_name") == meu],
+                          ensure_ascii=False, indent=2)
+    if isinstance(dados, dict) and dados.get("project_name") == meu:
+        return mensagem
+    return "Nenhuma tarefa encontrada."
+
+
+def decidir_pausa(passou: bool, tarefas: list, pausadas: list) -> tuple[list, list]:
+    """(uuids to pause, uuids to resume): past the day's limit the guest's idle tasks stop; the next day only the ones
+    paused here come back (a task the guest disabled stays disabled). tarefas: [(uuid, state)]."""
+    if passou:
+        return [u for u, estado in tarefas if estado == "idle" and u not in pausadas], []
+    existentes = {u: estado for u, estado in tarefas}
+    return [], [u for u in pausadas if existentes.get(u) == "disabled"]
+
+
 def bloqueio(login: str | None, ferramenta: str, args, projeto_ativo: str | None) -> str:
     """Why this tool call is refused in a guest's chat ("" = allowed; non-guests are never refused here)."""
     if not convidado(login):
@@ -168,7 +236,7 @@ def bloqueio(login: str | None, ferramenta: str, args, projeto_ativo: str | None
     if projeto_ativo != projeto(login):
         return (f"Esta conversa é de um convidado ({login}) e está fora do projeto dele; nenhuma ferramenta roda aqui. "
                 "Responda só com texto.")
-    if ferramenta not in FERRAMENTAS:
+    if str(ferramenta or "").partition(":")[0] not in FERRAMENTAS:
         return (f"A ferramenta '{ferramenta}' não está disponível para convidados (uso só pessoal). Não tente de novo "
                 "nem por outro caminho; diga à pessoa, com educação, que isso não está liberado para ela.")
     if ferramenta in LEEM_ARQUIVO and any(_REDE_INTERNA.search(t) for t in _textos(args)):

@@ -1080,6 +1080,36 @@ def texto_gasto(usuario: str = DONO) -> str:
             f"Este mês: US$ {mes:.2f}\n_(estimativa pelo uso registrado; a VM é cobrada à parte)_")
 
 
+def marcar_limites(pasta: Path | None = None) -> dict:
+    """16/10: guests' scheduled tasks run without a message through here, so the agent needs to know who is past the
+    day's limit: <pasta>/<login>/limite_hoje.txt holds the Bahia date while that guest is over (removed otherwise)."""
+    import datetime as dt
+    from zoneinfo import ZoneInfo
+
+    pasta = pasta or PASTA
+    dia = dt.datetime.now(ZoneInfo("America/Bahia")).strftime("%Y-%m-%d")
+    estado = {}
+    for login in CONVIDADOS_TETO:
+        marca = pasta / login / "limite_hoje.txt"
+        passou = bool(limite_convidado(login))
+        estado[login] = passou
+        if passou:
+            marca.parent.mkdir(parents=True, exist_ok=True)
+            marca.write_text(dia)
+        elif marca.exists():
+            marca.unlink()
+    return estado
+
+
+def ciclo_limites() -> None:
+    while True:
+        try:
+            marcar_limites()
+        except Exception as exc:
+            log(f"guest limit marks failed: {exc}")
+        time.sleep(60)
+
+
 def ciclo_alerta() -> None:
     """Once a day, warn the owner when today's model spending passes the limit."""
     while True:
@@ -1547,6 +1577,7 @@ def main() -> None:
     chave()
     threading.Thread(target=ciclo_entrada, daemon=True).start()
     threading.Thread(target=ciclo_alerta, daemon=True).start()
+    threading.Thread(target=ciclo_limites, daemon=True).start()
     threading.Thread(target=ciclo_digitando, daemon=True).start()
     threading.Thread(target=ciclo_destravar, daemon=True).start()
     threading.Thread(target=ciclo_fila, daemon=True).start()

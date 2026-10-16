@@ -109,7 +109,7 @@ class Suite:
         proj = c.projeto("ilia")
         ok(c.bloqueio("matheus", "prospeccao", {}, None) == "", "o dono nunca é barrado aqui")
         ok(c.bloqueio("fernanda", "code_execution_tool", {}, None) == "", "quem não é convidado também não")
-        for f in ("prospeccao", "conteudo", "code_execution_tool", "text_editor", "scheduler", "livro", "contas",
+        for f in ("prospeccao", "conteudo", "code_execution_tool", "text_editor", "livro", "contas",
                   "skills_tool", "parallel", "whatsapp_guardar_token", "google.gmail_listar"):
             ok("não está disponível" in c.bloqueio("ilia", f, {}, proj), f"convidado sem {f}")
         for f in ("response", "search_engine", "pesquisar", "browser", "lembrar", "memory_load", "document_query"):
@@ -204,6 +204,83 @@ class Suite:
         txt = c.instrucoes("ilia")
         ok("na língua em que Ilia escrever" in txt and "em português" not in txt, "responde na língua dele")
         ok("Google Maps" in txt and "pergunte antes de pesquisar" in txt, "pedido de lugar: pontos dele, distância e mapa")
+
+    def t_convidado_rotinas(self):
+        # 16/10, Matheus: "os convidados devem poder" criar tarefas agendadas — só as dele, poucas, no máximo por hora
+        c = self._c()
+        proj = c.projeto("will")
+        ok(c.bloqueio("will", "scheduler", {"action": "list_tasks"}, proj) == "", "convidado usa o agendador")
+        ok(c.bloqueio("will", "scheduler:create_scheduled_task", {}, proj) == "", "também com o método no nome")
+        ok("Rotinas de convidado" in c.instrucoes("will") or "criar rotinas" in c.instrucoes("will"), "ele sabe que pode")
+        diaria = {"name": "Resumo", "prompt": "x", "schedule": {"minute": "0", "hour": "9", "day": "*", "month": "*", "weekday": "*"}}
+        ok(c.regra_agenda("will", "create_scheduled_task", diaria, [], False) == "", "todo dia às 9h pode")
+        for ruim in ("*", "*/5", "0,30", ""):
+            a = {**diaria, "schedule": {**diaria["schedule"], "minute": ruim}}
+            ok("hora em hora" in c.regra_agenda("will", "create_scheduled_task", a, [], False), f"minuto {ruim!r} recusado")
+        ok("hora em hora" in c.regra_agenda("will", "create_scheduled_task", {"schedule": "*/10 * * * *"}, [], False), "cron em texto")
+        ok(c.regra_agenda("will", "create_scheduled_task", {"schedule": "15 8 * * 1-5"}, [], False) == "", "cron em texto ok")
+        ok("máximo é 5" in c.regra_agenda("will", "create_adhoc_task", {}, [object()] * 5, False), "no máximo 5 rotinas")
+        for acao in ("delete_task", "run_task", "update_task", "show_task", "wait_for_task"):
+            ok("não é desta pessoa" in c.regra_agenda("will", acao, {"uuid": "x"}, [], False), f"{acao} na tarefa de outro")
+            ok(c.regra_agenda("will", acao, {"uuid": "x"}, [object()], True) == "" or acao == "update_task", f"{acao} na dele")
+        ok("hora em hora" in c.regra_agenda("will", "update_task", {"uuid": "x", "schedule": {"minute": "*"}}, [object()], True),
+           "nem mudando a rotina para cada minuto")
+        ok("não está disponível" in c.regra_agenda("will", "apagar_tudo", {}, [], True), "ação desconhecida")
+        ok("No máximo 24" in c.regra_agenda("will", "create_planned_task", {"plan": {"todo": ["2026-10-17T09:00"] * 25}}, [], False),
+           "tarefa planejada com execuções demais")
+        tarefas = [{"name": "Minha", "project_name": proj}, {"name": "Prospecção do Matheus", "project_name": None},
+                   {"name": "Do Ilia", "project_name": "convidado-ilia"}]
+        ok([t["name"] for t in json.loads(c.filtrar_agenda("will", json.dumps(tarefas)))] == ["Minha"], "lista só as dele")
+        ok(c.filtrar_agenda("will", json.dumps(tarefas[1])) == "Nenhuma tarefa encontrada.", "não mostra a de outro")
+        ok(json.loads(c.filtrar_agenda("will", json.dumps(tarefas[0])))["name"] == "Minha", "mostra a dele")
+        ok(c.decidir_pausa(True, [("a", "idle"), ("b", "disabled"), ("c", "running")], []) == (["a"], []),
+           "passou do limite: pausa as que esperam")
+        ok(c.decidir_pausa(False, [("a", "disabled"), ("b", "disabled")], ["a"]) == ([], ["a"]),
+           "no dia seguinte volta só a que foi pausada pelo limite")
+        ext = (RAIZ / "extensions" / "python" / "tool_execute_before" / "_02_convidado.py").read_text(encoding="utf-8")
+        ok("regra_agenda" in ext and "t.project_name == c.projeto(login)" in ext, "a trava usa as tarefas do projeto dele")
+        ok((RAIZ / "extensions" / "python" / "tool_execute_after" / "_05_agenda_convidado.py").exists()
+           and (RAIZ / "extensions" / "python" / "job_loop" / "_20_limite_convidados.py").exists(), "filtro e pausa ligados")
+
+    def t_tarefa_e_do_dono_do_projeto(self):
+        # 16/10: a routine's own chat has no "dono"; it belongs to its project's owner (a guest's routine reports to him)
+        if "agent" in sys.modules:
+            return  # inside the agent: the real modules are loaded; the fake ones below would replace them
+        tmp = Path(tempfile.mkdtemp())
+        (tmp / "dono.txt").write_text("will")
+
+        class Ctx:
+            def __init__(self, cid, dados):
+                self.id, self.dados = cid, dados
+
+            def get_data(self, k):
+                return self.dados.get(k)
+
+            def get_output_data(self, k):
+                return None
+
+        ctxs = {"T": Ctx("T", {}), "M": Ctx("M", {"dono": "matheus"}), "S": Ctx("S", {})}
+        projetos = {"T": "convidado-will", "S": None}
+        agent = type(sys)("agent")
+        agent.AgentContext = type("AC", (), {"get": staticmethod(lambda i: ctxs.get(i))})
+        helpers = type(sys)("helpers")
+        projects = type(sys)("helpers.projects")
+        projects.get_context_project_name = lambda ctx: projetos.get(ctx.id)
+        projects.get_project_meta = lambda nome, arq: str(tmp / arq) if nome == "convidado-will" else "/nao/existe"
+        helpers.projects = projects
+        antes = {k: sys.modules.get(k) for k in ("agent", "helpers", "helpers.projects")}
+        sys.modules.update({"agent": agent, "helpers": helpers, "helpers.projects": projects})
+        try:
+            sep = _carregar("separacao_teste", RAIZ / "helpers" / "separacao.py")
+            ok(sep.dono_contexto(ctxs["T"]) == "will", "rotina no projeto do Will é do Will")
+            ok(sep.dono_contexto(ctxs["M"]) == "matheus", "quem tem dono continua com ele")
+            ok(sep.dono_contexto(ctxs["S"]) == "matheus", "sem dono e sem projeto: do Matheus, como antes")
+        finally:
+            for k, v in antes.items():
+                if v is None:
+                    sys.modules.pop(k, None)
+                else:
+                    sys.modules[k] = v
 
     def t_gasto_marcado_com_o_dono(self):
         c = self._c()
