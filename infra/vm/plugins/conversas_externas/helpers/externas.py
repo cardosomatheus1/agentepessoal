@@ -257,6 +257,50 @@ def devidas(login: str, ts: float | None = None) -> tuple[list, list]:
     return checar, fechadas
 
 
+# ---- 16/10, Matheus (Will): "the agent answers people on my WhatsApp" is not built yet. When someone asks, the agent
+# suggests the safe start (it drafts, the person approves each answer on Telegram), asks these questions, and the
+# answers go to Matheus so the feature is built to what the person wants. ----
+QUESTIONARIO = (
+    ("quem", "Quais mensagens o agente deve responder? (todas; só de quem não está nos contatos; só clientes; só "
+             "alguns contatos ou grupos — quais; e quem fica de fora, como família ou grupos)"),
+    ("aprovar", "Quer aprovar cada resposta antes de sair (recomendado no começo) ou que ele responda sozinho? Se "
+                "sozinho, em quais casos?"),
+    ("assuntos", "Sobre o que ele pode responder (preço, horário, agenda, endereço, dúvidas do seu serviço…) e o que "
+                 "ele nunca deve dizer ou prometer?"),
+    ("tom", "Como você escreve? (formal ou informal, com emoji ou não, mensagens curtas ou longas, que língua) — "
+            "se puder, mande 2 ou 3 respostas suas de exemplo"),
+    ("horario", "Em que horário ele pode responder? Fora dele, espera ou manda um aviso?"),
+    ("nao_sabe", "Quando ele não souber a resposta: te pergunta no Telegram, diz que você responde depois, ou não "
+                 "responde?"),
+)
+
+
+def salvar_preferencias(login: str, respostas: dict, ts: float | None = None) -> dict:
+    """Keep the person's answers (all questions answered, in their words) for the auto-reply request."""
+    if isinstance(respostas, str):
+        try:
+            respostas = json.loads(respostas)
+        except ValueError:
+            raise Recusa("respostas deve ser um objeto com as chaves " + ", ".join(k for k, _ in QUESTIONARIO))
+    respostas = {k: " ".join(str(v or "").split())[:600] for k, v in (respostas or {}).items()}
+    faltam = [k for k, _ in QUESTIONARIO if not respostas.get(k)]
+    if faltam:
+        perguntas = "; ".join(p for k, p in QUESTIONARIO if k in faltam)
+        raise Recusa(f"faltam respostas ({', '.join(faltam)}). Pergunte a ele: {perguntas}")
+    reg = {"em": ts or agora(), **{k: respostas[k] for k, _ in QUESTIONARIO}}
+    with transacao(login) as d:
+        d["responder_por_mim"] = reg
+    return reg
+
+
+def texto_preferencias(nome: str, reg: dict) -> str:
+    """The message to Matheus: who asked and what they want, to build it."""
+    linhas = [f"📝 {nome} quer que o agente responda mensagens no WhatsApp dele. O que ele respondeu:"]
+    linhas += [f"• {k}: {reg[k]}" for k, _ in QUESTIONARIO]
+    linhas.append("Ainda não existe: peça ao operador (Claude Code) para montar com essas respostas.")
+    return "\n".join(linhas)
+
+
 def logins() -> list[str]:
     return sorted(p.stem for p in PASTA.glob("*.json")) if PASTA.exists() else []
 

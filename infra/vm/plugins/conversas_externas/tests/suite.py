@@ -254,6 +254,26 @@ class Suite:
             ok(json.loads(pg.evaluate(e.SCRIPT_ESTADO))["codigo"] == "K7QP2XRT", "lê o código escrito na tela")
             b.close()
 
+    def t_responder_por_mim_questionario(self):
+        # 16/10, Matheus (Will): not built yet; the agent suggests the approve-first start, asks, and the answers go to him
+        e = _ex()
+        try:
+            e.salvar_preferencias("will", {"quem": "só clientes", "aprovar": "aprovar antes"})
+            ok(False, "salvou sem todas as respostas")
+        except e.Recusa as exc:
+            ok("assuntos" in str(exc) and "tom" in str(exc) and "Pergunte" in str(exc), f"diz o que falta perguntar: {exc}")
+        resp = {"quem": "só clientes, família fora", "aprovar": "aprovar cada uma no começo", "assuntos": "preço e horário; nunca desconto",
+                "tom": "informal,   sem emoji", "horario": "8h às 20h", "nao_sabe": "me pergunta no Telegram"}
+        reg = e.salvar_preferencias("will", json.dumps(resp))
+        ok(reg["tom"] == "informal, sem emoji" and e.carregar("will")["responder_por_mim"]["quem"] == resp["quem"], "guardado")
+        ok("will" in e.logins() and e.carregar("will")["conversas"] == [], "não mexe nas conversas")
+        txt = e.texto_preferencias("Will", reg)
+        ok(txt.startswith("📝 Will") and all(f"• {k}:" in txt for k, _ in e.QUESTIONARIO), f"aviso ao Matheus completo: {txt}")
+        prompt = (RAIZ / "prompts" / "agent.system.tool.conversa_externa.md").read_text(encoding="utf-8")
+        ok("AINDA NÃO EXISTE" in prompt and "UMA pergunta por mensagem" in prompt and "✅ Enviar" in prompt,
+           "regra: sugere aprovar antes e faz o questionário")
+        ok(all(k in prompt for k, _ in e.QUESTIONARIO), "prompt e ferramenta pedem as mesmas respostas")
+
     def t_convidado_pode_usar(self):
         arq = next((x for x in (RAIZ.parent / "login_usuarios" / "helpers" / "convidados.py",
                                 Path("/a0/usr/plugins/login_usuarios/helpers/convidados.py")) if x.exists()), None)

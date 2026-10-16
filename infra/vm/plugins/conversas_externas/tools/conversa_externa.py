@@ -39,6 +39,16 @@ def dono_e_nome(context) -> tuple[str, str]:
     return login, nome
 
 
+def avisar_matheus(texto: str) -> str:
+    """Tell the owner on his phone (the WhatsApp plugin's bridge); returns the note for the agent."""
+    p = sys.modules.get("whatsapp_ponte")
+    try:
+        erro = p.enviar("matheus", texto, tipo="progresso", reenviar=True) if p else "ponte indisponível"
+    except Exception as exc:
+        erro = str(exc)
+    return " e o Matheus foi avisado" if not erro else f" (o aviso ao Matheus falhou: {str(erro)[:100]})"
+
+
 class ConversaExterna(Tool):
     async def execute(self, acao: str = "listar", conversa: str = "", nome: str = "", telefone: str = "",
                       objetivo: str = "", texto: str = "", confirmado: str = "", motivo: str = "", **kwargs) -> Response:
@@ -96,7 +106,14 @@ class ConversaExterna(Tool):
             if acao == "encerrar":
                 c = e.encerrar(login, conversa, motivo or "concluída")
                 return r(f"Conversa com {c['nome']} encerrada ({c['motivo']}). Não vigio mais.")
-            return r("acao desconhecida: use listar, estado, conectar, abrir, enviar, ler, esperar_dono ou encerrar")
+            if acao == "responder_por_mim":
+                reg = e.salvar_preferencias(login, kwargs.get("respostas") or {})
+                avisado = avisar_matheus(e.texto_preferencias(dono, reg)) if login != "matheus" else ""
+                return r(f"Preferências de {dono} guardadas{avisado}. Diga a ele, na língua dele, que o Matheus vai montar "
+                         "isso com essas respostas e que você avisa quando estiver pronto. Não prometa data e não comece a "
+                         "responder ninguém por ele.")
+            return r("acao desconhecida: use listar, estado, conectar, abrir, enviar, ler, esperar_dono, encerrar ou "
+                     "responder_por_mim")
         except StopIteration:
             return r(f"conversa {conversa} não encontrada (veja acao \"listar\")")
         except (e.Recusa, n.SemWhatsApp) as exc:
