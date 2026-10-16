@@ -191,8 +191,7 @@ class Tela(ApiHandler):
             if str(pedida) not in ids:
                 return _erro("aba não encontrada nesta conversa", 404)
             bid = ids[str(pedida)]
-            if (lista or {}).get("last_interacted_browser_id") != bid:  # a tab in the back ignores clicks: bring it forward
-                await runtime.call("set_active", bid)
+            await runtime.call("set_active", bid)  # a tab in the back is frozen by the browser: bring it forward
         if bid is None and abas:
             bid = abas[-1].get("id")
         if bid is None and abrir_nova:  # the tab was closed (e.g. by the cleanup): the operator opens a new one
