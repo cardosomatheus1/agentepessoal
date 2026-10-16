@@ -31,15 +31,23 @@ def _tela():
 
 PAGINA = Path(__file__).resolve().parents[1] / "helpers" / "tela.html"
 ESCOLHER = r"""(() => { const alvo = __TEXTO__;
-  for (const s of document.querySelectorAll('select')) {
+  const todos = [];
+  const varrer = (raiz) => {
+    if (!raiz) return;
+    raiz.querySelectorAll('select').forEach(s => todos.push(s));
+    raiz.querySelectorAll('*').forEach(el => { if (el.shadowRoot) varrer(el.shadowRoot); });
+    raiz.querySelectorAll('iframe').forEach(f => { try { varrer(f.contentDocument); } catch (e) {} });
+  };
+  varrer(document);
+  for (const s of todos) {
     const o = [...s.options].find(o => o.text.trim() === alvo);
     if (!o) continue;
-    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(s, o.value);
+    Object.getOwnPropertyDescriptor(s.ownerDocument.defaultView.HTMLSelectElement.prototype, 'value').set.call(s, o.value);
     s.dispatchEvent(new Event('input', {bubbles: true}));
     s.dispatchEvent(new Event('change', {bubbles: true}));
     return 'escolhido: ' + o.text;
   }
-  return 'opção não encontrada';
+  return 'opção não encontrada em ' + todos.length + ' listas: ' + todos.map(s => [...s.options].map(o => o.text).join('/')).join(' | ');
 })()"""
 ANEXOS = Path("/a0/usr/navegador_visual/anexos")  # what "anexar" may attach (put there by the operator)
 TAMANHO = """(() => [innerWidth, innerHeight])()"""
