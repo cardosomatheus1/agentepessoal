@@ -264,6 +264,41 @@ async def _responder(ex, login: str, nome: str, p: dict, texto: str) -> list:
     raise SemWhatsApp("cliquei em enviar, mas a mensagem não apareceu na conversa: confira antes de mandar de novo")
 
 
+async def _ler_historico(rt, aba, ex, titulo: str) -> list:
+    """Open one chat and scroll back until no older messages come (or APRENDER_ROLAGENS times)."""
+    await _abrir_titulo(rt, aba, ex, titulo)
+    await asyncio.sleep(1.5)
+    antes = -1
+    for _ in range(ex.APRENDER_ROLAGENS):
+        n = await _js(rt, aba, ex.SCRIPT_ROLAR_CIMA)
+        if not isinstance(n, int) or n == antes:
+            break
+        antes = n
+        await asyncio.sleep(2)
+    r = await _js(rt, aba, ex.SCRIPT_HISTORICO)
+    return (r or {}).get("mensagens") or [] if isinstance(r, dict) else []
+
+
+async def aprender(ex, login: str, nome: str, excluir: list | None = None, maximo: int | None = None) -> list:
+    """Read the person's recent chats to learn how they answer: [(titulo, mensagens)]. Chats with unread messages are
+    left alone (opening marks them read) and so are the ones the person excluded; the lock is taken per chat, so the
+    watcher and the ✅ buttons are not held for the whole reading."""
+    async with trava(login):
+        rt = await _runtime(ex, login, nome)
+        aba = await _aba(rt)
+        await _na_lista(rt, aba, ex)
+        chats = ((await _js(rt, aba, ex.SCRIPT_CONVERSAS)) or {}).get("chats") or []
+    alvo = [c["titulo"] for c in chats if not c.get("nao_lidas") and not ex._excluido(c["titulo"], excluir or [])]
+    out = []
+    for titulo in alvo[:maximo or ex.APRENDER_CONVERSAS]:
+        async with trava(login):
+            try:
+                out.append((titulo, await _ler_historico(rt, aba, ex, titulo)))
+            except SemWhatsApp as exc:
+                print(f"conversas_externas: {login}: aprender {titulo}: {exc}", flush=True)
+    return out
+
+
 async def nao_lidas(ex, login: str, nome: str, maximo: int = 3, pular: set | None = None) -> list:
     async with trava(login):
         return await _nao_lidas(ex, login, nome, maximo, pular or set())

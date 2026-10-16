@@ -1,6 +1,7 @@
 """Tool `conversa_externa`: talk to a store, clinic or other business on the person's own WhatsApp, and keep the
 conversation going (helpers/externas.py has the rules, helpers/navegador.py drives WhatsApp Web)."""
 
+import asyncio
 import importlib.util
 import json
 import sys
@@ -47,6 +48,31 @@ def avisar_matheus(texto: str) -> str:
     except Exception as exc:
         erro = str(exc)
     return " e o Matheus foi avisado" if not erro else f" (o aviso ao Matheus falhou: {str(erro)[:100]})"
+
+
+async def aprender_em_fundo(e, n, login: str, dono: str, excluir: list) -> None:
+    """Reads the person's chats (minutes), then hands the result to the person's chat for the profile and facts."""
+    try:
+        chats = await n.aprender(e, login, dono, excluir)
+        for titulo, mensagens in chats:
+            e.guardar_coleta(login, titulo, mensagens)
+        texto = e.aviso_aprendizado(login, dono, len(chats))
+    except Exception as exc:
+        texto = (f"[Aprendizado falhou] {type(exc).__name__}: {str(exc)[:200]}. Diga a {dono} em uma linha que não "
+                 "consegui ler as conversas agora e que tento de novo quando ele pedir.")
+    receber = _carregar_caminho("whatsapp_receber_vigia", Path("/a0/usr/plugins/whatsapp/api/receber.py"))
+    receber._para_a_conversa(login, texto)
+
+
+def _carregar_caminho(nome: str, caminho: Path):
+    antigo, mtime = sys.modules.get(nome), caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        m._mtime = mtime
+        sys.modules[nome] = m
+    return sys.modules[nome]
 
 
 class ConversaExterna(Tool):
@@ -119,7 +145,30 @@ class ConversaExterna(Tool):
                          + (f", menos {', '.join(cfg['excluir'])}" if cfg["excluir"] else "")
                          + ("" if cfg["grupos"] else ", sem grupos") + ". Para cada uma ele recebe aqui a resposta sugerida "
                          "com ✅ Enviar / ✏️ Mudar / 🙈 Ignorar; nada sai sem ele. Diga isso a ele em 2 linhas, na língua "
-                         "dele, e avise que abrir a conversa no WhatsApp Web marca as mensagens como lidas no celular.")
+                         "dele, e avise que abrir a conversa no WhatsApp Web marca as mensagens como lidas no celular. Em seguida "
+                         "chame acao \"aprender\" (se ainda não aprendeu as conversas dele).")
+            if acao == "aprender":
+                if not (await n.estado(e, login, dono)).get("logado"):
+                    return r(f"NÃO FEITO: o WhatsApp de {dono} não está conectado. Conecte primeiro (acao \"conectar\").")
+                excluir = e.responder_config(e.carregar(login))["excluir"]
+                asyncio.get_running_loop().create_task(aprender_em_fundo(e, n, login, dono, excluir))
+                return r(f"Comecei a ler as {e.APRENDER_CONVERSAS} conversas mais recentes de {dono} (sem grupos, sem as "
+                         "excluídas e sem as que têm mensagem não lida). Leva alguns minutos; quando terminar, esta conversa "
+                         "recebe \"[Aprendizado pronto]\". Diga isso a ele em uma linha.")
+            if acao in ("propor_perfil", "propor_fatos"):
+                tipo = acao.split("_")[1]
+                prop = e.propor(login, tipo, texto if tipo == "perfil" else (kwargs.get("fatos") or texto))
+                cartao, botoes = e.cartao_proposta(login, tipo, prop["pendente"])
+                ponte = sys.modules.get("whatsapp_ponte")
+                erro = ponte.enviar(login, cartao, "", "", botoes, "resposta", reenviar=True) if ponte else "ponte indisponível"
+                if erro:
+                    return r(f"NÃO FEITO: a proposta não chegou a {dono} ({str(erro)[:150]}).")
+                self.agent.set_data("_resposta_ja_enviada", True)
+                return r(f"Proposta de {tipo} enviada para {dono} aprovar (✅ Está certo / ✏️ Mudar). Se ele pedir mudança, "
+                         f"chame {acao} de novo com a versão nova. Termine com response \"ok\".")
+            if acao == "esquecer_aprendizado":
+                e.esquecer(login)
+                return r(f"Apaguei tudo o que aprendi das conversas de {dono} (respostas, perfil e fatos).")
             if acao == "responder_desligar":
                 e.ligar_responder(login, False)
                 return r(f"Desligado: não olho mais as mensagens de {dono}.")
@@ -137,7 +186,8 @@ class ConversaExterna(Tool):
                 p = e.decidir(login, conversa or kwargs.get("pedido") or "", "ignorado", motivo or "pulada pelo agente")
                 return r(f"Mensagem de {p['titulo']} não será respondida. Se ele precisa saber, diga em uma linha.")
             return r("acao desconhecida: use listar, estado, conectar, abrir, enviar, ler, esperar_dono, encerrar, "
-                     "responder_por_mim, responder_desligar, sugerir_resposta ou pular_mensagem")
+                     "responder_por_mim, responder_desligar, sugerir_resposta, pular_mensagem, aprender, propor_perfil, "
+                     "propor_fatos ou esquecer_aprendizado")
         except StopIteration:
             return r(f"conversa {conversa} não encontrada (veja acao \"listar\")")
         except (e.Recusa, n.SemWhatsApp) as exc:

@@ -626,6 +626,8 @@ class Suite:
         receber = (RAIZ / "api" / "receber.py").read_text(encoding="utf-8")
         ok('botao.startswith("rp:")' in receber and "if login != usuario" in receber.split("def _botao_responder")[1][:400],
            "botões da sugestão: só a própria pessoa decide")
+        ok('botao.startswith("rpa:")' in receber and "if login != usuario" in receber.split("def _botao_aprendizado")[1][:400]
+           and receber.index('startswith("rpa:")') < receber.index('startswith("rp:")'), "perfil e fatos: só ela aprova")
 
     async def t_voz_responde_em_audio_quando_ele_fala(self):
         # 14/10 (Hermes voice_only): /voz on + his last message was audio -> text, then a voice note

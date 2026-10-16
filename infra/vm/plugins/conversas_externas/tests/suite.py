@@ -259,6 +259,13 @@ class Suite:
             ok(pg.evaluate(e.script_abrir_titulo("Loja 'X'")) == "clicado", "nome com aspas")
             ok(pg.evaluate(e.script_abrir_titulo("Carla")) == "não achei", "nome que não está na lista")
             ok(pg.evaluate(e.SCRIPT_TITULO_ABERTO) == "Ana" and pg.evaluate(e.SCRIPT_CAIXA) == "foco", "conversa aberta e caixa vazia")
+            conv = json.loads(pg.evaluate(e.SCRIPT_CONVERSAS))["chats"]
+            ok([(c["titulo"], c["nao_lidas"]) for c in conv] == [("Ana", 2), ("Bruno", 0), ("Loja 'X'", 1)], f"todas as conversas: {conv}")
+            pg.set_content('<div id="main"><div id="rol" style="height:100px;overflow-y:auto">'
+                           '<div style="height:1000px"><div data-id="false_55@c.us_1">a</div></div></div></div>')
+            pg.evaluate("document.getElementById('rol').scrollTop = 500")
+            ok(pg.evaluate(e.SCRIPT_ROLAR_CIMA) == 1 and pg.evaluate("document.getElementById('rol').scrollTop") == 0,
+               "rola a conversa até o começo")
             pg.set_content('<div data-link-code="ABCD,1234"></div>')
             ok(json.loads(pg.evaluate(e.SCRIPT_ESTADO))["codigo"] == "ABCD1234", "lê o código de 8 letras")
             pg.set_content('<div>Enter code on phone</div><div>K7QP-2XRT</div>')
@@ -380,6 +387,99 @@ class Suite:
             ok(False, "mandou depois de ele já ter respondido")
         except n.SemWhatsApp as exc:
             ok("já respondeu" in str(exc) and not rt2.digitado, str(exc))
+
+    def t_aprender_jeito_dele(self):
+        # 16/10, Matheus: "opção 3, lendo as conversas no WhatsApp, sem exportar"
+        e = _ex()
+        conv = [{"id": "false_5571911112222@c.us_1", "de": "eles", "texto": "Oi Will, quanto fica a diária?"},
+                {"id": "false_5571911112222@c.us_2", "de": "eles", "texto": "pra sábado"},
+                {"id": "true_5571911112222@c.us_3", "de": "eu", "texto": "opa! diária é 250 kkk"},
+                {"id": "true_5571911112222@c.us_4", "de": "eu", "texto": "sábado tenho livre"},
+                {"id": "false_5571911112222@c.us_5", "de": "eles", "texto": "[imagem]"},
+                {"id": "false_5571911112222@c.us_6", "de": "eles", "texto": "e o endereço da obra?"},
+                {"id": "true_5571911112222@c.us_7", "de": "eu", "texto": "te mando no zap mais tarde"}]
+        ok(e.pares(conv) == [("Oi Will, quanto fica a diária? / pra sábado", "opa! diária é 250 kkk / sábado tenho livre"),
+                             ("e o endereço da obra?", "te mando no zap mais tarde")], f"pares: {e.pares(conv)}")
+        ok(e.guardar_coleta("will", "Carlos", conv) == 2 and e.guardar_coleta("will", "Carlos", conv) == 0, "não duplica")
+        grupo = [{"id": "false_1203@g.us_9_557199@c.us", "de": "eles", "texto": "bora?"}, {"id": "true_1203@g.us_8", "de": "eu", "texto": "bora"}]
+        ok(e.guardar_coleta("will", "Pelada", grupo) == 0, "grupo não ensina")
+        e.guardar_pares("will", [{"contato": "Ana", "recebida": "qual o valor da diaria no domingo?", "resposta": "domingo é 300 viu"},
+                                 {"contato": "Ana", "recebida": "bom dia tudo bem", "resposta": "bom diaa"}])
+        par = e.parecidas("will", "quanto é a diária de vocês?", "Carlos", 3)
+        ok(par and "250" in par[0]["resposta"], f"acha a resposta parecida, mesma pessoa primeiro: {par}")
+        ok(any("300" in x["resposta"] for x in par), "e a de outra pessoa sobre o mesmo assunto")
+        ok(e.parecidas("will", "xyz qwe", "Ninguém") == [], "nada parecido: nada")
+        est = e.estatisticas("will")
+        ok(est["respostas"] == 4 and est["risadas"].get("kkk") == 1 and est["comeca_maiuscula_pct"] == 0, f"números: {est}")
+        aviso = e.aviso_aprendizado("will", "Will", 3)
+        ok("[Aprendizado pronto]" in aviso and "propor_perfil" in aviso and "propor_fatos" in aviso and "250" in aviso, aviso)
+        try:
+            e.aprovar("will", "perfil")
+            ok(False, "aprovou sem proposta")
+        except e.Recusa:
+            pass
+        e.propor("will", "perfil", "- tudo minúsculo\n- risada é kkk\n- frases curtas, sem ponto final")
+        e.propor("will", "fatos", "- diária 250 (sábado), 300 (domingo)\n- endereço da obra: manda depois")
+        ok(e.contexto_aprendido("will", {"recebidas": [{"texto": "diária?"}], "titulo": "Carlos"})["perfil"] == "",
+           "proposta pendente ainda não vale")
+        txt, bot = e.cartao_proposta("will", "fatos", e.carregar_aprendizado("will")["fatos"]["pendente"])
+        ok("• diária 250" in txt and [b["id"] for b in bot] == ["rpa:will:fatos:aprovar", "rpa:will:fatos:mudar"], f"{txt} {bot}")
+        e.aprovar("will", "perfil")
+        e.aprovar("will", "fatos")
+        ctx = e.contexto_aprendido("will", {"recebidas": [{"texto": "quanto a diária?"}], "titulo": "Carlos"})
+        ok("risada é kkk" in ctx["perfil"] and ctx["fatos"][0].startswith("diária 250") and ctx["parecidas"], f"contexto: {ctx}")
+        p = {"id": "x1", "titulo": "Carlos", "contexto": [{"de": "eles", "texto": "quanto a diária?"}], "recebidas": []}
+        aviso = e.aviso_pedido(p, "Will", {}, [], ctx)
+        ok("siga à risca" in aviso and "não invente" in aviso and "Carlos: «Oi Will, quanto fica" in aviso, aviso)
+        # what he approves joins the base, ahead of plain history
+        e.ligar_responder("will", True)
+        ped = e.novo_pedido("will", "Bia", [{"id": "false_557100@c.us_Z", "de": "eles", "texto": "tem diária livre sexta?"}], _ts(e, 10))
+        e.sugerir("will", ped["id"], "Tenho sim.")
+        e.sugerir("will", ped["id"], "tenho sim sexta livre")
+        e.decidir("will", ped["id"], "enviado")
+        ok(any(x["origem"] == "corrigida" and x["resposta"] == "tenho sim sexta livre" for x in e.carregar_aprendizado("will")["pares"]),
+           "a resposta aprovada vira exemplo (corrigida)")
+        e.esquecer("will")
+        ok(e.carregar_aprendizado("will")["pares"] == [] and e.carregar("will")["responder"]["ativo"], "esquecer apaga só o aprendido")
+        ok("will" in e.logins() and len(e.logins()) == 1, "o arquivo do aprendizado não vira um login")
+
+    def t_aprender_le_historico(self):
+        e = _ex()
+        n = _carregar("navegador_teste_apr", "navegador.py")
+        n.asyncio = type("A", (), {"sleep": staticmethod(lambda s: asyncio.sleep(0)), "Lock": asyncio.Lock})
+
+        class Rt(RtFalso):
+            def __init__(self, e):
+                super().__init__(e)
+                self.aberto, self.rolagens = "", 0
+
+            async def call(self, metodo, *args, **kw):
+                if metodo == "evaluate":
+                    s = args[1]
+                    if s == self.e.SCRIPT_CONVERSAS:
+                        return {"result": json.dumps({"chats": [{"titulo": "Carlos", "nao_lidas": 0}, {"titulo": "Ana", "nao_lidas": 2},
+                                                                 {"titulo": "Mãe", "nao_lidas": 0}]})}
+                    if "alvo_titulo" in s:
+                        self.aberto = json.loads(s.split("const alvo_titulo = ")[1].split(";")[0])
+                        return {"result": "clicado"}
+                    if s == self.e.SCRIPT_TITULO_ABERTO:
+                        return {"result": self.aberto}
+                    if s == self.e.SCRIPT_ROLAR_CIMA:
+                        self.rolagens += 1
+                        return {"result": min(self.rolagens, 3) * 10}
+                    if s == self.e.SCRIPT_HISTORICO:
+                        return {"result": json.dumps({"mensagens": [{"id": "false_55@c.us_1", "de": "eles", "texto": "oi"},
+                                                                    {"id": "true_55@c.us_2", "de": "eu", "texto": "fala"}]})}
+                return await super().call(metodo, *args, **kw)
+
+        rt = Rt(e)
+
+        async def rtf(*a):
+            return rt
+        n._runtime = rtf
+        lidas = asyncio.run(n.aprender(e, "will", "Will", ["mãe"]))
+        ok([t for t, _ in lidas] == ["Carlos"], f"pula a não lida (marcaria lida) e a excluída: {lidas}")
+        ok(rt.rolagens == 4, f"rola até parar de carregar: {rt.rolagens}")
 
     def t_convidado_pode_usar(self):
         arq = next((x for x in (RAIZ.parent / "login_usuarios" / "helpers" / "convidados.py",

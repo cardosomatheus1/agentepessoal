@@ -27,3 +27,8 @@ horários", com a conversa seguindo, não só a primeira mensagem.
   `sugerir_resposta` manda o cartão com ✅ Enviar / ✏️ Mudar / 🙈 Ignorar (botões `rp:`, tratados em
   `whatsapp/api/receber.py`). Só o ✅ envia; se ela já respondeu pelo celular, não manda.
 - Enquanto está ligado, a máquina fica acordada no horário (para ver as mensagens).
+- Aprender o jeito da pessoa (16/10, "opção 3, sem exportar"): `aprender` lê no WhatsApp Web as 15 conversas
+  individuais mais recentes (sem grupos, sem excluídas, sem as que têm não lidas), rolando para trás, e guarda pares
+  "o que recebeu → o que ela respondeu" em `aprendizado/<login>.json`. Cada mensagem nova leva as 5 respostas antigas
+  mais parecidas (mesma pessoa primeiro). O agente propõe perfil de escrita e fatos; só o que ela aprova
+  (botões `rpa:`) entra no prompt. Resposta aprovada vira exemplo (corrigida pesa mais). `esquecer_aprendizado` apaga.

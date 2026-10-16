@@ -47,7 +47,7 @@ async def _responder_por_mim(ex, nav, login: str, nome: str) -> None:
         if p:
             receber = _carregar("whatsapp_receber_vigia", Path("/a0/usr/plugins/whatsapp/api/receber.py"))
             receber._para_a_conversa(login, ex.aviso_pedido(p, nome, d.get("responder_por_mim") or {},
-                                                            d.get("exemplos_resposta") or []))
+                                                            d.get("exemplos_resposta") or [], ex.contexto_aprendido(login, p)))
             print(f"conversas_externas: {login}: mensagem nova de {titulo} (pedido {p['id']})", flush=True)
 
 

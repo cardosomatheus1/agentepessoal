@@ -596,6 +596,27 @@ async def _botao_responder(usuario: str, botao: str) -> dict:
     return {"ok": True}
 
 
+async def _botao_aprendizado(usuario: str, botao: str) -> dict:
+    """✅ Está certo / ✏️ Mudar under the writing profile or the facts the agent learned from the person's chats."""
+    _, login, tipo, acao = (botao.split(":") + ["", "", "", ""])[:4]
+    if login != usuario or tipo not in ("perfil", "fatos"):
+        return {"ok": False}
+    ex, _nav = _externas()
+    pendente = ex.carregar_aprendizado(login)[tipo].get("pendente")
+    if pendente is None:
+        await asyncio.to_thread(ponte().enviar, usuario, "Essa proposta já foi resolvida.")
+        return {"ok": True}
+    nome = {"perfil": "o perfil de como eu escrevo", "fatos": "a lista do que eu costumo informar"}[tipo]
+    if acao == "mudar":
+        atual = pendente if isinstance(pendente, str) else "\n".join(f"- {f}" for f in pendente)
+        return _para_a_conversa(usuario, (
+            f"✏️ Quero mudar {nome}:\n\n{atual}\n\nPergunte em uma linha o que eu quero mudar; depois reescreva e chame "
+            f"conversa_externa acao propor_{tipo} com a versão nova."))
+    ex.aprovar(login, tipo)
+    await asyncio.to_thread(ponte().enviar, usuario, f"✅ Pronto: o agente passa a seguir {nome}.")
+    return {"ok": True}
+
+
 async def _botao_conta(usuario: str, botao: str) -> dict:
     """✅ Já paguei, ⏰ Amanhã (remind again tomorrow), 🙈 Não é minha."""
     _, login, cid, acao = (botao.split(":") + ["", "", "", ""])[:4]
@@ -750,6 +771,8 @@ class Receber(ApiHandler):
             return await _botao_iniciativa(usuario, botao)
         if botao.startswith("rd:"):  # a drafted e-mail reply of plugins/auxiliar
             return await _botao_rascunho(usuario, botao)
+        if botao.startswith("rpa:"):  # the learned writing profile / facts (plugins/conversas_externas)
+            return await _botao_aprendizado(usuario, botao)
         if botao.startswith("rp:"):  # a drafted answer on the person's WhatsApp (plugins/conversas_externas)
             return await _botao_responder(usuario, botao)
         if botao.startswith("ct:"):  # a bill reminder of plugins/auxiliar
