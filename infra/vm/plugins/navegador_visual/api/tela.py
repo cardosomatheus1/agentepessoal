@@ -49,6 +49,17 @@ ESCOLHER = r"""(() => { const alvo = __TEXTO__;
   }
   return 'opção não encontrada em ' + todos.length + ' listas: ' + todos.map(s => [...s.options].map(o => o.text).join('/')).join(' | ');
 })()"""
+RAIZ_API = r"""async ({metodo, caminho, corpo}) => {
+  const r = await fetch('/api/v1/auth/refresh', {method: 'POST', credentials: 'include',
+    headers: {'Content-Type': 'application/json'}, body: '{}'});
+  const d = await r.json().catch(() => ({}));
+  if (!d.accessToken) return {erro: 'sem sessão na Raiz', status: r.status};
+  const p = JSON.parse(atob(d.accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+  const x = await fetch(caminho, {method: metodo, credentials: 'include', headers: {'Content-Type': 'application/json',
+    Authorization: 'Bearer ' + d.accessToken, 'X-Tenant-ID': p.tenant_id || p.tenantId || ''},
+    body: corpo ? JSON.stringify(corpo) : undefined});
+  return {status: x.status, corpo: (await x.text()).slice(0, 20000)};
+}"""
 ANEXOS = Path("/a0/usr/navegador_visual/anexos")  # what "anexar" may attach (put there by the operator)
 TAMANHO = """(() => [innerWidth, innerHeight])()"""
 # 16/10: the operator taking over a task reads the page as text (a picture cuts long fields, e.g. app credentials):
@@ -79,6 +90,14 @@ async def _na_pagina(runtime, bid, op: str, valor: str) -> str:
 
     async def _fazer():
         pagina = nucleo._page(nucleo._resolve_browser_id(bid))
+        if op == "raiz_api":  # the Raiz API with the session already open in this tab (our own app only)
+            pedido = json.loads(valor)
+            if not pagina.url.startswith("https://raizconnect.com.br/"):
+                return "a aba não está na Raiz (raizconnect.com.br)"
+            if not str(pedido.get("caminho", "")).startswith("/api/v1/") or "/auth/" in pedido["caminho"] \
+                    or pedido.get("metodo") not in ("GET", "POST", "PUT", "PATCH"):
+                return "pedido não permitido"
+            return await pagina.evaluate(RAIZ_API, pedido)
         for quadro in pagina.frames:
             if op == "arquivo":
                 campo = await quadro.query_selector('input[type="file"]')
@@ -191,7 +210,7 @@ class Tela(ApiHandler):
             return {"ok": True, "resultado": str(r)[:500]}
         if acao == "pagina":  # straight on the page (all frames, cross-origin too) when the reference tools can't reach
             op, valor = str(input.get("op") or ""), str(input.get("valor") or "")
-            if op not in ("arquivo", "escolher"):
+            if op not in ("arquivo", "escolher", "raiz_api"):
                 return _erro("operação não permitida", 400)
             if op == "arquivo":
                 caminho = Path(valor).resolve()

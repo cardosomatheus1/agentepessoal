@@ -57,7 +57,9 @@ class Suite:
         ok('acao == "anexar"' in api and "ANEXOS not in caminho.parents" in api, "anexar só da pasta de anexos do operador")
         ok('acao == "campo"' in api and 'método não permitido' in api, "campo: só type, select_option, set_checked e click")
         ok('acao == "pagina"' in api and "operação não permitida" in api and api.count("ANEXOS not in caminho.parents") == 2,
-           "pagina: só arquivo (da pasta de anexos) e escolher")
+           "pagina: só arquivo (da pasta de anexos), escolher e raiz_api")
+        ok('pagina.url.startswith("https://raizconnect.com.br/")' in api and '"/auth/" in pedido["caminho"]' in api,
+           "raiz_api: só na Raiz, só /api/v1/ e nunca rotas de autenticação")
 
     async def rodar(self, so=""):
         resultados = []
