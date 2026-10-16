@@ -55,6 +55,7 @@ class Suite:
         ok('acao == "conteudo"' in api and "c.type !== 'password'" in api
            and api.index("conferir(token") < api.index('acao == "conteudo"'), "texto da página só com o link e sem senha")
         ok('acao == "anexar"' in api and "ANEXOS not in caminho.parents" in api, "anexar só da pasta de anexos do operador")
+        ok('acao == "campo"' in api and 'método não permitido' in api, "campo: só type, select_option, set_checked e click")
 
     async def rodar(self, so=""):
         resultados = []

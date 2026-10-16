@@ -98,6 +98,19 @@ class Tela(ApiHandler):
         if acao == "elementos":  # the page as the agent's browser tool sees it, with the reference of each element
             r = await runtime.call("content", bid)
             return {"elementos": str((r or {}).get("content") or r)[:30000]}
+        if acao == "campo":  # fill/choose/tick/click one element by its reference (from "elementos"): exact, unlike typing
+            metodo, ref, valor = str(input.get("metodo") or ""), input.get("ref"), input.get("valor")
+            if metodo == "type":
+                r = await runtime.call("type", bid, ref, str(valor or "")[:2000])
+            elif metodo == "select_option":
+                r = await runtime.call("select_option", bid, ref, value=str(valor or ""))
+            elif metodo == "set_checked":
+                r = await runtime.call("set_checked", bid, ref, checked=bool(valor))
+            elif metodo == "click":
+                r = await runtime.call("click", bid, ref)
+            else:
+                return _erro("método não permitido", 400)
+            return {"ok": True, "resultado": str(r)[:500]}
         if acao == "anexar":  # attach a file to a file field (e.g. a logo); only from the operator's attachments folder
             caminho = Path(str(input.get("arquivo") or "")).resolve()
             if ANEXOS not in caminho.parents or not caminho.is_file():
