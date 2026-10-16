@@ -57,7 +57,9 @@ CONTEUDO = r"""(() => {
   const campos = [...document.querySelectorAll('input, textarea')].filter(c => c.type !== 'password' && c.value)
     .map(c => ({rotulo: (c.labels && c.labels[0] ? c.labels[0].innerText : '') || c.name || c.id || c.placeholder || '',
                 valor: c.value}));
-  return JSON.stringify({texto: (document.body.innerText || '').slice(0, 20000), campos: campos.slice(0, 50)});
+  const links = [...document.querySelectorAll('a[href]')].map(a => ({texto: (a.innerText || '').trim().slice(0, 80), href: a.href}))
+    .filter(l => l.href.startsWith('http')).slice(0, 300);
+  return JSON.stringify({texto: (document.body.innerText || '').slice(0, 60000), campos: campos.slice(0, 50), links});
 })()"""
 PRONTO = ("(Ele resolveu o que você pediu na tela do navegador, pelo botão do Telegram. Recarregue a sua aba ou abra o "
           "endereço de novo, confira e siga com a tarefa.)")
