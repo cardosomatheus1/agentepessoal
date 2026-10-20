@@ -15,8 +15,10 @@ from playwright.async_api import async_playwright
 
 URL = boto3.client("ssm", region_name="us-east-1").get_parameter(Name="/agentepessoal/agent-url")["Parameter"]["Value"].rstrip("/")
 NOME = "Sonnet"
+# ctx_history 0.4 (20/10, Matheus ok): history compressed past ~80k tokens instead of ~50k; in the simulation of
+# resumo_seguro (tests/compressao.py) compressions fell from 19 to 11, each call a bit larger but mostly cached.
 CHAT = {"provider": "bedrock", "name": "converse/us.anthropic.claude-sonnet-5-5", "ctx_length": 200000,
-        "ctx_history": 0.25, "vision": True, "max_embeds": 30, "rl_requests": 0, "rl_input": 0, "rl_output": 0,
+        "ctx_history": 0.4, "vision": True, "max_embeds": 30, "rl_requests": 0, "rl_input": 0, "rl_output": 0,
         "kwargs": {"a0_api_mode": "chat", "api_base": "http://host.docker.internal:8787/bedrock", "api_key": "proxy",
                    "aws_region_name": "us-east-1", "max_tokens": 32000, "output_config": {"effort": "medium"}}}
 
