@@ -151,6 +151,24 @@ class Suite:
         self._passo(a, {"contexto_conversa": "objetivo: X"})
         eq(len(a.history.msgs), 2, "ainda visível: não repete")
 
+    def t_objetivo_vivo_volta_ao_fim_quando_fica_longe(self):
+        a = Agente()
+        self._passo(a, {"objetivo_vivo": "Pedido: X", "fios": "F1"})
+        for i in range(self.m.REPETIR["objetivo_vivo"]):
+            a.history.msgs.append(Msg(f"passo {i}"))
+            self._passo(a, {"objetivo_vivo": "Pedido: X", "fios": "F1"})
+        eq(len(a.history.msgs), 1 + self.m.REPETIR["objetivo_vivo"], "até N mensagens atrás: não repete")
+        a.history.msgs.append(Msg("mais um passo"))
+        self._passo(a, {"objetivo_vivo": "Pedido: X", "fios": "F1"})
+        ultimo = a.history.msgs[-1].content
+        ok("Pedido: X" in ultimo and "F1" not in ultimo, f"longe demais: só o objetivo volta ao fim: {ultimo}")
+        antes = [m.content for m in a.history.msgs[:-1]]
+        self._passo(a, {"objetivo_vivo": "Pedido: X", "fios": "F1"})
+        eq([m.content for m in a.history.msgs[:-1]], antes, "só acrescenta no fim (o começo do prompt não muda)")
+        eq(len(a.history.msgs), len(antes) + 1, "e logo depois não repete de novo")
+        eq(self.m.longe({"x": "id"}, [{"id": "id"}] + [{"id": str(i)} for i in range(50)]), set(),
+           "chave fora de REPETIR nunca repete por distância")
+
     def t_desligado_por_conversa(self):
         tmp = Path(__import__("tempfile").mkdtemp(prefix="cache-teste-"))
         try:

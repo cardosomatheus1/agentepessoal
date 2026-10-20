@@ -27,3 +27,7 @@ resumido (a partir de ~50 mil tokens, `ctx_history` 0.25) ou quando as instruç�
 
 Para medir: `/var/lib/agentepessoal/uso.jsonl` (gravado pelo proxy) traz `entrada`, `cache` e
 `cache_gravado` de cada chamada.
+
+**20/10 (objetivo_vivo):** chave em `REPETIR` (hoje só `objetivo_vivo`, 12 mensagens) é gravada de novo no fim
+quando a mensagem que a levou ficou mais de N mensagens para trás, para o pedido e os passos ficarem perto do fim numa
+tarefa longa. Só acrescenta: o começo do prompt continua igual.

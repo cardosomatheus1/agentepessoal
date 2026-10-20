@@ -14,13 +14,14 @@ import ast
 import json
 import re
 
-LIMITE = 2_000  # characters of the whole block
+LIMITE = 3_500  # characters of the whole block (20/10: more of his words, for focus)
 MINIMO = 160  # below this budget the block is left out
-FALAS = 3  # last messages of the person, verbatim
-FALA_MAX = 300  # characters per message (longer ones are cut with "…")
+FALAS = 8  # last messages of the person, verbatim
+FALA_MAX = 400  # characters per message (longer ones are cut with "…")
 POR_TIPO = 40  # candidates of each kind (the budget fits far fewer)
 CABECALHO = "[resumo_seguro] Copiado literalmente do trecho resumido:"
 RODAPE = "Texto completo:"
+FALAS_TITULO = "## Falas dele literais (as mais novas por último)"
 
 _SAIDA = re.compile(r"(?:/opt)?/a0/usr/chats/[\w.-]+/saidas/[\w.-]*\w")
 _ARQUIVO = re.compile(r"(?<![\w/.~-])/(?:opt|a0|tmp|home|root|mnt|srv|workspace|var/lib)/[^\s\"'`<>\\|,;()\[\]{}]+")
@@ -190,7 +191,7 @@ def bloco(texto: str, resumo: str = "", ctx_id: str = "", teto: int | None = Non
     def montar(escolhidas, falas_escolhidas):
         partes = [CABECALHO]
         if falas_escolhidas:
-            partes.append("Últimas falas do usuário:")
+            partes.append(FALAS_TITULO)
             partes.extend(f"» {f}" for f in falas_escolhidas)
         if escolhidas:
             partes.append("Âncoras: " + " · ".join(escolhidas))
