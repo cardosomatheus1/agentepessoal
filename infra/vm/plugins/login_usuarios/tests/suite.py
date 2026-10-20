@@ -313,6 +313,18 @@ class Suite:
         ok(m.kwargs == {"temperature": 0, "extra_headers": {"X-Outro": "1"}}, "o modelo original (compartilhado) não muda")
         ok(c.com_dono(m, "../x") is m and c.com_dono(m, "") is m and c.com_dono(None, "ilia") is None, "dono inválido: nada muda")
 
+    def t_sonnet_so_para_o_matheus(self):
+        # 20/10: Matheus asked for Sonnet 5.5 only for himself; routines and guests stay on the default model
+        import json as _json
+        cfg = _json.loads((RAIZ / "modelo_por_dono.json").read_text(encoding="utf-8"))
+        import importlib.util as _u
+        spec = _u.spec_from_file_location("modelo_teste_sonnet", RAIZ / "helpers" / "modelo.py")
+        M = _u.module_from_spec(spec); spec.loader.exec_module(M)
+        eq(M.preset_para(cfg, "matheus", "c1", False), "Sonnet", "conversa do Matheus: Sonnet")
+        eq(M.preset_para(cfg, "matheus", "c1", True), "", "rotina do Matheus: modelo padrão")
+        eq(M.preset_para(cfg, "ilia", "c2", False), "", "convidado: modelo padrão")
+        eq(M.preset_para(cfg, "will", "c3", False), "", "convidado: modelo padrão")
+
     def t_modelo_por_dono_pronto_e_desligado(self):
         # 20/10: ready for "Sonnet only for Matheus", off while there is no file
         import json as _json
