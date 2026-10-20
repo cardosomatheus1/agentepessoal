@@ -443,10 +443,14 @@ def rota_permitida(metodo: str, caminho: str) -> str:
     return ""
 
 
-def searxng_base() -> str:
-    r = docker("inspect", "agent-zero", "-f", "{{.NetworkSettings.Networks.bridge.IPAddress}}")
-    ip = r.stdout.decode().strip()
-    return f"http://{ip}:{SEARXNG_PORTA}" if ip else ""
+def buscar_searxng(params: dict) -> bytes:
+    """The agent's SearXNG listens only inside its container (127.0.0.1): ask it there, with a fixed command and an
+    encoded query (never a shell string from the box)."""
+    url = f"http://127.0.0.1:{SEARXNG_PORTA}/search?{urllib.parse.urlencode(params)}"
+    r = docker("exec", "agent-zero", "curl", "-s", "-m", "30", url, timeout=40)
+    if r.returncode or not r.stdout:
+        raise OSError("busca indisponível")
+    return r.stdout
 
 
 def resumir_busca(dados: dict) -> dict:
@@ -483,40 +487,33 @@ class Repasse(BaseHTTPRequestHandler):
             _CHAMADAS[ip] = _CHAMADAS.get(ip, 0) + 1
             if _CHAMADAS[ip] > CHAMADAS_MAX:
                 return self._erro(429, f"esta tarefa passou de {CHAMADAS_MAX} chamadas ao modelo")
-        if rota == "modelo":
-            url = PROXY + self.path
-            cab = {"Content-Type": self.headers.get("Content-Type") or "application/json",
-                   "Accept": self.headers.get("Accept") or "*/*"}
-        else:
-            base = searxng_base()
-            if not base:
-                return self._erro(503, "busca indisponível")
+        if rota != "modelo":
             consulta = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            q = (consulta.get("q") or [""])[0]
-            params = {"q": q, "format": "json"}
+            params = {"q": (consulta.get("q") or [""])[0][:400], "format": "json"}
             if rota == "searxng":
-                params.update({k: v[0] for k, v in consulta.items() if k in ("pageno", "language", "categories",
-                                                                              "time_range")})
-            url = f"{base}/search?{urllib.parse.urlencode(params)}"
-            cab = {"Accept": "application/json"}
-        try:
-            resp = urllib.request.urlopen(urllib.request.Request(url, data=corpo, headers=cab, method=metodo),
-                                          timeout=600)
-        except urllib.error.HTTPError as e:
-            resp = e
-        except Exception:
-            return self._erro(502, "o serviço não respondeu")
-        if rota == "buscar":
+                params.update({k: v[0][:40] for k, v in consulta.items() if k in ("pageno", "language", "categories",
+                                                                                  "time_range")})
             try:
-                dados = json.dumps(resumir_busca(json.loads(resp.read())), ensure_ascii=False).encode()
-            except ValueError:
-                return self._erro(502, "busca sem resultado legível")
+                bruto = buscar_searxng(params)
+                dados = json.dumps(resumir_busca(json.loads(bruto)), ensure_ascii=False).encode() \
+                    if rota == "buscar" else bruto
+            except (OSError, ValueError, subprocess.TimeoutExpired):
+                return self._erro(502, "busca indisponível")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(dados)))
             self.end_headers()
             self.wfile.write(dados)
             return
+        cab = {"Content-Type": self.headers.get("Content-Type") or "application/json",
+               "Accept": self.headers.get("Accept") or "*/*"}
+        try:
+            resp = urllib.request.urlopen(urllib.request.Request(PROXY + self.path, data=corpo, headers=cab,
+                                                                 method=metodo), timeout=600)
+        except urllib.error.HTTPError as e:
+            resp = e
+        except Exception:
+            return self._erro(502, "o serviço não respondeu")
         self.send_response(resp.status if hasattr(resp, "status") else resp.code)
         self.send_header("Content-Type", resp.headers.get("Content-Type") or "application/json")
         self.send_header("Transfer-Encoding", "chunked")

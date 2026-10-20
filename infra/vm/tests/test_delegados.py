@@ -82,6 +82,11 @@ for metodo, caminho, rota in (("POST", "/openai/v1/responses", "modelo"), ("POST
                               ("GET", "/openai/v1/responses", ""), ("POST", "/openai/v1/../../arquivos/presign", ""),
                               ("POST", "/typesafe/x", "")):
     checa(d.rota_permitida(metodo, caminho) == rota, f"repasse {metodo} {caminho} -> {rota!r}")
+chamado = []
+d.docker = lambda *a, **k: chamado.append(a) or type("R", (), {"returncode": 0, "stdout": b'{"results": []}'})()
+d.buscar_searxng({"q": "a; rm -rf / & b", "format": "json"})
+checa(chamado[0][:4] == ("exec", "agent-zero", "curl", "-s") and chamado[0][-1].startswith(
+    "http://127.0.0.1:55510/search?q=a%3B+rm+-rf+%2F+%26+b"), f"busca com consulta codificada, comando fixo: {chamado}")
 r = d.resumir_busca({"results": [{"title": "T", "url": "https://x", "content": "c" * 900}] * 20})
 checa(len(r["resultados"]) == 12 and len(r["resultados"][0]["trecho"]) == 400, "busca resumida")
 
