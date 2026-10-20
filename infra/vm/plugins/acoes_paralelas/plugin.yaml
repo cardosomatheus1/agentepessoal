@@ -1,0 +1,4 @@
+name: acoes_paralelas
+title: Ações em paralelo
+description: Quando o modelo pede várias ações numa resposta, as que só leem (buscas, documentos, memória, Pasta, leituras do Gmail/Agenda/Drive/GitHub, arquivos diferentes) rodam ao mesmo tempo; navegador, celular, terminal, mensagens e a resposta final seguem uma de cada vez, na ordem (planejador de lotes do Hermes Agent).
+version: 1.0.0
