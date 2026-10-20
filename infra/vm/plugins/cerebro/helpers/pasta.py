@@ -137,10 +137,15 @@ def ler(colecao: str) -> list[dict]:
         raise Ilegivel(f"a pasta {COLECOES[colecao]} não pôde ser lida ({str(exc)[:60]})") from None
 
 
+def prefixo(ident) -> str:
+    """The file-name prefix of an item: its number padded, or its id made safe (an old loose end had brackets and spaces
+    in its id, which broke file globs and links)."""
+    ident = str(ident)
+    return ident.zfill(4) if ident.isdigit() else slug(ident, 40)
+
+
 def _nome_arquivo(colecao: str, item: dict) -> str:
-    ident = str(item.get("id"))
-    prefixo = ident.zfill(4) if ident.isdigit() else ident
-    return f"{prefixo}-{slug(titulo(colecao, item))}.md"
+    return f"{prefixo(item.get('id'))}-{slug(titulo(colecao, item))}.md"
 
 
 def gravar(colecao: str, itens: list[dict]) -> dict:
@@ -153,7 +158,13 @@ def gravar(colecao: str, itens: list[dict]) -> dict:
     for item in itens:
         ident = str(item.get("id"))
         vivos.add(ident)
-        f = existentes.get(ident, (None,))[0] or pasta / _nome_arquivo(colecao, item)
+        f = existentes.get(ident, (None,))[0]
+        if f is None:
+            f = pasta / _nome_arquivo(colecao, item)
+        elif not f.name.startswith(prefixo(ident) + "-"):  # an unsafe name from before: give it the safe one
+            novo = pasta / _nome_arquivo(colecao, item)
+            os.replace(f, novo)
+            f = novo
         campos = {k: v for k, v in item.items() if not str(k).startswith("_") and k not in DERIVADOS}
         campos["status"] = str(item.get("estado") or "aberto")
         campos["tags"] = [colecao[:-1] if colecao != "decisoes" else "decisao", slug(item.get("area") or "geral")]
@@ -189,9 +200,10 @@ def link(ref: str) -> str:
     colecao = {"decisao": "decisoes", "pendencia": "pendencias", "assunto": "assuntos"}.get(tipo)
     if not colecao:
         return str(ref)
-    prefixo = ident.zfill(4) if ident.isdigit() else ident
     pasta = RAIZ / COLECOES[colecao]
-    achado = next(iter(sorted(pasta.glob(f"{prefixo}-*.md"))), None) if pasta.exists() else None
+    inicio = prefixo(ident) + "-"
+    achado = next((f for f in sorted(pasta.iterdir()) if f.name.startswith(inicio) and f.suffix == ".md"),
+                  None) if pasta.exists() else None
     return f"[[{COLECOES[colecao]}/{achado.stem}]]" if achado else str(ref)
 
 

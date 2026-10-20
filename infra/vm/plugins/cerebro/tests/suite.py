@@ -6,6 +6,7 @@ python3 tests/suite.py"""
 import asyncio
 import importlib.util
 import json
+import os
 import shutil
 import sys
 import tempfile
@@ -206,6 +207,26 @@ class Suite:
             dados["fios"] = [x for x in dados["fios"] if x["id"] != "cc22dd"]
             f.salvar("matheus", dados)
             ok(list((p.RAIZ / "Arquivo-morto" / "Pendencias").glob("cc22dd-*.md")), "o que saiu foi para o arquivo morto")
+        finally:
+            self.limpar()
+
+    def t_id_estranho_vira_nome_seguro(self):
+        self.preparar()
+        try:
+            p, f = self.p, self.f
+            ruim = "[novo id] não devolvido"
+            f.mesclar("matheus", [{"id": ruim, "titulo": "Restaurar o token da Meta"}])
+            nomes = [x.name for x in (p.RAIZ / "Pendencias").glob("*.md")]
+            ok(any(n.startswith("novo-id-nao-devolvido-") for n in nomes) and not any("[" in n for n in nomes),
+               f"nome seguro: {nomes}")
+            ok(p.link(f"pendencia:{ruim}").startswith("[[Pendencias/novo-id-nao-devolvido-"), "link acha a nota")
+            r = self.mods.m("auditoria").rodar(p)
+            ok(not any(a["checagem"] in ("indices", "orfas") for a in r["achados"]), "índice e órfãs ok")
+            # a file saved with the old unsafe name is renamed on the next save
+            velho = next((p.RAIZ / "Pendencias").glob("novo-id-*.md"))
+            os.replace(velho, p.RAIZ / "Pendencias" / "[novo id] não devolvido-x.md")
+            f.mesclar("matheus", [{"id": ruim, "detalhe": "de novo"}])
+            ok(not any("[" in x.name for x in (p.RAIZ / "Pendencias").glob("*.md")), "renomeado para o nome seguro")
         finally:
             self.limpar()
 
