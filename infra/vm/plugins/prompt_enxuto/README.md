@@ -45,6 +45,12 @@ A lista é igual em toda chamada, então o cache do prompt continua valendo. Med
 ferramentas e 46.444 caracteres viraram 35 ferramentas e 19.615 caracteres (o catálogo é 4.387 deles), uns 7 mil
 tokens a menos por chamada. Para desligar só isto, crie `/a0/usr/plugins/prompt_enxuto/sem_sob_demanda`.
 
+**Pasta de trabalho numa linha (21/10):** fora de um projeto, o Agent Zero punha nos extras de cada passo a árvore de
+arquivos de `/a0/usr/workdir`, com uns 9.500 caracteres. Ela voltava inteira sempre que algum arquivo da pasta mudava,
+o que era quase toda mensagem. O Hermes não manda árvore nenhuma. `message_loop_prompts_after/_75_include_workdir_extras.py`
+substitui o arquivo do núcleo de mesmo nome e manda uma linha fixa com a pasta. Dentro de um projeto com a estrutura de
+arquivos ligada, fica como o Agent Zero faz.
+
 **Desligar sem implantar:** criar o arquivo `/a0/usr/plugins/prompt_enxuto/desligado` (no contêiner) volta as
 descrições inteiras e tira o manual, nos dois modos; apagar o arquivo liga de novo.
 

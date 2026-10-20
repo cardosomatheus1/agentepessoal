@@ -384,6 +384,60 @@ class Suite:
             self._soltar(antes)
             self.e.MANUAIS.pop("assistir_video", None)
 
+    def t_pasta_de_trabalho_uma_linha_fixa(self):
+        projeto = {"nome": ""}
+        cfg = {"workdir_show": True, "workdir_path": "/a0/usr/workdir"}
+        stubs = {"agent": types.ModuleType("agent"), "helpers": types.ModuleType("helpers"),
+                 "helpers.extension": types.ModuleType("helpers.extension"),
+                 "helpers.projects": types.ModuleType("helpers.projects"),
+                 "helpers.settings": types.ModuleType("helpers.settings")}
+        stubs["agent"].LoopData = type("LoopData", (), {})
+        stubs["helpers.extension"].Extension = type(
+            "Extension", (), {"__init__": lambda self, agent=None, **k: setattr(self, "agent", agent)})
+        stubs["helpers.projects"].get_context_project_name = lambda ctx: projeto["nome"]
+        stubs["helpers.settings"].get_settings_for_prompt = lambda: cfg
+        stubs["helpers"].projects, stubs["helpers"].settings = stubs["helpers.projects"], stubs["helpers.settings"]
+        antes = {k: sys.modules.get(k) for k in stubs}
+        sys.modules.update(stubs)
+        try:
+            arq = EXT / "message_loop_prompts_after" / "_75_include_workdir_extras.py"
+            spec = importlib.util.spec_from_file_location("enxuto_workdir_teste", arq)
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+            agente = types.SimpleNamespace(context=types.SimpleNamespace(id="c"))
+
+            def passo():
+                ld = types.SimpleNamespace(extras_temporary={})
+                _rodar(m.IncludeWorkdirExtras(agent=agente).execute(loop_data=ld))
+                return ld.extras_temporary
+            um, dois = passo(), passo()
+            eq(um, dois, "a mesma linha a cada passo (o cache_prompt manda uma vez só)")
+            texto = um["project_file_structure"]
+            ok("/a0/usr/workdir" in texto and "ls" in texto and len(texto) < 300, f"uma linha com a pasta: {texto}")
+            cfg["workdir_show"] = False
+            eq(passo(), {}, "com workdir_show desligado nas configurações: nada, como no Agent Zero")
+            projeto["nome"] = "raiz"
+            chamado = []
+
+            async def nucleo(self, ld):
+                chamado.append(True)
+            m.IncludeWorkdirExtras._nucleo = nucleo
+            passo()
+            eq(chamado, [True], "dentro de um projeto, o comportamento do Agent Zero fica")
+        finally:
+            for k, v in antes.items():
+                if v is None:
+                    sys.modules.pop(k, None)
+                else:
+                    sys.modules[k] = v
+        for raiz in (Path("/a0"), Path("/home/user/src/agent-zero")):
+            nucleo = raiz / "extensions" / "python" / "message_loop_prompts_after" / "_75_include_workdir_extras.py"
+            if nucleo.exists():
+                import hashlib
+                eq(hashlib.md5(nucleo.read_bytes()).hexdigest(), "ca5fb21762e53e5130fd46a4c0784496",
+                   "o arquivo do núcleo que este substitui mudou: revise a substituição")
+                break
+
     def t_indice_curto_e_com_as_acoes_de_cada_ferramenta(self):
         i = self.i
         for nome, curta in i.CURTAS.items():
