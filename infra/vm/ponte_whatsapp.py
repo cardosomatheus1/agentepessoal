@@ -49,6 +49,7 @@ ALERTA = Path("/var/lib/agentepessoal/alerta_gasto.json")
 # 12/10 review: Haiku (the reviewers) and Nova were priced as Luna; their prices come from the AWS Pricing API
 # (Bedrock, us-east-1, 12/10). The first name contained in the model id wins; anything else is priced as Luna.
 PRECOS = {"sol": (2.20, 0.22, 11.0), "haiku": (0.55, 0.055, 2.75, 0.1375), "nova-pro": (0.80, 0.20, 1.60, 0.0),
+          "sonnet": (2.0, 0.20, 10.0, 2.5), "opus": (4.0, 0.20, 20.0, 5.0),  # Claude 5.5 list prices (20/10)
           "luna": (0.11, 0.011, 0.55)}
 
 

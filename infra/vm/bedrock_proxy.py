@@ -267,7 +267,9 @@ def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: 
             "em": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "modelo": model,
             "status": status,
-            "entrada": u.get("input_tokens", u.get("prompt_tokens", u.get("inputTokens", 0))),
+            # Converse (Claude) counts inputTokens WITHOUT the cached part; the log keeps entrada = everything sent
+            "entrada": (u.get("inputTokens", 0) + (u.get("cacheReadInputTokens") or 0) + (u.get("cacheWriteInputTokens") or 0)
+                        if "inputTokens" in u else u.get("input_tokens", u.get("prompt_tokens", 0))),
             "cache": details.get("cached_tokens", u.get("cacheReadInputTokens", 0)) or 0,
             "cache_gravado": details.get("cache_write_tokens", u.get("cacheWriteInputTokens", 0)) or 0,
             "saida": u.get("output_tokens", u.get("completion_tokens", u.get("outputTokens", 0))),
@@ -285,6 +287,35 @@ def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: 
             (DUMP_DIR / f"{time.time():.3f}.json").write_bytes(body)
     except Exception:
         pass
+
+
+CACHE_PONTO = {"cachePoint": {"type": "default"}}
+_CONVERSE = re.compile(r"^/model/[^/]*anthropic[^/]*/converse(-stream)?$")
+
+
+def com_cache(path: str, body: bytes | None) -> bytes | None:
+    """20/10: Claude on Bedrock only caches up to an explicit cachePoint (the OpenAI-style models cache by themselves).
+    For a Converse call to a Claude model with no cachePoint of its own, mark the end of the system prompt and the end
+    of the last message: the next call of the same chat reads all of that from the cache and only pays the new part.
+    Anything that does not parse, or already has cache points, goes through unchanged."""
+    if not body or not _CONVERSE.match(path.split("?", 1)[0]):
+        return body
+    try:
+        dados = json.loads(body)
+        if "cachePoint" in body.decode("utf-8", "ignore"):
+            return body
+        sistema, mensagens = dados.get("system"), dados.get("messages")
+        mudou = False
+        if isinstance(sistema, list) and sistema:
+            sistema.append(dict(CACHE_PONTO))
+            mudou = True
+        if isinstance(mensagens, list) and mensagens and isinstance(mensagens[-1].get("content"), list) \
+                and mensagens[-1]["content"]:
+            mensagens[-1]["content"].append(dict(CACHE_PONTO))
+            mudou = True
+        return json.dumps(dados, ensure_ascii=False).encode() if mudou else body
+    except Exception:
+        return body
 
 
 def mark_activity() -> None:
@@ -399,6 +430,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif path.startswith("/bedrock/"):
             upstream, path = RUNTIME, path[len("/bedrock"):]
             headers["Authorization"] = f"Bearer {bearer_token()}"
+            body = com_cache(path, body)
         else:
             headers["Authorization"] = f"Bearer {bearer_token()}"
         if body is not None:

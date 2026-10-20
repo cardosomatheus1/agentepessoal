@@ -168,6 +168,26 @@ def main() -> int:
         log_usage_real("/v1/chat/completions", b'{"model": "m"}', 200, uso, 1.0)
         linhas = [json.loads(x) for x in p.USAGE_FILE.read_text().splitlines()]
         ok([x.get("dono") for x in linhas] == ["ilia", None, None], f"dono no uso, só login válido ({linhas})")
+        # Converse (Claude): inputTokens leaves out the cached part; entrada keeps the whole prompt
+        conv = b'{"metadata": {"usage": {"inputTokens": 100, "cacheReadInputTokens": 5000, "cacheWriteInputTokens": 300, "outputTokens": 20}}}'
+        log_usage_real("/model/us.anthropic.claude-sonnet-5-5/converse", b"{}", 200, conv, 1.0, "matheus")
+        u = json.loads(p.USAGE_FILE.read_text().splitlines()[-1])
+        ok((u["modelo"], u["entrada"], u["cache"], u["cache_gravado"], u["saida"]) ==
+           ("us.anthropic.claude-sonnet-5-5", 5400, 5000, 300, 20), f"uso do Converse com cache: {u}")
+        # cache points: end of system and of the last message, only for Claude on Converse, never twice
+        pedido = {"system": [{"text": "regras"}], "messages": [{"role": "user", "content": [{"text": "oi"}]},
+                  {"role": "assistant", "content": [{"text": "olá"}]}, {"role": "user", "content": [{"text": "e aí"}]}]}
+        cru = json.dumps(pedido).encode()
+        novo = json.loads(p.com_cache("/model/us.anthropic.claude-sonnet-5-5/converse-stream", cru))
+        ok(novo["system"][-1] == {"cachePoint": {"type": "default"}} and
+           novo["messages"][-1]["content"][-1] == {"cachePoint": {"type": "default"}} and
+           novo["messages"][0]["content"] == [{"text": "oi"}], f"pontos de cache no Claude: {novo}")
+        ok(str(novo).count("cachePoint") == 2, "dois pontos (sistema e última mensagem)")
+        de_novo = p.com_cache("/model/us.anthropic.claude-sonnet-5-5/converse", json.dumps(novo).encode())
+        ok(str(json.loads(de_novo)).count("cachePoint") == 2, "pedido que já tem ponto de cache passa igual")
+        ok(p.com_cache("/model/amazon.nova-pro-v1:0/converse", cru) == cru, "modelo que não é Claude passa igual")
+        ok(p.com_cache("/v1/chat/completions", cru) == cru, "OpenAI (Luna/Sol) passa igual")
+        ok(p.com_cache("/model/us.anthropic.claude-sonnet-5-5/converse", b"nao e json") == b"nao e json", "corpo torto passa igual")
     finally:
         servidor.shutdown()
     for f in falhas:

@@ -25,6 +25,8 @@ def main() -> int:
             {"em": agora, "modelo": "openai.gpt-6.1-sol", "entrada": 0, "saida": 1_000_000},
             {"em": agora, "modelo": "us.anthropic.claude-haiku-5-5", "entrada": 0, "saida": 1_000_000},
             {"em": agora, "modelo": "us.amazon.nova-pro-v1:0", "entrada": 0, "saida": 1_000_000},
+            # 20/10: Sonnet 5.5 for Matheus — its own price, not the Luna fallback
+            {"em": agora, "modelo": "us.anthropic.claude-sonnet-5-5", "entrada": 1_000_000, "cache": 1_000_000, "saida": 1_000_000},
             # cache: 1 M read + 1 M written on Haiku
             {"em": agora, "modelo": "us.anthropic.claude-haiku-5-5", "entrada": 2_000_000, "cache": 1_000_000,
              "cache_gravado": 1_000_000, "saida": 0},
@@ -32,7 +34,7 @@ def main() -> int:
         p.USO = tmp / "uso.jsonl"
         p.USO.write_text("\n".join(json.dumps(l) for l in linhas) + "\n")
         hoje, mes = p.gasto()
-        esperado = 0.55 + 11.0 + 2.75 + 1.60 + (0.055 + 0.1375)
+        esperado = 0.55 + 11.0 + 2.75 + 1.60 + (0.055 + 0.1375) + (0.20 + 10.0)
         if abs(hoje - esperado) > 1e-6 or abs(mes - esperado) > 1e-6:
             falhas.append(f"gasto: esperado US$ {esperado:.4f}, veio hoje {hoje:.4f} / mês {mes:.4f}")
         # 15/10 guests: spending per person (the proxy logs X-A0-Dono) and the guest's daily limit
