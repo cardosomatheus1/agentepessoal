@@ -37,3 +37,17 @@ _Avoid_: painel, dashboard, app
 **Área**:
 A frente da vida do Matheus a que um item pertence (Raiz, NEXOS, Orbyte, pessoal…); um só Segundo Cérebro, com a área marcada em cada item.
 _Avoid_: empresa, contexto, projeto
+
+### Raiz
+
+**Preço Certo em 30 Dias**:
+O programa que a Raiz vende como porta de entrada: um serviço feito junto com o restaurante para acertar preço e custo do cardápio em 30 dias, usando o Raiz Connect como ferramenta.
+_Avoid_: teste grátis, trial, consultoria
+
+**Raiz Connect**:
+O sistema da Raiz (cardápio, custo, CMV, assistente Fernanda) que o restaurante usa durante o programa e continua usando depois.
+_Avoid_: Raiz (sozinho, quando se fala do sistema), ERP, app
+
+**Especialista**:
+Um papel com personalidade e regras próprias (Crítico, Designer) que o agente principal chama para uma tarefa e que usa o mesmo Segundo Cérebro; o Matheus não fala com ele direto.
+_Avoid_: bot, subagente, outro agente
