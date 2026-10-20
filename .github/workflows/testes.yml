@@ -42,6 +42,7 @@ jobs:
           python3 infra/vm/tests/test_delegados.py
           python3 infra/operador/tests/test_segundo_cerebro.py
           python3 infra/operador/tests/test_cache_relatorio.py
+          python3 infra/operador/tests/test_calibracao.py
           python3 infra/reels/moldes/motor/test_validar.py
           python3 infra/reels/moldes/motor/test_gerar_foto.py
           python3 infra/reels/moldes/motor/test_audio.py

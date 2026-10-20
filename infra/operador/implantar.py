@@ -5,6 +5,7 @@
     python3 infra/operador/implantar.py --host caixa_convidados.py --unidade agentepessoal-caixas.service
     python3 infra/operador/implantar.py --host caixa_delegados.py --unidade agentepessoal-delegados.service
         (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it)
+    python3 infra/operador/implantar.py --calibracao   (AR Board criteria, calibracao/*/criterios.md, for the Crítico)
     python3 infra/operador/implantar.py --controle [--forcar]   (the control page / webhooks Lambda, infra/control)
     python3 infra/operador/implantar.py --segundo-cerebro [--rollback | --preparar | --adotar-manual]   (page + gateway plugin; no --forcar)
 
@@ -105,6 +106,38 @@ def host(args: list) -> None:
     if head not in saida:
         raise SystemExit("a troca falhou depois da conferência: veja a saída acima.")
     print(f"implantado no host: {arquivo} @ {head[:8]}")
+
+
+CALIBRACAO_VM = "/opt/a0/usr/calibracao"  # /a0/usr/calibracao in the container: read by plugins/especialistas (Crítico)
+
+
+def arquivos_calibracao(raiz: Path = RAIZ) -> list:
+    """The AR Board criteria the agent reads (calibracao/<agente>/criterios.md). The judged cases (casos.jsonl) stay in
+    git only: they quote real people's profiles and the Crítico needs just the rules."""
+    return sorted(str(f.relative_to(raiz)) for f in (raiz / "calibracao").glob("*/criterios.md"))
+
+
+def calibracao(args: list) -> None:
+    """Matheus's AR Board criteria to the VM (20/10): committed and pushed, the whole set replaced at once, the
+    previous set kept next to it (calibracao.anterior), version recorded."""
+    caminhos = arquivos_calibracao()
+    if not caminhos:
+        raise SystemExit("nenhum calibracao/<agente>/criterios.md no repositório")
+    head = _conferir_git(caminhos)
+    pacote = subprocess.run(["git", "archive", "--format=tar.gz", "HEAD", *caminhos], cwd=RAIZ, check=True,
+                            capture_output=True).stdout
+    chave = f"tmp/implantar-calibracao-{head[:8]}.tgz"
+    boto3.client("s3", region_name="us-east-1").put_object(Bucket=BUCKET, Key=chave, Body=pacote)
+    estagio = "/tmp/implantar-calibracao"
+    saida = vm(f"rm -rf {estagio} && mkdir -p {estagio} && aws s3 cp --quiet s3://{BUCKET}/{chave} - | tar xz -C {estagio} && "
+               f"echo '{head} {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}' > {estagio}/calibracao/.versao && "
+               f"rm -rf {CALIBRACAO_VM}.anterior && (test -d {CALIBRACAO_VM} && mv {CALIBRACAO_VM} {CALIBRACAO_VM}.anterior || true) && "
+               f"mv {estagio}/calibracao {CALIBRACAO_VM} && chmod -R a+rX {CALIBRACAO_VM} && "
+               f"find {CALIBRACAO_VM} -name criterios.md | sort && cat {CALIBRACAO_VM}/.versao")
+    print(saida[-800:])
+    if head not in saida:
+        raise SystemExit("a troca dos critérios falhou: veja a saída acima.")
+    print(f"implantado: {len(caminhos)} arquivo(s) de critérios @ {head[:8]}")
 
 
 CONTROLE = ("index.py", "whatsapp.py", "telegram.py")  # what deploy.py zips into the control function
@@ -212,6 +245,8 @@ def main() -> None:
         return host(args)
     if "--controle" in args:
         return controle(args)
+    if "--calibracao" in args:
+        return calibracao(args)
     if not args or args[0].startswith("-"):
         raise SystemExit(__doc__)
     plugin, forcar = args[0], "--forcar" in args

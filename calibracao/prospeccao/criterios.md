@@ -44,7 +44,5 @@ no perfil e oferecer planilha logo depois, fica bem sem nexo".
 9. **Comentário de aquecimento curto sobre o cardápio da semana está aprovado** (o 5cfec0 rejeitado em 13/10 foi
    aprovado agora: vale o mais recente). [5cfec0, adcdad]
 
-## Dúvidas para o Matheus
-
-- **d367be** (resposta a quem disse "agora não", deixando o link) veio rejeitada sem comentário. Ela saiu duplicada
-  no Direct; não sei se a rejeição é pelo texto ou pela duplicação.
+10. **A quem disse "agora não", deixar o link curto da calculadora está aprovado** (a rejeição do d367be foi só porque
+    saiu duplicada no Direct, erro de envio já corrigido). [d367be]
