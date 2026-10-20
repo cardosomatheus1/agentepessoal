@@ -37,6 +37,11 @@ def test_nativo_so_muda_o_modo():
     assert m.CHAT["kwargs"]["a0_api_mode"] == "chat", "chat() does not change the shared constant"
 
 
+def test_sonnet_no_modo_nativo():
+    saida = m.com_sonnet([{"name": "Default"}])
+    assert saida[-1]["name"] == "Sonnet" and saida[-1]["chat"]["kwargs"]["a0_api_mode"] == "responses"
+
+
 def test_preset_de_teste_nao_mexe_no_sonnet():
     sonnet = {"name": "Sonnet", "chat": m.chat("texto")}
     saida = m.com_sonnet([{"name": "Default"}, sonnet], m.NOME_TESTE, "nativo")
@@ -49,4 +54,5 @@ if __name__ == "__main__":
     test_utilitario_do_padrao()
     test_nativo_so_muda_o_modo()
     test_preset_de_teste_nao_mexe_no_sonnet()
+    test_sonnet_no_modo_nativo()
     print("ok")

@@ -27,7 +27,10 @@ from playwright.async_api import async_playwright
 URL = boto3.client("ssm", region_name="us-east-1").get_parameter(Name="/agentepessoal/agent-url")["Parameter"]["Value"].rstrip("/")
 NOME = "Sonnet"
 NOME_TESTE = "Sonnet nativo"
-MODO = "texto"
+# 20/10 ~22h: "nativo" after the test chats (same tasks, text x native): 0 <invoke> conversions, fewer model calls
+# (browser on python.org 5 -> 4, 29.5 s -> 21 s; example.com + 3 terminal steps 7 -> 6, 37 s -> 33 s), cache hits the
+# same (proxy cache points). Back to text mode: MODO = "texto" and run this script.
+MODO = "nativo"
 # ctx_history 0.4 (20/10, Matheus ok): history compressed past ~80k tokens instead of ~50k; in the simulation of
 # resumo_seguro (tests/compressao.py) compressions fell from 19 to 11, each call a bit larger but mostly cached.
 CHAT = {"provider": "bedrock", "name": "converse/us.anthropic.claude-sonnet-5-5", "ctx_length": 200000,
