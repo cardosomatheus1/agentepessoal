@@ -42,11 +42,15 @@ _Avoid_: empresa, contexto, projeto
 
 **Preço Certo em 30 Dias**:
 O programa que a Raiz vende como porta de entrada: um serviço feito junto com o restaurante para acertar preço e custo do cardápio em 30 dias, usando o Raiz Connect como ferramenta.
-_Avoid_: teste grátis, trial, consultoria
+_Avoid_: Lucro na Mão em 30 Dias (nome antigo), teste grátis, trial, consultoria
 
 **Raiz Connect**:
 O sistema da Raiz (cardápio, custo, CMV, assistente Fernanda) que o restaurante usa durante o programa e continua usando depois.
 _Avoid_: Raiz (sozinho, quando se fala do sistema), ERP, app
+
+**Cérebro da Raiz**:
+A parte da Pasta só da empresa Raiz (mapa, oferta, cliente ideal, marca, concorrentes, playbook), lida pela prospecção, pelos posts e pelos especialistas; vira um Segundo Cérebro próprio quando a Raiz tiver mais gente.
+_Avoid_: cérebro da empresa, wiki, base de conhecimento
 
 **Especialista**:
 Um papel com personalidade e regras próprias (Crítico, Designer) que o agente principal chama para uma tarefa e que usa o mesmo Segundo Cérebro; o Matheus não fala com ele direto.
