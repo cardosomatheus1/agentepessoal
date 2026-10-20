@@ -15,7 +15,7 @@ import types
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-PLUGINS = RAIZ.parent
+PLUGINS = RAIZ.parent if (RAIZ.parent / "memoria_pessoal").exists() else Path("/a0/usr/plugins")  # staging copy
 
 
 class Falha(AssertionError):

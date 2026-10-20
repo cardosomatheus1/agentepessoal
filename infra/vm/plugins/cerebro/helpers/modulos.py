@@ -6,7 +6,8 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-PLUGINS = RAIZ.parent
+# next to this plugin (repository, live install); a staging copy alone in /tmp uses the installed ones
+PLUGINS = RAIZ.parent if (RAIZ.parent / "memoria_pessoal").exists() else Path("/a0/usr/plugins")
 CAMINHOS = {
     "pasta": ("cerebro_pasta", RAIZ / "helpers" / "pasta.py"),
     "assuntos": ("cerebro_assuntos", RAIZ / "helpers" / "assuntos.py"),
