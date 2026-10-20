@@ -338,6 +338,15 @@ class Suite:
         finally:
             self.limpar()
 
+    def t_pedido_ensina_pendencia_com_o_exemplo_dele(self):
+        # 20/10: o modelo deixava passar "ainda nao terminei a tarefa do MEI" (o exemplo do próprio Matheus)
+        cap = _carregar("cerebro_captura_pedido", RAIZ / "helpers" / "captura.py")
+        for termo in ("ainda nao terminei a tarefa do MEI", "Uma frase pode ter decisão E pendência E assunto",
+                      "Tarefa que ele pediu ao assistente NÃO é pendência"):
+            ok(termo in cap.PEDIDO, f"pedido cita {termo!r}")
+        pedido = cap.montar_pedido(["x"], "y", [{"id": "a1", "titulo": "T"}], [], [])
+        ok("[a1] T" in pedido and "{" in pedido, "lista as pendências abertas e o formato JSON")
+
     def t_prompt_e_indice(self):
         ext = (RAIZ / "extensions" / "python" / "system_prompt" / "_27_cerebro.py").read_text(encoding="utf-8")
         for termo in ("anotação automática", "Pendência = o que ELE precisa fazer", "acao=desfazer", "UMA seção"):

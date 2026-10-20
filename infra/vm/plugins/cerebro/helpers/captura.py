@@ -23,8 +23,10 @@ Definições:
 - decisoes: uma escolha que ele JÁ fez e que vale daqui para a frente ("vamos cobrar R$ 497 de setup"). Pedido ao
   assistente ("faça X", "manda Y") NÃO é decisão. tema = nome curto canônico com pontos (ex.: raiz.preco-setup).
   tipo: decisao | permissao (o agente pode sem perguntar) | proibicao (não pode) | preferencia.
-- pendencias: algo que ELE precisa fazer e ainda não fez ("ainda não terminei o MEI", "preciso mandar o contrato").
-  Tarefa que ele pediu ao assistente NÃO é pendência dele. prazo só se ele disse (AAAA-MM-DD).
+- pendencias: algo que ELE precisa fazer e ainda não fez. Frases como "ainda não terminei X", "tenho que fazer Y",
+  "preciso mandar Z", "falta eu W" SEMPRE viram pendência (ex.: "ainda nao terminei a tarefa do MEI" → pendência
+  "Terminar a tarefa do MEI"). Uma frase pode ter decisão E pendência E assunto: registre todos. Tarefa que ele pediu
+  ao assistente NÃO é pendência dele. prazo só se ele disse uma data (AAAA-MM-DD); "essa semana" vai no detalhe.
 - pendencias_feitas: id de uma pendência aberta (lista abaixo) que ele disse ter feito ("fiz o MEI").
 - assuntos: tema que ele vem discutindo e que não terminou (plano, negócio, ideia levada pela metade), com onde
   parou agora. Use o id de um assunto aberto da lista quando for o mesmo tema. estado: andamento | parado | encerrado.
