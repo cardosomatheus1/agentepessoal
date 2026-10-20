@@ -407,7 +407,7 @@ export function normalizeProfile(md, src, mtime, cortes = { n: 0 }) {
   return { formatoAntigo: false, fatos };
 }
 
-// Corpo Markdown -> título (# ) e seções (## …) com itens de texto. Orçamento global para a resposta caber no gateway.
+// Corpo Markdown -> título (# ) e seções (## …) com itens de texto. Orçamento da carga inteira para a resposta caber no gateway.
 function secoesDe(corpo, cortes, orcamento) {
   let titulo = null;
   const secoes = [];
