@@ -65,6 +65,43 @@ class Suite:
         return [s["tarefa"] for s in self.dr.destravar(tarefas, rodando or {}, lambda cid: (do_chat or {}).get(cid),
                                                         time.time(), "running", "error")]
 
+    def t_temporarios_antigos_saem_e_os_em_uso_ficam(self):
+        # 20/10: /tmp of the container reached 6.7 GB of build leftovers and the disk hit 89%
+        import os
+        import tempfile
+        T = _carregar("limpeza_temporarios_teste", RAIZ / "helpers" / "temporarios.py")
+        base = Path(tempfile.mkdtemp(prefix="limpeza-tmp-"))
+        try:
+            agora = 1_800_000_000
+            velho, novo = agora - 5 * 86400, agora - 3600
+            def criar(rel, quando, tam=10):
+                p = base / rel
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_bytes(b"x" * tam)
+                os.utime(p, (quando, quando))
+                return p
+            criar("build-velho/a/b.tar", velho, 1000); os.utime(base / "build-velho/a", (velho, velho)); os.utime(base / "build-velho", (velho, velho))
+            criar("em-uso/velho.txt", velho); criar("em-uso/novo.txt", novo); os.utime(base / "em-uso", (velho, velho))
+            criar("solto-velho.zip", velho, 500)
+            criar("solto-novo.zip", novo)
+            criar("models/whisper.bin", velho); os.utime(base / "models", (velho, velho))
+            cache = base / "cache-uv"; criar("cache-uv/pkg.whl", novo, 300)
+            nomes = sorted(p.name for p in T.escolher(base, agora))
+            ok(nomes == ["build-velho", "solto-velho.zip"], f"só o que ninguém mexe há 3+ dias: {nomes}")
+            r = T.limpar(agora, tmp=base, caches=[cache])
+            ok(not (base / "build-velho").exists() and not (base / "solto-velho.zip").exists(), "velhos apagados")
+            ok((base / "em-uso/velho.txt").exists() and (base / "solto-novo.zip").exists(), "pasta em uso e arquivo novo ficam")
+            ok((base / "models/whisper.bin").exists(), "modelos de voz ficam")
+            ok(not cache.exists() and r["liberado_mb"] >= 0 and len(r["apagados"]) == 3, f"cache esvaziado: {r}")
+            ok(T.escolher(base / "nao-existe", agora) == [], "pasta que não existe não quebra")
+        finally:
+            import shutil
+            shutil.rmtree(base, ignore_errors=True)
+        ext = _carregar("limpeza_temp_ext_teste", RAIZ / "extensions" / "python" / "job_loop" / "_43_limpar_temporarios.py")
+        marca = Path(tempfile.mkdtemp(prefix="limpeza-marca-")) / "m"
+        ok(ext.na_hora(marca, 3600) and not ext.na_hora(marca, 3600), "no máximo uma vez por semana")
+        ok("/a0/usr" not in str(T.TMP) and all("/a0/usr" not in str(c) for c in T.CACHES), "nunca os arquivos do usuário")
+
     def t_arquivar_so_conversas_paradas_e_soltas(self):
         a = _carregar("limpeza_arquivar_teste", RAIZ / "helpers" / "arquivar.py")
         agora = 1_800_000_000
