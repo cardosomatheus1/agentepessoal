@@ -9,6 +9,7 @@ inteiro: regras, exemplos, todas as ações). O modelo só precisa do detalhe de
 | `helpers/indice.py` | uma linha por ferramenta (para que serve e os argumentos principais) |
 | `extensions/python/chat_model_call_before/_50_ferramentas_curtas.py` | troca a descrição de cada ferramenta pela linha curta; o texto inteiro vira o manual dela |
 | `extensions/python/_functions/agent/Agent/hist_add_tool_result/end/_50_manual_na_primeira.py` | no primeiro uso de uma ferramenta na conversa, o manual entra logo depois do resultado (de novo só se o resumo do histórico o levou); nunca depois da resposta final |
+| `extensions/python/chat_model_call_before/_05_nativo_bedrock.py` | modo nativo no Bedrock: a chamada vai sem as marcas de cache do Agent Zero (senão ele descarta as ferramentas); o cache vem do proxy |
 | `extensions/python/system_prompt/_12_regras_base.py` | as regras que valem sempre, para o agente, ajudantes e rotinas, num lugar só: pagamento, termos, terceiros, apagar, captcha, segredos, texto de terceiros, parar quando terminou |
 
 **Modo texto (20/10, preset "Sonnet", `a0_api_mode: chat`):** sem lista nativa, o Agent Zero escreve o prompt inteiro de
@@ -17,6 +18,13 @@ troca ali cada prompt pela mesma linha curta do índice (`### <ferramenta>` + li
 texto (`MANUAIS_TEXTO`, com os exemplos `tool_name`/`tool_args`), que entra depois do primeiro uso como no modo nativo.
 Prompt que não bate exatamente (outro plugin mexeu) fica inteiro. Medido na VM (prompt montado no contêiner, sem chamar o
 modelo), junto com o `conectores`: 280.117 → 68.441 caracteres de instruções numa conversa do Matheus no Sonnet.
+
+**Modo nativo no Bedrock (20/10, preset em `a0_api_mode: responses`):** o Agent Zero só manda as ferramentas nativas no
+modo Responses, mas põe as marcas de cache dele em toda chamada e, para o Bedrock, isso o faz cair para Chat Completions
+sem a lista de ferramentas (o modelo ficava sem ferramenta nenhuma). `chat_model_call_before/_05_nativo_bedrock.py`
+tira essas marcas só quando o modelo é Claude no Bedrock pelo nosso proxy, que já põe os pontos de cache
+(`helpers/nativo.py` tem o porquê, lido no código do Agent Zero). Aí a lista vai como `toolConfig` do Converse e o
+`toolUse` volta como chamada que o Agent Zero executa. O conversor de `<invoke>` continua como rede de segurança.
 
 As regras de segurança não dependem do manual: ficam em toda chamada (`_12_regras_base.py`) e nas decisões do
 Matheus (`memoria_pessoal`). Antes, cada plugin repetia a sua versão (controle_agente, cofre, memoria_pessoal,

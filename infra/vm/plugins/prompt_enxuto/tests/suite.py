@@ -456,6 +456,49 @@ class Suite:
             else:
                 sys.modules["helpers.extract_tools"] = antes
 
+    # ------------------------------------------------------------------ Sonnet nativo no Bedrock (20/10)
+
+    def t_nativo_bedrock_sem_marcas_so_quando_o_proxy_cacheia(self):
+        n = self.carregar.modulo("nativo")
+
+        def modelo(modo="responses", nome="bedrock/converse/us.anthropic.claude-sonnet-5-5",
+                   base="http://host.docker.internal:8787/bedrock"):
+            return types.SimpleNamespace(model_name=nome, kwargs={"a0_api_mode": modo, "api_base": base})
+
+        ok(n.sem_marcas_do_a0(modelo()), "Responses + Bedrock + proxy: sem as marcas do A0")
+        ok(n.sem_marcas_do_a0(modelo(base="http://host.docker.internal:8787/bedrock/")), "barra no fim também")
+        ok(not n.sem_marcas_do_a0(modelo("chat")), "modo texto: as marcas do A0 ficam")
+        ok(not n.sem_marcas_do_a0(modelo(base="")), "Bedrock direto (sem o proxy, que é quem põe o cache): ficam")
+        ok(not n.sem_marcas_do_a0(modelo(nome="anthropic/claude-x", base="https://api.anthropic.com")), "outro provedor")
+        ok(not n.sem_marcas_do_a0(modelo(nome="openai/gpt-6-luna", base="http://host.docker.internal:8787/openai/v1")),
+           "GPT pelo proxy: não mexe")
+        ok(not n.sem_marcas_do_a0(None) and not n.sem_marcas_do_a0(types.SimpleNamespace(kwargs=None)),
+           "modelo estranho: não mexe")
+
+    def t_nativo_bedrock_extensao(self):
+        m = _carregar("enxuto_nativo_teste", EXT / "chat_model_call_before" / "_05_nativo_bedrock.py")
+        m.carregar = self.carregar
+        sonnet = types.SimpleNamespace(model_name="bedrock/converse/us.anthropic.claude-sonnet-5-5",
+                                       kwargs={"a0_api_mode": "responses",
+                                               "api_base": "http://host.docker.internal:8787/bedrock"})
+        dados = {"model": sonnet, "explicit_caching": True, "a0_responses_function_tools": [_ferramenta("response", "x")]}
+        _rodar(m.NativoBedrock(agent=None).execute(call_data=dados))
+        eq(dados["explicit_caching"], False, "chamada nativa ao Sonnet pelo proxy: sem as marcas (senão perde as ferramentas)")
+        self._desligar(True)
+        try:
+            dados = {"model": sonnet, "explicit_caching": True, "a0_responses_function_tools": [_ferramenta("response", "x")]}
+            _rodar(m.NativoBedrock(agent=None).execute(call_data=dados))
+            eq(dados["explicit_caching"], False, "com o interruptor desligado também (as ferramentas precisam chegar)")
+        finally:
+            self._desligar(False)
+        dados = {"model": sonnet, "explicit_caching": True, "a0_responses_function_tools": []}
+        _rodar(m.NativoBedrock(agent=None).execute(call_data=dados))
+        eq(dados["explicit_caching"], True, "sem lista de ferramentas: não mexe")
+        texto = types.SimpleNamespace(model_name=sonnet.model_name, kwargs={**sonnet.kwargs, "a0_api_mode": "chat"})
+        dados = {"model": texto, "explicit_caching": True, "a0_responses_function_tools": [_ferramenta("response", "x")]}
+        _rodar(m.NativoBedrock(agent=None).execute(call_data=dados))
+        eq(dados["explicit_caching"], True, "modo texto: não mexe")
+
     async def rodar(self, filtro: str = ""):
         try:
             for nome in sorted(n for n in dir(self) if n.startswith("t_") and filtro in n):

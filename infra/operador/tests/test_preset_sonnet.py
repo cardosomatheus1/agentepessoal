@@ -26,7 +26,27 @@ def test_utilitario_do_padrao():
     assert saida[1]["utility"] == {"name": "luna"} and saida[1]["chat"]["ctx_history"] == 0.4
 
 
+def test_nativo_so_muda_o_modo():
+    texto, nativo = m.chat("texto"), m.chat("nativo")
+    assert texto["kwargs"]["a0_api_mode"] == "chat" and "tool_choice" not in texto["kwargs"]
+    assert nativo["kwargs"]["a0_api_mode"] == "responses"
+    # Sonnet 5.5 on Bedrock rejects tool_choice "any" (Agent Zero's default "required"); no stored responses there
+    assert nativo["kwargs"]["tool_choice"] == "auto" and nativo["kwargs"]["responses_state"] == "local"
+    resto = {k: v for k, v in nativo["kwargs"].items() if k not in m.NATIVO}
+    assert resto == {k: v for k, v in texto["kwargs"].items() if k != "a0_api_mode"}
+    assert m.CHAT["kwargs"]["a0_api_mode"] == "chat", "chat() does not change the shared constant"
+
+
+def test_preset_de_teste_nao_mexe_no_sonnet():
+    sonnet = {"name": "Sonnet", "chat": m.chat("texto")}
+    saida = m.com_sonnet([{"name": "Default"}, sonnet], m.NOME_TESTE, "nativo")
+    assert [p["name"] for p in saida] == ["Default", "Sonnet", "Sonnet nativo"]
+    assert saida[1] is sonnet and saida[2]["chat"]["kwargs"]["a0_api_mode"] == "responses"
+
+
 if __name__ == "__main__":
     test_historico_40()
     test_utilitario_do_padrao()
+    test_nativo_so_muda_o_modo()
+    test_preset_de_teste_nao_mexe_no_sonnet()
     print("ok")
