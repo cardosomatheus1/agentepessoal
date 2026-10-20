@@ -415,8 +415,8 @@ class Suite:
                                                           "script": 'Array.from(document.querySelectorAll("select")).map(e=>e.tagName)'}),
            "nome e parâmetros, número como número")
         eq(d["thoughts"], ["Vou abrir o seletor."], "o texto antes vira o pensamento")
-        vazio = json.loads(x.converter('<invoke name="browser">\n</invoke>\n<invoke name="browser">\n</invoke>'))
-        eq((vazio["tool_name"], vazio["tool_args"]), ("browser", {}), "sem parâmetros: a ferramenta reclama do que falta")
+        ok(x.converter('<invoke name="browser">\n</invoke>\n<invoke name="browser">\n</invoke>') is None,
+           "20/10: <invoke> sem parâmetros não vira chamada vazia (o navegador rodava sem nada e entrava em loop)")
         aninhado = json.loads(x.converter('<function_calls><invoke name="response"><parameter name="text">Pronto: '
                                           '3 itens</parameter><parameter name="opcoes">{"a": [1, 2]}</parameter></invoke></function_calls>'))
         eq(aninhado["tool_args"], {"text": "Pronto: 3 itens", "opcoes": {"a": [1, 2]}}, "objeto JSON e texto")

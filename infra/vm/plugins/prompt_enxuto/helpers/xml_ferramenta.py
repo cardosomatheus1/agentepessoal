@@ -48,6 +48,8 @@ def converter(texto: str) -> str | None:
         return None     # output JSON only."): the JSON wins; the empty XML call made the browser loop with no arguments
     nome, corpo = m.group(1).strip(), m.group(2)
     args = {p.group(1).strip(): _valor(p.group(2)) for p in _PARAM.finditer(corpo)}
+    if not args:  # 20/10: an <invoke> with no parameters is never a real call: converting it made the browser run with
+        return None  # nothing and loop; Agent Zero's own reminder asks for a proper call instead
     antes = re.sub(r"</?(?:[\w-]+:)?(?:function_calls|tool_call)>", "", texto[:m.start()]).strip(" \n`")
     pensou = [antes[:500]] if antes and not antes.startswith("{") else []
     return json.dumps({"thoughts": pensou or [f"chamar {nome}"], "headline": f"Usando {nome}",
