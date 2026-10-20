@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PanelLeftClose, PenSquare, Search, Trash2, X } from "lucide-react";
+import Link from "next/link";
+import { Brain, PanelLeftClose, PenSquare, Search, Trash2, X } from "lucide-react";
 import { groupByDate, type Conversation } from "@/lib/store";
 import { Logo } from "./Logo";
 
@@ -69,6 +70,13 @@ export function Sidebar({ conversations, activeId, open, onClose, onSelect, onNe
             <PenSquare size={17} className="text-muted" />
             Nova conversa
           </button>
+          <Link
+            href="/segundo-cerebro"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] transition-colors hover:bg-surface"
+          >
+            <Brain size={17} className="text-muted" />
+            Segundo Cérebro
+          </Link>
           <label className="flex items-center gap-3 rounded-xl px-3 py-2 text-[14px] text-muted focus-within:bg-surface">
             <Search size={17} />
             <input

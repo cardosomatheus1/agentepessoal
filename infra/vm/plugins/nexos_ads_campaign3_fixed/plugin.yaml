@@ -1,0 +1,7 @@
+name: nexos_ads_campaign3_fixed
+title: Nexos Ads Campaign 3 Fixed Operations
+description: Temporary loopback-only operations for one explicitly authorized sandbox campaign and budget flow.
+version: 0.1.0
+settings_sections: []
+per_project_config: false
+per_agent_config: false

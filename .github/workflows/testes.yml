@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Dependências
-        run: pip install boto3 cryptography croniter pillow
+        run: pip install boto3 cryptography croniter pillow "flask==3.0.3"  # flask: segundo_cerebro gateway suite (same as Agent Zero)
       - name: Pasta /a0/usr vazia (as suítes só usam logins teste_* e pastas temporárias)
         run: sudo mkdir -p /a0/usr && sudo chown -R "$USER" /a0
       - name: Suítes dos plugins
@@ -39,6 +39,7 @@ jobs:
           python3 infra/vm/tests/test_gasto.py
           python3 infra/control/tests/test_telegram.py
           python3 infra/vm/tests/test_caixa.py
+          python3 infra/operador/tests/test_segundo_cerebro.py
           python3 infra/reels/moldes/motor/test_validar.py
           python3 infra/reels/moldes/motor/test_gerar_foto.py
           python3 infra/reels/moldes/motor/test_audio.py

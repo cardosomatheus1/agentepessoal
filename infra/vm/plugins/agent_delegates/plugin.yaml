@@ -1,0 +1,7 @@
+name: agent_delegates
+title: Delegação textual Hermes / OpenClaw
+description: Permite ao Agent Zero pedir análises textuais isoladas ao Hermes ou OpenClaw, sem habilitar ferramentas externas.
+version: 1.0.0
+settings_sections: []
+per_project_config: false
+per_agent_config: false

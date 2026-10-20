@@ -5,6 +5,7 @@
     python3 infra/operador/implantar.py --host caixa_convidados.py --unidade agentepessoal-caixas.service
         (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it)
     python3 infra/operador/implantar.py --controle [--forcar]   (the control page / webhooks Lambda, infra/control)
+    python3 infra/operador/implantar.py --segundo-cerebro [--rollback | --preparar]   (page + gateway plugin; no --forcar)
 
 Why (11/10): two Claude sessions deployed the same plugin over each other and one edited the live data by hand; a
 reply lock stayed on and the only message to a lead was deleted. Rules enforced here:
@@ -148,8 +149,62 @@ def controle(args: list) -> None:
     print(f"implantado: função de controle @ {head[:8]} (página ok, chave errada recusada)")
 
 
+def segundo_cerebro(args: list) -> None:
+    """Segundo Cérebro (infra/operador/segundo_cerebro.py does the work): --preparar is local only (no AWS);
+    deploy and --rollback first confirm the existing account and instance. Only the owned plugin and release move."""
+    import urllib.error
+    import urllib.request
+
+    import segundo_cerebro as sc
+
+    if "--forcar" in args:
+        raise SystemExit("--forcar não vale para o Segundo Cérebro: resolva a causa (git pull, commit, push).")
+    python_suite = args[args.index("--python-suite") + 1] if "--python-suite" in args else sys.executable  # needs Flask
+    if "--preparar" in args:
+        sc.preparar(None, python_suite)
+        return
+
+    def conferir_conta() -> None:
+        conta = boto3.client("sts", region_name="us-east-1").get_caller_identity()["Account"]
+        if conta != sc.CONTA:
+            raise SystemExit(f"conta AWS {conta} não é a do agente ({sc.CONTA}): nada foi feito.")
+        info = ssm.describe_instance_information(Filters=[{"Key": "InstanceIds", "Values": [VM]}])["InstanceInformationList"]
+        if not info or info[0].get("PingStatus") != "Online":
+            raise SystemExit(f"a VM {VM} não está online no SSM: nada foi feito.")
+
+    if "--rollback" in args:
+        conferir_conta()
+        return sc.reverter(vm)
+
+    def url_publica() -> str:
+        return ssm.get_parameter(Name="/agentepessoal/agent-url")["Parameter"]["Value"].rstrip("/")
+
+    def sondar_publico(url: str) -> dict:
+        """From outside, without a session: page and API refuse (401), Agent Zero's login still loads."""
+        codigos = {}
+        for caminho in ("/segundo-cerebro", "/api/segundo-cerebro", "/login"):
+            try:
+                with urllib.request.urlopen(url + caminho, timeout=20) as r:
+                    codigos[caminho] = r.status
+            except urllib.error.HTTPError as exc:
+                codigos[caminho] = exc.code
+            except OSError as exc:
+                codigos[caminho] = f"erro: {type(exc).__name__}"
+        ok = codigos["/segundo-cerebro"] == 401 and codigos["/api/segundo-cerebro"] == 401 and codigos["/login"] == 200
+        return {"ok": ok, **codigos}
+
+    def eh_ancestral(a: str, b: str) -> bool:
+        return subprocess.run(["git", "merge-base", "--is-ancestor", a, b], cwd=RAIZ).returncode == 0
+
+    s3 = boto3.client("s3", region_name="us-east-1")
+    sc.implantar(vm, lambda chave, dados: s3.put_object(Bucket=BUCKET, Key=chave, Body=dados), _conferir_git,
+                 eh_ancestral, url_publica, sondar_publico, conferir_conta, BUCKET, python_suite)
+
+
 def main() -> None:
     args = sys.argv[1:]
+    if "--segundo-cerebro" in args:
+        return segundo_cerebro(args)
     if "--host" in args:
         return host(args)
     if "--controle" in args:
