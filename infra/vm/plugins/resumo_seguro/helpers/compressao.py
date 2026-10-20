@@ -41,6 +41,7 @@ PODA_ANCORAS = 6
 MSG_MAX = 6_000  # characters of each message given to the summarizer (start + end)
 ENTRADA_MAX = 120_000  # characters of the whole summarizer input
 RESUMO_TOKENS = 2_000  # room reserved for the summary when choosing what to keep
+FLUSH_MAX = 80_000  # characters of the summarized part given to the memory extractor (Agent Zero's own cap)
 CABECA = "## Resumo da conversa até aqui"
 NOTA = ("(O que vem depois deste resumo está inteiro. O que vale agora é o pedido em andamento, a partir da última "
         "mensagem da pessoa; o resumo é só referência.)")
@@ -229,6 +230,11 @@ async def comprimir(agent) -> bool:
             return True
         raise _ancoras().ResumoVazio("o modelo de resumo não devolveu texto; nada foi resumido")
 
+    try:
+        guardar_na_memoria(agent, texto_para_memoria(novos))
+    except Exception as exc:  # the memory is a bonus: never in the way of the compression
+        print(f"resumo_seguro: memória antes do resumo não rodou: {type(exc).__name__}: {exc}", flush=True)
+
     bloco = h.Bulk(history=hist)
     bloco.records = registros
     bloco.summary = f"{CABECA}\n{NOTA}\n\n{resumo.strip()}"
@@ -239,6 +245,66 @@ async def comprimir(agent) -> bool:
     if hist.get_tokens() > limite:
         await _cortar_dentro(hist, topicos[ultimo], limite)
     return True
+
+
+# ---- memory before the summary (21/10) -------------------------------------------------------------------------
+# OpenClaw's "memory flush before compaction" (extensions/memory-core/src/flush-plan.ts): the facts in what is about
+# to be summarized are saved to the long-term memory first. Agent Zero memorizes at the end of each turn from the last
+# 80k characters of the history only, so in a long task the middle could be summarized before any memory was taken
+# from it. Same extraction prompt and filters as Agent Zero's _50_memorize_fragments.py, in a background thread.
+
+def texto_para_memoria(novos) -> str:
+    """All of the summarized part within FLUSH_MAX: each message shortened (start + end) before anything is dropped,
+    so the oldest messages reach the memory too."""
+    limite = MSG_MAX
+    texto = _texto_registros(novos, limite)
+    while len(texto) > FLUSH_MAX and limite > 400:
+        limite //= 2
+        texto = _texto_registros(novos, limite)
+    return _cortar(texto, FLUSH_MAX)
+
+
+def guardar_na_memoria(agent, texto: str) -> None:
+    if not texto.strip():
+        return
+    from helpers.defer import THREAD_BACKGROUND, DeferredTask
+
+    DeferredTask(thread_name=THREAD_BACKGROUND).start_task(memorizar, agent, texto)
+
+
+async def memorizar(agent, texto: str) -> int:
+    """What Agent Zero's _50_memorize_fragments.memorize does, on `texto` instead of the end of the history (without
+    its consolidation step: a near-duplicate is replaced, as with consolidation off). Returns how many were saved."""
+    from helpers import plugins
+    from helpers.dirty_json import DirtyJson
+    from plugins._memory.helpers.memory import Memory
+    from plugins._memory.helpers.memory_quality import filter_auto_memory_fragments
+
+    cfg = plugins.get_plugin_config("_memory", agent) or {}
+    if not cfg.get("memory_memorize_enabled"):
+        return 0
+    resposta = await agent.call_utility_model(system=agent.read_prompt("memory.memories_sum.sys.md"),
+                                              message=texto, background=True)
+    try:
+        memorias = DirtyJson.parse_string((resposta or "").strip()) if isinstance(resposta, str) else None
+    except Exception:
+        return 0
+    if isinstance(memorias, (str, dict)):
+        memorias = [memorias]
+    if not isinstance(memorias, list):
+        return 0
+    memorias = filter_auto_memory_fragments(memorias)
+    if not memorias:
+        return 0
+    db = await Memory.get(agent)
+    area = Memory.Area.FRAGMENTS.value
+    limiar = float(cfg.get("memory_memorize_replace_threshold") or 0)
+    for m in memorias:
+        txt = f"{m}"
+        if limiar > 0:
+            await db.delete_documents_by_query(query=txt, threshold=limiar, filter=f"area=='{area}'")
+        await db.insert_text(text=txt, metadata={"area": area})
+    return len(memorias)
 
 
 async def _cortar_dentro(hist, topico, limite: int) -> bool:

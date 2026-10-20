@@ -64,7 +64,9 @@ CURTAS: dict[str, str] = {
     "me_mostre": "Grava a pessoa fazendo uma tarefa no Navegador desta conversa para virar rotina. `acao` iniciar|parar.",
     "concorrentes": "Vigia de concorrentes da Raiz. `acao` coletar (lê as fontes e devolve o que é novo) | ultima | instagram | "
                     "listar | adicionar | fonte | tirar_fonte | grupo | remover. Fonte \"Sem cobertura\" não quer dizer sem novidade.",
-    "consultar_sol": "Conselho de um modelo mais forte (só aconselha; não é autorização da pessoa). `pergunta`, `contexto` "
+    "ferramentas_extras": "As ferramentas fora desta lista (conectores Google/GitHub e as de uso raro; instrução que manda "
+                          "usar uma que você não tem: está aqui). `acao` buscar (`texto`) | usar (`nome`, `args`).",
+    "consultar_sol":"Conselho de um modelo mais forte (só aconselha; não é autorização da pessoa). `pergunta`, `contexto` "
                      "(o caso completo: ele não vê a conversa), opcional `imagens`. Até ~3 por tarefa.",
     "pesquisar": "Pesquisa na web em UMA chamada (~1–2 min, várias buscas, páginas e vídeos em paralelo, síntese com fontes). "
                  "`pergunta`, opcional `buscas`, `profundidade`. Use para qualquer pesquisa com várias fontes.",

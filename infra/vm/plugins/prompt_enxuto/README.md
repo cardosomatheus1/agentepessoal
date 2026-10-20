@@ -33,6 +33,18 @@ rotinas, descrições de ferramentas); agora eles só apontam para estas.
 A descrição da ferramenta `response` do Agent Zero mandava "prefira tabelas", o contrário da regra do celular; a linha
 curta não manda mais.
 
+**Ferramentas sob demanda (21/10, `tool_search` do Hermes Agent, MIT):** a lista nativa leva só o núcleo (`NUCLEO` em
+`helpers/sob_demanda.py`: as ferramentas mais usadas em 207 conversas de 14 dias, a resposta final e os fluxos de
+segurança). As outras (conectores Google/GitHub e as de uso raro) saem da lista e ficam atrás de `ferramentas_extras`:
+- a descrição dela traz o catálogo, uma linha por ferramenta com os argumentos obrigatórios;
+- `buscar` mostra o manual inteiro e os parâmetros;
+- `usar` roda a ferramenta pelo nome (aceita o nome sem o sufixo do conector, `google.get_events`, e erro pequeno de
+  digitação). Passa pelas mesmas conferências `tool_execute_before/after`, com o nome real da ferramenta.
+
+A lista é igual em toda chamada, então o cache do prompt continua valendo. Medido num pedido real do Haiku (20/10): 84
+ferramentas e 46.444 caracteres viraram 35 ferramentas e 19.615 caracteres (o catálogo é 4.387 deles), uns 7 mil
+tokens a menos por chamada. Para desligar só isto, crie `/a0/usr/plugins/prompt_enxuto/sem_sob_demanda`.
+
 **Desligar sem implantar:** criar o arquivo `/a0/usr/plugins/prompt_enxuto/desligado` (no contêiner) volta as
 descrições inteiras e tira o manual, nos dois modos; apagar o arquivo liga de novo.
 

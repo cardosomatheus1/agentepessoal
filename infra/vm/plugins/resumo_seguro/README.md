@@ -86,4 +86,11 @@ ficaria com 21 mil e a tarefa inteira (10 resultados podados), contra 34 mil com
 Ideias do Hermes Agent (MIT), `agent/context_compressor.py`: resumo estruturado e iterativo, poda de saídas de
 ferramenta antes do resumo e cauda protegida.
 
+**Memória antes do resumo (21/10, o "memory flush" do OpenClaw):** quando um trecho vai para o resumo, os fatos dele
+vão antes para a memória de longo prazo da conversa. Usa o mesmo prompt de extração e os mesmos filtros do
+`_50_memorize_fragments.py` do Agent Zero, numa thread separada. Antes, o Agent Zero só memorizava no fim de cada turno
+e só dos últimos 80 mil caracteres; numa tarefa longa, o meio podia ser resumido sem nunca ter ido para a memória. O
+texto vai inteiro até 80 mil caracteres: cada mensagem é encurtada antes de se cortar o total, para as mais antigas
+entrarem também. Se o resumo falha, nada vai para a memória, porque nada saiu do histórico.
+
 Testes: `tests/suite.py` e `tests/compressao.py` (o teste com o `Topic`/`Bulk` reais do Agent Zero só roda dentro do contêiner).

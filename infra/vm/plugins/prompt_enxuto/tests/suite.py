@@ -207,6 +207,183 @@ class Suite:
         _rodar(m.FerramentasCurtas(agent=None).execute(call_data=dados))
         eq(dados, {"messages": []}, "chamada sem lista de ferramentas (utilitária) não muda")
 
+    # ------------------------------------------------------------------ tools on demand (21/10)
+
+    def _sd(self):
+        sd = self.carregar.modulo("sob_demanda")
+        sd.DESLIGADO = self.tmp / "sem_sob_demanda"
+        return sd
+
+    def _lista_mista(self):
+        eventos = {"type": "object", "properties": {"time_min": {"type": "string"}, "time_max": {"type": "string"}},
+                   "required": ["time_min"]}
+        return [_ferramenta("response", "Resposta final."), _ferramenta("browser", "Navegador."),
+                _ferramenta("google_get_events_82f4960e", "Lists events from the user's calendar. Supports ranges.",
+                            eventos),
+                _ferramenta("assistir_video", "Assiste um vídeo inteiro e descreve com os tempos. `url`."),
+                _ferramenta("ferramentas_extras", "As ferramentas fora desta lista.")]
+
+    def t_sob_demanda_separa_nucleo_e_catalogo_estavel(self):
+        sd = self._sd()
+        original = self._lista_mista()
+        intacta = copy.deepcopy(original)
+        lista, ocultas = sd.separar(original)
+        eq(original, intacta, "a lista original não é alterada")
+        eq([f["name"] for f in lista], ["response", "browser", "ferramentas_extras"], "só o núcleo e a ponte na lista")
+        eq(sorted(ocultas), ["assistir_video", "google_get_events_82f4960e"], "o resto fica atrás da ponte")
+        final = sd.com_ponte(lista, ocultas)
+        ponte = final[-1]["description"]
+        ok("google_get_events_82f4960e(time_min)" in ponte, f"catálogo com nome e obrigatórios: {ponte}")
+        ok("assistir_video()" in ponte and ponte.index("assistir_video") < ponte.index("google_"),
+           "ferramentas soltas antes dos conectores")
+        eq(sd.com_ponte(*sd.separar(self._lista_mista())), final, "mesma lista a cada chamada (cache do prompt)")
+        sem_ponte = [f for f in self._lista_mista() if f["name"] != "ferramentas_extras"]
+        eq(sd.separar(sem_ponte), (sem_ponte, {}), "sem a ponte na lista nada se esconde (ficaria inalcançável)")
+        for nome in ("response", "pedir_codigo", "whatsapp_guardar_token", "decisao", "prospeccao", "tarefa_limite"):
+            ok(sd.visivel(nome), f"{nome} fica sempre na lista (resposta final, fluxos de segurança, rotinas)")
+
+    def t_sob_demanda_acha_pelo_nome_aproximado_e_por_palavras(self):
+        sd = self._sd()
+        _, ocultas = sd.separar(self._lista_mista())
+        for pedido in ("google_get_events_82f4960e", "google_get_events", "google.get_events", "Google-Get-Events",
+                       "google_get_event"):
+            eq(sd.resolver(ocultas, pedido), "google_get_events_82f4960e", f"resolver {pedido!r}")
+        eq(sd.resolver(ocultas, "apagar_tudo"), "", "nome sem parecida não vira outra ferramenta")
+        eq(sd.buscar(ocultas, "calendar events")[0], "google_get_events_82f4960e", "busca por palavras da descrição")
+        eq(sd.buscar(ocultas, "vídeo")[0], "assistir_video", "busca em português")
+        eq(sd.buscar(ocultas, ""), [], "busca vazia")
+        eq(sd.args_validos(ocultas["google_get_events_82f4960e"], {}), "faltam os argumentos obrigatórios: time_min",
+           "obrigatório que falta é dito pelo nome")
+        eq(sd.args_validos(ocultas["google_get_events_82f4960e"], {"time_min": "x"}), "", "argumentos completos")
+        ok(sd.args_validos(ocultas["assistir_video"], "url") != "", "args que não é objeto é recusado")
+
+    def t_sob_demanda_extensao_guarda_as_ocultas_e_respeita_o_interruptor(self):
+        sd = self._sd()
+        m = _carregar("enxuto_lista_teste2", EXT / "chat_model_call_before" / "_50_ferramentas_curtas.py")
+        m.carregar = self.carregar
+        agente = types.SimpleNamespace(dados={})
+        agente.set_data = lambda k, v: agente.dados.__setitem__(k, v)
+        dados = {"a0_responses_function_tools": self._lista_mista()}
+        _rodar(m.FerramentasCurtas(agent=agente).execute(call_data=dados))
+        eq([f["name"] for f in dados["a0_responses_function_tools"]], ["response", "browser", "ferramentas_extras"],
+           "lista do modelo só com o núcleo")
+        eq(sorted(agente.dados[sd.CHAVE]), ["assistir_video", "google_get_events_82f4960e"], "ocultas guardadas no agente")
+        sd.DESLIGADO.write_text("")
+        try:
+            dados = {"a0_responses_function_tools": self._lista_mista()}
+            _rodar(m.FerramentasCurtas(agent=agente).execute(call_data=dados))
+            eq(len(dados["a0_responses_function_tools"]), 5, "interruptor: todas as ferramentas na lista de novo")
+        finally:
+            sd.DESLIGADO.unlink(missing_ok=True)
+
+    def _ponte(self, ferramentas: dict, chamadas: list):
+        """The bridge tool loaded with Agent Zero's modules stubbed; `ferramentas` = {original name: callable(args)}."""
+        class Response:
+            def __init__(self, message, break_loop, additional=None):
+                self.message, self.break_loop, self.additional = message, break_loop, additional
+
+        class Tool:
+            def __init__(self, agent=None, name="", method=None, args=None, message="", loop_data=None, **k):
+                self.agent, self.name, self.args, self.message, self.loop_data = agent, name, args, message, loop_data
+
+        class Unknown(Tool):
+            pass
+
+        async def call_extensions_async(ponto, agente, **kw):
+            chamadas.append((ponto, kw.get("tool_name")))
+
+        stubs = {"helpers": types.ModuleType("helpers"), "helpers.tool": types.ModuleType("helpers.tool"),
+                 "helpers.extension": types.ModuleType("helpers.extension"),
+                 "helpers.responses_tools": types.ModuleType("helpers.responses_tools"),
+                 "helpers.mcp_handler": types.ModuleType("helpers.mcp_handler")}
+        stubs["helpers.tool"].Response, stubs["helpers.tool"].Tool = Response, Tool
+        stubs["helpers.extension"].call_extensions_async = call_extensions_async
+        stubs["helpers.responses_tools"].original_tool_name = lambda n, mapa: (mapa or {}).get(n, n)
+
+        class _MCP:
+            @staticmethod
+            def get_instance():
+                return types.SimpleNamespace(get_tool=lambda agente, nome: None)
+
+        stubs["helpers.mcp_handler"].MCPConfig = _MCP
+        antes = {k: sys.modules.get(k) for k in stubs}
+        sys.modules.update(stubs)
+
+        def get_tool(name, method, args, message, loop_data):
+            if name not in ferramentas:
+                return Unknown(name=name)
+            t = Tool(name=name)
+
+            async def execute(**a):
+                return Response(ferramentas[name](a), False, {"_responses_output_item": {"x": 1}})
+            t.execute = execute
+            return t
+
+        sd = self._sd()
+        _, ocultas = sd.separar(self._lista_mista())
+        class Agente:
+            DATA_NAME_RESPONSES_TOOL_NAME_MAP = "responses_tool_name_map"
+
+            def __init__(self):
+                self.dados = {sd.CHAVE: ocultas,
+                              "responses_tool_name_map": {"google_get_events_82f4960e": "google.get_events"}}
+                self.get_tool = get_tool
+
+            def get_data(self, k):
+                return self.dados.get(k)
+
+        agente = Agente()
+        spec = importlib.util.spec_from_file_location("ferramentas_extras_teste", RAIZ / "tools" / "ferramentas_extras.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        m._carregar = lambda: self.carregar
+        ponte = m.FerramentasExtras(agent=agente, name="ferramentas_extras", args={}, message="", loop_data=None)
+        return ponte, antes
+
+    def _soltar(self, antes):
+        for k, v in antes.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+
+    def t_ponte_usar_roda_a_ferramenta_com_as_conferencias(self):
+        chamadas = []
+        ponte, antes = self._ponte({"google.get_events": lambda a: f"3 eventos desde {a['time_min']}"}, chamadas)
+        try:
+            r = _rodar(ponte.execute(acao="usar", nome="google_get_events", args={"time_min": "2026-10-22"}))
+            eq(r.message, "[google.get_events] 3 eventos desde 2026-10-22", "roda pelo nome original do conector")
+            eq(r.break_loop, False, "a tarefa continua")
+            eq(r.additional, None, "o item nativo da ferramenta de dentro não vaza (o da ponte é o que vale)")
+            eq(chamadas, [("tool_execute_before", "google.get_events"), ("tool_execute_after", "google.get_events")],
+               "as conferências veem a ferramenta real")
+            r = _rodar(ponte.execute(acao="usar", nome="google_get_events", args='{"time_min": "x"}'))
+            ok(r.message.endswith("desde x"), "args em texto JSON também serve")
+            chamadas.clear()
+            r = _rodar(ponte.execute(acao="usar", nome="google_get_events", args={}))
+            ok("time_min" in r.message and "Parâmetros" in r.message, f"falta argumento: diz qual e mostra a ficha: {r.message}")
+            eq(chamadas, [], "sem argumento obrigatório não roda")
+            r = _rodar(ponte.execute(acao="usar", nome="apagar_tudo", args={}))
+            ok("não existe" in r.message, "nome desconhecido não roda outra coisa")
+            r = _rodar(ponte.execute(acao="usar", nome="assistir_video", args={"url": "u"}))
+            ok("não carregou" in r.message, "ferramenta que não carrega: avisa em vez de quebrar")
+        finally:
+            self._soltar(antes)
+
+    def t_ponte_buscar_mostra_manual_e_parametros(self):
+        self.e.MANUAIS["assistir_video"] = "### assistir_video\nManual inteiro com as regras."
+        ponte, antes = self._ponte({}, [])
+        try:
+            r = _rodar(ponte.execute(acao="buscar", texto="vídeo"))
+            ok("Manual inteiro com as regras." in r.message, "a busca traz o manual completo")
+            ok("Parâmetros (JSON Schema)" in r.message, "e os parâmetros")
+            r = _rodar(ponte.execute(acao="buscar", texto="zzzz"))
+            ok("assistir_video" in r.message and "google_get_events_82f4960e" in r.message,
+               "busca sem resultado lista as disponíveis")
+        finally:
+            self._soltar(antes)
+            self.e.MANUAIS.pop("assistir_video", None)
+
     def t_indice_curto_e_com_as_acoes_de_cada_ferramenta(self):
         i = self.i
         for nome, curta in i.CURTAS.items():

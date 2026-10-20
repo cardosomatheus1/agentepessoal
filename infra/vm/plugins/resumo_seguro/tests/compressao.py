@@ -282,6 +282,8 @@ class TestesCompressao:
         spec.loader.exec_module(c)
         c._h = h
         c.DESLIGADO = Path(tempfile.gettempdir()) / f"resumo_seguro_desligado_{os.getpid()}"
+        c.memoria = []  # what each compression handed to the memory (guardar_na_memoria starts a thread in the agent)
+        c.guardar_na_memoria = lambda agente, texto: c.memoria.append(texto)
         return c
 
     def _modulos(self):
@@ -371,6 +373,81 @@ class TestesCompressao:
             entrada = ag.chamadas[0][1]
             ok("pedido antigo 0" in entrada and "Monta a planilha" not in entrada,
                f"{nome}: o resumo recebe só o que veio antes da tarefa")
+
+    async def t_memoria_antes_do_resumo(self):
+        h = _historia_falsa()
+        c = self._comp(h)
+        with _stubs_a0():
+            ag = await self._cenario(h, c)
+            await c.comprimir(ag)
+        ok(len(c.memoria) == 1, f"uma ida à memória por resumo: {len(c.memoria)}")
+        ok("pedido antigo 0" in c.memoria[0] and "Monta a planilha" not in c.memoria[0],
+           "a memória recebe o que vai ser resumido, não a tarefa que fica inteira")
+        ok(len(c.memoria[0]) <= c.FLUSH_MAX, "dentro do teto")
+        h = _historia_falsa()
+        c = self._comp(h)
+        with _stubs_a0():
+            ag = await self._cenario(h, c)
+            ag.respostas = [RuntimeError("modelo fora")]
+            try:
+                await c.comprimir(ag)
+            except Exception:
+                pass
+        ok(c.memoria == [], "resumo que falha não leva nada à memória (nada saiu do histórico)")
+
+    async def t_memorizar_salva_com_os_filtros_do_agent_zero(self):
+        h = _historia_falsa()
+        c = self._comp(h)
+        salvas, apagadas = [], []
+        cfg = {"memory_memorize_enabled": True, "memory_memorize_replace_threshold": 0.9}
+
+        class Db:
+            async def delete_documents_by_query(self, query, threshold, filter):
+                apagadas.append((query, threshold, filter))
+                return []
+
+            async def insert_text(self, text, metadata):
+                salvas.append((text, metadata))
+
+        class Memory:
+            class Area:
+                FRAGMENTS = types.SimpleNamespace(value="fragments")
+
+            @staticmethod
+            async def get(agente):
+                return Db()
+
+        mods = {n: types.ModuleType(n) for n in ("helpers", "helpers.plugins", "helpers.dirty_json", "plugins",
+                                                  "plugins._memory", "plugins._memory.helpers",
+                                                  "plugins._memory.helpers.memory", "plugins._memory.helpers.memory_quality")}
+        mods["helpers.plugins"].get_plugin_config = lambda nome, agente: cfg
+        mods["helpers.dirty_json"].DirtyJson = types.SimpleNamespace(parse_string=json.loads)
+        mods["plugins._memory.helpers.memory"].Memory = Memory
+        mods["plugins._memory.helpers.memory_quality"].filter_auto_memory_fragments = \
+            lambda ms: [m for m in ms if "efêmero" not in m]
+        mods["helpers"].plugins, mods["helpers"].dirty_json = mods["helpers.plugins"], mods["helpers.dirty_json"]
+        antes = {k: sys.modules.get(k) for k in mods}
+        sys.modules.update(mods)
+        try:
+            ag = Agente(h, respostas=['["Matheus prefere planilha no Drive", "status efêmero da tela"]'])
+            ag.read_prompt = lambda f, **k: "extraia fatos duráveis" if f == "memory.memories_sum.sys.md" else ""
+            n = await c.memorizar(ag, "user: guarda a planilha no Drive")
+            ok(n == 1 and salvas == [("Matheus prefere planilha no Drive", {"area": "fragments"})],
+               f"salva o fato durável, o filtro do Agent Zero tira o resto: {salvas}")
+            ok(apagadas and apagadas[0][1] == 0.9, "quase-igual antigo é trocado (limiar da configuração)")
+            ok(ag.chamadas[0] == ("extraia fatos duráveis", "user: guarda a planilha no Drive"),
+               "mesmo prompt de extração do Agent Zero")
+            cfg["memory_memorize_enabled"] = False
+            ok(await c.memorizar(ag, "x") == 0 and len(ag.chamadas) == 1, "memória desligada: nem chama o modelo")
+            cfg["memory_memorize_enabled"] = True
+            ag.respostas = ["isso não é json"]
+            ok(await c.memorizar(ag, "x") == 0, "resposta que não é JSON: nada salvo, sem erro")
+        finally:
+            for k, v in antes.items():
+                if v is None:
+                    sys.modules.pop(k, None)
+                else:
+                    sys.modules[k] = v
 
     async def t_sem_pedido_guarda_desde_a_ultima_mensagem(self):
         for nome, h in self._modulos():

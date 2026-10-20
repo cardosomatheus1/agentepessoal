@@ -25,3 +25,13 @@ class FerramentasCurtas(Extension):
                     call_data["a0_responses_function_tools"], i.CURTAS, i.MIN_GANHO)
         except Exception as exc:  # never in the way of a model call
             print(f"prompt_enxuto: lista de ferramentas mantida inteira: {type(exc).__name__}: {exc}", flush=True)
+        try:
+            # 21/10: the tools outside the core go behind ferramentas_extras (helpers/sob_demanda.py)
+            sd = carregar.modulo("sob_demanda")
+            if sd.ligado() and self.agent is not None:
+                lista, ocultas = sd.separar(call_data["a0_responses_function_tools"])
+                self.agent.set_data(sd.CHAVE, ocultas)
+                call_data["a0_responses_function_tools"] = sd.com_ponte(lista, ocultas)
+        except Exception as exc:
+            print(f"prompt_enxuto: ferramentas sob demanda desligadas nesta chamada: {type(exc).__name__}: {exc}",
+                  flush=True)

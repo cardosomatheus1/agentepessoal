@@ -1,0 +1,4 @@
+name: aprendizado
+title: Aprender com o trabalho
+description: Depois de uma tarefa longa, ou quando o Matheus corrige o agente, um modelo relê a tarefa e cria ou melhora uma skill (revisão de skills do Hermes Agent). Só reescreve skills que ele mesmo criou; nas outras deixa uma sugestão. Guarda a versão anterior e avisa no celular.
+version: 1.0.0
