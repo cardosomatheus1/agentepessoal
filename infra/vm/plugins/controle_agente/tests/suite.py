@@ -263,6 +263,36 @@ class Suite:
         ext = (RAIZ / "extensions" / "python" / "tool_execute_after" / "_11_clique_que_sumiu.py").read_text(encoding="utf-8")
         ok("clique.dica(" in ext, "a extensão usa a regra")
 
+    def t_delegacoes_seguidas_sem_falar_com_a_pessoa(self):
+        # 18/10: ~33 helper calls in 4 h with no answer or notify_user; Matheus repeated "Continua…?" four times
+        g = self.g
+        a0 = _agente(0)
+        for i in range(1, 3):
+            r = self._passo(a0, "call_subordinate", f"resultado {i}", {"message": "parte", "reset": "true"})
+            ok("Delegação nº" not in r.message, f"{i}ª delegação ainda sem aviso")
+        r = self._passo(a0, "call_subordinate", "resultado 3", {"message": "parte"})
+        ok("⚠️ Delegação nº 3 seguida" in r.message and "notify_user" in r.message, "3ª delegação seguida avisa")
+        ok(r.message.startswith("resultado 3"), "o resultado do ajudante continua inteiro")
+        ok(any(i.get("heading") == "Delegações sem falar com a pessoa" for i in a0.context.log.itens), "registra no log")
+        ok(not r.break_loop, "só avisa: a tarefa continua")
+        r = self._passo(a0, "code_execution_tool", "ok", {"code": "ls"})
+        ok("Delegação nº" not in r.message, "ferramenta comum não recebe o aviso")
+        r = self._passo(a0, "parallel", "resultado 4", {"tool_calls": [{"tool_name": "call_subordinate", "tool_args": {}}]})
+        ok("Delegação nº 4" in r.message, "parallel com ajudante conta")
+        self._passo(a0, "notify_user", "enviado", {"message": "estado"})
+        r = self._passo(a0, "call_subordinate", "resultado 5", {"message": "parte"})
+        ok("Delegação nº" not in r.message and a0.data["_guardas_delegacoes"] == 1, "notify_user zera a contagem")
+        r = self._passo(a0, "parallel", "x", {"tool_calls": [{"tool_name": "search_engine", "tool_args": {}}]})
+        ok(a0.data["_guardas_delegacoes"] == 1, "parallel sem ajudante não conta")
+        a1 = _agente(1)
+        for i in range(4):
+            r = self._passo(a1, "call_subordinate", "r", {"message": "x"})
+        ok("Delegação nº" not in r.message and "_guardas_delegacoes" not in a1.data, "ajudante (A1) não é contado")
+        ok(g.Delegacoes("lixo").n == 0 and g.Delegacoes(None).registrar("response", {}) == 0, "valor torto vira zero")
+        ok(g.separar("x" + g.aviso_delegacoes(3))[1].startswith("\n\n⚠️ Delegação nº 3"), "aviso fica visível após stub")
+        zerar = (EXT / "_functions" / "agent" / "Agent" / "monologue" / "start" / "_15_zerar_guardas.py").read_text(encoding="utf-8")
+        ok("_guardas_delegacoes" in zerar, "nova tarefa (monólogo) zera a contagem")
+
     async def rodar(self, so: str = "") -> dict:
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:

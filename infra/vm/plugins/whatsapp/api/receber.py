@@ -58,6 +58,11 @@ def voz():
     return carregar("whatsapp_voz", Path(__file__).resolve().parents[1] / "helpers" / "voz.py")
 
 
+def paralelas():
+    """helpers/paralelas.py: what he said in a parallel chat, handed to the main chat with his next message there."""
+    return carregar("whatsapp_paralelas", Path(__file__).resolve().parents[1] / "helpers" / "paralelas.py")
+
+
 def _no_projeto_do_convidado(ctx, usuario: str) -> None:
     """A guest's phone chat runs inside the guest's own project (login_usuarios/helpers/convidados.py: own memory,
     only personal tools). If this fails the chat stays outside it, where the guest guard refuses every tool."""
@@ -312,6 +317,14 @@ def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str, audi
                         if _historico(principal) else "")
                      + f"Pedido:\n{texto}")
             ponte().enviar(usuario, "⚡ Ainda estou na tarefa anterior; este pedido já começo em paralelo.")
+    if not paralela:  # what he said meanwhile in a parallel chat (a corrected e-mail…) reaches the main chat once
+        try:
+            from agent import AgentContext
+
+            minhas = [c for c in AgentContext.all() if c.get_data(PARALELA) and c.get_data("whatsapp_de") == usuario]
+            texto = paralelas().resumo(principal, minhas, _logs, time.time()) + (texto or "")
+        except Exception as exc:
+            print(f"whatsapp: parallel context not handed over: {exc}", flush=True)
     alvo.set_data("whatsapp_ultima_entrada", time.time())
     alvo.set_data("whatsapp_ultimo_pedido", pedido)
     alvo.set_data("whatsapp_entrada_audio", bool(audio))  # /voz answers in audio when his last message was audio

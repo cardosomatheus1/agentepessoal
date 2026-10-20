@@ -443,6 +443,41 @@ class Suite:
         ok("a mesma tarefa da conversa principal" in regras, "a paralela não refaz a tarefa da principal")
         ok("respondeu citando" in regras and "vale mais que qualquer aviso" in regras, "citação vence o aviso recente")
 
+    def t_paralela_devolve_contexto_para_a_principal(self):
+        # 19/10: an e-mail he corrected in a parallel chat was typed wrong again later in the main chat
+        par = _modulo("whatsapp_paralelas_teste", "paralelas.py")
+        item = lambda tipo, texto: types.SimpleNamespace(type=tipo, content=texto)
+        principal = _Ctx("main", whatsapp_ultima_entrada=100.0)
+        p1 = _Ctx("p1", whatsapp_ultima_entrada=150.0)
+        p1.logs = [item("user", "[Pedido feito pelo celular enquanto a conversa principal está ocupada com: “x”.]\n"
+                                "Últimas mensagens da conversa principal (contexto):\nEle: velho\n\nPedido:\nO e-mail certo tem um 1 a menos"),
+                   item("agent", "passo interno"), item("response", "Corrigido: e-mail anotado.")]
+        velha = _Ctx("p0", whatsapp_ultima_entrada=50.0)
+        velha.logs = [item("user", "pedido antigo"), item("response", "feito")]
+        logs_de = lambda c: c.logs
+        txt = par.resumo(principal, [velha, p1, principal], logs_de, 200.0)
+        ok("conversa paralela" in txt and "Ele: O e-mail certo tem um 1 a menos" in txt
+           and "Você: Corrigido: e-mail anotado." in txt, "leva o que ele disse na paralela")
+        ok("Últimas mensagens da conversa principal" not in txt and "passo interno" not in txt, "só as falas dele e as respostas")
+        ok("pedido antigo" not in txt, "paralela parada desde antes da última mensagem da principal fica de fora")
+        ok(txt.endswith("]\n\n") and "vale também aqui" in txt, "aviso fecha antes da mensagem dele")
+        eq(par.resumo(principal, [velha, p1], logs_de, 210.0), "", "entregue uma vez só")
+        eq(par.resumo(_Ctx("m2"), [], logs_de, 1.0), "", "sem paralela, nada muda")
+        rec = (RAIZ / "api" / "receber.py").read_text(encoding="utf-8")
+        ok("paralelas().resumo(principal, minhas, _logs, time.time())" in rec and "if not paralela:" in rec,
+           "a rota da principal usa o resumo; a paralela não")
+
+    def t_pedido_curto_estado_executor_e_conclusao(self):
+        # 14-19/10 (auditoria): "Pode"/"Faça" ligados ao assunto errado, "p mik" lido como nome, insistências sem
+        # resposta, OpenCode pedido e análise feita pelo próprio agente, "Concluído" para uma revisão parcial
+        regras = (RAIZ / "extensions" / "python" / "system_prompt" / "_60_conversa_whatsapp.py").read_text(encoding="utf-8")
+        ok("mensagem curta sem citação" in regras and "pergunte numa linha a qual deles" in regras, "desambigua pedido curto")
+        ok("não a trate como nome de pessoa" in regras, "palavra desconhecida não vira nome")
+        ok("responda a ela antes de seguir" in regras and "são pedido de estado" in regras, "responde a insistência")
+        ok("use esse executor" in regras and "diga antes de fazer de outro jeito" in regras, "respeita o executor pedido")
+        ok("cobri X de Y" in regras and "link só depois de abrir de verdade" in regras, "conclusão só com prova")
+        ok(regras.count('"""') % 2 == 0, "o texto das regras continua bem fechado")
+
     def t_pedido_no_navegador_vira_botao_resolver_aqui(self):
         # 14/10, Matheus: resolve the captcha from Telegram, nothing extra (the app panel showed another chat)
         arq = self._tmp / "url.txt"

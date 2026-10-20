@@ -59,6 +59,17 @@ class Guardas(Extension):
                     type="warning", heading="Ferramenta falhando",
                     content=f"{agent.agent_name}: `{tool_name}` falhou {n} vezes seguidas; avisei para mudar de abordagem.")
 
+        if not agent.number:
+            delegacoes = guardas.Delegacoes(agent.data.get("_guardas_delegacoes"))
+            d = delegacoes.registrar(tool_name, agent.data.get("_detector_loop_args"))
+            agent.data["_guardas_delegacoes"] = delegacoes.n
+            if d >= guardas.DELEGACOES_AVISO and guardas.delegou(tool_name, agent.data.get("_detector_loop_args")):
+                response.message = mensagem = mensagem + guardas.aviso_delegacoes(d)
+                if d == guardas.DELEGACOES_AVISO:
+                    agent.context.log.log(
+                        type="warning", heading="Delegações sem falar com a pessoa",
+                        content=f"{agent.agent_name} delegou {d} vezes seguidas sem responder nem avisar; avisei.")
+
         limite = guardas.teto(agent.number, nomes_raiz(agent.context) if agent.number else ())
         if not limite:
             return

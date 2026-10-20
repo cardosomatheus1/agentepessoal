@@ -103,12 +103,58 @@ def parada_passos(quem: str, limite: int, tool: str, resultado: str) -> str:
             f"ajudante para a mesma coisa.\n\nÚltima ferramenta: `{tool}`. Último resultado:\n{resultado}")
 
 
+# --- delegations without talking to the person ----------------------------------------------------------------------
+# 18/10: the main agent chained ~33 helper calls over 4 h (06:54-09:28 and 09:30-11:25) without one answer or
+# notify_user; Matheus asked "Continua…?" four times and then "Oq ta fazendo?". A helper kept answering "não é conclusão
+# global" and was simply sent again. Only the main agent (A0) is counted; a warning, the task goes on.
+
+DELEGACOES_AVISO = 3
+CONTATO = {"response", "notify_user"}
+
+
+def delegou(tool: str, args) -> bool:
+    """The step hands work to a helper: call_subordinate, or a parallel that starts at least one."""
+    if tool == "call_subordinate":
+        return True
+    if tool != "parallel":
+        return False
+    try:
+        texto = json.dumps(args or {}, ensure_ascii=False, default=str)
+    except (TypeError, ValueError):
+        texto = str(args)
+    return "call_subordinate" in texto
+
+
+class Delegacoes:
+    """Helper calls of the main agent since it last spoke to the person (response or notify_user)."""
+
+    def __init__(self, n):
+        try:
+            self.n = max(0, int(n or 0))
+        except (TypeError, ValueError):
+            self.n = 0
+
+    def registrar(self, tool: str, args) -> int:
+        if tool in CONTATO:
+            self.n = 0
+        elif delegou(tool, args):
+            self.n += 1
+        return self.n
+
+
+def aviso_delegacoes(n: int) -> str:
+    return (f"\n\n⚠️ Delegação nº {n} seguida sem falar com a pessoa. Se esta conversa tem alguém esperando (não é "
+            "tarefa agendada): antes de delegar de novo, responda a qualquer mensagem nova dela e mande `notify_user` "
+            "curto com o que já está pronto, o que falta e o próximo passo. Se o ajudante devolveu resultado parcial "
+            "outra vez, não relance a mesma tarefa: entregue o que há e diga o que falta.")
+
+
 # --- identical results ----------------------------------------------------------------------------------------------
 
 REPETIDO_MIN = 512
 ARGS_PREVIA = 120
 # notices this plugin appends to a result: they stay visible after the stub (the result itself is what repeats)
-AVISOS = ("\n\n⚠️ ATENÇÃO:", "\n\n⛔ LOOP:", "\n\n↻ A página mudou", "\n\n⏳ Passo ", "\n\n⚠️ `")
+AVISOS = ("\n\n⚠️ ATENÇÃO:", "\n\n⛔ LOOP:", "\n\n↻ A página mudou", "\n\n⏳ Passo ", "\n\n⚠️ `", "\n\n⚠️ Delegação nº ")
 
 
 def separar(texto: str) -> tuple[str, str]:

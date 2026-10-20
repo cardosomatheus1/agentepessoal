@@ -4,7 +4,8 @@ when a repairable error restarts the inner loop (monologue_start would run again
 
 from helpers.extension import Extension
 
-CHAVES = ("_guardas_passos", "_guardas_falhas", "_guardas_resultados", "_guardas_resultado_pendente")
+CHAVES = ("_guardas_passos", "_guardas_falhas", "_guardas_resultados", "_guardas_resultado_pendente",
+          "_guardas_delegacoes")
 
 
 class ZerarGuardas(Extension):
