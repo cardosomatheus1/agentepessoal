@@ -49,7 +49,18 @@ def test_preset_de_teste_nao_mexe_no_sonnet():
     assert saida[1] is sonnet and saida[2]["chat"]["kwargs"]["a0_api_mode"] == "responses"
 
 
+def test_haiku_mesmo_caminho_outro_modelo():
+    saida = m.com_sonnet([{"name": "Default", "utility": {"name": "luna"}}, {"name": "Sonnet", "chat": m.chat("nativo")}],
+                         m.HAIKU, "nativo")
+    haiku = saida[-1]
+    assert [p["name"] for p in saida] == ["Default", "Sonnet", "Haiku"]
+    assert haiku["chat"]["name"] == "converse/us.anthropic.claude-haiku-5-5" and haiku["utility"] == {"name": "luna"}
+    assert haiku["chat"]["kwargs"] == m.chat("nativo")["kwargs"], "same proxy, cache and native mode as Sonnet"
+    assert saida[1]["chat"]["name"] == "converse/us.anthropic.claude-sonnet-5-5"
+
+
 if __name__ == "__main__":
+    test_haiku_mesmo_caminho_outro_modelo()
     test_historico_40()
     test_utilitario_do_padrao()
     test_nativo_so_muda_o_modo()

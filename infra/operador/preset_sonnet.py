@@ -2,8 +2,8 @@
 points) via Agent Zero's own preset API — never by editing presets.yaml. The chat model is Sonnet; the utility model
 (summaries, memory) stays on the default's cheap one. Usage:
 
-    A0_SENHA=... python3 infra/operador/preset_sonnet.py            # the "Sonnet" preset (mode: MODO below)
-    A0_SENHA=... python3 infra/operador/preset_sonnet.py --teste    # "Sonnet nativo": same, native tool calling,
+    A0_SENHA=... python3 infra/operador/preset_sonnet.py [--teste | --haiku]            # the "Sonnet" preset (mode: MODO below)
+    A0_SENHA=... python3 infra/operador/preset_sonnet.py [--teste | --haiku] --teste    # "Sonnet nativo": same, native tool calling,
                                                                     # for a test chat (per-chat override), no one else
 
 Who uses it is decided by login_usuarios/modelo_por_dono.json (in git, deployed with the plugin).
@@ -38,13 +38,19 @@ CHAT = {"provider": "bedrock", "name": "converse/us.anthropic.claude-sonnet-5-5"
         "kwargs": {"a0_api_mode": "chat", "api_base": "http://host.docker.internal:8787/bedrock", "api_key": "proxy",
                    "aws_region_name": "us-east-1", "max_tokens": 32000, "output_config": {"effort": "medium"}}}
 NATIVO = {"a0_api_mode": "responses", "responses_state": "local", "tool_choice": "auto"}
+# 20/10 ~22h (Matheus): the agent moves to Haiku 5.5. Tested through the proxy with one native tool, effort medium and
+# max_tokens 32000: tool call right, ~2 s. Same Bedrock path, same native mode; only the model id changes.
+HAIKU = "Haiku"
+MODELOS = {NOME: "converse/us.anthropic.claude-sonnet-5-5", NOME_TESTE: "converse/us.anthropic.claude-sonnet-5-5",
+           HAIKU: "converse/us.anthropic.claude-haiku-5-5"}
 
 
-def chat(modo: str) -> dict:
-    """The chat model of the preset in `modo` ("texto" or "nativo")."""
+def chat(modo: str, nome: str = NOME) -> dict:
+    """The chat model of the preset `nome` in `modo` ("texto" or "nativo")."""
     if modo not in ("texto", "nativo"):
         raise ValueError(modo)
     conf = json.loads(json.dumps(CHAT))
+    conf["name"] = MODELOS[nome]
     if modo == "nativo":
         conf["kwargs"].update(NATIVO)
     return conf
@@ -54,7 +60,7 @@ def com_sonnet(presets: list, nome: str = NOME, modo: str = MODO) -> list:
     """The list with the preset `nome` added or replaced (the others untouched); the utility/embedding come from Default
     (cheap model)."""
     padrao = next((p for p in presets if p.get("name") == "Default"), {})
-    novo = {"name": nome, "chat": chat(modo)}
+    novo = {"name": nome, "chat": chat(modo, nome)}
     for chave in ("utility", "embedding"):
         if padrao.get(chave):
             novo[chave] = padrao[chave]
@@ -79,5 +85,8 @@ async def main(nome: str, modo: str):
 
 
 if __name__ == "__main__":
-    teste = "--teste" in sys.argv[1:]
-    asyncio.run(main(NOME_TESTE if teste else NOME, "nativo" if teste else MODO))
+    if "--haiku" in sys.argv[1:]:
+        asyncio.run(main(HAIKU, MODO))
+    else:
+        teste = "--teste" in sys.argv[1:]
+        asyncio.run(main(NOME_TESTE if teste else NOME, "nativo" if teste else MODO))

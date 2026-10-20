@@ -394,13 +394,14 @@ class Suite:
                     sys.modules[k] = v
 
     def t_sonnet_so_para_o_matheus(self):
-        # 20/10: Matheus asked for Sonnet 5.5 only for himself; routines and guests stay on the default model
+        # 20/10: Matheus asked for Sonnet 5.5 only for himself, then (~22h) for Haiku 5.5; routines and guests stay on the
+        # default model
         import json as _json
         cfg = _json.loads((RAIZ / "modelo_por_dono.json").read_text(encoding="utf-8"))
         import importlib.util as _u
         spec = _u.spec_from_file_location("modelo_teste_sonnet", RAIZ / "helpers" / "modelo.py")
         M = _u.module_from_spec(spec); spec.loader.exec_module(M)
-        eq(M.preset_para(cfg, "matheus", "c1", False), "Sonnet", "conversa do Matheus: Sonnet")
+        eq(M.preset_para(cfg, "matheus", "c1", False), "Haiku", "conversa do Matheus: Haiku")
         eq(M.preset_para(cfg, "matheus", "c1", True), "", "rotina do Matheus: modelo padrão")
         eq(M.preset_para(cfg, "ilia", "c2", False), "", "convidado: modelo padrão")
         eq(M.preset_para(cfg, "will", "c3", False), "", "convidado: modelo padrão")
