@@ -618,7 +618,7 @@ class Suite:
                           "pendente: Lucro na Mão: <nome>", "plugins/prospeccao/playbook.md"):
                 ok(termo in oferta, f"oferta tem {termo!r}")
             ok("Preço Certo" not in oferta, "sem o nome antigo")
-            pb = (RAIZ.parent / "prospeccao" / "playbook.md").read_text(encoding="utf-8")
+            pb = (self.mods.m("raiz").PLUGINS / "prospeccao" / "playbook.md").read_text(encoding="utf-8")
             ok(rz._secoes(pb)["2"][1] in oferta, "a seção da oferta vai inteira, igual ao playbook")
             ok("produz alimento" in rz.ler("cliente-ideal"), "cliente ideal do playbook")
             resumo = rz.ler("playbook")
