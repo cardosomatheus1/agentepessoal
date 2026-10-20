@@ -414,7 +414,9 @@ def com_cache(path: str, body: bytes | None, longo: bool = False) -> bytes | Non
 
 
 _OPENAI_CACHE = re.compile(r"^/(openai/)?v1/(responses|chat/completions)$")
-RETENCAO = "24h"  # tested 20/10 on Bedrock: accepted values are "in_memory" and "24h"
+# tested 20/10 on Bedrock: accepted values are "in_memory" and "24h", same token counts and prices in the answer; but
+# a call 32 min after the first read nothing back (24h no better than in_memory then) — cache_relatorio.py measures it
+RETENCAO = "24h"
 
 
 def chave_cache(rastreio: dict | None) -> str:

@@ -86,7 +86,8 @@ def main() -> int:
     gpt = {**rot, "em": em(0)}
     gpt.pop("cache_retention")
     ok(r.causas({**gpt, "em": em(40)}, gpt) == ["expirou (40 min parado)"], "GPT sem 24 h: 30 min")
-    ok(r.causas({**rot, "em": em(40)}, {**rot, "em": em(0)}) == ["nada mudou no começo"], "GPT com 24 h: 40 min ainda vale")
+    ok(r.causas({**rot, "em": em(40)}, {**rot, "em": em(0)}) == ["expirou (40 min parado)"],
+       "GPT com 24 h pedido: ainda conta 30 min (o Bedrock aceitou o campo, mas não segurou o cache no teste de 20/10)")
     ok(r.causas(gpt, None) == ["1ª chamada"], "sem chamada anterior")
     # same prices and cost as /gasto
     sys.modules.setdefault("boto3", types.SimpleNamespace(client=lambda *a, **k: None))

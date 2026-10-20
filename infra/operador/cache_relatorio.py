@@ -53,11 +53,12 @@ def _quando(u: dict) -> float:
 
 
 def validade(anterior: dict) -> float:
-    """Seconds the previous call's cache lives: Claude 5 min (1 h when it wrote with ttl 1h); GPT 30 min (24 h with
-    prompt_cache_retention 24h)."""
+    """Seconds the previous call's cache lives: Claude 5 min (1 h when it wrote with ttl 1h); GPT 30 min. 20/10: Bedrock
+    accepts prompt_cache_retention 24h, but a test call 32 min later read nothing, so it is still counted as 30 min:
+    a miss after more than 30 min shows as "expirou" either way, which is how the report tells whether 24h works."""
     if "anthropic" in str(anterior.get("modelo", "")) or anterior.get("api") == "converse":
         return 3600 if anterior.get("cache_gravado_1h") else 300
-    return 86400 if anterior.get("cache_retention") == "24h" else 1800
+    return 1800
 
 
 def causas(atual: dict, anterior: dict | None) -> list:
