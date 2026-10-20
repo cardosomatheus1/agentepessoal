@@ -156,7 +156,9 @@ def _textos(valor):
 
 def caminho_proibido(login: str, args) -> str:
     """The first local path in the tool's arguments that is outside the guest's own folders ("" when none)."""
-    permitidas = [str(r.resolve()) if r.exists() else str(r) for r in raizes(login)]
+    # resolve() even for a folder not created yet: its existing parents (/a0 may be a symlink) must resolve like the
+    # path being checked, or the guest's own file would be refused
+    permitidas = [str(r.resolve()) for r in raizes(login)]
     for texto in _textos(args):
         relativo = _RELATIVO.search(texto)
         if relativo:
