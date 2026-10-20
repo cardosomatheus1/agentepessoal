@@ -148,6 +148,29 @@ class Suite:
         ok(len(curto) < 800 and "(mais " in curto and "acao \"listar\"" in curto, f"limite com aviso de que há mais: {curto}")
         ok(curto.splitlines()[0].startswith("- #2 **pagamentos**"), "o corte nunca tira as proibições do topo")
 
+    def t_prompt_compacto_com_pasta(self):
+        # 20/10 (token): with the Pasta, ordinary decisions go by tema only; prohibitions/permissions/preferences in full
+        d = self.d
+        d.registrar(LOGIN, "pagamentos", "Nada de pagamento, campanha com gasto ou meio de pagamento", tipo="proibicao")
+        d.registrar(LOGIN, "preferencia.tom", "Português, curto e sem jargão", tipo="preferencia")
+        d.registrar(LOGIN, "raiz.preco-setup", "Cobrar R$ 497 de setup na Raiz", area="raiz")
+        d.registrar(LOGIN, "agente.voz", "Responder em áudio só quando ele mandar áudio", area="agente")
+        cheio = d.texto_para_prompt(LOGIN, compacto=False)
+        curto = d.texto_para_prompt(LOGIN, compacto=True)
+        ok("Cobrar R$ 497" in cheio and "Cobrar R$ 497" not in curto, f"o texto da decisão comum sai: {curto}")
+        ok("Nada de pagamento" in curto and "sem jargão" in curto, "proibição e preferência ficam inteiras")
+        ok("  - raiz: #3 raiz.preco-setup" in curto and "  - agente: #4 agente.voz" in curto, f"tema por área: {curto}")
+        ok("busca" in curto, "diz como ler o texto")
+        eq(d.texto_para_prompt(LOGIN), cheio, "sem a Pasta: como antes")
+        original = d.na_pasta
+        try:
+            d.na_pasta = lambda login: True
+            ok(d.compacto_padrao(LOGIN), "com a Pasta ativa: compacto por padrão")
+            d.na_pasta = lambda login: 1 / 0
+            ok(not d.compacto_padrao(LOGIN), "Pasta com erro: o bloco inteiro, nunca vazio")
+        finally:
+            d.na_pasta = original
+
     def t_arquivo_ilegivel_nao_vira_vazio(self):
         d = self.d
         d.registrar(LOGIN, "senhas", "Não trocar senhas nem apagar backups; só evitar que algo fique público")

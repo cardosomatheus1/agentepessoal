@@ -264,13 +264,33 @@ def linha(x: dict) -> str:
     return f"- #{x['id']} **{x['tema']}** ({TIPOS.get(x['tipo'], x['tipo'])}, {_data(x['em'])}): {x['valor']}"
 
 
-def texto_para_prompt(login: str, limite: int = MAX_PROMPT, agora: float | None = None) -> str:
-    """The active decisions as a compact list, prohibitions first; empty string when there are none."""
+def compacto_padrao(login: str) -> bool:
+    try:
+        return na_pasta(login)
+    except Exception:  # the Pasta failing must never cost him the full block
+        return False
+
+
+INTEIRAS = ("proibicao", "permissao", "preferencia")  # what changes how he acts or is answered: always the full text
+
+
+def texto_para_prompt(login: str, limite: int = MAX_PROMPT, agora: float | None = None,
+                      compacto: bool | None = None) -> str:
+    """The active decisions as a compact list, prohibitions first; empty string when there are none.
+
+    20/10 (token): with the Segundo Cérebro's Pasta active (compacto by default) prohibitions, permissions and
+    preferences keep their text, the ordinary decisions go by tema only, grouped by área; the agent reads the text on
+    demand (`decisao` acao "listar" busca "<tema>"). It saved ~2/3 of the block (~1k tokens) on every call."""
     try:
         vivas = ativas(login, agora)
+        if compacto is None:
+            compacto = compacto_padrao(login)
     except EstadoIlegivel as exc:
         return f"(não consegui ler o registro de decisões: {exc}; pergunte só o que for mesmo dele)"
     vivas.sort(key=lambda x: (ORDEM_TIPOS.index(x["tipo"]) if x["tipo"] in ORDEM_TIPOS else 9, x["tema"]))
+    if compacto:
+        so_tema = [x for x in vivas if x["tipo"] not in INTEIRAS]
+        vivas = [x for x in vivas if x["tipo"] in INTEIRAS]
     linhas, total = [], 0
     for i, x in enumerate(vivas):
         ln = linha(x)
@@ -279,4 +299,11 @@ def texto_para_prompt(login: str, limite: int = MAX_PROMPT, agora: float | None 
             break
         linhas.append(ln)
         total += len(ln) + 1
+    if compacto and so_tema:
+        areas: dict = {}
+        for x in so_tema:
+            areas.setdefault(x.get("area") or "geral", []).append(f"#{x['id']} {x['tema']}")
+        linhas.append("- Outras decisões em vigor, só o tema (antes de agir ou perguntar sobre um deles, leia o texto com "
+                      "`decisao` acao \"listar\" busca \"<tema>\"):")
+        linhas += [f"  - {a}: {', '.join(t)}" for a, t in sorted(areas.items())]
     return "\n".join(linhas)

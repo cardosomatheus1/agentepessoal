@@ -101,7 +101,8 @@ class Suite:
             for k, v in antes.items():
                 sys.modules.pop(k, None) if v is None else sys.modules.__setitem__(k, v)
         f = self.f
-        f.mesclar(LOGIN, [{"titulo": "Mandar o contrato", "prioridade": "alta"}])
+        f.mesclar(LOGIN, [{"titulo": "Mandar o contrato", "prioridade": "alta", "proximo_passo": "pedir o CNPJ ao João",
+                           "ligacoes": "conversa longa sobre o contrato da Raiz"}])
         conversas = [{"id": "outra", "nome": "Integração com Drive", "mudou_ha_h": 1.3, "ultima_resposta": "Pasta criada",
                       "pedidos": []}, {"id": "c1", "nome": "esta", "mudou_ha_h": 0, "ultima_resposta": "x", "pedidos": []}]
         f.conversas = lambda login, horas: conversas
@@ -123,6 +124,9 @@ class Suite:
         fim = ld.extras_persistent["fios_soltos"]
         ok("Mandar o contrato" in fim and "Integração com Drive" in fim and "Pasta criada" in fim, fim)
         ok(" h)" not in fim and "- esta (" not in fim, "sem há N h e sem a própria conversa")
+        ok("prioridade alta" in fim and "pedir o CNPJ" not in fim and "conversa longa" not in fim,
+           f"20/10 (token): no turno só título, prazo e prioridade: {fim}")
+        ok("pedir o CNPJ" in f.linha(f.abertos(LOGIN, 1)[0]), "a linha inteira segue na ferramenta")
         eq(ext.bloco(LOGIN, "c1", types.SimpleNamespace(abertos=lambda *a: 1 / 0)), "", "registro indisponível: nada")
 
     def _pasta_falsa(self):

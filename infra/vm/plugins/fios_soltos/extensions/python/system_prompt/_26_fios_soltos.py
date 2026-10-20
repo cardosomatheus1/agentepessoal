@@ -70,7 +70,8 @@ def bloco(login: str, atual: str, f=None) -> str:
         return ""
     partes = []
     if abertos:
-        partes.append("Fios em aberto (do mais importante):\n" + "\n".join("- " + f.linha(x) for x in abertos))
+        partes.append("Fios em aberto (do mais importante; próximo passo e ligações: `fios` acao \"listar\"):\n"
+                      + "\n".join("- " + f.linha_curta(x) for x in abertos))
     if fechados:
         partes.append("Já resolvidos ou dispensados nos últimos 7 dias:\n"
                       + "\n".join(f"- {x.get('titulo', '')} ({x.get('estado')})" for x in fechados))

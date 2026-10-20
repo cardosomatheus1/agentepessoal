@@ -308,6 +308,14 @@ def linha(f: dict) -> str:
     return texto + (f" ({', '.join(extras)})" if extras else "")
 
 
+def linha_curta(f: dict) -> str:
+    """For the list that goes with every message (20/10, token): id, title, deadline and priority; the next step and
+    the links stay in `fios` acao "listar" (the full line)."""
+    extras = [x for x in (f.get("prazo") and f"prazo {f['prazo']}", f.get("prioridade") and f"prioridade {f['prioridade']}")
+              if x]
+    return f"[{f.get('id')}] {_curto(f.get('titulo', ''), 110)}" + (f" ({', '.join(extras)})" if extras else "")
+
+
 def _kv(valor):
     if isinstance(valor, dict):
         return valor
