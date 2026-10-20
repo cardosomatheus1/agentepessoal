@@ -424,6 +424,9 @@ class Suite:
         ok(x.converter('{"thoughts": ["preencher"], "headline": "Preenchendo", "tool_name": "browser", "tool_args": '
                        '{"action": "type", "ref": 61, "text": "Food"}}\n</invoke>\n<invoke name="browser">\n</invoke>') is None,
            "JSON válido antes do <invoke> vazio: a chamada JSON vale")
+        ok(x.converter('<invoke name="browser">\n</invoke>\nWait, I must output valid JSON only.\n\n{"thoughts": ["ler"], '
+                       '"headline": "Lendo", "tool_name": "browser", "tool_args": {"action": "content", "browser_id": 23}}') is None,
+           "<invoke> vazio e depois o JSON válido: a chamada JSON vale")
         cortado = json.loads(x.converter('<invoke name="browser"><parameter name="action">click</parameter><parameter name="ref">22'))
         eq(cortado["tool_args"], {"action": "click", "ref": 22}, "resposta cortada no meio ainda vale")
         eq(x.converter('{"tool_name": "response", "tool_args": {"text": "oi"}}'), None, "JSON não mexe")

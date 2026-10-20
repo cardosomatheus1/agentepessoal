@@ -21,6 +21,20 @@ def _valor(bruto: str):
     return v
 
 
+def _chamada_json(texto: str) -> dict | None:
+    """The first JSON object with a tool_name anywhere in the text, or None."""
+    dec, i = json.JSONDecoder(), texto.find("{")
+    while i >= 0:
+        try:
+            obj, _fim = dec.raw_decode(texto[i:])
+            if isinstance(obj, dict) and obj.get("tool_name"):
+                return obj
+        except ValueError:
+            pass
+        i = texto.find("{", i + 1)
+    return None
+
+
 def converter(texto: str) -> str | None:
     """The JSON tool call for the first `<invoke>` in `texto`, or None when there is none. Text before it goes to
     "thoughts" (what the model said it would do)."""
@@ -29,15 +43,9 @@ def converter(texto: str) -> str | None:
     m = _INVOKE.search(texto)
     if not m:
         return None
-    antes_cru = texto[:m.start()]
-    inicio = antes_cru.find("{")
-    if inicio >= 0:  # 20/10 21h: a valid JSON call followed by a stray empty <invoke>: the JSON wins (the empty XML
-        try:          # call replaced it and the browser looped with no arguments, 99Food form)
-            ja, _fim = json.JSONDecoder().raw_decode(antes_cru[inicio:])
-            if isinstance(ja, dict) and ja.get("tool_name"):
-                return None
-        except ValueError:
-            pass
+    ja = _chamada_json(texto)
+    if ja is not None:  # 20/10 21h: a valid JSON call next to a stray <invoke> (before it, or after "Wait, I must
+        return None     # output JSON only."): the JSON wins; the empty XML call made the browser loop with no arguments
     nome, corpo = m.group(1).strip(), m.group(2)
     args = {p.group(1).strip(): _valor(p.group(2)) for p in _PARAM.finditer(corpo)}
     antes = re.sub(r"</?(?:[\w-]+:)?(?:function_calls|tool_call)>", "", texto[:m.start()]).strip(" \n`")
