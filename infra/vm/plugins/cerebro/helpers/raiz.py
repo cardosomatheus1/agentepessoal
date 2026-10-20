@@ -30,7 +30,7 @@ MARCA_SEMEADO = ".semeado"
 PLAYBOOK_REPO = "plugins/prospeccao/playbook.md"
 _AQUI = Path(__file__).resolve().parents[1]
 # next to this plugin (repository, live install); a staging copy alone in /tmp reads the installed ones
-PLUGINS = _AQUI.parent if (_AQUI.parent / "prospeccao").exists() else Path("/a0/usr/plugins")
+PLUGINS = _AQUI.parent if (_AQUI.parent / "prospeccao" / "playbook.md").exists() else Path("/a0/usr/plugins")  # a staging copy in /tmp may sit next to a partial one
 LINHA_MAPA = "| Raiz/ | Cérebro da Raiz: mapa, oferta, cliente ideal, marca, concorrentes, playbook (leia `mapa.md`) |"
 
 MAPA = """# Mapa da Raiz
