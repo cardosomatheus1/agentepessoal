@@ -1,4 +1,6 @@
-"""Ask GPT-6.1 Sol for advice from an agent that runs on the cheaper GPT-6 Luna.
+"""Ask a stronger model for advice from an agent that runs on a cheaper one: GPT-6 Luna asks GPT-6.1 Sol and, since
+20/10 (Matheus: "a mesma função do Sol p Luna"), Claude Haiku 5.5 asks Claude Sonnet 5.5 (both on Bedrock through the
+VM proxy). The advisor follows the chat's own model (conselheiro).
 
 Luna does the work; when it is unsure (an ambiguous instruction, an action hard to undo, a
 deliverable someone will judge) it sends only the case to Sol: its question and summary, this
@@ -18,6 +20,8 @@ from helpers.tool import Response, Tool
 
 URL = "http://host.docker.internal:8787/openai/v1/responses"
 MODELO = "openai.gpt-6.1-sol"
+SONNET = "bedrock/converse/us.anthropic.claude-sonnet-5-5"
+BEDROCK = "http://host.docker.internal:8787/bedrock"
 MAX_IMAGENS = 8
 LADO_MAX = 1600
 MAX_TEXTO = 12_000  # per text block sent to Sol
@@ -70,6 +74,35 @@ def _ultima_mensagem_do_usuario(agent) -> str:
     return ""
 
 
+def conselheiro(agent) -> str:
+    """"Sonnet" when this chat runs on Claude Haiku (on Bedrock), else "Sol" (the Luna/GPT setup)."""
+    try:
+        modelo = agent.get_chat_model()
+        nome = str(getattr(modelo, "model_name", "") or "").lower()
+        return "Sonnet" if "haiku" in nome else "Sol"
+    except Exception:
+        return "Sol"
+
+
+def _perguntar_sonnet(texto: str, imagens: list[str], completar=None) -> str:
+    """The same case to Claude Sonnet 5.5 on Bedrock through the VM proxy (cache points, owner headers)."""
+    content = [{"type": "text", "text": texto}]
+    content += [{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}} for b64 in imagens]
+    if completar is None:
+        import litellm
+        completar = litellm.completion
+    erro = ""
+    for tentativa in range(3):
+        try:
+            r = completar(model=SONNET, api_base=BEDROCK, api_key="proxy", aws_region_name="us-east-1", max_tokens=4000,
+                          messages=[{"role": "system", "content": INSTRUCOES}, {"role": "user", "content": content}])
+            return (r.choices[0].message.content or "").strip() or "(o Sonnet não respondeu)"
+        except Exception as exc:
+            erro = str(exc)[:200]
+            time.sleep(2 * (tentativa + 1))
+    return f"(erro ao consultar o Sonnet: {erro})"
+
+
 def _perguntar(texto: str, imagens: list[str]) -> str:
     content = [{"type": "input_text", "text": texto}]
     for b64 in imagens:
@@ -117,16 +150,18 @@ class ConsultarSol(Tool):
         if caminhos:
             partes.append(f"## Imagens anexadas\n{len(codificadas)} de {len(caminhos)}: " + ", ".join(p.name for p in caminhos))
 
-        await self.set_progress("consultando o Sol…")
-        resposta = await asyncio.to_thread(_perguntar, "\n\n".join(partes), codificadas)
+        quem = conselheiro(self.agent)
+        await self.set_progress(f"consultando o {quem}…")
+        perguntar = _perguntar_sonnet if quem == "Sonnet" else _perguntar
+        resposta = await asyncio.to_thread(perguntar, "\n\n".join(partes), codificadas)
 
         try:
             chat_dir.mkdir(parents=True, exist_ok=True)
             with (chat_dir / "conselhos_sol.md").open("a", encoding="utf-8") as f:
-                f.write(f"\n## {time.strftime('%d/%m %H:%M')} — {pergunta.strip()[:200]}\n\n{resposta}\n")
+                f.write(f"\n## {time.strftime('%d/%m %H:%M')} ({quem}) — {pergunta.strip()[:200]}\n\n{resposta}\n")
         except OSError:
             pass
         return Response(
-            message=f"Conselho do Sol (só aconselha; não substitui a autorização do usuário):\n\n{resposta}",
+            message=f"Conselho do {quem} (só aconselha; não substitui a autorização do usuário):\n\n{resposta}",
             break_loop=False,
         )
