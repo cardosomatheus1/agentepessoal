@@ -1,5 +1,6 @@
 """Tell the agent which connectors belong to this chat's person (others are refused)."""
 
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -7,7 +8,19 @@ from pathlib import Path
 from agent import LoopData
 from helpers.extension import Extension
 
-DONOS = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists()) / "donos.json"
+_RAIZ = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
+DONOS = _RAIZ / "donos.json"
+
+
+def _sob_demanda() -> bool:
+    """helpers/sob_demanda.py is on (connector tools on demand)."""
+    try:
+        spec = importlib.util.spec_from_file_location("conectores_carregar", _RAIZ / "helpers" / "carregar.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m.modulo("sob_demanda").ligado()
+    except Exception:
+        return False
 
 
 class ConectoresPrompt(Extension):
@@ -32,6 +45,11 @@ class ConectoresPrompt(Extension):
                               "entrega for tabela/comparação use uma Planilha, texto/relatório use um Doc (além de PDF se pedirem), "
                               "sempre dentro da pasta \"Agente\" do Drive (crie se não existir) e mande o link. Edite só arquivos "
                               "que você criou ou que o usuário indicou; não compartilhe com ninguém nem apague arquivos.")
+            if any(s in meus for s in ("google", "github")) and _sob_demanda():
+                linhas.append("Sua lista traz só as ferramentas comuns dos conectores (Google: Gmail buscar/ler, Agenda ler, "
+                              "Drive/Docs/Planilhas ler e criar o básico; GitHub: em conversa sobre código). Precisa de outra "
+                              "(editar Doc, formatar Planilha, comentários, issues…)? `conector` acao \"listar\" e \"ativar\": "
+                              "nada deixa de ser possível.")
         if eu == "matheus":
             linhas.append("Claude Code (linha de comando) está instalado: `claude -p \"tarefa\" --output-format json`, rodado na "
                           "pasta do projeto, usa o Claude pela AWS, sem login no site nem captcha. Use para tarefas de código que "
