@@ -127,6 +127,15 @@ def main() -> int:
         for ruim in ("entrada/chats/x/y.mp4", "conteudo/../segredo", "conteudo/", ""):
             ok("error" in p.link_conteudo(ruim), f"fora de conteudo/ é recusado: {ruim!r}")
         ok("não encontrado" in p.link_conteudo("conteudo/falta.mp4").get("error", ""), "arquivo que não existe")
+        # 20/10: the week of posts uploads its arts through a 1-hour PUT link, only under conteudo/semanas/
+        r = p.subir_conteudo("conteudo/semanas/2026-10-21/p1/arte.jpg")
+        ok(r.get("url") == "https://s3/balde/conteudo/semanas/2026-10-21/p1/arte.jpg?put_object&3600", f"link de envio ({r})")
+        for ruim in ("conteudo/semana1/pov.mp4", "conteudo/semanas/../x", "conteudo/semanas/", "conteudo/semanas/a b.jpg", ""):
+            ok("error" in p.subir_conteudo(ruim), f"envio fora de conteudo/semanas/ é recusado: {ruim!r}")
+        req = urllib.request.Request(f"{base}/arquivos/conteudo_subir", data=b'{"chave": "conteudo/semanas/s/p/a.jpg"}',
+                                     method="POST")
+        with urllib.request.urlopen(req, timeout=5) as r:
+            ok(json.loads(r.read())["url"].endswith("a.jpg?put_object&3600"), "rota /arquivos/conteudo_subir")
         req = urllib.request.Request(f"{base}/arquivos/conteudo", data=b'{"chave": "conteudo/a.mp4"}', method="POST")
         with urllib.request.urlopen(req, timeout=5) as r:
             ok(json.loads(r.read())["url"].endswith("conteudo/a.mp4?get_object&3600"), "rota /arquivos/conteudo")

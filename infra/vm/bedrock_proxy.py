@@ -142,6 +142,25 @@ def link_conteudo(chave: str) -> dict:
     return {"url": _s3["client"].generate_presigned_url("get_object", Params={"Bucket": BUCKET, "Key": chave}, ExpiresIn=3600)}
 
 
+def subir_conteudo(chave: str) -> dict:
+    """1-hour PUT link for one art of the week of posts (plugins/conteudo/helpers/semana.py), only under
+    conteudo/semanas/: the agent container has no AWS credentials of its own."""
+    if not BUCKET:
+        return {"error": "bucket não configurado"}
+    chave = str(chave or "")
+    if (not chave.startswith("conteudo/semanas/") or ".." in chave or chave.endswith("/") or len(chave) > 300
+            or not re.fullmatch(r"[A-Za-z0-9._/-]+", chave)):
+        return {"error": "só arquivos de conteudo/semanas/"}
+    if "client" not in _s3:
+        import boto3
+        from botocore.config import Config
+
+        _s3["client"] = boto3.client("s3", region_name=REGION,
+                                     config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}))
+    return {"url": _s3["client"].generate_presigned_url("put_object", Params={"Bucket": BUCKET, "Key": chave},
+                                                        ExpiresIn=3600)}
+
+
 VIDEOS = Path("/opt/a0/usr/workdir/videos")  # /a0/usr/workdir/videos inside the agent container
 PEGASUS = "us.twelvelabs.pegasus-1-5-v1:0"
 _aws = {}
@@ -528,6 +547,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self._reply(400 if "error" in out else 200, out)
             if self.path == "/arquivos/conteudo":
                 out = link_conteudo(data.get("chave", ""))
+                return self._reply(400 if "error" in out else 200, out)
+            if self.path == "/arquivos/conteudo_subir":
+                out = subir_conteudo(data.get("chave", ""))
                 return self._reply(400 if "error" in out else 200, out)
             if self.path == "/arquivos/voz":
                 out = voz(data.get("texto", ""), str(data.get("idioma") or "pt"))

@@ -103,7 +103,7 @@ CURTAS: dict[str, str] = {
     "especialista": "Especialistas (o Matheus não fala com eles). Antes de publicar ou mandar algo público: `acao` criticar "
                     "(`tipo` post|carrossel|oferta|landing|mensagem, `material`: texto ou JSON com `imagens`); reprovado não "
                     "sai. Peça visual: `acao` desenhar (`briefing`) devolve ficha, arquivos e crítica. `papel` critico|designer.",
-    "conteudo": "Só leitura: posts da @raiz.connect. `acao` agenda (`dias`) | arquivos (`data`: baixa o post do dia) | desempenho (`dias`).",
+    "conteudo": "Posts da @raiz.connect. `acao` agenda (`dias`) | arquivos (`data`) | desempenho (`dias`) | propor_semana | semana | aprovar_semana (`semana`, `numeros`) | liberar_post (só com ordem dele).",
     "monitor": "Monitor de evento conferido pelo Radar. `acao` criar (`fonte` gmail|agenda, `condicao`, `o_que_fazer`) | listar | remover (`id`).",
     "livro": "Livro de ações (o que o agente fez no mundo, imutável). `acao` hoje (`dias`) | conferir. Use em vez de responder de memória.",
     "tarefa_limite": "Fim e histórico de uma tarefa agendada. `uuid`, `acao` ver | terminar_em (`termina_em`: \"7d\" ou data) | permanente.",

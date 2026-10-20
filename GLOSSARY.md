@@ -40,9 +40,9 @@ _Avoid_: empresa, contexto, projeto
 
 ### Raiz
 
-**Preço Certo em 30 Dias**:
-O programa que a Raiz vende como porta de entrada: um serviço feito junto com o restaurante para acertar preço e custo do cardápio em 30 dias, usando o Raiz Connect como ferramenta.
-_Avoid_: Lucro na Mão em 30 Dias (nome antigo), teste grátis, trial, consultoria
+**Lucro na Mão em 30 Dias**:
+A oferta da Raiz: em 30 dias o produtor sabe quanto sobra em cada produto e onde o dinheiro escapa, com a implementação feita pela Raiz e o Raiz Connect como ferramenta (R$ 197/mês, começando por 15 dias grátis).
+_Avoid_: Preço Certo em 30 Dias (nome antigo, saiu em 14/10), teste grátis, trial, consultoria
 
 **Raiz Connect**:
 O sistema da Raiz (cardápio, custo, CMV, assistente Fernanda) que o restaurante usa durante o programa e continua usando depois.

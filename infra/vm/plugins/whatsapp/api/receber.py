@@ -551,6 +551,30 @@ async def _botao_rotina(usuario: str, botao: str) -> dict:
     return {"ok": True}
 
 
+async def _botao_semana(usuario: str, botao: str) -> dict:
+    """Aprovar todas / Escolher / Refazer under the week of posts, and "Publicar mesmo assim" under a blocked post:
+    semana.botao answers with a text to send back or a request to hand to the agent in his chat."""
+    nome, caminho = "conteudo_semana", Path("/a0/usr/plugins/conteudo/helpers/semana.py")
+    try:
+        antigo = sys.modules.get(nome)
+        mtime = caminho.stat().st_mtime
+        if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+            spec = importlib.util.spec_from_file_location(nome, caminho)
+            modulo = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(modulo)
+            modulo._mtime = mtime
+            sys.modules[nome] = modulo
+        r = await asyncio.to_thread(sys.modules[nome].botao, usuario, botao)
+    except Exception as exc:
+        print(f"whatsapp: botão da semana de posts falhou: {type(exc).__name__}: {exc}", flush=True)
+        r = {"mensagem": "Não consegui registrar agora; nada foi aprovado nem publicado."}
+    if r.get("conversa"):
+        return _para_a_conversa(usuario, r["conversa"])
+    if r.get("mensagem"):
+        await asyncio.to_thread(ponte().enviar, usuario, r["mensagem"])
+    return {"ok": True}
+
+
 async def _botao_rascunho(usuario: str, botao: str) -> dict:
     """✅ Usar (Gmail draft, or the text alone to copy), ✏️ Ajustar (the agent asks what to change), 🙈 Deixa."""
     _, login, rid, acao = (botao.split(":") + ["", "", "", ""])[:4]
@@ -819,6 +843,8 @@ class Receber(ApiHandler):
             return await _botao_retomar(usuario, botao)
         if botao.startswith("rta:"):  # a routine's proposed improvement (plugins/rotinas/helpers/autoavaliacao.py)
             return await _botao_rotina(usuario, botao)
+        if botao.startswith("cs:"):  # the week of posts or a post the Crítico blocked (plugins/conteudo/helpers/semana.py)
+            return await _botao_semana(usuario, botao)
 
         pedido = ponte().PEDIDOS.get(usuario)
         if pedido and not pedido.get("codigo") and texto and len(texto) <= 40 and "\n" not in texto \

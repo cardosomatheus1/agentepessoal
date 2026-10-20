@@ -556,7 +556,7 @@ class Suite:
     def t_prompt_e_indice(self):
         ext = (RAIZ / "extensions" / "python" / "system_prompt" / "_27_cerebro.py").read_text(encoding="utf-8")
         for termo in ("anotação automática", "Pendência = o que ELE precisa fazer", "acao=desfazer", "UMA seção",
-                      "leia ANTES `cerebro` acao=raiz", "Preço Certo em 30 Dias"):
+                      "leia ANTES `cerebro` acao=raiz", "Lucro na Mão em 30 Dias"):
             ok(termo in ext, f"regras citam {termo!r}")
         ok("acao: raiz" in (RAIZ / "prompts" / "agent.system.tool.cerebro.md").read_text(encoding="utf-8"),
            "a ferramenta documenta acao raiz")
@@ -588,7 +588,7 @@ class Suite:
             eq(texto.count("| Raiz/ |"), 1, "linha Raiz/ entra no mapa")
             ok(texto.replace(rz.LINHA_MAPA + "\n", "") == antigo, "o resto do CLAUDE.md fica igual")
             eq(sorted(rz.pendentes()), sorted(n for n in rz.ARQUIVOS if n != "mapa.md"), "só o mapa nasce pronto")
-            ok("Preço Certo em 30 Dias" in rz.ler("mapa") and "Lucro na Mão" not in rz.ler("mapa"), "mapa com o nome da oferta")
+            ok("Lucro na Mão em 30 Dias" in rz.ler("mapa") and "Preço Certo" not in rz.ler("mapa"), "mapa com o nome da oferta")
             (p.RAIZ / "Raiz" / "marca.md").write_text("conteúdo dele")
             eq(rz.estrutura(), [], "segunda vez não cria nada")
             eq((p.RAIZ / "Raiz" / "marca.md").read_text(), "conteúdo dele", "estrutura nunca sobrescreve")
@@ -614,10 +614,10 @@ class Suite:
             eq(sorted(r["semeados"]), sorted(n for n in rz.ARQUIVOS if n != "mapa.md"), f"semeou os cinco: {r}")
             eq(r["pendentes"], ["marca.md"], "só o posicionamento da marca fica para a entrevista")
             oferta = rz.ler("oferta")
-            for termo in ("Preço Certo em 30 Dias", "R$ 197", "Garantia", "5 implementações por semana",
-                          "pendente: Preço Certo: <nome>", "plugins/prospeccao/playbook.md"):
+            for termo in ("Lucro na Mão em 30 Dias", "R$ 197", "Garantia", "5 implementações por semana",
+                          "pendente: Lucro na Mão: <nome>", "plugins/prospeccao/playbook.md"):
                 ok(termo in oferta, f"oferta tem {termo!r}")
-            ok("Lucro na Mão" not in oferta, "sem o nome antigo")
+            ok("Preço Certo" not in oferta, "sem o nome antigo")
             pb = (RAIZ.parent / "prospeccao" / "playbook.md").read_text(encoding="utf-8")
             ok(rz._secoes(pb)["2"][1] in oferta, "a seção da oferta vai inteira, igual ao playbook")
             ok("produz alimento" in rz.ler("cliente-ideal"), "cliente ideal do playbook")
@@ -704,7 +704,7 @@ class Suite:
             ok("Ainda pendente de validação: oferta.md" in r, f"diz o que falta: {r[-200:]}")
             self.mods.m("raiz").semear("operador: teste")
             r = ferr.executar("raiz", "matheus", secao="oferta")
-            ok(r.startswith("### Raiz/oferta.md") and "Preço Certo em 30 Dias" in r and "### Raiz/marca.md" not in r, r[:200])
+            ok(r.startswith("### Raiz/oferta.md") and "Lucro na Mão em 30 Dias" in r and "### Raiz/marca.md" not in r, r[:200])
             r = ferr.executar("raiz", "matheus", secao="oferta, cliente-ideal")
             ok("### Raiz/oferta.md" in r and "### Raiz/cliente-ideal.md" in r, "duas seções")
             try:

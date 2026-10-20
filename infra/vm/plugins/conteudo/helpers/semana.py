@@ -33,7 +33,7 @@ VIDEO, IMAGEM = (".mp4",), (".jpg", ".jpeg", ".png")
 SEM_REVISAO = "sem revisão"
 REGRAS = ("Fala com o dono do negócio que produz e vende comida, nunca com o consumidor; sem jargão; número sempre "
           "como \"valores de exemplo\"; legenda sem emoji e sem travessão; nunca \"aumente seu lucro\"; oferta: "
-          "Preço Certo em 30 Dias.")
+          "Lucro na Mão em 30 Dias.")
 
 _C: dict = {}
 

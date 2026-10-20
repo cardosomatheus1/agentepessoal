@@ -517,18 +517,18 @@ class Suite:
         # facts at the end (section 7 and 8)
         texto = (RAIZ / "playbook.md").read_text(encoding="utf-8")
         ok(len(texto) <= self.p.LIMITE_PLAYBOOK, f"playbook com {len(texto)} caracteres passa do que o revisor lê")
-        ok("Preço Certo em 30 Dias" in texto and "Lucro na Mão" not in texto,
-           "a oferta (nome de 20/10, Preço Certo em 30 Dias) está no playbook, sem o nome antigo")
+        ok("Lucro na Mão em 30 Dias" in texto and "Preço Certo" not in texto,
+           "a oferta (nome de 20/10, Lucro na Mão em 30 Dias) está no playbook, sem o nome antigo")
         # 14/10, Matheus: the guarantee is not charging the next monthly fee (not "not paying the first month")
         ok("não cobra a sua próxima mensalidade" in texto and "não paga o primeiro mês" not in texto,
            "a garantia do playbook é não cobrar a próxima mensalidade")
 
     def t_oferta_preco_certo_e_o_nome_antigo(self):
-        # Matheus, 20/10: the offer is "Preço Certo em 30 Dias" (glossary); the old name never goes out, old notes count
+        # Matheus, 20/10: the offer is "Lucro na Mão em 30 Dias" (glossary); the old name never goes out, old notes count
         p = self.p
-        eq(p.OFERTA, "Preço Certo em 30 Dias", "nome da oferta")
+        eq(p.OFERTA, "Lucro na Mão em 30 Dias", "nome da oferta")
         texto = (RAIZ / "playbook.md").read_text(encoding="utf-8")
-        ok('"pendente: Preço Certo: <nome>"' in texto and '"ofereci Preço Certo"' in texto, "marcas novas no playbook")
+        ok('"pendente: Lucro na Mão: <nome>"' in texto and '"ofereci Lucro na Mão"' in texto, "marcas novas no playbook")
         # nothing the agent reads to write (playbook, prompts, tool, rounds) carries the old name
         for f in [RAIZ / "playbook.md", RAIZ / "rodadas.py", *(RAIZ / "prompts").glob("*.md"), *(RAIZ / "tools").glob("*.py")]:
             ok(not p.NOME_ANTIGO_OFERTA.search(f.read_text(encoding="utf-8")), f"nome antigo em {f.name}")
@@ -536,26 +536,26 @@ class Suite:
         self.em(self.hora(10))
         lid = self._aquecido("oferta1")
         d = p.carregar(LOGIN)
-        for tipo, t in (("resposta", "Fechado! Isso é o Lucro na Mão em 30 Dias: eu cadastro seus 10 principais produtos."),
-                        ("resposta", "Fechado! Isso é o lucro na mao em 30 dias: eu cadastro seus 10 principais produtos."),
-                        ("seguimento", "Conseguiu fazer a conta? O Lucro na Mão cadastra o cardápio inteiro pra você. Topa?"),
-                        ("dm_abertura", DM_A.replace("Se quiser,", "Tem o Lucro na Mão em 30 Dias. Se quiser,"))):
-            ok("Preço Certo em 30 Dias" in p.validar_texto(tipo, t, d, lid), f"{tipo} com o nome antigo barrado: {t}")
-        eq(p.validar_texto("resposta", "Fechado! Isso é o Preço Certo em 30 Dias: eu cadastro seus 10 principais produtos.",
+        for tipo, t in (("resposta", "Fechado! Isso é o Preço Certo em 30 Dias: eu cadastro seus 10 principais produtos."),
+                        ("resposta", "Fechado! Isso é o preco certo em 30 dias: eu cadastro seus 10 principais produtos."),
+                        ("seguimento", "Conseguiu fazer a conta? O Preço Certo cadastra o cardápio inteiro pra você. Topa?"),
+                        ("dm_abertura", DM_A.replace("Se quiser,", "Tem o Preço Certo em 30 Dias. Se quiser,"))):
+            ok("Lucro na Mão em 30 Dias" in p.validar_texto(tipo, t, d, lid), f"{tipo} com o nome antigo barrado: {t}")
+        eq(p.validar_texto("resposta", "Fechado! Isso é o Lucro na Mão em 30 Dias: eu cadastro seus 10 principais produtos.",
                            d, lid), "", "com o nome novo passa")
-        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Fechado! É o Lucro na Mão, eu cadastro tudo."}])
+        r = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": "Fechado! É o Preço Certo, eu cadastro tudo."}])
         ok(not r["propostas"], f"proposta com o nome antigo não entra: {r}")
         # the notes: new and old marker both count
-        for marca, esperado in (("pendente: Preço Certo: Ana", "topou"), ("pendente: Lucro na Mão: Ana", "topou"),
-                                ("pendente: lucro na mao: receber as receitas", "topou"), ("ofereci Preço Certo", "ofereci"),
-                                ("ofereci Lucro na Mão", "ofereci"), ("pendente: ouvir áudio", ""), ("oi", "")):
+        for marca, esperado in (("pendente: Lucro na Mão: Ana", "topou"), ("pendente: Preço Certo: Ana", "topou"),
+                                ("pendente: preco certo: receber as receitas", "topou"), ("ofereci Lucro na Mão", "ofereci"),
+                                ("ofereci Preço Certo", "ofereci"), ("pendente: ouvir áudio", ""), ("oi", "")):
             eq(p.nota_da_oferta(marca), esperado, f"nota {marca!r}")
-        ok(p.avisar_agora("lead", "pendente: Preço Certo: Ana"), "quem topou toca na hora")
+        ok(p.avisar_agora("lead", "pendente: Lucro na Mão: Ana"), "quem topou toca na hora")
         outro = self._aquecido("oferta2")
-        p.mudar_etapa(LOGIN, lid, "lead", "ofereci Lucro na Mão", "direct")
-        p.mudar_etapa(LOGIN, outro, "lead", "pendente: Preço Certo: Bia", "direct")
+        p.mudar_etapa(LOGIN, lid, "lead", "ofereci Preço Certo", "direct")
+        p.mudar_etapa(LOGIN, outro, "lead", "pendente: Lucro na Mão: Bia", "direct")
         m = p.metricas(LOGIN, 7)["oferta"]
-        eq((m["nome"], m["ofereci"], m["topou"]), ("Preço Certo em 30 Dias", 2, 1), f"oferta nas métricas: {m}")
+        eq((m["nome"], m["ofereci"], m["topou"]), ("Lucro na Mão em 30 Dias", 2, 1), f"oferta nas métricas: {m}")
 
     def t_cliente_e_quem_produz_alimento(self):
         # Matheus, 14/10: "o icp é o produtor de alimentos de fato e não só esses ramos grandes" (two closing make
@@ -1419,6 +1419,16 @@ class Suite:
            "script recusa campo com rascunho, insere uma vez e espera o texto aparecer (editor do Instagram é assíncrono)")
         ok(json.dumps('Oi, pessoal da "Ana"! 😊 raizconnect.com.br/materiais/precificacao/calculadora', ensure_ascii=False) in s,
            "texto exato, com aspas escapadas")
+        ok("DUPLICADO" in s and "estavel >= 10" in s, "20/10: só OK com o texto estável e uma vez; texto dobrado = DUPLICADO")
+        c = p.script_conferir_envio("Tranquilo! Deixo o link")
+        ok("PODE ENVIAR" in c and "NÃO ENVIE" in c and json.dumps("Tranquilo! Deixo o link") in c, "conferência antes do Enter")
+        if shutil.which("node"):
+            import subprocess
+            js = ("const norm = s => (s || '').replace(/\\s+/g, ' ').trim(); const alvo = norm('Tranquilo! Deixo o link.'); "
+                  "const dobrado = v => v.length > alvo.length && v.split(alvo).length > 2; "
+                  "console.log([dobrado(norm('Tranquilo! Deixo o link.Tranquilo! Deixo o link.')), dobrado(alvo)].join(','))")
+            eq(subprocess.run(["node", "-e", js], capture_output=True, text=True).stdout.strip(), "true,false",
+               "a regra de texto dobrado acha o caso real e não acusa o texto certo")
         ok(set(p.TIPOS_DIRECT) == {"dm_abertura", "dm_lembrete", "resposta", "parceiro", "seguimento"},
            "todo envio no Direct usa o script")
         lid = self._lead("relida")

@@ -19,7 +19,7 @@ from pathlib import Path
 PASTA = "Raiz"
 ARQUIVOS = {  # file -> (title, what goes in it); the interface other plugins rely on: <Pasta>/Raiz/<nome>.md
     "mapa.md": ("Mapa da Raiz", "o que é a Raiz e onde mora cada coisa"),
-    "oferta.md": ("Oferta", "o Preço Certo em 30 Dias: promessa, o que entra, preço, garantia, vagas, links"),
+    "oferta.md": ("Oferta", "o Lucro na Mão em 30 Dias: promessa, o que entra, preço, garantia, vagas, links"),
     "cliente-ideal.md": ("Cliente ideal", "quem compra, perfil, sinais, quem está fora"),
     "marca.md": ("Marca", "posicionamento, voz, identidade visual, o que nunca dizer"),
     "concorrentes.md": ("Concorrentes", "quem a Raiz vigia, por grupo"),
@@ -37,8 +37,8 @@ MAPA = """# Mapa da Raiz
 
 A **Raiz Connect** é a empresa do Matheus que faz o sistema de custo, preço e estoque para quem produz comida (ficha
 técnica, custo, CMV, estoque, vendas, nota fiscal e a assistente Fernanda). A porta de entrada que ela vende é o
-**Preço Certo em 30 Dias**: um serviço feito junto com o restaurante para acertar preço e custo do cardápio em 30 dias,
-usando o Raiz Connect como ferramenta. Esta pasta é o **Cérebro da Raiz**: só a empresa Raiz, lida pela prospecção,
+**Lucro na Mão em 30 Dias**: em 30 dias o produtor sabe quanto sobra em cada produto e onde o dinheiro escapa, com a
+implementação feita pela Raiz e o Raiz Connect como ferramenta. Esta pasta é o **Cérebro da Raiz**: só a empresa Raiz, lida pela prospecção,
 pelos posts e pelos especialistas. O resto da vida do Matheus está no restante da Pasta.
 
 ## Onde mora cada coisa
@@ -242,8 +242,8 @@ def _de_playbook(pb: str) -> dict:
     out = {}
     if "2" in s:
         extra = "\n".join(x for x in (_item(s.get("7", ("", ""))[1], "- **Planos"),
-                                      _item(s.get("7", ("", ""))[1], "- **Preço Certo")) if x)
-        out["oferta.md"] = (f"# Oferta: Preço Certo em 30 Dias\n\n_Do playbook de prospecção ({fonte}, seção 2"
+                                      _item(s.get("7", ("", ""))[1], "- **Lucro na Mão")) if x)
+        out["oferta.md"] = (f"# Oferta: Lucro na Mão em 30 Dias\n\n_Do playbook de prospecção ({fonte}, seção 2"
                             f"{' e 7' if extra else ''}); o inteiro manda._\n\n" + s["2"][1]
                             + (f"\n\n## Fatos da seção 7\n{extra}" if extra else ""))
     if "1" in s:

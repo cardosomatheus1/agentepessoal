@@ -418,8 +418,11 @@ class Prospeccao(Tool):
                      + (("PARA DIGITAR NO DIRECT (obrigatório, NÃO digite à mão): com a conversa aberta, 1) clique no campo de mensagem, "
                          "2) aperte Control+A e depois Backspace (ações press do browser) para apagar rascunho de tentativa anterior, "
                          "3) rode este script com `browser` action \"evaluate\" — ele confere que o campo está vazio, coloca o texto uma vez "
-                         "e espera aparecer. Só aperte Enter/Enviar se ele devolver OK. \"CAMPO NÃO ESTÁ VAZIO\": repita 1–3. "
-                         "Depois de enviar, leia a conversa e confira que a mensagem aparece UMA vez.\n" + p.script_digitar(a["texto"]) + "\n\n")
+                         "e espera ficar estável. \"CAMPO NÃO ESTÁ VAZIO\" ou \"DUPLICADO\": repita 1–3 (no máximo 2 vezes). "
+                         "4) Com OK, rode o script de CONFERÊNCIA logo abaixo e só aperte Enter se ele devolver PODE ENVIAR; "
+                         "qualquer outra resposta: não envie, repita 1–3 uma vez e, se repetir, `resultado` ok=false. "
+                         "Depois de enviar, leia a conversa e confira que a mensagem aparece UMA vez.\n" + p.script_digitar(a["texto"])
+                         + "\n\nCONFERÊNCIA (logo antes do Enter):\n" + p.script_conferir_envio(a["texto"]) + "\n\n")
                         if a["tipo"] in p.TIPOS_DIRECT else "")
                      + "Depois chame `prospeccao` acao \"resultado\" com acao_id, ok (true/false) e detalhe (o que viu na tela). "
                      "Se o Instagram mostrar bloqueio/limite/'tente mais tarde'/verificação, PARE e mande bloqueio: true.")

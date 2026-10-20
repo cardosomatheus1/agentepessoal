@@ -170,8 +170,9 @@ saído. Só olhe a tela (a conversa ou o botão «Seguindo») e chame `resultado
 3. **Não digite à mão.** Clique no campo, aperte **Control+A** e depois **Backspace** (ações press do browser) para
    apagar rascunho de tentativa anterior, e rode o script "PARA DIGITAR NO DIRECT" que a `proxima` traz, com
    `browser` "evaluate".
-4. Só aperte Enter/Enviar se o script devolver **OK**. "CAMPO NÃO ESTÁ VAZIO": repita o passo 3 (no máximo 2 vezes no
-   total). Outra resposta: não envie; `resultado` ok=false.
+4. Só siga se o script devolver **OK**. "CAMPO NÃO ESTÁ VAZIO" ou "DUPLICADO": repita o passo 3 (no máximo 2 vezes no
+   total). Com OK, rode o script de **CONFERÊNCIA** que a `proxima` traz e só aperte Enter se ele devolver **PODE
+   ENVIAR** (20/10: o editor repetiu o texto depois do OK e saiu duplicado). Outra resposta: não envie; `resultado` ok=false.
 5. **Confira:** a sua última mensagem aparece UMA vez, igual à aprovada. Saiu duplicada ou cortada: não apague;
    `resultado` ok=true com o detalhe ("saiu duplicada"), e o Matheus decide.
 6. `resultado` só DEPOIS de conferir. Depois dele, não toque mais nessa conversa nesta ação.

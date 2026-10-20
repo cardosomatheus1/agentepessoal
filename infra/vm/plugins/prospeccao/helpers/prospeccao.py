@@ -1642,18 +1642,18 @@ PEDE_RECEITA = re.compile(r"\b(mand\w*|envi[ae]\w*|compartilh\w*|pass(a|e|ar|em|
 # AR Board 13/10 (Matheus, 5 of 13 cases): the dash "deixa com cara de IA". In code, for every text the agent writes.
 TRAVESSAO = re.compile("[\u2014\u2013]")
 
-# Matheus, 20/10 (GLOSSARY.md): the offer is "Preço Certo em 30 Dias"; the old name never goes out again, but notes
-# written before ("pendente: Lucro na Mão: <nome>", "ofereci Lucro na Mão") still count.
-OFERTA = "Preço Certo em 30 Dias"
-OFERTA_CURTA = "Preço Certo"
-NOME_ANTIGO_OFERTA = re.compile(r"lucro\s+na\s+m[aã]o", re.I)
+# Matheus, 14/10 and again 20/10 (GLOSSARY.md): the offer is "Lucro na Mão em 30 Dias"; the old name "Preço Certo"
+# never goes out again, but notes written with it ("pendente: Preço Certo: <nome>") still count.
+OFERTA = "Lucro na Mão em 30 Dias"
+OFERTA_CURTA = "Lucro na Mão"
+NOME_ANTIGO_OFERTA = re.compile(r"pre[cç]o\s+certo", re.I)
 _NOME_OFERTA = r"(pre[cç]o\s+certo|lucro\s+na\s+m[aã]o)"
 TOPOU_OFERTA = re.compile(r"^\s*pendente:\s*" + _NOME_OFERTA, re.I)
 OFERECEU = re.compile(r"^\s*ofereci\s+(a\s+oferta\s+)?" + _NOME_OFERTA, re.I)
 
 
 def nota_da_oferta(nota: str) -> str:
-    """'topou' (pendente: Preço Certo: …), 'ofereci' (ofereci Preço Certo) or ''; the old name counts the same."""
+    """'topou' (pendente: Lucro na Mão: …), 'ofereci' (ofereci Lucro na Mão) or ''; the old name counts the same."""
     n = str(nota or "")
     return "topou" if TOPOU_OFERTA.search(n) else "ofereci" if OFERECEU.search(n) else ""
 
@@ -1662,7 +1662,7 @@ def validar_texto(tipo: str, texto: str, d: dict, lid: str) -> str:
     """'' when the text may be proposed, else why not (playbook rules a model could slip on)."""
     t = (texto or "").strip()
     if NOME_ANTIGO_OFERTA.search(t):
-        return f"a oferta agora se chama {OFERTA} (o nome Lucro na Mão saiu, Matheus 20/10)"
+        return f"a oferta agora se chama {OFERTA} (o nome Preço Certo saiu, Matheus 14/10)"
     if TRAVESSAO.search(t):
         return "sem travessão (— ou –): deixa com cara de IA; use vírgula, ponto ou quebra de linha"
     if tipo == "aquecer":
@@ -2559,19 +2559,34 @@ def script_digitar(texto: str) -> str:
     (click the box, Control+A, Backspace). Instagram's box (a Lexical editor) keeps the draft of an earlier attempt
     (11/10: Zen and Anna got the text twice in one bubble), ignores a scripted delete and shows typed text only a moment
     later (12/10: the first version checked at once, saw it empty and said DIFERENTE). So: refuse a box that is not
-    empty, insert the text once, then wait until the box shows exactly that text. Idempotent: a box already holding
-    exactly the text answers OK without inserting again."""
+    empty, insert the text once, then wait until the box shows exactly that text AND stays so for ~1.5 s (20/10:
+    @jm_marmitafit got it twice: the editor repeated the insertion right after the first check said OK). A doubled box
+    answers DUPLICADO. Idempotent: a box already holding exactly the text answers OK without inserting again."""
     return ("(async () => { const t = " + json.dumps(texto, ensure_ascii=False) + "; "
             "const norm = s => (s || '').replace(/\\s+/g, ' ').trim(); "
             "const espera = ms => new Promise(r => setTimeout(r, ms)); "
             "const caixas = [...document.querySelectorAll('div[role=\"textbox\"][contenteditable=\"true\"]')]; "
             "const box = caixas[caixas.length - 1]; if (!box) return 'SEM CAMPO DE MENSAGEM'; "
+            "const alvo = norm(t); const dobrado = v => v.length > alvo.length && v.split(alvo).length > 2; "
             "box.focus(); await espera(300); "
-            "if (norm(box.innerText)) { if (norm(box.innerText) === norm(t)) return 'OK'; "
+            "if (norm(box.innerText)) { if (norm(box.innerText) === alvo) return 'OK'; "
+            "if (dobrado(norm(box.innerText))) return 'DUPLICADO: NÃO envie; clique no campo, aperte Control+A e depois Backspace e rode de novo.'; "
             "return 'CAMPO NÃO ESTÁ VAZIO: clique no campo, aperte Control+A e depois Backspace (ações press do browser) e rode de novo. Agora tem: ' + norm(box.innerText).slice(0, 120); } "
             "document.execCommand('insertText', false, t); "
-            "for (let i = 0; i < 20; i++) { await espera(150); if (norm(box.innerText) === norm(t)) return 'OK'; } "
+            "let estavel = 0; "
+            "for (let i = 0; i < 40; i++) { await espera(150); const v = norm(box.innerText); "
+            "if (dobrado(v)) return 'DUPLICADO: NÃO envie; clique no campo, aperte Control+A e depois Backspace e rode de novo.'; "
+            "estavel = v === alvo ? estavel + 1 : 0; if (estavel >= 10) return 'OK'; } "
             "return 'DIFERENTE: ' + norm(box.innerText).slice(0, 300); })()")
+
+
+def script_conferir_envio(texto: str) -> str:
+    """Run right BEFORE pressing Enter (20/10): the box must hold the approved text exactly once, now."""
+    return ("(() => { const t = " + json.dumps(texto, ensure_ascii=False) + "; "
+            "const norm = s => (s || '').replace(/\\s+/g, ' ').trim(); "
+            "const caixas = [...document.querySelectorAll('div[role=\"textbox\"][contenteditable=\"true\"]')]; "
+            "const box = caixas[caixas.length - 1]; if (!box) return 'SEM CAMPO DE MENSAGEM'; "
+            "return norm(box.innerText) === norm(t) ? 'PODE ENVIAR' : 'NÃO ENVIE: o campo tem ' + norm(box.innerText).slice(0, 200); })()")
 
 
 SCRIPT_ABRIR_CONVERSA = """(async () => {

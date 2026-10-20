@@ -152,7 +152,7 @@ class Suite:
     # --- what the Crítico reads
 
     def t_criticar_usa_o_cerebro_da_raiz_e_os_criterios(self):
-        m = self._e(com_raiz="OFERTA: Preço Certo em 30 Dias", criterios={"conteudo": "Regra 7: sem promessa.",
+        m = self._e(com_raiz="OFERTA: Lucro na Mão em 30 Dias", criterios={"conteudo": "Regra 7: sem promessa.",
                                                                             "prospeccao": "Regra P: curto."})
         tarefas = []
         m.chamar = lambda papel, tarefa, material, login="matheus": tarefas.append((papel, tarefa, material)) or \
@@ -162,7 +162,7 @@ class Suite:
         eq(c["avisos"], [], "nada faltou")
         papel, tarefa, _ = tarefas[0]
         eq(papel, "critico", "papel")
-        ok("Preço Certo em 30 Dias" in tarefa, "contexto da Raiz na tarefa")
+        ok("Lucro na Mão em 30 Dias" in tarefa, "contexto da Raiz na tarefa")
         ok("Regra 7" in tarefa and "Regra P" not in tarefa, "só os critérios do tipo (post = conteúdo)")
         m.criticar("mensagem", "Oi, tudo bem?")
         ok("Regra P" in tarefas[1][1] and "Regra 7" not in tarefas[1][1], "mensagem usa os critérios da prospecção")

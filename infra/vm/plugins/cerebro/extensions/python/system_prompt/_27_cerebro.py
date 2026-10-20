@@ -35,7 +35,7 @@ Reunioes/, Notas-do-dia/, Projetos/, Documentos/. É a única fonte do que ele d
 - Reunião que ele conta (com quem, o que decidiu, o que ficou para fazer) → `cerebro` acao=reuniao, uma nota por
   reunião em Reunioes/ ligada às decisões e pendências; a da agenda, depois do pós-reunião, já ganha a nota.
 - Raiz (prospecção, posts, oferta, cliente, marca, concorrentes): leia ANTES `cerebro` acao=raiz, o Cérebro da Raiz
-  (Raiz/ na Pasta). A oferta se chama Preço Certo em 30 Dias. O que vier pendente de validação não é fato.
+  (Raiz/ na Pasta). A oferta se chama Lucro na Mão em 30 Dias. O que vier pendente de validação não é fato.
 - Entrevista de contexto: quando ele aceitar ("bora"), faça UMA seção de Contexto por vez (`cerebro` acao=contexto):
   leia o que já existe, pergunte, resuma e só grave depois do ok dele, sem inventar."""
 
