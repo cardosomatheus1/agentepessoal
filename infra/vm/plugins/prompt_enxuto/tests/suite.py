@@ -402,6 +402,53 @@ class Suite:
         ok(com_codigo < META_TEXTO, f"conversa de código: {com_codigo} (meta {META_TEXTO})")
         print(f"prompt_enxuto: sistema no modo texto {antes} -> {depois} caracteres (código {com_codigo})")
 
+    # ------------------------------------------------------------------ <invoke> do modelo vira JSON (20/10)
+
+    def t_invoke_xml_vira_chamada_json(self):
+        x = self.carregar.modulo("xml_ferramenta")
+        # visto no log de 20/10 (texto antes, parâmetros com JSON e texto, e um ``` solto)
+        bruto = ('Vou abrir o seletor.\n<invoke name="browser">\n<parameter name="action">evaluate</parameter>\n'
+                 '<parameter name="browser_id">13</parameter>\n<parameter name="script">Array.from(document.querySelectorAll'
+                 '("select")).map(e=>e.tagName)</parameter>\n</invoke>\n```')
+        d = json.loads(x.converter(bruto))
+        eq((d["tool_name"], d["tool_args"]), ("browser", {"action": "evaluate", "browser_id": 13,
+                                                          "script": 'Array.from(document.querySelectorAll("select")).map(e=>e.tagName)'}),
+           "nome e parâmetros, número como número")
+        eq(d["thoughts"], ["Vou abrir o seletor."], "o texto antes vira o pensamento")
+        vazio = json.loads(x.converter('<invoke name="browser">\n</invoke>\n<invoke name="browser">\n</invoke>'))
+        eq((vazio["tool_name"], vazio["tool_args"]), ("browser", {}), "sem parâmetros: a ferramenta reclama do que falta")
+        aninhado = json.loads(x.converter('<function_calls><invoke name="response"><parameter name="text">Pronto: '
+                                          '3 itens</parameter><parameter name="opcoes">{"a": [1, 2]}</parameter></invoke></function_calls>'))
+        eq(aninhado["tool_args"], {"text": "Pronto: 3 itens", "opcoes": {"a": [1, 2]}}, "objeto JSON e texto")
+        cortado = json.loads(x.converter('<invoke name="browser"><parameter name="action">click</parameter><parameter name="ref">22'))
+        eq(cortado["tool_args"], {"action": "click", "ref": 22}, "resposta cortada no meio ainda vale")
+        eq(x.converter('{"tool_name": "response", "tool_args": {"text": "oi"}}'), None, "JSON não mexe")
+        eq(x.converter("texto comum, sem ferramenta"), None, "texto comum não mexe")
+
+    def t_extensao_xml_so_troca_quando_precisa(self):
+        m = _carregar("enxuto_xml_teste", EXT / "message_loop_result" / "_05_xml_para_json.py")
+        et = types.ModuleType("helpers.extract_tools")
+        et.extract_tool_request = lambda t: {"ok": 1} if t.startswith("{") else None
+        antes = sys.modules.get("helpers.extract_tools")
+        sys.modules["helpers.extract_tools"] = et
+        sys.modules.setdefault("helpers", types.ModuleType("helpers")).extract_tools = et
+        try:
+            llm = types.SimpleNamespace(response='<invoke name="browser"><parameter name="action">list</parameter></invoke>',
+                                        function_calls=None)
+            m.XmlParaJson(agent=None).execute(result_data={"llm_result": llm})
+            eq(json.loads(llm.response)["tool_args"], {"action": "list"}, "XML virou JSON")
+            nativa = types.SimpleNamespace(response='<invoke name="x"></invoke>', function_calls=[1])
+            m.XmlParaJson(agent=None).execute(result_data={"llm_result": nativa})
+            eq(nativa.response, '<invoke name="x"></invoke>', "chamada nativa: não mexe")
+            json_ok = types.SimpleNamespace(response='{"tool_name": "a", "tool_args": {"q": "<invoke>"}}', function_calls=None)
+            m.XmlParaJson(agent=None).execute(result_data={"llm_result": json_ok})
+            ok(json_ok.response.startswith('{"tool_name": "a"'), "JSON válido com a palavra invoke: não mexe")
+        finally:
+            if antes is None:
+                sys.modules.pop("helpers.extract_tools", None)
+            else:
+                sys.modules["helpers.extract_tools"] = antes
+
     async def rodar(self, filtro: str = ""):
         try:
             for nome in sorted(n for n in dir(self) if n.startswith("t_") and filtro in n):
