@@ -1843,7 +1843,9 @@ SEM perguntar a ele, então você é a última barreira antes de uma pessoa real
    mensagem pergunta ou oferece (ex.: "vi a pergunta sobre marinar… fiz uma calculadora grátis"; "vi o cardápio novo
    nos stories… posso te mandar a calculadora?"). A calculadora só tem nexo com gancho de preço, custo, reajuste ou
    promoção; iFood combina com a conciliação do iFood; encomenda com produção e insumos; cardápio novo com o preço de
-   cada prato novo; kit com quanto sobra no kit. Citar a bio entre aspas também reprova (soa como IA).
+   cada prato novo; kit com quanto sobra no kit. Uma PERGUNTA sobre como a pessoa chega no preço (variante A) tem nexo
+   com gancho de venda, pedido, link de pedidos, cardápio, kit ou preço (aprovada por ele). Citar a bio entre aspas
+   também reprova (soa como IA).
 4. Tem erro de português ou abreviação de internet que faça a marca parecer descuidada.
 5. Numa resposta: não combina com O QUE A PESSOA DISSE (ignora a pergunta dela, insiste depois de um não, ou finge
    uma conversa que não houve). Perguntou se é robô: a resposta não pode negar que há um assistente.
