@@ -1,18 +1,19 @@
 import type { MultiDirectedGraph } from "graphology";
 import type { SegundoCerebro } from "./second-brain.mjs";
 
-export type TipoNo = "fonte" | "projeto" | "contexto" | "documento" | "rotina" | "decisao" | "fato" | "fio" | "referencia";
-export type Relacao = "proveniencia" | "substitui" | "ligacao_fio" | "cita_documento" | "ligacao_texto" | "fonte_citada";
+export type TipoNo = "fonte" | "projeto" | "contexto" | "documento" | "reuniao" | "nota" | "decisao" | "assunto" | "fato" | "pendencia" | "referencia";
+export type Relacao = "proveniencia" | "substitui" | "liga" | "wiki" | "ligacao_texto" | "link_sem_destino" | "fonte_citada";
 export type ClasseRelacao = "proveniencia" | "comprovada" | "referencia";
-export type Agrupamento = "fonte" | "meta" | "tipo";
+export type Agrupamento = "fonte" | "area" | "meta" | "tipo";
 
-export interface Evidencia { fonte: string; registro: string | null; campo: string; localizador: string | null }
+export interface Evidencia { fonte: string; registro: string | null; campo: string; localizador: string | null; vias?: string[] }
 export interface NoCerebro {
   id: string;
   tipo: TipoNo;
   rotulo: string;
   rotuloCompleto?: string;
-  fonte: string;
+  fonte: string | null;
+  area?: string | null;
   meta?: string;
   texto?: string;
   estado?: string | null;
@@ -30,7 +31,7 @@ export function buildBrainGraph(brain: Partial<SegundoCerebro>): GrafoCerebro;
 export function grupoDe(node: NoCerebro, modo?: Agrupamento): string;
 export function filterBrainGraph(
   graph: GrafoCerebro,
-  opts?: { termo?: string; tipos?: Set<string>; fontes?: Set<string>; relacoes?: Set<string>; vizinhos?: boolean },
+  opts?: { termo?: string; tipos?: Set<string>; fontes?: Set<string>; areas?: Set<string>; relacoes?: Set<string>; vizinhos?: boolean },
 ): GrafoCerebro & { matches: Set<string>; contexto: Set<string> };
 export function layoutBrainGraph(graph: GrafoCerebro, modo?: Agrupamento): {
   positions: Map<string, { x: number; y: number }>;

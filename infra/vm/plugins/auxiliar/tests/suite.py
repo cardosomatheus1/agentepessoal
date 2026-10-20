@@ -432,6 +432,7 @@ class Suite:
                                     RAIZ / "extensions" / "python" / "tool_execute_after" / "_57_pos_registrado.py")
                 finally:
                     sys.modules.pop("helpers.extension", None)
+            ext.aux = lambda: a  # the hook's own loader may pick another copy (staging vs live): use the faked one
             gancho = object.__new__(ext.PosRegistrado)
             gancho.agent = types.SimpleNamespace(
                 number=0, context=types.SimpleNamespace(get_data=lambda k: LOGIN if k == "whatsapp_de" else None),

@@ -1,19 +1,20 @@
 import type { SegundoCerebro } from "./second-brain.mjs";
 
-export type Funcao = "retomar" | "rotina" | "prioridades" | "pauta" | "registro" | "fonte" | "buscar" | "onboarding";
-export interface Consulta { funcao: Funcao; fonte?: string; registro?: string; termo?: string }
+export type Funcao = "retomar" | "assuntos" | "prioridades" | "pauta" | "registro" | "fonte" | "buscar" | "contexto";
+export interface Consulta { funcao: Funcao; fonte?: string; registro?: string; termo?: string; area?: string }
 export interface ItemConsulta {
   ref: string;
   tipo: string;
   rotulo: string;
   trecho: string | null;
+  area: string | null;
   proveniencia: { fonte?: string; fonteRotulo?: string; localizador?: string | null; arquivoAtualizadoEm?: string | null } | null;
   porque: string;
 }
 export interface FonteUsada { id: string; estado: string; codigo: string; impressao: string | null }
 export interface ResultadoConsulta {
   ok: true;
-  consulta: { funcao: Funcao; fonte: string | null; registro: string | null; termo: string | null };
+  consulta: { funcao: Funcao; fonte: string | null; registro: string | null; termo: string | null; area: string | null };
   rotulo: string;
   estado: "ok" | "parcial" | "bloqueado";
   resumo: string;

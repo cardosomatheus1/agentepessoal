@@ -1,56 +1,17 @@
-// node --test tests/second-brain.test.mjs — só dados fictícios em diretório temporário.
+// node --test tests/second-brain.test.mjs — só dados fictícios numa Pasta temporária.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, statSync, symlinkSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, readdirSync, statSync, symlinkSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { handleSecondBrainRequest, redact, checkBearer, FICHA_MARCA } from "../lib/second-brain.mjs";
-import { escreverExtras } from "./fixture-brain.mjs";
+import { handleSecondBrainRequest, redact, checkBearer } from "../lib/second-brain.mjs";
+import { criarFixture, naPasta, PASTA, SENTINELA, FORA_DA_LISTA } from "./fixture-brain.mjs";
 
 const TOKEN = "fixture-token-not-real-123";
 const DIGEST = createHash("sha256").update(TOKEN).digest("hex");
-const SENTINELA = "FERNANDA_SENTINELA_9f3a";
-const NOW = new Date("2026-10-17T12:00:00Z");
+const NOW = new Date("2026-10-20T12:00:00Z");
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-
-function fixture() {
-  const root = mkdtempSync(path.join(tmpdir(), "sc-"));
-  mkdirSync(path.join(root, "memoria/decisoes"), { recursive: true });
-  mkdirSync(path.join(root, "memoria/usuarios"), { recursive: true });
-  mkdirSync(path.join(root, "fios"), { recursive: true });
-  writeFileSync(
-    path.join(root, "memoria/decisoes/matheus.json"),
-    JSON.stringify({
-      diario: [`registro interno ${SENTINELA}`],
-      decisoes: [
-        { id: "d1", tema: "Tom", tipo: "preferencia", valor: "curto <script>alert(1)</script>", citacao: "fala curto", origem: "chat", em: "2026-10-01T10:00:00Z", estado: "ativa", valido_ate: null, interno: SENTINELA },
-        { id: "d2", tema: "Campanha", tipo: "regra", valor: "pausar", citacao: "pausa", origem: "chat", em: "2026-09-01", estado: "ativa", valido_ate: "2026-10-01" },
-        { id: "d3", tema: "Chave", tipo: "regra", valor: "senha: hunter2abc e Bearer abcdefghijklmnop", estado: "revogada" },
-      ],
-    }),
-  );
-  // Formato do helper ficha.py: MARCA no topo, uma entrada por linha "- " (linha solta e item recuado não contam).
-  writeFileSync(path.join(root, "memoria/usuarios/matheus.md"), `# Sobre matheus\n> ${FICHA_MARCA}\nTexto solto ignorado\n  - recuado ignorado\n- Mora em SP\n- Prefere português\n`);
-  writeFileSync(
-    path.join(root, "fios/matheus.json"),
-    JSON.stringify({
-      cache: SENTINELA,
-      fios: [
-        { id: "f1", titulo: "Site", detalhe: "refazer", fontes: ["conversa 10/10"], dono: "matheus", prazo: "2026-10-20", prioridade: "alta", proximo_passo: "mandar briefing", ligacoes: [{ id: "f2", motivo: "depende" }, "Texto livre registrado"], estado: "aberto", criado: "2026-10-10", atualizado: "2026-10-15" },
-        { id: "f2", titulo: "Logo", detalhe: "Site também", prioridade: "baixa", estado: "aberto", criado: "2026-10-11", atualizado: "2026-10-12" },
-        { id: "f3", titulo: "Site e Logo sem ligação", estado: "aberto" },
-      ],
-    }),
-  );
-  // Outra pessoa no mesmo diretório: nunca pode aparecer.
-  writeFileSync(path.join(root, "memoria/decisoes/fernanda.json"), JSON.stringify({ decisoes: [{ id: "x", tema: SENTINELA }] }));
-  writeFileSync(path.join(root, "memoria/usuarios/fernanda.md"), `- ${SENTINELA}\n`);
-  writeFileSync(path.join(root, "fios/fernanda.json"), JSON.stringify({ fios: [{ id: "x", titulo: SENTINELA }] }));
-  escreverExtras(root);
-  return root;
-}
 
 function hashes(dir) {
   const out = {};
@@ -60,90 +21,44 @@ function hashes(dir) {
   }
   return out;
 }
-
-function req(url = "http://127.0.0.1/api/segundo-cerebro", headers = {}, method = "GET") {
-  return new Request(url, { method, headers });
-}
+const req = (url = "http://127.0.0.1/api/segundo-cerebro", headers = {}, method = "GET") => new Request(url, { method, headers });
 const auth = { Authorization: `Bearer ${TOKEN}` };
 const envFor = (root) => ({ SECOND_BRAIN_TOKEN_SHA256: DIGEST, SECOND_BRAIN_DATA_ROOT: root });
+const comFixture = async (fn) => { const root = criarFixture(); try { await fn(root); } finally { rmSync(root, { recursive: true, force: true }); } };
 
-test("acesso válido devolve só Matheus, campos permitidos e cabeçalhos sem cache", async () => {
-  const root = fixture();
-  try {
-    const antes = hashes(root);
-    const r = await handleSecondBrainRequest(req(undefined, auth), envFor(root), NOW);
-    assert.equal(r.status, 200);
-    assert.equal(r.headers["Cache-Control"], "private, no-store");
-    assert.equal(r.headers.Vary, "Authorization");
-    const b = r.body;
-    assert.equal(b.owner, "matheus");
-    assert.equal(b.fetchedAt, NOW.toISOString());
-    assert.deepEqual(Object.keys(b).sort(), ["conflicts", "connections", "contexts", "coverage", "daily", "decisions", "diagnostics", "documents", "fetchedAt", "gaps", "meetings", "owner", "profile", "projects", "proposals", "routines", "sources", "threads", "warnings"]);
-    assert.equal(b.warnings.length, 0);
-    assert.equal(b.decisions.length, 3);
-    assert.equal(b.threads.length, 3);
-    assert.deepEqual(b.profile.map((p) => p.texto), ["Mora em SP", "Prefere português"]);
-    assert.equal(b.profile[0].proveniencia.linha, 5);
-    assert.equal(b.profile[0].numero, 1, "número da entrada, como a ferramenta ficha usa");
-    assert.ok(b.profile[0].proveniencia.arquivoAtualizadoEm);
-    const json = JSON.stringify(b);
-    assert.ok(!json.includes(SENTINELA), "nada de Fernanda, diário ou cache");
-    assert.ok(!json.includes(root), "sem caminho cru");
-    assert.equal(b.decisions[0].proveniencia.fonte, "decisoes");
-    assert.equal(b.decisions[0].proveniencia.em, "2026-10-01T10:00:00Z");
-    assert.ok(b.sources.filter((s) => s.estado !== "sem_contrato").every((s) => s.estado === "ok" && s.arquivoAtualizadoEm));
-    assert.deepEqual(b.sources.filter((s) => s.estado === "sem_contrato").map((s) => s.id), ["reunioes", "daily"]);
-    assert.deepEqual(hashes(root), antes, "nenhuma escrita");
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
+test("acesso válido devolve só a Pasta do Matheus, com cabeçalhos sem cache e sem gravar nada", () => comFixture(async (root) => {
+  const antes = hashes(root);
+  const r = await handleSecondBrainRequest(req(undefined, auth), envFor(root), NOW);
+  assert.equal(r.status, 200);
+  assert.equal(r.headers["Cache-Control"], "private, no-store");
+  assert.equal(r.headers.Vary, "Authorization");
+  const b = r.body;
+  assert.equal(b.owner, "matheus");
+  assert.equal(b.fetchedAt, NOW.toISOString());
+  assert.deepEqual(Object.keys(b).sort(), ["areas", "conflicts", "connections", "contexts", "coverage", "daily", "decisions", "diagnostics", "documents", "fetchedAt", "gaps", "index", "links", "meetings", "owner", "pasta", "profile", "projects", "rules", "sources", "subjects", "threads", "warnings"]);
+  assert.deepEqual(b.warnings, []);
+  assert.equal(b.pasta.migrada, true);
+  assert.deepEqual([b.decisions.length, b.threads.length, b.subjects.length, b.contexts.length, b.meetings.length, b.daily.length, b.documents.length, b.projects.length], [5, 4, 2, 6, 1, 2, 1, 1]);
+  assert.deepEqual(b.profile.map((p) => p.texto), ["Mora numa cidade fictícia", "Prefere respostas em português"]);
+  assert.ok(b.sources.every((s) => s.estado === "ok" && s.arquivoAtualizadoEm), JSON.stringify(b.sources.map((s) => [s.id, s.estado])));
+  const json = JSON.stringify(b);
+  assert.ok(!json.includes(SENTINELA), "nada do Arquivo-morto nem de subpasta de projeto");
+  assert.ok(!json.includes(FORA_DA_LISTA), "nada dos registros antigos (memoria/, fios/, chats/, skills/, projects/)");
+  assert.ok(!json.includes(root), "sem caminho cru");
+  assert.deepEqual(hashes(root), antes, "nenhuma escrita");
+}));
 
-test("validade vencida vira expirada; revogada não é vigente", async () => {
-  const root = fixture();
-  try {
-    const { body } = await handleSecondBrainRequest(req(undefined, auth), envFor(root), NOW);
-    const [d1, d2, d3] = body.decisions;
-    assert.equal(d1.vigente, true);
-    assert.equal(d2.estadoEfetivo, "expirada");
-    assert.equal(d2.vigente, false);
-    assert.equal(d3.vigente, false);
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
+test("segredos reconhecíveis são removidos e HTML fica como texto", () => comFixture(async (root) => {
+  naPasta(root, "Decisoes/0006-x.md", '---\nid: 6\ntema: "t.x"\nvalor: "curto <script>alert(1)</script> senha: hunter2abc e Bearer abcdefghijklmnop"\nestado: "ativa"\n---\n# x\n');
+  const { body } = await handleSecondBrainRequest(req(undefined, auth), envFor(root), NOW);
+  const v = body.decisions.find((d) => d.id === "6").valor;
+  assert.ok(!v.includes("hunter2abc") && !v.includes("abcdefghijklmnop"), v);
+  assert.ok(v.includes("<script>alert(1)</script>"), "texto preservado; quem escapa é o React");
+  assert.equal(redact("api_key=AKIAABCDEFGHIJKLMNOP"), "api_key=[removido]");
+  assert.ok(!redact("use sk-abcdefghijklmnopqrstu").includes("sk-abc"));
+}));
 
-test("grafo só com ligações explícitas; texto livre vira nó textual separado", async () => {
-  const root = fixture();
-  try {
-    const { body } = await handleSecondBrainRequest(req(undefined, auth), envFor(root), NOW);
-    const { nodes, edges } = body.connections;
-    assert.equal(edges.length, 2);
-    assert.deepEqual(edges.map((e) => [e.de, e.para]), [["fio:f1", "fio:f2"], ["fio:f1", "texto:Texto livre registrado"]]);
-    assert.equal(edges[0].rotulo, "depende");
-    assert.equal(edges[0].evidencia.fioId, "f1");
-    assert.equal(nodes.find((n) => n.id === "texto:Texto livre registrado").tipo, "texto");
-    assert.ok(!nodes.some((n) => n.id === "fio:f3"), "f3 cita Site/Logo no título mas não tem ligação: nada inferido");
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test("segredos reconhecíveis são removidos e HTML fica como texto", async () => {
-  const root = fixture();
-  try {
-    const { body } = await handleSecondBrainRequest(req(undefined, auth), envFor(root), NOW);
-    const v = body.decisions[2].valor;
-    assert.ok(!v.includes("hunter2abc") && !v.includes("abcdefghijklmnop"), v);
-    assert.equal(body.decisions[0].valor, "curto <script>alert(1)</script>", "texto preservado; quem escapa é o React");
-    assert.equal(redact("api_key=AKIAABCDEFGHIJKLMNOP"), "api_key=[removido]");
-    assert.ok(!redact("use sk-abcdefghijklmnopqrstu").includes("sk-abc"));
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test("sem chave configurada => 503; sem/errada => 401", async () => {
+test("sem chave configurada => 503; sem/errada => 401; método diferente de GET => 405", async () => {
   assert.equal((await handleSecondBrainRequest(req(undefined, auth), {}, NOW)).status, 503);
   assert.equal((await handleSecondBrainRequest(req(undefined, auth), { SECOND_BRAIN_TOKEN_SHA256: "abc" }, NOW)).status, 503);
   assert.equal((await handleSecondBrainRequest(req(undefined, auth), { SECOND_BRAIN_TOKEN_SHA256: DIGEST, SECOND_BRAIN_DATA_ROOT: "relativo/x" }, NOW)).status, 503);
@@ -155,65 +70,59 @@ test("sem chave configurada => 503; sem/errada => 401", async () => {
   assert.equal((await handleSecondBrainRequest(req(undefined, auth, "POST"), env, NOW)).status, 405);
 });
 
-test("query string e cabeçalhos de identidade são recusados, mesmo autenticado", async () => {
-  const root = fixture();
-  try {
-    const env = envFor(root);
-    for (const q of ["?usuario=fernanda", "?tenant=fernanda", "?x", "?"]) {
-      const r = await handleSecondBrainRequest(req(`http://127.0.0.1/api/segundo-cerebro${q}`, auth), env, NOW);
-      assert.equal(r.status, q === "?" ? 200 : 400, q);
-    }
-    for (const h of ["x-user", "x-login", "x-tenant"]) {
-      const r = await handleSecondBrainRequest(req(undefined, { ...auth, [h]: "fernanda" }), env, NOW);
-      assert.equal(r.status, 403, h);
-      assert.ok(!JSON.stringify(r.body).includes(SENTINELA));
-    }
-  } finally {
-    rmSync(root, { recursive: true, force: true });
+test("query string (inclusive caminho) e cabeçalhos de identidade são recusados, mesmo autenticado", () => comFixture(async (root) => {
+  const env = envFor(root);
+  for (const q of ["?usuario=fernanda", "?tenant=fernanda", "?x", "?pasta=Arquivo-morto", "?arquivo=../../etc/passwd", "?"]) {
+    const r = await handleSecondBrainRequest(req(`http://127.0.0.1/api/segundo-cerebro${q}`, auth), env, NOW);
+    assert.equal(r.status, q === "?" ? 200 : 400, q);
   }
+  for (const h of ["x-user", "x-login", "x-tenant"]) {
+    const r = await handleSecondBrainRequest(req(undefined, { ...auth, [h]: "fernanda" }), env, NOW);
+    assert.equal(r.status, 403, h);
+  }
+}));
+
+test("Pasta ausente: toda fonte indisponível com aviso próprio (nunca lista vazia fingindo sucesso)", async () => {
+  const { status, body } = await handleSecondBrainRequest(req(undefined, auth), envFor("/nao-existe-fixture"), NOW);
+  assert.equal(status, 200);
+  assert.ok(body.sources.every((s) => s.estado === "indisponivel" && s.codigo === "ausente"));
+  assert.deepEqual(body.warnings.map((w) => w.fonte), ["pasta", "regras", "contexto", "perfil", "decisoes", "pendencias", "assuntos", "reunioes", "notas", "documentos", "projetos"]);
+  assert.equal(body.pasta.migrada, false);
+  assert.ok(body.gaps.some((g) => g.id === "pasta-nao-migrada"));
 });
 
-test("arquivo ausente e corrompido viram fonte indisponível com aviso separado", async () => {
-  const root = fixture();
-  try {
-    rmSync(path.join(root, "memoria/usuarios/matheus.md"));
-    writeFileSync(path.join(root, "fios/matheus.json"), "{ quebrado");
-    writeFileSync(path.join(root, "memoria/decisoes/matheus.json"), JSON.stringify({ outra: [] }));
-    const { status, body } = await handleSecondBrainRequest(req(undefined, auth), envFor(root), NOW);
-    assert.equal(status, 200);
-    assert.deepEqual(body.warnings.map((w) => [w.fonte, w.codigo]), [["decisoes", "invalida"], ["perfil", "ausente"], ["fios", "invalida"]]);
-    assert.deepEqual(body.sources.filter((s) => s.estado === "indisponivel").map((s) => s.id), ["decisoes", "perfil", "fios"]);
-    const json = JSON.stringify(body);
-    assert.ok(!json.includes(root) && !/SyntaxError|ENOENT|Unexpected/.test(json), "sem caminho nem exceção crua");
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
+test("link simbólico (na raiz, na Pasta, numa subpasta ou num item) e arquivo acima de 1 MB são recusados", () => comFixture(async (root) => {
+  const pasta = path.join(root, PASTA);
+  // item que é link para o Arquivo-morto
+  symlinkSync(path.join(pasta, "Arquivo-morto/Decisoes", readdirSync(path.join(pasta, "Arquivo-morto/Decisoes"))[0]), path.join(pasta, "Decisoes/0010-link.md"));
+  // subpasta inteira trocada por link
+  rmSync(path.join(pasta, "Reunioes"), { recursive: true });
+  mkdirSync(path.join(root, "outro"));
+  writeFileSync(path.join(root, "outro/2026-01-01-x.md"), `# ${SENTINELA}\n`);
+  symlinkSync(path.join(root, "outro"), path.join(pasta, "Reunioes"));
+  writeFileSync(path.join(pasta, "Documentos/grande.md"), "# g\n" + "a".repeat(1024 * 1024 + 10));
+  const { body } = await handleSecondBrainRequest(req(undefined, auth), envFor(root), NOW);
+  const f = (id) => body.sources.find((s) => s.id === id);
+  assert.deepEqual([f("decisoes").estado, f("decisoes").codigo], ["indisponivel", "ilegivel"], "coleção com item recusado não está completa");
+  assert.deepEqual(f("decisoes").arquivos, [{ chave: "0010-link.md", codigo: "link" }]);
+  assert.equal(body.decisions.length, 5, "os legíveis aparecem");
+  assert.deepEqual([f("reunioes").estado, f("reunioes").codigo], ["indisponivel", "link"]);
+  assert.deepEqual([f("documentos").estado, f("documentos").codigo], ["ok", "parcial"]);
+  assert.ok(f("documentos").arquivos.some((a) => a.chave === "grande.md" && a.codigo === "grande"));
+  assert.ok(!JSON.stringify(body).includes(SENTINELA));
+  const alias = path.join(root, "alias");
+  symlinkSync(root, alias);
+  const viaLink = await handleSecondBrainRequest(req(undefined, auth), envFor(alias), NOW);
+  assert.ok(viaLink.body.sources.every((s) => s.codigo === "link"), "raiz por link simbólico é recusada");
+}));
 
-test("link simbólico e arquivo acima de 1 MB são recusados", async () => {
-  const root = fixture();
-  try {
-    const alvo = path.join(root, "memoria/decisoes/fernanda.json");
-    rmSync(path.join(root, "memoria/decisoes/matheus.json"));
-    symlinkSync(alvo, path.join(root, "memoria/decisoes/matheus.json"));
-    rmSync(path.join(root, "fios"), { recursive: true });
-    mkdirSync(path.join(root, "outro"));
-    writeFileSync(path.join(root, "outro/matheus.json"), JSON.stringify({ fios: [{ id: "x", titulo: SENTINELA }] }));
-    symlinkSync(path.join(root, "outro"), path.join(root, "fios"));
-    writeFileSync(path.join(root, "memoria/usuarios/matheus.md"), "- " + "a".repeat(1024 * 1024 + 10));
-    const { body } = await handleSecondBrainRequest(req(undefined, auth), envFor(root), NOW);
-    assert.deepEqual(body.warnings.map((w) => [w.fonte, w.codigo]), [["decisoes", "link"], ["perfil", "grande"], ["fios", "link"]]);
-    assert.ok(!JSON.stringify(body).includes(SENTINELA));
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test("a interface não usa HTML cru nem guarda a chave", () => {
+test("a interface não usa HTML cru nem guarda a chave; o adaptador só varre num lugar e não grava", () => {
   const page = readFileSync(path.join(HERE, "../app/segundo-cerebro/page.tsx"), "utf8");
   assert.ok(!/dangerouslySetInnerHTML|innerHTML|localStorage|sessionStorage|document\.cookie/.test(page));
   assert.ok(!/\?token=|searchParams/.test(page));
   assert.ok(!/https?:\/\//.test(page), "sem recurso externo");
   const adapter = readFileSync(path.join(HERE, "../lib/second-brain.mjs"), "utf8");
-  assert.ok(!/writeFile|appendFile|\bunlink|readdir|glob/.test(adapter), "adaptador só lê arquivos fixos");
+  assert.ok(!/writeFile|appendFile|\bunlink|\brm\(|mkdir|rename\(|glob|recursive/.test(adapter), "adaptador só lê");
+  assert.equal((adapter.match(/readdir\(/g) ?? []).length, 1, "uma única varredura (listarPasta), sem recursão");
+  assert.ok(!/CONTEXTO_CHAT|ROTINAS_PERMITIDAS|PROJETOS_PERMITIDOS|DOCUMENTOS_PERMITIDOS|"memoria"|"fios"/.test(adapter), "as fontes antigas saíram");
 });

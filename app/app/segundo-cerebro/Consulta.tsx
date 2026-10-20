@@ -5,12 +5,12 @@ import type { SegundoCerebro } from "@/lib/second-brain.mjs";
 import { FONTES, FUNCOES, consultar, roteiro, verificar, type Consulta as Pedido, type Etapa, type Funcao, type ResultadoConsulta, type Verificacao } from "@/lib/brain-query.mjs";
 import s from "./consulta.module.css";
 
-// Cada consulta relê as fontes canônicas pela API (nenhum endpoint novo) e confere de novo no fim.
+// Cada consulta relê a Pasta pela API (nenhum endpoint novo) e confere de novo no fim.
 type Rodada = { resultado: ResultadoConsulta; etapas: Etapa[]; verificacao: Verificacao | null };
 
 const ROTULO_ETAPA: Record<Etapa["etapa"], string> = { captura: "Captura", validacao: "Validação", consulta: "Consulta", execucao: "Execução", verificacao: "Verificação" };
 
-export default function Consulta({ brain, recarregar, onOpen }: { brain: SegundoCerebro; recarregar: () => Promise<SegundoCerebro | null>; onOpen: (ref: string) => void }) {
+export default function Consulta({ brain, area, recarregar, onOpen }: { brain: SegundoCerebro; area: string; recarregar: () => Promise<SegundoCerebro | null>; onOpen: (ref: string) => void }) {
   const [funcao, setFuncao] = useState<Funcao>("retomar");
   const [termo, setTermo] = useState("");
   const [registro, setRegistro] = useState("");
@@ -23,11 +23,12 @@ export default function Consulta({ brain, recarregar, onOpen }: { brain: Segundo
   const temas = useMemo(() => [...new Set(brain.decisions.filter((d) => d.vigente && d.tema).map((d) => d.tema!.split(".")[0]))].sort(), [brain]);
   const registros = useMemo(() => {
     const op: [string, string][] = [];
-    for (const p of brain.projects) op.push([`projeto:${p.id}`, `Projeto: ${p.titulo}`]);
+    for (const a of brain.subjects) op.push([`assunto:${a.id}`, `Assunto: ${a.titulo}`]);
     for (const c of brain.contexts) op.push([`contexto:${c.id}`, `Contexto: ${c.titulo}`]);
-    for (const r of brain.routines) op.push([`rotina:${r.id}`, `Rotina: ${r.nome ?? r.id}`]);
-    for (const f of brain.threads) op.push([`fio:${f.id}`, `Fio: ${f.titulo ?? f.id}`]);
+    for (const p of brain.projects) op.push([`projeto:${p.id}`, `Projeto: ${p.titulo}`]);
+    for (const f of brain.threads) op.push([`pendencia:${f.id}`, `Pendência: ${f.titulo ?? f.id}`]);
     for (const d of brain.decisions) op.push([`decisao:${d.id}`, `Decisão ${d.id}: ${d.tema ?? ""}`]);
+    for (const m of brain.meetings) op.push([`reuniao:${m.id}`, `Reunião: ${m.titulo}`]);
     for (const d of brain.documents) op.push([`documento:${d.id}`, `Documento: ${d.titulo}`]);
     return op;
   }, [brain]);
@@ -37,7 +38,7 @@ export default function Consulta({ brain, recarregar, onOpen }: { brain: Segundo
     setErro(null);
     try {
       const carga = await recarregar();
-      if (!carga) { setErro("Não foi possível reler as fontes agora."); return; }
+      if (!carga) { setErro("Não foi possível reler a Pasta agora."); return; }
       const r = consultar(carga, pedido);
       if (!r.ok) { setErro(r.erro); setRodada(null); return; }
       const etapas = roteiro(carga, r);
@@ -57,24 +58,24 @@ export default function Consulta({ brain, recarregar, onOpen }: { brain: Segundo
     if (termo.trim()) pedido.termo = termo.trim();
     if (registro) pedido.registro = registro;
     if (fonte) pedido.fonte = fonte;
+    if (area) pedido.area = area;
     void rodar(pedido);
   }
-  const rotinaPadrao = brain.routines.find((r) => r.dono === "matheus") ?? brain.routines[0];
   // Fluxo A parte do tema (campo explícito) da decisão vigente mais recente; o termo pode ser trocado no formulário.
   const temaRecente = [...brain.decisions].filter((d) => d.vigente && d.tema).sort((a, b) => String(b.em ?? "").localeCompare(String(a.em ?? "")))[0]?.tema?.split(".")[0] ?? "";
 
   return (
     <div className={s.root}>
-      <p className={s.nota}>Só leitura. Cada consulta relê as fontes canônicas, monta o roteiro <b>captura → validação → consulta → execução → verificação</b> e relê de novo para verificar. Nada é enviado, gravado ou agendado.</p>
+      <p className={s.nota}>Só leitura. Cada consulta relê a Pasta, monta o roteiro <b>captura → validação → consulta → execução → verificação</b> e relê de novo para verificar. Nada é enviado, gravado ou agendado.</p>
       <div className={s.fluxos} role="group" aria-label="Fluxos prontos">
-        <button type="button" disabled={ocupado || !temaRecente} onClick={() => { setFuncao("retomar"); setTermo(temaRecente); setRegistro(""); setFonte(""); void rodar({ funcao: "retomar", termo: temaRecente }); }}>
-          <strong>A · Retomar contexto</strong><span>{temaRecente ? `Tema “${temaRecente}” (decisão vigente mais recente): contexto autorizado, decisões e fios em aberto.` : "Sem decisão vigente com tema."}</span>
+        <button type="button" disabled={ocupado || !temaRecente} onClick={() => { setFuncao("retomar"); setTermo(temaRecente); setRegistro(""); setFonte(""); void rodar({ funcao: "retomar", termo: temaRecente, ...(area ? { area } : {}) }); }}>
+          <strong>A · Retomar</strong><span>{temaRecente ? `Tema “${temaRecente}” (decisão vigente mais recente): assuntos, contexto, decisões e pendências em aberto.` : "Sem decisão vigente com tema."}</span>
         </button>
-        <button type="button" disabled={ocupado || !rotinaPadrao} onClick={() => { if (!rotinaPadrao) return; setFuncao("rotina"); setRegistro(`rotina:${rotinaPadrao.id}`); setTermo(""); setFonte(""); void rodar({ funcao: "rotina", registro: `rotina:${rotinaPadrao.id}` }); }}>
-          <strong>B · Consultar rotina</strong><span>{rotinaPadrao ? `Entradas, passos, aprovação, verificação e entrega de “${rotinaPadrao.nome}”.` : "Nenhuma rotina disponível."}</span>
+        <button type="button" disabled={ocupado} onClick={() => { setFuncao("assuntos"); setTermo(""); setRegistro(""); setFonte(""); void rodar({ funcao: "assuntos", ...(area ? { area } : {}) }); }}>
+          <strong>B · Onde parou</strong><span>Assuntos em andamento, do mais recente, com o ponto onde pararam.</span>
         </button>
-        <button type="button" disabled={ocupado} onClick={() => { setFuncao("prioridades"); setTermo(""); setRegistro(""); setFonte(""); void rodar({ funcao: "prioridades" }); }}>
-          <strong>C · Prioridades e pauta</strong><span>Fios em aberto na ordem do contrato, com os limites vigentes.</span>
+        <button type="button" disabled={ocupado} onClick={() => { setFuncao("prioridades"); setTermo(""); setRegistro(""); setFonte(""); void rodar({ funcao: "prioridades", ...(area ? { area } : {}) }); }}>
+          <strong>C · Prioridades e pauta</strong><span>Pendências em aberto por prioridade e prazo, com os limites vigentes.</span>
         </button>
       </div>
 
@@ -84,7 +85,7 @@ export default function Consulta({ brain, recarregar, onOpen }: { brain: Segundo
         <datalist id="sc-temas">{temas.map((t) => <option key={t} value={t} />)}</datalist>
         <label>Registro<select value={registro} onChange={(e) => setRegistro(e.target.value)}><option value="">(nenhum)</option>{registros.map(([v, r]) => <option key={v} value={v}>{r.length > 70 ? `${r.slice(0, 69)}…` : r}</option>)}</select></label>
         <label>Fonte<select value={fonte} onChange={(e) => setFonte(e.target.value)}><option value="">(nenhuma)</option>{FONTES.map((f) => <option key={f} value={f}>{brain.sources.find((x) => x.id === f)?.rotulo ?? f}</option>)}</select></label>
-        <button type="submit" className={s.prim} disabled={ocupado}>{ocupado ? "Relendo as fontes…" : "Consultar"}</button>
+        <button type="submit" className={s.prim} disabled={ocupado}>{ocupado ? "Relendo a Pasta…" : "Consultar"}{area ? ` (área ${area})` : ""}</button>
       </form>
 
       {erro && <p className={s.erro} role="alert">{erro}</p>}
@@ -110,11 +111,8 @@ function Resultado({ rodada, onOpen }: { rodada: Rodada; onOpen: (ref: string) =
           <li key={e.etapa} data-etapa={e.etapa} data-estado={e.estado}>
             <strong>{ROTULO_ETAPA[e.etapa]}</strong> <span className={s.badge}>{e.estado.replace("_", " ")}</span>
             <p>{e.detalhe}</p>
-            {e.aprovacoes?.filter((a) => a.ref.startsWith("rotina:")).map((a) => (
-              <p key={a.ref} className={s.aprovacao}><b>Exige aprovação (rotina):</b> {a.texto}</p>
-            ))}
-            {e.aprovacoes && e.aprovacoes.some((a) => !a.ref.startsWith("rotina:")) && (
-              <details><summary>Regras vigentes que limitam a execução ({e.aprovacoes.filter((a) => !a.ref.startsWith("rotina:")).length})</summary><ul>{e.aprovacoes.filter((a) => !a.ref.startsWith("rotina:")).map((a, i) => <li key={i}><button type="button" className={s.ref} onClick={() => onOpen(a.ref)}>{a.ref}</button> {a.texto}</li>)}</ul></details>
+            {e.aprovacoes && e.aprovacoes.length > 0 && (
+              <details><summary>Regras vigentes que limitam a execução ({e.aprovacoes.length})</summary><ul>{e.aprovacoes.map((a, i) => <li key={i}><button type="button" className={s.ref} onClick={() => onOpen(a.ref)}>{a.ref}</button> {a.texto}</li>)}</ul></details>
             )}
             {e.proposta && e.proposta.length > 0 && <div className={s.proposta}><span>Proposta (não executada)</span><ul>{e.proposta.map((p, i) => <li key={i}>{p}</li>)}</ul>{e.entrega && <p><b>Entrega:</b> {e.entrega}</p>}</div>}
             {e.evidencias && e.evidencias.length > 0 && e.etapa !== "consulta" && <ul className={s.evid}>{e.evidencias.map((x, i) => <li key={i}>{x}</li>)}</ul>}
@@ -125,7 +123,7 @@ function Resultado({ rodada, onOpen }: { rodada: Rodada; onOpen: (ref: string) =
       <ul className={s.itens}>
         {r.itens.map((i) => (
           <li key={i.ref} data-ref={i.ref}>
-            <div className={s.itemTopo}><span className={s.tipo}>{i.tipo}</span>{i.ref.startsWith("onboarding:") ? <span>{i.rotulo}</span> : <button type="button" className={s.ref} onClick={() => onOpen(i.ref)}>{i.rotulo}</button>}</div>
+            <div className={s.itemTopo}><span className={s.tipo}>{i.tipo}{i.area ? ` · ${i.area}` : ""}</span>{i.ref.startsWith("referencia:") ? <span>{i.rotulo}</span> : <button type="button" className={s.ref} onClick={() => onOpen(i.ref)}>{i.rotulo}</button>}</div>
             {i.trecho && <p>{i.trecho}</p>}
             <small>Por quê: {i.porque}{i.proveniencia?.localizador ? ` · origem: ${i.proveniencia.fonteRotulo ?? i.proveniencia.fonte} — ${i.proveniencia.localizador}` : ""}</small>
           </li>

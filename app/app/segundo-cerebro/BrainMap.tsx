@@ -38,7 +38,7 @@ function planejarRotulos(r: Renderer, alvo: string | null, vizinhos: Set<string>
   return planLabels(cands, { width, height, measure: medir });
 }
 
-export default function BrainMap({ brain, onOpen }: { brain: SegundoCerebro; onOpen: (ref: string) => void }) {
+export default function BrainMap({ brain, area = "", onOpen }: { brain: SegundoCerebro; area?: string; onOpen: (ref: string) => void }) {
   const grafo = useMemo(() => buildBrainGraph(brain), [brain]);
   const tiposPresentes = useMemo(() => (Object.keys(TIPOS) as TipoNo[]).filter((t) => grafo.nodes.some((n) => n.tipo === t)), [grafo]);
   const fontesPresentes = useMemo(() => brain.sources.map((f) => f.id), [brain]);
@@ -64,7 +64,8 @@ export default function BrainMap({ brain, onOpen }: { brain: SegundoCerebro; onO
   const helpId = useId().replace(/:/g, "");
 
   const layout = useMemo(() => layoutBrainGraph(grafo, agrupar), [grafo, agrupar]);
-  const visivel = useMemo(() => filterBrainGraph(grafo, { termo, tipos, fontes, relacoes, vizinhos }), [grafo, termo, tipos, fontes, relacoes, vizinhos]);
+  const areas = useMemo(() => (area ? new Set([area]) : undefined), [area]);
+  const visivel = useMemo(() => filterBrainGraph(grafo, { termo, tipos, fontes, areas, relacoes, vizinhos }), [grafo, termo, tipos, fontes, areas, relacoes, vizinhos]);
   const sigmaGraph = useMemo(() => buildSigmaGraph(visivel, layout.positions), [visivel, layout]);
   const porId = useMemo(() => new Map(grafo.nodes.map((n) => [n.id, n])), [grafo]);
   const matches = useMemo(() => (termo.trim() ? visivel.nodes.filter((n) => visivel.matches.has(n.id)) : []), [visivel, termo]);
@@ -75,7 +76,7 @@ export default function BrainMap({ brain, onOpen }: { brain: SegundoCerebro; onO
   const ativo = selected ? porId.get(selected) ?? null : null;
   const ligacoes = ativo ? neighborsOf(visivel, ativo.id) : [];
   const ligacoesTotais = ativo ? neighborsOf(grafo, ativo.id).length : 0;
-  const filtrado = !!termo.trim() || tipos.size < Object.keys(TIPOS).length || fontes.size < fontesPresentes.length || relacoes.size < Object.keys(RELACOES).length;
+  const filtrado = !!area || !!termo.trim() || tipos.size < Object.keys(TIPOS).length || fontes.size < fontesPresentes.length || relacoes.size < Object.keys(RELACOES).length;
   const hasNodes = visivel.nodes.length > 0;
 
   useEffect(() => {
@@ -224,7 +225,7 @@ export default function BrainMap({ brain, onOpen }: { brain: SegundoCerebro; onO
   return (
     <div className={s.root}>
       <header className={s.header}>
-        <div><p className={s.eyebrow}>Todos os registros das fontes autorizadas</p><h3>Mapa do Segundo Cérebro</h3></div>
+        <div><p className={s.eyebrow}>Todos os itens da Pasta{area ? ` · área ${area}` : ""}</p><h3>Mapa do Segundo Cérebro</h3></div>
         <div className={s.switcher} aria-label="Visualização do mapa">
           <button type="button" aria-pressed={view === "mapa"} onClick={() => setView("mapa")}><Network size={16} aria-hidden /> Mapa</button>
           <button type="button" aria-pressed={view === "lista"} onClick={() => setView("lista")}><List size={16} aria-hidden /> Lista</button>
@@ -258,7 +259,7 @@ export default function BrainMap({ brain, onOpen }: { brain: SegundoCerebro; onO
         <fieldset className={s.chips}><legend>Fonte</legend>
           {brain.sources.map((f) => (
             <label key={f.id} className={s.chip} data-estado={f.estado}><input type="checkbox" checked={fontes.has(f.id)} onChange={() => alternar(fontes, setFontes, f.id)} />
-              {f.rotulo} <small>{f.estado === "sem_contrato" ? "sem fonte" : f.estado === "indisponivel" ? "indisponível" : contar((n) => n.fonte === f.id && n.tipo !== "fonte")}</small></label>
+              {f.rotulo} <small>{f.estado === "indisponivel" ? "indisponível" : contar((n) => n.fonte === f.id && n.tipo !== "fonte")}</small></label>
           ))}
         </fieldset>
         <fieldset className={s.chips}><legend>Relação</legend>
@@ -357,7 +358,7 @@ function Detalhes({ ativo, ligacoes, total, porId, brain, agrupar, contexto, onE
         {ativo.localizador && <><dt>Localizador</dt><dd>{ativo.localizador}</dd></>}
         {ativo.estado && <><dt>Estado</dt><dd>{ativo.estado}</dd></>}
         <dt>Grupo visual</dt><dd>{ativo.meta ?? ativo.fonte} <small>(por {AGRUPAMENTOS[agrupar].toLowerCase()}; não é relação)</small></dd>
-        {ativo.tipo === "referencia" && <><dt>O que é</dt><dd>Texto escrito num campo do fio. Não é um registro, decisão ou projeto verificado.</dd></>}
+        {ativo.tipo === "referencia" && <><dt>O que é</dt><dd>Texto escrito numa ligação ou link que não aponta para nenhum item da Pasta. Não é um registro verificado.</dd></>}
       </dl>
       {ativo.registro && ativo.tipo !== "referencia" && <button type="button" className={s.abrir} onClick={() => onOpen(ativo.id)}>Abrir o registro na página</button>}
       <h5>Ligações neste recorte ({ligacoes.length}{total !== ligacoes.length ? ` de ${total}` : ""})</h5>

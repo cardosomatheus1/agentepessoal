@@ -7,10 +7,10 @@ import type { Conexoes, Fio } from "@/lib/second-brain.mjs";
 import { buildConnectionGraph, filterConnections, forceLayoutConnections, type MapEdgeAttributes, type MapNodeAttributes } from "@/lib/connection-map.mjs";
 import s from "./connection-map.module.css";
 
-type NodeType = "todos" | "fio" | "texto";
+type NodeType = string; // "todos", um tipo de item (pendencia, decisao…) ou "texto"
 type Renderer = Sigma<MapNodeAttributes, MapEdgeAttributes>;
 type Status = "carregando" | "pronto" | "erro";
-const COLORS = { fio: "#c6f432", texto: "#3fe0e6", dimNode: "#384031", edge: "#5d6b55", edgeActive: "#c6f432", edgeDim: "#262c22", label: "#ecefe6" };
+const COLORS: Record<string, string> = { pendencia: "#c6f432", texto: "#3fe0e6", item: "#ff9a5c", dimNode: "#384031", edge: "#5d6b55", edgeActive: "#c6f432", edgeDim: "#262c22", label: "#ecefe6" };
 const MIN_RATIO = 0.25, MAX_RATIO = 2.5, STEP = 1.25;
 const date = (value: string | null) => {
   if (!value) return "Data não registrada";
@@ -38,7 +38,7 @@ export default function ConnectionMap({ connections, threads }: { connections: C
   const visible = useMemo(() => filterConnections(connections, query, type), [connections, query, type]);
   const graph = useMemo(() => buildConnectionGraph(visible, layout.positions), [visible, layout]);
   const active = visible.nodes.find((node) => node.id === selected);
-  const fio = active?.tipo === "fio" ? threads.find((thread) => `fio:${thread.id}` === active.id) : undefined;
+  const fio = active?.tipo === "pendencia" ? threads.find((thread) => `pendencia:${thread.id}` === active.id) : undefined;
   const related = visible.edges.filter((edge) => edge.de === active?.id || edge.para === active?.id);
   const nodeById = new Map(connections.nodes.map((node) => [node.id, node]));
   const isFiltered = !!query.trim() || type !== "todos";
@@ -73,10 +73,10 @@ export default function ConnectionMap({ connections, threads }: { connections: C
             const context = filtered && !matches.has(id);
             return {
               label: shortLabel(attrs.label), labelColor: COLORS.label, labelSize: id === target ? 15 : 13,
-              color: lit ? COLORS[attrs.tipo] : COLORS.dimNode, opacity: context && !target ? 0.55 : 1,
+              color: lit ? COLORS[attrs.tipo] ?? COLORS.item : COLORS.dimNode, opacity: context && !target ? 0.55 : 1,
               size: id === target ? attrs.size + 3 : attrs.size, highlighted: id === target,
               labelVisibility: target ? (lit ? "visible" : "hidden") : "auto", zIndex: lit ? 1 : 0, depth: id === target ? "topNodes" : "nodes",
-              backdropColor: "#181b15", backdropShadowColor: "rgba(0, 0, 0, 0.6)", backdropBorderColor: COLORS[attrs.tipo], backdropBorderWidth: 1, backdropCornerRadius: 6,
+              backdropColor: "#181b15", backdropShadowColor: "rgba(0, 0, 0, 0.6)", backdropBorderColor: COLORS[attrs.tipo] ?? COLORS.item, backdropBorderWidth: 1, backdropCornerRadius: 6,
               labelBackgroundColor: target && lit ? "rgba(11, 12, 10, 0.8)" : "rgba(0, 0, 0, 0)", labelBackgroundPadding: 3, cursor: "pointer",
             };
           },
@@ -163,7 +163,7 @@ export default function ConnectionMap({ connections, threads }: { connections: C
       </header>
       <div className={s.filters}>
         <label className={s.search}><Search size={16} aria-hidden /><span className={s.srOnly}>Buscar no mapa</span><input type="search" placeholder="Buscar uma conexão…" value={query} onChange={(event) => { setQuery(event.target.value); clearSelection(); }} /></label>
-        <label className={s.type}>Mostrar<select value={type} onChange={(event) => { setType(event.target.value as NodeType); clearSelection(); }}><option value="todos">Todos os tipos</option><option value="fio">Fios</option><option value="texto">Referências textuais</option></select></label>
+        <label className={s.type}>Mostrar<select value={type} onChange={(event) => { setType(event.target.value as NodeType); clearSelection(); }}><option value="todos">Todos os tipos</option><option value="pendencia">Pendências</option><option value="texto">Referências textuais</option></select></label>
       </div>
       <div className={s.summary} role="status">{visible.nodes.length} nós · {visible.edges.length} de {connections.edges.length} ligações registradas{isFiltered ? " · com vizinhos diretos para contexto" : ""}</div>
       {!hasNodes ? (
@@ -180,7 +180,7 @@ export default function ConnectionMap({ connections, threads }: { connections: C
                     <button type="button" aria-label="Aumentar zoom" disabled={status !== "pronto" || zoomPct >= Math.round(100 / MIN_RATIO)} onClick={() => zoom(STEP)}><Plus size={17} aria-hidden /></button>
                     <button type="button" aria-label="Ajustar mapa à tela" disabled={status !== "pronto"} onClick={reset}><Maximize size={17} aria-hidden /></button>
                   </div>
-                  <label className={s.jump}><span>Ir para</span><select value={active?.id ?? ""} onChange={(event) => { if (event.target.value) choose(event.target.value, true); else setSelected(null); }}><option value="">Escolha um nó…</option>{sortedNodes.map((node) => <option key={node.id} value={node.id}>{node.tipo === "fio" ? "Fio" : "Referência"}: {shortLabel(node.rotulo)}</option>)}</select></label>
+                  <label className={s.jump}><span>Ir para</span><select value={active?.id ?? ""} onChange={(event) => { if (event.target.value) choose(event.target.value, true); else setSelected(null); }}><option value="">Escolha um nó…</option>{sortedNodes.map((node) => <option key={node.id} value={node.id}>{node.tipo === "texto" ? "Referência" : node.tipo}: {shortLabel(node.rotulo)}</option>)}</select></label>
                 </div>
                 <div ref={container} className={s.stage} data-renderer={status} data-nodes={status === "pronto" ? drawn.nodes : undefined} data-edges={status === "pronto" ? drawn.edges : undefined} role="group" aria-label="Mapa interativo de conexões explícitas" aria-describedby={`${helpId}-help`} tabIndex={0} onKeyDown={mapKey} />
                 {status === "carregando" && <p className={s.overlay} aria-live="polite">Desenhando o mapa…</p>}
@@ -189,17 +189,17 @@ export default function ConnectionMap({ connections, threads }: { connections: C
               </div>
               <aside className={s.details} aria-label="Detalhes do nó" aria-live="polite">
                 {!active ? <div className={s.invitation}><Network size={32} aria-hidden /><h4>Uma ligação, seu contexto.</h4><p>Selecione um nó para ver o registro e as ligações que o sustentam.</p><small>Distância e posição são apenas organização visual, não relevância.</small></div> : (
-                  <><p className={s.eyebrow}>{active.tipo === "fio" ? "Fio registrado" : "Referência textual"}{isFiltered && !visible.matches.has(active.id) ? " · contexto" : ""}</p><h4>{active.rotulo}</h4>
-                    {fio ? <><p>{fio.detalhe ?? "Sem descrição adicional."}</p>{fio.proximo_passo && <div className={s.next}><strong>Próximo passo</strong><p>{fio.proximo_passo}</p></div>}<dl><dt>Estado / prioridade</dt><dd>{fio.estado ?? "Não registrado"} / {fio.prioridade ?? "Não registrada"}</dd><dt>Prazo</dt><dd>{date(fio.prazo)}</dd><dt>Fonte</dt><dd>{fio.proveniencia.fonteRotulo} · fio {fio.id}</dd><dt>Atualizado</dt><dd>{date(fio.atualizado ?? fio.criado)}</dd></dl></> : <p>Texto citado em uma ligação. Não é um fio, uma decisão ou um fato de perfil verificado.</p>}
-                    <h5>Ligações neste recorte ({related.length})</h5><ul className={s.related}>{related.map((edge, index) => { const other = edge.de === active.id ? edge.para : edge.de; return <li key={index}><button type="button" onClick={() => choose(other, true)}>{edge.de === active.id ? "→" : "←"} {nodeById.get(other)?.rotulo ?? other}</button><p>{edge.rotulo ?? "Ligação registrada"}</p><small>Fonte: fios · registro {edge.evidencia.fioId} · {date(edge.evidencia.em)}</small></li>; })}</ul>
+                  <><p className={s.eyebrow}>{active.tipo === "texto" ? "Referência textual" : `Item da Pasta (${active.tipo})`}{isFiltered && !visible.matches.has(active.id) ? " · contexto" : ""}</p><h4>{active.rotulo}</h4>
+                    {fio ? <><p>{fio.detalhe ?? "Sem descrição adicional."}</p>{fio.proximo_passo && <div className={s.next}><strong>Próximo passo</strong><p>{fio.proximo_passo}</p></div>}<dl><dt>Estado / prioridade</dt><dd>{fio.estado ?? "Não registrado"} / {fio.prioridade ?? "Não registrada"}</dd><dt>Prazo</dt><dd>{date(fio.prazo)}</dd><dt>Fonte</dt><dd>{fio.proveniencia.fonteRotulo} · pendência {fio.id}</dd><dt>Atualizado</dt><dd>{date(fio.atualizado ?? fio.criado)}</dd></dl></> : <p>Texto citado em uma ligação. Não é um item verificado da Pasta.</p>}
+                    <h5>Ligações neste recorte ({related.length})</h5><ul className={s.related}>{related.map((edge, index) => { const other = edge.de === active.id ? edge.para : edge.de; return <li key={index}><button type="button" onClick={() => choose(other, true)}>{edge.de === active.id ? "→" : "←"} {nodeById.get(other)?.rotulo ?? other}</button><p>{edge.rotulo ?? "Ligação registrada"}</p><small>Fonte: {edge.evidencia.fonte} · registro {edge.evidencia.registro} · {edge.evidencia.campo}</small></li>; })}</ul>
                   </>
                 )}
               </aside>
             </div>
           ) : (
-            <ul className={s.connectionList} aria-label="Lista de conexões explícitas">{visible.edges.map((edge, index) => <li key={index}><h4>{nodeById.get(edge.de)?.rotulo} <span aria-label="liga-se a">→</span> {nodeById.get(edge.para)?.rotulo}</h4><p>{edge.rotulo ?? "Ligação registrada"}</p><small>Fonte: fios · registro {edge.evidencia.fioId} · {date(edge.evidencia.em)}</small><button type="button" onClick={() => { setSelected(edge.de); setView("mapa"); }}>Explorar no mapa</button></li>)}</ul>
+            <ul className={s.connectionList} aria-label="Lista de conexões explícitas">{visible.edges.map((edge, index) => <li key={index}><h4>{nodeById.get(edge.de)?.rotulo} <span aria-label="liga-se a">→</span> {nodeById.get(edge.para)?.rotulo}</h4><p>{edge.rotulo ?? "Ligação registrada"}</p><small>Fonte: {edge.evidencia.fonte} · registro {edge.evidencia.registro} · {edge.evidencia.campo}</small><button type="button" onClick={() => { setSelected(edge.de); setView("mapa"); }}>Explorar no mapa</button></li>)}</ul>
           )}
-          <footer className={s.legend}><span><i className={s.threadSwatch} /> Fio</span><span><i className={s.textSwatch} /> Referência textual</span><span>→ Ligação explícita · só leitura</span></footer>
+          <footer className={s.legend}><span><i className={s.threadSwatch} /> Pendência</span><span><i className={s.textSwatch} /> Referência textual</span><span>→ Ligação explícita · só leitura</span></footer>
         </>
       )}
     </div>

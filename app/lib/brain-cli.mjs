@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Consulta local do Segundo Cérebro, só leitura, sempre sobre as fontes canônicas de /a0/usr (dono fixo matheus).
-//   node lib/brain-cli.mjs <funcao> [--fonte F] [--registro tipo:id] [--termo T] [--json | --resumo]
-// Cada execução relê as fontes (carga), consulta, monta o roteiro e relê de novo para verificar.
+// Consulta local do Segundo Cérebro, só leitura, sempre sobre a Pasta em /a0/usr/segundo_cerebro/pasta (dono fixo matheus).
+//   node lib/brain-cli.mjs <funcao> [--fonte F] [--registro tipo:id] [--termo T] [--area A] [--json | --resumo]
+// Cada execução relê a Pasta (carga), consulta, monta o roteiro e relê de novo para verificar.
 // Não aceita caminho, raiz, dono nem variável de ambiente de dados.
 import { pathToFileURL } from "node:url";
 import { DEFAULT_DATA_ROOT, loadSecondBrain } from "./second-brain.mjs";
 import { FUNCOES, consultar, roteiro, verificar } from "./brain-query.mjs";
 
-const AJUDA = `Uso: node lib/brain-cli.mjs <funcao> [--fonte F] [--registro tipo:id] [--termo T] [--json | --resumo]
+const AJUDA = `Uso: node lib/brain-cli.mjs <funcao> [--fonte F] [--registro tipo:id] [--termo T] [--area A] [--json | --resumo]
 Funções: ${Object.keys(FUNCOES).join(", ")}`;
 
 export function lerArgumentos(argv) {
@@ -18,7 +18,7 @@ export function lerArgumentos(argv) {
     const a = resto[i];
     if (a === "--json") saida = "json";
     else if (a === "--resumo") saida = "resumo";
-    else if (["--fonte", "--registro", "--termo"].includes(a) && i + 1 < resto.length) consulta[a.slice(2)] = resto[++i];
+    else if (["--fonte", "--registro", "--termo", "--area"].includes(a) && i + 1 < resto.length) consulta[a.slice(2)] = resto[++i];
     else return { erro: `Argumento não aceito: ${a}` };
   }
   return { consulta, saida };

@@ -68,7 +68,7 @@ const degrees = (connections) => {
   }
   return degree;
 };
-export const nodeSize = (tipo, degree) => (tipo === "fio" ? 7 : 5) + Math.min(7, Math.sqrt(degree) * 2);
+export const nodeSize = (tipo, degree) => (tipo === "texto" ? 5 : 7) + Math.min(7, Math.sqrt(degree) * 2);
 
 // Graphology graph for the renderer. Edge `e<i>` is exactly connections.edges[i]: duplicates and self-links stay,
 // edges with a missing endpoint are skipped (filterConnections already drops them), nothing is added.

@@ -1,6 +1,7 @@
-// Adaptador do Segundo Cérebro (servidor, Node puro, somente leitura).
-// Uma única identidade fixa (matheus) e uma lista fixa de arquivos (allowlist do servidor); nenhum caminho vem do
-// usuário, nenhuma pasta é varrida e nada é gravado. É uma projeção dos contratos canônicos, não uma base própria.
+// Adaptador do Segundo Cérebro (servidor, Node puro, somente leitura). Lê só a Pasta (ADR 0001).
+// Uma única identidade fixa (matheus); nenhum caminho vem do pedido; nada é gravado. A Pasta fica em
+// <raiz>/segundo_cerebro/pasta e é escrita só pelo agente (infra/vm/plugins/cerebro/helpers/pasta.py). O site só mostra.
+// Varredura só nas subpastas fixas abaixo: sem recursão, só *.md, só arquivo regular, sem link simbólico, com teto.
 
 import { createHash, timingSafeEqual } from "node:crypto";
 import { constants as FS, promises as fsp } from "node:fs";
@@ -8,45 +9,50 @@ import path from "node:path";
 
 export const OWNER = "matheus";
 export const DEFAULT_DATA_ROOT = "/a0/usr";
-export const MAX_BYTES = 1024 * 1024;
+export const PASTA = Object.freeze(["segundo_cerebro", "pasta"]);
+export const MAX_BYTES = 1024 * 1024; // por arquivo
+export const MAX_ARQUIVOS = 1000; // por subpasta
+export const MAX_TOTAL_BYTES = 24 * 1024 * 1024; // por carga, somando todos os arquivos
+const MAX_TEXTO_NOTAS = 2_500_000; // caracteres de corpo de nota numa carga (a resposta passa pelo gateway, teto 8 MB)
 const IDENTITY_HEADERS = ["x-user", "x-login", "x-tenant"];
 const MAX_TEXT = 4000;
 const MAX_ITEMS = 2000;
 
-// Contratos lidos (estáticos, sem importar os helpers Python):
-// - memoria_pessoal/helpers/decisoes.py: memoria/decisoes/<login>.json, {decisoes:[{id,tema,tipo,valor,citacao,origem,
-//   por,em,estado,valido_ate?,fim_em?,fim_por?,substitui?,substituida_por?,motivo?}]}; vigente = ativa e não vencida.
-// - memoria_pessoal/helpers/ficha.py: memoria/usuarios/<login>.md; uma entrada por linha "- "; sem a MARCA nas
-//   primeiras 400 letras é o formato antigo (o helper recusa ler entradas).
-// - fios_soltos/helpers/fios.py: fios/<login>.json, {fios:[{id,titulo,detalhe,fontes,dono,prazo,prioridade,
-//   proximo_passo,ligacoes,estado,adiar_ate,criado,atualizado}], ruido:[...]}; em aberto = aberto ou adiado vencido.
-// - rotinas/helpers/rotinas.py: skills/<slug>/SKILL.md com tag "rotina" (e o login de quem salvou); seções fixas;
-//   versão = sha256(texto)[:12].
-// - helpers/projects.py + login_usuarios/helpers/separacao.py: projects/<nome>/.a0proj/{project.json,dono.txt}.
+// Contrato lido (estático, sem importar o Python): pasta.py.
+// - Decisoes/ Pendencias/ Assuntos/: um arquivo por item, cabeçalho "---" com linhas `chave: <valor JSON>` (os dados)
+//   e corpo Markdown gerado a partir deles; indice.md é índice; `status` e `tags` são derivados (nunca lidos).
+//   Item ilegível é erro (o helper recusa a coleção), nunca "não tem nada".
+// - Contexto/: organizacao, marca, estrategia, cliente-ideal, pessoas-chave, perfil; "[PENDENTE DE VALIDAÇÃO]" no
+//   texto = ainda não validado. perfil.md é a ficha (ficha.py): a MARCA nas 400 primeiras letras e uma entrada "- ".
+// - Reunioes/ Notas-do-dia/ (AAAA-MM-DD.md) Documentos/ Projetos/: notas livres, cabeçalho opcional.
+// - Arquivo-morto/: o que saiu. Nunca é lido nem mostrado; link para ele não vira nó.
+// - Ligações: `liga` = ["decisao:35", "pendencia:ab12cd", "assunto:x1y2z3"]; no texto, [[Pasta/arquivo]].
 export const FICHA_MARCA = "Mantida pela ferramenta `ficha`";
-export const CONTEXTO_CHAT = "uMqjehmr";
-export const PROJETOS_PERMITIDOS = Object.freeze(["meta-nexos", "saude", "carreira"]);
-export const ROTINAS_PERMITIDAS = Object.freeze(["orquestrar-a0-hermes-openclaw", "melhorias-bom-dia-radar-reunioes-e-candidatos-maps"]);
-const TERCEIRO = "terceiro (Playbook Lab), material público";
-export const DOCUMENTOS_PERMITIDOS = Object.freeze([
-  { chave: "requisitos", rotulo: "Requisitos e referências do Segundo Cérebro", dono: "matheus (documento deste pedido)", partes: ["workdir", "segundo_cerebro_correto", "REQUISITOS_REFERENCIAS.md"] },
-  { chave: "setup", rotulo: "O Setup inicial do OS (página, texto verificado)", dono: TERCEIRO, partes: ["workdir", "segundo_cerebro_correto", "atual", "setup_verified.txt"] },
-  { chave: "optimizer", rotulo: "OS Optimizer (página, texto verificado)", dono: TERCEIRO, partes: ["workdir", "segundo_cerebro_correto", "atual", "optimizer_verified.txt"] },
-  { chave: "onboarding", rotulo: "Skill de onboarding de contexto", dono: TERCEIRO, partes: ["workdir", "segundo_cerebro", "downloads", "onboarding-contexto.md"] },
-  { chave: "optimizer-skill", rotulo: "Skill OS Optimizer (SKILL.md do pacote)", dono: TERCEIRO, partes: ["workdir", "segundo_cerebro", "extraidos", "optimizer", "skills", "optimizer", "SKILL.md"] },
-  { chave: "video", rotulo: "Descrição do vídeo 3cUQxnCMD2Y", dono: "terceiro (descrição automática de vídeo público)", partes: ["workdir", "videos", "descricao_completa_3cUQxnCMD2Y.md"] },
+export const PENDENTE = "[PENDENTE DE VALIDAÇÃO]";
+export const MARCA_MIGRADO = ".migrado";
+const DERIVADOS = ["status", "tags"];
+export const CONTEXTO = Object.freeze([
+  ["organizacao", "Organização"],
+  ["marca", "Marca e voz"],
+  ["estrategia", "Estratégia"],
+  ["cliente-ideal", "Cliente ideal"],
+  ["pessoas-chave", "Pessoas-chave"],
+  ["perfil", "Perfil do Matheus"],
 ]);
+export const OCULTA = "Arquivo-morto";
 
+const p = (...x) => [...PASTA, ...x];
 export const SOURCES = Object.freeze({
-  decisoes: { id: "decisoes", rotulo: "Memória de decisões", partes: ["memoria", "decisoes", "matheus.json"] },
-  perfil: { id: "perfil", rotulo: "Ficha (fatos do Matheus)", partes: ["memoria", "usuarios", "matheus.md"] },
-  fios: { id: "fios", rotulo: "Fios (próximos passos)", partes: ["fios", "matheus.json"] },
-  contexto: { id: "contexto", rotulo: `Contexto da conversa ${CONTEXTO_CHAT}`, partes: ["chats", CONTEXTO_CHAT, "contexto.md"] },
-  rotinas: { id: "rotinas", rotulo: "Rotinas (skills com tag rotina)", partes: ["skills"] },
-  projetos: { id: "projetos", rotulo: "Projetos cadastrados no Agent Zero", partes: ["projects"] },
-  documentos: { id: "documentos", rotulo: "Documentos autorizados deste pedido", partes: [] },
-  reunioes: { id: "reunioes", rotulo: "Reuniões", partes: null },
-  daily: { id: "daily", rotulo: "Registros do dia (daily)", partes: null },
+  regras: { id: "regras", rotulo: "Regras da Pasta (CLAUDE.md)", partes: p("CLAUDE.md"), pasta: "" },
+  contexto: { id: "contexto", rotulo: "Contexto", partes: p("Contexto"), pasta: "Contexto" },
+  perfil: { id: "perfil", rotulo: "Perfil (ficha)", partes: p("Contexto", "perfil.md"), pasta: "Contexto" },
+  decisoes: { id: "decisoes", rotulo: "Decisões", partes: p("Decisoes"), pasta: "Decisoes", tipo: "decisao" },
+  pendencias: { id: "pendencias", rotulo: "Pendências", partes: p("Pendencias"), pasta: "Pendencias", tipo: "pendencia" },
+  assuntos: { id: "assuntos", rotulo: "Assuntos", partes: p("Assuntos"), pasta: "Assuntos", tipo: "assunto" },
+  reunioes: { id: "reunioes", rotulo: "Reuniões", partes: p("Reunioes"), pasta: "Reunioes", tipo: "reuniao" },
+  notas: { id: "notas", rotulo: "Notas do dia", partes: p("Notas-do-dia"), pasta: "Notas-do-dia", tipo: "nota" },
+  documentos: { id: "documentos", rotulo: "Documentos", partes: p("Documentos"), pasta: "Documentos", tipo: "documento" },
+  projetos: { id: "projetos", rotulo: "Projetos", partes: p("Projetos"), pasta: "Projetos", tipo: "projeto" },
 });
 
 export const SECURITY_HEADERS = Object.freeze({
@@ -122,32 +128,46 @@ function dateText(v) {
 }
 
 const impressao = (conteudo) => createHash("sha256").update(conteudo, "utf8").digest("hex").slice(0, 16);
+const area = (v) => text(v, 80) ?? "geral";
 
 // ---------- leitura segura ----------
 
-async function readFixed(root, partes) {
-  // Recusa link simbólico em qualquer nível abaixo da raiz e arquivo não regular.
+// Cada nível abaixo da raiz (e a própria raiz) tem que ser diretório de verdade, nunca link simbólico.
+async function checarDiretorios(root, partes) {
   let ancestor = path.parse(root).root;
   for (const segment of root.slice(ancestor.length).split(path.sep).filter(Boolean)) {
     ancestor = path.join(ancestor, segment);
     try {
       const st = await fsp.lstat(ancestor);
-      if (st.isSymbolicLink()) return { status: "link" };
-      if (!st.isDirectory()) return { status: "erro" };
-    } catch { return { status: "ausente" }; }
+      if (st.isSymbolicLink()) return "link";
+      if (!st.isDirectory()) return "erro";
+    } catch { return "ausente"; }
   }
   let atual = root;
-  for (let i = 0; i < partes.length; i++) {
-    atual = path.join(atual, partes[i]);
+  for (const parte of partes) {
+    atual = path.join(atual, parte);
     let st;
     try {
       st = await fsp.lstat(atual);
     } catch (e) {
-      if (e && (e.code === "ENOENT" || e.code === "ENOTDIR")) return { status: "ausente" };
-      return { status: "erro" };
+      if (e && (e.code === "ENOENT" || e.code === "ENOTDIR")) return "ausente";
+      return "erro";
     }
-    if (st.isSymbolicLink()) return { status: "link" };
-    if (i < partes.length - 1 && !st.isDirectory()) return { status: "ausente" };
+    if (st.isSymbolicLink()) return "link";
+    if (!st.isDirectory()) return "ausente";
+  }
+  return "ok";
+}
+
+async function readFixed(root, partes) {
+  const dirs = await checarDiretorios(root, partes.slice(0, -1));
+  if (dirs !== "ok") return { status: dirs };
+  const atual = path.join(root, ...partes);
+  try {
+    if ((await fsp.lstat(atual)).isSymbolicLink()) return { status: "link" };
+  } catch (e) {
+    if (e && (e.code === "ENOENT" || e.code === "ENOTDIR")) return { status: "ausente" };
+    return { status: "erro" };
   }
   let fh;
   try {
@@ -161,10 +181,10 @@ async function readFixed(root, partes) {
     const st = await fh.stat();
     if (!st.isFile()) return { status: "erro" };
     if (st.size > MAX_BYTES) return { status: "grande" };
-    const buf = Buffer.alloc(MAX_BYTES + 1);
-    const { bytesRead } = await fh.read(buf, 0, MAX_BYTES + 1, 0);
+    const buf = Buffer.alloc(Math.min(MAX_BYTES + 1, st.size + 1));
+    const { bytesRead } = await fh.read(buf, 0, buf.length, 0);
     if (bytesRead > MAX_BYTES) return { status: "grande" };
-    return { status: "ok", conteudo: buf.subarray(0, bytesRead).toString("utf8"), mtime: st.mtime.toISOString() };
+    return { status: "ok", conteudo: buf.subarray(0, bytesRead).toString("utf8"), mtime: st.mtime.toISOString(), bytes: bytesRead };
   } catch {
     return { status: "erro" };
   } finally {
@@ -172,18 +192,94 @@ async function readFixed(root, partes) {
   }
 }
 
-const AVISOS = {
-  ausente: "Fonte indisponível: arquivo não encontrado.",
-  link: "Fonte recusada: o arquivo é um link simbólico.",
-  grande: "Fonte recusada: arquivo maior que 1 MB.",
-  erro: "Fonte indisponível: não foi possível ler o arquivo.",
-  invalida: "Fonte indisponível: conteúdo em formato inválido.",
-  formato_antigo: "Fonte no formato antigo (texto livre): o helper da ficha recusa ler entradas até o operador migrar.",
-  truncada: "Fonte lida em parte: mais registros que o limite de leitura; os excedentes não aparecem.",
-  parcial: "Fonte lida em parte: alguns arquivos da lista não puderam ser lidos.",
-};
+// A única varredura: os nomes de uma subpasta fixa da Pasta. Sem recursão; só *.md que não começam com "." e não são
+// o índice; entrada que é link simbólico é recusada (anotada), subpasta e outros tipos são ignorados.
+async function listarPasta(root, partes) {
+  const dirs = await checarDiretorios(root, partes);
+  if (dirs !== "ok") return { status: dirs };
+  let entradas;
+  try {
+    entradas = await fsp.readdir(path.join(root, ...partes), { withFileTypes: true });
+  } catch (e) {
+    return { status: e && e.code === "ENOENT" ? "ausente" : "erro" };
+  }
+  const nomes = [];
+  const recusados = [];
+  for (const e of entradas) {
+    const n = e.name;
+    if (!n.endsWith(".md") || n.startsWith(".") || n === "indice.md" || /[\u0000-\u001f/\\]/.test(n)) continue;
+    if (e.isSymbolicLink()) { recusados.push(n); continue; }
+    if (e.isFile()) nomes.push(n);
+  }
+  nomes.sort();
+  return { status: "ok", nomes: nomes.slice(0, MAX_ARQUIVOS), excedeu: nomes.length > MAX_ARQUIVOS, recusados: recusados.sort() };
+}
 
-// ---------- normalização ----------
+const AVISOS = {
+  ausente: "Fonte indisponível: não encontrada na Pasta.",
+  link: "Fonte recusada: é um link simbólico.",
+  grande: "Fonte recusada: arquivo maior que 1 MB.",
+  erro: "Fonte indisponível: não foi possível ler.",
+  invalida: "Fonte indisponível: conteúdo em formato inválido.",
+  ilegivel: "Coleção com item ilegível ou recusado: os itens legíveis aparecem, mas a lista NÃO está completa (o agente também não grava nesta coleção até alguém corrigir o arquivo).",
+  formato_antigo: "Ficha no formato antigo (texto livre): o helper da ficha recusa ler entradas até o operador migrar.",
+  truncada: "Fonte lida em parte: mais arquivos ou registros que o limite de leitura; os excedentes não aparecem.",
+  parcial: "Fonte lida em parte: alguns arquivos não puderam ser lidos.",
+  orcamento: "Fonte não lida: a carga passou do limite total de leitura.",
+};
+const SEM_AVISO = ["ok", "vazia", "pendente"];
+
+// ---------- formato da Pasta ----------
+
+export class Ilegivel extends Error {}
+
+// Espelho de pasta.ler_frontmatter: começa com "---\n", fecha em "\n---\n", cada linha `chave: <JSON>`.
+// Qualquer desvio é Ilegivel (nunca "sem dados"). `status`/`tags` são derivados e saem.
+export function parseFrontmatter(conteudo, nome = "") {
+  if (typeof conteudo !== "string" || !conteudo.startsWith("---\n")) throw new Ilegivel(`${nome}: sem cabeçalho`);
+  const fim = conteudo.indexOf("\n---\n", 4);
+  if (fim < 0) throw new Ilegivel(`${nome}: cabeçalho sem fim`);
+  const campos = Object.create(null);
+  for (const linha of conteudo.slice(4, fim).split("\n")) {
+    if (!linha.trim()) continue;
+    const i = linha.indexOf(": ");
+    if (i < 0) throw new Ilegivel(`${nome}: linha sem valor`);
+    const chave = linha.slice(0, i).trim();
+    let valor;
+    try { valor = JSON.parse(linha.slice(i + 2)); } catch { throw new Ilegivel(`${nome}: valor ilegível em ${chave}`); }
+    if (["__proto__", "constructor", "prototype"].includes(chave)) continue;
+    campos[chave] = valor;
+  }
+  for (const k of DERIVADOS) delete campos[k];
+  return { campos, corpo: conteudo.slice(fim + 5) };
+}
+
+// Nota livre: cabeçalho opcional; se existe, tem que estar no formato (senão a nota é ilegível).
+function cabecalhoOpcional(conteudo, nome) {
+  return conteudo.startsWith("---\n") ? parseFrontmatter(conteudo, nome) : { campos: Object.create(null), corpo: conteudo };
+}
+
+// [[Pasta/arquivo]], [[Pasta/arquivo|apelido]], [[Pasta/arquivo#seção]] -> "Pasta/arquivo".
+export function wikiLinks(conteudo) {
+  const out = new Set();
+  for (const m of String(conteudo ?? "").matchAll(/\[\[([^\]\n|#]{1,200})(?:[|#][^\]\n]*)?\]\]/g)) {
+    const alvo = m[1].trim().replace(/^\.?\//, "").replace(/\.md$/i, "");
+    if (alvo) out.add(alvo);
+    if (out.size >= 200) break;
+  }
+  return [...out];
+}
+
+const TIPOS_REF = ["decisao", "pendencia", "assunto", "contexto", "reuniao", "nota", "documento", "projeto"];
+const REF = new RegExp(`^(${TIPOS_REF.join("|")}):[^\\u0000-\\u001f]{1,120}$`);
+function refs(v) {
+  if (!Array.isArray(v)) return [];
+  return [...new Set(v.slice(0, 50).filter((r) => typeof r === "string" || typeof r === "number").map((r) => String(r).trim()).filter((r) => REF.test(r)))];
+}
+
+const oculto = (alvo) => alvo.replace(/^\/+/, "").split("/")[0].toLowerCase() === OCULTA.toLowerCase();
+
+// ---------- normalização (os mesmos formatos de antes, agora alimentados pela Pasta) ----------
 
 function provenance(src, extra) {
   return { fonte: src.id, fonteRotulo: src.rotulo, dono: OWNER, ...extra };
@@ -239,6 +335,7 @@ function normalizeLinks(v) {
   return out;
 }
 
+// Pendências (antigos fios): mesma regra de "em aberto" do fios.abertos().
 export function normalizeThreads(data, src, mtime, now = new Date(), cortes = { n: 0 }) {
   if (!data || typeof data !== "object" || !Array.isArray(data.fios)) return null;
   const hoje = now.toISOString().slice(0, 10);
@@ -246,10 +343,9 @@ export function normalizeThreads(data, src, mtime, now = new Date(), cortes = { 
     .slice(0, MAX_ITEMS)
     .filter((f) => f && typeof f === "object" && !Array.isArray(f))
     .map((f, i) => {
-      const id = text(f.id, 120) ?? `fio-${i + 1}`;
+      const id = text(f.id, 120) ?? `pendencia-${i + 1}`;
       const estado = text(f.estado, 40);
       const adiar_ate = text(f.adiar_ate, 40);
-      // fios.abertos(): aberto (estado ausente conta como aberto) ou adiado cujo adiar_ate já chegou.
       const emAberto = (estado ?? "aberto") === "aberto" || (estado === "adiado" && !!adiar_ate && adiar_ate <= hoje);
       return {
         id,
@@ -266,212 +362,198 @@ export function normalizeThreads(data, src, mtime, now = new Date(), cortes = { 
         emAberto,
         criado: dateText(f.criado),
         atualizado: dateText(f.atualizado),
-        proveniencia: provenance(src, { localizador: `fios[id=${id}]`, em: dateText(f.atualizado) ?? dateText(f.criado), arquivoAtualizadoEm: mtime }),
+        proveniencia: provenance(src, { localizador: `pendencias[id=${id}]`, em: dateText(f.atualizado) ?? dateText(f.criado), arquivoAtualizadoEm: mtime }),
       };
     });
 }
 
-// Ficha: só o formato do helper (MARCA no topo, entradas "- "). Formato antigo => null (fonte não projetada).
+// Assunto: tema em discussão com onde parou (assuntos.py: andamento | parado | encerrado).
+export function normalizeSubject(a, src, mtime, cortes = { n: 0 }) {
+  if (!a || typeof a !== "object" || Array.isArray(a)) return null;
+  const id = text(a.id, 120);
+  if (!id) return null;
+  const estado = (text(a.estado, 40) ?? "andamento").toLowerCase();
+  const historico = (Array.isArray(a.historico) ? a.historico : []).slice(-30)
+    .filter((h) => h && typeof h === "object" && !Array.isArray(h))
+    .map((h) => ({ em: dateText(h.em), nota: texto(h.nota, 600, cortes) }))
+    .filter((h) => h.nota);
+  return {
+    id,
+    titulo: texto(a.titulo, 300, cortes) ?? id,
+    onde_parou: texto(a.onde_parou, 1500, cortes),
+    estado,
+    emAndamento: estado !== "encerrado",
+    citacao: texto(a.citacao, 1000, cortes),
+    origem: texto(a.origem, 300, cortes),
+    criado: dateText(a.criado),
+    atualizado: dateText(a.atualizado),
+    historico,
+    proveniencia: provenance(src, { localizador: `assuntos[id=${id}]`, em: dateText(a.atualizado) ?? dateText(a.criado), arquivoAtualizadoEm: mtime }),
+  };
+}
+
+// Ficha: só o formato do helper (MARCA no topo, entradas "- "). Sem MARCA e com o marcador de pendente: a entrevista
+// ainda não preencheu o perfil. Sem MARCA e sem marcador: formato antigo (o helper recusa ler).
 export function normalizeProfile(md, src, mtime, cortes = { n: 0 }) {
-  if (!md.slice(0, 400).includes(FICHA_MARCA)) return { formatoAntigo: true, fatos: [] };
+  if (!md.slice(0, 400).includes(FICHA_MARCA)) return md.includes(PENDENTE) ? { pendente: true, fatos: [] } : { formatoAntigo: true, fatos: [] };
   const fatos = [];
   md.split(/\r?\n/).forEach((linha, idx) => {
     if (!linha.startsWith("- ") || fatos.length >= MAX_ITEMS) return;
     const t = texto(linha.slice(2).replace(/\s+/g, " "), 1000, cortes);
     if (!t) return;
     const numero = fatos.length + 1;
-    fatos.push({ id: `perfil-${numero}`, numero, texto: t, proveniencia: provenance(src, { localizador: `entrada ${numero} (linha ${idx + 1})`, linha: idx + 1, arquivoAtualizadoEm: mtime }) });
+    fatos.push({ id: `perfil-${numero}`, numero, texto: t, area: "pessoal", proveniencia: provenance(src, { localizador: `Contexto/perfil.md entrada ${numero} (linha ${idx + 1})`, linha: idx + 1, arquivoAtualizadoEm: mtime }) });
   });
   return { formatoAntigo: false, fatos };
 }
 
-// contexto.md: seções "# Título" com itens "- ". Cada seção é um registro com o intervalo de linhas de origem.
-export function normalizeContext(md, src, mtime, cortes = { n: 0 }) {
+// Corpo Markdown -> título (# ) e seções (## …) com itens de texto. Orçamento global para a resposta caber no gateway.
+function secoesDe(corpo, cortes, orcamento) {
+  let titulo = null;
   const secoes = [];
   let atual = null;
-  md.split(/\r?\n/).forEach((linha, idx) => {
-    const h = /^#{1,3}\s+(.+)$/.exec(linha);
+  let linhaN = 0;
+  for (const linha of corpo.split(/\r?\n/)) {
+    linhaN++;
+    const h = /^(#{1,4})\s+(.+)$/.exec(linha);
     if (h) {
-      atual = { inicio: idx + 1, fim: idx + 1, titulo: texto(h[1], 200, cortes) ?? "(sem título)", itens: [] };
+      if (h[1] === "#" && titulo === null) { titulo = texto(h[2], 200, cortes); continue; }
+      if (secoes.length >= 80) break;
+      atual = { titulo: texto(h[2], 200, cortes), linha: linhaN, itens: [] };
       secoes.push(atual);
-      return;
+      continue;
     }
-    if (!linha.trim()) return;
-    if (!atual) {
-      atual = { inicio: idx + 1, fim: idx + 1, titulo: "(sem título)", itens: [] };
-      secoes.push(atual);
-    }
-    atual.fim = idx + 1;
-    const t = texto(linha.replace(/^\s*[-*]\s+/, ""), 1200, cortes);
-    if (t) atual.itens.push({ linha: idx + 1, texto: t });
-  });
-  return secoes.slice(0, MAX_ITEMS).map((s) => ({
-    id: `${CONTEXTO_CHAT}-L${s.inicio}`,
-    titulo: s.titulo,
-    itens: s.itens,
-    linhas: [s.inicio, s.fim],
-    proveniencia: provenance(src, { localizador: `contexto.md linhas ${s.inicio}–${s.fim}`, linha: s.inicio, arquivoAtualizadoEm: mtime, autorizacao: "allowlist do servidor (único contexto autorizado)" }),
-  }));
-}
-
-function frontMatter(t) {
-  if (!t.startsWith("---")) return {};
-  const bloco = t.slice(3).split("\n---", 1)[0];
-  const dados = { trigger_patterns: [] };
-  let lista = null;
-  for (const linha of bloco.split("\n")) {
-    if (lista && /^\s+- /.test(linha)) { dados[lista].push(linha.split("- ").slice(1).join("- ").trim().replace(/^"|"$/g, "")); continue; }
-    lista = null;
-    const m = /^(\w+):\s*(.*)$/.exec(linha);
-    if (!m) continue;
-    if (m[1] === "trigger_patterns" && !m[2]) lista = "trigger_patterns";
-    else dados[m[1]] = m[2].trim().replace(/^"|"$/g, "");
+    const limpo = linha.replace(/^\s*(?:[-*]\s+|>\s?)/, "");
+    if (!limpo.trim() || limpo.trim() === PENDENTE) continue;
+    if (!atual) { atual = { titulo: null, linha: linhaN, itens: [] }; secoes.push(atual); }
+    if (atual.itens.length >= 200) continue;
+    if (orcamento.texto <= 0) { cortes.n++; continue; }
+    const t = texto(limpo, 1200, cortes);
+    if (t) { atual.itens.push(t); orcamento.texto -= t.length; }
   }
-  let tags = [];
-  try {
-    const parsed = JSON.parse(dados.tags ?? "[]");
-    tags = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)];
-  } catch {
-    tags = String(dados.tags ?? "").replace(/[[\]"]/g, "").split(",").map((x) => x.trim()).filter(Boolean);
-  }
-  return { ...dados, tags };
+  return { titulo, secoes: secoes.filter((s) => s.titulo || s.itens.length) };
 }
 
-const SECOES_ROTINA = {
-  "Quando usar": "quando_usar",
-  "Entradas e acessos": "entradas",
-  Passos: "passos",
-  "Como verificar que deu certo": "verificar",
-  "O que entregar": "entregar",
-  "Precisa de aprovação do usuário": "aprovacao",
-};
+const DATA = /^(\d{4}-\d{2}-\d{2})/;
 
-// SKILL.md salvo pelo helper das rotinas. Dono = login na tag (sem login: rotina compartilhada do agente).
-export function normalizeRoutine(slug, md, src, mtime, cortes = { n: 0 }) {
-  const fm = frontMatter(md);
-  if (!fm.tags || !fm.tags.includes("rotina")) return { naoRotina: true };
-  const logins = fm.tags.filter((t) => t !== "rotina");
-  if (logins.length && !logins.includes(OWNER)) return { outroDono: true };
-  const secoes = {};
-  const correcoes = [];
-  let chave = null;
-  md.split(/\r?\n/).forEach((linha, idx) => {
-    const h = /^## (.+)$/.exec(linha);
-    if (h) {
-      const nome = h[1].trim();
-      chave = nome.startsWith("Correções do usuário") ? "correcoes" : (SECOES_ROTINA[nome] ?? null);
-      if (chave && chave !== "correcoes") secoes[chave] = { linha: idx + 1, linhas: [] };
-      return;
-    }
-    if (!chave) return;
-    if (chave === "correcoes") {
-      const m = /^- (?:(\d{2}\/\d{2}\/\d{4})(?: \(por ([^)]*)\))?: )?(.+)$/.exec(linha);
-      if (m) correcoes.push({ linha: idx + 1, data: m[1] ?? null, por: text(m[2], 120), texto: texto(m[3], 1000, cortes) });
-      return;
-    }
-    if (linha.trim()) secoes[chave].linhas.push(linha);
-  });
-  const corpo = (k) => (secoes[k] ? texto(secoes[k].linhas.join("\n"), 3000, cortes) : null);
-  const passos = secoes.passos
-    ? secoes.passos.linhas.map((l) => texto(l.replace(/^\s*\d+[.)]\s+/, ""), 1000, cortes)).filter(Boolean)
-    : [];
-  const titulo = /^# (.+)$/m.exec(md)?.[1];
+// Nota livre (Reuniões, Notas do dia, Documentos, Projetos, Contexto).
+export function normalizeNote(nome, conteudo, src, mtime, cortes = { n: 0 }, orcamento = { texto: MAX_TEXTO_NOTAS }) {
+  const { campos, corpo } = cabecalhoOpcional(conteudo, nome);
+  const stem = nome.replace(/\.md$/, "");
+  const { titulo, secoes } = secoesDe(corpo, cortes, orcamento);
+  const primeiro = secoes.flatMap((s) => s.itens)[0] ?? null;
   return {
-    id: slug,
-    nome: texto(titulo ?? fm.name ?? slug, 200, cortes),
-    descricao: texto(fm.description, 600, cortes),
-    gatilhos: textList(fm.trigger_patterns, cortes),
-    dono: logins.includes(OWNER) ? OWNER : null,
-    donoNota: logins.includes(OWNER) ? "login matheus na tag" : "sem login na tag: rotina compartilhada do agente (contrato das rotinas)",
-    versao: createHash("sha256").update(md, "utf8").digest("hex").slice(0, 12),
-    quando_usar: corpo("quando_usar"),
-    entradas: corpo("entradas"),
-    passos,
-    verificar: corpo("verificar"),
-    entregar: corpo("entregar"),
-    aprovacao: corpo("aprovacao"),
-    secoesAusentes: Object.values(SECOES_ROTINA).filter((k) => !secoes[k]),
-    correcoes,
-    pedeReescrita: correcoes.length >= 8,
-    proveniencia: provenance(src, { localizador: `skills/${slug}/SKILL.md`, arquivoAtualizadoEm: mtime, versao: createHash("sha256").update(md, "utf8").digest("hex").slice(0, 12), dono: logins.includes(OWNER) ? OWNER : "agente (compartilhada)" }),
-  };
-}
-
-export function normalizeProject(nome, json, src, mtime, cortes = { n: 0 }) {
-  if (!json || typeof json !== "object" || Array.isArray(json)) return null;
-  return {
-    id: nome,
-    titulo: texto(json.title, 200, cortes) ?? nome,
-    descricao: texto(json.description, 1200, cortes),
-    instrucoes: texto(json.instructions, 1500, cortes),
-    cor: text(json.color, 20),
-    proveniencia: provenance(src, { localizador: `projects/${nome}/.a0proj/project.json`, arquivoAtualizadoEm: mtime, donoProva: "dono.txt = matheus" }),
-  };
-}
-
-const CABECALHO = /^(?:(#{1,4})\s+(.+)|\s*\[(page|header|sub_header|sub_sub_header)\]\s+(.+))$/;
-export function normalizeDocument(doc, conteudo, src, mtime, cortes = { n: 0 }) {
-  const secoes = [];
-  conteudo.split(/\r?\n/).forEach((linha, idx) => {
-    const m = CABECALHO.exec(linha);
-    if (m && secoes.length < 80) secoes.push({ linha: idx + 1, titulo: texto(m[2] ?? m[4], 200, cortes) });
-  });
-  return {
-    id: doc.chave,
-    titulo: doc.rotulo,
-    dono: doc.dono,
+    id: text(stem, 200),
+    titulo: texto(campos.titulo, 300, cortes) ?? titulo ?? text(stem, 200),
+    data: dateText(campos.data) ?? dateText(campos.em) ?? (DATA.exec(stem)?.[1] ?? null),
+    area: area(campos.area),
+    resumo: primeiro ? primeiro.slice(0, 300) : null,
+    secoes,
+    pendente: conteudo.includes(PENDENTE),
     bytes: Buffer.byteLength(conteudo, "utf8"),
     linhas: conteudo.split(/\r?\n/).length,
     sha256: createHash("sha256").update(conteudo, "utf8").digest("hex"),
-    secoes: secoes.filter((s) => s.titulo),
-    citaDocumentos: [],
-    proveniencia: { fonte: src.id, fonteRotulo: src.rotulo, dono: doc.dono, localizador: doc.partes.join("/"), arquivoAtualizadoEm: mtime },
+    proveniencia: provenance(src, { localizador: `${src.pasta}/${nome}`, em: dateText(campos.em) ?? null, arquivoAtualizadoEm: mtime }),
+    _campos: campos,
   };
 }
 
-// Grafo legado (seção "ligações dos fios"): só o que está em fios[].ligacoes. Alvo que não é um fio vira nó
-// textual separado e rotulado; nada é inferido.
-export function buildConnections(threads) {
-  const nodes = new Map();
-  const edges = [];
-  const ids = new Set(threads.map((t) => t.id));
-  for (const t of threads) {
-    for (const l of t.ligacoes) {
-      if (!nodes.has(`fio:${t.id}`)) nodes.set(`fio:${t.id}`, { id: `fio:${t.id}`, tipo: "fio", rotulo: t.titulo ?? t.id });
-      let destino;
-      if (ids.has(l.alvo)) {
-        destino = `fio:${l.alvo}`;
-        const alvo = threads.find((x) => x.id === l.alvo);
-        if (!nodes.has(destino)) nodes.set(destino, { id: destino, tipo: "fio", rotulo: alvo?.titulo ?? l.alvo });
-      } else {
-        destino = `texto:${l.alvo}`;
-        if (!nodes.has(destino)) nodes.set(destino, { id: destino, tipo: "texto", rotulo: l.alvo });
-      }
-      edges.push({
-        de: `fio:${t.id}`,
-        para: destino,
-        rotulo: l.rotulo,
-        evidencia: { fonte: "fios", fioId: t.id, em: t.atualizado ?? t.criado },
-      });
+// Regras e mapa da Pasta (CLAUDE.md): só os itens numerados de "## Regras".
+export function normalizeRules(md, src, mtime, cortes = { n: 0 }) {
+  const regras = [];
+  let dentro = false;
+  for (const linha of md.split(/\r?\n/)) {
+    if (/^##\s+/.test(linha)) { dentro = /^##\s+Regras/i.test(linha); continue; }
+    if (!dentro) continue;
+    const m = /^\d+[.)]\s+(.+)$/.exec(linha);
+    if (m) regras.push(m[1].trim());
+    else if (/^\s+\S/.test(linha) && regras.length) regras[regras.length - 1] += ` ${linha.trim()}`;
+  }
+  return {
+    titulo: texto(/^# (.+)$/m.exec(md)?.[1] ?? "Segundo Cérebro", 200, cortes),
+    regras: regras.slice(0, 50).map((r) => texto(r, 1000, cortes)).filter(Boolean),
+    proveniencia: provenance(src, { localizador: "CLAUDE.md", arquivoAtualizadoEm: mtime }),
+  };
+}
+
+// ---------- ligações: `liga` + [[links]] (+ o texto livre de ligação das pendências) ----------
+
+// Cada aresta tem origem num campo gravado. Destino que não está na Pasta vira referência textual (nunca inferida);
+// destino no Arquivo-morto é omitido (e contado). Duplicatas do mesmo par se fundem com todas as vias.
+export function buildLinks(itens) {
+  const porRef = new Map(itens.map((i) => [i.ref, i]));
+  const porNota = new Map();
+  const porStem = new Map();
+  for (const i of itens) {
+    if (!i._nota) continue;
+    porNota.set(i._nota, i.ref);
+    const stem = i._nota.split("/").pop();
+    porStem.set(stem, porStem.has(stem) ? null : i.ref);
+  }
+  const porPendencia = new Map(itens.filter((i) => i._tipo === "pendencia").map((i) => [i.id, i.ref]));
+  const substituicao = new Set();
+  for (const d of itens.filter((i) => i._tipo === "decisao")) {
+    for (const outro of [d.substitui, d.substituida_por]) if (outro) { substituicao.add(`${d.ref}|decisao:${outro}`); substituicao.add(`decisao:${outro}|${d.ref}`); }
+  }
+  const arestas = new Map();
+  let ocultas = 0;
+  const add = (i, para, via, alvo, resolvido) => {
+    if (para === i.ref) return;
+    if (via === "wiki" && substituicao.has(`${i.ref}|${para}`)) return; // o corpo da decisão repete substitui/substituída
+    const k = `${i.ref}|${para}`;
+    const e = arestas.get(k);
+    if (e) { if (!e.vias.includes(via)) e.vias.push(via); return; }
+    arestas.set(k, { de: i.ref, para, vias: [via], alvo: text(alvo, 300), resolvido, evidencia: { fonte: i.proveniencia.fonte, registro: i.id, campo: via === "wiki" ? "[[link]] no texto" : via, localizador: i.proveniencia.localizador ?? null } });
+  };
+  for (const i of itens) {
+    for (const r of i.liga ?? []) {
+      if (porRef.has(r)) add(i, r, "liga", r, true);
+      else add(i, `referencia:${r}`, "liga", r, false);
     }
+    for (const w of i._wiki ?? []) {
+      if (oculto(w)) { ocultas++; continue; }
+      const alvo = porNota.get(w) ?? (w.includes("/") ? undefined : porStem.get(w) ?? undefined);
+      if (alvo) add(i, alvo, "wiki", w, true);
+      else add(i, `referencia:${w}`, "wiki", w, false);
+    }
+    for (const l of i.ligacoes ?? []) {
+      const alvo = porPendencia.get(l.alvo);
+      if (alvo) add(i, alvo, "ligacoes", l.alvo, true);
+      else add(i, `referencia:${l.alvo}`, "ligacoes", l.alvo, false);
+    }
+  }
+  return { links: [...arestas.values()], ocultas };
+}
+
+// Visão compacta (de/para/rotulo) das ligações, para o mapa simples de conexões.
+export function buildConnections(links, rotulos = new Map()) {
+  const nodes = new Map();
+  const node = (id) => {
+    if (!nodes.has(id)) {
+      const [tipo, ...resto] = id.split(":");
+      nodes.set(id, { id, tipo: tipo === "referencia" ? "texto" : tipo, rotulo: rotulos.get(id) ?? text(resto.join(":"), 300) ?? id });
+    }
+  };
+  const edges = [];
+  for (const l of links) {
+    node(l.de); node(l.para);
+    edges.push({ de: l.de, para: l.para, rotulo: l.vias.join(" + "), evidencia: { fonte: l.evidencia.fonte, registro: l.evidencia.registro, campo: l.evidencia.campo } });
   }
   return { nodes: [...nodes.values()], edges };
 }
 
 // ---------- diagnósticos (não autoritativos) ----------
 
-const chaveTexto = (s) => String(s ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9@]+/g, " ").trim();
+const chaveTexto = (s) => String(s ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9@]+/g, " ").trim();
 
 // Só invariantes explícitos dos contratos: nunca semelhança de palavras entre registros diferentes.
-export function diagnose({ decisions, threads, profile, routines }) {
+export function diagnose({ decisions, threads, subjects = [], profile, links = [] }) {
   const conflitos = [];
   const diagnosticos = [];
   const porTema = new Map();
   for (const d of decisions) if (d.vigente && d.tema) porTema.set(d.tema, [...(porTema.get(d.tema) ?? []), d.id]);
   for (const [tema, ids] of porTema) {
-    if (ids.length > 1) {
-      conflitos.push({ tipo: "decisoes_ativas_mesmo_tema", fonte: "decisoes", registros: ids.map((id) => `decisao:${id}`), regra: "decisoes.py: uma decisão ativa por tema", detalhe: `${ids.length} decisões vigentes no tema "${tema}"`, autoritativo: false });
-    }
+    if (ids.length > 1) conflitos.push({ tipo: "decisoes_ativas_mesmo_tema", fonte: "decisoes", registros: ids.map((id) => `decisao:${id}`), regra: "decisoes.py: uma decisão ativa por tema", detalhe: `${ids.length} decisões vigentes no tema "${tema}"`, autoritativo: false });
   }
   const idsDecisao = new Set(decisions.map((d) => d.id));
   for (const d of decisions) {
@@ -485,219 +567,232 @@ export function diagnose({ decisions, threads, profile, routines }) {
     if (vistos.has(k)) conflitos.push({ tipo: "ficha_entrada_duplicada", fonte: "perfil", registros: [`fato:${vistos.get(k)}`, `fato:${f.id}`], regra: "ficha.py: sem entradas duplicadas", detalhe: "duas entradas com o mesmo texto normalizado", autoritativo: false });
     else vistos.set(k, f.id);
   }
-  const idsFio = new Map();
-  for (const t of threads) idsFio.set(t.id, (idsFio.get(t.id) ?? 0) + 1);
-  for (const [id, n] of idsFio) if (n > 1) conflitos.push({ tipo: "fio_id_repetido", fonte: "fios", registros: [`fio:${id}`], regra: "fios.py: id único por fio", detalhe: `${n} fios com o mesmo id`, autoritativo: false });
-  for (const r of routines) {
-    if (r.pedeReescrita) diagnosticos.push({ tipo: "rotina_pede_reescrita", fonte: "rotinas", registros: [`rotina:${r.id}`], regra: "rotinas.py: LIMITE = 8 correções", detalhe: `${r.correcoes.length} correções acumuladas`, autoritativo: false });
-    if (r.secoesAusentes.length) diagnosticos.push({ tipo: "rotina_secoes_ausentes", fonte: "rotinas", registros: [`rotina:${r.id}`], regra: "rotinas.py salvar(): seções fixas", detalhe: `faltam: ${r.secoesAusentes.join(", ")}`, autoritativo: false });
+  for (const [lista, tipo, fonte] of [[threads, "pendencia", "pendencias"], [subjects, "assunto", "assuntos"], [decisions, "decisao", "decisoes"]]) {
+    const ids = new Map();
+    for (const t of lista) ids.set(t.id, (ids.get(t.id) ?? 0) + 1);
+    for (const [id, n] of ids) if (n > 1) conflitos.push({ tipo: `${tipo}_id_repetido`, fonte, registros: [`${tipo}:${id}`], regra: "pasta.py: id único por item da coleção", detalhe: `${n} arquivos com o mesmo id`, autoritativo: false });
+  }
+  for (const l of links) {
+    if (l.resolvido || !l.vias.includes("liga")) continue;
+    diagnosticos.push({ tipo: "liga_quebrada", fonte: l.evidencia.fonte, registros: [l.de], regra: "liga aponta para item que não está na Pasta", detalhe: `liga = ${l.alvo}`, autoritativo: false });
   }
   return { conflitos, diagnosticos };
-}
-
-// ---------- onboarding: estado honesto das 7 + 6 seções (proposta, nunca gravada) ----------
-
-export const ONBOARDING = Object.freeze({
-  negocio: [
-    ["negocio", "Seu negócio", "organization.md"],
-    ["clientes", "Seus clientes", "icp.md"],
-    ["posicionamento", "Seu posicionamento", "organization.md + icp.md"],
-    ["marca", "Sua marca e voz", "brand.md"],
-    ["estrategia", "Seus objetivos e sua estratégia", "strategy.md"],
-    ["operacao", "Sua operação e ferramentas", "organization.md"],
-    ["pessoas", "Pessoas-chave", "pessoas-chave.md"],
-  ],
-  pessoal: [
-    ["sobre", "Sobre você", "Profile.md"],
-    ["trajetoria", "Sua trajetória profissional", "Profile.md"],
-    ["experiencia", "Sua experiência e seu ponto de vista", "Profile.md"],
-    ["estilo", "Seu estilo de trabalho", "Profile.md"],
-    ["claude", "Como você quer que o Claude trabalhe com você", "CLAUDE.md"],
-    ["sucesso", "Como é o sucesso", "Profile.md"],
-  ],
-});
-
-export function onboardingState({ decisions, profile, routines, sources }) {
-  const fonte = (id) => sources.find((s) => s.id === id);
-  const fichaOk = fonte("perfil")?.estado === "ok";
-  const decOk = fonte("decisoes")?.estado === "ok";
-  const vigentes = decisions.filter((d) => d.vigente);
-  const comoTrabalhar = vigentes.filter((d) => ["preferencia", "proibicao", "permissao"].includes(d.tipo ?? ""));
-  const base = { aprovado: false, promovido: false, proposta: "Retomar só esta seção com o Matheus; gravar pela ferramenta canônica depois da aprovação dele." };
-  const negocio = ONBOARDING.negocio.map(([id, titulo, publicado]) => {
-    if (id === "operacao" && routines.length) {
-      return { ...base, id, titulo, publicado, estado: "parcial", destino: "rotinas (processos repetíveis) + contexto empresarial a definir", evidencias: routines.map((r) => `rotina:${r.id}`), motivo: `${routines.length} rotina(s) registradas descrevem processos; não há descrição da operação nem das ferramentas.` };
-    }
-    return { ...base, id, titulo, publicado, estado: "pendente", destino: "contexto empresarial (não existe contrato canônico; definir com o Matheus)", evidencias: [], motivo: "Sem fonte canônica de contexto empresarial com dono comprovado. O único contexto autorizado é registro de uma conversa, não onboarding." };
-  });
-  const pessoal = ONBOARDING.pessoal.map(([id, titulo, publicado]) => {
-    if (id === "sobre" && fichaOk && profile.length) {
-      return { ...base, id, titulo, publicado, estado: "parcial", destino: "ficha (fatos)", evidencias: profile.map((f) => `fato:${f.id}`), motivo: `${profile.length} fato(s) na ficha; a ficha não separa as seções do onboarding, então não dá para dizer quais perguntas estão respondidas.` };
-    }
-    if (id === "claude" && decOk && comoTrabalhar.length) {
-      return { ...base, id, titulo, publicado, estado: "parcial", destino: "decisões (preferências, permissões e proibições)", evidencias: comoTrabalhar.map((d) => `decisao:${d.id}`), motivo: `${comoTrabalhar.length} decisão(ões) vigentes de tipo preferência/permissão/proibição (campo tipo do contrato).` };
-    }
-    const destino = id === "claude" ? "decisões (preferências, permissões e proibições)" : "ficha (fatos) — preferências vão em decisões";
-    const motivo = (id === "sobre" && !fichaOk) || (id === "claude" && !decOk) ? "Fonte de destino indisponível." : "Sem evidência estruturada desta seção nas fontes canônicas.";
-    return { ...base, id, titulo, publicado, estado: "pendente", destino, evidencias: [], motivo };
-  });
-  return { negocio, pessoal, nota: "Proposta de retomada: nada aqui foi aprovado nem promovido a dado canônico." };
 }
 
 // ---------- carga ----------
 
 const vazioOuOk = (n) => (n === 0 ? "vazia" : "ok");
+const decrescente = (a, b) => String(b.data ?? "").localeCompare(String(a.data ?? "")) || String(b.id).localeCompare(String(a.id));
 
 export async function loadSecondBrain({ root, now = new Date() }) {
   const warnings = [];
   const sources = [];
-  const res = { decisions: [], threads: [], profile: [], contexts: [], routines: [], projects: [], documents: [] };
+  const res = { decisions: [], threads: [], subjects: [], profile: [], contexts: [], meetings: [], daily: [], documents: [], projects: [] };
+  const orcamento = { bytes: MAX_TOTAL_BYTES, texto: MAX_TEXTO_NOTAS };
+  let rules = null;
 
   function registrar(src, extra) {
-    const s = { id: src.id, rotulo: src.rotulo, dono: OWNER, localizador: src.partes ? src.partes.join("/") || "(lista fixa)" : null, arquivoAtualizadoEm: null, registros: 0, excluidos: 0, truncados: 0, impressao: null, arquivos: [], ...extra };
-    s.estado = ["ok", "vazia", "sem_contrato"].includes(s.codigo) ? s.codigo : (s.codigo === "truncada" || s.codigo === "parcial") ? "ok" : "indisponivel";
+    const s = { id: src.id, rotulo: src.rotulo, dono: OWNER, localizador: src.partes.join("/"), arquivoAtualizadoEm: null, registros: 0, excluidos: 0, truncados: 0, impressao: null, arquivos: [], ...extra };
+    s.estado = s.codigo === "pendente" ? "vazia" : ["ok", "vazia"].includes(s.codigo) ? s.codigo : ["truncada", "parcial"].includes(s.codigo) ? "ok" : "indisponivel";
     sources.push(s);
-    if (!["ok", "vazia", "sem_contrato"].includes(s.codigo)) warnings.push({ fonte: src.id, codigo: s.codigo, mensagem: `${src.rotulo}: ${AVISOS[s.codigo]}` });
+    if (!SEM_AVISO.includes(s.codigo)) {
+      const quais = s.arquivos.filter((a) => a.codigo !== "ok").slice(0, 5).map((a) => `${a.chave} (${a.codigo})`);
+      warnings.push({ fonte: src.id, codigo: s.codigo, mensagem: `${src.rotulo}: ${AVISOS[s.codigo]}${quais.length ? ` Arquivos: ${quais.join(", ")}.` : ""}` });
+    }
     return s;
   }
 
-  async function arquivoUnico(src, parse, chave) {
-    const r = await readFixed(root, src.partes);
-    if (r.status !== "ok") return registrar(src, { codigo: r.status });
-    const cortes = { n: 0 };
-    let saida = null;
-    try { saida = parse(r.conteudo, r.mtime, cortes); } catch { saida = null; }
-    if (saida && saida.formatoAntigo) return registrar(src, { codigo: "formato_antigo", arquivoAtualizadoEm: r.mtime, impressao: impressao(r.conteudo) });
-    const itens = saida && !Array.isArray(saida) && saida.fatos ? saida.fatos : saida;
-    if (!itens) return registrar(src, { codigo: "invalida", arquivoAtualizadoEm: r.mtime, impressao: impressao(r.conteudo) });
-    res[chave] = itens;
-    const excedeu = itens.length >= MAX_ITEMS;
-    return registrar(src, { codigo: excedeu ? "truncada" : vazioOuOk(itens.length), arquivoAtualizadoEm: r.mtime, registros: itens.length, truncados: cortes.n, impressao: impressao(r.conteudo) });
+  async function ler(partes) {
+    if (orcamento.bytes <= 0) return { status: "orcamento" };
+    const r = await readFixed(root, partes);
+    if (r.status === "ok") orcamento.bytes -= r.bytes;
+    return r;
   }
 
-  await arquivoUnico(SOURCES.decisoes, (c, m, k) => normalizeDecisions(JSON.parse(c), SOURCES.decisoes, m, now, k), "decisions");
-  await arquivoUnico(SOURCES.perfil, (c, m, k) => normalizeProfile(c, SOURCES.perfil, m, k), "profile");
-  await arquivoUnico(SOURCES.fios, (c, m, k) => normalizeThreads(JSON.parse(c), SOURCES.fios, m, now, k), "threads");
-  await arquivoUnico(SOURCES.contexto, (c, m, k) => normalizeContext(c, SOURCES.contexto, m, k), "contexts");
+  // Marca da migração única (pasta.ativa): sem ela o agente ainda grava nos registros antigos.
+  const marca = await readFixed(root, p(MARCA_MIGRADO));
+  const migrada = marca.status === "ok";
 
-  // Fontes de vários arquivos: só os nomes da allowlist; cada arquivo tem o próprio estado.
-  async function lista(src, chave, entradas) {
+  // CLAUDE.md
+  {
+    const src = SOURCES.regras;
+    const r = await ler(src.partes);
+    if (r.status !== "ok") registrar(src, { codigo: r.status === "orcamento" ? "truncada" : r.status });
+    else {
+      const cortes = { n: 0 };
+      rules = normalizeRules(r.conteudo, src, r.mtime, cortes);
+      registrar(src, { codigo: vazioOuOk(rules.regras.length), arquivoAtualizadoEm: r.mtime, registros: rules.regras.length, truncados: cortes.n, impressao: impressao(r.conteudo) });
+    }
+  }
+
+  // Contexto: as seis seções fixas (nada de varrer a pasta). perfil.md também é a ficha.
+  {
+    const src = SOURCES.contexto;
     const arquivos = [];
     const cortes = { n: 0 };
     const hash = createHash("sha256");
     let ultimo = null;
-    let excluidos = 0;
-    for (const e of entradas) {
-      const r = await e.ler();
-      if (r.status === "ok") {
-        hash.update(`${e.chave}\0${r.conteudo}\0`);
-        if (r.mtime && (!ultimo || r.mtime > ultimo)) ultimo = r.mtime;
-      }
-      const item = r.status === "ok" ? e.normalizar(r, cortes) : null;
-      if (item && item.excluido) { excluidos++; arquivos.push({ chave: e.chave, codigo: item.excluido }); continue; }
-      if (r.status === "ok" && !item) { arquivos.push({ chave: e.chave, codigo: "invalida" }); continue; }
-      arquivos.push({ chave: e.chave, codigo: r.status === "ok" ? "ok" : r.codigo ?? r.status });
-      if (item) res[chave].push(item);
+    let perfilBruto = null;
+    for (const [id, titulo] of CONTEXTO) {
+      const nome = `${id}.md`;
+      const r = await ler([...src.partes, nome]);
+      if (r.status !== "ok") { arquivos.push({ chave: nome, codigo: r.status }); continue; }
+      hash.update(`${nome}\0${r.conteudo}\0`);
+      if (!ultimo || r.mtime > ultimo) ultimo = r.mtime;
+      let n;
+      try { n = normalizeNote(nome, r.conteudo, src, r.mtime, cortes, orcamento); } catch { arquivos.push({ chave: nome, codigo: "ilegivel" }); continue; }
+      const c = n._campos;
+      if (id === "perfil") { perfilBruto = r; n.secoes = []; n.resumo = "Os fatos da ficha aparecem em Perfil."; }
+      res.contexts.push({
+        id, titulo: n.titulo ?? titulo, rotulo: titulo, estado: n.pendente ? "pendente" : "validado", area: "geral", secoes: n.secoes, resumo: n.resumo,
+        aprovado: texto(c.aprovado, 200, cortes), validadoEm: dateText(c.em), _nota: `Contexto/${id}`, _wiki: wikiLinks(r.conteudo),
+        proveniencia: n.proveniencia,
+      });
+      arquivos.push({ chave: nome, codigo: "ok" });
     }
     const oks = arquivos.filter((a) => a.codigo === "ok").length;
-    const falhas = arquivos.filter((a) => !["ok", "outro_dono", "dono_nao_comprovado", "nao_rotina"].includes(a.codigo));
-    let codigo;
-    // Sem nenhum arquivo bom e com falha: a fonte está indisponível (excluídos por dono não contam como falha).
-    if (falhas.length && oks === 0) codigo = falhas.every((f) => f.codigo === falhas[0].codigo) ? falhas[0].codigo : "erro";
-    else if (falhas.length) codigo = "parcial";
-    else codigo = vazioOuOk(oks);
-    return registrar(src, { codigo, arquivoAtualizadoEm: ultimo, registros: res[chave].length, excluidos, truncados: cortes.n, impressao: ultimo ? hash.digest("hex").slice(0, 16) : null, arquivos });
-  }
+    const falhas = arquivos.filter((a) => a.codigo !== "ok");
+    const codigo = falhas.length && !oks ? (falhas.every((f) => f.codigo === falhas[0].codigo) ? falhas[0].codigo : "erro") : falhas.length ? "parcial" : vazioOuOk(oks);
+    registrar(src, { codigo, arquivoAtualizadoEm: ultimo, registros: res.contexts.length, truncados: cortes.n, impressao: ultimo ? hash.digest("hex").slice(0, 16) : null, arquivos: falhas });
 
-  await lista(SOURCES.rotinas, "routines", ROTINAS_PERMITIDAS.map((slug) => ({
-    chave: slug,
-    ler: () => readFixed(root, ["skills", slug, "SKILL.md"]),
-    normalizar: (r, cortes) => {
-      const x = normalizeRoutine(slug, r.conteudo, SOURCES.rotinas, r.mtime, cortes);
-      if (x.naoRotina) return { excluido: "nao_rotina" };
-      if (x.outroDono) return { excluido: "outro_dono" };
-      return x;
-    },
-  })));
-
-  await lista(SOURCES.projetos, "projects", PROJETOS_PERMITIDOS.map((nome) => ({
-    chave: nome,
-    // Dono primeiro (login_usuarios: .a0proj/dono.txt). Sem dono.txt o contrato atribui ao dono padrão, mas isso
-    // não é prova: o projeto fica de fora e a ausência aparece na cobertura.
-    ler: async () => {
-      const dono = await readFixed(root, ["projects", nome, ".a0proj", "dono.txt"]);
-      if (dono.status === "ausente") {
-        const cabecalho = await readFixed(root, ["projects", nome, ".a0proj", "project.json"]);
-        return cabecalho.status === "ausente" ? cabecalho : { status: "ok", conteudo: "", mtime: null, semDono: true };
+    const ps = SOURCES.perfil;
+    const pr = perfilBruto ?? { status: arquivos.find((a) => a.chave === "perfil.md")?.codigo ?? "ausente" };
+    if (pr.status !== "ok") registrar(ps, { codigo: pr.status === "orcamento" ? "truncada" : pr.status });
+    else {
+      const k = { n: 0 };
+      const x = normalizeProfile(pr.conteudo, ps, pr.mtime, k);
+      const extra = { arquivoAtualizadoEm: pr.mtime, impressao: impressao(pr.conteudo) };
+      if (x.formatoAntigo) registrar(ps, { codigo: "formato_antigo", ...extra });
+      else if (x.pendente) registrar(ps, { codigo: "pendente", ...extra });
+      else {
+        res.profile = x.fatos;
+        registrar(ps, { codigo: x.fatos.length >= MAX_ITEMS ? "truncada" : vazioOuOk(x.fatos.length), registros: x.fatos.length, truncados: k.n, ...extra });
       }
-      if (dono.status !== "ok") return dono;
-      if (dono.conteudo.trim().toLowerCase() !== OWNER) return { status: "ok", conteudo: "", mtime: null, outroDono: true };
-      const r = await readFixed(root, ["projects", nome, ".a0proj", "project.json"]);
-      return r;
-    },
-    normalizar: (r, cortes) => {
-      if (r.semDono) return { excluido: "dono_nao_comprovado" };
-      if (r.outroDono) return { excluido: "outro_dono" };
-      try { return normalizeProject(nome, JSON.parse(r.conteudo), SOURCES.projetos, r.mtime, cortes); } catch { return null; }
-    },
-  })));
-
-  await lista(SOURCES.documentos, "documents", DOCUMENTOS_PERMITIDOS.map((doc) => ({
-    chave: doc.chave,
-    ler: () => readFixed(root, doc.partes),
-    normalizar: (r, cortes) => {
-      const d = normalizeDocument(doc, r.conteudo, SOURCES.documentos, r.mtime, cortes);
-      // Citação explícita: o texto contém o caminho completo de outro documento da lista.
-      d.citaDocumentos = DOCUMENTOS_PERMITIDOS.filter((o) => o.chave !== doc.chave && r.conteudo.includes(`${DEFAULT_DATA_ROOT}/${o.partes.join("/")}`)).map((o) => o.chave);
-      return d;
-    },
-  })));
-
-  registrar(SOURCES.reunioes, { codigo: "sem_contrato", localizador: null });
-  registrar(SOURCES.daily, { codigo: "sem_contrato", localizador: null });
-
-  const { conflitos, diagnosticos } = diagnose(res);
-  const lacunas = [
-    { id: "reunioes", fonte: "reunioes", motivo: "Não há plugin nem arquivo canônico de reuniões com dono; nada é mostrado como reunião." },
-    { id: "daily", fonte: "daily", motivo: "Não há contrato canônico de registros do dia; nada é mostrado como daily." },
-    { id: "pessoas-chave", fonte: null, motivo: "Não há fonte de pessoas-chave com papéis confirmados; pautas ficam sem responsáveis." },
-    { id: "contexto-empresarial", fonte: null, motivo: "Não há fonte canônica de organização, marca, estratégia ou ICP; ver onboarding." },
-  ];
-  for (const s of sources) {
-    if (s.id === "projetos") for (const a of s.arquivos) if (a.codigo === "dono_nao_comprovado") lacunas.push({ id: `projeto-sem-dono-${lacunas.length}`, fonte: "projetos", motivo: "Um projeto da lista não tem dono.txt; sem prova de dono ele não é mostrado." });
-    if (s.estado === "indisponivel") lacunas.push({ id: `fonte-${s.id}`, fonte: s.id, motivo: `${s.rotulo}: ${AVISOS[s.codigo] ?? "indisponível"}` });
+    }
   }
 
+  // Uma subpasta da Pasta: varredura fixa, um arquivo por item, estado por arquivo.
+  // estrita = coleção de dados (frontmatter): item ilegível/recusado torna a coleção indisponível (como o helper).
+  async function pasta(src, chave, normalizar, { estrita = false } = {}) {
+    const lst = await listarPasta(root, src.partes);
+    if (lst.status !== "ok") return registrar(src, { codigo: lst.status });
+    const arquivos = lst.recusados.map((n) => ({ chave: text(n, 200), codigo: "link" }));
+    const cortes = { n: 0 };
+    const hash = createHash("sha256");
+    let ultimo = null;
+    let excluidos = 0;
+    let estourou = lst.excedeu;
+    let oks = 0;
+    for (const nome of lst.nomes) {
+      const r = await ler([...src.partes, nome]);
+      if (r.status === "orcamento") { estourou = true; break; }
+      if (r.status !== "ok") { arquivos.push({ chave: text(nome, 200), codigo: r.status }); continue; }
+      hash.update(`${nome}\0${r.conteudo}\0`);
+      if (!ultimo || r.mtime > ultimo) ultimo = r.mtime;
+      let item = null;
+      try { item = normalizar(nome, r.conteudo, r.mtime, cortes); } catch { item = null; }
+      if (!item) { arquivos.push({ chave: text(nome, 200), codigo: "ilegivel" }); continue; }
+      if (item.excluido) { excluidos++; arquivos.push({ chave: text(nome, 200), codigo: item.excluido }); continue; }
+      const stem = nome.replace(/\.md$/, "");
+      item._nota = `${src.pasta}/${stem}`;
+      item._wiki = wikiLinks(r.conteudo);
+      item.proveniencia.localizador = text(`${src.pasta}/${nome}`, 300);
+      item.proveniencia.arquivoAtualizadoEm = r.mtime;
+      res[chave].push(item);
+      oks++;
+    }
+    const falhas = arquivos.filter((a) => a.codigo !== "nome_fora_do_padrao");
+    let codigo;
+    if (falhas.length && estrita) codigo = "ilegivel";
+    else if (falhas.length && oks === 0) codigo = falhas.every((f) => f.codigo === falhas[0].codigo) ? falhas[0].codigo : "erro";
+    else if (falhas.length) codigo = "parcial";
+    else if (estourou) codigo = "truncada";
+    else codigo = vazioOuOk(oks);
+    return registrar(src, { codigo, arquivoAtualizadoEm: ultimo, registros: res[chave].length, excluidos, truncados: cortes.n, impressao: ultimo ? hash.digest("hex").slice(0, 16) : null, arquivos, lidos: oks });
+  }
+
+  // Item de coleção: frontmatter = dados (formato estrito), mapeado para o normalizador de sempre.
+  const daColecao = (um) => (nome, conteudo, mtime, cortes) => {
+    const { campos } = parseFrontmatter(conteudo, nome);
+    const item = um(campos, mtime, cortes);
+    if (!item) return null;
+    return { ...item, area: area(campos.area), liga: refs(campos.liga) };
+  };
+
+  await pasta(SOURCES.decisoes, "decisions", daColecao((c, m, k) => normalizeDecisions({ decisoes: [c] }, SOURCES.decisoes, m, now, k)?.[0]), { estrita: true });
+  await pasta(SOURCES.pendencias, "threads", daColecao((c, m, k) => normalizeThreads({ fios: [c] }, SOURCES.pendencias, m, now, k)?.[0]), { estrita: true });
+  await pasta(SOURCES.assuntos, "subjects", daColecao((c, m, k) => normalizeSubject(c, SOURCES.assuntos, m, k)), { estrita: true });
+
+  const nota = (src) => (nome, conteudo, mtime, cortes) => {
+    const n = normalizeNote(nome, conteudo, src, mtime, cortes, orcamento);
+    const { _campos: campos, pendente: _p, ...resto } = n;
+    return { ...resto, liga: refs(campos.liga) };
+  };
+  await pasta(SOURCES.reunioes, "meetings", nota(SOURCES.reunioes));
+  await pasta(SOURCES.notas, "daily", (nome, ...r) => (/^\d{4}-\d{2}-\d{2}\.md$/.test(nome) ? nota(SOURCES.notas)(nome, ...r) : { excluido: "nome_fora_do_padrao" }));
+  await pasta(SOURCES.documentos, "documents", nota(SOURCES.documentos));
+  await pasta(SOURCES.projetos, "projects", nota(SOURCES.projetos));
+  res.meetings.sort(decrescente);
+  res.daily.sort(decrescente);
+  res.documents.sort(decrescente);
+
+  // Ref canônica de cada item (tipo:id) e as ligações entre eles.
+  const tipoDe = { decisions: "decisao", threads: "pendencia", subjects: "assunto", contexts: "contexto", meetings: "reuniao", daily: "nota", documents: "documento", projects: "projeto" };
+  const todos = [];
+  for (const [chave, tipo] of Object.entries(tipoDe)) for (const i of res[chave]) { i.ref = `${tipo}:${i.id}`; i._tipo = tipo; todos.push(i); }
+  const { links, ocultas } = buildLinks(todos);
+  const index = Object.create(null);
+  const rotulos = new Map();
+  for (const i of todos) {
+    if (i._nota) { i.nota = text(i._nota, 300); index[i.nota] = i.ref; }
+    rotulos.set(i.ref, i.titulo ?? i.tema ?? i.id);
+    delete i._nota; delete i._wiki; delete i._tipo;
+  }
+
+  const { conflitos, diagnosticos } = diagnose({ ...res, links });
+  const lacunas = [];
+  if (!migrada) lacunas.push({ id: "pasta-nao-migrada", fonte: null, motivo: "A Pasta ainda não tem a marca da migração (.migrado): o agente ainda grava nos registros antigos e o que aparece aqui pode estar atrasado." });
+  for (const c of res.contexts) if (c.estado === "pendente") lacunas.push({ id: `contexto-${c.id}`, fonte: "contexto", motivo: `${c.rotulo}: pendente de validação (a entrevista ainda não preencheu ou o Matheus não aprovou).` });
+  if (ocultas) lacunas.push({ id: "arquivo-morto", fonte: null, motivo: `${ocultas} link(s) para o Arquivo-morto não aparecem (o que saiu não é mostrado).` });
+  lacunas.push({ id: "projetos-subpastas", fonte: "projetos", motivo: "Só as notas soltas em Projetos/ são lidas; subpastas de projeto não são varridas." });
+  for (const s of sources) if (s.estado === "indisponivel") lacunas.push({ id: `fonte-${s.id}`, fonte: s.id, motivo: `${s.rotulo}: ${AVISOS[s.codigo] ?? "indisponível"}` });
+  if (!migrada) warnings.unshift({ fonte: "pasta", codigo: "nao_migrada", mensagem: lacunas[0].motivo });
+
+  const areas = [...new Set([...todos, ...res.profile].map((i) => i.area).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
   const coverage = {
     fontes: sources.length,
     fontesOk: sources.filter((s) => s.estado === "ok" || s.estado === "vazia").length,
     fontesIndisponiveis: sources.filter((s) => s.estado === "indisponivel").length,
-    fontesSemContrato: sources.filter((s) => s.estado === "sem_contrato").length,
     registros: Object.values(res).reduce((n, l) => n + l.length, 0),
-    excluidosPorDono: sources.reduce((n, s) => n + s.excluidos, 0),
+    excluidos: sources.reduce((n, s) => n + s.excluidos, 0),
     textosCortados: sources.reduce((n, s) => n + s.truncados, 0),
-    nota: "Contagens só das fontes da allowlist. Fora dela nada é lido; total não significa base completa.",
+    ligacoes: links.length,
+    nota: "Só a Pasta do Segundo Cérebro é lida (subpastas fixas, sem Arquivo-morto). O que não está na Pasta não foi registrado.",
   };
 
   return {
     owner: OWNER,
     fetchedAt: now.toISOString(),
+    pasta: { migrada },
+    rules,
+    areas,
     decisions: res.decisions,
     threads: res.threads,
+    subjects: res.subjects,
     profile: res.profile,
     contexts: res.contexts,
+    meetings: res.meetings,
+    daily: res.daily,
     documents: res.documents,
     projects: res.projects,
-    routines: res.routines,
-    meetings: [],
-    daily: [],
-    connections: buildConnections(res.threads),
+    index,
+    links,
+    connections: buildConnections(links, rotulos),
     sources,
     warnings,
     gaps: lacunas,
     conflicts: conflitos,
     diagnostics: diagnosticos,
-    proposals: { onboarding: onboardingState({ ...res, sources }) },
     coverage,
   };
 }

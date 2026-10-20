@@ -5,7 +5,7 @@ import type { SegundoCerebro } from "@/lib/second-brain.mjs";
 import s from "./segundo-cerebro.module.css";
 import BrainMap from "./BrainMap";
 import Consulta from "./Consulta";
-import { Contextos, Decisoes, Documentos, Ficha, Fios, Fontes, Onboarding, Projetos, ReunioesDaily, Rotinas, ancora, fmt } from "./Secoes";
+import { Assuntos, Contextos, Decisoes, Documentos, Ficha, Fontes, NotasDoDia, Pendencias, Projetos, Reunioes, ancora, fmt } from "./Secoes";
 
 // Todo conteúdo vindo do servidor é exibido como texto (React escapa); nada de HTML cru.
 
@@ -13,15 +13,15 @@ const SECOES = [
   ["visao", "Visão geral"],
   ["consulta", "Consulta"],
   ["mapa", "Mapa"],
-  ["contexto", "Contexto"],
-  ["projetos", "Projetos"],
-  ["rotinas", "Rotinas"],
+  ["assuntos", "Assuntos"],
+  ["pendencias", "Pendências"],
   ["decisoes", "Decisões"],
-  ["passos", "Fios"],
-  ["perfil", "Ficha"],
+  ["notas", "Notas do dia"],
+  ["reunioes", "Reuniões"],
+  ["contexto", "Contexto"],
+  ["perfil", "Perfil"],
+  ["projetos", "Projetos"],
   ["documentos", "Documentos"],
-  ["reunioes", "Reuniões e daily"],
-  ["onboarding", "Onboarding"],
   ["fontes", "Fontes"],
 ] as const;
 
@@ -111,8 +111,15 @@ export default function SegundoCerebroPage() {
 
 function Painel({ dados, carregando, erro, recarregar }: { dados: SegundoCerebro; carregando: boolean; erro: string | null; recarregar: () => Promise<SegundoCerebro | null> }) {
   const [aviso, setAviso] = useState<string | null>(null);
-  const vigentes = dados.decisions.filter((d) => d.vigente).length;
-  const abertos = dados.threads.filter((f) => f.emAberto).length;
+  const [area, setArea] = useState("");
+  const daArea = <T extends { area?: string | null }>(xs: T[]) => xs.filter((x) => !area || x.area === area);
+  const decisoes = daArea(dados.decisions);
+  const vigentes = decisoes.filter((d) => d.vigente).length;
+  const pendencias = daArea(dados.threads);
+  const abertos = pendencias.filter((f) => f.emAberto).length;
+  const assuntos = daArea(dados.subjects);
+  const andamento = assuntos.filter((a) => a.emAndamento).length;
+  const validados = dados.contexts.filter((c) => c.estado === "validado").length;
 
   // Navegação íntegra: abre o cartão do registro; se ele não está na página (filtro, outra fonte), diz isso.
   const abrir = useCallback((ref: string) => {
@@ -144,10 +151,16 @@ function Painel({ dados, carregando, erro, recarregar }: { dados: SegundoCerebro
       <main className={s.main}>
         <header className={s.topo}>
           <div>
-            <p className={s.kicker}>Matheus · fontes lidas {fmt(dados.fetchedAt)}</p>
+            <p className={s.kicker}>Matheus · Pasta lida {fmt(dados.fetchedAt)}</p>
             <h1 className={s.titulo}>Segundo Cérebro</h1>
           </div>
           <div className={s.acoes}>
+            <label className={s.muted}>Área{" "}
+              <select value={area} onChange={(e) => setArea(e.target.value)} aria-label="Filtrar por área">
+                <option value="">Todas</option>
+                {dados.areas.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </label>
             <button type="button" className={s.btn} onClick={() => void recarregar()} disabled={carregando}>
               {carregando ? "Atualizando…" : "Atualizar"}
             </button>
@@ -165,15 +178,18 @@ function Painel({ dados, carregando, erro, recarregar }: { dados: SegundoCerebro
 
         <section id="visao" className={s.secao}>
           <h2 className={s.h2}>Visão geral</h2>
-          <p className={s.muted}>Projeção só de leitura das fontes canônicas (ficha, decisões, fios, rotinas, contexto autorizado, projetos com dono e documentos do pedido). Esta página não grava nada e não é uma segunda base.</p>
+          <p className={s.muted}>Mostra a Pasta do Segundo Cérebro, a única fonte, escrita só pelo agente a partir das conversas no Telegram. Esta página só lê: não grava nada.{area ? ` Filtrando pela área ${area}.` : ""}</p>
           <div className={s.stats}>
-            <Stat valor={dados.coverage.registros} rotulo="registros lidos" />
-            <Stat valor={vigentes} rotulo="decisões vigentes" de={dados.decisions.length} />
-            <Stat valor={abertos} rotulo="fios em aberto" de={dados.threads.length} />
-            <Stat valor={dados.routines.length} rotulo="rotinas" />
-            <Stat valor={dados.projects.length} rotulo="projetos com dono" />
+            <Stat valor={andamento} rotulo="assuntos em andamento" de={assuntos.length} />
+            <Stat valor={abertos} rotulo="pendências em aberto" de={pendencias.length} />
+            <Stat valor={vigentes} rotulo="decisões vigentes" de={decisoes.length} />
+            <Stat valor={validados} rotulo="seções de contexto validadas" de={dados.contexts.length} />
+            <Stat valor={daArea(dados.daily).length} rotulo="notas do dia" />
             <Stat valor={dados.gaps.length} rotulo="lacunas" />
           </div>
+          {dados.rules && dados.rules.regras.length > 0 && (
+            <details className={s.mais}><summary>Regras da Pasta (CLAUDE.md)</summary><ol>{dados.rules.regras.map((r, i) => <li key={i}>{r}</li>)}</ol></details>
+          )}
           <div className={s.duas}>
             <div>
               <h3 className={s.h3}>Lacunas</h3>
@@ -182,7 +198,7 @@ function Painel({ dados, carregando, erro, recarregar }: { dados: SegundoCerebro
             <div>
               <h3 className={s.h3}>Conflitos e diagnósticos <small className={s.muted}>(não autoritativos)</small></h3>
               {dados.conflicts.length + dados.diagnostics.length === 0 ? (
-                <p className={s.muted}>Nenhum conflito com evidência estruturada (só invariantes dos contratos: uma decisão ativa por tema, ficha sem duplicadas, id de fio único, referências de substituição válidas, rotina com seções e menos de 8 correções). Semelhança de palavras não conta como conflito.</p>
+                <p className={s.muted}>Nenhum conflito com evidência estruturada (só invariantes da Pasta: uma decisão ativa por tema, perfil sem duplicadas, id único por item, substituição e liga apontando para itens que existem). Semelhança de palavras não conta como conflito.</p>
               ) : (
                 <ul className={s.lista} aria-label="Conflitos e diagnósticos">
                   {[...dados.conflicts, ...dados.diagnostics].map((c, i) => (
@@ -190,30 +206,30 @@ function Painel({ dados, carregando, erro, recarregar }: { dados: SegundoCerebro
                   ))}
                 </ul>
               )}
-              <p className={s.muted}>Propostas não aprovadas: veja Onboarding. Nada é promovido a dado canônico por esta página.</p>
+              <p className={s.muted}>Nada é corrigido por esta página: correção é pelo agente, no Telegram.</p>
             </div>
           </div>
         </section>
 
         <section id="consulta" className={s.secao}>
           <h2 className={s.h2}>Consulta</h2>
-          <Consulta brain={dados} recarregar={recarregar} onOpen={abrir} />
+          <Consulta brain={dados} area={area} recarregar={recarregar} onOpen={abrir} />
         </section>
 
         <section id="mapa" className={s.secao}>
           <h2 className={s.h2}>Mapa</h2>
-          <BrainMap brain={dados} onOpen={abrir} />
+          <BrainMap brain={dados} area={area} onOpen={abrir} />
         </section>
 
-        <Contextos b={dados} />
-        <Projetos b={dados} />
-        <Rotinas b={dados} />
-        <Decisoes b={dados} />
-        <Fios b={dados} />
+        <Assuntos b={dados} area={area} onOpen={abrir} />
+        <Pendencias b={dados} area={area} onOpen={abrir} />
+        <Decisoes b={dados} area={area} onOpen={abrir} />
+        <NotasDoDia b={dados} area={area} onOpen={abrir} />
+        <Reunioes b={dados} area={area} onOpen={abrir} />
+        <Contextos b={dados} area={area} onOpen={abrir} />
         <Ficha b={dados} />
-        <Documentos b={dados} />
-        <ReunioesDaily b={dados} />
-        <Onboarding b={dados} onOpen={abrir} />
+        <Projetos b={dados} area={area} onOpen={abrir} />
+        <Documentos b={dados} area={area} onOpen={abrir} />
         <Fontes b={dados} />
       </main>
     </div>

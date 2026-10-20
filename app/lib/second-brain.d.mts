@@ -1,21 +1,27 @@
-export type FonteId = "decisoes" | "perfil" | "fios" | "contexto" | "rotinas" | "projetos" | "documentos" | "reunioes" | "daily";
+export type FonteId = "regras" | "contexto" | "perfil" | "decisoes" | "pendencias" | "assuntos" | "reunioes" | "notas" | "documentos" | "projetos";
 
 export interface Proveniencia {
   fonte: FonteId;
   fonteRotulo: string;
   dono: string;
-  localizador?: string;
+  localizador?: string | null;
   citacao?: string | null;
   origem?: string | null;
   em?: string | null;
   linha?: number;
-  versao?: string;
-  autorizacao?: string;
-  donoProva?: string;
   arquivoAtualizadoEm: string | null;
 }
 
-export interface Decisao {
+/** Campos que todo item da Pasta carrega. */
+export interface ItemPasta {
+  /** tipo:id, a referência usada em `liga`, no mapa e na consulta. */
+  ref: string;
+  /** Pasta/arquivo (sem .md): o alvo de um [[link]]. */
+  nota: string | null;
+  area: string;
+}
+
+export interface Decisao extends ItemPasta {
   id: string;
   tema: string | null;
   tipo: string | null;
@@ -32,6 +38,7 @@ export interface Decisao {
   substitui: string | null;
   substituida_por: string | null;
   motivo: string | null;
+  liga: string[];
   proveniencia: Proveniencia;
 }
 
@@ -40,7 +47,8 @@ export interface Ligacao {
   rotulo: string | null;
 }
 
-export interface Fio {
+/** Pendência (o que falta o Matheus fazer). */
+export interface Fio extends ItemPasta {
   id: string;
   titulo: string | null;
   detalhe: string | null;
@@ -55,6 +63,23 @@ export interface Fio {
   emAberto: boolean;
   criado: string | null;
   atualizado: string | null;
+  liga: string[];
+  proveniencia: Proveniencia;
+}
+export type Pendencia = Fio;
+
+export interface Assunto extends ItemPasta {
+  id: string;
+  titulo: string;
+  onde_parou: string | null;
+  estado: string;
+  emAndamento: boolean;
+  citacao: string | null;
+  origem: string | null;
+  criado: string | null;
+  atualizado: string | null;
+  historico: { em: string | null; nota: string | null }[];
+  liga: string[];
   proveniencia: Proveniencia;
 }
 
@@ -62,70 +87,65 @@ export interface FatoPerfil {
   id: string;
   numero: number;
   texto: string;
+  area: string;
   proveniencia: Proveniencia;
 }
 
-export interface SecaoContexto {
+export interface Secao {
+  titulo: string | null;
+  linha: number;
+  itens: string[];
+}
+
+export interface SecaoContexto extends ItemPasta {
   id: string;
   titulo: string;
-  itens: { linha: number; texto: string }[];
-  linhas: [number, number];
+  rotulo: string;
+  estado: "validado" | "pendente";
+  secoes: Secao[];
+  resumo: string | null;
+  aprovado: string | null;
+  validadoEm: string | null;
   proveniencia: Proveniencia;
 }
 
-export interface Rotina {
-  id: string;
-  nome: string | null;
-  descricao: string | null;
-  gatilhos: string[];
-  dono: string | null;
-  donoNota: string;
-  versao: string;
-  quando_usar: string | null;
-  entradas: string | null;
-  passos: string[];
-  verificar: string | null;
-  entregar: string | null;
-  aprovacao: string | null;
-  secoesAusentes: string[];
-  correcoes: { linha: number; data: string | null; por: string | null; texto: string | null }[];
-  pedeReescrita: boolean;
-  proveniencia: Proveniencia;
-}
-
-export interface Projeto {
+/** Nota livre: reunião, nota do dia, documento ou projeto. */
+export interface Nota extends ItemPasta {
   id: string;
   titulo: string;
-  descricao: string | null;
-  instrucoes: string | null;
-  cor: string | null;
-  proveniencia: Proveniencia;
-}
-
-export interface Documento {
-  id: string;
-  titulo: string;
-  dono: string;
+  data: string | null;
+  resumo: string | null;
+  secoes: Secao[];
   bytes: number;
   linhas: number;
   sha256: string;
-  secoes: { linha: number; titulo: string | null }[];
-  citaDocumentos: string[];
+  liga: string[];
   proveniencia: Proveniencia;
+}
+export type Documento = Nota;
+export type Projeto = Nota;
+
+export interface Link {
+  de: string;
+  para: string;
+  vias: ("liga" | "wiki" | "ligacoes")[];
+  alvo: string | null;
+  resolvido: boolean;
+  evidencia: { fonte: string; registro: string; campo: string; localizador: string | null };
 }
 
 export interface Conexoes {
-  nodes: { id: string; tipo: "fio" | "texto"; rotulo: string }[];
-  edges: { de: string; para: string; rotulo: string | null; evidencia: { fonte: "fios"; fioId: string; em: string | null } }[];
+  nodes: { id: string; tipo: string; rotulo: string }[];
+  edges: { de: string; para: string; rotulo: string | null; evidencia: { fonte: string; registro: string; campo: string } }[];
 }
 
-export type CodigoFonte = "ok" | "vazia" | "ausente" | "link" | "grande" | "erro" | "invalida" | "formato_antigo" | "truncada" | "parcial" | "sem_contrato";
+export type CodigoFonte = "ok" | "vazia" | "pendente" | "ausente" | "link" | "grande" | "erro" | "invalida" | "ilegivel" | "formato_antigo" | "truncada" | "parcial" | "orcamento";
 
 export interface Fonte {
   id: FonteId;
   rotulo: string;
   dono: string;
-  estado: "ok" | "vazia" | "indisponivel" | "sem_contrato";
+  estado: "ok" | "vazia" | "indisponivel";
   codigo: CodigoFonte;
   localizador: string | null;
   arquivoAtualizadoEm: string | null;
@@ -133,7 +153,9 @@ export interface Fonte {
   excluidos: number;
   truncados: number;
   impressao: string | null;
-  arquivos: { chave: string; codigo: string }[];
+  /** Só os arquivos com problema (ou fora do padrão de nome). */
+  arquivos: { chave: string | null; codigo: string }[];
+  lidos?: number;
 }
 
 export interface Aviso {
@@ -150,56 +172,48 @@ export interface Lacuna {
 
 export interface Diagnostico {
   tipo: string;
-  fonte: FonteId;
+  fonte: string;
   registros: string[];
   regra: string;
   detalhe: string;
   autoritativo: false;
 }
 
-export interface SecaoOnboarding {
-  id: string;
-  titulo: string;
-  publicado: string;
-  estado: "pendente" | "parcial";
-  destino: string;
-  evidencias: string[];
-  motivo: string;
-  proposta: string;
-  aprovado: false;
-  promovido: false;
-}
-
 export interface Cobertura {
   fontes: number;
   fontesOk: number;
   fontesIndisponiveis: number;
-  fontesSemContrato: number;
   registros: number;
-  excluidosPorDono: number;
+  excluidos: number;
   textosCortados: number;
+  ligacoes: number;
   nota: string;
 }
 
 export interface SegundoCerebro {
   owner: "matheus";
   fetchedAt: string;
+  pasta: { migrada: boolean };
+  rules: { titulo: string | null; regras: string[]; proveniencia: Proveniencia } | null;
+  areas: string[];
   decisions: Decisao[];
   threads: Fio[];
+  subjects: Assunto[];
   profile: FatoPerfil[];
   contexts: SecaoContexto[];
-  documents: Documento[];
-  projects: Projeto[];
-  routines: Rotina[];
-  meetings: never[];
-  daily: never[];
+  meetings: Nota[];
+  daily: Nota[];
+  documents: Nota[];
+  projects: Nota[];
+  /** Pasta/arquivo -> tipo:id, para seguir um [[link]]. */
+  index: Record<string, string>;
+  links: Link[];
   connections: Conexoes;
   sources: Fonte[];
   warnings: Aviso[];
   gaps: Lacuna[];
   conflicts: Diagnostico[];
   diagnostics: Diagnostico[];
-  proposals: { onboarding: { negocio: SecaoOnboarding[]; pessoal: SecaoOnboarding[]; nota: string } };
   coverage: Cobertura;
 }
 
@@ -211,16 +225,21 @@ export interface AdapterReply {
 
 export const OWNER: "matheus";
 export const DEFAULT_DATA_ROOT: string;
+export const PASTA: readonly string[];
 export const MAX_BYTES: number;
+export const MAX_ARQUIVOS: number;
+export const MAX_TOTAL_BYTES: number;
 export const FICHA_MARCA: string;
-export const CONTEXTO_CHAT: string;
-export const PROJETOS_PERMITIDOS: readonly string[];
-export const ROTINAS_PERMITIDAS: readonly string[];
-export const DOCUMENTOS_PERMITIDOS: readonly { chave: string; rotulo: string; dono: string; partes: string[] }[];
+export const PENDENTE: string;
+export const MARCA_MIGRADO: string;
+export const OCULTA: string;
+export const CONTEXTO: readonly (readonly [string, string])[];
 export const SECURITY_HEADERS: Readonly<Record<string, string>>;
+export class Ilegivel extends Error {}
 export function redact(value: unknown): string;
+export function parseFrontmatter(conteudo: string, nome?: string): { campos: Record<string, unknown>; corpo: string };
+export function wikiLinks(conteudo: string): string[];
 export function checkBearer(authorization: string | null | undefined, digestHex: string): boolean;
-export function buildConnections(threads: Fio[]): Conexoes;
 export function loadSecondBrain(opts: { root: string; now?: Date }): Promise<SegundoCerebro>;
 export function handleSecondBrainRequest(
   request: Request,
