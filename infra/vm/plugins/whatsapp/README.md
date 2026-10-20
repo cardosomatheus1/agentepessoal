@@ -42,3 +42,7 @@ Segurança:
 
 Fora da janela de 24 h desde a sua última mensagem, a Meta só deixa enviar **modelos aprovados**: com
 `modelo_aviso` configurado (um modelo "utility" com um parâmetro), o aviso sai por ele.
+
+**20/10 (prompt enxuto):** "Últimos avisos que as rotinas mandaram ao celular" e "Pedidos feitos em paralelo" saíram
+das instruções (cada aviso novo mudava o começo do prompt): vão no fim, uma vez por mensagem dele. As regras do
+celular ficam como estavam.

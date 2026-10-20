@@ -24,23 +24,42 @@ def _ini():
     return sys.modules[nome]
 
 
+def no_turno(loop_data, chave: str, fazer) -> None:
+    """The latest initiative messages change during a chat: they go at the end of the prompt, once per message of the
+    person, not in the system prompt, whose start must stay the same between calls (20/10, prompt enxuto)."""
+    memo = getattr(loop_data, "params_persistent", None)
+    extras = getattr(loop_data, "extras_persistent", None)
+    if not isinstance(memo, dict) or not isinstance(extras, dict):
+        return
+    turno = memo.setdefault("_no_turno", {})
+    if chave not in turno:
+        turno[chave] = fazer()
+    if turno[chave]:
+        extras[chave] = turno[chave]
+
+
 class IniciativaPrompt(Extension):
     async def execute(self, system_prompt: list[str] = [], loop_data: LoopData = LoopData(), **kwargs):
         if not self.agent or self.agent.number != 0:
             return
         sep = sys.modules.get("login_usuarios_separacao")
         login = (sep.dono_contexto(self.agent.context) if sep else (self.agent.context.get_data("dono") or "matheus")) or "matheus"
-        try:
-            d = _ini().carregar(login)
-        except Exception:
-            return
-        recentes = [e for e in d["enviadas"] if time.time() - e["quando"] < 2 * 86400][-3:]
-        partes = ["## Iniciativa própria",
-                  "Às vezes você manda mensagens por conta própria (💡) ao celular da pessoa. Quando ela comentar sobre "
-                  "uma delas ou sobre o que quer receber assim (\"gostei\", \"não me manda isso\", \"mais disso\"), "
-                  "registre com `iniciativa` acao \"aprender\" numa frase objetiva."]
-        if recentes:
-            partes.append("Suas últimas mensagens por iniciativa (se a pessoa responder sobre elas, é disso que fala):\n"
-                          + "\n".join(f"- {time.strftime('%d/%m %H:%M', time.localtime(e['quando']))}: {e['titulo']} — "
-                                      f"{e['texto'][:160]}" for e in recentes))
-        system_prompt.append("\n".join(partes))
+        system_prompt.append("## Iniciativa própria\nÀs vezes você manda mensagens por conta própria (💡) ao celular da "
+                             "pessoa; as últimas chegam nas mensagens (bloco `iniciativas_recentes`). Quando ela comentar "
+                             "sobre uma delas ou sobre o que quer receber assim (\"gostei\", \"não me manda isso\", \"mais "
+                             "disso\"), registre com `iniciativa` acao \"aprender\" numa frase objetiva.")
+        no_turno(loop_data, "iniciativas_recentes", lambda: recentes(login))
+
+
+def recentes(login: str, d=None, agora=None) -> str:
+    try:
+        d = d or _ini().carregar(login)
+    except Exception:
+        return ""
+    agora = time.time() if agora is None else agora
+    ultimas = [e for e in d.get("enviadas", []) if agora - e["quando"] < 2 * 86400][-3:]
+    if not ultimas:
+        return ""
+    return ("Suas últimas mensagens por iniciativa (se a pessoa responder sobre elas, é disso que fala):\n"
+            + "\n".join(f"- {time.strftime('%d/%m %H:%M', time.localtime(e['quando']))}: {e['titulo']} — "
+                        f"{e['texto'][:160]}" for e in ultimas))

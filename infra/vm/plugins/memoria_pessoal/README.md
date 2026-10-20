@@ -52,3 +52,10 @@ atualizadas.
   (só as conversas cujo arquivo mudou, só o que é novo; até 20 s por busca na primeira montagem). Devolve trechos com
   data e id da conversa. Cada um só vê as próprias conversas (dono da conversa); conversas de ajudantes ficam fora;
   rotinas aparecem depois, marcadas. Conversa apagada sai do índice; índice quebrado é refeito.
+
+## Prompt enxuto (20/10)
+- O `contexto.md` e os anexos da conversa saíram das instruções (mudavam durante a conversa e faziam o Bedrock reler
+  o prompt inteiro): vão no fim, no bloco `contexto_conversa`, uma vez por mensagem e só quando mudam (`cache_prompt`).
+- "Velocidade" (parar quando terminou, conferir no máximo 2 vezes) ficou nas "Regras que valem sempre" (`prompt_enxuto`).
+- Rodada agendada que terminou `SEM NOVIDADE` não é memorizada (eram 2+ chamadas ao modelo por rodada, ~40 rodadas
+  por dia, para guardar nada).

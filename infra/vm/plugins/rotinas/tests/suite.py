@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 RAIZ = Path(__file__).resolve().parents[1]
 FUSO = ZoneInfo("America/Bahia")
 INICIO = RAIZ / "extensions" / "python" / "_functions" / "agent" / "Agent" / "monologue" / "start" / "_10_portao.py"
+ENXUTA = RAIZ / "extensions" / "python" / "_functions" / "agent" / "Agent" / "monologue" / "start" / "_20_rodada_enxuta.py"
 FIM = RAIZ / "extensions" / "python" / "_functions" / "agent" / "Agent" / "monologue" / "end" / "_10_portao_fim.py"
 
 
@@ -54,6 +55,15 @@ def _carregar(nome: str, arquivo: Path):
                 sys.modules.pop(k, None)
             else:
                 sys.modules[k] = v
+
+
+def _sincrono(corrotina):
+    """Run an extension's execute() that never really waits (the suite already runs inside an event loop)."""
+    try:
+        corrotina.send(None)
+    except StopIteration as fim:
+        return fim.value
+    raise Falha("a extensão esperou algo de verdade")
 
 
 def _quando(dia: int, hora: int) -> datetime:
@@ -464,6 +474,66 @@ class Suite:
         arq.write_text(arq.read_text(encoding="utf-8") + old + "\n", encoding="utf-8")
         eq(R.corrigir("Conferir exames", "Correção do formato antigo")["motivo"], "repetida",
            "correção no formato antigo (sem autor) também conta")
+
+    # ---------- 20/10: a round starts with only the previous round ----------
+
+    def t_rodada_comeca_so_com_a_anterior(self):
+        ext = _carregar("rotinas_rodada_enxuta_teste", ENXUTA)
+        R = ext.rodada()
+
+        class Topico:
+            def __init__(self, tokens):
+                self.tokens = tokens
+
+            def get_tokens(self):
+                return self.tokens
+
+        def hist(*tokens, blocos=(5000,)):
+            return types.SimpleNamespace(topics=[Topico(t) for t in tokens], bulks=[Topico(b) for b in blocos],
+                                         current=types.SimpleNamespace(messages=["## Task"]))
+
+        h = hist(9000, 20000, 4000)
+        eq(R.enxugar(h), 3, "dois tópicos antigos e o resumo saem")
+        eq([t.tokens for t in h.topics], [4000], "a rodada anterior pequena fica")
+        eq(h.bulks, [], "resumos antigos saem")
+        eq(h.current.messages, ["## Task"], "a rodada atual não é tocada")
+        h = hist(9000, 30000)
+        eq(R.enxugar(h), 3, "rodada anterior grande também sai")
+        eq(h.topics, [], "nada antigo fica")
+        h = hist(3000, 4000, blocos=())
+        eq(R.enxugar(h), 0, "histórico pequeno: nada muda")
+        eq(len(h.topics), 2, "intacto")
+
+        # the extension: only the main agent, only a scheduled round, once per round, never a round the gate skipped
+        ctx = Ctx("rot1")
+        a = Agente(ctx)
+        a.history = hist(9000, 20000, 4000)
+        a.last_user_message = Msg("## Task:\nrodada")
+        tarefa = types.SimpleNamespace(name="Prospecção — executar")
+        ext.tarefa_rodando = lambda cid: tarefa if cid == "rot1" else None
+        _sincrono(ext.RodadaEnxuta(agent=a).execute(data={"result": object()}))
+        eq(len(a.history.topics), 1, "rodada agendada: começa enxuta")
+        ok(any("saíram do histórico" in str(l.get("content")) for l in ctx.logs), "fica registrado no log")
+        a.history = hist(9000, 20000)
+        _sincrono(ext.RodadaEnxuta(agent=a).execute(data={"result": object()}))
+        eq(len(a.history.topics), 2, "a mesma rodada não é enxugada de novo")
+        a.last_user_message = Msg("## Task:\noutra rodada")
+        _sincrono(ext.RodadaEnxuta(agent=a).execute(data={"result": "SEM NOVIDADE (portão: nada mudou)"}))
+        eq(len(a.history.topics), 2, "rodada pulada pelo portão: nada muda")
+        b = Agente(Ctx("conversa"))
+        b.history = hist(9000, 20000)
+        b.last_user_message = Msg("## Task:\nalgo")
+        _sincrono(ext.RodadaEnxuta(agent=b).execute(data={"result": object()}))
+        eq(len(b.history.topics), 2, "conversa sem tarefa rodando: nada muda")
+        c = Agente(ctx, numero=1)
+        c.history = hist(9000, 20000)
+        c.last_user_message = Msg("## Task:\nterceira")
+        _sincrono(ext.RodadaEnxuta(agent=c).execute(data={"result": object()}))
+        eq(len(c.history.topics), 2, "ajudante (A1): nada muda")
+        a.last_user_message = Msg("oi, tudo bem?")
+        a.history = hist(9000, 20000)
+        _sincrono(ext.RodadaEnxuta(agent=a).execute(data={"result": object()}))
+        eq(len(a.history.topics), 2, "mensagem da pessoa (não é rodada): nada muda")
 
     async def rodar(self, so=""):
         self._tmp = []

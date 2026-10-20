@@ -23,3 +23,11 @@
   (dono = dono do projeto, `separacao.dono_contexto`), então gasta e avisa como ele. Passou do teto do dia, a ponte
   grava `whatsapp/<login>/limite_hoje.txt` e `job_loop/_20_limite_convidados.py` pausa as rotinas até o dia seguinte.
 - Novo convidado: some em `CONVIDADOS` e `CONVIDADOS_TETO`, em `LOGINS` de `infra/control/index.py`, teste, implante.
+
+**Modelo por dono e por conversa (20/10, pronto e DESLIGADO):** `helpers/modelo.py` + `monologue_start/_30_modelo_por_dono.py`.
+Sem o arquivo `/a0/usr/plugins/login_usuarios/modelo_por_dono.json` nada muda. Com ele
+(`{"donos": {"matheus": "Sonnet"}, "conversas": {"<id>": "Default"}, "rotinas": false}`), cada mensagem do agente
+principal escolhe o preset do seletor de modelos (presets.yaml) pela conversa ou pelo dono; rotinas ficam no padrão
+salvo `"rotinas": true`. Usa a mesma escolha da tela (`chat_model_override`) e nunca troca nem desfaz uma escolha
+feita à mão. Apagar o arquivo volta cada conversa ao padrão na mensagem seguinte. O proxy já registra `modelo` e
+`dono` de cada chamada em `uso.jsonl`.

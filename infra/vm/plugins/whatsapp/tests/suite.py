@@ -467,6 +467,59 @@ class Suite:
         ok("paralelas().resumo(principal, minhas, _logs, time.time())" in rec and "if not paralela:" in rec,
            "a rota da principal usa o resumo; a paralela não")
 
+    def t_avisos_e_paralelas_no_fim_do_prompt(self):
+        # 20/10 (prompt enxuto): a new notice to the phone changed the system prompt and broke the provider cache of
+        # every later call of the chat; now it goes at the end, once per message of his
+        stubs = {"agent": types.ModuleType("agent"), "helpers.extension": types.ModuleType("helpers.extension")}
+        stubs["agent"].LoopData = type("LoopData", (), {})
+        stubs["helpers.extension"].Extension = type("Extension", (), {})
+        antes = {k: sys.modules.get(k) for k in stubs}
+        sys.modules.update(stubs)
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "whatsapp_prompt_teste", RAIZ / "extensions" / "python" / "system_prompt" / "_60_conversa_whatsapp.py")
+            ext = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(ext)
+        finally:
+            for k, v in antes.items():
+                sys.modules.pop(k, None) if v is None else sys.modules.__setitem__(k, v)
+        avisos = [{"em": 1792400000, "texto": "Lead @fulana respondeu: «quero testar»"}]
+        ext.ponte = lambda: types.SimpleNamespace(avisos_recentes=lambda de: list(avisos), tarefa=lambda c: None)
+        ctx = _Ctx("cel1", whatsapp_de="matheus", _paralelas=[{"quando": "10:00", "pedido": "preço", "resposta": "R$ 10"}])
+        obj = ext.ConversaWhatsapp.__new__(ext.ConversaWhatsapp)
+        obj.agent = types.SimpleNamespace(number=0, context=ctx)
+        ld = types.SimpleNamespace(params_persistent={}, extras_persistent={})
+
+        def passo():
+            saida = []
+            corrotina = obj.execute(system_prompt=saida, loop_data=ld)
+            try:
+                corrotina.send(None)
+            except StopIteration:
+                pass
+            return "\n\n".join(saida)
+
+        sistema = passo()
+        ok("Esta conversa é pelo celular" in sistema, "as regras do celular ficam no começo")
+        ok("quero testar" not in sistema and "Últimos avisos" not in sistema and "R$ 10" not in sistema,
+           "avisos e paralelas não ficam no começo do prompt")
+        ok("quero testar" in ld.extras_persistent["avisos_recentes"]
+           and "vale mais que qualquer aviso" in ld.extras_persistent["avisos_recentes"], "avisos no fim, com a regra da citação")
+        ok("R$ 10" in ld.extras_persistent["pedidos_em_paralelo"], "paralelas no fim")
+        avisos.append({"em": 1792403600, "texto": "Novo aviso"})
+        ld.extras_persistent.clear()
+        eq(passo(), sistema, "mesmo começo a cada passo")
+        ok("Novo aviso" not in ld.extras_persistent["avisos_recentes"], "no mesmo turno, o mesmo bloco")
+        ld.params_persistent.clear()
+        passo()
+        ok("Novo aviso" in ld.extras_persistent["avisos_recentes"], "na mensagem seguinte dele, o aviso novo")
+        avisos.clear()
+        ctx.dados["_paralelas"] = []
+        ld.params_persistent.clear()
+        ld.extras_persistent.clear()
+        passo()
+        eq(ld.extras_persistent, {}, "sem avisos nem paralelas: nada no fim")
+
     def t_pedido_curto_estado_executor_e_conclusao(self):
         # 14-19/10 (auditoria): "Pode"/"Faça" ligados ao assunto errado, "p mik" lido como nome, insistências sem
         # resposta, OpenCode pedido e análise feita pelo próprio agente, "Concluído" para uma revisão parcial

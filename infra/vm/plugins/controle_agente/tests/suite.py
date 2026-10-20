@@ -14,6 +14,11 @@ class Falha(AssertionError):
     pass
 
 
+def eq(a, b, msg):
+    if a != b:
+        raise Falha(f"{msg}: esperado {b!r}, veio {a!r}")
+
+
 def ok(cond, msg):
     if not cond:
         raise Falha(msg)
@@ -292,6 +297,49 @@ class Suite:
         ok(g.separar("x" + g.aviso_delegacoes(3))[1].startswith("\n\n⚠️ Delegação nº 3"), "aviso fica visível após stub")
         zerar = (EXT / "_functions" / "agent" / "Agent" / "monologue" / "start" / "_15_zerar_guardas.py").read_text(encoding="utf-8")
         ok("_guardas_delegacoes" in zerar, "nova tarefa (monólogo) zera a contagem")
+
+    def t_rodada_agendada_recebe_aviso_para_fechar(self):
+        # 20/10: rounds that found nothing ran up to 120 steps; the main agent of a round gets a nudge, never a stop
+        g, m = self.g, self.depois
+        antes = m.tarefas_da_rodada
+        try:
+            m.tarefas_da_rodada = lambda agent: ["🔎 Radar e fios soltos"]
+            a0 = _agente(0, "🔎 Radar (Gmail e Agenda)")
+            _nova(self.zerar.ZerarGuardas, a0).execute(data={})
+            for passo in range(1, 30):
+                r = self._passo(a0, "code_execution_tool", "ok")
+                ok("⏳ Rodada" not in r.message, f"passo {passo}: nada")
+            r = self._passo(a0, "code_execution_tool", "ok")
+            ok("⏳ Rodada agendada no passo 30" in r.message and not r.break_loop, f"passo 30 avisa: {r.message!r}")
+            for _ in range(9):
+                r = self._passo(a0, "code_execution_tool", "ok")
+            ok("⏳" not in r.message, "não repete a cada passo")
+            r = self._passo(a0, "code_execution_tool", "ok")
+            ok("passo 40" in r.message and not r.break_loop, "repete a cada 10, sem parar a rodada")
+            m.tarefas_da_rodada = lambda agent: ["🎯 Prospecção — executar"]
+            p = _agente(0, "🎯 Prospecção — executar")
+            for _ in range(119):
+                r = self._passo(p, "browser", "ok")
+                ok("⏳ Rodada" not in r.message, "prospecção navega muito de propósito")
+            ok("⏳ Rodada agendada no passo 120" in self._passo(p, "browser", "ok").message, "prospecção: aviso no 120")
+            m.tarefas_da_rodada = lambda agent: []
+            c = _agente(0)
+            for _ in range(60):
+                r = self._passo(c, "search_engine", "x")
+            ok("⏳" not in r.message and not r.break_loop, "conversa com a pessoa: nada")
+            eq(g.aviso_rodada(29, ["x"]), "", "antes do limite, nada")
+        finally:
+            m.tarefas_da_rodada = antes
+
+    def t_regras_de_sempre_num_lugar_so(self):
+        # 20/10 (prompt enxuto): the goal-mode list and "stop at the 2nd repeat" live in prompt_enxuto; here only a pointer
+        texto = (EXT / "system_prompt" / "_18_sem_loops.py").read_text(encoding="utf-8")
+        regras = texto.split('REGRAS = """', 1)[1].split('"""', 1)[0]
+        ok("Regras que valem sempre" in regras, "aponta para as regras de sempre")
+        for repetida in ("aceitar termos legais", "pagamento ou forma de pagamento", "pela 2ª vez sem avanço"):
+            ok(repetida not in regras, f"não repete «{repetida}»")
+        for fica in ("analisar_imagens", "nunca coloque `browser`", "reset: true", "consultar_sol", "blocked"):
+            ok(fica in regras, f"o que é só daqui fica: «{fica}»")
 
     async def rodar(self, so: str = "") -> dict:
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):

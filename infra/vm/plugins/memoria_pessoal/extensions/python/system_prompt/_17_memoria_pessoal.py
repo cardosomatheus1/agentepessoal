@@ -7,6 +7,10 @@
 - /a0/usr/memoria/decisoes/<login>.json  the person's decisions in force (helpers/decisoes.py), so the agent follows
                                       them instead of asking again
 Agents are Agent Zero projects, whose vector memory is already isolated.
+
+20/10 (prompt enxuto): this chat's contexto.md and attachment list left the system prompt (they change during the chat
+and broke the provider cache of every later call); they go at the end, as the `contexto_conversa` extra (no_turno).
+"Velocidade" (stop when done, check at most twice) lives in prompt_enxuto's "Regras que valem sempre".
 """
 
 import importlib.util
@@ -61,6 +65,22 @@ def bloco_decisoes(quem: str, nome: str, modulo=None) -> str:
 - Antes de perguntar algo a {nome} ou de pedir o ok de {nome}, confira esta lista: se o assunto já está decidido, siga a decisão e só conte o que fez. Pergunte só o que ela não cobre.
 - Quando {nome} decidir algo que vale para as próximas vezes (permitir ou proibir algo, um jeito de trabalhar, uma preferência), registre na hora com a ferramenta `decisao` (acao "registrar", com as palavras de {nome} em `citacao`) e termine a resposta com "Anotado: …". Se {nome} mudar de ideia, registre de novo com o mesmo `tema` (a antiga é substituída) ou use acao "revogar".
 - Depois da conversa, um revisor relê as mensagens de {nome} e manda avisos curtos ao celular ("Anotado: …", "Anotado na rotina …", "Anotado sobre você: …", "Quer que eu salve '…' como rotina?", "Você disse «…». Hoje vale a decisão #N … Troco por «…»?"). Quando {nome} responder a um deles: «desfaz a N» → `decisao` acao "revogar" id N; «troca a N» → `decisao` acao "registrar" no tema da decisão N com o texto e as palavras que o aviso trouxe; «tira da ficha: …» → `ficha` acao "remove"; «tira da rotina X» → `salvar_rotina` acao "corrigir" na rotina X dizendo que a correção do aviso deixou de valer; "sim" para salvar rotina → `salvar_rotina` acao "salvar" com os passos que funcionaram."""
+
+
+def no_turno(loop_data, chave: str, fazer) -> None:
+    """A block that changes during a chat (this chat's contexto.md, its attachments) goes at the end of the prompt, not in
+    the system prompt, whose start must stay the same between calls (provider cache): it is computed once per message
+    of the person and cache_prompt writes it into the history only when it changed. Without a real LoopData (old
+    callers), nothing is added."""
+    memo = getattr(loop_data, "params_persistent", None)
+    extras = getattr(loop_data, "extras_persistent", None)
+    if not isinstance(memo, dict) or not isinstance(extras, dict):
+        return
+    turno = memo.setdefault("_no_turno", {})
+    if chave not in turno:
+        turno[chave] = fazer()
+    if turno[chave]:
+        extras[chave] = turno[chave]
 
 
 def _read(path: Path) -> str:
@@ -126,32 +146,21 @@ Pessoas que usam este agente: {", ".join(todos)} (cada uma com a sua ficha). **Q
 
 {bloco_decisoes(quem, nome)}
 
-### Contexto desta conversa (só desta conversa) — {context_file}
-{chat_context}
-
-### Anexos desta conversa — {attachments}/
-{anexos}
-
 ### Como manter essa memória
 {regra_ficha}
 - Quando {nome} citar algo de uma conversa antiga que não está aqui ("aquilo que falamos sobre…"), procure com a ferramenta `lembrar` antes de dizer que não sabe ou de perguntar de novo.
-- Quando surgir algo importante só para esta conversa (objetivo, combinados que só valem aqui, dados, pendências, resumo do que foi feito), atualize {context_file}; decisão que vale também fora daqui vai para a ferramenta `decisao`. Mantenha o arquivo curto e organizado em seções; reescreva em vez de só acrescentar.
-- O texto acima **já é** o {context_file} atual: não o leia de novo (nem com text_editor nem com cat) — isso só repete o mesmo texto no histórico. Para atualizar, reescreva o arquivo inteiro de uma vez a partir do que está acima.
-- Arquivos que o usuário manda da máquina dele: pelo **+ → Attach files** desta conversa, os grandes (até 5 GB) já ficam em {attachments}/ (lista acima; a mensagem traz o caminho) e os pequenos chegam como anexo normal; pela página de controle ("Enviar arquivos", funciona com a máquina desligada) chegam em /a0/usr/workdir/entrada/; pelo botão Files vão para a pasta que ele escolher. Se ele disser que mandou um arquivo, procure nesses lugares.
-- Anexos enviados nesta conversa: copie o arquivo para {attachments}/ (crie a pasta se preciso), registre nome e do que se trata em {context_file} e extraia as informações úteis (ex.: currículo → dados no perfil e no contexto).
-- Assunto de um agente (projeto ativo): guarde também nos arquivos do projeto e na memória do agente.
-- Não precisa avisar a cada atualização; mencione só quando for relevante. Nunca grave senhas, códigos ou tokens nesses arquivos.
-- Se o usuário pedir para criar um novo agente (ex.: "crie um agente de finanças"), crie um projeto em /a0/usr/projects/<nome-curto>/ com o arquivo .a0proj/project.json contendo title, description, instructions (como o agente deve agir, em português), color, git_url vazio e file_structure {{"enabled": true, "max_depth": 3, "max_files": 40, "max_folders": 20, "max_lines": 250, "gitignore": ""}}, e grave o arquivo .a0proj/dono.txt contendo só `{quem}` (cada pessoa só vê os próprios agentes); depois explique que ele aparece no seletor de projeto, no canto superior direito.
+- O contexto desta conversa ({context_file}) e a lista de anexos dela chegam nas mensagens, no bloco `contexto_conversa`, na versão atual (atualizado a cada mensagem dele, quando muda): não leia o arquivo de novo (nem com text_editor nem com cat). Quando surgir algo importante só para esta conversa (objetivo, combinados, dados, pendências, o que já está comprovado e o que falta), reescreva o arquivo inteiro de uma vez, curto e em seções; decisão que vale também fora daqui vai para a ferramenta `decisao`.
+- Arquivos que o usuário manda: pelo **+ → Attach files** desta conversa os grandes (até 5 GB) ficam em {attachments}/ e os pequenos chegam como anexo; pela página de controle ("Enviar arquivos") em /a0/usr/workdir/entrada/; pelo botão Files, na pasta que ele escolher. Anexo recebido: copie para {attachments}/, registre nome e assunto em {context_file} e extraia o que for útil (ex.: currículo → ficha e contexto).
+- Assunto de um agente (projeto ativo): guarde também nos arquivos do projeto e na memória do agente. Não avise a cada atualização. Nunca grave senhas, códigos ou tokens nesses arquivos.
+- Pedido para criar um novo agente (ex.: "crie um agente de finanças"): crie o projeto /a0/usr/projects/<nome-curto>/ com .a0proj/project.json (title, description, instructions em português, color, git_url vazio, file_structure {{"enabled": true, "max_depth": 3, "max_files": 40, "max_folders": 20, "max_lines": 250, "gitignore": ""}}) e .a0proj/dono.txt contendo só `{quem}` (cada pessoa só vê os próprios agentes); depois diga que ele aparece no seletor de projeto, no canto superior direito.
 
 ### Onde fazer as coisas (o usuário assiste ao vivo)
-- **Sites e serviços web** (WhatsApp Web, e-mail, vagas, formulários, pesquisas): use a ferramenta **browser** do computador. Diga ao usuário em uma linha: "acompanhe no botão **Browser** (globo) da barra à direita".
-- **Programas com janela** (LibreOffice, gerenciador de arquivos, apps Linux): use o **Desktop**. Diga: "acompanhe no botão **Desktop**".
-- **Celular Android**: só quando o usuário pedir o celular, quando o app só existe no celular ou for jogo/app Android. Diga: "acompanhe no botão **Celular**".
-- Na dúvida, prefira o computador (Browser/Desktop) ao celular.
-
-### Velocidade
-- Leia **texto** antes de imagem: conteúdo/estado da página no browser; no celular use a ferramenta **`celular`**, que já devolve o texto da tela (e uma imagem pequena quando a tela não tem texto) no mesmo passo. Não tire print + `vision_load` à parte no celular — são passos extras lentos.
-- Para muitos passos repetidos, use a skill **piloto-rapido** (script + Jev) em vez de decidir passo a passo pelo chat.
-- Quando o objetivo for atingido, **pare e responda**. Confira o resultado no máximo 2 vezes; nunca fique repetindo verificações (ex.: "confirmar que continua conectado").
+- Sites e serviços web: ferramenta **browser** ("acompanhe no botão **Browser**"). Programas com janela: **Desktop** ("acompanhe no botão **Desktop**"). Celular Android: só quando ele pedir, o app só existir no celular ou for jogo, com a ferramenta **`celular`**, que já devolve o texto da tela (não tire print + `vision_load` à parte). Na dúvida, o computador.
+- Leia **texto** antes de imagem. Muitos passos repetidos: skill **piloto-rapido** (script + Jev) em vez de decidir passo a passo.
 """
         )
+        no_turno(loop_data, "contexto_conversa", lambda: f"""### Contexto desta conversa (só desta conversa) — {context_file}
+{chat_context}
+
+### Anexos desta conversa — {attachments}/
+{anexos}""")
