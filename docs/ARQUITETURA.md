@@ -89,6 +89,12 @@ flowchart LR
 - **IAM Instance Role** com `bedrock:InvokeModel*`. Nenhuma chave guardada na VM.
 - Memória do agente e arquivos ficam no **EBS**, que persiste desligado. Snapshot diário.
 - Acesso por **Cloudflare Tunnel**: domínio fixo, HTTPS, nenhuma porta aberta.
+- **Delegados (20/10)**: o Agent Zero orquestra e, pela ferramenta `delegar` (plugin `agent_delegates`), entrega uma
+  tarefa ao Hermes (código, dados, arquivos) ou ao OpenClaw (pesquisa na web, segunda opinião). Cada tarefa roda numa
+  caixa Docker própria no host (`infra/vm/caixa_delegados.py`, porta 8791), com terminal, internet e Chromium, mas sem
+  nada do Matheus: instalações dos agentes só para leitura, o depósito e o runtime do Hermes em camada overlay por
+  tarefa, rede `delegados` que só alcança do host o repasse (porta 8792: chamada de modelo e busca no SearXNG do agente,
+  nunca as rotas de arquivos/tokens do proxy). Entregas voltam para `/a0/usr/workdir/delegados/<id>/`.
 
 ### 5. Tela ao vivo: ver o que o agente está fazendo
 

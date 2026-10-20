@@ -3,6 +3,7 @@
     python3 infra/operador/implantar.py prospeccao [--skill prospeccao-instagram] [--forcar]
     python3 infra/operador/implantar.py --host ponte_whatsapp.py [--reiniciar agentepessoal-whatsapp.service] [--forcar]
     python3 infra/operador/implantar.py --host caixa_convidados.py --unidade agentepessoal-caixas.service
+    python3 infra/operador/implantar.py --host caixa_delegados.py --unidade agentepessoal-delegados.service
         (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it)
     python3 infra/operador/implantar.py --controle [--forcar]   (the control page / webhooks Lambda, infra/control)
     python3 infra/operador/implantar.py --segundo-cerebro [--rollback | --preparar]   (page + gateway plugin; no --forcar)
@@ -53,7 +54,8 @@ def vm(comando: str, timeout: int = 600) -> str:
 # host scripts installed by setup.sh in /opt/agentepessoal (12/10 review: they were copied to the VM by hand)
 HOST_ARQUIVOS = ("bedrock_proxy.py", "report_url.py", "watchdog.sh", "memguard.sh", "backup.sh", "hibernate.sh",
                  "entrada.sh", "credenciais_meta.py", "ponte_whatsapp.py", "proximo_despertar.py", "agent_tools.sh",
-                 "saude.py", "firewall.sh", "usuarios.py", "caixa_convidados.py")
+                 "saude.py", "firewall.sh", "usuarios.py", "caixa_convidados.py", "caixa_delegados.py",
+                 "delegado_hermes.py", "delegado_openclaw.py")
 
 
 def _conferir_git(caminhos: list) -> str:

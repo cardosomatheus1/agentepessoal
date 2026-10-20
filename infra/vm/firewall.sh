@@ -9,7 +9,7 @@ set -u
 REDE=$(docker network inspect phone -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null)
 falhou=0
 if [ -n "$REDE" ]; then
-  for porta in 8787 8788 8789 8790; do
+  for porta in 8787 8788 8789 8790 8791 8792; do
     regra=(INPUT -s "$REDE" -p tcp --dport "$porta" -j DROP)
     iptables -C "${regra[@]}" 2>/dev/null || iptables -I "${regra[@]}" || falhou=1
   done
@@ -25,6 +25,20 @@ if [ -n "$CAIXAS" ]; then
   iptables -C "${regra[@]}" 2>/dev/null || iptables -I "${regra[@]}" || falhou=1
   for destino in 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 169.254.0.0/16 100.64.0.0/10; do
     regra=(DOCKER-USER -s "$CAIXAS" -d "$destino" -j DROP)
+    iptables -C "${regra[@]}" 2>/dev/null || iptables -I "${regra[@]}" || falhou=1
+  done
+fi
+# 20/10: the delegates' boxes (caixa_delegados.py, network "delegados": Hermes/OpenClaw with their tools) get the
+# internet and, of the host, only the relay port 8792 (model + search); the ACCEPT must sit above the DROP.
+DELEGADOS=$(docker network inspect delegados -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null)
+if [ -n "$DELEGADOS" ]; then
+  regra=(INPUT -s "$DELEGADOS" -j DROP)
+  iptables -C "${regra[@]}" 2>/dev/null || iptables -I "${regra[@]}" || falhou=1
+  aceita=(INPUT -s "$DELEGADOS" -p tcp --dport 8792 -j ACCEPT)
+  iptables -C "${aceita[@]}" 2>/dev/null && iptables -D "${aceita[@]}"
+  iptables -I "${aceita[@]}" || falhou=1
+  for destino in 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 169.254.0.0/16 100.64.0.0/10; do
+    regra=(DOCKER-USER -s "$DELEGADOS" -d "$destino" -j DROP)
     iptables -C "${regra[@]}" 2>/dev/null || iptables -I "${regra[@]}" || falhou=1
   done
 fi

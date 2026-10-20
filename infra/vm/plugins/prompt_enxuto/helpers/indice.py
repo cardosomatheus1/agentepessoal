@@ -42,8 +42,12 @@ CURTAS: dict[str, str] = {
             "`note`). Só quando a pessoa pedir um objetivo.",
     "office_artifact": "Cria/abre/lê/edita/exporta documentos Office (odt ods odp docx xlsx pptx). `action` create|open|read|"
                        "edit|export…, `kind`, `title`, `format`, `content`, `path`/`file_id`.",
-    "text_delegate": "Pede a Hermes ou OpenClaw uma segunda análise ou crítica só de texto (sem arquivos, contas ou ações). "
-                     "`engine` hermes|openclaw, `task` (autossuficiente, até 10 mil caracteres; sem senhas nem dados sensíveis).",
+    "delegar": "Você orquestra: dá UMA tarefa ao Hermes (código, dados, planilhas, PDFs, arquivos) ou ao OpenClaw "
+               "(pesquisa na web, vários passos, segunda opinião), com terminal, internet e navegador numa máquina isolada "
+               "sem contas dele. `motor` auto|hermes|openclaw, `tarefa` (brief; entregas em /trabalho/saida/), `arquivos`, "
+               "`minutos`, `esperar`; `acao` estado|parar `id`. Contas, mensagens e o que é curto: você.",
+    "text_delegate": "Pede a Hermes ou OpenClaw uma crítica rápida só de texto, sem ferramentas (para trabalho de verdade use "
+                     "`delegar`). `engine` hermes|openclaw, `task` (autossuficiente, até 10 mil caracteres; sem senhas).",
     # --- plugins deste repositório
     "prospeccao": "Prospecção da Raiz, só pela @raiz.connect (nunca o perfil pessoal). Tudo pré-aprovado pelo Matheus dentro "
                   "dos limites do dia; o revisor confere cada texto: reprovado volta com \"REESCREVA\" e o motivo (corrija só "
