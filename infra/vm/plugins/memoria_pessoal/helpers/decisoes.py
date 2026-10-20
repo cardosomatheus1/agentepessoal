@@ -46,6 +46,8 @@ def pasta():
     if nome not in sys.modules and not caminho.exists():
         return None
     antigo = sys.modules.get(nome)
+    if antigo is not None and Path(getattr(antigo, "__file__", "") or "").resolve() != caminho.resolve():
+        return antigo  # loaded from another copy (the cerebro plugin itself, a staging copy, a test): that one wins
     if antigo is None or (caminho.exists() and getattr(antigo, "_mtime", None) != caminho.stat().st_mtime):
         spec = importlib.util.spec_from_file_location(nome, caminho)
         modulo = importlib.util.module_from_spec(spec)
