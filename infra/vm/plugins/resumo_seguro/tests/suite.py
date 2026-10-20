@@ -169,7 +169,14 @@ def _history_real():
                 sys.modules[k] = v
 
 
-class Suite:
+def _testes_compressao():
+    spec = importlib.util.spec_from_file_location("resumo_seguro_testes_compressao", Path(__file__).with_name("compressao.py"))
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m.TestesCompressao
+
+
+class Suite(_testes_compressao()):
     def __init__(self):
         self.rs = _carregar("resumo_seguro_ancoras_teste", RAIZ / "helpers" / "ancoras.py")
         self.ext = _carregar("resumo_seguro_ext_teste", EXT).Ancoras
@@ -348,7 +355,7 @@ class Suite:
         b = self.rs.bloco_do_registro(itens, CTX)
         ok("@zen.marmitas" in b and SAIDA in b and "acao_id=3f2a1b" in b and f"/a0/usr/chats/{CTX}/chat.json" in b,
            f"âncoras da conversa antiga: {b}")
-        ok("Últimas falas" not in b, "as falas já vão no _herdado")
+        ok(self.rs.FALAS_TITULO not in b, "as falas já vão no _herdado")
         ok(self.rs.bloco_do_registro([], CTX) == "", "registro vazio")
 
     async def rodar(self, so: str = "") -> dict:

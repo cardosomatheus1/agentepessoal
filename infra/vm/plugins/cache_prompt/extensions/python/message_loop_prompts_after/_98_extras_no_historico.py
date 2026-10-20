@@ -28,6 +28,10 @@ from helpers.extension import Extension
 KEY = "cache_prompt_extras"
 IDS = "cache_prompt_extras_ids"  # key -> id of the history message that carries its current value
 PAGE_CHARS = 8_000  # browser page text per snapshot (the browser plugin alone allows 20k)
+# Keys written again when the message that carries them is more than N history messages behind the end (20/10,
+# objetivo_vivo: the request and its steps stay near the end of a long task, like Cline's focus chain). Appending is
+# cache-safe: the start of the prompt does not change.
+REPETIR = {"objetivo_vivo": 12}
 # One chat id per line, or "*" for every chat; no file = on everywhere.
 SWITCH = Path("/a0/usr/plugins/cache_prompt/conversas.txt")
 
@@ -54,10 +58,23 @@ def _visiveis(agent, history_output) -> set:
     return ids - resumidas
 
 
-def mudou(values: dict, last: dict, ids: dict, visiveis: set) -> dict:
-    """The keys to write now: new or different value, or the message that carried it is gone from the prompt."""
+def longe(ids: dict, history_output, repetir: dict | None = None) -> set:
+    """Keys of REPETIR whose carrier message is more than N messages behind the end of the history."""
+    repetir = REPETIR if repetir is None else repetir
+    saida = list(history_output or [])
+    pos = {}
+    for i, m in enumerate(saida):
+        mid = m.get("id") if isinstance(m, dict) else getattr(m, "id", None)
+        if mid:
+            pos[mid] = i
+    return {k for k, n in repetir.items() if k in ids and ids[k] in pos and len(saida) - 1 - pos[ids[k]] > n}
+
+
+def mudou(values: dict, last: dict, ids: dict, visiveis: set, distantes: set = frozenset()) -> dict:
+    """The keys to write now: new or different value, the message that carried it is gone from the prompt, or it is
+    a REPETIR key that fell far behind."""
     return {k: v for k, v in values.items()
-            if last.get(k) != v or (k in ids and ids[k] not in visiveis)}
+            if last.get(k) != v or (k in ids and ids[k] not in visiveis) or k in distantes}
 
 
 class ExtrasNoHistorico(Extension):
@@ -77,7 +94,8 @@ class ExtrasNoHistorico(Extension):
             )
         last = agent.get_data(KEY) or {}
         ids = dict(agent.get_data(IDS) or {})
-        changed = mudou(values, last, ids, _visiveis(agent, loop_data.history_output))
+        changed = mudou(values, last, ids, _visiveis(agent, loop_data.history_output),
+                        longe(ids, loop_data.history_output))
         agent.set_data(KEY, {**last, **values})
         loop_data.extras_temporary.clear()
         loop_data.extras_persistent.clear()

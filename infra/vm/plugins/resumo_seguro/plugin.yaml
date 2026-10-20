@@ -1,4 +1,4 @@
 name: resumo_seguro
 title: Resumo que não perde detalhes
-description: Quando o histórico de uma conversa longa é resumido, o resumo leva junto o que não pode sumir — @ dos leads, acao_id, ids de rotina, links e os arquivos completos em saidas/ —, as últimas falas do usuário literais e onde está o texto inteiro; resumo vazio nunca apaga mensagens.
-version: 1.0.0
+description: Quando o histórico de uma conversa longa passa do limite, os resultados velhos de ferramenta viram uma linha, a tarefa em andamento fica inteira e o resto vira UM resumo com seções fixas (objetivo, feito, pendente, próximos passos, decisões), atualizado a cada compressão, até ~45% do limite; o resumo leva @, ids, caminhos de saidas/ e as falas dele literais; resumo vazio nunca apaga mensagens.
+version: 2.0.0
