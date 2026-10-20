@@ -1,10 +1,16 @@
 """Loose ends ("fios soltos"): a per-person register of what is still open, plus a digest of everything
-recent (chats, scheduled tasks, notices, goals, approvals, memory) for the model to cross-check."""
+recent (chats, scheduled tasks, notices, goals, approvals, memory) for the model to cross-check.
+
+20/10 (ADR 0001): for the owner, once the Segundo Cérebro's Pasta is migrated, the register lives there: each loose end
+is a Pendência, one file in Pendencias/ (plugins/cerebro/helpers/pasta.py); "ruido" and other register-wide keys in
+Pendencias/.meta.json. This module stays the only writer; what it drops goes to Arquivo-morto/, never deleted."""
 
 import ast
 import fcntl
 import functools
+import importlib.util
 import json
+import sys
 import os
 import re
 import tempfile
@@ -44,6 +50,29 @@ _DONO = threading.local()
 
 class EstadoIlegivel(RuntimeError):
     pass
+
+
+def pasta():
+    """plugins/cerebro/helpers/pasta.py (the Segundo Cérebro's Pasta), reloaded when it changes; None if absent."""
+    nome = "cerebro_pasta"
+    caminho = Path(__file__).resolve().parents[2] / "cerebro" / "helpers" / "pasta.py"
+    if nome not in sys.modules and not caminho.exists():
+        return None
+    antigo = sys.modules.get(nome)
+    if antigo is None or (caminho.exists() and getattr(antigo, "_mtime", None) != caminho.stat().st_mtime):
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = caminho.stat().st_mtime
+        if antigo is not None and hasattr(antigo, "RAIZ"):
+            modulo.RAIZ = antigo.RAIZ  # a test (or the operator) may point it elsewhere
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
+
+
+def na_pasta(login: str) -> bool:
+    p = pasta()
+    return bool(p and p.ativa(login))
 
 
 @contextmanager
@@ -89,6 +118,15 @@ def _transacao(fn):
 
 
 def carregar(login: str) -> dict:
+    if na_pasta(login):
+        p = pasta()
+        meta = p.RAIZ / "Pendencias" / ".meta.json"
+        try:
+            dados = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else {}
+            dados["fios"] = sorted(p.ler("pendencias"), key=lambda f: f.get("criado", 0))
+        except (p.Ilegivel, OSError, ValueError) as exc:
+            raise EstadoIlegivel(f"uma pendência da Pasta não pôde ser lida ({str(exc)[:60]}); nada foi gravado") from None
+        return dados
     arq = arquivo(login)
     dados = {}
     if arq.exists():
@@ -113,6 +151,12 @@ def salvar(login: str, dados: dict) -> None:
         # resolved/ignored ones are kept 14 days, so a later round does not recreate them
         dados["fios"] = [f for f in dados.get("fios", [])
                          if f.get("estado", "aberto") in ("aberto", "adiado") or agora - f.get("atualizado", agora) < 14 * 86400]
+        if na_pasta(login):
+            p = pasta()
+            p.gravar("pendencias", dados["fios"])
+            p.escrever(p.RAIZ / "Pendencias" / ".meta.json",
+                       json.dumps({k: v for k, v in dados.items() if k != "fios"}, ensure_ascii=False, indent=1))
+            return
         fd, tmp = tempfile.mkstemp(dir=PASTA, prefix=f".{_login(login)}.", suffix=".tmp")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:

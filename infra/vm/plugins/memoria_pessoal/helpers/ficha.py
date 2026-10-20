@@ -10,6 +10,8 @@ tools/memory_tool_store.py, MIT):
 - the same lock and atomic write as the decisions (flock per person, temp file + fsync + rename); an unreadable file
   is an error, never "empty"; every change is appended to <login>.diario.jsonl (who, when, before, after).
 The old free-text file is converted once by `migrar` (the operator runs it; the original is kept as a backup).
+20/10 (ADR 0001): for the owner, once the Segundo Cérebro's Pasta is migrated, the ficha is Contexto/perfil.md there
+(plugins/cerebro/helpers/pasta.py); this module stays its only writer, with the same rules.
 """
 
 import fcntl
@@ -60,7 +62,32 @@ def _login(login: str) -> str:
     return re.sub(r"[^a-z0-9_.-]", "", (login or "").lower()) or "matheus"
 
 
+def pasta():
+    """plugins/cerebro/helpers/pasta.py (the Segundo Cérebro's Pasta), reloaded when it changes; None if absent."""
+    nome = "cerebro_pasta"
+    caminho = Path(__file__).resolve().parents[2] / "cerebro" / "helpers" / "pasta.py"
+    if nome not in sys.modules and not caminho.exists():
+        return None
+    antigo = sys.modules.get(nome)
+    if antigo is None or (caminho.exists() and getattr(antigo, "_mtime", None) != caminho.stat().st_mtime):
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = caminho.stat().st_mtime
+        if antigo is not None and hasattr(antigo, "RAIZ"):
+            modulo.RAIZ = antigo.RAIZ  # a test (or the operator) may point it elsewhere
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
+
+
+def na_pasta(login: str) -> bool:
+    p = pasta()
+    return bool(p and p.ativa(login))
+
+
 def arquivo(login: str) -> Path:
+    if na_pasta(login):
+        return pasta().RAIZ / "Contexto" / "perfil.md"
     return PASTA / f"{_login(login)}.md"
 
 
@@ -142,6 +169,13 @@ def uso(lista: list[str]) -> int:
 
 
 def _render(login: str, lista: list[str]) -> str:
+    if na_pasta(login):
+        cab = pasta().frontmatter({"status": "validado", "tags": ["contexto", "perfil"]})
+        return cab + _render_simples(login, lista)
+    return _render_simples(login, lista)
+
+
+def _render_simples(login: str, lista: list[str]) -> str:
     return (f"# Sobre {_login(login)}\n\n> {MARCA} (add, patch, remove), uma entrada por linha, até {TETO} caracteres. "
             "Não edite à mão.\n\n" + "".join(f"- {e}\n" for e in lista))
 
@@ -156,14 +190,16 @@ def _diario(login: str, registro: dict) -> None:
 def _salvar(login: str, lista: list[str], registro: dict) -> None:
     with _exclusivo(login):
         PASTA.mkdir(parents=True, exist_ok=True)
-        fd, tmp = tempfile.mkstemp(dir=PASTA, prefix=f".{_login(login)}.", suffix=".tmp")
+        destino = arquivo(login)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=destino.parent, prefix=f".{_login(login)}.", suffix=".tmp")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(_render(login, lista))
                 f.flush()
                 os.fsync(f.fileno())
             os.chmod(tmp, 0o644)
-            os.replace(tmp, arquivo(login))
+            os.replace(tmp, destino)
         except BaseException:
             try:
                 os.unlink(tmp)

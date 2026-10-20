@@ -35,11 +35,11 @@ def quem(context) -> str:
 
 
 def executar(d, login: str, acao: str, tema: str = "", decisao: str = "", tipo: str = "decisao", citacao: str = "",
-             id: str = "", busca: str = "", motivo: str = "", origem: str = "", por: str = "agente") -> str:
+             id: str = "", busca: str = "", motivo: str = "", origem: str = "", por: str = "agente", area: str = "") -> str:
     acao = str(acao or "listar").strip().lower()
     if acao in ("registrar", "anotar", "salvar", "mudar"):
         try:
-            r = d.registrar(login, tema, decisao, tipo=tipo, citacao=citacao, origem=origem, por=por)
+            r = d.registrar(login, tema, decisao, tipo=tipo, citacao=citacao, origem=origem, por=por, area=area)
         except d.DecisaoInvalida as exc:
             return f"Não registrei: {exc}."
         if r["efeito"] == "igual":
@@ -69,8 +69,10 @@ def executar(d, login: str, acao: str, tema: str = "", decisao: str = "", tipo: 
 
 class Decisao(Tool):
     async def execute(self, acao: str = "listar", tema: str = "", decisao: str = "", tipo: str = "decisao",
-                      citacao: str = "", id: str = "", busca: str = "", motivo: str = "", **kwargs) -> Response:
+                      citacao: str = "", id: str = "", busca: str = "", motivo: str = "", area: str = "",
+                      **kwargs) -> Response:
         origem = f"conversa {self.agent.context.id}"
         msg = executar(_decisoes(), quem(self.agent.context), acao, tema=tema, decisao=decisao, tipo=tipo,
-                       citacao=citacao, id=str(id or ""), busca=busca, motivo=motivo, origem=origem, por="agente")
+                       citacao=citacao, id=str(id or ""), busca=busca, motivo=motivo, origem=origem, por="agente",
+                       area=area)
         return Response(message=msg, break_loop=False)

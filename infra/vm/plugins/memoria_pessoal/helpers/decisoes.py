@@ -10,10 +10,14 @@ prospecting config, the skill, the docs...) and none was read in a structured wa
   rename). An unreadable file is an error, never "no decisions" (the next write would wipe them).
 - Every turn of the person's agent sees the active ones (extension _17_memoria_pessoal) and follows them instead of
   asking again; the agent records new ones with the `decisao` tool, quoting the person's words.
+- 20/10 (ADR 0001): for the owner, once the Segundo Cérebro's Pasta is migrated, the decisions live there, one file
+  each in Decisoes/ (plugins/cerebro/helpers/pasta.py); this module stays the only writer and keeps its lock.
 """
 
 import fcntl
+import importlib.util
 import json
+import sys
 import os
 import re
 import tempfile
@@ -33,6 +37,29 @@ _DONO = threading.local()
 
 class EstadoIlegivel(RuntimeError):
     pass
+
+
+def pasta():
+    """plugins/cerebro/helpers/pasta.py (the Segundo Cérebro's Pasta), reloaded when it changes; None if absent."""
+    nome = "cerebro_pasta"
+    caminho = Path(__file__).resolve().parents[2] / "cerebro" / "helpers" / "pasta.py"
+    if nome not in sys.modules and not caminho.exists():
+        return None
+    antigo = sys.modules.get(nome)
+    if antigo is None or (caminho.exists() and getattr(antigo, "_mtime", None) != caminho.stat().st_mtime):
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        modulo._mtime = caminho.stat().st_mtime
+        if antigo is not None and hasattr(antigo, "RAIZ"):
+            modulo.RAIZ = antigo.RAIZ  # a test (or the operator) may point it elsewhere
+        sys.modules[nome] = modulo
+    return sys.modules[nome]
+
+
+def na_pasta(login: str) -> bool:
+    p = pasta()
+    return bool(p and p.ativa(login))
 
 
 class DecisaoInvalida(ValueError):
@@ -93,6 +120,15 @@ def _exclusivo(login: str):
 
 
 def carregar(login: str) -> dict:
+    if na_pasta(login):
+        p = pasta()
+        try:
+            itens = p.ler("decisoes")
+        except p.Ilegivel as exc:
+            raise EstadoIlegivel(f"uma decisão da Pasta não pôde ser lida ({str(exc)[:80]}); nada foi gravado.") from None
+        for x in itens:
+            x["id"] = int(x["id"])
+        return {"decisoes": sorted(itens, key=lambda x: x["id"])}
     arq = arquivo(login)
     d = {}
     if arq.exists():
@@ -113,6 +149,9 @@ def carregar(login: str) -> dict:
 
 def _salvar(login: str, d: dict) -> None:
     with _exclusivo(login):
+        if na_pasta(login):
+            pasta().gravar("decisoes", d["decisoes"])
+            return
         PASTA.mkdir(parents=True, exist_ok=True)
         fd, tmp = tempfile.mkstemp(dir=PASTA, prefix=f".{_login(login)}.", suffix=".tmp")
         try:
@@ -149,7 +188,8 @@ def _achar(d: dict, ref, agora: float) -> dict | None:
 
 
 def registrar(login: str, tema: str, decisao: str, tipo: str = "decisao", citacao: str = "", origem: str = "",
-              por: str = "agente", valido_ate: float | None = None, agora: float | None = None) -> dict:
+              por: str = "agente", valido_ate: float | None = None, agora: float | None = None, area: str = "",
+              liga: list | None = None) -> dict:
     """Record a decision; one active per tema (a new one replaces the old). Returns the record plus "efeito":
     "nova" | "substituiu" (with "anterior") | "igual" (same text again: nothing changes)."""
     agora = agora or time.time()
@@ -173,6 +213,10 @@ def registrar(login: str, tema: str, decisao: str, tipo: str = "decisao", citaca
                 "por": _texto(por)[:120] or "agente", "em": agora, "estado": "ativa"}
         if valido_ate:
             nova["valido_ate"] = float(valido_ate)
+        if area:
+            nova["area"] = _texto(area)[:40].lower()
+        if liga:
+            nova["liga"] = [str(r) for r in liga if r][:10]
         if antiga:
             antiga.update(estado="substituida", fim_em=agora, fim_por=nova["por"], substituida_por=nova["id"])
             nova["substitui"] = antiga["id"]

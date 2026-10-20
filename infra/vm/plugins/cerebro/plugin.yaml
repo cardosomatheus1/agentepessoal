@@ -1,0 +1,7 @@
+name: cerebro
+title: Segundo Cérebro (a Pasta)
+description: A Pasta do Segundo Cérebro do Matheus (decisões, pendências, assuntos, contexto, notas do dia) como fonte única, alimentada sozinha pelas conversas no Telegram, com nota do dia às 20h, entrevista de contexto e auditoria.
+version: 1.0.0
+settings_sections: []
+per_project_config: false
+per_agent_config: false
