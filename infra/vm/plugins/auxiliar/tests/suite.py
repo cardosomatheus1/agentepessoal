@@ -393,6 +393,84 @@ class Suite:
         ok(a.registrar_pos(LOGIN, "ev-pos"), "registra")
         eq(a.pos_pendentes(LOGIN), [], "registrado sai")
 
+    async def t_pos_reuniao_vira_nota_na_pasta(self):
+        """20/10: after the fios save of his answer, the owner with the Pasta also gets the meeting's note (via
+        plugins/cerebro helpers/reunioes.py), linked to the loose ends of that answer. The cerebro plugin is faked here:
+        this suite runs inside the live agent and must not touch the real Pasta (cerebro's suite tests the real chain)."""
+        import types
+        a = self.a
+        agora = time.time()
+        fim = agora - 30 * 60
+        d = a.carregar(LOGIN)
+        d["reunioes"] = [{"evento_id": "ev-nota", "titulo": "TESTE_AUX Nota", "inicio_ts": fim - 3600, "fim_ts": fim,
+                          "inicio_txt": "10/10 09:00", "participantes": "João", "pos_registrado": False}]
+        a.salvar(LOGIN, d)
+        fios = {"fios": [{"id": "f1", "titulo": "marcado", "fontes": ["evento_id:ev-nota"], "criado": agora - 9000},
+                         {"id": "f2", "titulo": "acabou de ser criado", "criado": agora},
+                         {"id": "f3", "titulo": "velho", "criado": agora - 9000},
+                         {"id": "f4", "titulo": "de outra reunião", "fontes": ["evento_id:ev-nota-2"], "criado": agora - 9000},
+                         {"id": "f5", "titulo": "ignorado", "fontes": ["evento_id:ev-nota"], "estado": "ignorado"}]}
+        gravadas, versoes = [], []
+        pasta = types.SimpleNamespace(ativa=lambda login: login == LOGIN, data=lambda ts=None: "2026-10-10",
+                                      versionar=lambda motivo="": versoes.append(motivo) or True)
+        reunioes = types.SimpleNamespace(registrar=lambda *args, **kw: gravadas.append((args, kw)) or
+                                         {"arquivo": "Reunioes/2026-10-10-teste-aux-nota.md", "efeito": "nova"})
+        falso = types.SimpleNamespace(m=lambda q: {"pasta": pasta, "reunioes": reunioes,
+                                                   "fios": types.SimpleNamespace(carregar=lambda login: fios)}[q])
+        original = a._cerebro
+        a._cerebro = lambda: falso
+        try:
+            try:
+                from helpers.extension import Extension  # noqa: F401  (inside the agent)
+                ext = _carregar("auxiliar_pos_registrado_teste",
+                                RAIZ / "extensions" / "python" / "tool_execute_after" / "_57_pos_registrado.py")
+            except ImportError:  # outside the agent
+                sys.modules["helpers"] = sys.modules.get("helpers") or types.ModuleType("helpers")
+                sys.modules["helpers.extension"] = types.SimpleNamespace(Extension=type("Extension", (), {}))
+                try:
+                    ext = _carregar("auxiliar_pos_registrado_teste",
+                                    RAIZ / "extensions" / "python" / "tool_execute_after" / "_57_pos_registrado.py")
+                finally:
+                    sys.modules.pop("helpers.extension", None)
+            gancho = object.__new__(ext.PosRegistrado)
+            gancho.agent = types.SimpleNamespace(
+                number=0, context=types.SimpleNamespace(get_data=lambda k: LOGIN if k == "whatsapp_de" else None),
+                last_user_message=types.SimpleNamespace(content={"user_message": "Ficou que eu mando a proposta."}))
+            await gancho.execute(tool_name="decisao")
+            eq(gravadas, [], "outra ferramenta: nada")
+            await gancho.execute(tool_name="fios")
+            eq(a.pos_pendentes(LOGIN), [], "o pós segue marcado como antes")
+            eq(len(gravadas), 1, "uma nota")
+            args, kw = gravadas[0]
+            eq((args[0], args[1], args[2]), ("TESTE_AUX Nota", "2026-10-10", "João"), "título, data e participantes")
+            ok("Ficou que eu mando a proposta." in args[3], f"o relato dele é o resumo: {args[3]!r}")
+            eq(sorted(args[5]), ["pendencia:f1", "pendencia:f2"], "liga as marcadas e as recém-criadas, não as outras")
+            eq(kw.get("evento_id"), "ev-nota", "evento_id na nota")
+            eq(len(versoes), 1, "uma versão da Pasta")
+            # another save of the same answer still completes the note; a later, different message only by evento_id
+            fios["fios"].append({"id": "f6", "titulo": "segundo salvar", "criado": time.time()})
+            await gancho.execute(tool_name="fios")
+            ok("pendencia:f6" in gravadas[-1][0][5], "o segundo salvar da mesma resposta entra")
+            gancho.agent.last_user_message = types.SimpleNamespace(content={"user_message": "outro assunto"})
+            fios["fios"].append({"id": "f7", "titulo": "de outra conversa", "criado": time.time()})
+            await gancho.execute(tool_name="fios")
+            ok("pendencia:f7" not in gravadas[-1][0][5] and gravadas[-1][0][3] == "", "outra mensagem não entra")
+            # someone else (Pasta not theirs) or cerebro absent: only the old behaviour
+            pasta.ativa = lambda login: False
+            eq(a.nota_na_pasta(LOGIN, "ev-nota"), "", "sem a Pasta, sem nota")
+            a._cerebro = lambda: None
+            eq(a.nota_na_pasta(LOGIN, "ev-nota"), "", "sem o plugin cerebro, sem nota")
+            # a failing note never undoes the follow-up
+            d = a.carregar(LOGIN)
+            d["reunioes"].append({"evento_id": "ev-falha", "titulo": "TESTE_AUX Falha", "inicio_ts": fim - 3600,
+                                  "fim_ts": fim, "inicio_txt": "x", "pos_registrado": False})
+            a.salvar(LOGIN, d)
+            a._cerebro = lambda: (_ for _ in ()).throw(RuntimeError("quebrou"))
+            eq(a.pos_depois_dos_fios(LOGIN, "x"), [], "falha na nota não propaga")
+            eq(a.pos_pendentes(LOGIN), [], "e o pós foi marcado")
+        finally:
+            a._cerebro = original
+
     # ------------------------------------------------------------------ phone buttons (receber.py)
     def _receber(self):
         return _carregar("receber_testes", Path("/a0/usr/plugins/whatsapp/api/receber.py"))

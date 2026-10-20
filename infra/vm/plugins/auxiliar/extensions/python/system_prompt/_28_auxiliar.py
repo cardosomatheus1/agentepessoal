@@ -54,5 +54,7 @@ class AuxiliarPrompt(Extension):
             partes.append(f"Você perguntou como foi a reunião «{r['titulo']}» (evento_id {r['evento_id']}, {r['inicio_txt']}). "
                           "Se a mensagem for sobre isso: crie UM fio por combinado (`fios` salvar: titulo = o que, dono = quem, "
                           "prazo AAAA-MM-DD quando houver data ou dia da semana), sem fios extras (nada de \"reunião realizada\"), "
-                          "e confirme em poucas linhas o que vai lembrar.")
+                          "e confirme em poucas linhas o que vai lembrar. Decisão que ele tomou na reunião vai na `decisao`; "
+                          "no fim, `reuniao` pos_registrado com `resumo` (2–3 linhas) e `decisoes` (\"decisao:N\") completa "
+                          "a nota da reunião no Segundo Cérebro.")
         system_prompt.append("\n".join(partes))

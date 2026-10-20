@@ -32,6 +32,8 @@ Reunioes/, Notas-do-dia/, Projetos/, Documentos/. É a única fonte do que ele d
   (`cerebro` acao=consultar, `decisao` listar, `fios` listar) citando a nota; o que não está lá, diga que não está.
 - Pendência = o que ELE precisa fazer. Decisão = escolha feita. Assunto = tema em andamento com onde parou. Toda
   pendência e decisão tem área (raiz, nexos, orbyte, agente, pessoal, geral).
+- Reunião que ele conta (com quem, o que decidiu, o que ficou para fazer) → `cerebro` acao=reuniao, uma nota por
+  reunião em Reunioes/ ligada às decisões e pendências; a da agenda, depois do pós-reunião, já ganha a nota.
 - Entrevista de contexto: quando ele aceitar ("bora"), faça UMA seção de Contexto por vez (`cerebro` acao=contexto):
   leia o que já existe, pergunte, resuma e só grave depois do ok dele, sem inventar."""
 

@@ -71,7 +71,7 @@ CURTAS: dict[str, str] = {
     "rascunho": "Rascunho de resposta de e-mail no estilo da pessoa, entregue no celular dela (quem envia é ela; você nunca "
                 "envia). `acao` criar (`para`, `assunto`, `texto`, `pedido`, `referencia`) | listar | amostras | estilo | estilo_salvar.",
     "reuniao": "Briefing antes e pergunta do pós-reunião de uma reunião da agenda. `acao` agendar (`evento_id`, `titulo`, "
-               "`inicio`, `fim`, `participantes`, `local`) | cancelar | listar | pos_registrado.",
+               "`inicio`, `fim`, `participantes`, `local`) | cancelar | listar | pos_registrado (`evento_id`, `resumo`, `decisoes`).",
     "contas": "Contas e boletos com vencimento (lembretes saem sozinhos). `acao` salvar (`descricao`, `vencimento` AAAA-MM-DD, "
               "`valor`, `fonte`, `codigo`) | listar | paga | ignorar (`id`). Nunca pague.",
     "iniciativa": "Mensagens por iniciativa própria. `acao` contexto | candidatos (`candidatos`: 3–5 {titulo, tipo, nota, "
@@ -87,6 +87,7 @@ CURTAS: dict[str, str] = {
             "prazo, prioridade, proximo_passo, ligacoes, area}) | resolver (`resolvidos`/`id`) | adiar (`id`, `ate`) | avisar (`id`).",
     "cerebro": "Segundo Cérebro do Matheus (a Pasta). `acao` consultar (`texto`: responde \"o que decidi/onde parou/quem é\") | "
                "assunto (`titulo`/`ref`, `onde_parou`, `estado`, `area`) | assuntos | desfazer (`ref` ou \"ultimo\", `motivo`) | "
+               "reuniao (`titulo`, `data`, `participantes`, `resumo`, `decisoes`, `proximos`) | "
                "contexto (entrevista: `secao`, `conteudo`, `aprovado`) | nota_do_dia | auditoria.",
     "videos_em_alta": "Vídeos do YouTube mais vistos das últimas N horas sobre um tema, assistidos. `tema`, opcional "
                       "`consultas`, `quantidade`, `horas`, `assistir`.",

@@ -4,10 +4,12 @@ bills and due dates, and the morning summary as a voice note. State lives in /a0
 import datetime as dt
 import fcntl
 import functools
+import importlib.util
 import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -608,14 +610,120 @@ def pos_pendentes(login: str) -> list[dict]:
 
 
 @_transacao
-def registrar_pos(login: str, evento_id: str) -> bool:
+def registrar_pos(login: str, evento_id: str, relato: str = "") -> bool:
     d = carregar(login)
     for r in d["reunioes"]:
         if r["evento_id"] == evento_id:
-            r["pos_registrado"] = True
+            if not r.get("pos_registrado"):
+                r["pos_registrado"], r["pos_registrado_em"] = True, time.time()
+                if _texto_relato(relato):
+                    r["pos_relato"] = _marca_relato(relato)  # which answer it was (later saves of it add their ones)
             salvar(login, d)
             return True
     return False
+
+
+# ------------------------------------------------------------------ the meeting's note in the Segundo Cérebro (20/10)
+# For the owner, once the Pasta is active (plugins/cerebro, ADR 0001), the pós-reunião also leaves one note per meeting
+# in Reunioes/ (plugins/cerebro/helpers/reunioes.py is its only writer), linked to the Pendências the answer created.
+# The fios behaviour does not change; without the cerebro plugin nothing more happens.
+JANELA_NOVOS = 120  # s: loose ends created this recently, while a follow-up is pending, came from this answer
+JANELA_DEPOIS = 30 * 60  # s: after the follow-up was marked, later saves of the same answer still add their marked ones
+
+
+def _cerebro():
+    """plugins/cerebro's loader (helpers/modulos.py), by path like its own cross-plugin loads; None when absent."""
+    nome = "cerebro_modulos"
+    if nome in sys.modules:
+        return sys.modules[nome]
+    for base in (Path(__file__).resolve().parents[2], Path("/a0/usr/plugins")):
+        caminho = base / "cerebro" / "helpers" / "modulos.py"
+        if caminho.exists():
+            spec = importlib.util.spec_from_file_location(nome, caminho)
+            modulo = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(modulo)
+            sys.modules[nome] = modulo
+            return modulo
+    return None
+
+
+def _da_reuniao(fio: dict, evento_id: str) -> bool:
+    """The loose end carries this meeting's source (the pós prompt asks for evento_id:<id> and pos-reuniao:<id>:<hash>)."""
+    texto = json.dumps(fio, ensure_ascii=False)
+    eid = re.escape(evento_id)
+    return bool(re.search(rf"(?:evento_id:|pos-reuniao:){eid}(?![\w.@-])", texto))
+
+
+def pendencias_da_reuniao(fios_mod, login: str, evento_id: str, desde: float | None = None) -> list[str]:
+    """'pendencia:<id>' of the loose ends from this meeting: marked with its evento_id, or (desde) created since then."""
+    refs = []
+    for f in fios_mod.carregar(login).get("fios", []):
+        if not f.get("id") or f.get("estado") == "ignorado":
+            continue
+        if _da_reuniao(f, evento_id) or (desde is not None and float(f.get("criado") or 0) >= desde):
+            refs.append(f"pendencia:{f['id']}")
+    return refs
+
+
+def nota_na_pasta(login: str, evento_id: str, resumo: str = "", decisoes=None, desde: float | None = None) -> str:
+    """Record (or complete) the meeting's note in the Pasta. The note's path, or '' when it does not apply (not the
+    owner, Pasta not active, cerebro plugin absent, meeting unknown)."""
+    m = _cerebro()
+    if m is None:
+        return ""
+    p = m.m("pasta")
+    if not p.ativa(login):
+        return ""
+    r = next((x for x in carregar(login)["reunioes"] if x["evento_id"] == str(evento_id or "").strip()), None)
+    if not r:
+        return ""
+    pend = pendencias_da_reuniao(m.m("fios"), login, r["evento_id"], desde)
+    nota = m.m("reunioes").registrar(
+        r["titulo"], p.data(r.get("inicio_ts") or r.get("fim_ts")), r.get("participantes", ""), resumo, decisoes or [],
+        pend, origem=f"pós-reunião da agenda (evento_id {r['evento_id']})", por="agente: pós-reunião",
+        evento_id=r["evento_id"])
+    if nota["efeito"] != "igual":
+        p.versionar(f"reunião: {nota['arquivo']}")
+    return nota["arquivo"]
+
+
+def pos_depois_dos_fios(login: str, relato: str = "", agora: float | None = None) -> list[str]:
+    """After `fios` saved something in the person's phone chat: each pending follow-up counts as answered (as before)
+    and, for the owner with the Pasta, gets its note with the loose ends just created; follow-ups marked in the last
+    30 min get the later ones carrying their evento_id. Returns the notes written ('' entries left out)."""
+    agora = agora or time.time()
+    notas, feitos = [], set()
+    resumo = f"“{_texto_relato(relato)}” (Matheus, no pós-reunião)" if _texto_relato(relato) else ""
+    for r in pos_pendentes(login):
+        registrar_pos(login, r["evento_id"], relato)
+        feitos.add(r["evento_id"])
+        notas.append(_nota_segura(login, r["evento_id"], resumo=resumo, desde=agora - JANELA_NOVOS))
+    for r in carregar(login)["reunioes"]:
+        if r["evento_id"] in feitos or not r.get("pos_registrado") \
+                or not 0 <= agora - float(r.get("pos_registrado_em") or 0) < JANELA_DEPOIS:
+            continue
+        mesma = bool(resumo) and r.get("pos_relato") == _marca_relato(relato)  # another save of the same answer
+        notas.append(_nota_segura(login, r["evento_id"], resumo=resumo if mesma else "",
+                                  desde=agora - JANELA_NOVOS if mesma else None))
+    return [n for n in notas if n]
+
+
+def _nota_segura(login: str, evento_id: str, **kw) -> str:
+    """The note never undoes the follow-up: a failure there is logged and the loose ends stay as they were."""
+    try:
+        return nota_na_pasta(login, evento_id, **kw)
+    except Exception as exc:
+        print(f"auxiliar: meeting note not written ({evento_id}): {type(exc).__name__}: {exc}", flush=True)
+        return ""
+
+
+def _texto_relato(texto: str) -> str:
+    return re.sub(r"\s+", " ", str(texto or "")).strip()[:1500]
+
+
+def _marca_relato(texto: str) -> str:
+    import hashlib
+    return hashlib.sha256(_texto_relato(texto).encode()).hexdigest()[:12]
 
 
 # ------------------------------------------------------------------ voice (idea 7)

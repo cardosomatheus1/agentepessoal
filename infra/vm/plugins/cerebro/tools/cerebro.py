@@ -1,11 +1,14 @@
 """Tool `cerebro` (20/10): the agent's hands on the Segundo Cérebro's Pasta, besides `decisao` and `fios`: search it,
-record or move an Assunto, undo what the automatic anotação got wrong, run the context interview (one section at a
-time, written only after his ok), write the nota do dia now, run the audit."""
+record or move an Assunto, log a meeting he tells about (Reunioes/, linked to its Decisões and Pendências), undo what
+the automatic anotação got wrong, run the context interview (one section at a time, written only after his ok), write
+the nota do dia now, run the audit."""
 
 import asyncio
 import importlib.util
 import json
+import re
 import sys
+import uuid
 from pathlib import Path
 
 from helpers.tool import Response, Tool
@@ -48,8 +51,50 @@ def desfazer(m, ref: str, motivo: str, login: str = "matheus") -> list:
     return feito
 
 
+_REF = re.compile(r"^(decisao|pendencia):\S+$")
+
+
+def _achar_ref(p, item: str, candidatos: list[dict], tipo: str, campo: str) -> str:
+    """'decisao:N'/'pendencia:id' as given; else the one open item whose title has every word of the text; else ''."""
+    if _REF.match(item):
+        return item
+    palavras = [w for w in p.slug(item, 200).split("-") if len(w) > 2]
+    achados = [c for c in candidatos if palavras and all(w in p.slug(c.get(campo) or "", 400) for w in palavras)]
+    return f"{tipo}:{achados[0]['id']}" if len(achados) == 1 else ""
+
+
+def reuniao(m, login: str, titulo: str, data: str = "", participantes="", resumo: str = "", decisoes=None,
+            proximos=None, area: str = "") -> dict:
+    """A meeting he told about: decisions as links when registered (or their text), next steps linked to the
+    Pendências they are (an open one with those words, or a new one through fios.py, its only writer)."""
+    p, r, f = m.m("pasta"), m.m("reunioes"), m.m("fios")
+    if len(str(titulo or "").strip()) < 4:
+        raise ValueError("falta o `titulo` da reunião (ex.: 'Alinhamento NEXOS com o João')")
+    data = r.data_valida(data)  # before any pendência is created
+    ident = f"{data}-{p.slug(titulo)}"
+    ativas = m.m("decisoes").ativas(login)
+    dec = [_achar_ref(p, x, ativas, "decisao", "valor") or x for x in r.como_lista(decisoes)]
+    abertas = f.abertos(login, 200)
+    pend, novas = [], []
+    for x in r.como_lista(proximos):
+        ref = _achar_ref(p, x, abertas, "pendencia", "titulo")
+        if not ref:
+            novas.append({"id": uuid.uuid4().hex[:6], "titulo": x[:200], "area": str(area or "").lower() or "geral",
+                          "origem": f"reunião {titulo} ({data})", "fontes": [f"reuniao:{ident}"]})
+            ref = f"pendencia:{novas[-1]['id']}"
+        pend.append(ref)
+    if novas:
+        f.mesclar(login, novas)
+    nota = r.registrar(titulo, data, participantes, resumo, dec, pend, origem="contado por ele no Telegram",
+                       por="agente", area=area)
+    if nota["efeito"] != "igual":
+        p.versionar(f"reunião: {nota['arquivo']}")
+    return {**nota, "novas": len(novas)}
+
+
 def executar(acao: str, login: str, texto: str = "", ref: str = "", titulo: str = "", onde_parou: str = "",
-             estado: str = "", area: str = "", secao: str = "", conteudo: str = "", aprovado: str = "", motivo: str = "") -> str:
+             estado: str = "", area: str = "", secao: str = "", conteudo: str = "", aprovado: str = "", motivo: str = "",
+             data: str = "", participantes="", resumo: str = "", decisoes=None, proximos=None) -> str:
     m = mods()
     p = m.m("pasta")
     if not p.ativa(login):
@@ -68,6 +113,11 @@ def executar(acao: str, login: str, texto: str = "", ref: str = "", titulo: str 
         x = a.registrar(titulo, onde_parou=onde_parou, area=area, estado=estado or "andamento", por="agente")
         p.versionar("assunto")
         return f"Assunto {'atualizado' if x['efeito'] == 'atualizou' else 'aberto'}: {a.linha(x)}"
+    if acao in ("reuniao", "reunião"):
+        x = reuniao(m, login, titulo, data, participantes, resumo, decisoes, proximos, area)
+        efeito = {"nova": "registrada", "atualizou": "completada", "igual": "já estava assim"}[x["efeito"]]
+        return (f"Reunião {efeito}: {m.m('reunioes').linha(x)}" +
+                (f"; {x['novas']} pendência(s) nova(s) dos próximos passos." if x["novas"] else "."))
     if acao == "assuntos":
         lista = m.m("assuntos").abertos(30)
         return "\n".join("- " + m.m("assuntos").linha(x) for x in lista) or "Nenhum assunto em andamento."
@@ -95,16 +145,18 @@ def executar(acao: str, login: str, texto: str = "", ref: str = "", titulo: str 
         r = m.m("auditoria").gravar(p)
         top = "\n".join(f"- {a['checagem']} · {a['arquivo']}: {a['motivo']} → {a['correcao']}" for a in r["achados"][:12])
         return f"Auditoria: {r['nota']}/100 ({r['arquivo']}).\n{top}"
-    return "acao desconhecida: consultar | assunto | assuntos | desfazer | contexto | nota_do_dia | auditoria"
+    return "acao desconhecida: consultar | assunto | assuntos | reuniao | desfazer | contexto | nota_do_dia | auditoria"
 
 
 class Cerebro(Tool):
     async def execute(self, acao: str = "consultar", texto: str = "", ref: str = "", titulo: str = "",
                       onde_parou: str = "", estado: str = "", area: str = "", secao: str = "", conteudo: str = "",
-                      aprovado: str = "", motivo: str = "", **kwargs) -> Response:
+                      aprovado: str = "", motivo: str = "", data: str = "", participantes="", resumo: str = "",
+                      decisoes=None, proximos=None, **kwargs) -> Response:
         try:
             msg = await asyncio.to_thread(executar, acao, dono(self.agent.context), texto, ref, titulo, onde_parou,
-                                          estado, area, secao, conteudo, aprovado, motivo)
+                                          estado, area, secao, conteudo, aprovado, motivo, data, participantes, resumo,
+                                          decisoes, proximos)
         except (ValueError, KeyError) as exc:
             msg = f"NÃO FEITO: {exc}"
         except Exception as exc:

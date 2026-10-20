@@ -12,6 +12,10 @@ glossário em `GLOSSARY.md`). Estrutura dos guias da Playbook Lab: `CLAUDE.md`, 
   citadas; os da mesma frase ficam ligados; vai uma linha "📌 Anotei …". Errado → `cerebro` acao=desfazer.
 - **Nota do dia** às 20h (Bahia) com resumo de 3 linhas e convite para a próxima seção da entrevista
   (`job_loop/_58_cerebro.py`, `helpers/dia.py`). **Auditoria** (checagens do OS Optimizer) no dia 1 de cada mês.
-- **Ferramenta `cerebro`**: consultar, assunto(s), desfazer, contexto (entrevista, só grava com o ok dele),
+- **Reuniões** (`helpers/reunioes.py`, único que escreve em `Reunioes/`): uma nota por reunião
+  (`AAAA-MM-DD-<slug>.md`: resumo, participantes, Decisões e próximos passos com links, `indice.md`); gravar de novo
+  completa, nunca apaga. Vem do pós-reunião do `auxiliar` (a resposta dele vira fios e a nota, ligada a eles) ou de
+  `cerebro` acao=reuniao (reunião que ele conta no Telegram; próximos passos novos viram Pendências pelo `fios.py`).
+- **Ferramenta `cerebro`**: consultar, assunto(s), reuniao, desfazer, contexto (entrevista, só grava com o ok dele),
   nota_do_dia, auditoria.
 - **Operador**: `python3 infra/operador/cerebro.py migrar --motivo "…"` (uma vez), `estado`, `auditoria`, `nota`.

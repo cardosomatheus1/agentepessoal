@@ -28,7 +28,7 @@ def dono(context) -> str:
 
 class Reuniao(Tool):
     async def execute(self, acao: str = "agendar", evento_id: str = "", titulo: str = "", inicio: str = "", fim: str = "",
-                      participantes: str = "", local: str = "", **kwargs) -> Response:
+                      participantes: str = "", local: str = "", resumo: str = "", decisoes=None, **kwargs) -> Response:
         a = aux()
         login = dono(self.agent.context)
         acao = str(acao or "agendar").lower()
@@ -39,7 +39,16 @@ class Reuniao(Tool):
             return Response(message=await a.cancelar_reuniao(login, evento_id), break_loop=False)
         if acao == "pos_registrado":
             ok = a.registrar_pos(login, evento_id)
-            return Response(message="Pós-reunião registrado." if ok else "Reunião não encontrada.", break_loop=False)
+            if not ok:
+                return Response(message="Reunião não encontrada.", break_loop=False)
+            try:  # the owner with the Pasta: the meeting's note (summary, decisions, the loose ends with its evento_id)
+                nota = a.nota_na_pasta(login, evento_id, resumo=resumo, decisoes=decisoes)
+            except Exception as exc:
+                nota, falha = "", f" A nota da reunião na Pasta NÃO foi gravada ({type(exc).__name__}: {str(exc)[:150]})."
+            else:
+                falha = ""
+            return Response(message="Pós-reunião registrado." + (f" Nota da reunião: {nota}." if nota else "") + falha,
+                            break_loop=False)
         if acao == "listar":
             agora = a.agora().timestamp()
             itens = [r for r in a.carregar(login)["reunioes"] if r["fim_ts"] > agora - 86400]

@@ -1,6 +1,6 @@
 """The Segundo Cérebro's Pasta (20/10, ADR 0001): Matheus's decisions, pendências, assuntos, context, meetings and notas
 do dia as Markdown files in one folder, the only source. Written only through this module (and the helpers that use
-it: decisoes.py, fios.py, ficha.py, assuntos.py); the site and the agent read it.
+it: decisoes.py, fios.py, ficha.py, assuntos.py, reunioes.py); the site and the agent read it.
 
 Layout (from the Playbook Lab guides "Setup inicial do OS" and "OS Optimizer", with the glossary's words):
   CLAUDE.md            rules and the map of the folders (read first)

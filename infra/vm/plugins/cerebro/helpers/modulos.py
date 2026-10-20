@@ -11,6 +11,7 @@ PLUGINS = RAIZ.parent if (RAIZ.parent / "memoria_pessoal").exists() else Path("/
 CAMINHOS = {
     "pasta": ("cerebro_pasta", RAIZ / "helpers" / "pasta.py"),
     "assuntos": ("cerebro_assuntos", RAIZ / "helpers" / "assuntos.py"),
+    "reunioes": ("cerebro_reunioes", RAIZ / "helpers" / "reunioes.py"),
     "captura": ("cerebro_captura", RAIZ / "helpers" / "captura.py"),
     "dia": ("cerebro_dia", RAIZ / "helpers" / "dia.py"),
     "auditoria": ("cerebro_auditoria", RAIZ / "helpers" / "auditoria.py"),

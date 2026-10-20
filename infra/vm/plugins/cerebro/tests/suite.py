@@ -364,6 +364,161 @@ class Suite:
         finally:
             self.limpar()
 
+    def _ferramenta(self):
+        return _carregar("cerebro_tool_teste", RAIZ / "tools" / "cerebro.py", {
+            "helpers": types.ModuleType("helpers"), "helpers.tool": types.SimpleNamespace(
+                Tool=type("Tool", (), {}), Response=type("Response", (), {}))})
+
+    def t_reuniao_nota_com_links_indice_e_nunca_menos(self):
+        self.preparar()
+        try:
+            p, r = self.p, self.mods.m("reunioes")
+            x = r.registrar("Alinhamento NEXOS com o João", "2026-10-20", "João (joao@x.com), Maria",
+                            "Fechamos o escopo do piloto.", ["decisao:1", "Prazo de 30 dias"], ["pendencia:cc22dd"],
+                            origem="teste", area="NEXOS")
+            eq((x["efeito"], x["arquivo"]), ("nova", "Reunioes/2026-10-20-alinhamento-nexos-com-o-joao.md"), "nome AAAA-MM-DD-slug")
+            arq = p.RAIZ / x["arquivo"]
+            texto = arq.read_text()
+            cab = texto.split("\n---\n", 1)[0]
+            ok('status: "registrada"' in cab and 'tags: ["reuniao", "nexos"]' in cab, f"cabeçalho derivado: {cab}")
+            eq(p.ler_frontmatter(texto)["participantes"], ["João (joao@x.com)", "Maria"], "participantes em lista")
+            for termo in ("## Resumo", "Fechamos o escopo", "## Participantes", "- Maria", "## Decisões",
+                          "[[Decisoes/0001-prospeccao-da-raiz-com-20-dms-por-dia]]", "- Prazo de 30 dias",
+                          "## Próximos passos", "[[Pendencias/cc22dd-"):
+                ok(termo in texto, f"nota tem {termo!r}")
+            idx = (p.RAIZ / "Reunioes" / "indice.md").read_text()
+            ok("[[Reunioes/2026-10-20-alinhamento-nexos-com-o-joao]]" in idx and "20/10/2026" in idx, idx)
+            # the same meeting again with less: nothing lost
+            y = r.registrar("alinhamento nexos com o joão", "2026-10-20", "", "", [], [])
+            eq(y["efeito"], "igual", "com menos, nada muda")
+            eq(arq.read_text(), texto, "arquivo intacto")
+            z = r.registrar("Alinhamento NEXOS com o João", "2026-10-20", "Pedro", "O João manda a proposta.", [],
+                            ["pendencia:aa11bb", "pendencia:cc22dd"])
+            nota = p.ler_frontmatter(arq.read_text())
+            eq(z["efeito"], "atualizou", "com mais, completa")
+            eq(nota["participantes"], ["João (joao@x.com)", "Maria", "Pedro"], "participantes somados")
+            eq(nota["pendencias"], ["pendencia:cc22dd", "pendencia:aa11bb"], "próximos passos somados, sem repetir")
+            ok("Fechamos o escopo" in nota["resumo"] and "O João manda" in nota["resumo"], "resumo novo somado ao antigo")
+            eq(nota["area"], "nexos", "área mantida")
+            r.registrar("Outra reunião de teste", "2026-10-19", "", "x", [], [])
+            eq([n["id"] for n in r.todas()], ["2026-10-20-alinhamento-nexos-com-o-joao", "2026-10-19-outra-reuniao-de-teste"],
+               "mais recente primeiro")
+            aud = self.mods.m("auditoria").rodar(p)
+            ruins = [a for a in aud["achados"] if "Reunioes" in a["arquivo"]]
+            eq(ruins, [], "auditoria sem achado nas reuniões (índice, cabeçalho, links)")
+            for ruim in (("", "2026-10-20"), ("Reunião válida", "20/10/2026")):
+                try:
+                    r.registrar(ruim[0], ruim[1])
+                    raise Falha(f"aceitou {ruim}")
+                except ValueError:
+                    pass
+            arq.write_text("---\nid: {quebrado\n---\n")
+            try:
+                r.registrar("Alinhamento NEXOS com o João", "2026-10-20", resumo="algo")
+                raise Falha("sobrescreveu uma nota ilegível")
+            except p.Ilegivel:
+                pass
+            eq(arq.read_text(), "---\nid: {quebrado\n---\n", "a ilegível fica como estava")
+        finally:
+            self.limpar()
+
+    def t_ferramenta_reuniao_liga_decisoes_e_cria_pendencias(self):
+        self.preparar()
+        try:
+            ferr, p = self._ferramenta(), self.p
+            msg = ferr.executar("reuniao", "matheus", titulo="Cardápio com o cliente da Raiz", data="2026-10-18",
+                                participantes="Ana", resumo="Ana gostou do cardápio; pediu preço por kg.",
+                                decisoes=["usar opencode", "Manter o preço atual até dezembro"],
+                                proximos='["mandar o cardápio raiz", "Calcular o preço por kg"]', area="raiz")
+            ok(msg.startswith("Reunião registrada: Reunioes/2026-10-18-cardapio-com-o-cliente-da-raiz.md") and
+               "1 pendência(s) nova(s)" in msg, msg)
+            nota = p.ler_frontmatter((p.RAIZ / "Reunioes" / "2026-10-18-cardapio-com-o-cliente-da-raiz.md").read_text())
+            eq(nota["decisoes"], ["decisao:2", "Manter o preço atual até dezembro"], "decisão registrada vira link; texto fica")
+            eq(nota["pendencias"][0], "pendencia:cc22dd", "próximo passo que já era pendência é ligado, não duplicado")
+            nova = self.f.obter("matheus", nota["pendencias"][1].split(":", 1)[1])
+            ok(nova and nova["titulo"] == "Calcular o preço por kg" and nova["area"] == "raiz", f"pendência criada: {nova}")
+            ok("reuniao:2026-10-18-cardapio-com-o-cliente-da-raiz" in nova["fontes"], "a pendência sabe de que reunião veio")
+            texto = (p.RAIZ / "Reunioes" / "2026-10-18-cardapio-com-o-cliente-da-raiz.md").read_text()
+            ok("[[Decisoes/0002-" in texto and texto.count("[[Pendencias/") == 2, "links na nota")
+            antes = len(self.f.carregar("matheus")["fios"])
+            try:
+                ferr.executar("reuniao", "matheus", titulo="Outra reunião", data="ontem", proximos=["algo novo"])
+                raise Falha("aceitou data fora de AAAA-MM-DD")
+            except ValueError:
+                pass
+            eq(len(self.f.carregar("matheus")["fios"]), antes, "data errada: nenhuma pendência criada antes do erro")
+            x = ferr.executar("reuniao", "matheus", titulo="Cardápio com o cliente da Raiz", data="2026-10-18",
+                              proximos=["mandar o cardápio raiz"])
+            ok(x.startswith("Reunião já estava assim"), f"de novo, igual: {x}")
+        finally:
+            self.limpar()
+        self.preparar()
+        try:
+            ok("só do Matheus" in self._ferramenta().executar("reuniao", "ilia", titulo="Qualquer reunião"), "convidado não")
+        finally:
+            self.limpar()
+
+    def t_pos_reuniao_do_auxiliar_grava_a_nota(self):
+        self.preparar()
+        try:
+            p = self.p
+            aux = _carregar("auxiliar_helper_teste_cerebro", PLUGINS / "auxiliar" / "helpers" / "auxiliar.py")
+            aux.PASTA = self.tmp / "auxiliar"
+            sys.modules["cerebro_modulos"] = self.mods
+            fim = time.time() - 30 * 60
+            d = aux.carregar("matheus")
+            d["reunioes"] = [{"evento_id": "ev7k3", "titulo": "Alinhamento NEXOS", "inicio_ts": fim - 3600, "fim_ts": fim,
+                              "inicio_txt": "20/10 09:00", "participantes": "João, Maria", "pos_registrado": False},
+                             {"evento_id": "ev7k3x", "titulo": "Outra", "inicio_ts": fim - 3600, "fim_ts": fim - 86400 * 3,
+                              "inicio_txt": "17/10 09:00", "pos_registrado": True}]
+            aux.salvar("matheus", d)
+            # the model's save of his answer: one marked with the evento_id, one just created without it
+            self.f.mesclar("matheus", [{"id": "m1m1m1", "titulo": "Mandar a proposta ao João", "fontes": ["evento_id:ev7k3"]},
+                                       {"id": "n2n2n2", "titulo": "Ver o contrato com a Maria"}])
+            velho = self.f.carregar("matheus")
+            for x in velho["fios"]:
+                if x["id"] == "aa11bb":
+                    x["fontes"] = ["evento_id:ev7k3x"]  # another meeting's id that starts the same: not this one
+            self.f.salvar("matheus", velho)
+            relato = "Foi bom: eu mando a proposta ao João até sexta e vejo o contrato com a Maria."
+            notas = aux.pos_depois_dos_fios("matheus", relato)
+            eq(len(notas), 1, f"uma nota: {notas}")
+            reg = next(r for r in aux.carregar("matheus")["reunioes"] if r["evento_id"] == "ev7k3")
+            ok(reg["pos_registrado"] and reg.get("pos_registrado_em"), "o pós segue marcado como antes")
+            nota = p.ler_frontmatter((p.RAIZ / notas[0]).read_text())
+            eq(sorted(nota["pendencias"]), ["pendencia:m1m1m1", "pendencia:n2n2n2"], "liga as pendências da resposta")
+            ok(relato in nota["resumo"] and nota["participantes"] == ["João", "Maria"] and nota["evento_id"] == "ev7k3",
+               f"resumo e participantes: {nota}")
+            ok("[[Pendencias/m1m1m1-" in (p.RAIZ / notas[0]).read_text(), "link na nota")
+            # a later save of the same answer adds its marked one; an unrelated new one is not linked
+            self.f.mesclar("matheus", [{"id": "o3o3o3", "titulo": "Agendar a volta", "fontes": ["pos-reuniao:ev7k3:abc123"]}])
+            aux.pos_depois_dos_fios("matheus", relato)
+            nota = p.ler_frontmatter((p.RAIZ / notas[0]).read_text())
+            ok("pendencia:o3o3o3" in nota["pendencias"] and nota["resumo"].count(relato) == 1, f"completou sem repetir: {nota}")
+            self.f.mesclar("matheus", [{"id": "p4p4p4", "titulo": "Assunto de outra conversa"}])
+            aux.pos_depois_dos_fios("matheus", "outra mensagem, outro assunto")
+            nota = p.ler_frontmatter((p.RAIZ / notas[0]).read_text())
+            ok("pendencia:p4p4p4" not in nota["pendencias"] and "outra mensagem" not in nota["resumo"],
+               "outra mensagem não entra na nota")
+            # the agent's explicit pos_registrado with summary and decisions completes the same note
+            dec = self.d.registrar("matheus", "nexos.piloto", "Piloto da NEXOS em novembro", citacao="piloto em novembro")
+            ok(aux.nota_na_pasta("matheus", "ev7k3", resumo="Piloto acertado.", decisoes=[f"decisao:{dec['id']}"]) == notas[0],
+               "mesma nota")
+            ok(f"[[Decisoes/{str(dec['id']).zfill(4)}-" in (p.RAIZ / notas[0]).read_text(), "decisão ligada")
+            # a guest, or without the cerebro plugin: the follow-up is marked as before and nothing else happens
+            eq(aux.nota_na_pasta("teste_conv", "ev7k3"), "", "convidado sem nota")
+            d = aux.carregar("matheus")
+            d["reunioes"].append({"evento_id": "ev9", "titulo": "Sem cérebro", "inicio_ts": fim - 3600, "fim_ts": fim,
+                                  "inicio_txt": "x", "pos_registrado": False})
+            aux.salvar("matheus", d)
+            aux._cerebro = lambda: None
+            eq(aux.pos_depois_dos_fios("matheus", "x"), [], "sem o plugin cerebro, nenhuma nota")
+            ok(next(r for r in aux.carregar("matheus")["reunioes"] if r["evento_id"] == "ev9")["pos_registrado"],
+               "mas o pós foi marcado")
+            ok(not list((p.RAIZ / "Reunioes").glob("*sem-cerebro*")), "e nenhuma nota")
+        finally:
+            self.limpar()
+
     def t_prompt_e_indice(self):
         ext = (RAIZ / "extensions" / "python" / "system_prompt" / "_27_cerebro.py").read_text(encoding="utf-8")
         for termo in ("anotação automática", "Pendência = o que ELE precisa fazer", "acao=desfazer", "UMA seção"):
