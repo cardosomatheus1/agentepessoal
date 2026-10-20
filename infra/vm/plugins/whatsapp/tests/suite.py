@@ -14,6 +14,7 @@ import time
 import traceback
 import types
 import urllib.error
+from datetime import datetime
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -83,6 +84,7 @@ class Suite:
         self.p = _modulo("whatsapp_ponte_teste", "ponte.py")
         self.t = _modulo("whatsapp_turnos_teste", "turnos.py")
         self.v = _modulo("whatsapp_voz_teste", "voz.py")
+        self.r = _modulo("whatsapp_resumo_teste", "resumo_andamento.py")
         self.resultados = []
 
     def _preparar(self):
@@ -91,6 +93,8 @@ class Suite:
         self.p.SAIDA, self.p.SAIDA_DESISTIDA = self._tmp / "saida_pendente.jsonl", self._tmp / "saida_desistida.jsonl"
         self.t.ARQ, self.t.SUBIDAS = self._tmp / "turnos_abertos.json", self._tmp / "reinicios.json"
         self.v.CONFIG, self.v.PASTA = self._tmp / "voz.json", self._tmp / "voz"
+        self.r.ESTADO = self._tmp / "resumos.json"
+        self.r._chamar = lambda texto: (_ for _ in ()).throw(OSError("sem modelo nos testes"))
         self.falados = []
 
         def tts_falso(texto, destino, idioma="pt"):
@@ -899,6 +903,242 @@ class Suite:
             await self._extensao("job_loop", "_58_reenviar_saida.py", "ReenviarSaida").execute()
         eq(self.enviados[-1]["texto"], "(pode ser repetida) Resposta perdida", "o job loop reenvia")
         eq(self.p._ler_jsonl(self.p.SAIDA), [], "e tira da fila")
+
+    # 20/10, Matheus: "às vezes fica mais de 60 min e não faço ideia do que tá acontecendo, se de fato tá executando,
+    # não sei se travou" — short summaries in a new message (helpers/resumo_andamento.py)
+    @staticmethod
+    def _pedido(cid, desde, agora, ultimo=None, esperando="", rodando=True, respondido=False, parado_por_ele=False,
+                texto="pesquisa lava e seca"):
+        return {"id": cid, "pedido": texto, "desde": desde, "rodando": rodando, "respondido": respondido,
+                "parado_por_ele": parado_por_ele, "ultimo_item": agora - 30 if ultimo is None else ultimo,
+                "esperando": esperando, "ultima_entrada": desde}
+
+    def t_resumo_intervalo(self):
+        r = self.r
+        t0, est, enviados = 1_000_000.0, {}, []
+        for minuto in range(0, 61):
+            agora = t0 + minuto * 60
+            for envio in r.planejar({LOGIN: [self._pedido("c1", t0, agora)]}, est, agora, "P", lambda *a: False):
+                enviados.append(minuto)
+                r.marcar_enviado(est, envio, agora)
+        eq(enviados, [10, 25, 40, 55], "o 1º aos 10 min, depois a cada 15 (numa tarefa de 60 min: 4 mensagens)")
+        envio = r.planejar({LOGIN: [self._pedido("c1", t0, t0 + 70 * 60)]}, est, t0 + 70 * 60, "P", lambda *a: False)[0]
+        texto = r.texto_resumo([{**envio["pedidos"][0], "feito": "comparou preços", "agora": "lendo avaliações"}], t0 + 70 * 60)
+        eq(texto, "⏳ Ainda em «pesquisa lava e seca» (70 min)\nFeito: comparou preços\nAgora: lendo avaliações",
+           "três linhas")
+
+    def t_resumo_parado_vs_esperando(self):
+        r = self.r
+        t0, est = 1_000_000.0, {}
+        agora = t0 + 10 * 60
+        envio = r.planejar({LOGIN: [self._pedido("c1", t0, agora)]}, est, agora, "P", lambda *a: False)[0]
+        r.marcar_enviado(est, envio, agora)
+        # 9 min with no new item in its chats: the next summary comes forward (5 min after the last), once
+        ultimo = t0 + 7 * 60
+        agora = t0 + 16 * 60
+        saida = r.planejar({LOGIN: [self._pedido("c1", t0, agora, ultimo)]}, est, agora, "P", lambda *a: False)
+        ok(len(saida) == 1, f"parado há 9 min: resumo antecipado: {saida}")
+        p = {**saida[0]["pedidos"][0], "feito": "", "agora": "olhando um site no navegador"}
+        texto = r.texto_resumo([p], agora)
+        ok("⚠️ Sem avanço há 9 min (última coisa: olhando um site no navegador)" in texto and "/parar" in texto
+           and "/painel" in texto, f"diz que parou e o que fazer: {texto}")
+        r.marcar_enviado(est, saida[0], agora)
+        agora = t0 + 22 * 60
+        eq(r.planejar({LOGIN: [self._pedido("c1", t0, agora, ultimo)]}, est, agora, "P", lambda *a: False), [],
+           "a mesma parada não é avisada de novo antes da hora")
+        agora = t0 + 31 * 60
+        saida = r.planejar({LOGIN: [self._pedido("c1", t0, agora, ultimo)]}, est, agora, "P", lambda *a: False)
+        texto = r.texto_resumo([{**saida[0]["pedidos"][0], "agora": "olhando um site"}], agora)
+        ok("Parado há 24 min" in texto and "parece travado" in texto, f"20+ min: parece travado: {texto}")
+        # a slow tool that runs is "esperando", not "sem avanço", and brings nothing forward
+        est = {}
+        agora = t0 + 10 * 60
+        r.marcar_enviado(est, r.planejar({LOGIN: [self._pedido("c1", t0, agora)]}, est, agora, "P", lambda *a: False)[0], agora)
+        agora = t0 + 20 * 60
+        eq(r.planejar({LOGIN: [self._pedido("c1", t0, agora, t0 + 9 * 60, "um comando no computador terminar")]}, est,
+                      agora, "P", lambda *a: False), [], "comando longo rodando: nada antecipado")
+        texto = r.texto_resumo([{"pedido": "x", "inicio": t0, "agora": "rodando um comando no computador", "parado_s": 11 * 60,
+                                 "esperando": "um comando no computador terminar"}], agora)
+        ok(texto.endswith("Agora: rodando um comando no computador — esperando um comando no computador terminar há 11 min")
+           and "⚠️" not in texto, texto)
+        # what counts as a slow tool, from the log
+        it = lambda tipo, ferramenta="", texto="", em=1.0: {"em": em, "tipo": tipo, "agente": 0, "ferramenta": ferramenta,  # noqa: E731
+                                                          "titulo": "", "texto": texto}
+        eq(r.esperando([it("agent"), it("code_exe", "code_execution_tool", "baixando 40%")]), "um comando no computador terminar",
+           "terminal rodando")
+        eq(r.esperando([it("tool", "browser")]), "a página do navegador carregar", "navegador ainda sem resultado")
+        eq(r.esperando([it("tool", "browser", "página aberta")]), "", "navegador já respondeu: não é espera")
+        eq(r.esperando([it("tool", "wait")]), "o horário combinado", "espera combinada")
+        eq(r.esperando([it("tool", "browser"), it("agent")]), "", "o modelo já está no passo seguinte")
+        eq(r.esperando([it("agent")], aprovacao=True), "a sua aprovação", "aprovação pendente")
+
+    def t_resumo_varios_pedidos_um_so(self):
+        r = self.r
+        t0, est = 1_000_000.0, {}
+        agora = t0 + 12 * 60
+        por = {LOGIN: [self._pedido("c1", t0, agora), self._pedido("c2", t0 + 6 * 60, agora, texto="e o lead da Zen?"),
+                       self._pedido("c3", t0 + 9 * 60, agora, texto="novo agora")],
+               "convidado": [self._pedido("g1", t0, agora, texto="pedido do convidado")]}
+        saida = r.planejar(por, est, agora, "P", lambda *a: False)
+        eq(sorted(e["login"] for e in saida), ["convidado", LOGIN], "cada pessoa recebe o seu")
+        meu = next(e for e in saida if e["login"] == LOGIN)
+        eq([p["id"] for p in meu["pedidos"]], ["c1", "c2"], "um resumo com os pedidos dele (o de 3 min fica de fora)")
+        texto = r.texto_resumo([{**p, "feito": "", "agora": "pesquisando"} for p in meu["pedidos"]], agora)
+        ok(texto.startswith("⏳ Ainda em 2 pedidos:") and "«pesquisa lava e seca» (12 min)" in texto
+           and "«e o lead da Zen?» (6 min)" in texto and "pedido do convidado" not in texto, texto)
+
+    def t_resumo_sem_spam(self):
+        r, p = self.r, self.p
+        t0 = 1_000_000.0
+        for minuto in (1, 4, 6, 9):
+            eq(r.planejar({LOGIN: [self._pedido("c1", t0, t0 + minuto * 60)]}, {}, t0 + minuto * 60, "P",
+                          lambda *a: False), [], f"nada antes dos 10 min ({minuto} min)")
+        est = {}
+        eq(r.planejar({LOGIN: [self._pedido("c1", t0, t0 + 600)]}, est, t0 + 600, "P", lambda *a: True), [],
+           "horário de silêncio ou /foco: não sai (nem fica para depois)")
+        # the bridge's rules, read from its files
+        noite = datetime(2026, 10, 20, 23, 40, tzinfo=r.FUSO).timestamp()
+        tarde = datetime(2026, 10, 20, 15, 0, tzinfo=r.FUSO).timestamp()
+        ok(r.em_silencio(LOGIN, noite, noite - 3600, {}, {}), "23h40, sem escrever há 1 h: silêncio (padrão 23–7)")
+        ok(not r.em_silencio(LOGIN, noite, noite - 600, {}, {}), "escreveu há 10 min: acordado")
+        ok(not r.em_silencio(LOGIN, noite, 0, {LOGIN: {"desligado": True}}, {}), "/silencio off")
+        ok(not r.em_silencio(LOGIN, tarde, 0, {}, {}), "de tarde: sai")
+        ok(r.em_silencio(LOGIN, tarde, tarde, {}, {LOGIN: tarde + 3600}), "/foco até daqui a 1 h: segura")
+        # WhatsApp: once the summaries start, the progress message (a new message each time there) stops
+        aberto = {LOGIN: {"em": t0 - 300, "n": 1, "maximo": 1}}
+        pedidos = {LOGIN: [{"pedido": "a", "desde": t0 - 900, "fazendo": ""}]}
+        eq(p.proximos_andamentos(pedidos, aberto, t0, {LOGIN}), [], "WhatsApp com resumos: a mensagem de progresso para")
+        eq(len(p.proximos_andamentos(pedidos, {LOGIN: {**aberto[LOGIN], "canal": "telegram"}}, t0, {LOGIN})), 1,
+           "Telegram: continua se editando (não toca)")
+        eq(p.proximos_andamentos({}, aberto, t0, {LOGIN})[0][2], True, "e no fim fecha do mesmo jeito")
+        p.ANDAMENTO = self._tmp / "andamento.json"
+        respostas = [b'{"ok": true, "como": "enviada"}', b'{"ok": true, "como": "editada"}', b'{"ok": true, "como": "nada"}']
+
+        def falso(req, timeout=0):
+            resp = _Resposta()
+            resp.read = lambda: respostas.pop(0)
+            return resp
+
+        p._abrir = falso
+        p.andamento(LOGIN, "1")
+        ok("canal" not in p.andamento_aberto()[LOGIN], "a 1ª ainda não diz o canal")
+        p.andamento(LOGIN, "2")
+        p.andamento(LOGIN, "3")
+        eq(p.andamento_aberto()[LOGIN].get("canal"), "telegram", "a ponte editou: Telegram (e fica)")
+        # the summary goes as a new message, not "progresso" (held or counted in the day's ceiling), and not kept
+        self._ponte_responde(None)
+        eq(p.enviar_resumo(LOGIN, "⏳ Ainda em «x» (10 min)"), "", "sai")
+        eq((self.enviados[-1]["tipo"], self.enviados[-1]["texto"]), ("andamento", "⏳ Ainda em «x» (10 min)"), "tipo próprio")
+        eq(p._ler_jsonl(p.AVISOS / f"{LOGIN}.jsonl"), [], "não entra nos avisos da conversa")
+
+    def t_resumo_resposta_encerra(self):
+        r = self.r
+        t0, est = 1_000_000.0, {}
+        agora = t0 + 10 * 60
+        r.marcar_enviado(est, r.planejar({LOGIN: [self._pedido("c1", t0, agora)]}, est, agora, "P", lambda *a: False)[0], agora)
+        agora = t0 + 30 * 60
+        eq(r.planejar({LOGIN: [self._pedido("c1", t0, agora, respondido=True)]}, est, agora, "P", lambda *a: False), [],
+           "respondido (ainda rodando): sai do resumo")
+        eq(est, {}, "e a pessoa sai do estado")
+        # stopped with no answer (the clean-up, a crash, an error): one last line
+        est = {}
+        agora = t0 + 10 * 60
+        r.marcar_enviado(est, r.planejar({LOGIN: [self._pedido("c1", t0, agora)]}, est, agora, "P", lambda *a: False)[0], agora)
+        agora = t0 + 33 * 60
+        saida = r.planejar({LOGIN: [self._pedido("c1", t0, agora, rodando=False)]}, est, agora, "P", lambda *a: False)
+        eq([e["tipo"] for e in saida], ["sem_resposta"], "parou sem resposta: avisa")
+        texto = r.texto_do_envio(saida[0], agora)
+        ok(texto.startswith("⏹️ «pesquisa lava e seca» parou sem me dar a resposta (depois de 33 min)") and "/painel" in texto, texto)
+        eq(r.planejar({LOGIN: [self._pedido("c1", t0, agora, rodando=False)]}, est, agora, "P", lambda *a: False), [], "uma vez")
+        # /parar (he already got "⏹️ Parei") and a restart (_56_retomar_pedido resumes and tells): nothing
+        for caso in ({"parado_por_ele": True}, {}):
+            est = {}
+            agora = t0 + 10 * 60
+            r.marcar_enviado(est, r.planejar({LOGIN: [self._pedido("c1", t0, agora)]}, est, agora, "P", lambda *a: False)[0], agora)
+            proc = "P" if caso else "OUTRO"
+            eq(r.planejar({LOGIN: [self._pedido("c1", t0, agora + 60, rodando=False, **caso)]}, est, agora + 60, proc,
+                          lambda *a: False), [], f"nada: {caso or 'reinício'}")
+        # from a log: an answer after his last message, and his /parar
+        logs = r.itens([{"type": "user", "content": "pesquisa", "timestamp": t0 + 1},
+                        {"type": "response", "content": "Achei 3", "timestamp": t0 + 900, "agentno": 1},
+                        {"type": "info", "content": "Parado pelo usuário (/parar no WhatsApp).", "timestamp": t0 + 950}])
+        ok(not r.respondido(logs, t0), "a resposta de um ajudante não é a resposta a ele")
+        ok(r.respondido(logs + [{"em": t0 + 990, "tipo": "response", "agente": 0, "ferramenta": "", "titulo": "", "texto": "ok"}], t0),
+           "a do agente principal é")
+        ok(r.parado_por_ele(logs, t0), "/parar fica no log")
+
+    def _log_falso(self, t0):
+        """A made-up phone request: a search, a page, a helper and a page still loading."""
+        L = lambda **k: types.SimpleNamespace(**{"agentno": 0, "kvps": {}, "heading": "", "content": "", **k})  # noqa: E731
+        return [L(type="user", content="pesquisa lava e seca até 3 mil", timestamp=t0 + 2),
+                L(type="agent", kvps={"headline": "Pesquisando lava e seca na internet"}, timestamp=t0 + 30),
+                L(type="tool", heading="A0: Using tool 'search_engine'", kvps={"_tool_name": "search_engine"},
+                  content="Samsung WD11 R$ 2.899; LG VC4 R$ 3.199", timestamp=t0 + 40),
+                L(type="agent", kvps={"headline": "Abrindo a página da LG"}, timestamp=t0 + 100),
+                L(type="tool", heading="A0: Using tool 'browser'", kvps={"_tool_name": "browser"},
+                  content="LG VC4 11 kg, avaliações 4,6", timestamp=t0 + 120),
+                L(type="response", agentno=1, content="Comparei as duas: a LG tem nota melhor", timestamp=t0 + 300),
+                L(type="agent", kvps={"headline": "Abrindo avaliações da Samsung"}, timestamp=t0 + 400),
+                L(type="tool", heading="A0: Using tool 'browser'", kvps={"_tool_name": "browser"}, content="",
+                  timestamp=t0 + 410)]
+
+    def t_resumo_nao_inventa(self):
+        r = self.r
+        t0 = 1_000_000.0
+        ctx = _Ctx("c1", rodando=True, whatsapp_de=LOGIN, whatsapp_ultima_entrada=t0, whatsapp_ultimo_pedido="pesquisa lava e seca")
+        ctx.log = types.SimpleNamespace(logs=self._log_falso(t0), progress="")
+        pedido = r.montar(ctx, [ctx])
+        eq(pedido["esperando"], "a página do navegador carregar", "a página ainda carrega")
+        envio = {"login": LOGIN, "tipo": "resumo", "pedidos": [{**pedido, "inicio": t0, "visto": t0, "parado_s": 60}]}
+        r.completar(envio)
+        p = envio["pedidos"][0]
+        ok(len(p["eventos"]) == 7 and "olhando um site no navegador (ainda sem resultado)" in p["eventos"][-1] and "pesquisa lava e seca até 3 mil" not in "\n".join(p["eventos"]),
+           f"o registro (sem o próprio pedido): {p['eventos']}")
+        eq(p["feito_codigo"], "um ajudante terminou a parte dele e pesquisou na internet", "por código: só palavras fixas")
+        eq(p["agora_codigo"], "olhando um site no navegador", "agora, por código")
+        modelo = lambda resposta: (lambda texto: resposta)  # noqa: E731
+        bom = '{"pedidos": [{"feito": "Comparou a Samsung WD11 e a LG VC4; a LG tem nota melhor", "agora": "abrindo avaliações da Samsung"}]}'
+        eq(r.redigir(envio["pedidos"], modelo(bom))[0],
+           {"feito": "comparou a Samsung WD11 e a LG VC4; a LG tem nota melhor", "agora": "abrindo avaliações da Samsung",
+            "fonte": "modelo"}, "o modelo só reescreve o que está no log")
+        for ruim, por_que in (('{"pedidos": [{"feito": "achou a Brastemp por R$ 1.899", "agora": "comprando"}]}', "nome e preço inventados"),
+                              ('{"pedidos": [{"feito": "pesquisou", "agora": "usando o browser"}]}', "nome de ferramenta"),
+                              ('{"pedidos": [{"feito": "viu 7 modelos", "agora": "lendo"}]}', "número inventado"),
+                              ("não sei", "resposta ilegível")):
+            eq(r.redigir(envio["pedidos"], modelo(ruim))[0]["fonte"], "codigo", f"jogado fora: {por_que}")
+        texto = r.texto_do_envio({"login": LOGIN, "tipo": "resumo",
+                                  "pedidos": [{**r.montar(ctx, [ctx]), "inicio": t0, "visto": t0, "parado_s": 60}]},
+                                 t0 + 11 * 60, modelo('{"pedidos": [{"feito": "achou a Brastemp por R$ 1.899", "agora": "x"}]}'))
+        eq(texto, "⏳ Ainda em «pesquisa lava e seca» (11 min)\nFeito: um ajudante terminou a parte dele e pesquisou na "
+                  "internet\nAgora: olhando um site no navegador", "texto final, sem a invenção")
+        ok(len(r.pergunta(envio["pedidos"])) < 3000, "entrada pequena e limitada para o modelo")
+
+    async def t_resumo_job_loop(self):
+        # the job-loop extension with Agent Zero's stand-ins: progress message in plain words, then the summary
+        t0 = time.time() - 11 * 60
+        ctx = _Ctx("c1", rodando=True, whatsapp_de=LOGIN, whatsapp_ultima_entrada=t0, whatsapp_ultimo_pedido="pesquisa lava e seca")
+        ctx.log = types.SimpleNamespace(logs=self._log_falso(t0), progress="Subagente · passo 205 · browser · 8 min")
+        self.p.ANDAMENTO = self._tmp / "andamento.json"
+        self._ponte_responde()
+        silencio, self.r.em_silencio = self.r.em_silencio, lambda *a, **k: False
+        mods = self._agent_zero({"c1": ctx})
+        mods["whatsapp_resumo_andamento"] = self.r
+        try:
+            with self._modulos(**mods):
+                ext = self._extensao("job_loop", "_55_andamento_celular.py", "AndamentoCelular")
+                await ext.execute()
+                n = len(self.enviados)
+                await ext.execute()
+        finally:
+            self.r.em_silencio = silencio
+        andamento = [e for e in self.enviados if "fim" in e]
+        resumo = [e for e in self.enviados if e.get("tipo") == "andamento"]
+        ok(andamento and "esperando a página do navegador carregar" in andamento[0]["texto"]
+           and "passo 205" not in andamento[0]["texto"], f"a mensagem de progresso em palavras de gente: {andamento}")
+        ok(len(resumo) == 1 and resumo[0]["texto"].startswith("⏳ Ainda em «pesquisa lava e seca» (11 min)"),
+           f"aos 11 min, um resumo em mensagem nova: {resumo}")
+        eq(len(self.enviados), n, "a passada seguinte não repete")
+        ok(self.r.estado()[LOGIN]["pedidos"]["c1"]["resumido"], "fica marcado no estado")
 
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):

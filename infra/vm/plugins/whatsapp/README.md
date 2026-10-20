@@ -18,6 +18,17 @@ agente → este plugin → ponte_whatsapp (:8789) → Meta → WhatsApp
   tabelas viram linhas). Respostas intermediárias de um `/goal` não vão.
 - **Avisos** em outras conversas: se você não escreve há 5 min e o agente termina (ou para para te
   perguntar algo), chega um resumo; tarefa agendada que termina sempre avisa.
+- **Andamento de pedido longo** (`helpers/resumo_andamento.py`, job loop `_55`): a partir dos 10 min, e depois a
+  cada 15, chega um resumo em mensagem nova (notifica), um só para todos os pedidos da pessoa: "⏳ Ainda em «…»
+  (23 min) / Feito: … / Agora: …". Sem item novo no log há 8+ min: "⚠️ Sem avanço há N min (última coisa: …)" com
+  `/parar` e `/painel` (antecipa o resumo, uma vez por parada); 20+ min: "parece travado". Passo lento legítimo
+  (comando no terminal, espera, página carregando, código ou aprovação pedidos a você) é "esperando …". O Luna só
+  reescreve itens do log; resposta com número, nome ou link fora do log, ou nome de ferramenta, é trocada pelo texto
+  feito por código. Respeita `/silencio` e `/foco` (resumo segurado é descartado, não fica para depois) e não conta
+  no teto diário de avisos. Pedido respondido sai; pedido que parou sem resposta (e não por `/parar`) ganha uma
+  linha "⏹️ … parou sem me dar a resposta". No WhatsApp, onde cada atualização da mensagem de progresso é uma
+  mensagem nova, os resumos tomam o lugar dela; no Telegram ela continua se editando (sem tocar), em palavras de
+  gente. Estado em `/a0/usr/whatsapp/resumos.json`.
 - **Arquivos**: a ferramenta `whatsapp_enviar` manda print/PDF/foto para o dono da conversa.
 - **Reinício no meio de um pedido** (`helpers/turnos.py`): cada pedido do celular deixa uma marca em
   `/a0/usr/whatsapp/turnos_abertos.json`, que a resposta final apaga. Se o agente reinicia (memguard, queda), o

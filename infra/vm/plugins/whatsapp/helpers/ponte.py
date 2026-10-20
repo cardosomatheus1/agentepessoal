@@ -332,6 +332,7 @@ def andamento(usuario: str, texto: str, fim: bool = False, n: int = 1) -> str:
     when done, else the reason it was not."""
     if not usuario:
         return "conversa sem dono"
+    resposta = b""
     if usuario.startswith("teste_"):
         CAIXA_TESTES.parent.mkdir(parents=True, exist_ok=True)
         with CAIXA_TESTES.open("a", encoding="utf-8") as f:
@@ -344,7 +345,7 @@ def andamento(usuario: str, texto: str, fim: bool = False, n: int = 1) -> str:
                                      headers={"Content-Type": "application/json", "X-Chave": chave()})
         try:
             with _abrir(req, timeout=60) as r:
-                r.read()
+                resposta = r.read()
             erro = ""
         except Exception as exc:
             erro = str(exc)[:200]
@@ -355,6 +356,12 @@ def andamento(usuario: str, texto: str, fim: bool = False, n: int = 1) -> str:
         else:
             antes = dados.get(usuario) or {}
             dados[usuario] = {"em": time.time(), "n": n, "maximo": max(n, int(antes.get("maximo") or 0))}
+            try:  # the bridge edited it: Telegram (an edit does not buzz); WhatsApp can only send new ones
+                como = json.loads(resposta or b"{}").get("como")
+            except (ValueError, AttributeError):
+                como = ""
+            if como == "editada" or antes.get("canal") == "telegram":
+                dados[usuario]["canal"] = "telegram"
         try:
             _guardar_andamento(dados)
         except OSError as exc:
@@ -381,12 +388,16 @@ ANDAMENTO_PRIMEIRO = 90       # a request answered faster than this gets no prog
 ANDAMENTO_ATUALIZA = 2 * 60   # then the message updates every 2 min (edits do not buzz) or when requests come/go
 
 
-def proximos_andamentos(por_pessoa: dict, abertos: dict, agora: float) -> list:
+def proximos_andamentos(por_pessoa: dict, abertos: dict, agora: float, resumindo=()) -> list:
     """What the progress loop sends now: [(login, texto, fim, n)]. `por_pessoa`: {login: running requests}
-    (see texto_andamento); `abertos`: andamento_aberto()."""
+    (see texto_andamento); `abertos`: andamento_aberto(); `resumindo`: people who already get the summaries in new
+    messages (helpers/resumo_andamento.py). On WhatsApp every update is a new message (at most one per 4 min), so
+    for them the summaries take its place; on Telegram it keeps updating in place, silently, between summaries."""
     saida = []
     for destino, pedidos in por_pessoa.items():
         reg = abertos.get(destino)
+        if reg and destino in resumindo and reg.get("canal") != "telegram":
+            continue
         if not reg and all(agora - float(x.get("desde") or agora) < ANDAMENTO_PRIMEIRO for x in pedidos):
             continue
         if reg and agora - float(reg.get("em") or 0) < ANDAMENTO_ATUALIZA and int(reg.get("n") or 0) == len(pedidos):
@@ -396,6 +407,18 @@ def proximos_andamentos(por_pessoa: dict, abertos: dict, agora: float) -> list:
         if destino not in por_pessoa:  # everything answered: the message turns into "done"
             saida.append((destino, texto_andamento_fim(int(reg.get("maximo") or 1)), True, 0))
     return saida
+
+
+def enviar_resumo(usuario: str, texto: str) -> str:
+    """A progress summary in a NEW message (it notifies, unlike the edited progress message). Not "progresso": the
+    plugin already held it in quiet hours and /foco (resumo_andamento.em_silencio) and the bridge would only queue it
+    for later or count it in the daily ceiling of notices; a summary is worth nothing later. Not kept in AVISOS (the
+    chat's context of notices) nor retried: the next summary replaces it."""
+    if not usuario:
+        return "conversa sem dono"
+    if usuario.startswith("teste_"):
+        return enviar(usuario, texto, tipo="andamento")
+    return _postar(_corpo(usuario, texto, "", "", None, "andamento", "", None))[0]
 
 
 def texto_andamento_fim(n: int) -> str:
