@@ -45,10 +45,9 @@ CURTAS: dict[str, str] = {
     "text_delegate": "Pede a Hermes ou OpenClaw uma segunda análise ou crítica só de texto (sem arquivos, contas ou ações). "
                      "`engine` hermes|openclaw, `task` (autossuficiente, até 10 mil caracteres; sem senhas nem dados sensíveis).",
     # --- plugins deste repositório
-    "prospeccao": "Prospecção da Raiz pela @raiz.connect (rodadas). `acao`: contexto | playbook | proxima (`conta_ativa`) | "
-                  "resultado | propor | comentar | comentado | ler_direct | caixa_lida | etapa | entrou | falha | registrar | "
-                  "rejeitar | fontes | fontes_instagram | hoje | metricas | cartao | assumir | devolver e outras. O manual "
-                  "completo vem no primeiro resultado.",
+    "prospeccao": "Prospecção da Raiz, só pela @raiz.connect (nunca o perfil pessoal). Tudo pré-aprovado pelo Matheus dentro "
+                  "dos limites do dia; o revisor confere cada texto: reprovado volta com \"REESCREVA\" e o motivo (corrija só "
+                  "esse item); execute só ações entregues como APROVADAS, com o texto exato. Regras e modelos: acao \"playbook\"; no navegador: skill `prospeccao-instagram`. `acao`: playbook | contexto | registrar | rejeitar | fontes | fontes_instagram | conferir_estoque | estoque_conferido | buscar_script | avaliar_api | perfis_script | avaliar_perfis | limite_consulta | liberar_consultas | liberar_bloqueio | scripts_conta | propor | comentar | comentado | pular_comentario | editar | caixa_lida | ler_direct | direct_script | falha | proxima | resultado | etapa | entrou | cartao | assumir | devolver | apagada | importar_lista | variante | token_meta | hoje | metricas. O manual completo vem depois do primeiro resultado.",
     "conversa_externa": "Fala com lojas e negócios pelo WhatsApp DA PRÓPRIA PESSOA, em nome dela, e vigia a resposta. `acao` "
                         "estado|conectar|abrir|enviar|ler|esperar_dono|encerrar|listar|responder_por_mim|sugerir_resposta… "
                         "Marcar, reservar, aceitar preço ou passar dado pessoal só com o sim dela (`esperar_dono`, `confirmado`); "

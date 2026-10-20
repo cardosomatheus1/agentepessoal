@@ -144,7 +144,8 @@ class Suite:
     def t_indice_curto_e_com_as_acoes_de_cada_ferramenta(self):
         i = self.i
         for nome, curta in i.CURTAS.items():
-            ok(len(curta) <= 420, f"{nome}: a linha curta passou de 420 caracteres ({len(curta)})")
+            teto = 1000 if nome == "prospeccao" else 420  # the rounds' tool: every action and the core rules stay listed
+            ok(len(curta) <= teto, f"{nome}: a linha curta passou de {teto} caracteres ({len(curta)})")
         total = sum(len(c) for c in i.CURTAS.values()) // 4
         ok(total < 6500, f"o índice inteiro deve caber em ~6 mil tokens (deu ~{total})")
         # every action a plugin tool declares in its JSON schema is named in its short line
