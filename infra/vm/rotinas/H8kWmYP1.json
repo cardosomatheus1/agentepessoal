@@ -1,7 +1,7 @@
 {
  "uuid": "H8kWmYP1",
  "name": "Nexos — acompanhar fase 2 e lead",
- "state": "idle",
+ "state": "disabled",
  "schedule": {
   "minute": "0",
   "hour": "0,6,12,18",
