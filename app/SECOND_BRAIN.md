@@ -1,6 +1,8 @@
 # Segundo Cérebro (Matheus)
 
-Painel só de leitura com decisões, próximos passos (fios), fatos de perfil e ligações do Matheus.
+Site só de leitura que mostra a **Pasta** do Segundo Cérebro do Matheus (ADR 0001): assuntos (onde parou), pendências,
+decisões, notas do dia, reuniões, contexto (validado ou pendente), perfil, projetos e documentos, com a área de cada item,
+os links entre eles e o mapa de conexões. A Pasta é a única fonte e só o agente escreve nela; o site não edita.
 
 - Página: `/segundo-cerebro` (link "Segundo Cérebro" na barra lateral do chat)
 - API: `GET /api/segundo-cerebro` (sem parâmetros de consulta)
@@ -52,27 +54,62 @@ do próprio site.
   é 502, não 401. Se um início falhar, novas tentativas esperam 30 s. Ao encerrar, o filho recebe SIGTERM e depois
   SIGKILL.
 
-## O que lê
+## O que lê (a Pasta)
 
-Só três arquivos fixos, abaixo de `SECOND_BRAIN_DATA_ROOT` (`/a0/usr`):
+Só a Pasta, em `SECOND_BRAIN_DATA_ROOT/segundo_cerebro/pasta` (`/a0/usr/segundo_cerebro/pasta`), no formato de
+`infra/vm/plugins/cerebro/helpers/pasta.py`. As nove fontes antigas (`memoria/decisoes`, `memoria/usuarios`, `fios/`,
+o contexto de um chat, rotinas, projetos do Agent Zero e documentos avulsos) não são mais lidas.
 
-| Fonte | Arquivo | O que vira |
-|---|---|---|
-| Decisões | `memoria/decisoes/matheus.json` | `decisoes[]` (respeita `estado` e `valido_ate`) |
-| Perfil | `memoria/usuarios/matheus.md` | só as linhas `- ...` |
-| Fios | `fios/matheus.json` | `fios[]`; o grafo usa só `ligacoes` gravadas |
+| Fonte (`id`) | Onde, na Pasta | Como lê | Vira |
+|---|---|---|---|
+| `regras` | `CLAUDE.md` | arquivo fixo | `rules.regras` (itens numerados de "## Regras") |
+| `contexto` | `Contexto/{organizacao,marca,estrategia,cliente-ideal,pessoas-chave,perfil}.md` | seis arquivos fixos | `contexts[]` com `estado` `validado` ou `pendente` (tem `[PENDENTE DE VALIDAÇÃO]`), `aprovado`, `validadoEm`, seções |
+| `perfil` | `Contexto/perfil.md` | arquivo fixo | `profile[]`: só as linhas `- ` depois da marca da ferramenta `ficha`; sem a marca e com o marcador = `pendente`; sem os dois = `formato_antigo` |
+| `decisoes` | `Decisoes/*.md` | varredura (abaixo) | `decisions[]` (mesmo formato de antes: `estado`, `valido_ate`, `vigente`, `substitui`…) |
+| `pendencias` | `Pendencias/*.md` | varredura | `threads[]` (pendências; "em aberto" = aberto ou adiado vencido) |
+| `assuntos` | `Assuntos/*.md` | varredura | `subjects[]` com `onde_parou`, `estado` (andamento/parado/encerrado), `emAndamento`, `historico` |
+| `reunioes` | `Reunioes/*.md` | varredura | `meetings[]` (mais recente primeiro) |
+| `notas` | `Notas-do-dia/AAAA-MM-DD.md` | varredura; outro nome fica fora (`nome_fora_do_padrao`) | `daily[]` (mais recente primeiro) |
+| `documentos` | `Documentos/*.md` | varredura | `documents[]` |
+| `projetos` | `Projetos/*.md` | varredura (subpastas de projeto não são lidas) | `projects[]` |
 
-Nada de varrer pasta, de caminho vindo do usuário ou de outra pessoa. Link simbólico e arquivo acima de 1 MB são
-recusados. Arquivo ausente ou inválido vira "fonte indisponível" com aviso (nunca lista vazia fingindo sucesso).
-Nada é gravado. Segredos reconhecíveis (Bearer, chaves de API, `senha: ...`) são trocados por `[removido]`.
-A API do Next continua exigindo o bearer (`checkBearer`, testes em `tests/second-brain.test.mjs`): sem gateway, ela
-recusa.
+Nunca lido nem mostrado: `Arquivo-morto/` (nem item, nem link: `[[Arquivo-morto/…]]` num texto vira "(no
+Arquivo-morto)" e só conta na lacuna), `indice.md`, arquivos que começam com `.`, o `.git` da Pasta.
+
+**Formato de item** (Decisões, Pendências, Assuntos): cabeçalho entre `---` com uma linha `chave: <valor JSON>` por
+campo (os dados) e corpo Markdown gerado a partir deles. `status` e `tags` são derivados e ignorados. Qualquer desvio
+(sem cabeçalho, sem fim, linha sem `: `, valor que não é JSON) torna o item **ilegível**: a coleção inteira fica
+`indisponivel` com código `ilegivel` e um aviso com o nome do arquivo (os itens legíveis continuam visíveis, mas a lista
+não está completa, como no helper, que recusa ler a coleção). Notas livres (Reuniões, Notas do dia, Documentos,
+Projetos, Contexto) têm cabeçalho opcional; uma nota ilegível deixa a fonte `parcial`.
+
+**Área**: todo item traz `area` (do campo `area`; sem ele, `geral`); `areas` lista as que existem. A página tem um
+filtro de área global (listas, contagens, mapa e consulta); a consulta aceita `area`. Contexto e perfil valem para
+todas as áreas.
+
+**Ligações** (`links[]`): só o que está gravado. `liga` (`["decisao:35", "pendencia:ab12cd", "assunto:x1y2z3"]`),
+`[[Pasta/arquivo]]` (também `[[x|apelido]]`, `[[x#seção]]`) em qualquer arquivo lido e, nas pendências antigas, o texto
+de `ligacoes` (quando é o id de outra pendência). Cada ligação tem `de`/`para` (`tipo:id`), `vias`, `resolvido` e a
+evidência (fonte, item, campo, arquivo). `liga` e o link que o corpo repete viram uma ligação só; destino fora da
+Pasta vira referência textual (nunca inventado); `liga` quebrada vira diagnóstico. `index` mapeia `Pasta/arquivo` →
+`tipo:id` para a página seguir um link.
+
+**Segurança (igual à de antes)**: dono fixo `matheus`; nenhum caminho vem do pedido (consulta na URL = 400); só
+leitura. A única varredura é a de uma subpasta fixa: sem recursão, só `*.md` regulares, entrada que é link simbólico é
+recusada (e anotada), no máximo 1000 arquivos por subpasta (`truncada`), 1 MB por arquivo (`grande`), 24 MB por carga.
+Link simbólico em qualquer nível da raiz até o arquivo é recusado (`O_NOFOLLOW`). Ausente ≠ vazia: pasta que falta é
+`indisponivel/ausente` com aviso, nunca lista vazia fingindo sucesso. Segredos e dados pessoais reconhecíveis (Bearer,
+chaves, `senha: …`, e-mail, CPF/CNPJ, telefone, cartão) são trocados antes de sair. Cada item tem proveniência
+(`fonte`, arquivo na Pasta, `arquivoAtualizadoEm`, dono). Sem a marca `.migrado` a página avisa que a Pasta ainda não
+é a fonte do agente. A API do Next continua exigindo o bearer (`checkBearer`): sem gateway, ela recusa.
 
 ## Mapa de conexões (Sigma.js + Graphology)
 
 - Desenho em canvas WebGL2 com `sigma` 4; `sigma` e `sigma/rendering` só carregam no navegador (`import()` dentro de
-  um `useEffect`). O grafo (`graphology`) tem exatamente as ligações gravadas: a aresta `e<i>` é a ligação `i` do
-  recorte, com duplicadas (em curva) e auto-ligações (laço) preservadas. Nada é inferido.
+  um `useEffect`). Nó = item da Pasta (decisão, pendência, assunto, contexto, reunião, nota do dia, documento,
+  projeto, fato do perfil) ou fonte; aresta = `links[]` (relações `liga`, `wiki`, `ligacao_texto`, `link_sem_destino`),
+  `substitui` das decisões, `fontes` citadas nas pendências e a proveniência. Nada é inferido; agrupar por fonte, área,
+  metadado ou tipo só muda a posição.
 - Posições: ForceAtlas2 síncrono (`graphology-layout-forceatlas2`), semeado pelo layout radial e com número fixo de
   passos: mesma entrada, mesmas posições. Calculado uma vez por carga de dados, sobre o grafo inteiro; filtro, busca,
   seleção e hover não movem nós (filtro só redesenha o recorte).
@@ -99,16 +136,19 @@ E2E, que põe um gateway falso na frente.
 ## Testes
 
 ```bash
-node --test tests/second-brain.test.mjs tests/second-brain-boundaries.test.mjs \
-  tests/second-brain-real-format.test.mjs tests/connection-map.test.mjs          # 26 testes, dados fictícios
+node --test tests/*.test.mjs                                                    # 58 testes, Pasta fictícia
 PLAYWRIGHT_MODULE=/caminho/playwright PLAYWRIGHT_CHROMIUM_EXECUTABLE=/caminho/chrome \
-  node tests/connection-map.e2e.mjs                                             # opcional, depois do build
+  node tests/second-brain.e2e.mjs                                               # opcional, depois do build
 ```
 
-Usam só dados fictícios num diretório temporário (inclui uma "Fernanda" sentinela que nunca pode aparecer). O E2E
-sobe o Next em loopback e um gateway falso que faz o papel da sessão. Ele confere que o navegador nunca manda
-`Authorization`, que sair passa por `/logout`, que a sessão expirada mostra só o link de login e que outra pessoa não
-vê dados.
+Usam só uma Pasta fictícia num diretório temporário (`tests/fixture-brain.mjs`, no formato do `pasta.py`, com
+sentinelas no Arquivo-morto, numa subpasta de projeto e nos registros antigos, que nunca podem aparecer).
+`second-brain-real-format.test.mjs` grava a Pasta com o próprio `pasta.py` (precisa de `python3`; sem ele, pula) e
+confere que o site lê o que o agente escreve. O E2E sobe o Next em loopback e um gateway falso que faz o papel da
+sessão. Ele confere que o navegador nunca manda `Authorization`, que sair passa por `/logout`, que a sessão expirada
+mostra só o link de login, que outra pessoa não vê dados, e as seções da Pasta (onde parou, contexto pendente,
+notas do dia, reuniões, área, link `[[…]]` navegável). `tests/connection-map.e2e.mjs` testa o mapa simples antigo,
+que a página não mostra mais.
 
 ## Limites
 
