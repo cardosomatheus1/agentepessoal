@@ -915,8 +915,11 @@ def gasto(dono: str | None = None) -> tuple[float, float]:
         p_in, p_cache, p_out = p[:3]
         p_gravar = p[3] if len(p) > 3 else p_in * 1.25
         cache, gravado = u.get("cache", 0) or 0, u.get("cache_gravado", 0) or 0
+        # 20/10: the proxy logs the part of cache_gravado written with the 1-hour lifetime (Claude): 2x the input price
+        gravado_1h = min(gravado, u.get("cache_gravado_1h", 0) or 0)
         normal = max(0, (u.get("entrada", 0) or 0) - cache - gravado)
-        custo = (normal * p_in + cache * p_cache + gravado * p_gravar + (u.get("saida", 0) or 0) * p_out) / 1e6
+        custo = (normal * p_in + cache * p_cache + (gravado - gravado_1h) * p_gravar + gravado_1h * p_in * 2
+                 + (u.get("saida", 0) or 0) * p_out) / 1e6
         mes += custo
         if quando.date() == agora.date():
             hoje += custo

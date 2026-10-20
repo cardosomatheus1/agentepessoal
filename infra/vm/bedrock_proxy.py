@@ -45,8 +45,10 @@ ENTRADA = "/opt/agentepessoal/entrada.sh"
 CHAT_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 MAX_UPLOAD = 5 * 1024**3
 
+# X-A0-*: whose chat made the call and (20/10) which chat, routine, agent and role, set by the login_usuarios plugin;
+# logged here, never sent upstream
 HOP_HEADERS = {"host", "authorization", "content-length", "connection", "accept-encoding", "transfer-encoding",
-               "x-a0-dono"}  # X-A0-Dono: whose chat made the call (logged, never sent upstream)
+               "x-a0-dono", "x-a0-conversa", "x-a0-rotina", "x-a0-agente", "x-a0-papel"}
 SKIP_RESPONSE_HEADERS = {"transfer-encoding", "connection", "content-length", "content-encoding"}
 
 _token = {"value": "", "at": 0.0}
@@ -247,17 +249,90 @@ def _last_usage(tail: bytes) -> dict:
     return {}
 
 
-def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: float, dono: str = "") -> None:
+_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
+PAPEIS = {"chat", "util"}
+
+
+def rastreio_de(headers) -> dict:
+    """20/10: which chat (conversa), scheduled task (rotina), agent (0 = main, n = helper) and role (chat model or
+    utility model) made the call, from the X-A0-* headers (login_usuarios plugin). Only well-formed ids are kept."""
+    out = {}
+    for campo, nome in (("conversa", "X-A0-Conversa"), ("rotina", "X-A0-Rotina")):
+        v = (headers.get(nome) or "").strip()
+        if _ID.fullmatch(v):
+            out[campo] = v
+    agente = (headers.get("X-A0-Agente") or "").strip()
+    if re.fullmatch(r"\d{1,2}", agente):
+        out["agente"] = int(agente)
+    papel = (headers.get("X-A0-Papel") or "").strip().lower()
+    if papel in PAPEIS:
+        out["papel"] = papel
+    return out
+
+
+def _sem_cache(valor):
+    """The request without the cache markers (ours or the caller's), so they never change a fingerprint."""
+    if isinstance(valor, dict):
+        return {k: _sem_cache(v) for k, v in valor.items() if k not in ("cache_control", "cachePoint")}
+    if isinstance(valor, list):
+        return [_sem_cache(v) for v in valor if not (isinstance(v, dict) and set(v) == {"cachePoint"})]
+    return valor
+
+
+def _digital(parte) -> dict:
+    """Size, hash of the first 2,000 characters and hash of the whole of one part of the prompt: never its text."""
+    import hashlib
+
+    texto = json.dumps(_sem_cache(parte), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    h = lambda t: hashlib.sha256(t.encode("utf-8", "ignore")).hexdigest()[:10]  # noqa: E731
+    return {"n": len(texto), "ini": h(texto[:2000]), "todo": h(texto)}
+
+
+def impressao(dados, converse: bool = False) -> dict:
+    """20/10 (cache diagnosis): fingerprints of the start of the prompt, by part, so a cache miss shows what changed.
+    instrucoes = system prompt (Converse `system`; Responses `instructions` + leading system/developer items; Chat
+    leading system messages); ferramentas = the tool list; primeira = the first message after the instructions;
+    mensagens = how many messages (a drop means the history was summarized)."""
+    if not isinstance(dados, dict):
+        return {}
+    if converse:
+        instr, msgs = dados.get("system"), dados.get("messages") or []
+        ferr = (dados.get("toolConfig") or {}).get("tools")
+    else:
+        msgs = dados.get("input") if "input" in dados else dados.get("messages")
+        msgs = msgs if isinstance(msgs, list) else ([msgs] if msgs else [])
+        i = 0
+        while i < len(msgs) and isinstance(msgs[i], dict) and msgs[i].get("role") in ("system", "developer"):
+            i += 1
+        instr = ([dados["instructions"]] if dados.get("instructions") else []) + msgs[:i]
+        msgs, ferr = msgs[i:], dados.get("tools")
+    out = {"mensagens": len(msgs)}
+    for nome, parte in (("instrucoes", instr), ("ferramentas", ferr), ("primeira", msgs[0] if msgs else None)):
+        if parte:
+            out[nome] = _digital(parte)
+    return out
+
+
+def _gravado_1h(u: dict) -> int:
+    """Converse reports the cache writes by lifetime (cacheDetails); the 1-hour ones cost more (2x instead of 1.25x)."""
+    return sum(int(d.get("inputTokens") or 0) for d in (u.get("cacheDetails") or [])
+               if isinstance(d, dict) and d.get("ttl") == "1h")
+
+
+def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: float, dono: str = "",
+              rastreio: dict | None = None) -> None:
     """One JSON line per model call: model, input/cached/output tokens and duration (for the
-    context-economy measurements). Never breaks the proxied call."""
+    context-economy measurements), and (20/10) which chat/routine/agent made it plus fingerprints of the start of the
+    prompt (sizes and hashes only, never text). Never breaks the proxied call."""
     try:
         u = _last_usage(tail)
         if not u:
             return
-        model = ""
+        model, dados = "", None
         if body:
             try:
-                model = json.loads(body).get("model", "")
+                dados = json.loads(body)
+                model = dados.get("model", "") if isinstance(dados, dict) else ""
             except ValueError:
                 pass
         if not model and "/model/" in path:
@@ -276,8 +351,17 @@ def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: 
             "segundos": round(seconds, 1),
             "bytes_pedido": len(body or b""),
         }
+        if _gravado_1h(u):  # part of cache_gravado (not added to it) written with the 1-hour lifetime
+            row["cache_gravado_1h"] = _gravado_1h(u)
         if re.fullmatch(r"[a-z0-9_-]{1,32}", dono or ""):  # whose chat (login_usuarios: spending per person)
             row["dono"] = dono
+        row.update(rastreio or {})
+        if isinstance(dados, dict):
+            row["api"] = "converse" if "/converse" in path else "responses" if "/responses" in path else "chat"
+            for campo in ("prompt_cache_key", "prompt_cache_retention"):
+                if isinstance(dados.get(campo), str):
+                    row[campo.replace("prompt_", "")] = dados[campo][:80]
+            row.update(impressao(dados, "/converse" in path))
         with _usage_lock, USAGE_FILE.open("a") as f:
             f.write(json.dumps(row) + "\n")
         if body and DUMP_DIR.is_dir():  # debugging only: `mkdir` the folder to capture request bodies
@@ -290,28 +374,77 @@ def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: 
 
 
 CACHE_PONTO = {"cachePoint": {"type": "default"}}
+CACHE_PONTO_1H = {"cachePoint": {"type": "default", "ttl": "1h"}}
 _CONVERSE = re.compile(r"^/model/[^/]*anthropic[^/]*/converse(-stream)?$")
 
 
-def com_cache(path: str, body: bytes | None) -> bytes | None:
+def conversa_humana(rastreio: dict | None) -> bool:
+    """20/10: a person's chat (main agent, chat model, not a scheduled task): someone who may answer 5 to 60 minutes
+    later. Routines, helpers and the utility model run step after step and keep the 5-minute cache."""
+    r = rastreio or {}
+    return bool(r.get("conversa")) and not r.get("rotina") and r.get("agente") == 0 and r.get("papel") == "chat"
+
+
+def com_cache(path: str, body: bytes | None, longo: bool = False) -> bytes | None:
     """20/10: Claude on Bedrock only caches up to an explicit cachePoint (the OpenAI-style models cache by themselves).
     For a Converse call to a Claude model with no cachePoint of its own, mark the end of the system prompt and the end
     of the last message: the next call of the same chat reads all of that from the cache and only pays the new part.
-    Anything that does not parse, or already has cache points, goes through unchanged."""
+    `longo` (a person's chat, see conversa_humana): both points live 1 hour instead of 5 minutes — writing costs 2x
+    instead of 1.25x the input price, but an answer after a 5-60 min pause reads the whole history (0.1x) instead of
+    writing it all again. Anything that does not parse, or already has cache points, goes through unchanged."""
     if not body or not _CONVERSE.match(path.split("?", 1)[0]):
         return body
     try:
         dados = json.loads(body)
         if "cachePoint" in body.decode("utf-8", "ignore"):
             return body
+        ponto = CACHE_PONTO_1H if longo else CACHE_PONTO
         sistema, mensagens = dados.get("system"), dados.get("messages")
         mudou = False
         if isinstance(sistema, list) and sistema:
-            sistema.append(dict(CACHE_PONTO))
+            sistema.append(json.loads(json.dumps(ponto)))
             mudou = True
         if isinstance(mensagens, list) and mensagens and isinstance(mensagens[-1].get("content"), list) \
                 and mensagens[-1]["content"]:
-            mensagens[-1]["content"].append(dict(CACHE_PONTO))
+            mensagens[-1]["content"].append(json.loads(json.dumps(ponto)))
+            mudou = True
+        return json.dumps(dados, ensure_ascii=False).encode() if mudou else body
+    except Exception:
+        return body
+
+
+_OPENAI_CACHE = re.compile(r"^/(openai/)?v1/(responses|chat/completions)$")
+RETENCAO = "24h"  # tested 20/10 on Bedrock: accepted values are "in_memory" and "24h"
+
+
+def chave_cache(rastreio: dict | None) -> str:
+    """A stable prompt_cache_key per routine (all its runs share the instructions and tools) or per chat, and per
+    agent and role (helpers and the utility model have prompts of their own). Empty when the caller is unknown."""
+    r = rastreio or {}
+    dono = f"r-{r['rotina']}" if r.get("rotina") else f"c-{r['conversa']}" if r.get("conversa") else ""
+    if not dono:
+        return ""
+    return f"a0-{dono}-a{r.get('agente', 0)}" + ("-u" if r.get("papel") == "util" else "")
+
+
+def com_chave(path: str, body: bytes | None, rastreio: dict | None) -> bytes | None:
+    """20/10: for the OpenAI-style models (GPT on Bedrock, Responses and Chat Completions) of a known chat or routine,
+    add prompt_cache_key (calls sharing a start go to the same cache machine) and prompt_cache_retention 24h (the
+    cache outlives the 30-minute default between a routine's runs) — each only when the request does not bring its
+    own. Anything else, or anything that does not parse, goes through unchanged."""
+    chave = chave_cache(rastreio)
+    if not body or not chave or not _OPENAI_CACHE.match(path.split("?", 1)[0]):
+        return body
+    try:
+        dados = json.loads(body)
+        if not isinstance(dados, dict):
+            return body
+        mudou = False
+        if "prompt_cache_key" not in dados:
+            dados["prompt_cache_key"] = chave
+            mudou = True
+        if "prompt_cache_retention" not in dados:
+            dados["prompt_cache_retention"] = RETENCAO
             mudou = True
         return json.dumps(dados, ensure_ascii=False).encode() if mudou else body
     except Exception:
@@ -415,6 +548,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         body = self.rfile.read(length) if length else None
         headers = {k: v for k, v in self.headers.items() if k.lower() not in HOP_HEADERS}
         upstream, path = UPSTREAM, self.path
+        rastreio = rastreio_de(self.headers)
         if path.startswith("/typesafe/"):
             key = typesafe_key()
             if not key:
@@ -430,9 +564,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif path.startswith("/bedrock/"):
             upstream, path = RUNTIME, path[len("/bedrock"):]
             headers["Authorization"] = f"Bearer {bearer_token()}"
-            body = com_cache(path, body)
+            body = com_cache(path, body, conversa_humana(rastreio))
         else:
             headers["Authorization"] = f"Bearer {bearer_token()}"
+            body = com_chave(path, body, rastreio)
         if body is not None:
             headers["Content-Length"] = str(len(body))
 
@@ -462,7 +597,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.wfile.flush()
             if upstream != TYPESAFE_HOST:
                 log_usage(path, body, resp.status, tail, time.time() - started,
-                          (self.headers.get("X-A0-Dono") or "").strip().lower())
+                          (self.headers.get("X-A0-Dono") or "").strip().lower(), rastreio)
         except (BrokenPipeError, ConnectionResetError):
             pass
         finally:

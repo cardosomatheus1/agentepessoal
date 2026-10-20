@@ -253,16 +253,18 @@ def bloqueio(login: str | None, ferramenta: str, args, projeto_ativo: str | None
     return ""
 
 
-def com_dono(modelo, dono: str | None):
-    """A copy of the model wrapper whose calls carry the chat owner in X-A0-Dono (for spending per person).
+def com_dono(modelo, dono: str | None, extras: dict | None = None):
+    """A copy of the model wrapper whose calls carry the chat owner in X-A0-Dono (for spending per person) and
+    (20/10) the `extras` headers (helpers/rastreio.py: chat, routine, agent, role).
     The original object may be shared between chats, so it is never changed; on any surprise the original is kept."""
     dono = str(dono or "").strip().lower()
-    if not modelo or not _LOGIN.match(dono):
+    novos = {**({CABECALHO: dono} if _LOGIN.match(dono) else {}), **(extras or {})}
+    if not modelo or not novos:
         return modelo
     try:
         kwargs = dict(getattr(modelo, "kwargs", None) or {})
         cab = dict(kwargs.get("extra_headers") or {})
-        cab[CABECALHO] = dono
+        cab.update(novos)
         kwargs["extra_headers"] = cab
         novo = copy.copy(modelo)
         try:

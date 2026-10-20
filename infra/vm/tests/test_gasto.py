@@ -30,11 +30,14 @@ def main() -> int:
             # cache: 1 M read + 1 M written on Haiku
             {"em": agora, "modelo": "us.anthropic.claude-haiku-5-5", "entrada": 2_000_000, "cache": 1_000_000,
              "cache_gravado": 1_000_000, "saida": 0},
+            # 20/10: 1-hour cache on Sonnet: of 1 M written, 400 k with the 1 h lifetime (2x = US$ 4/M), 600 k at 5 min
+            {"em": agora, "modelo": "us.anthropic.claude-sonnet-5-5", "entrada": 1_000_000, "cache": 0,
+             "cache_gravado": 1_000_000, "cache_gravado_1h": 400_000, "saida": 0},
         ]
         p.USO = tmp / "uso.jsonl"
         p.USO.write_text("\n".join(json.dumps(l) for l in linhas) + "\n")
         hoje, mes = p.gasto()
-        esperado = 0.55 + 11.0 + 2.75 + 1.60 + (0.055 + 0.1375) + (0.20 + 10.0)
+        esperado = 0.55 + 11.0 + 2.75 + 1.60 + (0.055 + 0.1375) + (0.20 + 10.0) + (0.4 * 4.0 + 0.6 * 2.5)
         if abs(hoje - esperado) > 1e-6 or abs(mes - esperado) > 1e-6:
             falhas.append(f"gasto: esperado US$ {esperado:.4f}, veio hoje {hoje:.4f} / mês {mes:.4f}")
         # 15/10 guests: spending per person (the proxy logs X-A0-Dono) and the guest's daily limit
