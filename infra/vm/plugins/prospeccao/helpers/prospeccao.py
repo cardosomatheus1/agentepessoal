@@ -1842,7 +1842,7 @@ SEM perguntar a ele, então você é a última barreira antes de uma pessoa real
 6. Primeira mensagem ou lembrete SEM NEXO (Matheus, AR Board 20/10): o detalhe citado do perfil não leva ao que a
    mensagem pergunta ou oferece (ex.: "vi a pergunta sobre marinar… fiz uma calculadora grátis"; "vi o cardápio novo
    nos stories… posso te mandar a calculadora?"). A calculadora só tem nexo com gancho de preço, custo, reajuste ou
-   promoção; iFood combina com a conciliação do iFood; encomenda com produção e insumos; cardápio novo com o preço de
+   promoção; iFood combina com a integração oficial do iFood (pedidos entram sozinhos); encomenda com produção e insumos; cardápio novo com o preço de
    cada prato novo; kit com quanto sobra no kit. Uma PERGUNTA sobre como a pessoa chega no preço (variante A) tem nexo
    com gancho de venda, pedido, link de pedidos, cardápio, kit ou preço (aprovada por ele). Citar a bio entre aspas
    também reprova (soa como IA).

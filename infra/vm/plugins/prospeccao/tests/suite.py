@@ -1419,6 +1419,8 @@ class Suite:
                       "preço, reajuste, promoção, custo", "Não cite a bio entre aspas"):
             ok(termo in pb, f"playbook ensina o nexo: {termo}")
         ok("SEM NEXO" in p.REVISOR and "entre aspas" in p.REVISOR, "o revisor reprova mensagem sem nexo e bio entre aspas")
+        ok("homologada pelo iFood em 20/10/2026" in pb and "entram sozinhos no sistema" in pb,
+           "20/10: a integração oficial com o iFood (homologada) é fato do playbook, seção 7")
 
     def t_direct_script_e_comentario_relido(self):
         p = self.p

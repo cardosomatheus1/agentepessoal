@@ -1,7 +1,7 @@
 {
  "uuid": "PZoyGwEh",
  "name": "Acompanhar chamado iFood Developer 34938963",
- "state": "idle",
+ "state": "disabled",
  "schedule": {
   "minute": "0",
   "hour": "9",

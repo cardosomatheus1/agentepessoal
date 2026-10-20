@@ -121,8 +121,8 @@ pedido de licença para mandar o link.
 **Nexo (Matheus, AR Board 20/10): o detalhe que você viu tem de levar ao que você pergunta ou oferece, numa linha de
 raciocínio.** Detalhe solto seguido da calculadora ("vi o cardápio novo… fiz uma calculadora grátis") é sem nexo e
 não sai. Ofereça o que combina com o gancho, não sempre a calculadora:
-- usa **iFood** (selo, link, "peça pelo iFood") → o Raiz Connect importa e concilia os arquivos do iFood e mostra
-  quanto sobra em cada pedido depois da taxa;
+- usa **iFood** (selo, link, "peça pelo iFood") → a integração oficial com o iFood: os pedidos entram sozinhos no
+  sistema e ele mostra quanto sobra em cada pedido depois da taxa;
 - **encomenda / produção programada** → a produção que baixa os insumos e mostra o que comprar;
 - **cardápio novo / prato novo** → custo e preço de cada prato novo antes de vender;
 - **kit ou combo** → quanto sobra no kit comparado ao avulso;
@@ -242,8 +242,9 @@ seguimento. **Lead** é só quem pediu o link, o preço ou o teste: mandar o lin
 - **Cancelamento:** pela própria plataforma, valendo no fim do ciclo pago.
 - **Nota fiscal:** emite NF-e e NFC-e a partir da venda, com os impostos calculados; precisa da configuração fiscal da
   empresa e de certificado digital.
-- **iFood:** hoje importa e concilia os arquivos do iFood; integração em tempo real se confirma na conversa com o
-  Matheus.
+- **iFood:** integração oficial homologada pelo iFood em 20/10/2026 (pedidos, cardápio e loja): os pedidos do iFood
+  entram sozinhos no sistema e o cardápio sincroniza com o iFood; a ligação com a loja da pessoa é feita na
+  implementação, com o Matheus. Também importa e concilia os arquivos do iFood.
 - **O que tem:** ficha técnica, produção (baixa os insumos), estoque por lote e validade, compras, custo e margem por
   produto, financeiro (contas, fluxo de caixa, DRE), PDV e pedidos; mesas, comandas e cardápio por QR Code conforme o
   plano. A Fernanda é uma IA que lê os dados e aponta o que conferir; não decide por você.
