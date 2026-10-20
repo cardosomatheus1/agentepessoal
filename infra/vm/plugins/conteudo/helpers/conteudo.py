@@ -21,7 +21,8 @@ PREFIXO = "conteudo/"
 GRAPH = "https://graph.facebook.com/v25.0"
 PROXY = "http://host.docker.internal:8787"  # host proxy: the only holder of AWS credentials
 FUSO = "America/Sao_Paulo"
-TIPOS = ("REELS", "CARROSSEL")
+TIPOS = ("REELS", "CARROSSEL", "IMAGE")  # IMAGE: one feed photo (17/10: Matheus wanted the iFood art as a photo, not a still Reel)
+JPG = (".jpg", ".jpeg")  # the Graph API takes JPEG only for images
 MAX_LEGENDA, MAX_HASHTAGS, MAX_CARROSSEL = 2200, 30, 10
 CAPA_MS = 1500  # Reel cover frame when no cover image is given (ms)
 ESPERA_PROCESSAR = 600  # seconds Meta may take to process a video before we give up
@@ -128,10 +129,14 @@ def _validar_item(it: dict) -> str:
         return f"arquivos: chaves do S3 começando por {PREFIXO}"
     if it["tipo"] == "REELS" and (len(arqs) != 1 or not arqs[0].lower().endswith(".mp4")):
         return "Reel: um único .mp4"
+    if it["tipo"] == "IMAGE" and (len(arqs) != 1 or not arqs[0].lower().endswith(JPG)):
+        return "foto (IMAGE): uma única imagem .jpg"
     capa = it.get("capa")
-    if capa and (it["tipo"] != "REELS" or not str(capa).startswith(PREFIXO) or not str(capa).lower().endswith((".jpg", ".jpeg"))):
+    if capa and (it["tipo"] != "REELS" or not str(capa).startswith(PREFIXO) or not str(capa).lower().endswith(JPG)):
         return f"capa: só em Reel, uma .jpg do S3 começando por {PREFIXO}"
-    if it["tipo"] == "CARROSSEL" and not (2 <= len(arqs) <= MAX_CARROSSEL and all(a.lower().endswith((".jpg", ".jpeg")) for a in arqs)):
+    if it["tipo"] == "IMAGE" and it.get("capa_ms"):
+        return "capa_ms: só em Reel"
+    if it["tipo"] == "CARROSSEL" and not (2 <= len(arqs) <= MAX_CARROSSEL and all(a.lower().endswith(JPG) for a in arqs)):
         return f"carrossel: de 2 a {MAX_CARROSSEL} imagens .jpg"
     return validar_legenda(it.get("legenda", ""))
 
@@ -279,6 +284,41 @@ def replanejar(mudancas: list, agora: float | None = None) -> dict:
     return {"ok": True, "agenda": {i["id"]: i["data"] for i in d["itens"] if i["id"] in novo}}
 
 
+def trocar_formato(item_id: str, tipo: str, arquivos: list, capa: str = "", agora: float | None = None) -> dict:
+    """Swaps the format and files of ONE pending post, keeping its id, day, hour, caption, state and creation time
+    (17/10: the iFood post was a still Reel and Matheus wanted a single feed photo). Only the operator; the old
+    Reel cover (capa/capa_ms) goes away unless the new format is a Reel with a new capa. Before writing, an exact copy
+    of agenda.json is saved next to it, inside the same lock. Files in S3 are never touched."""
+    if not str(AUTOR["quem"]).startswith("operador:"):
+        return {"ok": False, "erro": "só o operador troca o formato (AUTOR['quem'] = 'operador: <motivo>')"}
+    agora = time.time() if agora is None else agora
+    hoje = dt.datetime.fromtimestamp(agora, _tz()).date().isoformat()
+    with _exclusivo():
+        bruto = _arq().read_bytes() if _arq().exists() else b""
+        d = carregar()
+        alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
+        if not alvo:
+            return {"ok": False, "erro": f"{item_id}: não existe"}
+        if alvo["estado"] != "pendente":
+            return {"ok": False, "erro": f"{item_id}: só post pendente muda (está {alvo['estado']})"}
+        novo = {k: v for k, v in alvo.items() if k not in ("capa", "capa_ms")}
+        novo.update(tipo=tipo, arquivos=list(arquivos or []), **({"capa": capa} if capa else {}))
+        erro = _validar_item(novo) or ("data no passado" if novo["data"] < hoje else "")
+        if erro:
+            return {"ok": False, "erro": f"{item_id}: {erro}"}
+        if novo == alvo:  # already in this format: write nothing, log nothing
+            return {"ok": True, "id": item_id, "tipo": tipo, "arquivos": novo["arquivos"], "sem_mudanca": True}
+        copia = PASTA / f"agenda.backup-formato-{item_id}-{time.strftime('%Y%m%d-%H%M%S', time.localtime(agora))}.json"
+        copia.write_bytes(bruto)
+        antes = {k: alvo.get(k) for k in ("tipo", "arquivos", "capa", "capa_ms") if k in alvo}
+        alvo.clear()
+        alvo.update(novo)
+        _gravar(d)
+        _diario({"item": item_id, "formato_trocado": True, "de_formato": antes,
+                 "para_formato": {k: novo[k] for k in ("tipo", "arquivos", "capa") if k in novo}})
+    return {"ok": True, "id": item_id, "tipo": tipo, "arquivos": novo["arquivos"], "backup": str(copia)}
+
+
 def devido(agora: float | None = None) -> dict | None:
     """Today's post when its hour has come, unless something was already published or attempted today."""
     agora = time.time() if agora is None else agora
@@ -378,13 +418,20 @@ def preparar(item: dict, api, dormir=time.sleep) -> str:
         else:
             params["thumb_offset"] = str(int(item.get("capa_ms") or CAPA_MS))
         cid = _ok(api.post(f"{ig}/media", params), "criar o Reel")["id"]
-    else:
+    elif item["tipo"] == "IMAGE":
+        # single feed photo: image_url + caption only. "IMAGE" is our schema name; the Graph API takes no media_type
+        # for a feed photo (media_type is only CAROUSEL, REELS or STORIES).
+        cid = _ok(api.post(f"{ig}/media", {"image_url": api.url(item["arquivos"][0]), "caption": item["legenda"]}),
+                  "criar a foto")["id"]
+    elif item["tipo"] == "CARROSSEL":
         filhos = [_ok(api.post(f"{ig}/media", {"image_url": api.url(k), "is_carousel_item": "true"}), f"imagem {n + 1}")["id"]
                   for n, k in enumerate(item["arquivos"])]
         for f in filhos:
             _esperar_pronto(api, f, dormir)
         cid = _ok(api.post(f"{ig}/media", {"media_type": "CAROUSEL", "children": ",".join(filhos),
                                            "caption": item["legenda"]}), "criar o carrossel")["id"]
+    else:  # never guess: an unknown type must not go out as a carousel
+        raise ValueError(f"tipo desconhecido: {item.get('tipo')!r}")
     _esperar_pronto(api, cid, dormir)
     return cid
 

@@ -458,10 +458,14 @@ BRIEFING_SISTEMA = ("Você prepara um briefing de reunião em MODO SÓ LEITURA: 
 
 def _prompt_briefing(r: dict) -> str:
     return f"""Briefing para a reunião «{r['titulo']}» que começa às {r['inicio_txt']} ({FUSO}).
+Evento (evento_id): {r.get('evento_id') or '(não informado)'}
 Participantes: {r.get('participantes') or '(não informados)'} · Local/link: {r.get('local') or '(não informado)'}
 
 1. Com o conector `google` (user_google_email = falhanosistema1111@gmail.com), procure os e-mails recentes com esses participantes ou sobre esse assunto (últimos 60 dias) e a descrição do evento.
 2. Veja os fios soltos ligados (ferramenta `fios`, acao "listar") e o que a memória sabe dessas pessoas e do assunto.
+Pesquisa complementar, quando pertinente: identifique organização/pessoa pelo convite antes de pesquisar; use somente fontes públicas (site oficial, perfil público, notícia). Não trate nomes ambíguos como a mesma pessoa; se a identidade não estiver confirmada, explicite a incerteza e não atribua achados de homônimos.
+Não envie conteúdo privado do convite, e-mails, fios ou memória a buscadores; use somente termos públicos de identidade já confirmada. Não pesquise dados sensíveis (CPF, endereço residencial, telefone pessoal, saúde, finanças pessoais ou família).
+Em cada linha com achado público, cite URL e data da fonte (se ausente, indique sem data e a data da consulta), distinguindo fato de incerteza. Preserve Google só leitura; não envie confirmação, convite ou mensagem a ninguém e não altere agenda.
 3. Resposta final (vai inteira para o celular dele), curta e organizada:
 *Com quem:* quem é cada um em 1 linha (o que se sabe; não invente).
 *Contexto:* o que já rolou (2–4 linhas).
@@ -473,7 +477,28 @@ Se não achar nada além do convite, diga isso em 2 linhas e sugira o que vale c
 def _prompt_pos(r: dict) -> str:
     return (f"A reunião «{r['titulo']}» acabou. Sua resposta final (vai ao celular dele) deve ser só esta pergunta, curta e "
             f"natural: \"📝 Como foi «{r['titulo']}»? Me conta (pode ser áudio) o que ficou combinado — quem faz o quê e "
-            "até quando — que eu organizo os próximos passos e te lembro.\" Não faça mais nada.")
+            "até quando — que eu organizo os próximos passos e te lembro.\" Nesta execução, não faça mais nada.\n\n"
+            f"Contexto interno para o relato posterior, não incluir na pergunta: evento_id = {r.get('evento_id') or '(não informado)'}.\n"
+            "Somente quando Matheus responder: extraia compromissos explícitos; cada item precisa de ação e dono "
+            "ditos por ele, prazo somente se dito. Se faltar ação/dono ou houver ambiguidade, pergunte sem supor. "
+            "Sem evento_id confirmado, não registre nem marque o pós como concluído; peça confirmação.\n"
+            "Antes de salvar, use `fios` acao \"listar\" para conferir fios canônicos e suas fontes, inclusive registros "
+            "anteriores da reunião. Deduplique por evento_id + ação normalizada + dono, também dentro do relato. "
+            "Para a chave estável em fontes, normalize ação e dono removendo acentos (NFD), usando casefold, "
+            "trocando pontuação por espaços e reduzindo espaços; una ação|dono, calcule SHA-256 UTF-8 e use "
+            "os primeiros 12 caracteres hexadecimais: pos-reuniao:<evento_id>:<hash>. Preserve o evento_id original. "
+            "Inclua também a fonte explícita evento_id:<evento_id> e registre ação e responsável explícitos no detalhe. "
+            "Compare também fontes/detalhe de fios anteriores sem chave; sem certeza da correspondência, pergunte, "
+            "não crie outro por suposição.\n"
+            "Se já existir, use `fios` acao \"salvar\" com o mesmo id apenas para atualizações comprovadas; se nada "
+            "mudou, não duplique. Preserve fontes, prazo e ligações existentes quando o relato não os alterar "
+            "explicitamente; não invente ligações por semelhança. Novos fios não têm ligações, salvo as ditas por "
+            "Matheus. O campo dono aceita você/agente; responsável terceiro deve ficar explícito no detalhe, sem "
+            "atribuir a você ou ao agente por inferência. Não edite arquivos de armazenamento.\n"
+            "Depois de salvar/atualizar pelas ferramentas canônicas, confira os registros; somente depois, sem "
+            "itens ambíguos ou falhas pendentes, chame `reuniao` acao \"pos_registrado\" com este evento_id. "
+            "Se ele disser explicitamente que não houve compromissos, confira antes de marcar o pós como registrado. "
+            "Não chame `reuniao` acao \"agendar\" nem `scheduler`, não reagende, não envie nada a terceiros.")
 
 
 def _contexto_da_tarefa(tarefa, login: str) -> None:

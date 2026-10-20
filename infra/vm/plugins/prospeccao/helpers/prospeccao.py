@@ -2749,6 +2749,82 @@ def enviar(login: str, texto: str, botoes: list | None = None, tipo: str = "prog
 
 # ------------------------------------------------------------------ numbers
 
+def _resumo_coorte(itens: list[dict], agora_ts: float, janela_dias: int = 7) -> dict:
+    """Return bounded, mature-only outcomes for a stored outreach cohort."""
+    maduros = [x for x in itens if agora_ts >= x["entrada"] + janela_dias * 86400]
+    n = len(maduros)
+    respostas = sum(bool(x["respondeu"]) for x in maduros)
+    leads = sum(bool(x["virou_lead"]) for x in maduros)
+    return {
+        "abordados_n": len(itens),
+        "maduros_n": n,
+        "pendentes_n": len(itens) - n,
+        "janela_observacao_dias": janela_dias,
+        "respondidos_n": respostas,
+        "respondidos_denominador": n,
+        "taxa_resposta_pct": round(100 * respostas / n, 1) if n else None,
+        "viraram_lead_n": leads,
+        "leads_denominador": n,
+        "taxa_lead_pct": round(100 * leads / n, 1) if n else None,
+    }
+
+
+def _metricas_coortes(leads: list[dict], corte: float, agora_ts: float, janela_dias: int = 7) -> dict:
+    """Weekly first-DM cohorts with direct outcomes inside a fixed observation window.
+
+    Pure calculation: no state writes, reservations, dispatch, or network access.
+    """
+    duracao = janela_dias * 86400
+    por_semana: dict[str, list[dict]] = {}
+    todos: list[dict] = []
+    tipos_resposta = {f"etapa:{e}" for e in RESPOSTAS_ETAPAS}
+    tipos_lead = {"etapa:lead", "etapa:demo", "etapa:teste", "etapa:cliente"}
+    for lead in leads:
+        aberturas = sorted(float(h.get("em") or 0) for h in lead.get("historico", [])
+                           if h.get("tipo") == "dm_abertura" and float(h.get("em") or 0) >= corte)
+        if not aberturas:
+            continue
+        entrada = aberturas[0]  # one denominator per profile in the selected period
+        fim = entrada + duracao
+        historico = lead.get("historico", [])
+        eventos = [h for h in historico if h.get("onde", "direct") == "direct"
+                   and h.get("tipo") in tipos_resposta and not h.get("mesma_fala")]
+        # A late re-read can promote the same Direct quote from "respondeu" to "lead".
+        # Attribute that classification to the original answer timestamp, not to the re-read.
+        atribuidos = list(eventos)
+        for h in historico:
+            if not h.get("mesma_fala") or h.get("onde", "direct") != "direct" or h.get("tipo") not in tipos_lead:
+                continue
+            ts = float(h.get("em") or 0)
+            anteriores = [x for x in eventos if float(x.get("em") or 0) <= ts
+                          and _citacao(x.get("texto", "")) == _citacao(h.get("texto", ""))]
+            if not anteriores:
+                anteriores = [x for x in eventos if float(x.get("em") or 0) <= ts]
+            if anteriores:
+                origem = max(anteriores, key=lambda x: float(x.get("em") or 0))
+                atribuidos.append({**h, "em": origem.get("em", ts), "_origem_resposta": True})
+        eventos_janela = [h for h in atribuidos if entrada <= float(h.get("em") or 0) <= fim]
+        item = {
+            "entrada": entrada,
+            "respondeu": any(h.get("tipo") in tipos_resposta for h in eventos_janela),
+            "virou_lead": any(h.get("tipo") in tipos_lead for h in eventos_janela),
+        }
+        data = dt.datetime.fromtimestamp(entrada, _tz()).date()
+        semana = (data - dt.timedelta(days=data.weekday())).isoformat()
+        por_semana.setdefault(semana, []).append(item)
+        todos.append(item)
+    return {
+        "janela_observacao_dias": janela_dias,
+        "unidade": "semana de entrada (segunda-feira)",
+        "criterio": "primeira DM de abertura do perfil no período; respostas diretas até 7 dias após o envio",
+        "resumo": _resumo_coorte(todos, agora_ts, janela_dias),
+        "por_semana": [
+            {"semana_inicio": semana, **_resumo_coorte(itens, agora_ts, janela_dias)}
+            for semana, itens in sorted(por_semana.items())
+        ],
+    }
+
+
 def metricas(login: str, dias: int = 7) -> dict:
     d = carregar(login)
     corte = agora() - dias * 86400
@@ -2791,6 +2867,7 @@ def metricas(login: str, dias: int = 7) -> dict:
     aprovadas = sum(1 for a in acoes if a["estado"] in ("aprovada", "executada", "falhou"))
     decididas = sum(1 for a in acoes if a["estado"] in ("aprovada", "executada", "falhou", "pulada"))
     return {"dias": dias, "acoes": por_estado, "etapas": etapas, "geral": taxa(abordados),
+            "coortes": _metricas_coortes(d["leads"], corte, agora()),
             "comentarios": {"comentados": len(comentados), "responderam": len(pelo_comentario),
                             "taxa_resposta": round(100 * len(pelo_comentario) / len(comentados), 1) if comentados else 0.0},
             "por_variante": por("variante"), "ab": sugestao_ab(por("variante")),

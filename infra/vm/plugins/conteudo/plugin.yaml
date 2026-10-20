@@ -1,4 +1,4 @@
 name: conteudo
 title: Conteúdo da @raiz.connect
-description: Publica um post por dia (Reel ou carrossel) na @raiz.connect pela API oficial da Meta, no horário da agenda; legendas sem emoji; nunca publica duas vezes.
+description: Publica um post por dia (Reel, foto única ou carrossel) na @raiz.connect pela API oficial da Meta, no horário da agenda; legendas sem emoji; nunca publica duas vezes.
 version: 1.0.0

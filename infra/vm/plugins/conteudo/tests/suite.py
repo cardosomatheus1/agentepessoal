@@ -61,6 +61,9 @@ ITEM = {"id": "seg-pov", "data": "2026-10-14", "hora": "11:45", "tipo": "REELS",
 CARR = {"id": "ter-frases", "data": "2026-10-15", "hora": "11:45", "tipo": "CARROSSEL",
         "arquivos": [f"conteudo/semana1/frases/{i}.jpg" for i in range(1, 10)], "legenda": "Qual você mais ouve? Comenta o número."}
 
+FOTO = {"id": "s3-foto", "data": "2026-10-17", "hora": "11:45", "tipo": "IMAGE", "arquivos": ["conteudo/semana3/ifood/foto.jpg"],
+        "legenda": "Pedidos do iFood na Raiz Connect. Mais clareza para acompanhar os pedidos."}
+
 
 class Suite:
     def __init__(self):
@@ -362,6 +365,176 @@ class Suite:
         ok(c.carregar()["itens"][0]["estado"] == "pendente", "só leitura: não muda o post")
         fonte = (RAIZ / "tools" / "conteudo.py").read_text(encoding="utf-8")
         ok('acao == "arquivos"' in fonte and "baixar_post" in fonte, "a ferramenta oferece a ação")
+
+    def t_foto_unica_valida(self):
+        c = _modulo()
+        agora = _ts(c, "2026-10-13", "10:00")
+        ok(c._validar_item(FOTO) == "", "uma .jpg do S3 é foto válida")
+        ok(c._validar_item(dict(FOTO, arquivos=["conteudo/s3/a.JPEG"])) == "", ".jpeg também")
+        ruins = {"mp4": dict(FOTO, arquivos=["conteudo/s3/a.mp4"]), "png": dict(FOTO, arquivos=["conteudo/s3/a.png"]),
+                 "duas": dict(FOTO, arquivos=["conteudo/s3/a.jpg", "conteudo/s3/b.jpg"]), "nenhuma": dict(FOTO, arquivos=[]),
+                 "fora do S3": dict(FOTO, arquivos=["/tmp/a.jpg"]), "capa": dict(FOTO, capa="conteudo/s3/capa.jpg"),
+                 "capa_ms": dict(FOTO, capa_ms=1500), "emoji": dict(FOTO, legenda="Pedidos 🍔"),
+                 "minúsculo": dict(FOTO, tipo="image"), "desconhecido": dict(FOTO, tipo="FOTO")}
+        for nome, it in ruins.items():
+            ok(c._validar_item(it) != "", f"foto inválida passou: {nome}")
+            ok(c.agendar([it], agora)["ok"] is False, f"agendar recusa: {nome}")
+        ok(c.carregar()["itens"] == [], "nada inválido entrou")
+        ok(c.agendar([FOTO], agora)["ok"], "foto válida agenda")
+        it = c.carregar()["itens"][0]
+        ok(it["tipo"] == "IMAGE" and it["arquivos"] == FOTO["arquivos"] and "capa" not in it, it)
+        ok(c.agenda_proxima(7, _ts(c, "2026-10-17", "09:00"))["dias"][0]["itens"][0]["tipo"] == "IMAGE", "a agenda mostra o tipo")
+
+    def t_publica_foto_unica_uma_vez(self):
+        c = _modulo()
+        c.agendar([FOTO], _ts(c, "2026-10-13", "10:00"))
+        api, avisos = ApiFalsa(), []
+        r = c.rodar(api, avisos.append, _ts(c, "2026-10-17", "11:45"), dormir=lambda s: None)
+        ok(r["estado"] == "publicada" and r["media_id"] == "C2", r)
+        criar = [x for x in api.chamadas if x[0] == "POST" and x[1] == "IG1/media"]
+        ok(len(criar) == 1, f"um único contêiner: {criar}")
+        ok(criar[0][2] == {"image_url": "https://s3/conteudo/semana3/ifood/foto.jpg?assinado", "caption": FOTO["legenda"]},
+           f"só image_url + caption (sem media_type, is_carousel_item, children, share_to_feed, vídeo): {criar[0][2]}")
+        ok(("GET", "C1", {"fields": "status_code"}) in api.chamadas, "espera a Meta processar antes de publicar")
+        pubs = [x for x in api.chamadas if x[1] == "IG1/media_publish"]
+        ok(pubs == [("POST", "IG1/media_publish", {"creation_id": "C1"})], f"publica uma vez o contêiner: {pubs}")
+        ok(not avisos, "deu certo: sem aviso")
+        ok(c.rodar(api, avisos.append, _ts(c, "2026-10-17", "12:30"), dormir=lambda s: None) is None, "não publica de novo")
+        ok(len([x for x in api.chamadas if x[1] == "IG1/media_publish"]) == 1, "sem publicação duplicada")
+
+    def t_foto_unica_falhas(self):
+        casos = {"criar": (ApiFalsa(falhar_em="IG1/media"), "falhou", "permissão negada"),
+                 "processar": (ApiFalsa(status="ERROR"), "falhou", "recusou"),
+                 "publicar": (ApiFalsa(falhar_em="media_publish"), "incerta", "caiu a conexão")}
+        for nome, (api, estado, msg) in casos.items():
+            c = _modulo()
+            c.agendar([FOTO], _ts(c, "2026-10-13", "10:00"))
+            avisos = []
+            r = c.rodar(api, avisos.append, _ts(c, "2026-10-17", "11:50"), dormir=lambda s: None)
+            ok(r["estado"] == estado and msg in r["erro"], f"{nome}: {r}")
+            ok(avisos and avisos[0].startswith("pendente:"), f"{nome}: avisa")
+            ok(c.devido(_ts(c, "2026-10-17", "13:00")) is None, f"{nome}: não repete sozinho")
+            pubs = [x for x in api.chamadas if x[1] == "IG1/media_publish"]
+            ok(len(pubs) == (1 if nome == "publicar" else 0), f"{nome}: publicação chamada {len(pubs)}x")
+
+    def t_tipo_desconhecido_nao_vira_carrossel(self):
+        c = _modulo()
+        api = ApiFalsa()
+        for tipo in ("FOTO", "IMAGEM", "", None, "image"):
+            try:
+                c.preparar(dict(FOTO, tipo=tipo), api, dormir=lambda s: None)
+                ok(False, f"tipo {tipo!r} foi aceito")
+            except ValueError:
+                pass
+        ok(api.chamadas == [], f"nada foi criado na Meta: {api.chamadas}")
+        # a corrupted calendar entry with an unknown type fails before Meta and never goes out as a carousel
+        c.agendar([FOTO], _ts(c, "2026-10-13", "10:00"))
+        d = c.carregar(); d["itens"][0]["tipo"] = "FOTO"; c._gravar(d)
+        r = c.rodar(api, lambda t: None, _ts(c, "2026-10-17", "11:50"), dormir=lambda s: None)
+        ok(r["estado"] == "falhou" and "tipo desconhecido" in r["erro"] and api.chamadas == [], r)
+
+    def t_reel_e_carrossel_sem_mudanca(self):
+        c = _modulo()
+        agora = _ts(c, "2026-10-13", "10:00")
+        c.agendar([dict(ITEM, capa="conteudo/semana2/capa-pov.jpg"), CARR], agora)
+        api = ApiFalsa()
+        c.rodar(api, lambda t: None, _ts(c, "2026-10-14", "11:50"), dormir=lambda s: None)
+        ok(api.chamadas[0][2] == {"media_type": "REELS", "video_url": "https://s3/conteudo/semana1/pov.mp4?assinado",
+                                  "caption": ITEM["legenda"], "share_to_feed": "true",
+                                  "cover_url": "https://s3/conteudo/semana2/capa-pov.jpg?assinado"}, api.chamadas[0])
+        api = ApiFalsa()
+        c.rodar(api, lambda t: None, _ts(c, "2026-10-15", "11:50"), dormir=lambda s: None)
+        criar = [x[2] for x in api.chamadas if x[0] == "POST" and x[1] == "IG1/media"]
+        ok(criar[:9] == [{"image_url": f"https://s3/conteudo/semana1/frases/{i}.jpg?assinado", "is_carousel_item": "true"}
+                         for i in range(1, 10)], "telas do carrossel iguais a antes")
+        ok(criar[9] == {"media_type": "CAROUSEL", "children": ",".join(f"C{i}" for i in range(1, 10)),
+                        "caption": CARR["legenda"]}, criar[9])
+        for n, bom in ((1, False), (2, True), (10, True), (11, False)):
+            it = dict(CARR, arquivos=[f"conteudo/x/{i}.jpg" for i in range(n)])
+            ok((c._validar_item(it) == "") is bom, f"carrossel de {n}")
+        ok(c._validar_item(dict(CARR, arquivos=["conteudo/x/1.jpg", "conteudo/x/2.png"])) != "", "carrossel só .jpg")
+        ok(c._validar_item(dict(ITEM, arquivos=["conteudo/x/a.jpg"])) != "", "Reel só .mp4")
+        ok(c._validar_item(dict(ITEM, arquivos=["conteudo/x/a.mp4", "conteudo/x/b.mp4"])) != "", "Reel um arquivo")
+
+    def t_trocar_formato_reel_para_foto(self):
+        c = _modulo()
+        agora = _ts(c, "2026-10-17", "09:00")
+        reel = dict(ITEM, id="s3-ifood", data="2026-10-17", capa="conteudo/s3/capa.jpg", capa_ms=800)
+        outro = dict(ITEM, id="amanha", data="2026-10-18", capa="conteudo/s3/capa2.jpg")
+        c.agendar([reel, outro], agora)
+        antes = c.carregar()
+        bruto = c._arq().read_bytes()
+        foto = ["conteudo/s3/feed.jpg"]
+        ok(not c.trocar_formato("s3-ifood", "IMAGE", foto, agora=agora)["ok"], "só o operador")
+        c.AUTOR["quem"] = "operador: foto"
+        for tipo, arqs in (("IMAGE", ["conteudo/s3/feed.png"]), ("IMAGE", foto * 2), ("FOTO", foto), ("IMAGE", ["conteudo/a.mp4"])):
+            ok(not c.trocar_formato("s3-ifood", tipo, arqs, agora=agora)["ok"], f"recusa {tipo} {arqs}")
+        ok(not c.trocar_formato("s3-ifood", "IMAGE", foto, capa="conteudo/s3/c.jpg", agora=agora)["ok"], "foto sem capa")
+        ok(c._arq().read_bytes() == bruto, "recusa não grava nada")
+        r = c.trocar_formato("s3-ifood", "IMAGE", foto, agora=agora)
+        ok(r["ok"] and Path(r["backup"]).read_bytes() == bruto, f"cópia exata antes de gravar: {r}")
+        depois = c.carregar()
+        novo, velho = depois["itens"][0], antes["itens"][0]
+        ok(novo == {**{k: v for k, v in velho.items() if k not in ("capa", "capa_ms")}, "tipo": "IMAGE", "arquivos": foto},
+           f"só tipo/arquivos mudam e a capa sai: {novo}")
+        ok(list(novo) == [k for k in velho if k not in ("capa", "capa_ms")], "ordem dos campos mantida")
+        ok(depois["itens"][1] == antes["itens"][1], "o outro post fica idêntico")
+        ev = json.loads((c.PASTA / "diario.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        ok(ev["formato_trocado"] and ev["para_formato"]["tipo"] == "IMAGE" and ev["quem"] == "operador: foto", ev)
+        ok(c.devido(_ts(c, "2026-10-17", "11:45"))["tipo"] == "IMAGE", "a rotina vê a foto na hora")
+        bruto, linhas = c._arq().read_bytes(), (c.PASTA / "diario.jsonl").read_text(encoding="utf-8")
+        r2 = c.trocar_formato("s3-ifood", "IMAGE", foto, agora=agora)
+        ok(r2["ok"] and r2.get("sem_mudanca") and c._arq().read_bytes() == bruto
+           and (c.PASTA / "diario.jsonl").read_text(encoding="utf-8") == linhas, f"repetir não grava nem registra: {r2}")
+        api = ApiFalsa()
+        c.rodar(api, lambda t: None, _ts(c, "2026-10-17", "11:45"), dormir=lambda s: None)
+        ok(api.chamadas[0][2] == {"image_url": "https://s3/conteudo/s3/feed.jpg?assinado", "caption": ITEM["legenda"]}, api.chamadas[0])
+        ok(not c.trocar_formato("s3-ifood", "REELS", ["conteudo/a.mp4"], agora=agora)["ok"], "publicado não muda")
+
+    def t_arquivos_da_foto_do_dia(self):
+        c = _modulo()
+        c.agendar([FOTO], _ts(c, "2026-10-13", "10:00"))
+        links = []
+        def url(chave):
+            links.append(chave); return f"https://s3/{chave}?assinado"
+        r = c.baixar_post("2026-10-17", url, lambda link, caminho: Path(caminho).write_bytes(b"\xff\xd8\xff"))
+        ok(r["ok"] and r["tipo"] == "IMAGE" and len(r["arquivos"]) == 1 and r["arquivos"][0].endswith("/cache/s3-foto/foto.jpg"), r)
+        ok(links == FOTO["arquivos"] and r["legenda"] == FOTO["legenda"], "a foto pelo link do S3, com a legenda")
+
+    def t_rotina_recarrega_o_helper(self):
+        import sys
+        import types
+        falso = types.ModuleType("helpers.extension")
+        falso.Extension = type("Extension", (), {})
+        guardados = {k: sys.modules.get(k) for k in ("helpers", "helpers.extension")}
+        sys.modules.setdefault("helpers", types.ModuleType("helpers"))
+        sys.modules["helpers.extension"] = falso
+        try:
+            import shutil
+            _modulo()  # fresh CONTEUDO_PASTA
+            copia = Path(tempfile.mkdtemp(prefix="conteudo_ext_"))  # a copy: the real helper's mtime is never touched
+            shutil.copytree(RAIZ / "helpers", copia / "helpers")
+            (copia / "extensions" / "python" / "job_loop").mkdir(parents=True)
+            arq = copia / "extensions" / "python" / "job_loop" / "_46_publicar_conteudo.py"
+            shutil.copy(RAIZ / "extensions" / "python" / "job_loop" / "_46_publicar_conteudo.py", arq)
+            spec = importlib.util.spec_from_file_location("ext_teste", arq)
+            ext = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(ext)
+            m1 = ext._helper()
+            ok("IMAGE" in m1.TIPOS and ext._helper() is m1, "carrega uma vez e reaproveita")
+            prova = json.loads((m1.PASTA / "rotina.json").read_text(encoding="utf-8"))
+            import hashlib
+            ok(prova["pid"] == os.getpid() and prova["helper_sha256"] == hashlib.sha256(ext._CAMINHO.read_bytes()).hexdigest()
+               and "IMAGE" in prova["tipos"], prova)
+            st = ext._CAMINHO.stat()
+            os.utime(ext._CAMINHO, ns=(st.st_atime_ns, st.st_mtime_ns + 1000))
+            ok(ext._helper() is not m1, "helper novo no disco: a rotina relê")
+        finally:
+            for k, v in guardados.items():
+                if v is None:
+                    sys.modules.pop(k, None)
+                else:
+                    sys.modules[k] = v
 
     def t_extensao_usa_o_helper(self):
         ext = (RAIZ / "extensions" / "python" / "job_loop" / "_46_publicar_conteudo.py").read_text(encoding="utf-8")

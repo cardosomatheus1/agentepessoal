@@ -2003,6 +2003,48 @@ class Suite:
         eq(m["por_variante"]["A"]["taxa_resposta"], 50.0, "A: 50%")
         eq(m["por_variante"]["B"]["taxa_resposta"], 100.0, "B: 100%")
 
+    def t_metricas_coortes_janela_e_maturidade(self):
+        """Co-hort rates use mature denominators and only outcomes inside the direct-message window."""
+        p = self.p
+        self.em(self.hora(10))
+        ids = [self._aquecido(f"coorte{i}") for i in range(4)]
+        for i, lid in enumerate(ids):
+            self.em(self.relogio + 200)
+            self._executar(lid, "dm_abertura", TEXTOS[i].format(n=f"Pessoa {i}"), "A")
+
+        now = self.relogio
+        d = p.carregar(LOGIN)
+        for i, lid in enumerate(ids):
+            lead = p._lead(d, lid)
+            dm = next(h for h in lead["historico"] if h["tipo"] == "dm_abertura")
+            dm["em"] = now - (2 if i == 3 else 10) * 86400
+            if i == 0:
+                lead["historico"].append({"em": now - 8 * 86400, "tipo": "etapa:respondeu", "texto": "sim", "onde": "direct"})
+            elif i == 1:
+                lead["historico"].extend([
+                    {"em": now - 8 * 86400, "tipo": "etapa:respondeu", "texto": "quero saber mais", "onde": "direct"},
+                    {"em": now - 2 * 86400, "tipo": "etapa:lead", "texto": "quero saber mais", "onde": "direct", "mesma_fala": True},
+                ])
+            elif i == 2:
+                lead["historico"].append({"em": now - 2 * 86400, "tipo": "etapa:lead", "texto": "conversão realmente tardia", "onde": "direct"})
+            else:
+                lead["historico"].append({"em": now - 86400, "tipo": "etapa:respondeu", "texto": "ainda na janela", "onde": "direct"})
+        p.salvar(LOGIN, d)
+
+        coortes = p.metricas(LOGIN, 14)["coortes"]
+        geral = coortes["resumo"]
+        eq(geral["abordados_n"], 4, "denominador bruto: quatro perfis abordados")
+        eq(geral["maduros_n"], 3, "só três tiveram sete dias completos")
+        eq(geral["pendentes_n"], 1, "um perfil ainda está em observação")
+        eq(geral["respondidos_n"], 2, "respostas diretas dentro da janela, inclusive reclassificação tardia")
+        eq(geral["respondidos_denominador"], 3, "denominador da taxa: coortes maduras")
+        eq(geral["taxa_resposta_pct"], 66.7, "taxa madura: 2/3")
+        eq(geral["viraram_lead_n"], 1, "reclassificação tardia da mesma fala conta; conversão realmente tardia não")
+        eq(geral["leads_denominador"], 3, "denominador da taxa de lead: coortes maduras")
+        eq(geral["taxa_lead_pct"], 33.3, "taxa de lead madura: 1/3")
+        eq(sum(x["abordados_n"] for x in coortes["por_semana"]), 4, "abordagens distribuídas por semana sem perder registros")
+        eq(sum(x["maduros_n"] for x in coortes["por_semana"]), 3, "maturidade preservada na segmentação semanal")
+
     def t_cartao_lead(self):
         """12/10 review §7 item 3: the hot lead's one-page card, both sides of the conversation, in order."""
         p = self.p
