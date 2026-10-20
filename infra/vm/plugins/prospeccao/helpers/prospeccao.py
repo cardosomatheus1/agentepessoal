@@ -1529,7 +1529,7 @@ def marcar_links(texto: str, d: dict, lid: str) -> str:
 
 def avisar_agora(etapa: str, nota: str = "") -> bool:
     """Matheus, 12/10: the phone rings right away only for lead, demo and what waits on him ("pendente:"); a plain
-    answer ("oi", a heart) goes to the 20h17 summary."""
+    answer ("oi", a heart) goes to the 19h52 summary."""
     return etapa in ("lead", "demo") or str(nota or "").strip().lower().startswith("pendente:")
 
 

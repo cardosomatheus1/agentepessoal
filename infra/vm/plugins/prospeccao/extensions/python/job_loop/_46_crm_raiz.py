@@ -1,4 +1,4 @@
-"""The "CRM Raiz" sheet (12/10 review §5.2 item 10): once a day, after 20h30 (the day's summary goes at 20h17), the
+"""The "CRM Raiz" sheet (12/10 review §5.2 item 10): once a day, after 20h30 (the day's summary goes at 19h52), the
 prospecting register is written to the sheet (helpers/crm.py: when, and how). A failure is tried again an hour later,
 at most 3 times a day; the first time, the person gets the sheet's link once."""
 

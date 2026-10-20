@@ -2209,7 +2209,7 @@ class Suite:
         self.em(self.hora(18))
         p.interacao_comentario(LOGIN, outro, "Valeu! Montamos tudo no mesmo dia sim")
         resumo = p.resumo_hoje(LOGIN)
-        ok("Responderam ao nosso comentário" in resumo and "@coment2" in resumo, f"aparece no resumo das 20h17: {resumo}")
+        ok("Responderam ao nosso comentário" in resumo and "@coment2" in resumo, f"aparece no resumo das 19h52: {resumo}")
 
     def t_seguimento_depois_do_link(self):
         """Item 7: one follow-up 2 days after our link, only if the person wrote nothing since."""

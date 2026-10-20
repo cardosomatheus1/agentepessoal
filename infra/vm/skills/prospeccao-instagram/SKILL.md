@@ -54,7 +54,7 @@ dia; comentário: `comentar`, até 2). `editar` troca o texto de uma ação apro
 
 ## As rodadas (uma por vez)
 
-**Execução** (minutos 8 e 38, das 9h08 às 12h38 e das 14h08 às 21h38): 1. a espera sorteada do prompt; 2. conta
+**Execução** (minutos 8 e 38, das 10h08 às 12h38 e das 14h08 às 19h38; sem rodada à noite): 1. a espera sorteada do prompt; 2. conta
 certa (seção 1); 3. `contexto`; 4. `playbook` (inteiro, sempre: a etapa e a resposta de cada fala dependem dele);
 5. ler respostas e `caixa_lida` (seção 2); 6. `proxima` até 3 ações feitas ou "NADA AGORA" (seção 3; respostas a quem
 escreveu saem primeiro e não contam nas 3); 7. resposta final. As seções 4 a 7 servem à busca e aos pedidos do Matheus.
@@ -64,10 +64,10 @@ Depois das 20h e no domingo, a `proxima` só entrega respostas a quem escreveu, 
 (seção 4); 5. repor o estoque (seções 5 e 6); 6. resposta final. Veja a hora (terminal: `date`) antes de cada lote e
 termine até 9h03 ou 14h03, antes da execução; o que faltar fica para a busca seguinte.
 
-**Resumo** (20h17): `hoje`; a resposta final é o texto que ele devolver (ou SEM NOVIDADE se vier "NADA HOJE").
+**Resumo** (19h52): `hoje`; a resposta final é o texto que ele devolver (ou SEM NOVIDADE se vier "NADA HOJE").
 
 **Resposta final da rodada, e nada além dela:** SEM NOVIDADE (as falas registradas já chegam ao Matheus pela
-ferramenta, e o que foi feito vai no resumo das 20h17); ou CONSULTA LIMITADA (429); ou "PRECISA DE VOCÊ:" e o que
+ferramenta, e o que foi feito vai no resumo das 19h52); ou CONSULTA LIMITADA (429); ou "PRECISA DE VOCÊ:" e o que
 precisa dele (bloqueio, verificação, conta, erro), em até 3 linhas.
 
 ## 1. Conta certa (início de toda rodada)
@@ -97,8 +97,8 @@ atenção do Instagram.
      separa as automáticas e, quando o `contexto` pede **VARREDURA COMPLETA**, já a registra. Abra só o que ele
      mandar abrir: clique no nome na lista (pelo print, se a referência falhar);
    - script com erro: abra a caixa e leia pelo print (`browser` screenshot + `vision_load`), não pelo texto;
-   - notificações (https://www.instagram.com/accounts/activity/): na primeira rodada de cada turno (9h08 e 14h08), na
-     última (21h38), na VARREDURA COMPLETA e quando o coração estiver acima de zero.
+   - notificações (https://www.instagram.com/accounts/activity/): na primeira rodada de cada turno (10h08 e 14h08), na
+     última (19h38), na VARREDURA COMPLETA e quando o coração estiver acima de zero.
 2. **É fala da pessoa** quando a ÚLTIMA coisa na conversa é dela: mensagem, áudio, figurinha, ou reação (❤️, 👍) à 1ª
    mensagem, ao lembrete ou a uma pergunta nossa. A reação não vira mensagem nova: se o texto da página não mostrar, olhe
    o print embaixo do nosso balão; nota "reagiu com <reação> a: <começo da nossa frase>". Reação a mensagem nossa que

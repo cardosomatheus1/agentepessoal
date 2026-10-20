@@ -5,7 +5,7 @@ and nothing is read back from the sheet."""
 import re
 from datetime import datetime
 
-HORA = "20:30"  # after the day's summary (20h17)
+HORA = "20:30"  # after the day's summary (19h52)
 TENTATIVAS = 3
 CONTA = "falhanosistema1111@gmail.com"  # the Google account of the agent's connector (workspace-mcp, single user)
 ABA = "Leads"
