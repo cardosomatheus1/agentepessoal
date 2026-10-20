@@ -65,12 +65,10 @@ checa(hermes.endswith("/caixa/delegado_hermes.py"), "Hermes roda o executor dele
 checa(" ".join(d.argumentos_run("d20261020-180000-abc234", "openclaw", Path("/t"), "172.30.0.1")).endswith(
     "python3 -I /caixa/delegado_openclaw.py"), "OpenClaw roda o executor dele")
 
-a = d.atalhos()
-checka = None
-checka = a['agent-browser'].startswith('#!/bin/sh') and d.AGENT_BROWSER in a['agent-browser']
-checks = 'BUSCAR_URL' in a['buscar']
-for ok_, msg in ((checka, 'atalho agent-browser'), (checks, 'atalho buscar')):
-    checa(ok_, msg)
+atalhos = d.atalhos()
+checa(atalhos["agent-browser"].startswith("#!/bin/sh") and d.AGENT_BROWSER in atalhos["agent-browser"],
+      "atalho agent-browser aponta para o binário do runtime")
+checa("BUSCAR_URL" in atalhos["buscar"], "atalho buscar usa o repasse")
 
 # ---- config: the relay, no secret, the rules of the box told to the delegate
 cfg = d.configuracao("hermes", 10, "172.30.0.1")
