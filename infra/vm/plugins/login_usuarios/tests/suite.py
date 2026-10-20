@@ -313,6 +313,86 @@ class Suite:
         ok(m.kwargs == {"temperature": 0, "extra_headers": {"X-Outro": "1"}}, "o modelo original (compartilhado) não muda")
         ok(c.com_dono(m, "../x") is m and c.com_dono(m, "") is m and c.com_dono(None, "ilia") is None, "dono inválido: nada muda")
 
+    def t_rastreio_da_chamada(self):
+        # 20/10: each model call says which chat, routine and agent made it (proxy: cache diagnosis and settings)
+        r = _carregar("login_usuarios_rastreio_teste", RAIZ / "helpers" / "rastreio.py")
+
+        class Ctx:
+            def __init__(self, cid, dados=None):
+                self.id, self.dados = cid, dados or {}
+
+            def get_data(self, k):
+                return self.dados.get(k)
+
+            def get_output_data(self, k):
+                return None
+
+        tarefa = type("T", (), {"uuid": "HL76nfIg"})()
+        ctxs = {"R": Ctx("R"), "P": Ctx("P", {"_parallel_parent_context_id": "R"}), "M": Ctx("M"),
+                "L": Ctx("L", {"parent_context_id": "L"})}
+        tarefas = lambda cid: [tarefa] if cid == "R" else []  # noqa: E731
+        eq(r.rotina_de(ctxs["R"], tarefas, ctxs.get), "HL76nfIg", "chat da rotina")
+        eq(r.rotina_de(ctxs["P"], tarefas, ctxs.get), "HL76nfIg", "trabalhador paralelo aberto pela rotina")
+        eq(r.rotina_de(ctxs["M"], tarefas, ctxs.get), "", "conversa de uma pessoa: sem rotina")
+        eq(r.rotina_de(ctxs["L"], tarefas, ctxs.get), "", "pai apontando para si mesmo não trava")
+        eq(r.cabecalhos("abc-1", "HL76nfIg", 0, "chat"),
+           {"X-A0-Conversa": "abc-1", "X-A0-Rotina": "HL76nfIg", "X-A0-Agente": "0", "X-A0-Papel": "chat"}, "cabeçalhos")
+        eq(r.cabecalhos("a b", "", 100, "outro"), {}, "valores tortos ficam de fora")
+        eq(r.cabecalhos("abc", None, 2, "util"), {"X-A0-Conversa": "abc", "X-A0-Agente": "2", "X-A0-Papel": "util"},
+           "sem rotina, ajudante 2, modelo utilitário")
+        eq(r.do_agente(object(), "chat"), {}, "agente estranho: nada, sem erro")
+        c = self._c()
+
+        class Modelo:
+            def __init__(self):
+                self.kwargs = {"extra_headers": {"X-Outro": "1"}}
+
+        m = Modelo()
+        n = c.com_dono(m, "matheus", {"X-A0-Conversa": "abc"})
+        eq(n.kwargs["extra_headers"], {"X-Outro": "1", "X-A0-Dono": "matheus", "X-A0-Conversa": "abc"}, "dono e rastreio")
+        ok(m.kwargs == {"extra_headers": {"X-Outro": "1"}}, "o modelo original não muda")
+        eq(c.com_dono(m, "", {"X-A0-Conversa": "abc"}).kwargs["extra_headers"], {"X-Outro": "1", "X-A0-Conversa": "abc"},
+           "sem dono válido, o rastreio vai assim mesmo")
+        # the two extensions (chat and utility model) end to end, with a fake scheduler
+        helpers_mod = sys.modules.get("helpers")
+        nomes = ("agent", "helpers.task_scheduler", "helpers.extension")
+        antes = {k: sys.modules.get(k) for k in nomes + ("helpers",)}
+        agent_mod = type(sys)("agent")
+        agent_mod.AgentContext = type("AC", (), {"get": staticmethod(lambda i: ctxs.get(i))})
+        ts = type(sys)("helpers.task_scheduler")
+        ts.TaskScheduler = type("TS", (), {"get": staticmethod(lambda: type("S", (), {
+            "get_tasks_by_context_id": staticmethod(tarefas)})())})
+        try:
+            sys.modules.update({"agent": agent_mod, "helpers.task_scheduler": ts})
+            if helpers_mod is None:
+                sys.modules["helpers"] = type(sys)("helpers")
+            try:
+                import helpers.extension  # noqa: F401  (the real one inside Agent Zero)
+            except Exception:
+                ext = type(sys)("helpers.extension")
+                ext.Extension = type("Extension", (), {})
+                sys.modules["helpers.extension"] = ext
+            for pasta, papel in (("chat_model_call_before", "chat"), ("util_model_call_before", "util")):
+                e = _carregar(f"quem_gasta_{papel}_teste", RAIZ / "extensions" / "python" / pasta / "_10_quem_gasta.py")
+                obj = e.QuemGasta.__new__(e.QuemGasta)
+                obj.agent = type("A", (), {"context": ctxs["P"], "number": 1})()
+                dados = {"model": Modelo()}
+                coro = obj.execute(call_data=dados)
+                try:
+                    coro.send(None)
+                except StopIteration:
+                    pass
+                cab = dados["model"].kwargs["extra_headers"]
+                eq({k: v for k, v in cab.items() if k.startswith("X-A0-") and k != "X-A0-Dono"},
+                   {"X-A0-Conversa": "P", "X-A0-Rotina": "HL76nfIg", "X-A0-Agente": "1", "X-A0-Papel": papel},
+                   f"extensão {pasta}")
+        finally:
+            for k, v in antes.items():
+                if v is None:
+                    sys.modules.pop(k, None)
+                else:
+                    sys.modules[k] = v
+
     def t_sonnet_so_para_o_matheus(self):
         # 20/10: Matheus asked for Sonnet 5.5 only for himself; routines and guests stay on the default model
         import json as _json

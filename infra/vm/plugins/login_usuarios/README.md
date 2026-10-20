@@ -31,3 +31,10 @@ principal escolhe o preset do seletor de modelos (presets.yaml) pela conversa ou
 salvo `"rotinas": true`. Usa a mesma escolha da tela (`chat_model_override`) e nunca troca nem desfaz uma escolha
 feita à mão. Apagar o arquivo volta cada conversa ao padrão na mensagem seguinte. O proxy já registra `modelo` e
 `dono` de cada chamada em `uso.jsonl`.
+
+**Rastreio de cada chamada (20/10):** `helpers/rastreio.py`. Além de `X-A0-Dono`, toda chamada de modelo leva
+`X-A0-Conversa` (id da conversa), `X-A0-Rotina` (uuid da tarefa agendada que roda nela, ou na conversa que abriu o
+trabalhador paralelo), `X-A0-Agente` (0 = principal, n = ajudante) e `X-A0-Papel` (`chat` ou `util`). Só ids e
+números, nunca conteúdo; o proxy grava em `uso.jsonl` e não manda para a AWS. Com isso o proxy põe a chave de cache
+do GPT por rotina/conversa e o cache de 1 h do Claude só na conversa de uma pessoa (agente 0, modelo de chat, sem
+rotina). Relatório: `python3 infra/operador/cache_relatorio.py`.
