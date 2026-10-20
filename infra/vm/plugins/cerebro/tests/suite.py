@@ -347,6 +347,23 @@ class Suite:
         pedido = cap.montar_pedido(["x"], "y", [{"id": "a1", "titulo": "T"}], [], [])
         ok("[a1] T" in pedido and "{" in pedido, "lista as pendências abertas e o formato JSON")
 
+    def t_copia_no_github_sem_gravar_o_token(self):
+        self.preparar()
+        try:
+            import subprocess
+            p = self.p
+            eq(p.enviar_copia(""), "sem token do GitHub no cofre", "sem token, nada")
+            ok("ainda não tem repositório" in p.enviar_copia("tok"), "sem remoto, diz o que falta")
+            remoto = self.tmp / "remoto.git"
+            subprocess.run(["git", "init", "-q", "--bare", str(remoto)], check=True)
+            subprocess.run(["git", "-C", str(p.RAIZ), "remote", "add", "origin", str(remoto)], check=True)
+            eq(p.enviar_copia("ghp_SEGREDOdeTESTE123"), "", "enviou")
+            ok(subprocess.run(["git", "-C", str(remoto), "log", "--oneline", "main"], capture_output=True).stdout,
+               "o histórico chegou no remoto")
+            ok("SEGREDOdeTESTE" not in (p.RAIZ / ".git" / "config").read_text(), "o token nunca vai para o .git/config")
+        finally:
+            self.limpar()
+
     def t_prompt_e_indice(self):
         ext = (RAIZ / "extensions" / "python" / "system_prompt" / "_27_cerebro.py").read_text(encoding="utf-8")
         for termo in ("anotação automática", "Pendência = o que ELE precisa fazer", "acao=desfazer", "UMA seção"):

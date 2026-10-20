@@ -4,7 +4,8 @@ data is never edited by hand). Usage, from the repository root:
     python3 infra/operador/cerebro.py migrar --motivo "<por quê>" [--simular]   (one-time move of the old stores)
     python3 infra/operador/cerebro.py estado                                     (counts, pending context, last note)
     python3 infra/operador/cerebro.py auditoria                                  (writes Documentos/auditoria-<data>.md)
-    python3 infra/operador/cerebro.py nota                                       (writes today's nota do dia now)"""
+    python3 infra/operador/cerebro.py nota                                       (writes today's nota do dia now)
+    python3 infra/operador/cerebro.py copia-github                               (creates the private repo once, pushes)"""
 
 import base64
 import json
@@ -32,6 +33,34 @@ elif p["op"] == "auditoria":
     print("AUDITORIA", r["nota"], r["arquivo"])
     for a in r["achados"][:30]:
         print(" -", a["checagem"], a["arquivo"], a["motivo"])
+elif p["op"] == "copia-github":
+    import subprocess, urllib.request
+    sys.path.insert(0, "/a0/usr/plugins/cofre/helpers"); import cofre
+    tok = cofre.carregar("matheus").get("GITHUB_TOKEN") or ""
+    def api(metodo, url, corpo=None):
+        req = urllib.request.Request("https://api.github.com" + url, method=metodo, data=json.dumps(corpo).encode() if corpo else None,
+                                     headers={"Authorization": "Bearer " + tok, "Accept": "application/vnd.github+json"})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return r.status, json.loads(r.read() or b"{}")
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read() or b"{}")
+    _st, eu = api("GET", "/user")
+    dono = eu.get("login")
+    st, repo = api("GET", f"/repos/{dono}/segundo-cerebro")
+    if st == 404:
+        st, repo = api("POST", "/user/repos", {"name": "segundo-cerebro", "private": True, "auto_init": False,
+                                               "description": "Segundo Cérebro do Matheus (cópia diária da Pasta do agente)"})
+        print("REPO CRIADO", st, repo.get("full_name"), "privado:", repo.get("private"))
+    else:
+        print("REPO JA EXISTE", repo.get("full_name"), "privado:", repo.get("private"))
+    if not repo.get("private"):
+        print("PARADO: o repositório não é privado; nada foi enviado")
+    else:
+        pasta.versionar("cópia inicial")
+        if subprocess.run(["git", "-C", str(pasta.RAIZ), "remote", "get-url", "origin"], capture_output=True).returncode:
+            subprocess.run(["git", "-C", str(pasta.RAIZ), "remote", "add", "origin", f"https://github.com/{dono}/segundo-cerebro.git"])
+        print("ENVIO", pasta.enviar_copia(tok) or "ok")
 elif p["op"] == "nota":
     n = m.m("dia").escrever(pasta)
     print("NOTA", n["data"]); print(n["resumo"])
@@ -70,7 +99,7 @@ def main() -> None:
         del args[i:i + 2]
     simular = "--simular" in args
     args = [a for a in args if a != "--simular"]
-    if not args or args[0] not in ("migrar", "estado", "auditoria", "nota"):
+    if not args or args[0] not in ("migrar", "estado", "auditoria", "nota", "copia-github"):
         raise SystemExit(__doc__)
     if args[0] == "migrar" and not motivo:
         raise SystemExit("diga o motivo com --motivo \"...\" (fica registrado em quem migrou)")

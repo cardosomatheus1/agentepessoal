@@ -11,6 +11,7 @@ from helpers.extension import Extension
 
 RAIZ = next(p for p in Path(__file__).resolve().parents if (p / "plugin.yaml").exists())
 _ULTIMO = {"checado": 0.0, "versao": 0.0}
+HORA_COPIA = 3  # the daily copy to GitHub (Q20), at night
 
 
 def mods():
@@ -21,6 +22,18 @@ def mods():
         spec.loader.exec_module(modulo)
         sys.modules[nome] = modulo
     return sys.modules[nome]
+
+
+def token() -> str:
+    """The GitHub token of the vault (cofre plugin), read only for the push."""
+    try:
+        caminho = RAIZ.parent / "cofre" / "helpers" / "cofre.py"
+        spec = importlib.util.spec_from_file_location("cofre_para_cerebro", caminho)
+        c = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(c)
+        return str(c.carregar("matheus").get("GITHUB_TOKEN") or "")
+    except Exception:
+        return ""
 
 
 def tique(agora: float | None = None, enviar=None) -> list:
@@ -43,6 +56,11 @@ def tique(agora: float | None = None, enviar=None) -> list:
         if p.versionar("versão da hora"):
             feito.append("versão")
     t = p.agora_local(agora)
+    marca_copia = p.RAIZ / ".copia-github"
+    if t.tm_hour >= HORA_COPIA and (not marca_copia.exists() or marca_copia.read_text().strip() != p.data(agora)):
+        erro = p.enviar_copia(token())
+        p.escrever(marca_copia, p.data(agora))
+        feito.append("cópia no GitHub" if not erro else f"cópia no GitHub falhou: {erro}")
     auditorias = list((p.RAIZ / "Documentos").glob(f"auditoria-{time.strftime('%Y-%m', t)}-*.md"))
     if t.tm_mday == 1 and t.tm_hour >= 20 and not auditorias:
         r = m.m("auditoria").gravar(p, agora)

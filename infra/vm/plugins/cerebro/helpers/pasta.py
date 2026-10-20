@@ -353,6 +353,21 @@ def versionar(motivo: str = "atualização") -> bool:
     return r.returncode == 0
 
 
+def enviar_copia(token: str) -> str:
+    """Push the Pasta's history to its private GitHub repository (remote "origin", set once by the operator). The token
+    goes only in this one command's header, never into .git/config (the Pasta is also backed up to S3). '' when ok."""
+    if not token:
+        return "sem token do GitHub no cofre"
+    if subprocess.run(["git", "-C", str(RAIZ), "remote", "get-url", "origin"], capture_output=True).returncode:
+        return "a Pasta ainda não tem repositório no GitHub (operador: cerebro.py copia-github)"
+    versionar("cópia diária")
+    import base64
+    basico = base64.b64encode(f"x-access-token:{token}".encode()).decode()
+    r = subprocess.run(["git", "-C", str(RAIZ), "-c", f"http.extraHeader=Authorization: Basic {basico}", "push", "-q",
+                        "origin", "HEAD:main"], capture_output=True, timeout=300)
+    return "" if r.returncode == 0 else f"push falhou ({r.returncode})"
+
+
 # ---------------------------------------------------------------- reading
 def buscar(texto: str, limite: int = 12) -> list[dict]:
     """Notes whose text has every word searched (accents ignored), Arquivo-morto left out; best titles first."""
