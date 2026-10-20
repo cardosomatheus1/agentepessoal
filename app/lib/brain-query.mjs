@@ -16,7 +16,7 @@ export const FUNCOES = Object.freeze({
 });
 export const FONTES = Object.freeze(["regras", "contexto", "perfil", "decisoes", "pendencias", "assuntos", "reunioes", "notas", "documentos", "projetos"]);
 const CHAVES = ["funcao", "fonte", "registro", "termo", "area"];
-const REGISTRO = /^(decisao|fato|pendencia|assunto|contexto|reuniao|nota|documento|projeto|fonte):[A-Za-z0-9._@-][A-Za-z0-9 ._@()[\]-]{0,119}$/;
+const REGISTRO = /^(decisao|fato|pendencia|assunto|contexto|reuniao|nota|documento|projeto|fonte):[A-Za-z0-9._@([-][A-Za-z0-9 ._@()[\]-]{0,119}$/;
 const PRIORIDADE = { alta: 0, media: 1, "média": 1, baixa: 2 };
 const BUSCA = "busca textual: contém o termo (só ordena; não é vínculo)";
 

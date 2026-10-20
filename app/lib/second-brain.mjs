@@ -97,11 +97,14 @@ export function redact(value) {
   return s;
 }
 
-// Texto pronto para projeção: redigido, aparado e com o corte marcado em `cortes`.
+// O que está no Arquivo-morto não aparece nem como nome de link dentro de um texto.
+const semMorto = (s) => s.replace(/\[\[\s*(?:\.?\/)*Arquivo-morto\/[^\]\n]*\]\]/gi, "(no Arquivo-morto)");
+
+// Texto pronto para projeção: redigido, aparado, sem o Arquivo-morto e com o corte marcado em `cortes`.
 function texto(v, max = MAX_TEXT, cortes) {
   if (v === null || v === undefined) return null;
   if (typeof v !== "string" && typeof v !== "number" && typeof v !== "boolean") return null;
-  const s = redact(String(v)).trim();
+  const s = semMorto(redact(String(v))).trim();
   if (!s) return null;
   if (s.length > max) {
     if (cortes) cortes.n++;
@@ -725,7 +728,8 @@ export async function loadSecondBrain({ root, now = new Date() }) {
 
   const nota = (src) => (nome, conteudo, mtime, cortes) => {
     const n = normalizeNote(nome, conteudo, src, mtime, cortes, orcamento);
-    const { _campos: campos, pendente: _p, ...resto } = n;
+    const { _campos: campos, ...resto } = n;
+    delete resto.pendente;
     return { ...resto, liga: refs(campos.liga) };
   };
   await pasta(SOURCES.reunioes, "meetings", nota(SOURCES.reunioes));

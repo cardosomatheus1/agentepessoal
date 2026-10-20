@@ -1,8 +1,8 @@
 /* Navegador (Playwright existente, nada instalado), depois do `npm run build`:
      PLAYWRIGHT_MODULE=/caminho/playwright PLAYWRIGHT_CHROMIUM_EXECUTABLE=/caminho/chrome \
      E2E_OUT=/pasta/resultados [E2E_REAIS=1] node tests/second-brain.e2e.mjs
-   Fase 1 (sempre): dados sintéticos. Fase 2 (E2E_REAIS=1): as fontes reais autorizadas de /a0/usr, só leitura,
-   para os prints; os arquivos lidos são conferidos por hash antes e depois.
+   Fase 1 (sempre): uma Pasta sintética. Fase 2 (E2E_REAIS=1): a Pasta real em /a0/usr/segundo_cerebro/pasta, só leitura,
+   para os prints; os arquivos da Pasta são conferidos por hash antes e depois.
    Harness local: Next em 127.0.0.1 numa porta livre escolhida aqui + um gateway falso que faz o papel da sessão do
    Agent Zero e põe o bearer só no salto para a API. Isto NÃO prova a autenticação de produção (plugin segundo_cerebro);
    prova a página, a API real com bearer e o isolamento de identidade. */
@@ -16,9 +16,8 @@ import { createHash, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { buildBrainGraph } from "../lib/brain-graph.mjs";
-import { DOCUMENTOS_PERMITIDOS, ROTINAS_PERMITIDAS, PROJETOS_PERMITIDOS, CONTEXTO_CHAT } from "../lib/second-brain.mjs";
-import { criarFixture, SENTINELA, FORA_DA_LISTA } from "./fixture-brain.mjs";
+import { TIPOS, buildBrainGraph } from "../lib/brain-graph.mjs";
+import { criarFixture, naPasta, frontmatter, PASTA, SENTINELA, FORA_DA_LISTA } from "./fixture-brain.mjs";
 
 // Opções também por argumento (--playwright=, --chromium=, --out=, --reais), além das variáveis de ambiente.
 const ARG = Object.fromEntries(process.argv.slice(2).map((a) => { const [k, ...v] = a.replace(/^--/, "").split("="); return [k, v.length ? v.join("=") : "1"]; }));
@@ -35,8 +34,7 @@ const results = { fases: {}, checks: [], screenshots: [], pageErrors: [], consol
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const pass = (n) => { results.checks.push(n); console.log("PASS", n); };
 const sha = (b) => createHash("sha256").update(b).digest("hex");
-const TIPOS_ROTULOS = ["Fonte", "Projeto", "Contexto", "Documento", "Rotina", "Fato da ficha", "Fio", "Referência textual"];
-const FUNCAO = { A: "retomar", B: "rotina", C: "prioridades" };
+const FUNCAO = { A: "retomar", B: "assuntos", C: "prioridades" };
 
 // Porta escolhida explicitamente: a primeira livre a partir de uma base fixa, em 127.0.0.1.
 async function portaLivre(base) {
@@ -93,9 +91,8 @@ function subirGateway(nextBase, token, porta, estado) {
 
 const hashesDir = (dir) => fs.readdirSync(dir, { recursive: true }).filter((f) => fs.statSync(path.join(dir, f)).isFile()).sort().map((f) => [f, sha(fs.readFileSync(path.join(dir, f)))]);
 function arquivosReais() {
-  const rel = ["memoria/decisoes/matheus.json", "memoria/usuarios/matheus.md", "fios/matheus.json", `chats/${CONTEXTO_CHAT}/contexto.md`,
-    ...ROTINAS_PERMITIDAS.map((s) => `skills/${s}/SKILL.md`), ...PROJETOS_PERMITIDOS.flatMap((p) => [`projects/${p}/.a0proj/dono.txt`, `projects/${p}/.a0proj/project.json`]), ...DOCUMENTOS_PERMITIDOS.map((d) => d.partes.join("/"))];
-  return rel.map((r) => { try { return [r, sha(fs.readFileSync(path.join("/a0/usr", r)))]; } catch (e) { return [r, e.code]; } });
+  const raiz = path.join("/a0/usr", PASTA);
+  try { return hashesDir(raiz).filter(([f]) => !f.startsWith(".git")); } catch (e) { return [["(pasta)", e.code]]; }
 }
 
 async function contexto(browser, base, label, viewport) {
@@ -165,7 +162,10 @@ async function fase1(browser) {
     const dados = await r.json();
     const json = JSON.stringify(dados);
     assert.ok(!json.includes(SENTINELA) && !json.includes(FORA_DA_LISTA));
-    const total = buildBrainGraph(dados).nodes.length;
+    const grafo = buildBrainGraph(dados);
+    const total = grafo.nodes.length;
+    const decisoes = dados.decisions.length;
+    const tiposMenosDecisao = [...new Set(grafo.nodes.map((n) => TIPOS[n.tipo].rotulo))].filter((t) => t !== "Decisão");
     f.nos = total;
     pass("fase 1: API real com bearer, identidade fixa, no-store e sem dados de outra pessoa");
 
@@ -185,13 +185,13 @@ async function fase1(browser) {
       await chip(page, "Relação", "Veio da fonte").check();
       pass(`${label}: filtro de relação mantém nós isolados`);
 
-      for (const t of TIPOS_ROTULOS) await chip(page, "Tipo", t).uncheck();
-      await desenhado(page, 5);
-      for (const t of TIPOS_ROTULOS) await chip(page, "Tipo", t).check();
+      for (const t of tiposMenosDecisao) await chip(page, "Tipo", t).uncheck();
+      await desenhado(page, decisoes);
+      for (const t of tiposMenosDecisao) await chip(page, "Tipo", t).check();
       await desenhado(page, total);
-      await chip(page, "Fonte", "Fios").uncheck();
+      await chip(page, "Fonte", "Pendências").uncheck();
       await page.waitForFunction((n) => { const el = document.querySelector("#mapa [data-renderer]"); return el?.dataset.renderer === "pronto" && Number(el.dataset.nodes) < n; }, total);
-      await chip(page, "Fonte", "Fios").check();
+      await chip(page, "Fonte", "Pendências").check();
       await desenhado(page, total);
       pass(`${label}: filtros por tipo e por fonte`);
 
@@ -212,11 +212,11 @@ async function fase1(browser) {
 
       await busca.fill("");
       await desenhado(page, total);
-      await page.locator("#mapa").getByRole("combobox", { name: "Ir para" }).selectOption({ label: "Fio: Catálogo sintético" });
+      await page.locator("#mapa").getByRole("combobox", { name: "Ir para" }).selectOption({ label: "Pendência: Catálogo sintético" });
       await det.getByRole("heading", { name: "Catálogo sintético" }).waitFor();
-      assert.match(await det.innerText(), /Evidência: fonte fios · registro b2 · campo ligacoes/);
+      assert.match(await det.innerText(), /Evidência: fonte pendencias · registro b2 · campo ligacoes/);
       await det.getByRole("button", { name: "Abrir o registro na página" }).click();
-      await page.waitForFunction(() => document.getElementById("reg-fio_b2")?.getAttribute("data-destacado") === "sim");
+      await page.waitForFunction(() => document.getElementById("reg-pendencia_b2")?.getAttribute("data-destacado") === "sim");
       pass(`${label}: detalhes com evidência e navegação até o registro`);
 
       await page.locator("#mapa").getByRole("button", { name: "Lista", exact: true }).click();
@@ -226,17 +226,32 @@ async function fase1(browser) {
       pass(`${label}: lista acessível com todos os nós`);
 
       await page.locator("#consulta").scrollIntoViewIfNeeded();
-      let res = await rodarFluxo(page, "A · Retomar contexto");
+      let res = await rodarFluxo(page, "A · Retomar");
       assert.ok(await res.locator('li[data-ref^="decisao:"]').count() > 0, "decisões do tema entram na retomada");
-      res = await rodarFluxo(page, "B · Consultar rotina");
-      assert.match(await res.innerText(), /Ler o arquivo sintético/);
-      assert.match(await res.innerText(), /Antes de enviar qualquer coisa a terceiros/);
+      res = await rodarFluxo(page, "B · Onde parou");
+      assert.match(await res.innerText(), /Falta escolher entre os dois orçamentos/);
       res = await rodarFluxo(page, "C · Prioridades e pauta");
-      assert.match(await res.getByRole("list", { name: "Bloqueios" }).innerText(), /estratégia/);
+      assert.ok(await res.locator('li[data-ref="contexto:estrategia"]').count() === 1, "estratégia validada entra nas prioridades");
       pass(`${label}: fluxos A, B e C com roteiro, execução não feita e verificação real`);
 
-      assert.match(await page.locator('#fontes tr[data-fonte="reunioes"]').innerText(), /sem fonte canônica/);
-      assert.match(await page.locator("#reunioes").innerText(), /Lacuna/);
+      assert.match(await page.locator("#assuntos").innerText(), /Onde parou[\s\S]*Falta escolher entre os dois orçamentos/i);
+      assert.equal(await page.locator('#contexto li[data-estado="pendente"]').count(), 3);
+      assert.match(await page.locator("#contexto").innerText(), /pendente de validação/i);
+      assert.match(await page.locator("#notas").innerText(), /Nota do dia 19\/10\/2026[\s\S]*Nota do dia 18\/10\/2026/);
+      assert.match(await page.locator("#reunioes").innerText(), /Reunião da Raiz/);
+      assert.match(await page.locator("#pendencias").innerText(), /área: Orbyte/i);
+      assert.ok(!(await page.locator("main").innerText()).includes("Arquivo-morto/"));
+      await page.locator("#contexto").getByRole("button", { name: "0001-responder-curto-e-direto" }).click();
+      await page.waitForFunction(() => document.getElementById("reg-decisao_1")?.getAttribute("data-destacado") === "sim");
+      pass(`${label}: assuntos (onde parou), contexto pendente/validado, notas do dia, reuniões, área e [[link]] navegável`);
+
+      await page.getByLabel("Filtrar por área").selectOption("Raiz");
+      await page.locator("#reg-pendencia_a1").waitFor();
+      assert.equal(await page.locator("#reg-pendencia_b2").count(), 0, "b2 é Orbyte");
+      await page.getByLabel("Filtrar por área").selectOption("");
+      await page.locator("#reg-pendencia_b2").waitFor();
+      pass(`${label}: filtro por área`);
+
       await semOverflow(page, label);
       assert.deepEqual(await page.evaluate(() => ({ l: localStorage.length, s: sessionStorage.length })), { l: 0, s: 0 });
       assert.equal(await page.locator("input[type=password]").count(), 0);
@@ -264,21 +279,19 @@ async function fase1(browser) {
       const { ctx, page } = await contexto(browser, base, "desktop-atualizar", { width: 1280, height: 900 });
       await page.goto(`${base}/segundo-cerebro`);
       await desenhado(page, total);
-      const fios = JSON.parse(fs.readFileSync(path.join(fixture, "fios/matheus.json"), "utf8"));
-      fios.fios.push({ id: "z9", titulo: "<img src=x onerror=alert(1)>", estado: "aberto", ligacoes: ["a1"], criado: 1790000700, atualizado: 1790000700 });
-      fs.writeFileSync(path.join(fixture, "fios/matheus.json"), JSON.stringify(fios));
+      naPasta(fixture, "Pendencias/z9-img.md", frontmatter({ id: "z9", titulo: "<img src=x onerror=alert(1)>", estado: "aberto", area: "Raiz", liga: ["pendencia:a1"], criado: 1790000700 }) + "# <img src=x onerror=alert(1)>\n");
       await page.getByRole("button", { name: "Atualizar", exact: true }).click();
       await desenhado(page, total + 1);
       assert.equal(await page.locator("main img").count(), 0, "HTML vira texto");
-      fs.unlinkSync(path.join(fixture, "fios/matheus.json"));
+      fs.rmSync(path.join(fixture, PASTA, "Pendencias"), { recursive: true });
       await page.getByRole("button", { name: "Atualizar", exact: true }).click();
-      await page.locator("#passos").getByText(/Fonte indisponível \(ausente\)/).waitFor();
-      pass("atualizar relê a fonte: novo registro aparece, HTML escapado, fonte ausente ≠ vazia");
+      await page.locator("#pendencias").getByText(/Fonte indisponível \(ausente\)/).waitFor();
+      pass("atualizar relê a Pasta: novo item aparece, HTML escapado, fonte ausente ≠ vazia");
       await ctx.close();
     }
     assert.equal(estado.authDoNavegador, 0);
     pass("o navegador nunca mandou Authorization");
-    const semFios = (l) => l.filter(([n]) => n !== "fios/matheus.json");
+    const semFios = (l) => l.filter(([n]) => !n.startsWith(`${PASTA}/Pendencias`));
     assert.deepEqual(semFios(hashesDir(fixture)), semFios(antes));
     pass("arquivos sintéticos intactos (fora o que o próprio teste mudou)");
   } finally {
@@ -333,12 +346,12 @@ async function fase2(browser) {
       await print(page, `${label}_mapa_busca.png`, "#mapa");
       await page.getByLabel("Buscar no mapa").fill("");
       await page.locator("#consulta").scrollIntoViewIfNeeded();
-      for (const [fluxo, nome] of [["A · Retomar contexto", "consulta_A_retomar"], ["B · Consultar rotina", "consulta_B_rotina"], ["C · Prioridades e pauta", "consulta_C_prioridades"]]) {
+      for (const [fluxo, nome] of [["A · Retomar", "consulta_A_retomar"], ["B · Onde parou", "consulta_B_assuntos"], ["C · Prioridades e pauta", "consulta_C_prioridades"]]) {
         await rodarFluxo(page, fluxo);
         await print(page, `${label}_${nome}.png`, "#consulta");
       }
       await print(page, `${label}_fontes.png`, "#fontes");
-      if (label === "desktop") { await print(page, "desktop_onboarding.png", "#onboarding"); await print(page, "desktop_rotinas.png", "#rotinas"); await print(page, "desktop_visao_geral.png", "#visao"); }
+      if (label === "desktop") { await print(page, "desktop_assuntos.png", "#assuntos"); await print(page, "desktop_contexto.png", "#contexto"); await print(page, "desktop_visao_geral.png", "#visao"); }
       await semOverflow(page, `real-${label}`);
       pass(`real ${label}: mapa (${f.nos} nós), detalhes, busca, 3 fluxos verificados, fontes; prints salvos`);
       await ctx.close();
@@ -351,8 +364,8 @@ async function fase2(browser) {
     f.arquivosConferidos = antes.length;
     results.fases.real = f;
   }
-  assert.ok(f.fontesReaisIntactas, "fontes reais sem nenhuma mudança");
-  pass("fontes reais intactas (hash antes = depois)");
+  assert.ok(f.fontesReaisIntactas, "Pasta real sem nenhuma mudança");
+  pass("Pasta real intacta (hash antes = depois)");
 }
 
 let browser;
