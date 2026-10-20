@@ -216,6 +216,10 @@ class Suite:
             p, f = self.p, self.f
             ruim = "[novo id] não devolvido"
             f.mesclar("matheus", [{"id": ruim, "titulo": "Restaurar o token da Meta"}])
+            ok(all(x["id"] != ruim for x in f.carregar("matheus")["fios"]), "20/10: um id novo inválido nem entra")
+            # one recorded before that rule (12/10 on the VM) still gets a safe file name and link
+            p.gravar("pendencias", p.ler("pendencias") + [{"id": ruim, "titulo": "Outra cópia antiga", "estado": "aberto",
+                                                           "criado": time.time(), "atualizado": time.time()}])
             nomes = [x.name for x in (p.RAIZ / "Pendencias").glob("*.md")]
             ok(any(n.startswith("novo-id-nao-devolvido-") for n in nomes) and not any("[" in n for n in nomes),
                f"nome seguro: {nomes}")

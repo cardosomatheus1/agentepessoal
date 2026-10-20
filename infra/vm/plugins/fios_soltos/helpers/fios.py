@@ -198,6 +198,9 @@ def salvar(login: str, dados: dict) -> None:
             raise
 
 
+ID_OK = re.compile(r"^[A-Za-z0-9_-]{1,40}$")  # 12/10: the model sent "[new fio id from previous result not returned]"
+
+
 @_transacao
 def mesclar(login: str, novos: list, resolvidos: list | None = None) -> tuple[int, int, int]:
     dados = carregar(login)
@@ -209,6 +212,8 @@ def mesclar(login: str, novos: list, resolvidos: list | None = None) -> tuple[in
         if not isinstance(item, dict) or not (item.get("titulo") or item.get("id")):
             continue
         fid = str(item.get("id") or "").strip()
+        if fid and fid not in por_id and not ID_OK.match(fid):
+            fid = ""  # not an id (a placeholder or a sentence): a new one, never a file named after the text
         if fid and fid in por_id:
             por_id[fid].update({k: v for k, v in item.items() if v not in (None, "")})
             if do_dono:
@@ -230,6 +235,28 @@ def mesclar(login: str, novos: list, resolvidos: list | None = None) -> tuple[in
             fechados += 1
     salvar(login, dados)
     return criados, atualizados, fechados
+
+
+@_transacao
+def juntar_duplicata(login: str, duplicada: str, original: str, por: str) -> dict:
+    """The same loose end recorded twice: the copy leaves the list (with the Pasta it goes to Arquivo-morto, never
+    deleted) and what it said stays in the original's `juntou`. Only the operator, only with the same title."""
+    if not str(por or "").startswith("operador:"):
+        raise ValueError("quem junta é o operador: por='operador: <motivo>'")
+    dados = carregar(login)
+    por_id = {str(f.get("id")): f for f in dados["fios"]}
+    copia, orig = por_id.get(str(duplicada)), por_id.get(str(original))
+    if not copia or not orig or copia is orig:
+        raise ValueError("as duas pendências precisam existir e ser diferentes")
+    norm = lambda t: " ".join(str(t or "").lower().split())  # noqa: E731
+    if norm(copia.get("titulo")) != norm(orig.get("titulo")):
+        raise ValueError("títulos diferentes: não são a mesma pendência")
+    orig["juntou"] = (orig.get("juntou") or []) + [{
+        "id": copia.get("id"), "detalhe": copia.get("detalhe", ""), "fontes": copia.get("fontes", ""),
+        "proximo_passo": copia.get("proximo_passo", ""), "criado": copia.get("criado"), "por": por, "em": time.time()}]
+    dados["fios"] = [f for f in dados["fios"] if f is not copia]
+    salvar(login, dados)
+    return orig
 
 
 @_transacao

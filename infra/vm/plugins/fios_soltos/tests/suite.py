@@ -59,6 +59,33 @@ class Suite:
         eq(f.mesclar(LOGIN, [], [outro]), (0, 0, 0), "resolver de novo não conta")
         ok(not list(f.PASTA.glob(".*.tmp")), "nenhum temporário largado")
 
+    def t_id_que_nao_e_id_e_duplicata(self):
+        # 12/10: the model sent a sentence as the id; it became a second copy (and a file named after the sentence)
+        f = self.f
+        f.mesclar(LOGIN, [{"id": "ab12cd", "titulo": "Restaurar o token da Meta", "detalhe": "primeiro"}])
+        f.mesclar(LOGIN, [{"id": "[new fio id from previous result not returned]", "titulo": "Restaurar o token da Meta",
+                           "detalhe": "segundo"}])
+        fios = f.carregar(LOGIN)["fios"]
+        nova = next(x for x in fios if x.get("detalhe") == "segundo")
+        ok(f.ID_OK.match(nova["id"]) and nova["id"] != "ab12cd", f"ganhou um id de verdade: {nova['id']!r}")
+        for errado in ("matheus", "operador"):
+            try:
+                f.juntar_duplicata(LOGIN, nova["id"], "ab12cd", por=errado)
+                raise AssertionError("juntou sem ser o operador")
+            except ValueError:
+                pass
+        f.mesclar(LOGIN, [{"titulo": "Outra coisa"}])
+        outra = next(x["id"] for x in f.carregar(LOGIN)["fios"] if x["titulo"] == "Outra coisa")
+        try:
+            f.juntar_duplicata(LOGIN, outra, "ab12cd", por="operador: teste")
+            raise AssertionError("juntou títulos diferentes")
+        except ValueError:
+            pass
+        orig = f.juntar_duplicata(LOGIN, nova["id"], "ab12cd", por="operador: teste")
+        ids = [x["id"] for x in f.carregar(LOGIN)["fios"]]
+        ok(nova["id"] not in ids and "ab12cd" in ids and outra in ids, f"a cópia sai, o resto fica: {ids}")
+        eq(orig["juntou"][0]["detalhe"], "segundo", "o que a cópia dizia fica na original")
+
     def t_registro_ilegivel_nao_vira_vazio(self):
         f = self.f
         f.mesclar(LOGIN, [{"titulo": "Responder a Anna"}])
