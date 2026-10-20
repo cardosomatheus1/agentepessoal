@@ -10,6 +10,7 @@ import copy
 import gzip
 import importlib.util
 import json
+import re
 import shutil
 import sys
 import tempfile
@@ -39,6 +40,42 @@ USADAS_14_DIAS = {
     "github.list_branches": 1,
 }
 # used once or twice and too big to go in every call: on demand (`conector` ativar, or called by name)
+# Agent Zero's MCP prompt templates (prompts/agent.system.mcp_*.md, e3051fb, the VM's version), for the text mode
+TEMPLATE_FERRAMENTA = ("#### MCP tool `{{qualified_name}}`\nAllowed operation (exhaustive): {{description}}\n\n"
+                       "##### Input schema for tool_args:\n{{input_schema}}\n\n##### Usage:\n{\n    \"thoughts\": "
+                       "[\"...\"],\n    \"tool_name\": \"{{qualified_name}}\",\n    \"tool_args\": !follow schema above\n}\n")
+TEMPLATE_SERVIDOR = "### MCP server `{{server_name}}` (group only; not a tool)\nContext only: {{server_description}}\n\n{{tools}}\n"
+TEMPLATE_SECAO = ('## "Remote (MCP Server) Agent Tools" available:\n\nServer descriptions are context, not callable '
+                  'capabilities. Each "Allowed operation" line is exhaustive.\n\n{{tools}}\n')
+SERVIDORES = {"google": "Gmail e Agenda (só leitura); Drive, Docs e Planilhas", "github": "GitHub (só leitura)"}
+
+
+def preencher(template: str, **valores) -> str:
+    """Agent Zero's read_prompt for these templates: {{name}} replaced, then .strip() (mcp_handler's render)."""
+    for k, v in valores.items():
+        template = template.replace("{{" + k + "}}", str(v))
+    return template.strip()
+
+
+def render_ferramenta(nome, descricao, esquema):
+    return preencher(TEMPLATE_FERRAMENTA, qualified_name=nome, description=descricao, input_schema=esquema)
+
+
+def render_servidor(nome, descricao):
+    return preencher(TEMPLATE_SERVIDOR, server_name=nome, server_description=descricao, tools="")
+
+
+def secao_mcp_texto(cat: dict) -> str:
+    """The MCP section as helpers/mcp_handler.get_tools_prompt writes it into the system prompt (text mode)."""
+    servidores = []
+    for servidor in ("google", "github"):
+        blocos = [render_ferramenta(n, f["description"], json.dumps(f["input_schema"]) if f["input_schema"] else "")
+                  for n, f in cat.items() if n.startswith(servidor + ".")]
+        servidores.append(preencher(TEMPLATE_SERVIDOR, server_name=servidor, server_description=SERVIDORES[servidor],
+                                    tools="\n\n".join(blocos)))
+    return preencher(TEMPLATE_SECAO, tools="\n".join(servidores)) + "\n"
+
+
 RARAS_SOB_DEMANDA = {"google.get_doc_content", "google.update_drive_file", "google.format_sheet_range",
                      "google.resize_sheet_dimensions"}
 
@@ -122,14 +159,62 @@ class Mensagem:
         self.content = {"user_message": texto}
 
 
+class Modelo:
+    def __init__(self, modo):
+        self.kwargs = {"a0_api_mode": modo}
+
+
 class Agente:
-    def __init__(self, dono="matheus", texto="", mapa=None):
+    def __init__(self, dono="matheus", texto="", mapa=None, modo="chat"):
         self.context = Contexto(dono)
         self.data = {"responses_tool_name_map": mapa or {}}
         self.last_user_message = Mensagem(texto) if texto else None
+        self.modo = modo
 
     def get_data(self, k):
         return self.data.get(k)
+
+    def get_chat_model(self):
+        return Modelo(self.modo)
+
+    def read_prompt(self, arquivo, **valores):
+        modelo = {"agent.system.mcp_tool.md": TEMPLATE_FERRAMENTA, "agent.system.mcp_server.md": TEMPLATE_SERVIDOR}[arquivo]
+        return preencher(modelo, **valores)
+
+
+class LoopData:
+    def __init__(self, system):
+        self.system = system
+
+
+class _Transporte:
+    """helpers.litellm_transport.TransportMode, as Agent Zero has it (any value but responses* = chat)."""
+
+    class TransportMode:
+        RESPONSES, CHAT = "responses", "chat"
+
+        @classmethod
+        def from_value(cls, valor):
+            return cls.RESPONSES if str(valor or "").lower().strip() in {"response", "responses", "responses_api"} \
+                else cls.CHAT
+
+
+def com_transporte(funcao):
+    """Run `funcao` with Agent Zero's transport module importable (outside the container it is not)."""
+    modulo = types.ModuleType("helpers.litellm_transport")
+    modulo.TransportMode = _Transporte.TransportMode
+    antes = {k: sys.modules.get(k) for k in ("helpers", "helpers.litellm_transport")}
+    if antes["helpers"] is None:
+        sys.modules["helpers"] = types.ModuleType("helpers")
+    sys.modules["helpers.litellm_transport"] = modulo
+    try:
+        return funcao()
+    finally:
+        for k, v in antes.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
 
 
 def _tam(ferramentas) -> int:
@@ -351,6 +436,121 @@ class Suite:
         esquema = json.loads(texto.split("Input schema for tool_args:", 1)[1].split("\n", 1)[0])
         eq(esquema["properties"]["acao"]["enum"], ["listar", "ativar", "descrever"], "ações")
         ok(len(texto) < 1100, f"a descrição vai em toda chamada: curta ({len(texto)})")
+
+    # ------------------------------------------------------------------ text mode (tools written into the system prompt)
+
+    def _ext_texto(self):
+        m = _carregar("conectores_texto_teste", EXT / "message_loop_prompts_after" / "_21_conectores_texto.py")
+        m.carregar = self.carregar
+        m.donos = lambda: {"google": "matheus", "github": "matheus"}
+        cat = self.mcp
+
+        class Config:
+            servers = [types.SimpleNamespace(name=n, description=d) for n, d in SERVIDORES.items()]
+
+            @staticmethod
+            def get_tools():
+                return [{n: dict(f)} for n, f in cat.items()]
+
+        m.config_mcp = lambda agent: Config()
+        return m
+
+    def _sistema_texto(self, agente, sistema=None):
+        sistema = sistema or ["# instruções do agente", "## available tools\n### wait\npausa", secao_mcp_texto(self.mcp),
+                              "## Memória pessoal do usuário\nficha"]
+        dados = LoopData(list(sistema))
+        com_transporte(lambda: _rodar(self._ext_texto().ConectoresTexto(agent=agente).execute(loop_data=dados)))
+        return dados.system
+
+    @staticmethod
+    def _mcp_na(sistema) -> list[str]:
+        return re.findall(r"#### MCP tool `([^`]+)`", "\n\n".join(sistema))
+
+    def t_texto_so_as_de_sempre_e_mais_curtas(self):
+        s = self.s
+        original = secao_mcp_texto(self.mcp)
+        ok(len(original) > 150000, f"a seção de texto cheia media ~165 mil caracteres (deu {len(original)})")
+        nova = s.enxugar_mcp_texto(original, self.mcp, render_ferramenta, set())
+        nomes = re.findall(r"#### MCP tool `([^`]+)`", nova)
+        eq(sorted(nomes), sorted(f"google.{n}" for n in s.SEMPRE["google"]), "do Google, só as de sempre; GitHub fora")
+        ordem = [n for n in re.findall(r"#### MCP tool `([^`]+)`", original) if n in nomes]
+        eq(nomes, ordem, "na ordem de sempre (cache)")
+        ok(len(nova) < 25000, f"seção MCP de uma conversa comum até ~25 mil (deu {len(nova)})")
+        ok("### MCP server `github`" in nova, "o GitHub continua citado (pelo `conector`)")
+        ok(nova.startswith(original[:200]), "o começo da seção é o mesmo")
+        eq(s.enxugar_mcp_texto(original, self.mcp, render_ferramenta, set()), nova, "montada duas vezes: igual")
+        # each kept tool: first sentence, same parameters, no owner's e-mail
+        bloco = nova.split("#### MCP tool `google.get_events`", 1)[1].split("#### MCP tool", 1)[0]
+        esquema = json.loads(bloco.split("##### Input schema for tool_args:", 1)[1].split("##### Usage:", 1)[0])
+        eq(set(esquema["properties"]), set(self.mcp["google.get_events"]["input_schema"]["properties"]) - {"user_google_email"},
+           "get_events: mesmos parâmetros (menos o e-mail do dono)")
+        ok("dono@example.com" not in nova, "o e-mail do dono não vai em toda chamada")
+        ok(s._frase(self.mcp["google.get_events"]["description"], s.MAX_DESCRICAO) in bloco, "descrição: primeira frase")
+        # active ones and code
+        com = s.enxugar_mcp_texto(original, self.mcp, render_ferramenta, {"google.batch_update_doc", "github.list_issues"})
+        ok({"google.batch_update_doc", "github.list_issues"} <= set(re.findall(r"#### MCP tool `([^`]+)`", com)), "ativadas entram")
+        print(f"conectores: seção MCP do prompt de texto {len(original)} -> {len(nova)} caracteres")
+
+    def t_texto_bloco_diferente_fica_como_esta(self):
+        s = self.s
+        original = secao_mcp_texto(self.mcp)
+        mudado = original.replace("Allowed operation (exhaustive): ", "Allowed operation: ", 1)  # another version/template
+        nova = s.enxugar_mcp_texto(mudado, self.mcp, render_ferramenta, set())
+        primeira = re.findall(r"#### MCP tool `([^`]+)`", original)[0]
+        ok(primeira in re.findall(r"#### MCP tool `([^`]+)`", nova), "bloco que não bate exatamente não é tirado")
+        eq(s.enxugar_mcp_texto("## outra coisa", self.mcp, render_ferramenta, set()), "## outra coisa", "texto sem MCP: igual")
+        so_um = dict(self.mcp)
+        so_um.pop("google.batch_update_doc")  # the policy left it out: it is never added
+        nova = s.enxugar_mcp_texto(secao_mcp_texto(so_um), self.mcp, render_ferramenta, {"google.batch_update_doc"})
+        ok("google.batch_update_doc" not in nova, "ativada que a política tirou não aparece")
+
+    def t_texto_ativada_aparece_na_proxima_chamada(self):
+        s = self.s
+        a = Agente(texto="resume meus e-mails")
+        antes = self._sistema_texto(a)
+        ok("google.search_gmail_messages" in self._mcp_na(antes), "Gmail na conversa comum")
+        ok("google.batch_update_doc" not in self._mcp_na(antes), "a rara fica fora")
+        ok(len("\n\n".join(antes)) < 30000, "sistema de teste enxuto")
+        eq(antes[0], "# instruções do agente", "o resto do sistema fica")
+        eq(antes[-1], "## Memória pessoal do usuário\nficha", "o resto do sistema fica (fim)")
+        eq(self._sistema_texto(a), antes, "duas chamadas sem mudança: sistema idêntico (cache)")
+        t, _ = self._ferramenta()
+        t.agent = a
+        txt = _rodar(t.execute(acao="ativar", conector="google", ferramentas=["batch_update_doc"])).message
+        ok("Ativadas" in txt, txt)
+        depois = self._sistema_texto(a)
+        ok("google.batch_update_doc" in self._mcp_na(depois), "ativada: aparece na próxima chamada")
+        eq(depois[:2], antes[:2], "o que vem antes da seção MCP não muda")
+        bloco = "\n\n".join(depois).split("#### MCP tool `google.batch_update_doc`", 1)[1].split("#### MCP tool", 1)[0]
+        inteiro = len(render_ferramenta("google.batch_update_doc", self.mcp["google.batch_update_doc"]["description"],
+                                        json.dumps(self.mcp["google.batch_update_doc"]["input_schema"])))
+        ok("operations" in bloco and len(bloco) < inteiro * 0.8,
+           f"com o esquema curto ({len(bloco)} caracteres; o inteiro tem {inteiro})")
+
+    def t_texto_codigo_convidado_desligado_e_nativo(self):
+        s = self.s
+        a = Agente(texto="e o último commit do agentepessoal?")
+        ok("github.list_commits" in self._mcp_na(self._sistema_texto(a)), "falou de código: GitHub básico")
+        a.last_user_message = Mensagem("ok")
+        ok("github.list_commits" in self._mcp_na(self._sistema_texto(a)), "e fica na conversa")
+        convidado = self._sistema_texto(Agente(dono="will", texto="olha o repositório"))
+        eq(self._mcp_na(convidado), [], "convidado: nenhuma ferramenta do conector do Matheus")
+        ok(not any("MCP server `google`" in x for x in convidado), "nem o cabeçalho do conector dele")
+        eq(len(convidado), 3, "a seção MCP sai inteira")
+        cheio = secao_mcp_texto(self.mcp)
+        nativo = self._sistema_texto(Agente(modo="responses"))
+        eq(nativo[2], cheio, "modo nativo (Responses): o texto não muda aqui")
+        self._desligar(True)
+        try:
+            eq(self._sistema_texto(Agente())[2], cheio, "desligado: tudo como antes")
+        finally:
+            self._desligar(False)
+        quebrado = Agente()
+        quebrado.read_prompt = None  # anything unexpected
+        eq(self._sistema_texto(quebrado)[2], cheio, "erro: tudo como antes, a chamada segue")
+        fora = Agente()
+        sem_mcp = ["# instruções", "## skills"]
+        eq(self._sistema_texto(fora, sem_mcp), sem_mcp, "sistema sem MCP: igual")
 
     # ------------------------------------------------------------------ system prompt
 

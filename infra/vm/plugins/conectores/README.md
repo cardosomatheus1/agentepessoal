@@ -29,5 +29,11 @@ e 28 do GitHub (33 mil). Nos 14 dias antes, as conversas dele usaram 30 delas.
 Medido na VM (20/10, lista montada sem chamar o modelo): conversa comum 176.491 → 38.811 caracteres (71 ferramentas);
 conversa de código 46.123; convidado 22.872. As ativadas ficam em `conectores_ativas` nos dados da conversa.
 
+**Modo texto (preset "Sonnet", `a0_api_mode: chat`):** sem lista nativa, o Agent Zero escreve cada ferramenta MCP nas
+instruções (`#### MCP tool`, 165 mil caracteres medidos). `message_loop_prompts_after/_21_conectores_texto.py` deixa ali
+só as mesmas da lista nativa (sempre, GitHub de código, ativadas), com a descrição e o esquema curtos; conector de outra
+pessoa sai com o cabeçalho. Só mexe em bloco que bate exatamente com o que o Agent Zero escreveu (nunca acrescenta o que a
+política tirou). A ferramenta ativada entra na próxima montagem. Medido na VM: 87 → 18 ferramentas, ~165 mil → 18 mil.
+
 **Desligar sem implantar:** criar `/a0/usr/plugins/conectores/sob_demanda_desligado` (no contêiner) volta a lista
-inteira; apagar o arquivo liga de novo.
+inteira (nos dois modos); apagar o arquivo liga de novo.

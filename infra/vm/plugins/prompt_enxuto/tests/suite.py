@@ -4,6 +4,7 @@ python3 infra/operador/rodar_suites_locais.py prompt_enxuto"""
 
 import asyncio
 import copy
+import gzip
 import importlib.util
 import json
 import re
@@ -15,8 +16,16 @@ import types
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-PLUGINS = RAIZ.parent
+# the repository's plugins; in implantar.py's staging copy (/tmp/estagio-prompt_enxuto) the VM's installed ones
+PLUGINS = RAIZ.parent if (RAIZ.parent / "conectores").is_dir() else Path("/a0/usr/plugins")
 EXT = RAIZ / "extensions" / "python"
+# Agent Zero's own tool prompts (rendered outside the agent, e3051fb = the VM's version) and its tools/MCP templates
+FIXTURE = RAIZ / "tests" / "prompts_agent_zero_20out.json.gz"
+# measured on the VM on 20/10 (a request of Matheus's chat to Sonnet, text mode): 281,509 characters of system prompt,
+# 77,296 in "## available tools" and 164,823 in the MCP section; the rest (instructions, rules, decisions, the
+# "Sobre" sheet, memory, vault, skills…) was 39,390
+RESTO_MEDIDO = 39390
+META_TEXTO = 80000
 
 
 class Falha(AssertionError):
@@ -73,6 +82,59 @@ def _ferramenta(nome, descricao, parametros=None):
             "parameters": parametros or {"type": "object", "properties": {}, "additionalProperties": True}}
 
 
+class Modelo:
+    def __init__(self, modo):
+        self.kwargs = {"a0_api_mode": modo}
+
+
+class _Transporte:
+    """helpers.litellm_transport.TransportMode, as Agent Zero has it (any value but responses* = chat)."""
+    RESPONSES, CHAT = "responses", "chat"
+
+    @classmethod
+    def from_value(cls, valor):
+        return cls.RESPONSES if str(valor or "").lower().strip() in {"response", "responses", "responses_api"} else cls.CHAT
+
+
+def com_transporte(funcao):
+    """Run `funcao` with Agent Zero's transport module importable (outside the container it is not)."""
+    modulo = types.ModuleType("helpers.litellm_transport")
+    modulo.TransportMode = _Transporte
+    antes = {k: sys.modules.get(k) for k in ("helpers", "helpers.litellm_transport")}
+    if antes["helpers"] is None:
+        sys.modules["helpers"] = types.ModuleType("helpers")
+    sys.modules["helpers.litellm_transport"] = modulo
+    try:
+        return funcao()
+    finally:
+        for k, v in antes.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+
+
+def partes_reais() -> list[tuple[str, str]]:
+    """The tool prompts of a chat of Matheus's, in Agent Zero's order: its own (fixture) and this repository's
+    plugins, sorted by file name, plus the vision block at the end."""
+    with gzip.open(FIXTURE, "rt", encoding="utf-8") as f:
+        dados = json.load(f)
+    proprias = [tuple(x) for x in dados["ferramentas"]]
+    visao = [x for x in proprias if x[0] == "vision_load"]
+    arquivos = {a: p for a, p in proprias if a != "vision_load"}
+    for md in PLUGINS.glob("*/prompts/agent.system.tool.*.md"):
+        arquivos[md.name] = md.read_text(encoding="utf-8").rstrip("\n")
+    return sorted(arquivos.items()) + visao, dados
+
+
+def secao_texto(partes, dados) -> str:
+    """The tools section as Agent Zero's system_prompt/_11_tools_prompt.build_prompt writes it."""
+    comuns = [p for a, p in partes if a != "vision_load"]
+    visao = [p for a, p in partes if a == "vision_load"]
+    texto = dados["agent.system.tools.md"].replace("{{tools}}", "\n\n".join(comuns)).rstrip("\n")
+    return texto + ("\n\n" + visao[0] if visao else "")
+
+
 class Historico:
     def __init__(self):
         self.msgs = []  # [{"content", "summary"}]
@@ -82,8 +144,12 @@ class Historico:
 
 
 class Agente:
-    def __init__(self):
+    def __init__(self, modo="responses"):
         self.history = Historico()
+        self.modo = modo
+
+    def get_chat_model(self):
+        return Modelo(self.modo)
 
     def hist_add_message(self, ai, content):
         self.history.msgs.append({"content": content})
@@ -235,6 +301,106 @@ class Suite:
         ok(novo is not self.e and novo.MANUAIS.get("livro") == "manual do livro", "recarregar não perde os manuais")
         self.e = novo
         self.e.DESLIGADO = self.tmp / "desligado"
+
+    # ------------------------------------------------------------------ text mode (tools written into the system prompt)
+
+    def t_texto_uma_linha_por_ferramenta_e_manual_guardado(self):
+        e, i = self.e, self.i
+        partes, dados = partes_reais()
+        secao = secao_texto(partes, dados)
+        ok(len(secao) > 70000, f"a seção de ferramentas cheia media ~77 mil caracteres na VM (deu {len(secao)})")
+        manuais = {}
+        nova = e.encurtar_texto(secao, partes, i.CURTAS, i.MIN_GANHO, manuais)
+        ok(len(nova) < 16000, f"seção de ferramentas curta até ~16 mil (deu {len(nova)})")
+        ok(nova.startswith(dados["agent.system.tools.md"].split("{{tools}}")[0]), "o cabeçalho de Agent Zero fica")
+        for nome in ("prospeccao", "code_execution_tool", "salvar_rotina", "call_subordinate", "parallel",
+                     "conversa_externa", "memory_load", "memory_forget", "vision_load", "response"):
+            ok(e.linha_texto(nome, i.CURTAS[nome]) in nova, f"{nome}: a linha curta do índice")
+            ok(nome in manuais, f"{nome}: o texto inteiro vira o manual")
+        ok(manuais["prospeccao"] == dict(partes)["agent.system.tool.prospeccao.md"], "manual = o prompt inteiro")
+        ok("Input schema for tool_args" not in nova.split("### conector", 1)[0], "nada do texto inteiro antes do conector")
+        conector = dict(partes)["agent.system.tool.conector.md"]
+        ok(conector in nova and "conector" not in manuais, "ferramenta fora do índice fica inteira")
+        eq(e.encurtar_texto(secao, partes, i.CURTAS, i.MIN_GANHO, {}), nova, "montada duas vezes: igual (cache)")
+        # a prompt that is not in the section exactly (changed since) stays whole; the others still change
+        mexido = secao.replace("### celular", "### celular ", 1)
+        outra = e.encurtar_texto(mexido, partes, i.CURTAS, i.MIN_GANHO, {})
+        ok("### celular \n" in outra and e.linha_texto("prospeccao", i.CURTAS["prospeccao"]) in outra, "só a mexida fica")
+        eq(e.encurtar_texto("## skills", partes, i.CURTAS, i.MIN_GANHO, {}), "## skills", "texto sem ferramentas: igual")
+        print(f"prompt_enxuto: seção de ferramentas do prompt de texto {len(secao)} -> {len(nova)} caracteres")
+
+    def _ext_texto(self):
+        m = _carregar("enxuto_texto_teste", EXT / "message_loop_prompts_after" / "_20_ferramentas_curtas_texto.py")
+        m.carregar = self.carregar
+        return m
+
+    def _rodar_texto(self, agente, sistema, partes):
+        dados = types.SimpleNamespace(system=list(sistema))
+        original = self.e.partes_das_ferramentas
+        self.e.partes_das_ferramentas = lambda agent: partes
+        try:
+            com_transporte(lambda: _rodar(self._ext_texto().FerramentasCurtasTexto(agent=agente).execute(loop_data=dados)))
+        finally:
+            self.e.partes_das_ferramentas = original
+        return dados.system
+
+    def t_texto_extensao_so_no_modo_texto(self):
+        partes, dados = partes_reais()
+        secao = secao_texto(partes, dados)
+        sistema = ["# Agent Zero System Manual", secao, "## Regras que valem sempre", "## Sobre Matheus"]
+        texto = self._rodar_texto(Agente("chat"), sistema, partes)
+        ok(len(texto[1]) < 16000 and texto[0] == sistema[0] and texto[2:] == sistema[2:], "modo texto: só a seção muda")
+        eq(self._rodar_texto(Agente("chat"), sistema, partes), texto, "duas chamadas: sistema idêntico (cache)")
+        eq(self._rodar_texto(Agente("responses"), sistema, partes), sistema, "modo nativo: o texto fica (a lista é que encurta)")
+        self._desligar(True)
+        try:
+            eq(self._rodar_texto(Agente("chat"), sistema, partes), sistema, "desligado: tudo como antes")
+        finally:
+            self._desligar(False)
+        quebrado = Agente("chat")
+        quebrado.get_chat_model = None  # anything unexpected: not text mode, nothing changes
+        eq(self._rodar_texto(quebrado, sistema, partes), sistema, "erro: tudo como antes")
+
+    def t_texto_manual_na_primeira_no_formato_de_texto(self):
+        m, e = self._manual_ext(), self.e
+        e.MANUAIS["ficha"] = "manual nativo da ficha"
+        e.MANUAIS_TEXTO["ficha"] = "### ficha\nmanual de texto com {\"tool_name\": \"ficha\"}"
+        for modo, esperado in (("chat", "manual de texto"), ("responses", "manual nativo")):
+            a = Agente(modo)
+            com_transporte(lambda: m.ManualNaPrimeira(agent=a).execute(
+                data={"args": (a, "ficha", "ok"), "kwargs": {}, "exception": None}))
+            eq(len(a.history.msgs), 1, f"{modo}: o manual entra no primeiro uso")
+            ok(esperado in a.history.msgs[0]["content"], f"{modo}: {a.history.msgs[0]['content'][:80]}")
+            com_transporte(lambda: m.ManualNaPrimeira(agent=a).execute(
+                data={"args": (a, "ficha", "ok"), "kwargs": {}, "exception": None}))
+            eq(len(a.history.msgs), 1, f"{modo}: não repete")
+        e.MANUAIS_TEXTO["so_texto"] = "só no texto"
+        eq(e.manual("so_texto", texto_modo=False).endswith("só no texto"), True, "sem o nativo, serve o de texto")
+
+    def t_texto_meta_conversa_do_matheus_no_sonnet(self):
+        """The whole system prompt of a common chat of Matheus's in text mode: below 80 thousand characters, with the
+        rules, decisions and sheet (the measured rest) untouched."""
+        e, i = self.e, self.i
+        partes, dados = partes_reais()
+        secao = secao_texto(partes, dados)
+        conectores = _carregar("conectores_suite_para_meta", PLUGINS / "conectores" / "tests" / "suite.py")
+        ok(hasattr(conectores, "secao_mcp_texto"), "o conectores com o modo texto tem de ser implantado antes")
+        s = conectores.Suite()
+        try:
+            mcp = conectores.secao_mcp_texto(s.mcp)
+            antes = RESTO_MEDIDO + len(secao) + len(mcp)
+            ferramentas = e.encurtar_texto(secao, partes, i.CURTAS, i.MIN_GANHO, {})
+            comum = s.s.enxugar_mcp_texto(mcp, s.mcp, conectores.render_ferramenta, set())
+            codigo = s.s.enxugar_mcp_texto(mcp, s.mcp, conectores.render_ferramenta,
+                                           {f"github.{n}" for n in s.s.GITHUB_CODIGO})
+        finally:
+            shutil.rmtree(s.tmp, ignore_errors=True)
+        depois = RESTO_MEDIDO + len(ferramentas) + len(comum)
+        ok(antes > 270000, f"antes: ~281 mil como na VM (deu {antes})")
+        ok(depois < META_TEXTO, f"conversa comum no Sonnet: {depois} caracteres (meta {META_TEXTO})")
+        com_codigo = RESTO_MEDIDO + len(ferramentas) + len(codigo)
+        ok(com_codigo < META_TEXTO, f"conversa de código: {com_codigo} (meta {META_TEXTO})")
+        print(f"prompt_enxuto: sistema no modo texto {antes} -> {depois} caracteres (código {com_codigo})")
 
     async def rodar(self, filtro: str = ""):
         try:

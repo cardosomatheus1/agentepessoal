@@ -17,7 +17,9 @@ def modulo(arquivo: str):
         novo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(novo)
         novo._mtime = mtime
-        if antigo is not None and isinstance(getattr(antigo, "MANUAIS", None), dict):
-            novo.MANUAIS.update(antigo.MANUAIS)
+        for guardados in ("MANUAIS", "MANUAIS_TEXTO"):
+            if antigo is not None and isinstance(getattr(antigo, guardados, None), dict) \
+                    and isinstance(getattr(novo, guardados, None), dict):
+                getattr(novo, guardados).update(getattr(antigo, guardados))
         sys.modules[nome] = novo
     return sys.modules[nome]
