@@ -18,6 +18,11 @@ class Falha(AssertionError):
     pass
 
 
+def eq(a, b, msg):
+    if a != b:
+        raise Falha(f"{msg}: esperado {b!r}, veio {a!r}")
+
+
 def ok(cond, msg):
     if not cond:
         raise Falha(msg)
@@ -307,6 +312,51 @@ class Suite:
            f"cópia com o cabeçalho: {n.kwargs}")
         ok(m.kwargs == {"temperature": 0, "extra_headers": {"X-Outro": "1"}}, "o modelo original (compartilhado) não muda")
         ok(c.com_dono(m, "../x") is m and c.com_dono(m, "") is m and c.com_dono(None, "ilia") is None, "dono inválido: nada muda")
+
+    def t_modelo_por_dono_pronto_e_desligado(self):
+        # 20/10: ready for "Sonnet only for Matheus", off while there is no file
+        import json as _json
+        import tempfile as _tf
+        M = _carregar("login_modelo_teste", RAIZ / "helpers" / "modelo.py")
+
+        class Ctx:
+            def __init__(self, cid, **dados):
+                self.id, self.dados = cid, dict(dados)
+
+            def get_data(self, k):
+                return self.dados.get(k)
+
+            def set_data(self, k, v):
+                self.dados[k] = v
+
+        pasta = Path(_tf.mkdtemp(prefix="modelo-teste-"))
+        try:
+            eq(M.ler(pasta / "nao-existe.json"), {}, "sem arquivo: desligado")
+            (pasta / "m.json").write_text("{quebrado", encoding="utf-8")
+            eq(M.ler(pasta / "m.json"), {}, "arquivo ilegível: desligado")
+        finally:
+            import shutil as _sh
+            _sh.rmtree(pasta, ignore_errors=True)
+        cfg = {"donos": {"matheus": "Sonnet"}, "conversas": {"c9": "Default"}}
+        c = Ctx("c1")
+        eq(M.aplicar(c, "Matheus", False, {}), "", "desligado: nada")
+        ok(c.get_data(M.CHAVE) is None, "nada gravado")
+        eq(M.aplicar(c, "matheus", False, cfg), "ligou:Sonnet", "conversa do Matheus: preset dele")
+        eq(c.get_data(M.CHAVE), {"preset_name": "Sonnet"}, "pela escolha da própria conversa")
+        eq(M.aplicar(c, "matheus", False, cfg), "", "de novo: nada muda")
+        eq(M.aplicar(c, "matheus", False, {}), "desligou", "arquivo apagado: volta ao padrão")
+        ok(c.get_data(M.CHAVE) is None and c.get_data(M.AUTO) is None, "limpo")
+        r = Ctx("r1")
+        eq(M.aplicar(r, "matheus", True, cfg), "", "rotina fica no padrão")
+        eq(M.aplicar(r, "matheus", True, {**cfg, "rotinas": True}), "ligou:Sonnet", "com rotinas: true, a rotina também")
+        eq(M.aplicar(Ctx("c9"), "matheus", False, cfg), "ligou:Default", "a conversa nomeada vence o dono")
+        eq(M.aplicar(Ctx("i1"), "ilia", False, cfg), "", "outro dono: nada")
+        manual = Ctx("c2", chat_model_override={"preset_name": "Luna alto"})
+        eq(M.aplicar(manual, "matheus", False, cfg), "manual", "escolha feita na tela nunca é trocada")
+        eq(manual.get_data(M.CHAVE), {"preset_name": "Luna alto"}, "continua a dele")
+        eq(M.aplicar(manual, "matheus", False, {}), "manual", "nem desfeita")
+        texto = (RAIZ / "extensions" / "python" / "monologue_start" / "_30_modelo_por_dono.py").read_text(encoding="utf-8")
+        ok("if not cfg and not ctx.get_data(M.AUTO):" in texto, "desligado, a extensão nem olha a conversa")
 
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):

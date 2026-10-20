@@ -9,6 +9,8 @@ Here, as plain functions (tested in tests/suite.py):
 - falhou(): the tool's answer is an error;
 - Falhas: 3 failures in a row of the same tool give the agent a warning to change approach (the task goes on);
 - teto(): step cap of a helper (A1+); A0 has none, helpers of a prospecting round get a high one;
+- aviso_rodada(): the main agent in a scheduled round gets a nudge to close the round (20/10; no forced stop: the
+  round's final answer is what reaches the phone);
 - Resultados: a result identical to an earlier one of the same task (512+ characters) goes to the history as "igual
   ao resultado do passo N". Only the NEW history item changes, never an earlier one, so every prompt still starts
   with the whole previous prompt and the provider cache keeps working (see cache_prompt).
@@ -81,6 +83,23 @@ def teto(numero: int, nomes_raiz: list[str] | tuple = ()) -> int:
     if any(PROSPECCAO.search(n or "") for n in nomes_raiz):
         return TETO_PROSPECCAO
     return TETO_AJUDANTE
+
+
+# --- scheduled rounds of the main agent: a nudge to close, never a forced stop ---------------------------------------
+# 13-19/10: routine rounds other than prospecting end within ~25 steps; prospecting rounds browse up to ~120 on purpose.
+
+RODADA_AVISO = 30
+RODADA_AVISO_PROSPECCAO = 120
+RODADA_REPETIR = 10
+
+
+def aviso_rodada(passo: int, nomes_tarefa: list[str] | tuple = ()) -> str:
+    """Warning for the main agent's step `passo` in a scheduled round (empty when none is due)."""
+    limite = RODADA_AVISO_PROSPECCAO if any(PROSPECCAO.search(n or "") for n in nomes_tarefa) else RODADA_AVISO
+    if passo < limite or (passo - limite) % RODADA_REPETIR:
+        return ""
+    return (f"\n\n⏳ Rodada agendada no passo {passo}: feche agora. Termine com `response`: o que fez, o que ficou "
+            "pendente (anote no contexto.md) e `SEM NOVIDADE` se nada mudou para ele. Não repita verificações.")
 
 
 def passo_do_aviso(limite: int) -> int:

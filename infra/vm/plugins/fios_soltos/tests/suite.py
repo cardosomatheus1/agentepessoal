@@ -7,6 +7,7 @@ import sys
 import tempfile
 import threading
 import traceback
+import types
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -86,6 +87,43 @@ class Suite:
         [x.join() for x in fios]
         eq(erros, [], "sem erro")
         eq(len(f.carregar(LOGIN)["fios"]), 45, "os 45 fios ficaram (nenhuma gravação apagou a outra)")
+
+    def t_listas_no_fim_do_prompt(self):
+        # 20/10 (prompt enxuto): the lists changed every few minutes and broke the provider cache from the system prompt
+        stubs = {"agent": types.ModuleType("agent"), "helpers.extension": types.ModuleType("helpers.extension")}
+        stubs["agent"].LoopData = type("LoopData", (), {})
+        stubs["helpers.extension"].Extension = type("Extension", (), {})
+        antes = {k: sys.modules.get(k) for k in stubs}
+        sys.modules.update(stubs)
+        try:
+            ext = _carregar("fios_prompt_teste", RAIZ / "extensions" / "python" / "system_prompt" / "_26_fios_soltos.py")
+        finally:
+            for k, v in antes.items():
+                sys.modules.pop(k, None) if v is None else sys.modules.__setitem__(k, v)
+        f = self.f
+        f.mesclar(LOGIN, [{"titulo": "Mandar o contrato", "prioridade": "alta"}])
+        conversas = [{"id": "outra", "nome": "Integração com Drive", "mudou_ha_h": 1.3, "ultima_resposta": "Pasta criada",
+                      "pedidos": []}, {"id": "c1", "nome": "esta", "mudou_ha_h": 0, "ultima_resposta": "x", "pedidos": []}]
+        f.conversas = lambda login, horas: conversas
+        ext._fios = lambda: f
+        ext._cache.clear()
+        ctx = types.SimpleNamespace(id="c1", get_data=lambda k: {"dono": LOGIN}.get(k))
+        obj = ext.FiosSoltosPrompt.__new__(ext.FiosSoltosPrompt)
+        obj.agent = types.SimpleNamespace(number=0, context=ctx)
+        ld = types.SimpleNamespace(params_persistent={}, extras_persistent={})
+        saida = []
+        corrotina = obj.execute(system_prompt=saida, loop_data=ld)
+        try:
+            corrotina.send(None)
+        except StopIteration:
+            pass
+        sistema = "\n".join(saida)
+        ok("`fios_soltos`" in sistema and "ferramenta `fios`" in sistema, "as instruções ficam no começo")
+        ok("Mandar o contrato" not in sistema and "Integração com Drive" not in sistema, "as listas não ficam no começo")
+        fim = ld.extras_persistent["fios_soltos"]
+        ok("Mandar o contrato" in fim and "Integração com Drive" in fim and "Pasta criada" in fim, fim)
+        ok(" h)" not in fim and "- esta (" not in fim, "sem há N h e sem a própria conversa")
+        eq(ext.bloco(LOGIN, "c1", types.SimpleNamespace(abertos=lambda *a: 1 / 0)), "", "registro indisponível: nada")
 
     async def rodar(self, so=""):
         try:

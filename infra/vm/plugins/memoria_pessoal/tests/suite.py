@@ -245,6 +245,75 @@ class Suite:
         ok("- Mora em Camaçari\n(" in b and "ferramenta `ficha`" in b and "Nunca edite o arquivo da ficha" in b, b[:1500])
         ok("ferramenta `lembrar`" in b and "«desfaz a N»" in b and "«tira da rotina X»" in b, "revisor e lembrar no bloco")
 
+    def t_contexto_da_conversa_vai_para_o_fim_do_prompt(self):
+        # 20/10 (prompt enxuto): contexto.md changes during a chat; in the system prompt it broke the provider cache
+        f = self.f
+        stubs = _stubs()
+        stubs["helpers.projects"].get_context_project_name = lambda ctx: ""
+        ext = _carregar("memoria_ext_turno_teste", RAIZ / "extensions" / "python" / "system_prompt" / "_17_memoria_pessoal.py",
+                        stubs)
+        ext.PROFILES, ext.USR, ext.USUARIOS = f.PASTA, self._tmp, self._tmp / "usuarios.json"
+        ext._helper = lambda nome: {"ficha": f, "decisoes": self.d}[nome]
+        pasta = self._tmp / "chats" / "c1"
+        (pasta / "anexos").mkdir(parents=True, exist_ok=True)
+        (pasta / "contexto.md").write_text("## Objetivo\nMandar o vídeo da homologação", encoding="utf-8")
+        (pasta / "anexos" / "video.mp4").write_bytes(b"x" * 10)
+        ctx = types.SimpleNamespace(id="c1", get_data=lambda k: {"usuario": LOGIN, "usuario_nome": "Teste"}.get(k))
+        obj = ext.MemoriaPessoal()
+        obj.agent = types.SimpleNamespace(number=0, context=ctx)
+        ld = types.SimpleNamespace(params_persistent={}, extras_persistent={})
+
+        def passo():
+            saida = []
+            corrotina = obj.execute(system_prompt=saida, loop_data=ld)
+            try:
+                corrotina.send(None)
+            except StopIteration:
+                pass
+            return saida[0]
+
+        sistema = passo()
+        ok("Mandar o vídeo da homologação" not in sistema and "video.mp4" not in sistema, "nada que muda no começo do prompt")
+        ok("`contexto_conversa`" in sistema and "não leia o arquivo de novo" in sistema, "o prompt diz onde o contexto chega")
+        ok("### Velocidade" not in sistema, "parar e conferir: só nas regras de sempre")
+        turno = ld.extras_persistent["contexto_conversa"]
+        ok("Mandar o vídeo da homologação" in turno and "- video.mp4" in turno, turno)
+        (pasta / "contexto.md").write_text("## Objetivo\noutro", encoding="utf-8")
+        ld.extras_persistent.clear()
+        eq(passo(), sistema, "o começo do prompt é o mesmo a cada passo")
+        eq(ld.extras_persistent["contexto_conversa"], turno, "no mesmo turno, o mesmo bloco (calculado uma vez)")
+        ld.params_persistent.clear()
+        passo()
+        ok("outro" in ld.extras_persistent["contexto_conversa"], "mensagem nova da pessoa: o contexto atual")
+
+    def t_rodada_sem_novidade_nao_memoriza(self):
+        # 20/10 (prompt enxuto): memorizing a round that found nothing cost 2+ model calls each time
+        stubs = _stubs()
+        stubs["helpers.projects"].get_context_project_name = lambda ctx: ""
+        ext = _carregar("memoria_config_teste", RAIZ / "extensions" / "python" / "_functions" / "helpers" / "plugins"
+                        / "get_plugin_config" / "end" / "_50_memoria_por_conversa.py", stubs)
+        tarefas = self._tmp / "tasks.json"
+        tarefas.write_text(json.dumps({"tasks": [{"uuid": "T1", "context_id": "rot1"}]}), encoding="utf-8")
+        ext.TAREFAS = str(tarefas)
+
+        def config(ctx_id, ultima):
+            obj = ext.MemoriaPorConversa()
+            obj.agent = types.SimpleNamespace(context=types.SimpleNamespace(id=ctx_id),
+                                              loop_data=types.SimpleNamespace(last_response=ultima))
+            data = {"args": ("_memory",), "result": {"memory_memorize_enabled": True}}
+            obj.execute(data=data)
+            return data["result"]
+
+        resposta = '{"tool_name": "response", "tool_args": {"text": "SEM NOVIDADE"}}'
+        eq(config("rot1", resposta)["memory_memorize_enabled"], False, "rodada sem novidade: não memoriza")
+        eq(config("rot1", '{"tool_name": "response", "tool_args": {"text": "PRECISA DE VOCÊ: código"}}')
+           ["memory_memorize_enabled"], True, "rodada com algo: memoriza")
+        eq(config("conversa", resposta)["memory_memorize_enabled"], True, "conversa da pessoa: sempre memoriza")
+        r = config("rot1", resposta)
+        ok(r["agent_memory_subdir"] == "chats/rot1" and r["memory_recall_solutions_max_result"] == 1, "o resto continua")
+        ext.TAREFAS = str(self._tmp / "nao-existe.json")
+        eq(config("rot1", resposta)["memory_memorize_enabled"], True, "sem a lista de tarefas: como antes")
+
     def t_ficha_add_duplicata_teto_patch_remove(self):
         f = self.f
         r = f.adicionar(LOGIN, "Mora em Camaçari, BA", por="agente", origem="conversa x")

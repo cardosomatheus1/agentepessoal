@@ -16,3 +16,7 @@ diferentes.
   (até 3 itens, com a ligação e o que o agente pode fazer). Sem novidade, `SEM NOVIDADE` (não envia).
 
 Só leitura fora do próprio registro: nunca envia, responde, paga, apaga ou altera nada.
+
+**20/10 (prompt enxuto):** as listas (fios em aberto, resolvidos, outras conversas) mudavam a cada poucos minutos e
+estavam nas instruções de todas as conversas; agora vão no fim do prompt (bloco `fios_soltos`, uma vez por mensagem
+dele), com a data em vez de "há N h". As instruções ficam onde estavam.

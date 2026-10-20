@@ -19,3 +19,6 @@ interrupção, manda uma mensagem — de preferência já com o trabalho adianta
   vai como está (só chega ao dono).
 
 Registro: `/a0/usr/iniciativa/<login>.json`. Os botões chegam por `plugins/whatsapp/api/receber.py` (`ini:`).
+
+**20/10 (prompt enxuto):** as últimas mensagens por iniciativa vão no fim do prompt (bloco `iniciativas_recentes`), não
+nas instruções; a regra de registrar o que a pessoa disser sobre elas continua nas instruções.

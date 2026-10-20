@@ -7,6 +7,7 @@ import sys
 import tempfile
 import threading
 import traceback
+import types
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -96,6 +97,40 @@ class Suite:
         [x.join() for x in fios]
         eq(erros, [], "sem erro")
         eq(len(i.carregar(LOGIN)["aprendizados"]), 36, "os 36 aprendizados ficaram (nenhuma gravação apagou a outra)")
+
+    def t_ultimas_iniciativas_no_fim_do_prompt(self):
+        # 20/10 (prompt enxuto): the list changes when a message is sent; the system prompt keeps only the rule
+        stubs = {"agent": types.ModuleType("agent"), "helpers.extension": types.ModuleType("helpers.extension")}
+        stubs["agent"].LoopData = type("LoopData", (), {})
+        stubs["helpers.extension"].Extension = type("Extension", (), {})
+        antes = {k: sys.modules.get(k) for k in stubs}
+        sys.modules.update(stubs)
+        try:
+            ext = _carregar("iniciativa_prompt_teste", RAIZ / "extensions" / "python" / "system_prompt" / "_27_iniciativa.py")
+        finally:
+            for k, v in antes.items():
+                sys.modules.pop(k, None) if v is None else sys.modules.__setitem__(k, v)
+        agora = 1_800_000_000
+        d = {"enviadas": [{"quando": agora - 3 * 86400, "titulo": "velha", "texto": "x"},
+                          {"quando": agora - 3600, "titulo": "Rascunho pronto", "texto": "Adiantei a resposta"}]}
+        txt = ext.recentes("teste", d, agora)
+        ok("Rascunho pronto" in txt and "velha" not in txt, txt)
+        eq(ext.recentes("teste", {"enviadas": []}, agora), "", "sem iniciativa recente: nada")
+        import time as _t
+        agora_real = {"enviadas": [{"quando": _t.time() - 600, "titulo": "Rascunho pronto", "texto": "Adiantei"}]}
+        ext._ini = lambda: types.SimpleNamespace(carregar=lambda login: agora_real)
+        ctx = types.SimpleNamespace(id="c1", get_data=lambda k: {"dono": "teste"}.get(k))
+        obj = ext.IniciativaPrompt.__new__(ext.IniciativaPrompt)
+        obj.agent = types.SimpleNamespace(number=0, context=ctx)
+        ld = types.SimpleNamespace(params_persistent={}, extras_persistent={})
+        saida = []
+        corrotina = obj.execute(system_prompt=saida, loop_data=ld)
+        try:
+            corrotina.send(None)
+        except StopIteration:
+            pass
+        ok("acao \"aprender\"" in saida[0] and "Rascunho" not in saida[0], "a regra fica no começo; a lista, não")
+        ok("Rascunho pronto" in ld.extras_persistent.get("iniciativas_recentes", ""), "a lista vai no fim")
 
     async def rodar(self, so=""):
         try:

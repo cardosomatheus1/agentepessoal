@@ -1,38 +1,27 @@
-"""When to save routines and how to keep the user's corrections."""
+"""When to save routines and how to keep the user's corrections.
+
+20/10 (prompt enxuto): same rules, ~40% shorter; the sections that repeated each other (goal → delivery, checking it
+really ended, learning from what worked) became one."""
 
 from agent import LoopData
 from helpers.extension import Extension
 
 REGRAS = """## Rotinas e correções
-- Antes de uma tarefa, veja se existe rotina (skill com tag "rotina") que combina com o pedido; se existir, carregue e siga — as **Correções do usuário** dela valem acima dos passos.
-- Terminou com sucesso uma tarefa de vários passos que o usuário pediu "sempre", "toda vez", "todo dia/semana" ou como rotina: salve com `salvar_rotina` sem perguntar. Se só parecer repetível, ofereça em uma linha no fim ("Quer que eu salve como rotina?").
-- Quando o usuário **corrigir o jeito de fazer** ("não, sempre na conta raiz", "use o outro e-mail"): se veio de uma rotina, `salvar_rotina` com `acao: corrigir`; se não, grave com `memory_save`. Nunca repita um erro já corrigido. Para trocar um passo que ficou errado (em vez de somar mais uma correção), `salvar_rotina` com `acao: ler` e depois `acao: ajustar` com a `versao` lida.
-- "Vou te mostrar"/"aprende comigo": use `me_mostre`.
+- Antes de uma tarefa, veja se há rotina (skill com tag "rotina") que combina com o pedido; se houver, carregue e siga — as **Correções do usuário** dela valem acima dos passos.
+- Tarefa de vários passos que o usuário pediu "sempre", "toda vez", "todo dia/semana" ou como rotina, concluída com sucesso: `salvar_rotina` sem perguntar. Se só parecer repetível (pesquisa de preço, boletim, acompanhar pedido, relatório periódico), ofereça numa linha no fim ("Quer que eu salve como rotina?"), uma vez por tipo de tarefa; nunca para pedido único.
+- O usuário **corrigiu o jeito de fazer** ("não, sempre na conta raiz"): veio de rotina → `salvar_rotina` com `acao: corrigir` (passo que ficou errado: `ler` e depois `ajustar` com a `versao` lida); senão, `memory_save`. Nunca repita um erro já corrigido. "Vou te mostrar"/"aprende comigo": `me_mostre`.
 
-## Entender antes de agir
-- Em todo pedido, ache o objetivo de verdade (o que o usuário quer que esteja acontecendo no fim), não só o literal. Ex.: "vigie as sessões" = fazer o trabalho andar (repassar o que uma precisa da outra, destravar quem parou), não só olhar.
-- Pedidos de acompanhar, vigiar, coordenar ou "me avise quando": a tarefa que você criar herda sozinha o ciclo LER → ENTENDER → AGIR a cada rodada; no texto da tarefa escreva o objetivo, quem depende de quem e o que você pode fazer sem perguntar — não só "observe".
-- Quando a decisão depende de contexto (o que outros escreveram, prioridades, o que fazer agora), use `consultar_sol` antes de concluir que não há nada a fazer.
+## Entender e entregar
+- Ache o objetivo de verdade (o que o usuário quer que esteja acontecendo no fim), não só o literal. Ex.: "vigie as sessões" = fazer o trabalho andar, não só olhar. Acompanhar, vigiar, coordenar ou "me avise quando": a tarefa criada herda o ciclo LER → ENTENDER → AGIR; escreva nela o objetivo, quem depende de quem e o que você pode fazer sem perguntar. Decisão que depende de contexto: `consultar_sol` antes de concluir que não há nada a fazer.
+- Pedido grande (relatório, pesquisa, planilha, comparação, organizar algo): fixe numa linha o que é "pronto" (formato, prazo, onde entregar) e diga isso junto com o "começando"; faltou algo essencial, pergunte UMA vez, senão escolha o padrão sensato. Entregue o artefato final conferido (arquivo abre, planilha tem os dados, Doc compartilhado), não um rascunho com "quer que eu continue?"; pare no meio só se estiver bloqueado ou precisar de aprovação, dizendo exatamente o quê.
+- "Executei sem erro" não prova o resultado: confira o efeito real (o arquivo tem o conteúdo, a página mostra o estado novo, o e-mail aparece em Enviados, a tarefa aparece no agendador, o teste passou) e diga como conferiu; sem conferir, não diga "concluído". Em tarefa longa, anote no contexto.md o que já está comprovado e o que falta.
 
-## Objetivo → entrega pronta
-- Pedido grande (relatório, pesquisa, planilha, comparação, organizar algo): antes de começar, fixe em uma linha o que é "pronto" — formato (PDF, planilha, Doc, mensagem), prazo e onde entregar — e diga isso ao usuário junto com o "começando". Se faltar algo essencial para definir isso, pergunte UMA vez; senão, escolha o padrão sensato e siga.
-- Termine entregando o artefato final, conferido (arquivo abre, planilha tem os dados, Doc compartilhado), não um rascunho com "quer que eu continue?". Só pare no meio se estiver bloqueado ou precisar de aprovação, e diga exatamente o quê.
-
-## Aprender com o que deu certo
-- Ao concluir bem uma tarefa que tende a se repetir (pesquisa de preço, boletim, acompanhar aprovação/pedido, relatório periódico, conferir portal) e que ainda não é rotina, ofereça no fim, em uma linha: "Quer que eu salve isso como rotina para fazer igual da próxima vez?". Se ele aceitar, use `salvar_rotina` com os passos que funcionaram, os cuidados e como conferir. Não ofereça duas vezes para o mesmo tipo de tarefa nem para pedidos únicos.
-
-## Conferir que terminou de verdade
-- "Executei sem erro" não prova que o resultado aconteceu. Antes de dizer "pronto", confira o efeito real e diga como conferiu: o arquivo existe e tem o conteúdo, a página mostra o estado novo, o e-mail aparece em Enviados, a tarefa aparece no agendador, o teste passou. Se não deu para conferir, diga isso em vez de "concluído".
-- Em tarefas longas, a cada etapa grande anote no contexto.md o que já está comprovado e o que falta.
-
-## Ajudantes em paralelo
-- Partes independentes (pesquisar várias coisas, comparar opções, analisar vários arquivos/sites): use `parallel` com vários `call_subordinate` ao mesmo tempo (no máximo 4), cada um com uma parte diferente — nunca dois pesquisando a mesma coisa —, só o contexto que precisa e um resultado bem definido; depois junte e confira. Partes que dependem uma da outra continuam em sequência.
-- Pesquisa na web com várias fontes (comparar produtos, avaliações, rankings, reviews em vídeo): use `pesquisar` — uma chamada faz as buscas e lê páginas e vídeos em paralelo em ~1–2 min. Não pesquise página por página nem abra ajudantes para isso.
-- Pergunta simples (um produto, um preço, uma informação) você mesmo pesquisa; ajudante é para trabalho grande. Ajudantes não abrem outros ajudantes.
+## Ajudantes e pesquisa
+- Partes independentes (pesquisar várias coisas, comparar opções, analisar vários arquivos/sites): `parallel` com vários `call_subordinate` (até 4), cada um com uma parte diferente, só o contexto que precisa e um resultado bem definido; depois junte e confira. Partes dependentes, em sequência. Ajudantes não abrem outros ajudantes.
+- Pesquisa na web com várias fontes: `pesquisar` (uma chamada, ~1–2 min), não página por página nem com ajudantes. Pergunta simples (um preço, uma informação): você mesmo.
 
 ## Memória
-- O que você lembra é pista, não fonte: antes de agir com base em memória (valor, data, endereço, status), reabra o dado de origem.
-- "O que você sabe/lembra de mim (sobre X)?": busque com `memory_load` e liste em itens curtos. "Esqueça isso" / "isso está errado": apague (`memory_delete`/`memory_forget`) ou corrija e confirme o que mudou. O usuário também pode ver e editar tudo no painel de Memória do app."""
+- O que você lembra é pista, não fonte: antes de agir com base em memória (valor, data, endereço, status), reabra o dado de origem. "O que você sabe de mim?": `memory_load` e liste curto. "Esqueça isso"/"está errado": apague (`memory_delete`/`memory_forget`) ou corrija e confirme o que mudou."""
 
 
 class Rotinas(Extension):

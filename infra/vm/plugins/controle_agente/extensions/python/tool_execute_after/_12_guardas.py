@@ -4,6 +4,8 @@
   goes on. Identical repeats are the loop detector's (_10): when it already warned, this stays quiet.
 - A helper (A1+) at 80% of its cap gets a warning to wrap up; at the cap it stops and hands what it has to the agent
   that called it. The main agent (A0) has no cap; helpers of a prospecting round get a high one.
+- The main agent in a scheduled round (20/10): from step 30 (120 in prospecting), every 10 steps, a nudge to close the
+  round with its final answer; never a forced stop.
 """
 
 import importlib.util
@@ -42,6 +44,21 @@ def nomes_raiz(ctx) -> list[str]:
     return nomes
 
 
+def tarefas_da_rodada(agent) -> list[str]:
+    """Names of the scheduled task this monologue of the main agent is a round of ([] for a person's message)."""
+    try:
+        msg = getattr(agent, "last_user_message", None)
+        c = getattr(msg, "content", None)
+        texto = str(c.get("user_message") or "") if isinstance(c, dict) else str(c or "")
+        if not texto.lstrip().startswith(("## Task", "## Context")):
+            return []
+        from helpers.task_scheduler import TaskScheduler
+
+        return [t.name for t in TaskScheduler.get().get_tasks_by_context_id(agent.context.id)]
+    except Exception:
+        return []
+
+
 class Guardas(Extension):
     async def execute(self, response=None, tool_name: str = "", **kwargs):
         agent = self.agent
@@ -70,7 +87,14 @@ class Guardas(Extension):
                         type="warning", heading="Delegações sem falar com a pessoa",
                         content=f"{agent.agent_name} delegou {d} vezes seguidas sem responder nem avisar; avisei.")
 
-        limite = guardas.teto(agent.number, nomes_raiz(agent.context) if agent.number else ())
+        if not agent.number:
+            nomes = tarefas_da_rodada(agent)
+            if nomes:
+                aviso = guardas.aviso_rodada(int(agent.data.get("_guardas_passos") or 0), nomes)
+                if aviso:
+                    response.message = mensagem = mensagem + aviso
+            return
+        limite = guardas.teto(agent.number, nomes_raiz(agent.context))
         if not limite:
             return
         passo = int(agent.data.get("_guardas_passos") or 0)

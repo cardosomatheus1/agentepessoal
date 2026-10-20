@@ -8,6 +8,7 @@ import sys
 import tempfile
 import threading
 import traceback
+import types
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -120,6 +121,37 @@ class Suite:
            "nada do valor no livro")
         eq(lc.registrar_usos(None, "pessoa_cofre", "browser", ["X"], {}, agora=1.0), [], "sem livro instalado: nada, sem erro")
         eq(lc.registrar_usos(livro, "teste_cofre", "browser", ["X"], {}, agora=1.0), [], "login de teste não vai ao livro")
+
+    def t_bloco_do_prompt_curto_sem_regras_repetidas(self):
+        # 20/10 (prompt enxuto): captcha and "never ask in the chat" live in prompt_enxuto; long descriptions are cut
+        stubs = {"agent": types.ModuleType("agent"), "helpers.extension": types.ModuleType("helpers.extension")}
+        stubs["agent"].LoopData = type("LoopData", (), {})
+        stubs["helpers.extension"].Extension = type("Extension", (), {})
+        antes = {k: sys.modules.get(k) for k in stubs}
+        sys.modules.update(stubs)
+        try:
+            ext = _carregar("cofre_prompt_teste", RAIZ / "extensions" / "python" / "system_prompt" / "_14_cofre.py")
+        finally:
+            for k, v in antes.items():
+                sys.modules.pop(k, None) if v is None else sys.modules.__setitem__(k, v)
+        falso = types.SimpleNamespace(dono=lambda ctx: LOGIN, carregar=lambda d: {"GMAIL": 1, "IG": 1},
+                                      lista=lambda d: [("GMAIL", "Google · " + "conta muito comprida " * 10), ("IG", "")])
+        ext.cofre = lambda: falso
+        obj = ext.CofrePrompt.__new__(ext.CofrePrompt)
+        obj.agent = types.SimpleNamespace(context=None)
+        saida = []
+        corrotina = obj.execute(system_prompt=saida)
+        try:
+            corrotina.send(None)
+        except StopIteration:
+            pass
+        texto = saida[0]
+        ok("§§secret(NOME)" in texto and "NÃO é falha" in texto and "/senha NOME valor" in texto, "como usar o cofre fica")
+        ok("- IG: (sem descrição)" in texto and "cofre_descrever" in texto, "lista e como descrever")
+        linha = next(l for l in texto.splitlines() if l.startswith("- GMAIL:"))
+        ok(len(linha) <= len("- GMAIL: ") + ext.DESCRICAO_MAX and linha.endswith("…"), f"descrição longa cortada: {linha}")
+        ok("captcha" not in texto.lower() and "nunca contorne" not in texto, "captcha só nas regras de sempre")
+        ok(len(texto) < 1600, f"bloco curto ({len(texto)} caracteres sem a lista longa)")
 
     async def rodar(self, so=""):
         try:

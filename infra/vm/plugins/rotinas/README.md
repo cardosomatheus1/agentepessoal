@@ -29,3 +29,9 @@ Rotinas reutilizáveis, como as skills do Grok Bot, em cima das skills do Agent 
   o ambíguo e salva a rotina.
 
 As rotinas são do agente (todos os logins veem); a tag traz o login de quem salvou.
+
+**Rodada enxuta (20/10, `helpers/rodada.py`, `monologue/start/_20_rodada_enxuta.py`):** a rodada agendada começa só
+com a rodada anterior no histórico do modelo (quando ela tem até 12 mil tokens); as mais antigas e os resumos saem.
+O chat da prospecção vivia no teto do histórico (~50 mil tokens, "History compression stalled" a cada passo): cada
+chamada de uma rodada de 7 passos levava 35-50 mil tokens de rodadas velhas. O que a rodada precisa do passado está
+no checkpoint (contexto.md, o estado da ferramenta, o portão). A janela do chat continua com tudo.
