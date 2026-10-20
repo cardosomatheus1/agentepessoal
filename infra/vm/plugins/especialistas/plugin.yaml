@@ -1,0 +1,7 @@
+name: especialistas
+title: Especialistas (Crítico e Designer)
+description: Papéis com personalidade e regras próprias que o agente principal chama antes de publicar algo público. O Crítico julga post, carrossel, oferta, landing ou mensagem contra o Cérebro da Raiz e os critérios do AR Board; o Designer transforma um briefing numa ficha para o motor de render e passa tudo pelo Crítico. O Matheus não fala com eles direto.
+version: 1.0.0
+settings_sections: []
+per_project_config: false
+per_agent_config: false

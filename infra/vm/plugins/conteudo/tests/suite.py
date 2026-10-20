@@ -26,6 +26,7 @@ def _modulo():
     spec = importlib.util.spec_from_file_location("conteudo_teste", RAIZ / "helpers" / "conteudo.py")
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
+    m.especialistas = lambda: None  # the real Crítico calls a model; tests that want one pass a fake
     return m
 
 

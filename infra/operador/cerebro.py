@@ -5,12 +5,19 @@ data is never edited by hand). Usage, from the repository root:
     python3 infra/operador/cerebro.py estado                                     (counts, pending context, last note)
     python3 infra/operador/cerebro.py auditoria                                  (writes Documentos/auditoria-<data>.md)
     python3 infra/operador/cerebro.py nota                                       (writes today's nota do dia now)
-    python3 infra/operador/cerebro.py copia-github                               (creates the private repo once, pushes)"""
+    python3 infra/operador/cerebro.py copia-github                               (creates the private repo once, pushes)
+    python3 infra/operador/cerebro.py semear-raiz --motivo "<por quê>"           (fills the Cérebro da Raiz once)
+
+semear-raiz: Raiz/ (helpers/raiz.py) from the prospecção playbook and the competitor list on the VM, plus the brand
+identity notes that live only in this repository (infra/reels/README.md and the Raiz molde's marca.json), sent along;
+what has no source stays PENDENTE for the interview. Refuses a second time."""
 
 import base64
 import json
+import re
 import sys
 import time
+from pathlib import Path
 
 import boto3
 
@@ -61,6 +68,11 @@ elif p["op"] == "copia-github":
         if subprocess.run(["git", "-C", str(pasta.RAIZ), "remote", "get-url", "origin"], capture_output=True).returncode:
             subprocess.run(["git", "-C", str(pasta.RAIZ), "remote", "add", "origin", f"https://github.com/{dono}/segundo-cerebro.git"])
         print("ENVIO", pasta.enviar_copia(tok) or "ok")
+elif p["op"] == "semear-raiz":
+    r = m.m("raiz").semear("operador: " + p["motivo"], marca_visual=p.get("marca_visual", ""))
+    print("RAIZ", json.dumps(r, ensure_ascii=False))
+    a = m.m("auditoria").gravar(pasta)
+    print("AUDITORIA", a["nota"], a["arquivo"], "mapa:", [x["motivo"] for x in a["achados"] if x["checagem"] == "mapa"])
 elif p["op"] == "nota":
     n = m.m("dia").escrever(pasta)
     print("NOTA", n["data"]); print(n["resumo"])
@@ -74,6 +86,34 @@ else:
         notas = sorted((pasta.RAIZ / "Notas-do-dia").glob("????-??-??.md"))
         print("última nota:", notas[-1].name if notas else "nenhuma")
 """
+
+
+REPO = Path(__file__).resolve().parents[2]
+
+
+def marca_visual() -> str:
+    """The Raiz brand identity notes kept in this repository (not on the VM): the fixed part of the kit rule in
+    infra/reels/README.md and the Raiz molde's marca.json. '' when neither can be read (marca.md keeps PENDENTE)."""
+    partes = []
+    leia = REPO / "infra" / "reels" / "README.md"
+    if leia.exists():
+        texto = leia.read_text(encoding="utf-8")
+        for comeco in ("> **Regra do Matheus (14/10/2026)", "> **Padrão x liberdade criativa"):
+            i = texto.find(comeco)
+            if i >= 0:
+                bloco = texto[i:].split("\n>\n", 1)[0]
+                partes.append(re.sub(r"^> ?", "", bloco, flags=re.M).strip())
+    marca = REPO / "infra" / "reels" / "moldes" / "marcas" / "raiz" / "marca.json"
+    if marca.exists():
+        try:
+            j = json.loads(marca.read_text(encoding="utf-8"))
+            # the molde's colors and font are the old video ones (the kit replaced them): only who speaks and the call
+            partes.append(f"Perfil {j.get('perfil', '')}; chamada dos posts \"{j.get('chamada', '')}\"; "
+                          f"voz dos vídeos: {j.get('voz', {}).get('id', '')}")
+        except ValueError:
+            pass
+    return ("_Do repositório: infra/reels/README.md e infra/reels/moldes/marcas/raiz/marca.json._\n\n" + "\n\n".join(partes)
+            if partes else "")
 
 
 def vm(comando: str, timeout: int = 600) -> str:
@@ -99,11 +139,13 @@ def main() -> None:
         del args[i:i + 2]
     simular = "--simular" in args
     args = [a for a in args if a != "--simular"]
-    if not args or args[0] not in ("migrar", "estado", "auditoria", "nota", "copia-github"):
+    if not args or args[0] not in ("migrar", "estado", "auditoria", "nota", "copia-github", "semear-raiz"):
         raise SystemExit(__doc__)
-    if args[0] == "migrar" and not motivo:
+    if args[0] in ("migrar", "semear-raiz") and not motivo:
         raise SystemExit("diga o motivo com --motivo \"...\" (fica registrado em quem migrou)")
     p = {"op": args[0], "motivo": motivo, "simular": simular}
+    if args[0] == "semear-raiz":
+        p["marca_visual"] = marca_visual()
     programa = base64.b64encode(PROGRAMA.encode()).decode()
     dados = base64.b64encode(json.dumps(p, ensure_ascii=False).encode()).decode()
     print(vm(f"echo {programa} | base64 -d > /tmp/cerebro_operador.py && "

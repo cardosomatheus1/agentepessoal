@@ -88,7 +88,7 @@ CURTAS: dict[str, str] = {
     "cerebro": "Segundo Cérebro do Matheus (a Pasta). `acao` consultar (`texto`: responde \"o que decidi/onde parou/quem é\") | "
                "assunto (`titulo`/`ref`, `onde_parou`, `estado`, `area`) | assuntos | desfazer (`ref` ou \"ultimo\", `motivo`) | "
                "reuniao (`titulo`, `data`, `participantes`, `resumo`, `decisoes`, `proximos`) | "
-               "contexto (entrevista: `secao`, `conteudo`, `aprovado`) | nota_do_dia | auditoria.",
+               "contexto (entrevista: `secao`, `conteudo`, `aprovado`) | raiz (Cérebro da Raiz, ler antes de prospecção/posts/oferta; `secao`) | nota_do_dia | auditoria.",
     "videos_em_alta": "Vídeos do YouTube mais vistos das últimas N horas sobre um tema, assistidos. `tema`, opcional "
                       "`consultas`, `quantidade`, `horas`, `assistir`.",
     "assistir_video": "Assiste um vídeo inteiro (imagem e áudio) e descreve com os tempos. `url` ou `caminho`, opcional "
@@ -100,6 +100,9 @@ CURTAS: dict[str, str] = {
     "whatsapp_guardar_token": "Guarda no cofre, sem você ler, o token ou a chave secreta visível na página da Meta. `campo` token|app_secret.",
     "terminal_isolado": "O computador Linux separado de um convidado. `acao` rodar (`comando`, `tempo`) | enviar (`arquivo`) | "
                         "trazer (`caminho`).",
+    "especialista": "Especialistas (o Matheus não fala com eles). Antes de publicar ou mandar algo público: `acao` criticar "
+                    "(`tipo` post|carrossel|oferta|landing|mensagem, `material`: texto ou JSON com `imagens`); reprovado não "
+                    "sai. Peça visual: `acao` desenhar (`briefing`) devolve ficha, arquivos e crítica. `papel` critico|designer.",
     "conteudo": "Só leitura: posts da @raiz.connect. `acao` agenda (`dias`) | arquivos (`data`: baixa o post do dia) | desempenho (`dias`).",
     "monitor": "Monitor de evento conferido pelo Radar. `acao` criar (`fonte` gmail|agenda, `condicao`, `o_que_fazer`) | listar | remover (`id`).",
     "livro": "Livro de ações (o que o agente fez no mundo, imutável). `acao` hoje (`dias`) | conferir. Use em vez de responder de memória.",

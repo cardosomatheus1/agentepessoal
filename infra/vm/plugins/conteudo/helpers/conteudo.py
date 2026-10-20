@@ -4,13 +4,17 @@ changes through this file: agendar() validates, the job loop publishes what is d
 through _mudar() (TRANSICOES) and lands in the journal. Rules that are code, not text:
 - at most one post per day (BRT), never twice the same item;
 - captions without emoji, at most 2200 characters and 30 hashtags;
-- a post whose publish call was made but not confirmed becomes "incerta" and is never retried by itself."""
+- a post whose publish call was made but not confirmed becomes "incerta" and is never retried by itself;
+- 20/10: when the especialistas plugin exists, the Crítico judges each post right before it goes out; "reprova" or any
+  error blocks it ("bloqueada", fail closed) until Matheus releases it (liberar(), his override is recorded)."""
 
 import datetime as dt
 import fcntl
+import importlib.util
 import json
 import os
 import re
+import sys
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -27,12 +31,17 @@ MAX_LEGENDA, MAX_HASHTAGS, MAX_CARROSSEL = 2200, 30, 10
 CAPA_MS = 1500  # Reel cover frame when no cover image is given (ms)
 ESPERA_PROCESSAR = 600  # seconds Meta may take to process a video before we give up
 AUTOR = {"quem": "agente"}  # operator scripts set "operador: <why>"
+LOGIN = "matheus"
+# the Crítico (plugins/especialistas): next to this plugin, else the installed one (a staging copy alone in /tmp)
+ESPECIALISTAS = (Path(__file__).resolve().parents[2] / "especialistas" / "helpers" / "especialistas.py",
+                 Path("/a0/usr/plugins/especialistas/helpers/especialistas.py"))
 
 # any pictograph, dingbat, arrow-ish symbol or emoji joiner: Matheus wants plain text captions
 EMOJI = re.compile("[\U0001F000-\U0001FAFF\U0001F900-\U0001F9FF☀-➿⬀-⯿←-⇿️‍⃣]")
 
 TRANSICOES = {
-    "pendente": {"publicando", "cancelada"},
+    "pendente": {"publicando", "cancelada", "bloqueada"},
+    "bloqueada": {"pendente", "cancelada"},  # the Crítico's gate stopped it; back to pendente only by liberar()
     "publicando": {"publicada", "falhou", "incerta"},
     "incerta": {"publicada", "falhou"},  # checked on the profile by a person before anything else
     "publicada": set(), "falhou": {"pendente"}, "cancelada": set(),  # falhou → pendente only by the operator
@@ -138,6 +147,9 @@ def _validar_item(it: dict) -> str:
         return "capa_ms: só em Reel"
     if it["tipo"] == "CARROSSEL" and not (2 <= len(arqs) <= MAX_CARROSSEL and all(a.lower().endswith(JPG) for a in arqs)):
         return f"carrossel: de 2 a {MAX_CARROSSEL} imagens .jpg"
+    for campo in ("origem", "liberado"):
+        if campo in it and not isinstance(it[campo], dict):
+            return f"{campo}: objeto"
     return validar_legenda(it.get("legenda", ""))
 
 
@@ -162,7 +174,8 @@ def agendar(itens: list, agora: float | None = None) -> dict:
                 return {"ok": False, "erro": f"{it.get('id', '?')}: {erro}"}
             novos.append({"id": it["id"], "data": it["data"], "hora": it["hora"], "tipo": it["tipo"],
                           "arquivos": list(it["arquivos"]), "legenda": it["legenda"].strip(), "estado": "pendente",
-                          "criado_em": agora, **{k: it[k] for k in ("capa", "capa_ms") if it.get(k)}})
+                          "criado_em": agora,
+                          **{k: it[k] for k in ("capa", "capa_ms", "origem", "liberado") if it.get(k)}})
         d["itens"].extend(novos)
         _gravar(d)
         for n in novos:
@@ -436,12 +449,135 @@ def preparar(item: dict, api, dormir=time.sleep) -> str:
     return cid
 
 
-def rodar(api, avisar=lambda texto: None, agora: float | None = None, dormir=time.sleep) -> dict | None:
-    """One pass of the job loop: publishes today's post if due. The reservation (pendente → publicando) is saved
-    before talking to Meta, so two passes can never publish the same item."""
+_PADRAO = object()
+
+
+def especialistas():
+    """plugins/especialistas' helper, or None when no copy is installed (then posts go out as before). A copy that
+    exists but does not load raises: the gate treats that as an error and blocks (fail closed)."""
+    caminho = next((p for p in ESPECIALISTAS if p.exists()), None)
+    if caminho is None:
+        return None
+    nome, mtime = "especialistas_conteudo", caminho.stat().st_mtime_ns
+    antigo = sys.modules.get(nome)
+    if antigo is None or getattr(antigo, "_mtime", None) != (str(caminho), mtime):
+        spec = importlib.util.spec_from_file_location(nome, caminho)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        m._mtime = (str(caminho), mtime)
+        sys.modules[nome] = m
+    return sys.modules[nome]
+
+
+def uma_linha(motivos, limite: int = 200) -> str:
+    texto = "; ".join(str(m).strip() for m in (motivos if isinstance(motivos, list) else [motivos]) if str(m).strip())
+    texto = " ".join(texto.split()) or "sem motivo dito"
+    return texto if len(texto) <= limite else texto[:limite - 1] + "…"
+
+
+def material_do_post(item: dict) -> tuple[str, dict]:
+    """(tipo, material) for criticar(): the caption, the format and the local copies of the files when they exist
+    (semana.aprovar() leaves them in cache/<id>/, the same place baixar_post() uses)."""
+    pasta = PASTA / "cache" / item["id"]
+    imagens = [str(pasta / k.rsplit("/", 1)[-1]) for k in list(item.get("arquivos") or []) + ([item["capa"]] if item.get("capa") else [])
+               if k.lower().endswith(JPG) and (pasta / k.rsplit("/", 1)[-1]).exists()]
+    tipo = "carrossel" if item.get("tipo") == "CARROSSEL" else "post"
+    material = {"formato": item.get("tipo"), "legenda": item.get("legenda", ""), "data": item.get("data"),
+                "titulo": (item.get("origem") or {}).get("titulo", ""), "imagens": imagens}
+    return tipo, material
+
+
+def portao(item: dict, critico=_PADRAO) -> dict:
+    """The Crítico's gate before a post goes out: {"publicar": bool, "motivo", "critica"?}. No especialistas plugin:
+    publish as before. Released by Matheus (item["liberado"]): publish without asking again. Anything but a clean
+    "aprova" (reprova, exception, odd answer, plugin that does not load) blocks."""
+    if item.get("liberado"):
+        return {"publicar": True, "motivo": f"liberado por {item['liberado'].get('por', 'Matheus')}"}
+    try:
+        esp = especialistas() if critico is _PADRAO else critico
+    except Exception as exc:
+        return {"publicar": False, "motivo": f"o Crítico não carregou ({type(exc).__name__}: {str(exc)[:120]})"}
+    if esp is None:
+        return {"publicar": True, "motivo": "sem Crítico instalado"}
+    try:
+        r = esp.criticar(*material_do_post(item))
+    except Exception as exc:
+        return {"publicar": False, "motivo": f"o Crítico falhou ({type(exc).__name__}: {str(exc)[:120]})"}
+    veredito = r.get("veredito") if isinstance(r, dict) else None
+    critica = {"veredito": veredito, "motivos": list((r or {}).get("motivos") or [])[:5] if isinstance(r, dict) else []}
+    if veredito == "aprova":
+        return {"publicar": True, "motivo": "o Crítico aprovou", "critica": critica}
+    if veredito == "reprova":
+        return {"publicar": False, "motivo": "o Crítico reprovou: " + uma_linha(critica["motivos"]), "critica": critica}
+    return {"publicar": False, "motivo": f"resposta do Crítico sem veredito claro ({str(r)[:80]})"}
+
+
+def _chamar_aviso(avisar, texto: str, botoes: list | None = None) -> None:
+    """The job loop's notifier takes buttons; the tests' list.append takes the text alone."""
+    if botoes:
+        try:
+            avisar(texto, botoes)
+            return
+        except TypeError:
+            pass
+    avisar(texto)
+
+
+def liberar(item_id: str, motivo: str, quem: str = "matheus") -> dict:
+    """Matheus's override of the Crítico (20/10): a blocked post goes back to pendente, or a pending one is marked to
+    go without the gate. Only on his explicit word (button or a message saying so); who, when and why are kept on the
+    post and in the journal. Nothing is published here: the job loop does it at the post's hour, on its day."""
+    if not str(motivo or "").strip():
+        return {"ok": False, "erro": "diga o motivo (o que o Matheus disse)"}
+    registro = {"por": str(quem)[:80], "em": time.time(), "motivo": str(motivo)[:200]}
+    antes = AUTOR["quem"]
+    AUTOR["quem"] = f"{quem}: liberou {item_id}"
+    try:
+        with _exclusivo():
+            d = carregar()
+            alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
+            if not alvo:
+                return {"ok": False, "erro": f"{item_id}: não existe"}
+            if alvo["estado"] == "bloqueada":
+                registro["bloqueio"] = alvo.get("bloqueio", "")
+                _mudar(alvo, "pendente", liberado=registro)
+            elif alvo["estado"] == "pendente":
+                alvo["liberado"] = registro
+                _diario({"item": item_id, "liberado": registro})
+            else:
+                return {"ok": False, "erro": f"{item_id}: está {alvo['estado']}, nada a liberar"}
+            _gravar(d)
+    finally:
+        AUTOR["quem"] = antes
+    return {"ok": True, "id": item_id, "data": alvo["data"], "hora": alvo["hora"]}
+
+
+def rodar(api, avisar=lambda texto: None, agora: float | None = None, dormir=time.sleep, critico=_PADRAO) -> dict | None:
+    """One pass of the job loop: publishes today's post if due and the Crítico's gate lets it. The reservation
+    (pendente → publicando) is saved before talking to Meta, so two passes can never publish the same item."""
+    previsto = devido(agora)
+    if not previsto:
+        return None
+    gate = portao(previsto, critico)  # outside the lock: it may call a model
+    if not gate["publicar"]:
+        with _exclusivo():
+            d = carregar()
+            alvo = next((i for i in d["itens"] if i["id"] == previsto["id"]), None)
+            if not alvo or alvo["estado"] != "pendente":
+                return None
+            if alvo.get("liberado"):  # released while the Crítico was thinking: next pass publishes it
+                return None
+            _mudar(alvo, "bloqueada", bloqueio=gate["motivo"], **({"critica": gate["critica"]} if gate.get("critica") else {}))
+            _gravar(d)
+        botao = f"cs:{LOGIN}:{previsto['id']}:liberar"
+        _chamar_aviso(avisar, f"pendente: o post de hoje da @raiz.connect ({previsto['id']}) não saiu: {gate['motivo']}. "
+                              f"Ele fica bloqueado na agenda; para publicar mesmo assim, toque no botão ou diga "
+                              f"\"libera o post {previsto['id']}\".",
+                      [{"id": botao, "titulo": "🔓 Publicar mesmo assim"}] if len(botao.encode()) <= 64 else None)
+        return {"id": previsto["id"], "estado": "bloqueada", "motivo": gate["motivo"]}
     with _exclusivo():
         item = devido(agora)
-        if not item:
+        if not item or item["id"] != previsto["id"]:
             return None
         d = carregar()
         alvo = next(i for i in d["itens"] if i["id"] == item["id"])
@@ -453,7 +589,7 @@ def rodar(api, avisar=lambda texto: None, agora: float | None = None, dormir=tim
         publicou_chamado = True
         pub = _ok(api.post(f"{api.ig}/media_publish", {"creation_id": cid}), "publicar")
         link = (api.get(pub["id"], {"fields": "permalink"}) or {}).get("permalink", "")
-        fim, campos = "publicada", {"media_id": pub["id"], "permalink": link}
+        fim, campos = "publicada", {"media_id": pub["id"], "permalink": link, "portao": gate["motivo"]}
     except Exception as exc:
         fim, campos = ("incerta" if publicou_chamado else "falhou"), {"erro": str(exc)[:300]}
     with _exclusivo():

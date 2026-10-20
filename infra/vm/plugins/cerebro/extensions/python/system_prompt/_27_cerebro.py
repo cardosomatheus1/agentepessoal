@@ -23,7 +23,7 @@ def mods():
 
 
 REGRAS = """## Segundo Cérebro
-O Segundo Cérebro do Matheus é a Pasta (/a0/usr/segundo_cerebro/pasta): Contexto/, Decisoes/, Pendencias/, Assuntos/,
+O Segundo Cérebro do Matheus é a Pasta (/a0/usr/segundo_cerebro/pasta): Contexto/, Raiz/, Decisoes/, Pendencias/, Assuntos/,
 Reunioes/, Notas-do-dia/, Projetos/, Documentos/. É a única fonte do que ele decidiu, discute e deixou por fazer.
 - Anotação: depois de cada mensagem dele no celular, a anotação automática registra sozinha Decisões, Pendências e
   Assuntos e manda uma linha "📌 Anotei …". Você não precisa repetir. Se ele corrigir ("era só ideia", "tira isso",
@@ -34,6 +34,8 @@ Reunioes/, Notas-do-dia/, Projetos/, Documentos/. É a única fonte do que ele d
   pendência e decisão tem área (raiz, nexos, orbyte, agente, pessoal, geral).
 - Reunião que ele conta (com quem, o que decidiu, o que ficou para fazer) → `cerebro` acao=reuniao, uma nota por
   reunião em Reunioes/ ligada às decisões e pendências; a da agenda, depois do pós-reunião, já ganha a nota.
+- Raiz (prospecção, posts, oferta, cliente, marca, concorrentes): leia ANTES `cerebro` acao=raiz, o Cérebro da Raiz
+  (Raiz/ na Pasta). A oferta se chama Preço Certo em 30 Dias. O que vier pendente de validação não é fato.
 - Entrevista de contexto: quando ele aceitar ("bora"), faça UMA seção de Contexto por vez (`cerebro` acao=contexto):
   leia o que já existe, pergunte, resuma e só grave depois do ok dele, sem inventar."""
 

@@ -16,7 +16,8 @@ USR = Path("/a0/usr")
 ANTIGOS = {"decisoes": USR / "memoria" / "decisoes" / "matheus.json", "fios": USR / "fios" / "matheus.json",
            "ficha": USR / "memoria" / "usuarios" / "matheus.md"}
 AREAS = (  # first match wins; words of the item's text (accents ignored)
-    ("raiz", ("raiz", "prospec", "instagram", "lead", "ifood", "cardapio", "restaurante", "cmv", "erp", "lucro-na-mao")),
+    ("raiz", ("raiz", "prospec", "instagram", "lead", "ifood", "cardapio", "restaurante", "cmv", "erp", "preco-certo",
+              "lucro-na-mao")),  # the offer's old name (until 20/10) still marks old items
     ("nexos", ("nexos", "ia-business", "revenue-os")),
     ("orbyte", ("orbyte",)),
     ("agente", ("agente", "telegram", "whatsapp", "hermes", "openclaw", "codigo", "deploy", "aws", "vm", "drive",

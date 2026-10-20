@@ -1,7 +1,7 @@
 """Tool `cerebro` (20/10): the agent's hands on the Segundo Cérebro's Pasta, besides `decisao` and `fios`: search it,
 record or move an Assunto, log a meeting he tells about (Reunioes/, linked to its Decisões and Pendências), undo what
-the automatic anotação got wrong, run the context interview (one section at a time, written only after his ok), write
-the nota do dia now, run the audit."""
+the automatic anotação got wrong, run the context interview (one section at a time, written only after his ok), read
+(or, with his ok, rewrite) the Cérebro da Raiz, write the nota do dia now, run the audit."""
 
 import asyncio
 import importlib.util
@@ -145,6 +145,20 @@ def executar(acao: str, login: str, texto: str = "", ref: str = "", titulo: str 
         return (f"Seção {alvo} ({tit}): {oque}.\nFaltam: {', '.join(faltam) or 'nenhuma'}.\nConteúdo atual:\n{atual[:3000]}\n"
                 "Faça as perguntas desta seção uma a uma, leia antes o que já existe (decisões, documentos), resuma e "
                 "grave com acao=contexto secao=… conteudo=… aprovado=<as palavras do ok dele>. Perfil: use a ferramenta ficha.")
+    if acao == "raiz":  # the Cérebro da Raiz: read before anything about Raiz (prospecção, posts, oferta)
+        rz = m.m("raiz")
+        if not (p.RAIZ / rz.PASTA / "mapa.md").exists():
+            rz.estrutura()
+            p.versionar("Cérebro da Raiz: estrutura")
+        nomes = [s.strip() for s in re.split(r"[,;\s]+", str(secao or "")) if s.strip()]
+        if nomes and conteudo:
+            if len(nomes) != 1:
+                raise ValueError("grave um arquivo da Raiz por vez (secao=oferta, marca…)")
+            return f"Gravado em {rz.gravar(nomes[0], conteudo, aprovado)} com o ok dele."
+        texto = rz.contexto(nomes or None, limite=8000 if nomes else 6000)
+        faltam = rz.pendentes()
+        return (texto + (f"\n\nAinda pendente de validação: {', '.join(faltam)} (não afirme o que falta; pergunte a ele)."
+                         if faltam else ""))
     if acao == "nota_do_dia":
         nota = m.m("dia").escrever(p)
         return f"Nota do dia gravada (Notas-do-dia/{nota['data']}.md).\n{nota['resumo']}"
@@ -152,7 +166,8 @@ def executar(acao: str, login: str, texto: str = "", ref: str = "", titulo: str 
         r = m.m("auditoria").gravar(p)
         top = "\n".join(f"- {a['checagem']} · {a['arquivo']}: {a['motivo']} → {a['correcao']}" for a in r["achados"][:12])
         return f"Auditoria: {r['nota']}/100 ({r['arquivo']}).\n{top}"
-    return "acao desconhecida: consultar | assunto | assuntos | reuniao | desfazer | contexto | nota_do_dia | auditoria"
+    return ("acao desconhecida: consultar | assunto | assuntos | reuniao | desfazer | contexto | raiz | nota_do_dia | "
+            "auditoria")
 
 
 class Cerebro(Tool):

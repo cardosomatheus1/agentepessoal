@@ -38,7 +38,8 @@ def _helper():
     return _ATUAL["modulo"]
 
 
-def _avisar(texto: str) -> None:
+def _avisar(texto: str, botoes: list | None = None) -> None:
+    """A "pendente:" notice to Matheus; botoes: e.g. "Publicar mesmo assim" under a post the Crítico blocked."""
     caminho = Path("/a0/usr/plugins/whatsapp/helpers/ponte.py")
     try:
         ponte = sys.modules.get("whatsapp_ponte")
@@ -46,7 +47,7 @@ def _avisar(texto: str) -> None:
             s = importlib.util.spec_from_file_location("whatsapp_ponte", caminho)
             ponte = importlib.util.module_from_spec(s)
             s.loader.exec_module(ponte)
-        erro = ponte.enviar("matheus", texto, tipo="urgente") if ponte else "ponte indisponível"
+        erro = ponte.enviar("matheus", texto, botoes=botoes, tipo="urgente") if ponte else "ponte indisponível"
         if erro:
             print(f"conteudo: aviso não saiu: {erro}", flush=True)
     except Exception as exc:

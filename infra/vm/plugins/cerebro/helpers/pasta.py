@@ -5,6 +5,7 @@ it: decisoes.py, fios.py, ficha.py, assuntos.py, reunioes.py); the site and the 
 Layout (from the Playbook Lab guides "Setup inicial do OS" and "OS Optimizer", with the glossary's words):
   CLAUDE.md            rules and the map of the folders (read first)
   Contexto/            organizacao, marca, estrategia, cliente-ideal, pessoas-chave, perfil (the interview fills them)
+  Raiz/                the Cérebro da Raiz (mapa, oferta, cliente-ideal, marca, concorrentes, playbook): helpers/raiz.py
   Decisoes/ Pendencias/ Assuntos/   one file per item; frontmatter = the data, body = the readable note
   Reunioes/ Notas-do-dia/ Projetos/ Documentos/
   Arquivo-morto/       what left (undone, replaced files, the old stores): kept, never deleted
@@ -25,8 +26,8 @@ RAIZ = Path("/a0/usr/segundo_cerebro/pasta")
 DONO = "matheus"
 FUSO = "America/Bahia"
 COLECOES = {"decisoes": "Decisoes", "pendencias": "Pendencias", "assuntos": "Assuntos"}
-PASTAS = ("Contexto", "Decisoes", "Pendencias", "Assuntos", "Reunioes", "Notas-do-dia", "Projetos", "Documentos",
-          "Arquivo-morto")
+PASTAS = ("Contexto", "Raiz", "Decisoes", "Pendencias", "Assuntos", "Reunioes", "Notas-do-dia", "Projetos", "Documentos",
+          "Arquivo-morto")  # Raiz/: the Cérebro da Raiz, its files written by helpers/raiz.py
 CONTEXTO = {  # file -> (title, what goes in it), the guide's six context files
     "organizacao.md": ("Organização", "o que são os negócios (Raiz, NEXOS, Orbyte…), o que vendem, como operam, ferramentas"),
     "marca.md": ("Marca e voz", "como cada marca fala, posicionamento, o que nunca dizer"),
@@ -271,6 +272,7 @@ Leia isto antes de usar a Pasta. Ela é a única fonte: o que não está aqui n�
 
 ## Regras
 1. Leia `Contexto/` antes de trabalhar em qualquer coisa de negócio; `perfil.md` diz como trabalhar com o Matheus.
+   Coisa da Raiz (prospecção, posts, oferta): leia antes `Raiz/` (o Cérebro da Raiz), começando por `mapa.md`.
 2. Nunca invente: o que falta fica marcado [PENDENTE DE VALIDAÇÃO] até ele confirmar.
 3. Quem escreve é o agente, pelas ferramentas (decisao, fios, cerebro, ficha); ninguém edita estes arquivos à mão.
 4. Decisão = escolha feita que vale daqui para a frente. Pendência = o que falta ele fazer. Assunto = tema em discussão,
@@ -281,6 +283,7 @@ Leia isto antes de usar a Pasta. Ela é a única fonte: o que não está aqui n�
 | Pasta | O que tem |
 |---|---|
 | Contexto/ | organização, marca, estratégia, cliente ideal, pessoas-chave, perfil |
+| Raiz/ | Cérebro da Raiz: mapa, oferta, cliente ideal, marca, concorrentes, playbook (leia `mapa.md`) |
 | Decisoes/ | uma decisão por arquivo, com a citação dele e o que substituiu |
 | Pendencias/ | o que falta fazer, com prazo e de onde veio |
 | Assuntos/ | temas em andamento e onde pararam |

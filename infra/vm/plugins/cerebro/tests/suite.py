@@ -555,11 +555,186 @@ class Suite:
 
     def t_prompt_e_indice(self):
         ext = (RAIZ / "extensions" / "python" / "system_prompt" / "_27_cerebro.py").read_text(encoding="utf-8")
-        for termo in ("anotação automática", "Pendência = o que ELE precisa fazer", "acao=desfazer", "UMA seção"):
+        for termo in ("anotação automática", "Pendência = o que ELE precisa fazer", "acao=desfazer", "UMA seção",
+                      "leia ANTES `cerebro` acao=raiz", "Preço Certo em 30 Dias"):
             ok(termo in ext, f"regras citam {termo!r}")
+        ok("acao: raiz" in (RAIZ / "prompts" / "agent.system.tool.cerebro.md").read_text(encoding="utf-8"),
+           "a ferramenta documenta acao raiz")
         indice = PLUGINS / "prompt_enxuto" / "helpers" / "indice.py"
         if indice.exists():
-            ok('"cerebro":' in indice.read_text(encoding="utf-8"), "ferramenta no índice curto")
+            texto = indice.read_text(encoding="utf-8")
+            ok('"cerebro":' in texto and "raiz (Cérebro da Raiz" in texto, "ferramenta (com acao raiz) no índice curto")
+
+    # ------------------------------------------------------------ Cérebro da Raiz (Raiz/)
+    def _raiz(self):
+        rz = self.mods.m("raiz")
+        rz._concorrentes().PASTA = self.tmp / "concorrentes"  # no lista.json: the plugin's starting list
+        return rz
+
+    def t_raiz_estrutura_nunca_sobrescreve(self):
+        self.preparar()
+        try:
+            p, rz = self.p, self._raiz()
+            ok("| Raiz/ |" in p.CLAUDE_MD and "Raiz" in p.PASTAS, "Raiz/ na estrutura e no mapa do CLAUDE.md novo")
+            # a Pasta made before Raiz/ existed: its CLAUDE.md has no Raiz/ line
+            claude = p.RAIZ / "CLAUDE.md"
+            antigo = "\n".join(l for l in claude.read_text().splitlines() if "Raiz/" not in l) + "\n"
+            claude.write_text(antigo)
+            criados = rz.estrutura()
+            for nome in rz.ARQUIVOS:
+                ok((p.RAIZ / "Raiz" / nome).exists(), f"Raiz/{nome} criado")
+            ok("Raiz/oferta.md" in criados and any("CLAUDE.md" in c for c in criados), f"lista o que criou: {criados}")
+            texto = claude.read_text()
+            eq(texto.count("| Raiz/ |"), 1, "linha Raiz/ entra no mapa")
+            ok(texto.replace(rz.LINHA_MAPA + "\n", "") == antigo, "o resto do CLAUDE.md fica igual")
+            eq(sorted(rz.pendentes()), sorted(n for n in rz.ARQUIVOS if n != "mapa.md"), "só o mapa nasce pronto")
+            ok("Preço Certo em 30 Dias" in rz.ler("mapa") and "Lucro na Mão" not in rz.ler("mapa"), "mapa com o nome da oferta")
+            (p.RAIZ / "Raiz" / "marca.md").write_text("conteúdo dele")
+            eq(rz.estrutura(), [], "segunda vez não cria nada")
+            eq((p.RAIZ / "Raiz" / "marca.md").read_text(), "conteúdo dele", "estrutura nunca sobrescreve")
+            eq(claude.read_text().count("| Raiz/ |"), 1, "a linha não repete")
+            try:
+                rz.ler("segredos")
+                raise Falha("leu arquivo fora da lista")
+            except ValueError:
+                pass
+        finally:
+            self.limpar()
+
+    def t_raiz_semear_uma_vez(self):
+        self.preparar()
+        try:
+            p, rz = self.p, self._raiz()
+            try:
+                rz.semear("")
+                raise Falha("semeou sem dizer quem")
+            except ValueError:
+                pass
+            r = rz.semear("operador: teste", marca_visual="Logo, Manrope + Instrument Serif, cores night e creme.")
+            eq(sorted(r["semeados"]), sorted(n for n in rz.ARQUIVOS if n != "mapa.md"), f"semeou os cinco: {r}")
+            eq(r["pendentes"], ["marca.md"], "só o posicionamento da marca fica para a entrevista")
+            oferta = rz.ler("oferta")
+            for termo in ("Preço Certo em 30 Dias", "R$ 197", "Garantia", "5 implementações por semana",
+                          "pendente: Preço Certo: <nome>", "plugins/prospeccao/playbook.md"):
+                ok(termo in oferta, f"oferta tem {termo!r}")
+            ok("Lucro na Mão" not in oferta, "sem o nome antigo")
+            pb = (RAIZ.parent / "prospeccao" / "playbook.md").read_text(encoding="utf-8")
+            ok(rz._secoes(pb)["2"][1] in oferta, "a seção da oferta vai inteira, igual ao playbook")
+            ok("produz alimento" in rz.ler("cliente-ideal"), "cliente ideal do playbook")
+            resumo = rz.ler("playbook")
+            ok("plugins/prospeccao/playbook.md" in resumo and "2. Oferta e links" in resumo and len(resumo) < 3000,
+               f"playbook: resumo curto e o caminho do inteiro ({len(resumo)})")
+            conc = rz.ler("concorrentes")
+            ok("ChefPro" in conc and "Saipos" in conc and "SEMENTE" in conc, "concorrentes da lista do plugin")
+            marca = rz.ler("marca")
+            ok("Manrope" in marca and "Dono falando com dono" in marca and p.PENDENTE in marca, "marca: visual, voz, pendente")
+            cab = (p.RAIZ / "Raiz" / "oferta.md").read_text().split("\n---\n", 1)[0]
+            ok('status: "semeado"' in cab and 'por: "operador: teste"' in cab, f"cabeçalho diz de onde veio: {cab}")
+            antes = (p.RAIZ / "Raiz" / "oferta.md").read_text()
+            try:
+                rz.semear("operador: de novo")
+                raise Falha("semeou duas vezes")
+            except RuntimeError:
+                pass
+            eq((p.RAIZ / "Raiz" / "oferta.md").read_text(), antes, "a segunda tentativa não mexe em nada")
+        finally:
+            self.limpar()
+        self.preparar()
+        try:
+            rz = self._raiz()
+            rz.gravar("oferta", "A oferta que ele mesmo ditou, com as palavras dele.", "ok, pode gravar")
+            r = rz.semear("operador: teste", playbook="")
+            ok("oferta.md" not in r["semeados"] and "A oferta que ele mesmo ditou" in rz.ler("oferta"),
+               "o que ele aprovou não é trocado pelo semeado")
+            ok({"cliente-ideal.md", "playbook.md", "marca.md"} <= set(r["pendentes"]), f"sem playbook: pendentes {r}")
+            ok("concorrentes.md" in r["semeados"], "a lista de concorrentes vem mesmo sem playbook")
+        finally:
+            self.limpar()
+
+    def t_raiz_gravar_so_com_o_ok(self):
+        self.preparar()
+        try:
+            import subprocess
+            p, rz = self.p, self._raiz()
+            for nome, aprovado in (("marca", ""), ("marca", "   "), ("inventado", "ok")):
+                try:
+                    rz.gravar(nome, "Conteúdo longo o bastante para gravar aqui.", aprovado)
+                    raise Falha(f"gravou {nome} com aprovado={aprovado!r}")
+                except ValueError:
+                    pass
+            ok(not (p.RAIZ / "Raiz" / "marca.md").exists() or p.PENDENTE in (p.RAIZ / "Raiz" / "marca.md").read_text(),
+               "nada gravado sem o ok")
+            eq(rz.gravar("marca.md", "A Raiz fala como dono falando com dono.", "pode gravar assim"), "Raiz/marca.md", "grava")
+            texto = (p.RAIZ / "Raiz" / "marca.md").read_text()
+            ok('status: "validado"' in texto and 'aprovado: "pode gravar assim"' in texto and "# Marca" in texto, texto)
+            ok("marca.md" not in rz.pendentes(), "validado sai das pendentes")
+            log = subprocess.run(["git", "-C", str(p.RAIZ), "log", "--oneline"], capture_output=True, text=True).stdout
+            ok("raiz: Raiz/marca.md" in log, f"versionado: {log}")
+        finally:
+            self.limpar()
+
+    def t_raiz_contexto_respeita_limite(self):
+        self.preparar()
+        try:
+            rz = self._raiz()
+            rz.semear("operador: teste", marca_visual="Logo, Manrope + Instrument Serif.")
+            inteiro = rz.contexto(limite=10 ** 6)
+            ok(all(f"### Raiz/{n}" in inteiro for n in rz.ARQUIVOS), "todos os arquivos, com o nome")
+            ok("---\n" not in inteiro[:4] and 'status: "' not in inteiro, "sem cabeçalho")
+            for limite in (200, 500, 1500, 6000):
+                t = rz.contexto(limite=limite)
+                ok(len(t) <= limite, f"limite {limite}: veio {len(t)}")
+                ok(all(f"### Raiz/{n}" in t for n in rz.ORDEM_CONTEXTO) or limite < 1000, f"todos aparecem em {limite}")
+            t = rz.contexto(limite=1500)
+            ok("cortado; o inteiro em Raiz/" in t, "o cortado diz onde está o inteiro")
+            so = rz.contexto(["oferta"], limite=6000)
+            ok(so.startswith("### Raiz/oferta.md") and "### Raiz/marca.md" not in so, "só o pedido")
+            eq(rz.contexto(["oferta.md", "marca"], limite=10 ** 6),
+               rz.contexto(["oferta", "marca.md"], limite=10 ** 6), "com ou sem .md")
+        finally:
+            self.limpar()
+
+    def t_raiz_ferramenta(self):
+        self.preparar()
+        try:
+            ferr, p = self._ferramenta(), self.p
+            self._raiz()
+            r = ferr.executar("raiz", "matheus")
+            ok((p.RAIZ / "Raiz" / "mapa.md").exists() and "### Raiz/mapa.md" in r, "cria o que falta e devolve o contexto")
+            ok("Ainda pendente de validação: oferta.md" in r, f"diz o que falta: {r[-200:]}")
+            self.mods.m("raiz").semear("operador: teste")
+            r = ferr.executar("raiz", "matheus", secao="oferta")
+            ok(r.startswith("### Raiz/oferta.md") and "Preço Certo em 30 Dias" in r and "### Raiz/marca.md" not in r, r[:200])
+            r = ferr.executar("raiz", "matheus", secao="oferta, cliente-ideal")
+            ok("### Raiz/oferta.md" in r and "### Raiz/cliente-ideal.md" in r, "duas seções")
+            try:
+                ferr.executar("raiz", "matheus", secao="marca", conteudo="Posicionamento novo da Raiz, longo.", aprovado="")
+                raise Falha("gravou sem o ok pela ferramenta")
+            except ValueError:
+                pass
+            msg = ferr.executar("raiz", "matheus", secao="marca", conteudo="Posicionamento novo da Raiz, longo.",
+                                aprovado="isso, grava")
+            eq(msg, "Gravado em Raiz/marca.md com o ok dele.", "grava pela ferramenta")
+            ok("só do Matheus" in ferr.executar("raiz", "ilia"), "convidado não lê o Cérebro da Raiz")
+        finally:
+            self.limpar()
+
+    def t_raiz_auditoria_limpa(self):
+        self.preparar()
+        try:
+            p, rz = self.p, self._raiz()
+            claude = p.RAIZ / "CLAUDE.md"  # the live Pasta was made before Raiz/
+            claude.write_text("\n".join(l for l in claude.read_text().splitlines() if "Raiz/" not in l) + "\n")
+            antes = self.mods.m("auditoria").rodar(p)
+            ok(any(a["checagem"] == "mapa" and "Raiz/" in a["motivo"] for a in antes["achados"]),
+               "sem a linha, a auditoria acha o Raiz/ fora do mapa")
+            rz.semear("operador: teste", marca_visual="Logo, Manrope + Instrument Serif.")
+            r = self.mods.m("auditoria").rodar(p)
+            ruins = [a for a in r["achados"] if a["checagem"] == "mapa" or a["arquivo"].startswith("Raiz")]
+            eq(ruins, [], "mapa, índice, links, cabeçalhos e tamanhos do Raiz/ limpos")
+            eq(r["descontos"]["mapa"], 0, "checagem mapa passa")
+        finally:
+            self.limpar()
 
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):

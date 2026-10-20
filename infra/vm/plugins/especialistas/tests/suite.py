@@ -1,0 +1,407 @@
+"""Tests of the Especialistas (Crítico and Designer) with the model call mocked: no network, no Agent Zero, no render
+engine. Run with implantar.py (staging copy) or anywhere: python3 tests/suite.py"""
+
+import asyncio
+import importlib.util
+import json
+import struct
+import sys
+import tempfile
+import traceback
+import types
+import zlib
+from pathlib import Path
+
+RAIZ = Path(__file__).resolve().parents[1]
+
+
+class Falha(AssertionError):
+    pass
+
+
+def eq(a, b, msg):
+    if a != b:
+        raise Falha(f"{msg}: esperado {b!r}, veio {a!r}")
+
+
+def ok(cond, msg):
+    if not cond:
+        raise Falha(msg)
+
+
+_n = [0]
+
+
+def _carregar(nome: str, arquivo: Path, stubs: dict | None = None):
+    antes = {k: sys.modules.get(k) for k in (stubs or {})}
+    sys.modules.update(stubs or {})
+    try:
+        _n[0] += 1
+        spec = importlib.util.spec_from_file_location(f"{nome}_{_n[0]}", arquivo)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m
+    finally:
+        for k, v in antes.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+
+
+def _png(caminho: Path):
+    """A valid 1x1 PNG without PIL."""
+    def bloco(tipo, dados):
+        return struct.pack(">I", len(dados)) + tipo + dados + struct.pack(">I", zlib.crc32(tipo + dados) & 0xFFFFFFFF)
+    caminho.write_bytes(b"\x89PNG\r\n\x1a\n" + bloco(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
+                        + bloco(b"IDAT", zlib.compress(b"\x00\xff\x00\x00")) + bloco(b"IEND", b""))
+
+
+def _resposta(texto: str) -> dict:
+    return {"output": [{"type": "message", "content": [{"type": "output_text", "text": texto}]}]}
+
+
+APROVA = json.dumps({"veredito": "aprova", "motivos": [], "sugestoes": ["nada"]})
+
+
+class Suite:
+    def __init__(self):
+        self.resultados = []
+        self.tmp = Path(tempfile.mkdtemp(prefix="teste_especialistas_"))
+
+    def _e(self, com_raiz: str | None = None, criterios: dict | None = None, reels: Path | None = None):
+        """A fresh helper with a fake plugins folder (cerebro/helpers/raiz.py only when com_raiz) and calibracao."""
+        m = _carregar("especialistas_teste", RAIZ / "helpers" / "especialistas.py")
+        base = Path(tempfile.mkdtemp(dir=self.tmp))
+        (base / "plugins" / "cerebro" / "helpers").mkdir(parents=True)
+        if com_raiz is not None:
+            (base / "plugins" / "cerebro" / "helpers" / "raiz.py").write_text(
+                f"def contexto(nomes=None, limite=6000):\n    return {com_raiz!r}[:limite]\n", encoding="utf-8")
+        m.PLUGINS = base / "plugins"
+        for agente, texto in (criterios or {}).items():
+            (base / "calibracao" / agente).mkdir(parents=True)
+            (base / "calibracao" / agente / "criterios.md").write_text(texto, encoding="utf-8")
+        m.pasta_calibracao = lambda: (base / "calibracao") if criterios else None
+        m.pasta_reels = lambda: reels
+        return m
+
+    # --- the roles
+
+    def t_souls_tem_personalidade_regras_e_o_que_nao_faz(self):
+        m = self._e()
+        eq(sorted(m.PAPEIS), ["critico", "designer"], "os dois papéis")
+        for papel, soul in m.PAPEIS.items():
+            ok("O que você faz:" in soul, f"{papel}: seção do que faz")
+            ok("O que você não faz:" in soul, f"{papel}: seção do que não faz")
+            nao_faz = soul.split("O que você não faz:")[1].split("\n\n")[0]
+            ok(nao_faz.count("\n- ") >= 3, f"{papel}: pelo menos 3 coisas que não faz")
+            ok("Não fala com o Matheus" in soul or "não fala com o Matheus" in soul, f"{papel}: não fala com o Matheus")
+        c = m.PAPEIS["critico"]
+        for termo in ("veredito", "motivos", "sugestoes", "genérico", "Cérebro da Raiz", "AR Board", "decisão é cara"):
+            ok(termo in c, f"crítico cita {termo!r}")
+        ok("moldes do repositório para a Raiz" in m.PAPEIS["designer"], "designer sabe que molde não vale para a Raiz")
+
+    # --- strict parsing, fail closed
+
+    def t_critica_so_vale_json_limpo(self):
+        m = self._e()
+        i = m.interpretar_critica
+        eq(i(APROVA), {"veredito": "aprova", "motivos": [], "sugestoes": ["nada"]}, "aprova limpo")
+        eq(i('Aqui: {"veredito": "Reprova ", "motivos": "manchete genérica"}')["motivos"], ["manchete genérica"],
+           "JSON no meio do texto, motivo único em texto")
+        eq(i('{"veredito": "reprova", "motivos": []}')["motivos"], ["reprovado sem motivo dado"], "reprova sem motivo")
+        ilegivel = {"veredito": "reprova", "motivos": ["resposta ilegível"], "sugestoes": []}
+        for ruim in ("", "Aprovo sim!", "{nao é json}", '["aprova"]', '{"veredito": "talvez"}',
+                     '{"veredito": "aprova", "motivos": 3}', '{"veredito": "aprova", "sugestoes": [1, 2]}',
+                     '{"veredito": true}', None):
+            eq(i(ruim), ilegivel, f"ilegível: {ruim!r}")
+
+    def t_chamar_monta_um_pedido_com_soul_texto_e_imagem(self):
+        m = self._e()
+        img = self.tmp / "slide1.png"
+        _png(img)
+        enviados = []
+        m._enviar = lambda body, login: enviados.append((body, login)) or _resposta("oi")
+        r = m.chamar("critico", "Julgue.", {"legenda": "Lucro na mão",
+                                            "imagens": [str(img), "/nao/existe/slide2.png"]}, login="teste_ana")
+        eq(len(enviados), 1, "uma chamada só")
+        body, login = enviados[0]
+        eq(login, "teste_ana", "o dono vai no cabeçalho")
+        eq(body["model"], "openai.gpt-6-luna", "modelo")
+        eq(body["instructions"], m.PAPEIS["critico"], "o SOUL vai como instruções")
+        conteudo = body["input"][0]["content"]
+        ok("Julgue." in conteudo[0]["text"] and "Lucro na mão" in conteudo[0]["text"], "tarefa e material no texto")
+        ok("slide2.png" in conteudo[0]["text"], "avisa a imagem que não viu")
+        eq([c["type"] for c in conteudo], ["input_text", "input_image"], "a imagem vai como input_image")
+        ok(conteudo[1]["image_url"].startswith("data:image/"), "imagem em data URL")
+        eq((r["texto"], r["erro"], r["imagens"]), ("oi", "", [str(img)]), "resultado")
+        eq(m.chamar("bruxo", "x", "y")["erro"], "papel desconhecido: bruxo", "papel inventado")
+
+    def t_rede_fora_reprova(self):
+        m = self._e(com_raiz="Raiz")
+
+        def cai(body, login):
+            raise OSError("sem rede")
+        m._enviar = cai
+        r = m.chamar("critico", "x", "y")
+        ok(r["erro"].startswith("OSError") and r["texto"] == "", "chamar não levanta")
+        c = m.criticar("post", "Calculadora grátis na bio")
+        eq(c["veredito"], "reprova", "sem resposta, reprova")
+        ok("não respondeu" in c["motivos"][0], c["motivos"])
+
+    # --- what the Crítico reads
+
+    def t_criticar_usa_o_cerebro_da_raiz_e_os_criterios(self):
+        m = self._e(com_raiz="OFERTA: Preço Certo em 30 Dias", criterios={"conteudo": "Regra 7: sem promessa.",
+                                                                            "prospeccao": "Regra P: curto."})
+        tarefas = []
+        m.chamar = lambda papel, tarefa, material, login="matheus": tarefas.append((papel, tarefa, material)) or \
+            {"texto": APROVA, "erro": "", "imagens": [], "sem_imagem": []}
+        c = m.criticar("post", "Acerte o preço do cardápio em 30 dias. Calculadora grátis na bio.")
+        eq(c["veredito"], "aprova", "aprovado")
+        eq(c["avisos"], [], "nada faltou")
+        papel, tarefa, _ = tarefas[0]
+        eq(papel, "critico", "papel")
+        ok("Preço Certo em 30 Dias" in tarefa, "contexto da Raiz na tarefa")
+        ok("Regra 7" in tarefa and "Regra P" not in tarefa, "só os critérios do tipo (post = conteúdo)")
+        m.criticar("mensagem", "Oi, tudo bem?")
+        ok("Regra P" in tarefas[1][1] and "Regra 7" not in tarefas[1][1], "mensagem usa os critérios da prospecção")
+
+    def t_criticar_funciona_sem_cerebro_e_sem_criterios(self):
+        m = self._e()
+        tarefas = []
+        m.chamar = lambda papel, tarefa, material, login="matheus": tarefas.append(tarefa) or \
+            {"texto": APROVA, "erro": "", "imagens": [], "sem_imagem": []}
+        c = m.criticar("landing", "Acerte o preço do cardápio.")
+        eq(c["veredito"], "aprova", "ainda julga")
+        ok(any("Cérebro da Raiz indisponível" in a for a in c["avisos"]), c["avisos"])
+        ok(any("sem critérios" in a for a in c["avisos"]), c["avisos"])
+        ok("indisponível" in tarefas[0], "o modelo sabe que faltou contexto")
+        # a raiz.py that breaks is also tolerated
+        q = self._e(com_raiz="x")
+        (q.PLUGINS / "cerebro" / "helpers" / "raiz.py").write_text("def contexto(**k):\n    raise RuntimeError('quebrou')\n")
+        texto, nota = q.contexto_raiz()
+        eq(texto, "", "sem texto")
+        ok("RuntimeError" in nota, nota)
+
+    def t_regras_fixas_reprovam_mesmo_com_o_modelo_aprovando(self):
+        m = self._e(com_raiz="Raiz")
+        chamadas = []
+        m.chamar = lambda *a, **k: chamadas.append(a) or {"texto": APROVA, "erro": "", "imagens": [], "sem_imagem": []}
+        eq(m.criticar("post", "Seu lucro vai subir \U0001F680")["veredito"], "reprova", "emoji")
+        eq(m.criticar("mensagem", "Oi — tudo bem?")["veredito"], "reprova", "travessão")
+        c = m.criticar("carrossel", {"slides": ["Custo do prato: R$ 12,40"]})
+        eq(c["veredito"], "reprova", "R$ sem valores de exemplo")
+        ok('valores de exemplo' in c["motivos"][0], c["motivos"])
+        eq(m.criticar("carrossel", {"slides": ["Custo do prato: R$ 12,40", "valores de exemplo"]})["veredito"],
+           "aprova", "com valores de exemplo passa")
+        eq(m.criticar("oferta", "Programa por R$ 197/mês")["veredito"], "aprova", "oferta com preço real passa")
+
+    def t_tipo_ou_material_ruim_reprova_sem_chamar(self):
+        m = self._e()
+        chamadas = []
+        m.chamar = lambda *a, **k: chamadas.append(a) or {"texto": APROVA, "erro": "", "imagens": [], "sem_imagem": []}
+        eq(m.criticar("tweet", "x")["veredito"], "reprova", "tipo desconhecido")
+        eq(m.criticar("post", "   ")["veredito"], "reprova", "vazio")
+        eq(chamadas, [], "nada chamado")
+
+    # --- the Designer
+
+    def _designer(self, m, ficha_texto: str, critica: str = APROVA):
+        chamadas = []
+
+        def chamar(papel, tarefa, material, login="matheus"):
+            chamadas.append((papel, tarefa, material))
+            return {"texto": ficha_texto if papel == "designer" else critica, "erro": "", "imagens": [], "sem_imagem": []}
+        m.chamar = chamar
+        return chamadas
+
+    def t_designer_entrega_ficha_do_kit_e_sempre_a_critica(self):
+        m = self._e(com_raiz="Marca: night, creme, lima")
+        spec = {"marca": "raiz", "motor": "carrossel_raiz", "formato": "carrossel", "pasta": "c_prato",
+                "conceito": "recibo", "slides": [{"manchete": "Seu prato campeão paga a conta?", "destaque": "conta"},
+                                                 {"manchete": "Custo R$ 12,40 (valores de exemplo)", "destaque": "custo"}],
+                "legenda": "Calculadora grátis na bio"}
+        chamadas = self._designer(m, json.dumps(spec))
+        d = m.desenhar("Carrossel sobre prato mais vendido no prejuízo")
+        for chave in ("spec", "arquivos", "critica"):
+            ok(chave in d, f"chave {chave}")
+        eq(d["spec"]["motor"], "carrossel_raiz", "ficha do kit")
+        eq(d["arquivos"], [], "carrossel da Raiz não renderiza no plugin")
+        ok("base/carrossel.py c_prato" in d["render"], d["render"])
+        ok(any("HTML próprio" in f for f in d["falta"]), d["falta"])
+        eq([c[0] for c in chamadas], ["designer", "critico"], "o designer e depois o crítico")
+        ok("Marca: night" in chamadas[0][1], "o designer lê o Cérebro da Raiz")
+        ok("c_prato" in json.dumps(chamadas[1][2], ensure_ascii=False), "o crítico vê a ficha")
+        eq(d["critica"]["veredito"], "aprova", "crítica anexada")
+
+    def t_designer_ilegivel_ou_fora_do_ar_reprova(self):
+        m = self._e()
+        self._designer(m, "não sei fazer isso")
+        d = m.desenhar("Um carrossel")
+        eq(d["spec"], {}, "sem ficha")
+        eq(d["critica"]["veredito"], "reprova", "nada para aprovar: reprova mesmo com o crítico aprovando")
+        ok("o designer não devolveu uma ficha legível" in d["falta"], d["falta"])
+        q = self._e()
+        q._enviar = lambda body, login: (_ for _ in ()).throw(OSError("fora"))
+        d = q.desenhar("Um carrossel")
+        eq(d["critica"]["veredito"], "reprova", "fora do ar")
+        ok(any("não respondeu" in f for f in d["falta"]), d["falta"])
+        eq(q.desenhar("  ")["critica"]["veredito"], "reprova", "briefing vazio")
+
+    def t_designer_confere_a_ficha(self):
+        m = self._e()
+        longa = " ".join(["palavra"] * 13)
+        self._designer(m, json.dumps({"marca": "raiz", "motor": "carrossel_raiz", "formato": "carrossel",
+                                      "slides": [{"manchete": longa}]}))
+        d = m.desenhar("x")
+        ok("carrossel precisa de 2 a 10 slides" in d["falta"], d["falta"])
+        self._designer(m, json.dumps({"marca": "raiz", "motor": "carrossel_raiz", "slides": [{"manchete": longa},
+                                                                                           {"manchete": "ok"}]}))
+        ok(any("13 palavras" in f for f in m.desenhar("x")["falta"]), "manchete longa")
+        self._designer(m, json.dumps({"marca": "raiz", "motor": "molde", "molde": "frases", "ficha": {}}))
+        d = m.desenhar("x")
+        ok(any("não vale para a Raiz" in f for f in d["falta"]) and d["arquivos"] == [], d["falta"])
+        self._designer(m, json.dumps({"motor": "photoshop"}))
+        ok(any("motor desconhecido" in f for f in m.desenhar("x")["falta"]), "motor inventado")
+
+    def _reels(self) -> Path:
+        reels = Path(tempfile.mkdtemp(dir=self.tmp))
+        (reels / "moldes" / "frases").mkdir(parents=True)
+        (reels / "moldes" / "motor").mkdir(parents=True)
+        (reels / "moldes" / "frases" / "esquema.json").write_text(json.dumps(
+            {"formatos": ["carrossel"], "campos": {"pergunta": {"tipo": "texto", "max": 20}}}))
+        (reels / "moldes" / "motor" / "validar.py").write_text(
+            "def validar(esquema, ficha):\n    return [f'{k}: longo' for k, v in ficha.items()\n"
+            "            if k in esquema['campos'] and len(v) > esquema['campos'][k]['max']]\n")
+        (reels / "moldes" / "motor" / "render.py").write_text("")
+        (reels / "moldes" / "catalogo.json").write_text(json.dumps(
+            {"moldes": [{"id": "frases", "formatos": ["carrossel"], "situacao": "Frases", "ficha": {"pergunta": "até 20"}}]}))
+        return reels
+
+    def t_designer_renderiza_molde_de_outra_marca_e_mostra_ao_critico(self):
+        reels = self._reels()
+        m = self._e(reels=reels)
+        img = self.tmp / "slide_molde.png"
+        _png(img)
+        m._pode_renderizar = lambda: ""
+        renders = []
+        m.renderizar_molde = lambda molde, formato, ficha: renders.append((molde, formato, ficha)) or \
+            ([str(img), str(self.tmp / "video.mp4")], "")
+        chamadas = self._designer(m, json.dumps({"marca": "doces-da-lu", "motor": "molde", "molde": "frases",
+                                                 "formato": "carrossel", "ficha": {"pergunta": "O que mais ouve?"}}))
+        d = m.desenhar("Carrossel de frases para a Doces da Lu")
+        eq(renders, [("frases", "carrossel", {"pergunta": "O que mais ouve?"})], "renderizou com a ficha")
+        eq(d["arquivos"], [str(img), str(self.tmp / "video.mp4")], "arquivos devolvidos")
+        eq(chamadas[1][2]["imagens"], [str(img)], "o crítico recebe as imagens renderizadas")
+        ok("frases" in chamadas[0][1] and "Catálogo de moldes" in chamadas[0][1], "o designer vê o catálogo")
+        # a ficha the molde's validator refuses is not rendered
+        self._designer(m, json.dumps({"marca": "doces-da-lu", "motor": "molde", "molde": "frases",
+                                      "ficha": {"pergunta": "x" * 30}}))
+        d = m.desenhar("x")
+        ok("ficha: pergunta: longo" in d["falta"] and len(renders) == 1, d["falta"])
+        # without the engine here: the spec plus what is missing
+        sem = self._e(reels=None)
+        self._designer(sem, json.dumps({"marca": "doces-da-lu", "motor": "molde", "molde": "frases", "ficha": {}}))
+        ok(any("não existe no motor" in f for f in sem.desenhar("x")["falta"]), "sem motor")
+
+    def t_renderizar_molde_chama_o_motor(self):
+        import os
+        reels = self._reels()
+        m = self._e(reels=reels)
+        saida = Path(tempfile.mkdtemp(dir=self.tmp))
+        os.environ["ESPECIALISTAS_SAIDA"] = str(saida)
+        cmds = []
+
+        def run(cmd, **kw):
+            cmds.append(cmd)
+            destino = Path(cmd[cmd.index("--saida") + 1])
+            (destino / "slide1.jpg").write_bytes(b"x")
+            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+        m.subprocess = types.SimpleNamespace(run=run)
+        try:
+            arquivos, problema = m.renderizar_molde("frases", "carrossel", {"pergunta": "Oi"})
+        finally:
+            os.environ.pop("ESPECIALISTAS_SAIDA", None)
+        eq(problema, "", "sem problema")
+        ok(len(arquivos) == 1 and arquivos[0].endswith("slide1.jpg"), arquivos)
+        ok(cmds[0][1].endswith("moldes/motor/render.py") and cmds[0][2] == "frases", cmds[0])
+        ficha = Path(cmds[0][3])
+        eq(json.loads(ficha.read_text()), {"pergunta": "Oi"}, "a ficha vai em arquivo")
+        m.subprocess = types.SimpleNamespace(run=lambda cmd, **kw: types.SimpleNamespace(returncode=2, stdout="",
+                                                                                         stderr="prazo vencido"))
+        arquivos, problema = m.renderizar_molde("frases", "carrossel", {})
+        ok(arquivos == [] and "recusou a ficha" in problema and "prazo vencido" in problema, problema)
+
+    # --- the tool
+
+    def _ferramenta(self):
+        stubs = {"helpers": types.ModuleType("helpers"), "helpers.tool": types.ModuleType("helpers.tool")}
+        stubs["helpers.tool"].Tool = type("Tool", (), {"__init__": lambda s: None})
+        stubs["helpers.tool"].Response = type("Response", (), {"__init__": lambda s, **kw: s.__dict__.update(kw)})
+        return _carregar("especialistas_ferramenta_teste", RAIZ / "tools" / "especialista.py", stubs)
+
+    async def t_ferramenta_liga_acao_ao_papel(self):
+        f = self._ferramenta()
+        feitos = []
+        falso = types.SimpleNamespace(
+            criticar=lambda tipo, material, login="matheus": feitos.append(("criticar", tipo, material)) or
+            {"veredito": "reprova", "motivos": ["manchete genérica"], "sugestoes": ["diga o número"],
+             "avisos": ["sem critérios do AR Board para landing"]},
+            desenhar=lambda briefing, login="matheus": feitos.append(("desenhar", briefing)) or
+            {"spec": {"motor": "carrossel_raiz"}, "arquivos": [], "falta": ["render no repositório"], "render": "cmd",
+             "critica": {"veredito": "aprova", "motivos": [], "sugestoes": []}})
+        f.esp = lambda: falso
+        e = f.Especialista()
+        r = await e.execute(acao="criticar", tipo="landing", material='{"titulo": "Preço certo", "imagens": []}')
+        eq(feitos[0], ("criticar", "landing", {"titulo": "Preço certo", "imagens": []}), "JSON vira dict")
+        ok(r.message.startswith("REPROVADO") and "manchete genérica" in r.message and "diga o número" in r.message,
+           r.message)
+        ok("Julgado sem" in r.message, "avisa o que faltou")
+        r = await e.execute(acao="desenhar", briefing="Carrossel do prato campeão")
+        eq(feitos[1], ("desenhar", "Carrossel do prato campeão"), "briefing")
+        ok("carrossel_raiz" in r.message and "APROVADO" in r.message and "render no repositório" in r.message, r.message)
+        r = await e.execute(acao="desenhar", papel="critico", briefing="x")
+        ok("é do papel designer" in r.message, r.message)
+        r = await e.execute(acao="publicar")
+        ok("acao desconhecida" in r.message, r.message)
+        r = await e.execute(acao="criticar", tipo="post")
+        ok("Mande o `material`" in r.message, r.message)
+        eq(len(feitos), 2, "nada chamado nos erros")
+
+        def quebra(*a, **k):
+            raise RuntimeError("x")
+        f.esp = lambda: types.SimpleNamespace(criticar=quebra)
+        r = await e.execute(acao="criticar", material="x")
+        ok("Não publique sem crítica" in r.message, r.message)
+
+    def t_manual_e_indice(self):
+        manual = (RAIZ / "prompts" / "agent.system.tool.especialista.md").read_text(encoding="utf-8")
+        for termo in ("Antes de publicar", "O Matheus não fala com eles", "criticar", "desenhar", "Reprovado não sai",
+                      "Input schema for tool_args"):
+            ok(termo in manual, f"manual cita {termo!r}")
+        indice = RAIZ.parent / "prompt_enxuto" / "helpers" / "indice.py"
+        if indice.exists():
+            i = _carregar("especialistas_indice_teste", indice)
+            ok("especialista" in i.CURTAS, "o índice curto tem a ferramenta")
+            ok(len(i.CURTAS["especialista"]) <= 420, "linha curta até 420")
+
+    async def rodar(self, so=""):
+        for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
+            try:
+                feito = getattr(self, nome)()
+                if asyncio.iscoroutine(feito):
+                    await feito
+                self.resultados.append({"teste": nome, "ok": True})
+            except Exception as exc:
+                self.resultados.append({"teste": nome, "ok": False, "erro": f"{type(exc).__name__}: {exc}",
+                                        "onde": traceback.format_exc().splitlines()[-3:]})
+        return {"passou": sum(r["ok"] for r in self.resultados), "total": len(self.resultados),
+                "resultados": self.resultados}
+
+
+if __name__ == "__main__":
+    r = asyncio.run(Suite().rodar(sys.argv[1] if len(sys.argv) > 1 else ""))
+    for x in r["resultados"]:
+        print("ok   " if x["ok"] else "FALHA", x["teste"], x.get("erro", ""), *(x.get("onde") or []) if not x["ok"] else "")
+    print("TESTES", r["passou"], r["total"])

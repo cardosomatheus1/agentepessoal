@@ -1642,10 +1642,27 @@ PEDE_RECEITA = re.compile(r"\b(mand\w*|envi[ae]\w*|compartilh\w*|pass(a|e|ar|em|
 # AR Board 13/10 (Matheus, 5 of 13 cases): the dash "deixa com cara de IA". In code, for every text the agent writes.
 TRAVESSAO = re.compile("[\u2014\u2013]")
 
+# Matheus, 20/10 (GLOSSARY.md): the offer is "Preço Certo em 30 Dias"; the old name never goes out again, but notes
+# written before ("pendente: Lucro na Mão: <nome>", "ofereci Lucro na Mão") still count.
+OFERTA = "Preço Certo em 30 Dias"
+OFERTA_CURTA = "Preço Certo"
+NOME_ANTIGO_OFERTA = re.compile(r"lucro\s+na\s+m[aã]o", re.I)
+_NOME_OFERTA = r"(pre[cç]o\s+certo|lucro\s+na\s+m[aã]o)"
+TOPOU_OFERTA = re.compile(r"^\s*pendente:\s*" + _NOME_OFERTA, re.I)
+OFERECEU = re.compile(r"^\s*ofereci\s+(a\s+oferta\s+)?" + _NOME_OFERTA, re.I)
+
+
+def nota_da_oferta(nota: str) -> str:
+    """'topou' (pendente: Preço Certo: …), 'ofereci' (ofereci Preço Certo) or ''; the old name counts the same."""
+    n = str(nota or "")
+    return "topou" if TOPOU_OFERTA.search(n) else "ofereci" if OFERECEU.search(n) else ""
+
 
 def validar_texto(tipo: str, texto: str, d: dict, lid: str) -> str:
     """'' when the text may be proposed, else why not (playbook rules a model could slip on)."""
     t = (texto or "").strip()
+    if NOME_ANTIGO_OFERTA.search(t):
+        return f"a oferta agora se chama {OFERTA} (o nome Lucro na Mão saiu, Matheus 20/10)"
     if TRAVESSAO.search(t):
         return "sem travessão (— ou –): deixa com cara de IA; use vírgula, ponto ou quebra de linha"
     if tipo == "aquecer":
@@ -2866,7 +2883,15 @@ def metricas(login: str, dias: int = 7) -> dict:
                                                     for h in l["historico"])]
     aprovadas = sum(1 for a in acoes if a["estado"] in ("aprovada", "executada", "falhou"))
     decididas = sum(1 for a in acoes if a["estado"] in ("aprovada", "executada", "falhou", "pulada"))
-    return {"dias": dias, "acoes": por_estado, "etapas": etapas, "geral": taxa(abordados),
+    oferta = {"nome": OFERTA, "ofereci": set(), "topou": set()}  # leads, by the stage notes (old name counts too)
+    for l in d["leads"]:
+        for h in l["historico"]:
+            qual = nota_da_oferta(h.get("texto")) if str(h.get("tipo", "")).startswith("etapa:") else ""
+            if qual and float(h.get("em") or 0) >= corte:
+                oferta[qual].add(l["id"])
+    oferta["ofereci"] = len(oferta["ofereci"] | oferta["topou"])
+    oferta["topou"] = len(oferta["topou"])
+    return {"dias": dias, "acoes": por_estado, "etapas": etapas, "geral": taxa(abordados), "oferta": oferta,
             "coortes": _metricas_coortes(d["leads"], corte, agora()),
             "comentarios": {"comentados": len(comentados), "responderam": len(pelo_comentario),
                             "taxa_resposta": round(100 * len(pelo_comentario) / len(comentados), 1) if comentados else 0.0},
