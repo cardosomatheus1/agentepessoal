@@ -102,9 +102,16 @@ def executar(acao: str, login: str, texto: str = "", ref: str = "", titulo: str 
     acao = str(acao or "consultar").strip().lower()
     if acao == "consultar":
         achados = p.buscar(texto)
+        aviso = ""
+        if achados and achados[0].get("fora_do_filtro"):  # "o que decidi sobre X" with no decision on X
+            _t, pastas, _a, _ab = p._termos(texto)
+            aviso = f"Nada em {', '.join(sorted(pastas))} sobre isso; em outras partes da Pasta:\n"
         if not achados:
             return f"Nada na Pasta sobre “{texto}”. Diga que não está registrado (não invente)."
-        return "\n".join(f"- [[{a['nota']}]] {a['titulo']}: {a['trecho']}" for a in achados)
+        return aviso + "\n".join(
+            f"- [[{a['nota']}]] {a['titulo']}" + (f" ({', '.join(x for x in (a.get('area'), a.get('estado')) if x)})"
+                                                  if a.get("area") or a.get("estado") else "") + f": {a['trecho']}"
+            for a in achados)
     if acao == "assunto":
         a = m.m("assuntos")
         if ref:

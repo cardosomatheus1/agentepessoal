@@ -519,6 +519,36 @@ class Suite:
         finally:
             self.limpar()
 
+    def t_consultar_entende_a_pergunta_dele(self):
+        # 20/10: the 5 real questions all came back "nada na Pasta" — every word of the question had to be in one note
+        self.preparar()
+        try:
+            p, f = self.p, self.f
+            f.mesclar("matheus", [{"id": "ee33ff", "titulo": "Completar consulta das dívidas do MEI no gov.br",
+                                   "area": "pessoal", "dono": "você"},
+                                  {"id": "gg44hh", "titulo": "Definir ambiente seguro para homologação iFood",
+                                   "area": "raiz", "dono": "você"}])
+            achar = lambda q: [a["nota"].split("/")[-1][:6] for a in p.buscar(q)]  # noqa: E731
+            ok(achar("O que ficou faltando eu fazer sobre o MEI?")[:1] == ["ee33ff"], achar("o que falta do MEI"))
+            ok(achar("Onde parou o assunto da homologação do iFood?")[:1] == ["gg44hh"],
+               f"assunto vazio não esconde a pendência: {achar('Onde parou a homologação do iFood?')}")
+            raiz = achar("Quais pendências minhas da Raiz estão abertas agora?")
+            ok("gg44hh" in raiz and "cc22dd" in raiz and "ee33ff" not in raiz and "aa11bb" not in raiz,
+               f"filtro de pasta e área: {raiz}")
+            f.mesclar("matheus", [{"id": "gg44hh", "estado": "resolvido"}])
+            ok("gg44hh" not in achar("pendências da Raiz abertas"), "abertas: a resolvida sai")
+            pessoas = [a["nota"] for a in p.buscar("Quem são as pessoas-chave da Raiz?")]
+            ok(pessoas[:1] == ["Contexto/pessoas-chave"], f"o arquivo de contexto vem primeiro: {pessoas}")
+            eq(p.buscar("o que é que eu"), [], "só palavras vazias: nada, sem listar a Pasta toda")
+            ferramenta = _carregar("cerebro_ferramenta_busca", RAIZ / "tools" / "cerebro.py", {
+                "helpers": types.ModuleType("helpers"), "helpers.tool": types.SimpleNamespace(
+                    Tool=type("Tool", (), {}), Response=type("Response", (), {}))})
+            r = ferramenta.executar("consultar", "matheus", "O que eu decidi sobre a integração com o Google Drive?")
+            ok(r.startswith("Nada em Decisoes sobre isso") and "Autorizar o Drive" in r,
+               f"sem decisão: diz e mostra a pendência: {r}")
+        finally:
+            self.limpar()
+
     def t_prompt_e_indice(self):
         ext = (RAIZ / "extensions" / "python" / "system_prompt" / "_27_cerebro.py").read_text(encoding="utf-8")
         for termo in ("anotação automática", "Pendência = o que ELE precisa fazer", "acao=desfazer", "UMA seção"):

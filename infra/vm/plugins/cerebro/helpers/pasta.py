@@ -369,23 +369,81 @@ def enviar_copia(token: str) -> str:
 
 
 # ---------------------------------------------------------------- reading
+# A question in his words ("o que ficou faltando eu fazer sobre o MEI?") is not a list of words that must all be in one
+# note (20/10: that found nothing for 5 of 5 real questions). Function words go, collection / área / "aberta" words
+# become filters, and a note qualifies with a third of the remaining words (best ranked first).
+PARADAS = set("""o a os as um uma uns umas de do da dos das em no na nos nas por pelo pela para pra pro com sem sobre e
+ou que qual quais quem onde como quando porque eu me meu minha meus minhas voce seu sua ele ela isso isto esse essa
+este esta estao sao ser foi era tem tenho ter ha agora hoje ainda ja so mais muito ficou falta faltando faltou fazer
+feito fiz combinado parou parado anda andamento estado lista quero saber mostrar mostre me""".split())
+FILTRO_COLECAO = {"pendencia": "Pendencias", "pendencias": "Pendencias", "decisao": "Decisoes", "decisoes": "Decisoes",
+                  "decidi": "Decisoes", "decidiu": "Decisoes", "decidimos": "Decisoes", "combinei": "Decisoes",
+                  "assunto": "Assuntos", "assuntos": "Assuntos", "reuniao": "Reunioes", "reunioes": "Reunioes"}
+FILTRO_ABERTO = {"aberta", "abertas", "aberto", "abertos", "pendente", "pendentes"}
+AREAS = ("raiz", "nexos", "orbyte", "agente", "pessoal")
+
+
+def _termos(texto: str) -> tuple[list, set, str, bool]:
+    """(words to look for, collection folders, área, only open?)"""
+    termos, pastas, area, aberto = [], set(), "", False
+    for w in slug(texto, 400).split("-"):
+        if w in FILTRO_COLECAO:
+            pastas.add(FILTRO_COLECAO[w])
+        elif w in FILTRO_ABERTO:
+            aberto = True
+        elif w in AREAS and not area:
+            area = w
+        elif len(w) > 1 and w not in PARADAS:
+            termos.append(w)
+    return termos, pastas, area, aberto
+
+
+def _tem(termo: str, alvo: str) -> bool:
+    return termo in alvo or (len(termo) > 4 and termo[:-1] in alvo)  # plural/gender: pendencias ~ pendencia
+
+
 def buscar(texto: str, limite: int = 12) -> list[dict]:
-    """Notes whose text has every word searched (accents ignored), Arquivo-morto left out; best titles first."""
-    palavras = [p for p in slug(texto, 200).split("-") if len(p) > 1]
+    """Notes about a question in his words, best first (Arquivo-morto left out). Collection words (pendências,
+    decisão…), an área (raiz, nexos…) and "abertas" filter; the other content words rank (title counts double).
+    When the named collection has nothing (no Assunto on the iFood yet), the rest of the Pasta is searched and each
+    result says so (fora_do_filtro)."""
+    termos, pastas, area, aberto = _termos(texto)
+    achados = _buscar(termos, pastas, area, aberto)
+    if not achados and pastas and termos:
+        achados = [{**a, "fora_do_filtro": True} for a in _buscar(termos, set(), area, aberto)]
+    return achados[:limite]
+
+
+def _buscar(termos: list, pastas: set, area: str, aberto: bool) -> list[dict]:
+    if area and not termos and not pastas:  # "pessoas-chave da Raiz" style: the área is a word too
+        termos = [area]
     achados = []
     for f in RAIZ.rglob("*.md"):
         rel = f.relative_to(RAIZ)
         if rel.parts[0] in ("Arquivo-morto",) or f.name == "indice.md" or rel.parts[0].startswith("."):
             continue
+        if pastas and rel.parts[0] not in pastas:
+            continue
         conteudo = f.read_text(encoding="utf-8", errors="ignore")
-        alvo = slug(conteudo, 10 ** 7)
-        if all(p in alvo for p in palavras):
-            linha_tit = next((l[2:] for l in conteudo.splitlines() if l.startswith("# ")), f.stem)
-            nota = slug(linha_tit, 300)
-            achados.append({"nota": str(rel.with_suffix("")), "titulo": linha_tit,
-                            "pontos": sum(p in nota for p in palavras), "trecho": _trecho(conteudo, palavras)})
-    achados.sort(key=lambda a: -a["pontos"])
-    return achados[:limite]
+        cab = conteudo.split("\n---\n", 1)[0] if conteudo.startswith("---\n") else ""
+        area_nota = (re.search(r'^area: "([^"]*)"', cab, re.M) or [None, ""])[1]
+        estado = (re.search(r'^estado: "([^"]*)"', cab, re.M) or [None, ""])[1]
+        if area and area_nota and area_nota != area and (pastas or termos != [area]):
+            continue
+        if aberto and estado and estado not in ("aberto", "ativa", "andamento", "adiado"):
+            continue
+        linha_tit = next((l[2:] for l in conteudo.splitlines() if l.startswith("# ")), f.stem)
+        alvo, nota = slug(conteudo, 10 ** 7), slug(linha_tit, 300)
+        bate = [t for t in termos if _tem(t, alvo)]
+        if termos and len(bate) < max(1, (len(termos) + 2) // 3):
+            continue
+        if not termos and not (pastas or area or aberto):
+            continue
+        pontos = len(bate) + sum(_tem(t, nota) for t in bate) + (2 if area and area_nota == area else 0)
+        achados.append({"nota": str(rel.with_suffix("")), "titulo": linha_tit, "pontos": pontos, "area": area_nota,
+                        "estado": estado, "trecho": _trecho(conteudo, bate or termos or [linha_tit[:20]])})
+    achados.sort(key=lambda a: (-a["pontos"], a["nota"]))
+    return achados
 
 
 def _trecho(conteudo: str, palavras: list) -> str:
