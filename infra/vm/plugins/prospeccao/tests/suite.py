@@ -1411,6 +1411,15 @@ class Suite:
         ok(not r, "fora da janela de 3 dias / já comentado: recusa")
         p.revisor = None
 
+    def t_nexo_entre_gancho_e_oferta(self):
+        # AR Board 20/10 (calibracao/prospeccao/criterios.md, regras 5-7): the detail seen must lead to what is offered
+        p = self.p
+        pb = (RAIZ / "playbook.md").read_text(encoding="utf-8")
+        for termo in ("**Nexo", "iFood", "encomenda / produção programada", "cardápio novo / prato novo",
+                      "preço, reajuste, promoção, custo", "Não cite a bio entre aspas"):
+            ok(termo in pb, f"playbook ensina o nexo: {termo}")
+        ok("SEM NEXO" in p.REVISOR and "entre aspas" in p.REVISOR, "o revisor reprova mensagem sem nexo e bio entre aspas")
+
     def t_direct_script_e_comentario_relido(self):
         p = self.p
         self.em(self.hora(10))

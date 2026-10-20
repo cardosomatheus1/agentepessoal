@@ -1839,6 +1839,11 @@ SEM perguntar a ele, então você é a última barreira antes de uma pessoa real
    (variante B): as duas são válidas. Pedir a receita da pessoa ("me manda a receita", ficha técnica) fere o
    playbook: soa invasivo.
 3. Soa como spam, intimidade forçada ou constrange a pessoa.
+6. Primeira mensagem ou lembrete SEM NEXO (Matheus, AR Board 20/10): o detalhe citado do perfil não leva ao que a
+   mensagem pergunta ou oferece (ex.: "vi a pergunta sobre marinar… fiz uma calculadora grátis"; "vi o cardápio novo
+   nos stories… posso te mandar a calculadora?"). A calculadora só tem nexo com gancho de preço, custo, reajuste ou
+   promoção; iFood combina com a conciliação do iFood; encomenda com produção e insumos; cardápio novo com o preço de
+   cada prato novo; kit com quanto sobra no kit. Citar a bio entre aspas também reprova (soa como IA).
 4. Tem erro de português ou abreviação de internet que faça a marca parecer descuidada.
 5. Numa resposta: não combina com O QUE A PESSOA DISSE (ignora a pergunta dela, insiste depois de um não, ou finge
    uma conversa que não houve). Perguntou se é robô: a resposta não pode negar que há um assistente.

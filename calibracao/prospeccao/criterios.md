@@ -22,3 +22,29 @@ Rodada `prosp-2026-10-13-textos`: 13 textos reais de 10 a 12/10, julgados em 13/
 - **Os 2 comentários rejeitados vieram sem comentário.** Hipótese: são genéricos, não citam um produto do post
   ("Quentinha de comida caseira é daquelas que sempre resolve", "Qual prato esgotou primeiro?").
   [5cfec0, ec5e8c]
+
+---
+
+Rodada `prospeccao-raiz-2026-10-20-mensagens-reais`: 11 mensagens que saíram de verdade (15 a 20/10), julgadas em
+20/10. 6 aprovadas, 5 rejeitadas. Comentário geral dele: "em vez de oferecer só a planilha, quando vir o gancho falar
+do software; quando vir que a empresa usa iFood, citar a integração, entre outras coisas; parar de pegar algo que viu
+no perfil e oferecer planilha logo depois, fica bem sem nexo".
+
+## Regras novas
+
+5. **Nexo entre o gancho e o que se oferece.** O que a mensagem cita do perfil tem de levar, numa linha de
+   raciocínio, ao que ela oferece ou pergunta. Detalhe solto ("vi o cardápio novo", "vi a pergunta sobre marinar")
+   seguido da calculadora é "sem nexo". [prospeccao-raiz-2026-10-20-mensagens-reais/7f65cb, a66b4c, 0b798d; comentário geral]
+6. **Oferecer o que combina com o gancho, não sempre a planilha.** Usa iFood → o Raiz Connect importa e concilia os
+   arquivos do iFood e mostra o que sobra depois da taxa; encomenda/produção programada → produção que baixa os
+   insumos e estoque; cardápio novo → custo e preço de cada prato novo; kit/combo → quanto sobra no kit; revenda/atacado
+   → tabela de atacado x varejo. A calculadora fica para quando o gancho é preço ou custo. [comentário geral; 7f65cb]
+7. **Citar a bio entre aspas soa como IA.** Diga com as próprias palavras o que viu. [32f7fe]
+8. **Gancho de pedido/venda + pergunta de preço tem nexo e está aprovado.** [204d61, d6856a]
+9. **Comentário de aquecimento curto sobre o cardápio da semana está aprovado** (o 5cfec0 rejeitado em 13/10 foi
+   aprovado agora: vale o mais recente). [5cfec0, adcdad]
+
+## Dúvidas para o Matheus
+
+- **d367be** (resposta a quem disse "agora não", deixando o link) veio rejeitada sem comentário. Ela saiu duplicada
+  no Direct; não sei se a rejeição é pelo texto ou pela duplicação.

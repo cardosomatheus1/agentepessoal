@@ -22,6 +22,11 @@ casos = [  # (id, tipo, texto, base, esperado)
  ("r2", "aquecer", "Lindo! Conhece um sistema que calcula o lucro de cada marmita? Chama no direct", "post de 08/10: rondelli", False),
  ("r3", "dm_abertura", "Oi! Nosso ERP de gestão integrada reduz seu CMV em 30% garantido. Quer uma demonstração da solução? — Matheus, da Raiz Connect", "", False),
  ("r4", "dm_abertura", "Oi, Zen Marmitas! Vi que vocês abriram a terceira unidade no Rio Vermelho, parabéns! Vocês sabem quanto sobra em cada marmita? Me manda a receita que eu calculo de graça. — Matheus, da Raiz Connect", "", False),
+ # AR Board 20/10 (real messages): gancho sem nexo com a oferta reprova; gancho que leva à oferta passa
+ ("n1", "dm_abertura", "Vi que vocês publicaram um cardápio novo nos stories! Sou Matheus, da Raiz Connect, que calcula custo e preço de quem produz comida. Fiz uma calculadora grátis: posso te mandar o link?", "story: cardápio novo", False),
+ ("n2", "dm_abertura", "Vi a pergunta no post sobre a diferença entre marinar e temperar! Sou Matheus, da Raiz Connect, que calcula custo e preço pra quem produz comida. Fiz uma calculadora grátis pra mostrar quanto sobra em cada produto. Posso te mandar?", "post: marinar x temperar", False),
+ ("n3", "dm_abertura", "Vi que o cardápio de vocês também está no iFood! Aqui é o Matheus, da Raiz Connect: o sistema puxa os pedidos do iFood e mostra quanto sobra em cada marmita depois da taxa. Posso te mandar como funciona?", "bio: peça pelo iFood", True),
+ ("n4", "dm_abertura", "Vi que vocês recebem pedidos de marmitas pelo link da bio! Sou o Matheus, da Raiz Connect, que calcula custo e preço para marmitarias. Como vocês chegam no preço: planilha, caderno ou de cabeça?", "bio: link de pedidos", True),
  ("r5", "dm_abertura", "oi zen vi seus produto mt bom vc sab quanto sobra?? manda a receita q eu calculo de graça pra vc ai. — Matheus, da Raiz Connect", "post de 08/10: rondelli", False),
 ]
 acertos = 0

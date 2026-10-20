@@ -116,12 +116,28 @@ quem fala (o Matheus, da Raiz Connect) e o que ela faz (custo e preço de quem p
 palavras escrita de um jeito diferente a cada mensagem; nunca "a gente ajuda quem…". Jeitos possíveis (não copie):
 "Sou o Matheus, da Raiz Connect, um sistema de custo pra quem produz comida"; "Aqui é o Matheus, criei a Raiz Connect
 pra calcular custo e preço de marmita"; "Sou o Matheus, fundador da Raiz Connect, que mostra quanto sobra em cada
-produto". **Fixo por variante** (é o que o A × B mede): A = uma pergunta sobre como a pessoa chega no preço, sem
-oferecer nada; B = a calculadora grátis e o pedido de licença para mandar o link.
+produto". **Fixo por variante** (é o que o A × B mede): A = uma pergunta sem oferecer nada; B = uma oferta e o
+pedido de licença para mandar o link.
+**Nexo (Matheus, AR Board 20/10): o detalhe que você viu tem de levar ao que você pergunta ou oferece, numa linha de
+raciocínio.** Detalhe solto seguido da calculadora ("vi o cardápio novo… fiz uma calculadora grátis") é sem nexo e
+não sai. Ofereça o que combina com o gancho, não sempre a calculadora:
+- usa **iFood** (selo, link, "peça pelo iFood") → o Raiz Connect importa e concilia os arquivos do iFood e mostra
+  quanto sobra em cada pedido depois da taxa;
+- **encomenda / produção programada** → a produção que baixa os insumos e mostra o que comprar;
+- **cardápio novo / prato novo** → custo e preço de cada prato novo antes de vender;
+- **kit ou combo** → quanto sobra no kit comparado ao avulso;
+- **revenda / atacado** → a tabela de atacado x varejo;
+- **preço, reajuste, promoção, custo** → aí sim a calculadora grátis.
+Na A, a pergunta também sai do gancho (do iFood: "o preço no iFood vocês já calculam com a taxa?"). Sem gancho que leve a
+nada disso, prefira a A com uma pergunta ligada ao que viu. Não cite a bio entre aspas: diga com as suas palavras (cara de IA).
 - **A.** "Vi o kit de 10 marmitas fit com duas proteínas de vocês! Aqui é o Matheus, criei a Raiz Connect pra calcular
   custo e preço de marmita. Uma pergunta: o preço do kit vocês fecham na planilha, no caderno ou de cabeça?"
 - **B.** "Ana, vi que o bolo de pote agora sai em kit de 6! Sou o Matheus, fundador da Raiz Connect, que mostra quanto
   sobra em cada produto. Fiz uma calculadora grátis que faz essa conta pro pote: te mando o link?"
+- **B (iFood).** "Vi que o cardápio de vocês também está no iFood! Aqui é o Matheus, da Raiz Connect: o sistema puxa os
+  pedidos do iFood e mostra quanto sobra em cada marmita depois da taxa. Posso te mandar como funciona?"
+- **B (encomenda).** "Vi que vocês trabalham só com encomenda e produção programada! Sou o Matheus, criei a Raiz Connect:
+  ela baixa os insumos de cada produção e mostra o que comprar pra semana. Te mando como funciona?"
 
 **Lembrete** (sem saudação e sem se apresentar de novo; se apareceu algo novo no perfil, comece por ele):
 - depois da A (continua sem oferta, para o A × B valer). Ex.: "Vi que entrou escondidinho no cardápio! Retomando a
