@@ -55,6 +55,16 @@ class Suite:
         ok(not self.rr.rodando(ag, "outra"), "rodada sem execução pode ser recuperada")
         ok(not self.rr.rodando(types.SimpleNamespace(), "x"), "agendador sem o registro (versão antiga) não quebra")
 
+    def t_rotina_diaria_perdida_e_recuperada_no_mesmo_dia(self):
+        # 20/10: the agent was down ~2 h on 19/10 and the daily 16:53 round was lost (window of 15 min)
+        j = self.rr.janela
+        ok(j(30 * 60) == 15 * 60 and j(5 * 3600) == 15 * 60, "rodada frequente: só 15 min")
+        ok(j(None) == 15 * 60 and j(0) == 15 * 60, "intervalo desconhecido: 15 min")
+        ok(j(24 * 3600) == 12 * 3600, "diária: até 12 h depois")
+        ok(j(7 * 24 * 3600) == 12 * 3600, "semanal: no máximo 12 h")
+        ok(j(8 * 3600) == 4 * 3600, "3 vezes ao dia: metade do intervalo")
+        ok(2 * 3600 < j(24 * 3600), "o buraco de 19/10 (~2 h) estaria coberto")
+
     def _limites(self):
         import tempfile
 
