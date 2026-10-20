@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,7 +35,7 @@ p.gravar("decisoes", [{"id": 35, "tema": "loja.fornecedor", "tipo": "decisao", "
 print(json.dumps(sorted(str(f.relative_to(p.RAIZ)) for f in p.RAIZ.rglob("*.md"))))
 `;
 
-test("o que o pasta.py grava é o que o site lê (frontmatter, liga, [[links]], contexto, Arquivo-morto)", { skip: !temPython && "python3 indisponível" }, async () => {
+test("o que o pasta.py grava é o que o site lê (frontmatter, liga, [[links]], contexto, Arquivo-morto)", { skip: (!temPython && "python3 indisponível") || (!existsSync(PASTA_PY) && "sem o pasta.py nesta cópia (pacote do implantador); roda no repositório e no GitHub") }, async () => {
   const root = mkdtempSync(path.join(tmpdir(), "sc-real-"));
   try {
     const r = spawnSync("python3", ["-I", "-c", ESCRITOR, PASTA_PY, root], { encoding: "utf8" });
