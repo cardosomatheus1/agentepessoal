@@ -7,7 +7,9 @@ rules are the same for the agent and for the reviewer:
 - "ajustar" (swap a passage) only works on the version the caller read: it passes the hash `ler` returned;
 - from LIMITE accumulated corrections on, the answer asks for the steps to be rewritten clean (`salvar` with
   consolidar=True and the hash read: the corrections section leaves, the previous file is kept in .versoes/).
-Every change is also logged in <slug>/.versoes/diario.jsonl."""
+Every change is also logged in <slug>/.versoes/diario.jsonl.
+Scheduled routines (scheduler tasks) keep their corrections in AGENDADAS/<uuid>/correcoes.md, same rules
+(corrigir_agendada: the "Aplicar" of helpers/autoavaliacao.py)."""
 
 import fcntl
 import hashlib
@@ -21,6 +23,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 SKILLS = Path("/a0/usr/skills")
+AGENDADAS = Path("/a0/usr/rotinas/agendadas")  # corrections of scheduled routines (scheduler tasks)
 SECAO = "## Correções do usuário"
 LIMITE = 8  # from this many accumulated corrections on, the steps should be rewritten clean
 _LINHA = re.compile(r"^- (\d{2}/\d{2}/\d{4}(?: \(por [^)]*\))?: )?")
@@ -159,10 +162,29 @@ def ler(nome: str) -> dict | None:
 
 def corrigir(nome: str, correcao: str, por: str = "agente") -> dict:
     """Add a correction. {ok, motivo, n_correcoes, pede_reescrita}; motivo: gravada|repetida|nao_existe|vazia."""
-    arq = arquivo(nome)
+    return _corrigir(arquivo(nome), correcao, por)
+
+
+def arquivo_agendada(uuid: str) -> Path:
+    """Corrections of a scheduled routine (a scheduler task, not a skill): its prompt stays as the scheduler keeps it
+    and the round gets these appended at start (monologue/start/_30_correcoes_agendada.py)."""
+    return AGENDADAS / (re.sub(r"[^A-Za-z0-9_-]", "", str(uuid or "")) or "sem-id") / "correcoes.md"
+
+
+def corrigir_agendada(uuid: str, nome: str, correcao: str, por: str = "agente") -> dict:
+    """Same rules as corrigir (dated, author, no repeats, diário), for a scheduled routine; its file is born here."""
+    cabeca = f"# Correções da rotina agendada {' '.join(str(nome or uuid).split())} ({uuid})\n"
+    return _corrigir(arquivo_agendada(uuid), correcao, por, criar=cabeca)
+
+
+def correcoes_agendada(uuid: str) -> list[str]:
+    return correcoes(_texto(arquivo_agendada(uuid)))
+
+
+def _corrigir(arq: Path, correcao: str, por: str, criar: str = "") -> dict:
     correcao = " ".join(str(correcao or "").split())
     with _trava():
-        atual = _texto(arq)
+        atual = _texto(arq) or criar
         if not atual:
             return {"ok": False, "motivo": "nao_existe", "n_correcoes": 0, "pede_reescrita": False}
         existentes = correcoes(atual)

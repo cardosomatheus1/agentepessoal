@@ -147,6 +147,13 @@ def testes():
     for item in ("pagar", "terceiros", "apagar", "Captcha", "§§secret(NOME)"):
         if item not in regras:
             falhas.append(f"regras de sempre: falta «{item}»")
+    # every scheduled round is assessed at its end and runs with the corrections Matheus approved (20/10)
+    mono = PLUGINS / "rotinas" / "extensions" / "python" / "_functions" / "agent" / "Agent" / "monologue"
+    fim, inicio = mono / "end" / "_20_autoavaliar.py", mono / "start" / "_30_correcoes_agendada.py"
+    if not fim.exists() or "autoavaliar(" not in fim.read_text(encoding="utf-8"):
+        falhas.append("o fim da rodada não chama mais a autoavaliação")
+    if not inicio.exists() or "correcoes_agendada(" not in inicio.read_text(encoding="utf-8"):
+        falhas.append("a rodada não recebe mais as correções aprovadas pelo Matheus")
     pro = curtas["prospeccao"]
     for item in ("@raiz.connect", "nunca o perfil pessoal", "pré-aprovado", "limites do dia", "revisor", '"REESCREVA"',
                  "APROVADAS, com o texto exato", '"playbook"', "`prospeccao-instagram`"):

@@ -18,6 +18,8 @@ FUSO = ZoneInfo("America/Bahia")
 INICIO = RAIZ / "extensions" / "python" / "_functions" / "agent" / "Agent" / "monologue" / "start" / "_10_portao.py"
 ENXUTA = RAIZ / "extensions" / "python" / "_functions" / "agent" / "Agent" / "monologue" / "start" / "_20_rodada_enxuta.py"
 FIM = RAIZ / "extensions" / "python" / "_functions" / "agent" / "Agent" / "monologue" / "end" / "_10_portao_fim.py"
+CORRECOES = RAIZ / "extensions" / "python" / "_functions" / "agent" / "Agent" / "monologue" / "start" / "_30_correcoes_agendada.py"
+AUTOAVALIAR = RAIZ / "extensions" / "python" / "_functions" / "agent" / "Agent" / "monologue" / "end" / "_20_autoavaliar.py"
 
 
 class Falha(Exception):
@@ -535,6 +537,209 @@ class Suite:
         _sincrono(ext.RodadaEnxuta(agent=a).execute(data={"result": object()}))
         eq(len(a.history.topics), 2, "mensagem da pessoa (não é rodada): nada muda")
 
+    # ---------- self-assessment of scheduled routines ----------
+
+    def _auto(self):
+        """autoavaliacao.py and rotinas.py on temporary folders; a fake phone and a fake model."""
+        A = _carregar("rotinas_autoavaliacao_teste", RAIZ / "helpers" / "autoavaliacao.py")
+        R = _carregar("rotinas_helper_auto_teste", RAIZ / "helpers" / "rotinas.py")
+        pasta = Path(tempfile.mkdtemp(prefix="autoavaliacao-teste-"))
+        self._tmp.append(pasta)
+        A.PASTA, R.SKILLS, R.AGENDADAS = pasta / "log", pasta / "skills", pasta / "agendadas"
+        self.enviadas, self.pedidos, self.modelo = [], [], ""
+
+        def enviar(login, texto, botoes):
+            self.enviadas.append({"login": login, "texto": texto, "botoes": botoes})
+            return self.falha_envio
+        self.falha_envio = ""
+
+        def modelo(pedido):
+            self.pedidos.append(pedido)
+            if isinstance(self.modelo, BaseException):
+                raise self.modelo
+            return self.modelo
+
+        def avaliar(resultado="Resumo: 3 e-mails importantes.", erro=None, agora=None, uuid="R1"):
+            return A.autoavaliar(uuid, "📰 Resumo do dia", resultado, pedido="Monte o resumo da manhã.", erro=erro,
+                                 chamar_modelo=modelo, enviar=enviar, R=R, agora=agora)
+        return A, R, avaliar
+
+    @staticmethod
+    def _json(nota=4, linha="Bom: trouxe só o que importa.", melhoria="", infra=False):
+        return "ok, aqui: " + json.dumps({"nota": nota, "linha": linha, "falha_infra": infra, "melhoria": melhoria})
+
+    def t_autoavaliacao_resposta_ruim_nao_propoe(self):
+        A, R, avaliar = self._auto()
+        for saida in ("não sei", "{nota: 4}", self._json(nota=9, melhoria="x"), self._json(linha="", melhoria="x"),
+                      '["lista"]', RuntimeError("modelo caiu")):
+            self.modelo = saida
+            r = avaliar()
+            eq(r["motivo"], "sem_avaliacao", f"resposta ruim do modelo ({saida!r})")
+        eq(self.enviadas, [], "nada vai ao celular")
+        av = [e for e in A.eventos("R1") if e["tipo"] == "avaliacao"]
+        eq(len(av), 6, "cada rodada fica no registro, sem nota")
+        ok(all(e["nota"] is None for e in av) and "modelo caiu" in av[-1]["linha"], "o motivo fica registrado")
+        self.modelo = self._json()
+        r = avaliar()
+        eq((r["motivo"], r["avaliacao"]["nota"]), ("avaliada", 4), "resposta boa sem melhoria: só avalia")
+        eq(A.eventos("R1")[-1]["linha"], "Bom: trouxe só o que importa.", "a linha fica no registro")
+        eq(self.enviadas, [], "sem melhoria, sem mensagem")
+
+    def t_autoavaliacao_falha_de_infra_nao_propoe(self):
+        A, R, avaliar = self._auto()
+        self.modelo = self._json(melhoria="Mude tudo")
+        eq(avaliar(erro=TimeoutError("sem rede"))["motivo"], "infra", "rodada com erro")
+        eq(avaliar(resultado="CONSULTA LIMITADA (429): tente depois")["motivo"], "infra", "limite de consulta")
+        eq(avaliar(resultado="")["motivo"], "infra", "rodada sem resposta")
+        eq(self.pedidos, [], "falha de infra: nem chama o modelo")
+        eq(avaliar(resultado="SEM NOVIDADE")["motivo"], "sem_novidade", "sem novidade: registra sem modelo")
+        eq(self.pedidos, [], "sem novidade não chama o modelo")
+        self.modelo = self._json(nota=1, infra=True, melhoria="Tente de novo com outra conta")
+        eq(avaliar(resultado="A busca não trouxe nada hoje.")["motivo"], "infra", "o modelo viu falha de infra")
+        eq(self.enviadas, [], "nenhuma proposta por falha de infra")
+        ok(all("melhoria" not in e for e in A.eventos("R1")), "melhoria de rodada com falha de infra é descartada")
+
+    def t_autoavaliacao_uma_proposta_por_semana_sem_repetir(self):
+        A, R, avaliar = self._auto()
+        t0, dia = 1_800_000_000, 86400
+        self.modelo = self._json(melhoria="Junte os e-mails do mesmo remetente numa linha só")
+        r = avaliar(agora=t0)
+        eq(r["motivo"], "proposta", "primeira melhoria vira proposta")
+        eq(len(self.enviadas), 1, "UMA mensagem")
+        m = self.enviadas[0]
+        eq(m["login"], "matheus", "vai ao Matheus")
+        ok("Junte os e-mails" in m["texto"] and "Resumo do dia" in m["texto"] and "ok" in m["texto"], m["texto"])
+        eq([b["titulo"] for b in m["botoes"]], ["✅ Aplicar", "❌ Não"], "botões Aplicar / Não")
+        ok(all(len(b["id"].encode()) <= 64 for b in m["botoes"]), "id cabe no botão do Telegram (64 bytes)")
+        eq(A.ler_botao(m["botoes"][0]["id"]), ("matheus", "R1", r["proposta"], "aplicar"), "o botão diz qual proposta")
+        eq(avaliar(agora=t0 + 3600)["motivo"], "repetida", "a mesma melhoria pendente não volta")
+        self.modelo = self._json(melhoria="Comece pelo que vence hoje")
+        eq(avaliar(agora=t0 + 3 * dia)["motivo"], "limite", "outra melhoria antes de 7 dias: espera")
+        eq(len(self.enviadas), 1, "nada mais foi ao celular")
+        self.modelo = self._json(melhoria="  junte os E-MAILS do mesmo remetente, numa linha só. ")
+        eq(avaliar(agora=t0 + 8 * dia)["motivo"], "repetida", "a mesma (normalizada) não volta nem depois de 7 dias")
+        self.modelo = self._json(melhoria="Comece pelo que vence hoje")
+        eq(avaliar(agora=t0 + 8 * dia)["motivo"], "proposta", "depois de 7 dias, uma nova pode ir")
+        eq(len(self.enviadas), 2, "segunda proposta enviada")
+        ok(avaliar(uuid="R2", agora=t0 + 8 * dia)["motivo"] == "proposta", "o limite é por rotina")
+        # a proposal that never reached the phone does not hold the next one back
+        self.falha_envio = "ponte fora do ar"
+        self.modelo = self._json(melhoria="Diga a hora de cada reunião")
+        eq(avaliar(uuid="R3", agora=t0)["motivo"], "envio_falhou", "envio falhou")
+        self.falha_envio = ""
+        self.modelo = self._json(melhoria="Ponha as contas no topo")
+        eq(avaliar(uuid="R3", agora=t0 + 60)["motivo"], "proposta", "a que não chegou não conta no limite")
+
+    def t_autoavaliacao_aplicar_passa_pela_correcao(self):
+        A, R, avaliar = self._auto()
+        rotinas_git = {p.name: p.read_bytes() for p in (RAIZ.parents[1] / "rotinas").glob("*.json")}
+        self.modelo = self._json(melhoria="Junte os e-mails do mesmo remetente numa linha só")
+        pid = avaliar()["proposta"]
+        aplicar, nao = (b["id"] for b in self.enviadas[0]["botoes"])
+        ok("Não reconheci" in A.responder("outra_pessoa", aplicar, R=R), "botão de outro login não vale")
+        eq(R.correcoes_agendada("R1"), [], "nada aplicado sem o ok dele")
+        r = A.responder("matheus", aplicar, R=R)
+        ok(r.startswith("✅ Aplicado"), r)
+        eq(R.correcoes_agendada("R1"), ["Junte os e-mails do mesmo remetente numa linha só"],
+           "a mudança entra pelas correções da rotina")
+        texto = R.arquivo_agendada("R1").read_text(encoding="utf-8")
+        ok(f"(por matheus, aprovou a sugestão {pid})" in texto and "Resumo do dia" in texto, texto)
+        diario = (R.arquivo_agendada("R1").parent / ".versoes" / "diario.jsonl").read_text(encoding="utf-8")
+        ok('"acao": "corrigir"' in diario and "aprovou" in diario, "o diário das rotinas registra a correção")
+        resp = [e for e in A.eventos("R1") if e["tipo"] == "resposta"]
+        eq((resp[0]["decisao"], resp[0]["ok_de"]), ("aplicada", "matheus"), "o ok dele fica registrado")
+        ok("já foi respondida" in A.responder("matheus", nao, R=R), "segunda resposta não muda nada")
+        eq(len(R.correcoes_agendada("R1")), 1, "aplicada uma vez só")
+        self.modelo = self._json(melhoria="junte os e-mails do mesmo remetente numa linha só!")
+        eq(avaliar(uuid="R1")["motivo"], "ja_vale", "o que já vale não é proposto de novo")
+        # never the routine itself: the versioned JSONs are untouched and the helper never writes the scheduler
+        eq({p.name: p.read_bytes() for p in (RAIZ.parents[1] / "rotinas").glob("*.json")}, rotinas_git,
+           "as rotinas do git ficam iguais")
+        fonte = (RAIZ / "helpers" / "autoavaliacao.py").read_text(encoding="utf-8").split('"""', 2)[2]  # code, no docstring
+        for proibido in ("tasks.json", "update_task", "TaskScheduler", "salvar(", "ajustar("):
+            ok(proibido not in fonte, f"a autoavaliação não mexe na rotina direto ({proibido})")
+        escritos = {p.relative_to(A.PASTA.parent).parts[0] for p in A.PASTA.parent.rglob("*") if p.is_file()}
+        ok(escritos <= {"log", "agendadas", "skills"}, f"só grava no registro e nas correções: {escritos}")
+
+    def t_autoavaliacao_nao_registra_recusa(self):
+        A, R, avaliar = self._auto()
+        self.modelo = self._json(melhoria="Mande também o clima")
+        avaliar(agora=1_800_000_000)
+        nao = self.enviadas[0]["botoes"][1]["id"]
+        ok("fica como está" in A.responder("matheus", nao, R=R), "Não: responde curto")
+        eq(R.correcoes_agendada("R1"), [], "Não: nada muda na rotina")
+        p = A.propostas("R1")[0]
+        eq((p["estado"], p["resposta"]["por"]), ("recusada", "matheus"), "a recusa fica registrada")
+        eq(avaliar(agora=1_800_000_000 + 30 * 86400)["motivo"], "repetida", "recusada não volta")
+        ok("Não achei" in A.responder("matheus", "rta:matheus:R1.ffffffff:aplicar", R=R), "proposta que não existe")
+        ok("Não reconheci" in A.responder("matheus", "rta:matheus:lixo", R=R), "botão malformado")
+
+    def t_autoavaliacao_registro_pequeno(self):
+        A, R, avaliar = self._auto()
+        A.MAX_AVALIACOES = 5
+        self.modelo = self._json(melhoria="Mande também o clima")
+        avaliar(agora=1_800_000_000)
+        self.modelo = self._json()
+        for i in range(12):
+            avaliar(agora=1_800_000_100 + i)
+        ev = A.eventos("R1")
+        eq(sum(e["tipo"] == "avaliacao" for e in ev), 5, "só as últimas avaliações ficam")
+        eq(len(A.propostas("R1")), 1, "a proposta nunca sai do registro")
+
+    def t_autoavaliacao_ganchos(self):
+        ini = _carregar("rotinas_correcoes_inicio_teste", CORRECOES)
+        fim = _carregar("rotinas_autoavaliar_fim_teste", AUTOAVALIAR)
+        R = _carregar("rotinas_helper_gancho_teste", RAIZ / "helpers" / "rotinas.py")
+        pasta = Path(tempfile.mkdtemp(prefix="ganchos-teste-"))
+        self._tmp.append(pasta)
+        R.SKILLS, R.AGENDADAS = pasta / "skills", pasta / "agendadas"
+        ini.rotinas = lambda: R
+        tarefa = types.SimpleNamespace(uuid="R1", name="📰 Resumo do dia", prompt="Monte o resumo da manhã.")
+        ini.tarefa_rodando = lambda cid: tarefa if cid == "c1" else None
+        chamadas = []
+        fim.iniciar = lambda marca, resultado, erro: chamadas.append((marca, resultado, erro))
+
+        def rodada(agente, resultado="resposta", erro=None, pulada=False):
+            data = {"result": "SEM NOVIDADE (portão: nada mudou)" if pulada else object(), "exception": None}
+            _sincrono(ini.CorrecoesAgendada(agent=agente).execute(data=data))
+            if not pulada:
+                data["result"] = resultado
+                data["exception"] = erro
+            _sincrono(fim.Autoavaliar(agent=agente).execute(data=data))
+
+        ag = Agente(Ctx("c1"))
+        m = ag.tarefa()
+        rodada(ag)
+        eq(m.content["user_message"], "## Task:\nfaça a rodada", "sem correções: a mensagem fica igual")
+        eq(len(chamadas), 1, "a rodada terminada é avaliada")
+        eq((chamadas[0][0]["uuid"], chamadas[0][1]), ("R1", "resposta"), "com o resultado da rodada")
+        ok("resumo da manhã" in chamadas[0][0]["pedido"], "e o que a rotina pede")
+        R.corrigir_agendada("R1", tarefa.name, "Comece pelo que vence hoje", por="matheus")
+        m = ag.tarefa()
+        rodada(ag, erro=RuntimeError("caiu"))
+        ok(m.content["user_message"].startswith("## Task") and "- Comece pelo que vence hoje" in m.content["user_message"]
+           and "valem acima dos passos" in m.content["user_message"], "a correção aprovada entra no fim da tarefa")
+        ok(isinstance(chamadas[-1][2], RuntimeError), "rodada com erro: a avaliação recebe o erro (infra)")
+        n = len(chamadas)
+        ag.tarefa()
+        rodada(ag, pulada=True)
+        eq(len(chamadas), n, "rodada pulada pelo portão não é avaliada")
+        _sincrono(fim.Autoavaliar(agent=ag).execute(data={"result": "outra", "exception": None}))
+        eq(len(chamadas), n, "fim sem rodada marcada (mensagem dele no chat): nada")
+        sub = Agente(ag.context, numero=1)
+        sub.tarefa("## Task:\nsubordinado")
+        rodada(sub)
+        eq(len(chamadas), n, "subordinado não é avaliado")
+        outra = Agente(Ctx("c2"))
+        outra.tarefa()
+        rodada(outra)
+        eq(len(chamadas), n, "conversa sem rotina rodando não é avaliada")
+        receber = RAIZ.parent / "whatsapp" / "api" / "receber.py"  # in the repository (a staging copy is alone)
+        if receber.exists():
+            texto = receber.read_text(encoding="utf-8")
+            ok('botao.startswith("rta:")' in texto and ".responder, usuario, botao" in texto,
+               "o botão do celular chega ao responder da autoavaliação")
+
     async def rodar(self, so=""):
         self._tmp = []
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
@@ -548,7 +753,7 @@ class Suite:
                                         "onde": traceback.format_exc().splitlines()[-3:]})
         for pasta in self._tmp:
             shutil.rmtree(pasta, ignore_errors=True)
-        for m in ("rotinas_portao", "rotinas_helper"):  # the tests changed their folders and sources
+        for m in ("rotinas_portao", "rotinas_helper", "rotinas_autoavaliacao"):  # the tests changed their folders and sources
             sys.modules.pop(m, None)
         return {"passou": sum(r["ok"] for r in self.resultados), "total": len(self.resultados), "resultados": self.resultados}
 

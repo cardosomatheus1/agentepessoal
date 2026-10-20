@@ -28,6 +28,14 @@ Rotinas reutilizáveis, como as skills do Grok Bot, em cima das skills do Agent 
   min) enquanto você faz a tarefa; ao terminar, o agente estuda as telas (`analisar_imagens`), pergunta só
   o ambíguo e salva a rotina.
 
+**Autoavaliação das rotinas agendadas (20/10, `helpers/autoavaliacao.py`):** no fim de cada rodada
+(`monologue/end/_20_autoavaliar.py`, em segundo plano) um modelo barato dá nota 1–5 e uma linha sobre o resultado
+(`/a0/usr/rotinas/autoavaliacao/<uuid>.jsonl`). Se vir uma melhoria, vai UMA mensagem ao Matheus com ✅ Aplicar / ❌ Não
+(botão `rta:`, tratado em `whatsapp/api/receber.py`); no máximo uma por rotina a cada 7 dias, nunca repetida, nunca de
+rodada com falha de infra (erro, 429, conexão, login) e sem modelo em rodada "SEM NOVIDADE". Aplicar grava pela
+`corrigir_agendada` (`/a0/usr/rotinas/agendadas/<uuid>/correcoes.md`, com data e "aprovou a sugestão …"); o prompt da
+rotina no agendador não muda: as correções entram no fim da tarefa a cada rodada (`monologue/start/_30_correcoes_agendada.py`).
+
 As rotinas são do agente (todos os logins veem); a tag traz o login de quem salvou.
 
 **Rodada enxuta (20/10, `helpers/rodada.py`, `monologue/start/_20_rodada_enxuta.py`):** a rodada agendada começa só

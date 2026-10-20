@@ -530,6 +530,27 @@ def _para_a_conversa(usuario: str, texto: str) -> dict:
     return _entregar(usuario, texto, [], "", " (botão)")
 
 
+async def _botao_rotina(usuario: str, botao: str) -> dict:
+    """✅ Aplicar / ❌ Não under a routine's proposed improvement: the rotinas helper checks the login and records his
+    answer (Aplicar goes through its corrections path, never the routine's prompt)."""
+    nome, caminho = "rotinas_autoavaliacao", Path("/a0/usr/plugins/rotinas/helpers/autoavaliacao.py")
+    try:
+        antigo = sys.modules.get(nome)
+        mtime = caminho.stat().st_mtime
+        if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+            spec = importlib.util.spec_from_file_location(nome, caminho)
+            modulo = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(modulo)
+            modulo._mtime = mtime
+            sys.modules[nome] = modulo
+        resposta = await asyncio.to_thread(sys.modules[nome].responder, usuario, botao)
+    except Exception as exc:
+        print(f"whatsapp: botão de rotina falhou: {type(exc).__name__}: {exc}", flush=True)
+        resposta = "Não consegui registrar agora; a rotina ficou como estava."
+    await asyncio.to_thread(ponte().enviar, usuario, resposta)
+    return {"ok": True}
+
+
 async def _botao_rascunho(usuario: str, botao: str) -> dict:
     """✅ Usar (Gmail draft, or the text alone to copy), ✏️ Ajustar (the agent asks what to change), 🙈 Deixa."""
     _, login, rid, acao = (botao.split(":") + ["", "", "", ""])[:4]
@@ -796,6 +817,8 @@ class Receber(ApiHandler):
             return await _botao_lead(usuario, botao)
         if botao.startswith("rt:"):  # resume a request a restart cut short (helpers/turnos.py)
             return await _botao_retomar(usuario, botao)
+        if botao.startswith("rta:"):  # a routine's proposed improvement (plugins/rotinas/helpers/autoavaliacao.py)
+            return await _botao_rotina(usuario, botao)
 
         pedido = ponte().PEDIDOS.get(usuario)
         if pedido and not pedido.get("codigo") and texto and len(texto) <= 40 and "\n" not in texto \
