@@ -30,7 +30,7 @@ class ManualNaPrimeira(Extension):
             nome = nome_da_ferramenta(data)
             if not nome or nome in i.SEM_MANUAL or not e.ligado():
                 return
-            texto = e.manual(nome)
+            texto = e.manual(nome, texto_modo=e.modo_texto(agent))
             if not texto or e.no_historico(agent.history.output(), e.MARCA.format(nome=nome)):
                 return
             agent.hist_add_message(False, content=texto)

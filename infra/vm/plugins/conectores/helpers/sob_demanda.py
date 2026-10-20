@@ -10,6 +10,10 @@ Measured on 20/10 in one of Matheus's chats: 139 native tools, 176k characters i
   join the list from the next call); a connector tool that runs anyway (by its name) is kept active as well.
 - A connector tied to another person (donos.json) does not go in the list at all (it was already refused on use).
 
+Text mode (the Sonnet preset, `a0_api_mode: chat`): no native list goes; Agent Zero writes every MCP tool into the
+system prompt ("#### MCP tool `google.x`", 165 thousand characters measured on 20/10). `enxugar_mcp_texto` applies the
+same choice there: the same tools stay, with the same shorter description and schema; the others leave the prompt.
+
 Nothing here makes a tool uncallable: the MCP server and Agent Zero still have all of them; only what the model
 sees per call changes. Switch: the file DESLIGADO exists = the full list as before, no deploy needed."""
 
@@ -134,6 +138,68 @@ def filtrar(ferramentas: list, mapa: dict, ativas, codigo: bool, de_outros=()) -
             saida.append(f)
         elif na_lista(original, ativas, codigo):
             saida.append(compactar(f))
+    return saida
+
+
+def modo_texto(agent) -> bool:
+    """This agent's chat model gets the tools as text in the system prompt (any API mode but Responses), the same test
+    Agent Zero makes before each call (agent.call_chat_model_turn). Unknown = False: nothing changes."""
+    try:
+        from helpers.litellm_transport import TransportMode
+
+        kwargs = getattr(agent.get_chat_model(), "kwargs", None)
+        if not isinstance(kwargs, dict):
+            return False
+        return TransportMode.from_value(kwargs.get("a0_api_mode")) is not TransportMode.RESPONSES
+    except Exception:
+        return False
+
+
+def lembrar_codigo(agent) -> None:
+    """The person's last message talks about code: GitHub's core set joins this chat's tools (and stays: stable list)."""
+    if fala_de_codigo(texto_da_mensagem(getattr(agent, "last_user_message", None))):
+        ativar(agent.context, [f"github.{n}" for n in GITHUB_CODIGO])
+
+
+def _esquema_texto(esquema) -> str:
+    return json.dumps(esquema) if esquema else ""  # as helpers/mcp_handler.get_tools_prompt writes it
+
+
+def enxugar_mcp_texto(secao: str, cat: dict, render, ativas_agora, de_outros=(), render_servidor=None,
+                      servidores: dict | None = None) -> str:
+    """`secao` (Agent Zero's MCP text section) with only the connector tools this chat gets, shorter.
+
+    `cat`: {"google.x": {"description", "input_schema"}}; `render(qualified_name, description, input_schema)`: the
+    "#### MCP tool" block exactly as Agent Zero renders it. Only blocks found exactly in `secao` are touched (a tool
+    the policy or the server left out is never added): kept ones get the first sentence and the compact schema,
+    the others go (with the separator before them). Connectors of `de_outros` (another person's) go entirely,
+    their server heading too (`render_servidor(name, description)`, `servidores`: {name: description}); when no MCP
+    tool remains at all, "" (the section goes)."""
+    saida, tirou = secao, False
+    for original, ferramenta in cat.items():
+        servidor, _ = servidor_e_nome(original)
+        if servidor not in ENXUTOS and servidor not in de_outros:
+            continue
+        bloco = render(original, ferramenta.get("description"), _esquema_texto(ferramenta.get("input_schema")))
+        if not bloco or saida.count(bloco) != 1:
+            continue
+        if servidor in de_outros or not na_lista(original, ativas_agora, False):
+            saida = saida.replace("\n\n" + bloco, "", 1) if ("\n\n" + bloco) in saida else saida.replace(bloco, "", 1)
+            tirou = True
+            continue
+        curta = compactar({"name": original, "description": ferramenta.get("description") or "",
+                           "parameters": ferramenta.get("input_schema")})
+        esquema = curta.get("parameters")
+        saida = saida.replace(bloco, render(original, curta["description"],
+                                            json.dumps(esquema, ensure_ascii=False, separators=(",", ":")) if esquema else ""), 1)
+    if render_servidor and servidores:
+        for servidor in de_outros:
+            if servidor in servidores and f"#### MCP tool `{servidor}." not in saida:
+                cabeca = render_servidor(servidor, servidores[servidor])
+                if cabeca and saida.count(cabeca) == 1:
+                    saida = saida.replace(cabeca + "\n", "", 1) if (cabeca + "\n") in saida else saida.replace(cabeca, "", 1)
+    if tirou and "#### MCP tool `" not in saida:
+        return ""
     return saida
 
 

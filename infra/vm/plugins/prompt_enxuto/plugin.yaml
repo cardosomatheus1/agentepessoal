@@ -1,4 +1,4 @@
 name: prompt_enxuto
 title: Prompt enxuto
 description: Cada chamada ao modelo leva uma linha por ferramenta em vez do texto inteiro de cada uma (o manual completo entra na conversa uma vez, depois do primeiro uso) e as regras que valem sempre num lugar só.
-version: 1.0.0
+version: 1.1.0

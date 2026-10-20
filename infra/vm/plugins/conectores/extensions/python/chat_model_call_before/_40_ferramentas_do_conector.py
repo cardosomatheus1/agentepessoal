@@ -43,8 +43,7 @@ class FerramentasDoConector(Extension):
             if not isinstance(mapa, dict) or not mapa:
                 return
             contexto = agent.context
-            if s.fala_de_codigo(s.texto_da_mensagem(getattr(agent, "last_user_message", None))):
-                s.ativar(contexto, [f"github.{n}" for n in s.GITHUB_CODIGO])  # stays for the chat: stable list
+            s.lembrar_codigo(agent)  # GitHub's core set when the chat talks about code (stays: stable list)
             eu = dono_da_conversa(contexto)
             de_outros = {servidor for servidor, dono in donos().items() if dono and dono != eu}
             call_data["a0_responses_function_tools"] = s.filtrar(
