@@ -31,6 +31,7 @@ from pathlib import Path
 
 NOME = "segundo_cerebro"
 VERSAO = re.compile(r"^[0-9a-f]{40}$")
+MANUAL = re.compile(r"^local-[0-9a-f]{12}$")  # a `preparar` package someone installed by hand (18/10, before the deploy)
 NODE_MINIMO = (20, 9)
 
 
@@ -105,6 +106,20 @@ class Vm:
         p = self.estado / "atual"
         return p.read_text().strip() if p.is_file() and not p.is_symlink() else ""
 
+    def _hashes(self, raiz: Path) -> dict:
+        return {str(f.relative_to(raiz)): hashlib.sha256(f.read_bytes()).hexdigest() for f in raiz.rglob("*")
+                if f.is_file() and not f.is_symlink() and "__pycache__" not in f.parts and f.name != ".versao"}
+
+    def manual_adotavel(self) -> bool:
+        """--adotar-manual (20/10): the hand-installed state is taken as the starting point only when the release is a
+        `local-<12 hex>` one kept in releases/ and the live plugin, without .versao, has exactly the files of the plugin
+        in this package (the same git code). Anything else stays refused."""
+        atual = self.atual()
+        return bool(getattr(self.a, "adotar_manual", False) and MANUAL.match(atual)
+                    and _real_dir(self.estado / "releases" / atual) and _real_dir(self.plugin)
+                    and not self.versao_plugin() and _real_dir(self.pacote / "plugin")
+                    and self._hashes(self.plugin) == self._hashes(self.pacote / "plugin"))
+
     # ---- conferir ----
     def problemas_destino(self) -> list:
         p = []
@@ -126,14 +141,15 @@ class Vm:
                 if _existe(self.estado / "atual") and not (self.estado / "atual").is_file():
                     p.append("o ponteiro atual não é um arquivo comum")
                 atual = self.atual()
-                if atual and atual != "desativado" and not VERSAO.match(atual):
+                adotar = self.manual_adotavel()
+                if atual and atual != "desativado" and not VERSAO.match(atual) and not adotar:
                     p.append(f"release no ar desconhecida: {atual[:30]!r}")
                 if self.versao and _existe(self.estado / "releases" / self.versao):
                     p.append("esta versão já está instalada em releases/ (nada a fazer; ou faça um commit novo)")
         v = self.versao_plugin()
         if v and not VERSAO.match(v):
             p.append(f"plugin no ar de versão desconhecida: {v[:30]!r}")
-        if _real_dir(self.plugin) and not v:
+        if _real_dir(self.plugin) and not v and not self.manual_adotavel():
             p.append("plugin no ar sem .versao (instalado à mão?): confira antes")
         return p
 
@@ -376,6 +392,7 @@ def main(argv=None) -> int:
     ap.add_argument("--node-container", default="node")
     ap.add_argument("--espera-reinicio", type=int, default=240)
     ap.add_argument("--automatico", action="store_true")
+    ap.add_argument("--adotar-manual", action="store_true")
     a = ap.parse_args(argv)
     if a.versao and not VERSAO.match(a.versao):
         print(json.dumps({"ok": False, "erro": "versão inválida"}))

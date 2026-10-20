@@ -6,7 +6,7 @@
     python3 infra/operador/implantar.py --host caixa_delegados.py --unidade agentepessoal-delegados.service
         (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it)
     python3 infra/operador/implantar.py --controle [--forcar]   (the control page / webhooks Lambda, infra/control)
-    python3 infra/operador/implantar.py --segundo-cerebro [--rollback | --preparar]   (page + gateway plugin; no --forcar)
+    python3 infra/operador/implantar.py --segundo-cerebro [--rollback | --preparar | --adotar-manual]   (page + gateway plugin; no --forcar)
 
 Why (11/10): two Claude sessions deployed the same plugin over each other and one edited the live data by hand; a
 reply lock stayed on and the only message to a lead was deleted. Rules enforced here:
@@ -200,7 +200,8 @@ def segundo_cerebro(args: list) -> None:
 
     s3 = boto3.client("s3", region_name="us-east-1")
     sc.implantar(vm, lambda chave, dados: s3.put_object(Bucket=BUCKET, Key=chave, Body=dados), _conferir_git,
-                 eh_ancestral, url_publica, sondar_publico, conferir_conta, BUCKET, python_suite)
+                 eh_ancestral, url_publica, sondar_publico, conferir_conta, BUCKET, python_suite,
+                 adotar="--adotar-manual" in args)
 
 
 def main() -> None:

@@ -303,11 +303,12 @@ def _lado_vm(pasta: str, acao: str, versao: str, extra: str = "") -> str:
     return f"python3 {pasta}/vm/segundo_cerebro_vm.py {acao} --versao {versao} {extra}".strip()
 
 
-def guarda_de_versao(no_ar: dict, head: str, eh_ancestral) -> None:
-    """The plugin and the release running on the VM must both come from this checkout's history (no --forcar)."""
+def guarda_de_versao(no_ar: dict, head: str, eh_ancestral, adotar: bool = False) -> None:
+    """The plugin and the release running on the VM must both come from this checkout's history (no --forcar).
+    With --adotar-manual, a `local-` release the VM side already checked (plugin identical to this package) passes."""
     for nome in ("plugin", "release"):
         sha = (no_ar.get(nome) or "").strip()
-        if not sha:
+        if not sha or (adotar and nome == "release" and __import__("re").fullmatch(r"local-[0-9a-f]{12}", sha)):
             continue
         if not __import__("re").fullmatch(r"[0-9a-f]{40}", sha):
             raise SystemExit(f"a VM roda um {nome} de versão desconhecida ({sha[:20]!r}): confira antes, nada foi feito.")
@@ -316,7 +317,7 @@ def guarda_de_versao(no_ar: dict, head: str, eh_ancestral) -> None:
 
 
 def implantar(vm, enviar, conferir_git, eh_ancestral, url_publica, sondar_publico, conferir_conta, bucket: str,
-              python_suite: str = sys.executable) -> None:
+              python_suite: str = sys.executable, adotar: bool = False) -> None:
     """vm(cmd, timeout)->str, enviar(chave, bytes), conferir_git(caminhos)->head, eh_ancestral(a, b)->bool,
     url_publica()->str, sondar_publico(url)->dict, conferir_conta(): injected by implantar.py (tests use fakes)."""
     head = conferir_git(CAMINHOS_APROVADOS)
@@ -336,27 +337,28 @@ def implantar(vm, enviar, conferir_git, eh_ancestral, url_publica, sondar_public
         montar_pacote(fonte, pacote, head, "git archive HEAD")
         empacotar(pacote, trabalho / "pacote.tgz")
         _implantar_pacote(vm, enviar, eh_ancestral, url_publica, sondar_publico, head,
-                          (trabalho / "pacote.tgz").read_bytes(), bucket)
+                          (trabalho / "pacote.tgz").read_bytes(), bucket, adotar=adotar)
     finally:
         shutil.rmtree(trabalho, ignore_errors=True)  # our own temporary build tree only
 
 
 def _implantar_pacote(vm, enviar, eh_ancestral, url_publica, sondar_publico, head: str, dados: bytes, bucket: str,
-                      agora=time.time) -> None:
+                      agora=time.time, adotar: bool = False) -> None:
     chave = f"tmp/implantar-segundo-cerebro-{head[:8]}.tgz"
     enviar(chave, dados)
     pasta = f"{ESTAGIO_VM}/{head[:12]}-{int(agora())}"  # fresh per attempt: no leftovers, nothing to delete
     lado = lambda acao, extra="": _lado_vm(pasta, acao, head, extra)
     baixar = f"mkdir -p {pasta} && aws s3 cp --quiet s3://{bucket}/{chave} - | tar xz --no-same-owner -C {pasta}"
-    no_ar = _vm_json(vm, f"{baixar} && " + lado("conferir"))
+    marca = "--adotar-manual" if adotar else ""
+    no_ar = _vm_json(vm, f"{baixar} && " + lado("conferir", marca))
     if no_ar.get("problemas") or not no_ar.get("ok"):
         raise SystemExit("a VM recusou: " + "; ".join(no_ar.get("problemas") or [str(no_ar.get("erro"))])
                          + ". Nada foi trocado.")
-    guarda_de_versao(no_ar, head, eh_ancestral)
-    estagio = _vm_json(vm, lado("estagiar"), 1200)
+    guarda_de_versao(no_ar, head, eh_ancestral, adotar)
+    estagio = _vm_json(vm, lado("estagiar", marca), 1200)
     if not estagio.get("ok"):
         raise SystemExit(f"o estágio falhou ({estagio.get('erro', '?')}): nada foi trocado.")
-    troca = _vm_json(vm, lado("trocar"))
+    troca = _vm_json(vm, lado("trocar", marca))
     if not troca.get("ok"):
         raise SystemExit(f"a troca não terminou ({troca.get('erro', '?')}): rode --segundo-cerebro --rollback e confira.")
     reiniciou = False

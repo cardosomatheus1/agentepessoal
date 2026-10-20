@@ -390,6 +390,36 @@ class TestLadoVm(Base):
         (self.estado / "atual").write_text("qualquer-coisa")
         self.assertTrue(any("release no ar desconhecida" in x for x in self.vm("conferir", V1, p)["problemas"]))
 
+    def test_adotar_instalacao_manual(self):
+        # 20/10: the live page was a `preparar` package installed by hand (atual local-…, plugin without .versao)
+        p = self.pacote(V1)
+        shutil.copytree(p / "plugin", self.plugin)
+        (self.estado / "releases" / "local-873a783dc091").mkdir(parents=True)
+        (self.estado / "atual").write_text("local-873a783dc091\n")
+        sem = self.vm("conferir", V1, p)
+        self.assertFalse(sem["ok"], "sem a marca: recusa como antes")
+        self.assertTrue(any("sem .versao" in x for x in sem["problemas"]) and
+                        any("desconhecida" in x for x in sem["problemas"]), sem)
+        self.assertTrue(self.vm("conferir", V1, p, "--adotar-manual")["ok"], "plugin igual ao do pacote: adota")
+        self.assertTrue(self.vm("estagiar", V1, p, "--adotar-manual")["ok"])
+        t = self.vm("trocar", V1, p, "--adotar-manual")
+        self.assertTrue(t["ok"], t)
+        self.assertEqual(t["anterior"]["release"], "local-873a783dc091", "a manual fica como a anterior (rollback)")
+        self.assertEqual((self.estado / "atual").read_text().strip(), V1)
+        r = self.vm("reverter")
+        self.assertTrue(r["ok"] and r["release"] == "local-873a783dc091", r)
+
+    def test_adotar_manual_recusa_plugin_diferente(self):
+        p = self.pacote(V1)
+        shutil.copytree(p / "plugin", self.plugin)
+        (self.plugin / "helpers.py").write_text("# mexido à mão\n")
+        (self.estado / "releases" / "local-873a783dc091").mkdir(parents=True)
+        (self.estado / "atual").write_text("local-873a783dc091\n")
+        self.assertFalse(self.vm("conferir", V1, p, "--adotar-manual")["ok"], "plugin com outro conteúdo: recusa")
+        (self.plugin / "helpers.py").unlink()
+        (self.estado / "atual").write_text("qualquer-coisa\n")
+        self.assertFalse(self.vm("conferir", V1, p, "--adotar-manual")["ok"], "release fora do formato local-: recusa")
+
     def test_reiniciar_espera_o_agent_zero(self):
         self.config(curl={"/login": 0}, curl_depois={"/login": 200})
         r = self.vm("reiniciar")
