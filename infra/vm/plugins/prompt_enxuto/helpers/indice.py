@@ -88,7 +88,7 @@ CURTAS: dict[str, str] = {
     "cerebro": "Segundo Cérebro do Matheus (a Pasta). `acao` consultar (`texto`: responde \"o que decidi/onde parou/quem é\") | "
                "assunto (`titulo`/`ref`, `onde_parou`, `estado`, `area`) | assuntos | desfazer (`ref` ou \"ultimo\", `motivo`) | "
                "reuniao (`titulo`, `data`, `participantes`, `resumo`, `decisoes`, `proximos`) | "
-               "contexto (entrevista: `secao`, `conteudo`, `aprovado`) | raiz (Cérebro da Raiz, ler antes de prospecção/posts/oferta; `secao`) | nota_do_dia | auditoria.",
+               "contexto (entrevista: `secao`, `conteudo`, `aprovado`) | raiz (ler antes de algo da Raiz) | nota_do_dia | auditoria.",
     "videos_em_alta": "Vídeos do YouTube mais vistos das últimas N horas sobre um tema, assistidos. `tema`, opcional "
                       "`consultas`, `quantidade`, `horas`, `assistir`.",
     "assistir_video": "Assiste um vídeo inteiro (imagem e áudio) e descreve com os tempos. `url` ou `caminho`, opcional "

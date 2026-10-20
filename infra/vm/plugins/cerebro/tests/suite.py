@@ -563,7 +563,7 @@ class Suite:
         indice = PLUGINS / "prompt_enxuto" / "helpers" / "indice.py"
         if indice.exists():
             texto = indice.read_text(encoding="utf-8")
-            ok('"cerebro":' in texto and "raiz (Cérebro da Raiz" in texto, "ferramenta (com acao raiz) no índice curto")
+            ok('"cerebro":' in texto and "| raiz (ler antes de algo da Raiz" in texto, "ferramenta (com acao raiz) no índice curto")
 
     # ------------------------------------------------------------ Cérebro da Raiz (Raiz/)
     def _raiz(self):

@@ -279,7 +279,8 @@ def _lista_concorrentes() -> tuple[str, str]:
         for x in dele:
             seg = re.sub(r"\s+", " ", str(x.get("segmento") or "")).strip()
             linhas.append(f"- **{x.get('nome') or x.get('id')}**" + (f": {seg[:160]}{'…' if len(seg) > 160 else ''}" if seg else ""))
-    fonte = "/a0/usr/concorrentes/lista.json (lista viva)" if viva else "plugins/concorrentes (lista inicial, SEMENTE)"
+    fonte = ("lista viva do plugin concorrentes (/a0/usr/concorrentes/lista.json)" if viva
+             else "lista inicial do plugin concorrentes (SEMENTE de plugins/concorrentes/helpers/concorrentes.py)")
     return "\n".join(linhas).strip(), fonte
 
 
@@ -301,7 +302,7 @@ def semear(por: str, marca_visual: str = "", playbook: str | None = None) -> dic
     fontes = {n: PLAYBOOK_REPO for n in ("oferta.md", "cliente-ideal.md", "playbook.md") if n in textos}
     lista, fonte_lista = _lista_concorrentes()
     if lista:
-        textos["concorrentes.md"] = (f"# Concorrentes\n\n_Da {fonte_lista}; quem muda a lista é a ferramenta "
+        textos["concorrentes.md"] = (f"# Concorrentes\n\n_Fonte: {fonte_lista}; quem muda a lista é a ferramenta "
                                      "`concorrentes`, e a vigia semanal (quarta) traz o que mudou._\n\n" + lista)
         fontes["concorrentes.md"] = fonte_lista
     voz, visual = textos.pop("_voz", ""), str(marca_visual or "").strip()
