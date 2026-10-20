@@ -20,3 +20,7 @@ Só leitura fora do próprio registro: nunca envia, responde, paga, apaga ou alt
 **20/10 (prompt enxuto):** as listas (fios em aberto, resolvidos, outras conversas) mudavam a cada poucos minutos e
 estavam nas instruções de todas as conversas; agora vão no fim do prompt (bloco `fios_soltos`, uma vez por mensagem
 dele), com a data em vez de "há N h". As instruções ficam onde estavam.
+
+**20/10 (Área):** toda Pendência do Matheus na Pasta tem `area` (raiz | nexos | orbyte | agente | pessoal | geral). A
+rodada e a ferramenta pedem a área; se vier vazia ou desconhecida, `fios.mesclar` põe o palpite da mesma tabela de
+palavras da migração (`cerebro/helpers/migracao.py` `area_de`, carregada pelo caminho; sem o plugin cerebro, "geral").

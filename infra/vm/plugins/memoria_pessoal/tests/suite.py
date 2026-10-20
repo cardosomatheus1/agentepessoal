@@ -601,6 +601,66 @@ class Suite:
                         chamar=chamar, agora=agora + 60)
         ok(not r2["feito"] and len(pedidos) == 1, "a mesma conversa não é revisada de novo")
 
+    def t_revisor_deixa_decisoes_para_a_anotacao_com_pasta(self):
+        # 20/10: with the Pasta active the per-turn capture records his decisions; the reviewer doing it again every ~8
+        # messages recorded the same decision twice under another tema. Its other jobs (ficha, routines) stay.
+        d, f, rv, cv = self.d, self.f, self.rv, self.cv
+
+        class ComPasta:  # the decisions helper, with the Pasta active for the owner only
+            def __init__(self, ativa):
+                self.ativa = ativa
+
+            def __getattr__(self, nome):
+                return getattr(d, nome)
+
+            def na_pasta(self, login):
+                if self.ativa is None:
+                    raise OSError("pasta fora")
+                return self.ativa and login == LOGIN
+
+        antiga = d.registrar(LOGIN, "prospeccao.conta", "Prospecção pela conta pessoal", por="matheus")
+        conversa = [("user", "Não, sempre pela @raiz.connect, nunca pela pessoal"), ("response", "Certo."),
+                    ("user", "Pagamento por boleto nunca, só Pix"), ("response", "Combinado."),
+                    ("user", "No resumo do dia, põe os leads quentes primeiro sempre"), ("response", "Ok."),
+                    ("user", "Eu atendo marmitarias de Salvador e Lauro"), ("response", "Anotado.")]
+        dele = [t for tipo, t in conversa if tipo == "user"]
+        propostas = {
+            "decisoes": [{"tema": "prospeccao.conta", "tipo": "decisao", "decisao": "Prospecção sempre pela @raiz.connect",
+                          "citacao": "sempre pela @raiz.connect, nunca pela pessoal", "muda": antiga["id"]},
+                         {"tema": "pagamentos.forma", "tipo": "proibicao", "decisao": "Nunca pagar por boleto; só Pix",
+                          "citacao": "Pagamento por boleto nunca, só Pix"}],
+            "correcoes_rotina": [{"rotina": "Resumo do dia", "correcao": "Pôr os leads quentes primeiro",
+                                  "citacao": "põe os leads quentes primeiro sempre"}],
+            "rotina_nova": None,
+            "retrato": [{"fato": "Atende marmitarias de Salvador e Lauro", "citacao": "atendo marmitarias de Salvador e Lauro"}]}
+        rot = self._rotinas_falsas()
+        ok(rv.decisoes_pela_captura(LOGIN, ComPasta(True)) and not rv.decisoes_pela_captura("convidada", ComPasta(True)),
+           "só o dono, com a Pasta ativa")
+        ok(not rv.decisoes_pela_captura(LOGIN, d), "sem a Pasta (como hoje nos testes): o revisor faz como antes")
+        r = rv.aplicar(LOGIN, "ctx9", propostas, dele, ComPasta(True), f, self.pr, rot, agora=time.time())
+        eq((r["decisoes"], r["perguntas"]), ([], []), "nenhuma decisão nem pergunta de troca pelo revisor")
+        eq([x["tema"] for x in d.ativas(LOGIN)], ["prospeccao.conta"], "nada gravado nas decisões")
+        eq(sum(x["motivo"] == "decisão fica com a anotação do turno (Pasta ativa)" for x in r["descartados"]), 2,
+           "descartadas com o motivo")
+        eq(rot.corrigidas, [("Resumo do dia", "Pôr os leads quentes primeiro", "revisor")], "correção de rotina continua")
+        eq(f.entradas(LOGIN), ["Atende marmitarias de Salvador e Lauro"], "fato da ficha continua")
+        t = rv.aviso(r)
+        ok("decisão #" not in t and "Troco por" not in t and "Anotado sobre você" in t and "Anotado na rotina" in t, t)
+        # the whole review, with the model: the cursor moves and the notice has no decision either
+        logs = self._logs(conversa)
+        rv.guardar(LOGIN, rv.estado(LOGIN, agora=logs[0]["timestamp"] - 1))
+        enviados = []
+        r = rv.revisar(LOGIN, "Matheus", "ctx9", cv.itens(logs), set(), ComPasta(True), f, self.pr, self._rotinas_falsas(),
+                       texto_dele=cv.texto_dele, chamar=lambda p: json.dumps(propostas, ensure_ascii=False),
+                       enviar=lambda q, t: enviados.append(t), agora=logs[0]["timestamp"] + rv.VELHAS_S + 60)
+        ok(r["feito"] and r["decisoes"] == [] and len(enviados) == 1 and "decisão #" not in enviados[0], r)
+        eq([x["tema"] for x in d.ativas(LOGIN)], ["prospeccao.conta"], "revisão inteira: nada nas decisões")
+        # guests (and a Pasta that cannot be checked) keep the old behaviour
+        for quem, pasta in (("convidada", ComPasta(True)), (LOGIN, ComPasta(None))):
+            r = rv.aplicar(quem, "ctx8", {"decisoes": propostas["decisoes"][1:]}, dele, pasta, f, self.pr, None,
+                           agora=time.time())
+            eq([x["tema"] for x in r["decisoes"]], ["pagamentos.forma"], f"{quem}: decisão gravada como antes")
+
     def t_revisor_sem_rotinas_falha_e_nada(self):
         d, f, rv, cv = self.d, self.f, self.rv, self.cv
         logs = self._logs([("user", f"Mensagem número {i} sobre o trabalho de hoje") for i in range(8)])

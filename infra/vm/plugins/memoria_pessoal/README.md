@@ -41,6 +41,9 @@ atualizadas.
   LITERAL dele: decisão nova (`decisoes.registrar(por="revisor")`), correção de rotina existente
   (`rotinas/helpers/rotinas.py` `corrigir(por="revisor")`; sem esse helper, desligado), fato na ficha (`ficha.adicionar`).
   Trocar uma decisão em vigor vira pergunta ("Troco por …? Responda «troca a N»"). Nunca revoga, troca nem apaga.
+  **20/10:** para o Matheus com a Pasta do Segundo Cérebro ativa, o revisor não grava decisões (nem pergunta troca): a
+  anotação de cada mensagem (`cerebro/helpers/captura.py`) já faz isso, e as duas gravavam a mesma decisão com `tema`
+  diferente. Ficha e correções de rotina continuam; convidados, como antes.
 - No fim de cada tarefa com 5+ ferramentas que terminou com resposta, oferece salvar como rotina ("Quer que eu salve
   '<nome>' como rotina?"): no máximo 1 por dia, nome da classe da tarefa (sem data, número, @, "hoje"), nunca uma que
   já existe ou que já foi sugerida. Quem cria é o agente, com `salvar_rotina`, se ele disser sim.

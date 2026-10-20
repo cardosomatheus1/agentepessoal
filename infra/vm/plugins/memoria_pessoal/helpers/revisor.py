@@ -12,6 +12,9 @@ model the other plugins use) reads them and proposes up to four kinds of item; t
 - retrato: stable facts about him into the ficha (helpers/ficha.py: ceiling, duplicates, protection filter).
 Every item needs a LITERAL quote of his that the code finds in his messages; the reviewer only adds (never revokes,
 replaces or removes); "nothing to save" is the usual answer. One short notice per review, with how to undo.
+20/10 (ADR 0001): for the owner with the Segundo Cérebro's Pasta active, decisions are left to the per-turn capture
+(plugins/cerebro/helpers/captura.py), which already proposes them after each of his messages; the reviewer proposing
+them again every ~8 messages recorded the same decision twice under another `tema`. Its other jobs stay.
 """
 
 import json
@@ -280,6 +283,14 @@ def _sugerir(p: dict, e: dict, ctx_id: str, agora: float) -> dict:
     return s
 
 
+def decisoes_pela_captura(login: str, d) -> bool:
+    """True for the owner once the Pasta is active: the per-turn capture records his decisions, not the reviewer."""
+    try:
+        return bool(getattr(d, "na_pasta", None) and d.na_pasta(login))
+    except Exception:
+        return False  # the Pasta could not be checked: keep the reviewer's old behaviour
+
+
 def aplicar(login: str, ctx_id: str, propostas: dict, dele: list[str], d, f, protecao, rotinas=None,
             e: dict | None = None, agora: float | None = None) -> dict:
     """Write what passes the checks; never revoke, replace or remove. Returns what was done, for the notice.
@@ -292,7 +303,12 @@ def aplicar(login: str, ctx_id: str, propostas: dict, dele: list[str], d, f, pro
     fora = lambda item, motivo: r["descartados"].append({"item": item, "motivo": motivo})  # noqa: E731
 
     vivas = d.ativas(login, agora)
-    for p in propostas.get("decisoes", [])[:MAX["decisoes"]]:
+    decisoes = propostas.get("decisoes", [])[:MAX["decisoes"]]
+    if decisoes and decisoes_pela_captura(login, d):
+        for p in decisoes:
+            fora(p, "decisão fica com a anotação do turno (Pasta ativa)")
+        decisoes = []
+    for p in decisoes:
         cit, valor, tipo = str(p.get("citacao") or ""), str(p.get("decisao") or ""), str(p.get("tipo") or "decisao").lower()
         if not citacao_confere(cit, dele):
             fora(p, "citação não aparece nas mensagens dele")

@@ -52,10 +52,9 @@ class EstadoIlegivel(RuntimeError):
     pass
 
 
-def pasta():
-    """plugins/cerebro/helpers/pasta.py (the Segundo Cérebro's Pasta), reloaded when it changes; None if absent."""
-    nome = "cerebro_pasta"
-    caminho = Path(__file__).resolve().parents[2] / "cerebro" / "helpers" / "pasta.py"
+def _do_cerebro(nome: str, arquivo: str):
+    """A helper of plugins/cerebro (helpers/<arquivo>), reloaded when it changes; None if absent."""
+    caminho = Path(__file__).resolve().parents[2] / "cerebro" / "helpers" / arquivo
     if nome not in sys.modules and not caminho.exists():
         return None
     antigo = sys.modules.get(nome)
@@ -70,6 +69,30 @@ def pasta():
             modulo.RAIZ = antigo.RAIZ  # a test (or the operator) may point it elsewhere
         sys.modules[nome] = modulo
     return sys.modules[nome]
+
+
+def pasta():
+    """plugins/cerebro/helpers/pasta.py (the Segundo Cérebro's Pasta), reloaded when it changes; None if absent."""
+    return _do_cerebro("cerebro_pasta", "pasta.py")
+
+
+def area_de(*textos) -> tuple[str, set]:
+    """(guessed Área, valid Áreas) from the cerebro's one keyword table (helpers/migracao.py area_de/AREAS);
+    ("geral", {"geral"}) when that plugin is absent or fails."""
+    try:
+        m = _do_cerebro("cerebro_migracao", "migracao.py")
+        if m is not None:
+            return m.area_de(*textos), {a for a, _ in m.AREAS} | {"geral"}
+    except Exception:
+        pass
+    return "geral", {"geral"}
+
+
+def _com_area(fio: dict) -> None:
+    """Every Pendência carries its Área (20/10): a missing or unknown one gets the deterministic guess."""
+    palpite, validas = area_de(fio.get("titulo"), fio.get("detalhe"), fio.get("ligacoes"))
+    atual = str(fio.get("area") or "").strip().lower()
+    fio["area"] = atual if atual in validas else palpite
 
 
 def na_pasta(login: str) -> bool:
@@ -180,6 +203,7 @@ def mesclar(login: str, novos: list, resolvidos: list | None = None) -> tuple[in
     dados = carregar(login)
     por_id = {f["id"]: f for f in dados["fios"] if f.get("id")}
     agora = time.time()
+    do_dono = na_pasta(login)  # the owner's Pendências carry an Área; guests' register is unchanged
     criados = atualizados = fechados = 0
     for item in novos or []:
         if not isinstance(item, dict) or not (item.get("titulo") or item.get("id")):
@@ -187,11 +211,15 @@ def mesclar(login: str, novos: list, resolvidos: list | None = None) -> tuple[in
         fid = str(item.get("id") or "").strip()
         if fid and fid in por_id:
             por_id[fid].update({k: v for k, v in item.items() if v not in (None, "")})
+            if do_dono:
+                _com_area(por_id[fid])
             por_id[fid]["atualizado"] = agora
             atualizados += 1
             continue
         fio = {"id": fid or uuid.uuid4().hex[:6], "estado": "aberto", "criado": agora, "atualizado": agora}
         fio.update({k: v for k, v in item.items() if v not in (None, "") and k != "id"})
+        if do_dono:
+            _com_area(fio)
         dados["fios"].append(fio)
         por_id[fio["id"]] = fio
         criados += 1
