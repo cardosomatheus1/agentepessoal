@@ -27,7 +27,9 @@ HIBERNACAO_FALHOU = Path("/var/lib/agentepessoal/hibernacao_falhou")  # written 
 BINDER = Path("/sys/module/binder_linux")  # the phone container needs it
 # 12/10 review: the backup said "done" but nobody ever restored from it. Every day these copies come back from S3 to a
 # temporary folder and must open (JSON parses, SQLite passes integrity_check) and keep up with the live file.
-CRITICOS = ("prospeccao/matheus.json", "memoria/decisoes/matheus.json", "scheduler/tasks.json", "central/agente.copia.db")
+# 20/10: the decisions live in the Segundo Cérebro's Pasta (the old JSON is a read-only archive now)
+CRITICOS = ("prospeccao/matheus.json", "segundo_cerebro/pasta/Decisoes/indice.md", "scheduler/tasks.json",
+            "central/agente.copia.db")
 USR = Path("/opt/a0/usr")
 ATRASO_MAX = 3 * 3600
 
@@ -109,6 +111,10 @@ def problema_da_copia(nome: str, local: Path, copia: Path | None, agora: float) 
                 con.close()
             if not integro:
                 return f"backup: a cópia de {nome} no S3 está corrompida"
+        elif nome.endswith(".md"):  # a note of the Pasta: readable text with its title or header
+            texto = copia.read_text(encoding="utf-8")
+            if not texto.lstrip().startswith(("#", "---")):
+                raise ValueError("nota sem título nem cabeçalho")
         else:
             json.loads(copia.read_text(encoding="utf-8"))
     except Exception:

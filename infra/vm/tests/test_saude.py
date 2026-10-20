@@ -81,6 +81,16 @@ def main() -> int:
         falhas.append("backup: JSON cortado no S3 deveria aparecer")
     if "não está" not in s.problema_da_copia("x.json", vivo, None, agora_s):
         falhas.append("backup: arquivo ausente no S3 deveria aparecer")
+    nota_viva, nota_copia = tmp / "indice.md", tmp / "indice_copia.md"  # 20/10: a note of the Pasta is Markdown
+    nota_viva.write_text("# Decisoes\n")
+    nota_copia.write_text("# Decisoes\n")
+    if s.problema_da_copia("pasta/Decisoes/indice.md", nota_viva, nota_copia, agora_s):
+        falhas.append("backup: nota Markdown da Pasta deveria abrir")
+    nota_copia.write_text("\x00lixo")
+    if "não abre" not in s.problema_da_copia("pasta/Decisoes/indice.md", nota_viva, nota_copia, agora_s):
+        falhas.append("backup: nota sem título no S3 deveria aparecer")
+    if "segundo_cerebro/pasta/Decisoes/indice.md" not in s.CRITICOS:
+        falhas.append("backup: as decisões (na Pasta) estão entre os arquivos críticos")
     banco = tmp / "copia.db"
     con = sqlite3.connect(banco)
     con.execute("CREATE TABLE t (x)")
