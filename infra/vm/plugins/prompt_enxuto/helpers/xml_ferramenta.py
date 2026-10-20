@@ -29,6 +29,15 @@ def converter(texto: str) -> str | None:
     m = _INVOKE.search(texto)
     if not m:
         return None
+    antes_cru = texto[:m.start()]
+    inicio = antes_cru.find("{")
+    if inicio >= 0:  # 20/10 21h: a valid JSON call followed by a stray empty <invoke>: the JSON wins (the empty XML
+        try:          # call replaced it and the browser looped with no arguments, 99Food form)
+            ja, _fim = json.JSONDecoder().raw_decode(antes_cru[inicio:])
+            if isinstance(ja, dict) and ja.get("tool_name"):
+                return None
+        except ValueError:
+            pass
     nome, corpo = m.group(1).strip(), m.group(2)
     args = {p.group(1).strip(): _valor(p.group(2)) for p in _PARAM.finditer(corpo)}
     antes = re.sub(r"</?(?:[\w-]+:)?(?:function_calls|tool_call)>", "", texto[:m.start()]).strip(" \n`")
