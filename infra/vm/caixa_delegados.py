@@ -188,6 +188,14 @@ def argumentos_run(id_: str, motor: str, pasta: Path, gateway: str) -> list:
             *volumes, *env, "-w", "/trabalho", "--restart", "no", IMAGEM, *comando]
 
 
+AGENT_BROWSER = f"{C}/runtime/hermes/agent-browser-0.26.0-linux-arm64/bin/agent-browser-linux-arm64"
+
+
+def atalhos() -> dict:
+    """Commands the delegate finds on its PATH (/trabalho/bin): the browser CLI under its plain name, and the search."""
+    return {"agent-browser": f'#!/bin/sh\nexec {AGENT_BROWSER} "$@"\n', "buscar": BUSCAR}
+
+
 BUSCAR = """#!/usr/bin/env python3
 import json, os, sys, urllib.parse, urllib.request
 q = " ".join(sys.argv[1:]).strip()
@@ -329,8 +337,9 @@ def iniciar(dados: dict) -> dict:
         for d in ("entrada", "saida", "casa/hermes", "casa/openclaw", "bin"):
             (pasta / d).mkdir(parents=True, exist_ok=True)
         (pasta / "casa" / "hermes" / "config.yaml").write_text('browser:\n  backend: "off"\n')  # agent-browser stack
-        (pasta / "bin" / "buscar").write_text(BUSCAR)
-        os.chmod(pasta / "bin" / "buscar", 0o755)
+        for nome, conteudo in atalhos().items():
+            (pasta / "bin" / nome).write_text(conteudo)
+            os.chmod(pasta / "bin" / nome, 0o755)
         for origem in origens:
             shutil.copyfile(origem, pasta / "entrada" / _nome_seguro(origem.name))
         (pasta / "tarefa.txt").write_text(tarefa)
