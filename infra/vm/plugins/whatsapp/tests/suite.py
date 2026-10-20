@@ -1067,6 +1067,60 @@ class Suite:
            "a do agente principal é")
         ok(r.parado_por_ele(logs, t0), "/parar fica no log")
 
+    def t_encerra_travado_30_min(self):
+        # 20/10, Matheus: "pode encerrar qd travar por 30 min"
+        r = self.r
+        t0 = 1_000_000.0
+        agora = t0 + 50 * 60
+        por = {LOGIN: [self._pedido("c1", t0, agora, ultimo=agora - 31 * 60),
+                       self._pedido("c2", t0, agora, ultimo=agora - 29 * 60),
+                       self._pedido("c3", t0, agora, ultimo=agora - 60 * 60, respondido=True),
+                       self._pedido("c4", t0, agora, ultimo=agora - 60 * 60, esperando="a sua aprovação"),
+                       self._pedido("c5", t0, agora, ultimo=agora - 60 * 60, esperando="o código que pedi a você"),
+                       self._pedido("c6", t0, agora, ultimo=agora - 60 * 60, esperando="o horário combinado"),
+                       self._pedido("c7", t0, agora, ultimo=agora - 60 * 60, esperando="um comando no computador terminar"),
+                       self._pedido("c8", t0, agora, ultimo=agora - 91 * 60, esperando="um comando no computador terminar"),
+                       self._pedido("c9", t0, agora, ultimo=agora - 60 * 60, rodando=False)],
+               "convidado": [self._pedido("g1", t0, agora, ultimo=agora - 40 * 60)]}
+        eq([(login, p["id"]) for login, p in r.a_encerrar(por, agora)], [("convidado", "g1"), (LOGIN, "c1"), (LOGIN, "c8")],
+           "30 min sem nada novo (90 com um passo lento); esperando ele ou um horário, nunca")
+        p = {**r.a_encerrar(por, agora)[1][1], "_itens": [{"em": 1.0, "tipo": "tool", "agente": 0, "ferramenta": "browser",
+                                                          "titulo": "", "texto": ""}]}
+        eq(r.texto_encerrado(p, agora), "⏹️ Encerrei «pesquisa lava e seca»: 31 min sem avanço (última coisa: olhando um site "
+                                        "no navegador). Se ainda precisar, mande de novo; /painel mostra o que ficou.", "a mensagem")
+        logs = r.itens([{"type": "info", "content": f"{r.ENCERRADO_SOZINHO}: 31 min sem avanço.", "timestamp": t0 + 9}])
+        ok(r.parado_por_ele(logs, t0), "depois do encerramento não vem \"parou sem resposta\"")
+
+    async def t_encerra_travado_job_loop(self):
+        t0 = time.time() - 45 * 60
+        ctx = _Ctx("c1", rodando=True, whatsapp_de=LOGIN, whatsapp_ultima_entrada=t0, whatsapp_ultimo_pedido="pesquisa lava e seca")
+        ajudante = _Ctx("c2", rodando=True)
+        ajudante.dados["parent_id"] = "c1"
+        linhas = []
+        for c in (ctx, ajudante):
+            c.mortos = 0
+            c.kill_process = (lambda c=c: setattr(c, "rodando", False))
+            c.log = types.SimpleNamespace(logs=[types.SimpleNamespace(type="user", agentno=0, kvps={}, heading="",
+                                                                      content="pesquisa", timestamp=t0 + 2)],
+                                          progress="", set_progress=lambda *a, **k: None,
+                                          log=lambda **k: linhas.append(k))
+        self.p.ANDAMENTO = self._tmp / "andamento.json"
+        self._ponte_responde()
+        silencio, self.r.em_silencio = self.r.em_silencio, lambda *a, **k: False
+        mods = self._agent_zero({"c1": ctx, "c2": ajudante})
+        mods["whatsapp_resumo_andamento"] = self.r
+        pai, self.r._pai = self.r._pai, lambda c: c.get_data("parent_id") or ""
+        try:
+            with self._modulos(**mods):
+                await self._extensao("job_loop", "_55_andamento_celular.py", "AndamentoCelular").execute()
+        finally:
+            self.r.em_silencio, self.r._pai = silencio, pai
+        ok(not ctx.rodando and not ajudante.rodando, "para o pedido e o ajudante dele")
+        ok(any(self.r.ENCERRADO_SOZINHO in str(k.get("content")) for k in linhas), f"fica no registro: {linhas}")
+        ok(any(e.get("texto", "").startswith("⏹️ Encerrei «pesquisa lava e seca»: 45 min sem avanço") for e in self.enviados),
+           f"e avisa no celular: {self.enviados}")
+        eq([e for e in self.enviados if e.get("tipo") == "andamento"], [], "sem resumo \"ainda em\" na mesma passada")
+
     def _log_falso(self, t0):
         """A made-up phone request: a search, a page, a helper and a page still loading."""
         L = lambda **k: types.SimpleNamespace(**{"agentno": 0, "kvps": {}, "heading": "", "content": "", **k})  # noqa: E731

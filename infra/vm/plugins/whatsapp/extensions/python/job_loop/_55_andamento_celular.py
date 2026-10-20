@@ -11,6 +11,8 @@ every 4 min) and, when all are answered, it turns into "✅ Terminei". The rules
 now in plain words, and from 10 min on a short summary goes in a NEW message (it notifies) every 15 min, with "sem
 avanço há N min" when nothing moves and "esperando …" when a slow step runs (helpers/resumo_andamento.py, tested
 there). On WhatsApp, where each update of the progress message is a new message anyway, the summaries take its place.
+And ("pode encerrar qd travar por 30 min") a request with nothing new for 30 min is stopped, like /parar, with a
+message saying so (resumo_andamento.a_encerrar: what counts).
 """
 
 import asyncio
@@ -86,8 +88,27 @@ class AndamentoCelular(Extension):
                 continue
             todos.setdefault(destino, []).append(pedido)
             if pedido["rodando"]:
-                por_pessoa.setdefault(destino, []).append({"pedido": pedido["pedido"], "desde": float(entrada),
+                por_pessoa.setdefault(destino, []).append({"_id": ctx.id, "pedido": pedido["pedido"], "desde": float(entrada),
                                                            "fazendo": _fazendo(r, pedido)})
+        por_id = {c.id: c for c in contextos}
+        for destino, pedido in r.a_encerrar(todos, agora):
+            raiz = por_id.get(pedido["id"])
+            if raiz is None:
+                continue
+            for c in r.familia(raiz, contextos):
+                if c.is_running():
+                    c.kill_process()
+                    c.paused = False
+                    c.log.set_progress("", active=False)
+            raiz.log.log(type="info", content=f"{r.ENCERRADO_SOZINHO}: {round(pedido['parado_s'] / 60)} min sem avanço.",
+                         finished=True)
+            pedido.update(rodando=False, parado_por_ele=True)
+            por_pessoa[destino] = [x for x in por_pessoa.get(destino, []) if x.get("_id") != pedido["id"]]
+            if not por_pessoa[destino]:
+                del por_pessoa[destino]  # its progress message turns into "done" as usual
+            erro = await asyncio.to_thread(p.enviar, destino, r.texto_encerrado(pedido, agora))
+            print(f"whatsapp: stopped {pedido['id']} of {destino} after {round(pedido['parado_s'] / 60)} min with no "
+                  f"progress: {erro or 'ok'}", flush=True)
         for destino, texto, fim, n in p.proximos_andamentos(por_pessoa, p.andamento_aberto(), agora, r.resumindo(est)):
             erro = await asyncio.to_thread(p.andamento, destino, texto, fim, n)
             print(f"whatsapp: progress to {destino} ({'done' if fim else f'{n} request(s)'}): {erro or 'ok'}", flush=True)

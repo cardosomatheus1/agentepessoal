@@ -41,6 +41,8 @@ DEPOIS = 15 * 60         # then one every 15 min
 PARADO = 8 * 60          # no new log item for this long, with no slow tool running: "sem avanço"
 TRAVADO = 20 * 60        # this long: "parece travado"
 ESPERA_LONGA = 4 * 60   # a slow step running this long is named in the summary ("esperando … há N min")
+ENCERRAR = 30 * 60       # 20/10, Matheus: "pode encerrar qd travar por 30 min" (nothing new in its chats)
+ENCERRAR_LENTO = 90 * 60  # a slow step (command, page) with no sign of life: a long render is not a stall
 MIN_ENTRE = 5 * 60       # a stall can bring the next summary forward, never closer than this to the last one
 MAX_PEDIDOS = 3          # requests listed in one message (the rest: "e mais N")
 COMANDOS = "/parar cancela · /painel mostra tudo"
@@ -89,6 +91,7 @@ ROTULO_APROVACAO = "a sua aprovação"
 TIPOS_FERRAMENTA = {"tool", "code_exe", "browser", "mcp", "subagent"}
 CALADAS = {"response", "util", "hint", "progress", "info"}  # never an event of their own (info: own notices)
 PARADO_POR_ELE = "Parado pelo usuário"
+ENCERRADO_SOZINHO = "Encerrado sozinho"  # the log line of an automatic stop (the person already got the message)
 
 # words that give away the machinery (the person reads plain Portuguese)
 JARGAO = re.compile(r"_|\b(tool|tools|subordinate|subagente|subagent|agent|llm|browser|terminal|code|python|json|api|"
@@ -166,7 +169,9 @@ def respondido(proprios: list[dict], desde: float) -> bool:
 
 
 def parado_por_ele(proprios: list[dict], desde: float) -> bool:
-    return any(i["tipo"] == "info" and PARADO_POR_ELE in i["texto"] and i["em"] >= desde for i in proprios)
+    """Stopped by /parar or by a_encerrar: the person was already told, no "parou sem resposta" after it."""
+    return any(i["tipo"] == "info" and (PARADO_POR_ELE in i["texto"] or ENCERRADO_SOZINHO in i["texto"])
+               and i["em"] >= desde for i in proprios)
 
 
 def esperando(todos: list[dict], aprovacao: bool = False) -> str:
@@ -463,6 +468,34 @@ def planejar(por_pessoa: dict, est: dict, agora: float, proc: str, silencio=None
             continue
         saida.append({"login": login, "tipo": "resumo", "pedidos": ativos})
     return saida
+
+
+def espera_dele(esperando_: str) -> bool:
+    """Waiting on the person or on an agreed time: never a stall, however long."""
+    return esperando_ in (ROTULO_APROVACAO, ROTULOS["pedir_codigo"][2], ROTULOS["wait"][2])
+
+
+def a_encerrar(por_pessoa: dict, agora: float) -> list[tuple[str, dict]]:
+    """(login, request) of the requests to stop now: running, unanswered, and nothing new in their chats for 30 min
+    (90 min while a slow step runs). Waiting for the person (approval, a code) or an agreed time never counts."""
+    saida = []
+    for login in sorted(por_pessoa):
+        for p in por_pessoa[login]:
+            if not p["rodando"] or p["respondido"] or p.get("parado_por_ele") or espera_dele(p.get("esperando") or ""):
+                continue
+            limite = ENCERRAR_LENTO if p.get("esperando") else ENCERRAR
+            parado = agora - float(p.get("ultimo_item") or agora)
+            if parado >= limite:
+                p["parado_s"] = parado  # the same dict: the caller marks it stopped for this pass's summaries
+                saida.append((login, p))
+    return saida
+
+
+def texto_encerrado(p: dict, agora: float) -> str:
+    ultima = agora_codigo(p.get("_itens") or [])
+    return (f"⏹️ Encerrei «{_curto(p.get('pedido'), 60) or 'seu pedido'}»: {_minutos(p['parado_s'])} min sem avanço"
+            + (f" (última coisa: {ultima})" if ultima else "")
+            + ". Se ainda precisar, mande de novo; /painel mostra o que ficou.")
 
 
 def marcar_enviado(est: dict, envio: dict, agora: float) -> None:
