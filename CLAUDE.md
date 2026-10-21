@@ -23,6 +23,11 @@ porque erros bobos aconteceram quando duas sessões mexeram na mesma coisa sem r
   do Matheus para aquele caso.
 - **Uma frente, uma sessão:** antes de mexer num plugin, confira no `git log` se outra sessão mexeu nele nas últimas
   horas; se sim, combine pelo Matheus em vez de trabalhar em paralelo.
+- **O que o Matheus decide ou pede na conversa com o operador vai para o Segundo Cérebro** (a anotação automática só lê
+  as conversas dele com o agente): decisão/preferência com a fala literal (`decisoes.registrar`), andamento das frentes
+  (`assuntos.registrar/atualizar`) e pendências (`fios.mesclar`), sempre com `por="operador: <motivo>"`. Antes de
+  encerrar uma leva de trabalho, confira com `pasta.buscar` que o agente acha o que mudou (21/10: 6 decisões e 3
+  frentes do dia estavam fora).
 - Segredos só no cofre/SSM; nunca no chat, em arquivo ou no git. Sem identificador de modelo em commit. PR só se ele
   pedir.
 
