@@ -29,11 +29,11 @@ def linha_decisao(d: dict, n: int = 220) -> str:
     return f"- #{d.get('id')} [{d.get('tipo')}] {d.get('tema')}: {_curto(d.get('valor'), n)}"
 
 
-def para_operador(mods, login: str = "matheus", limite: int = 9000) -> str:
+def para_operador(mods, login: str = "matheus", limite: int = 18000) -> str:
     partes = ["# Segundo Cérebro do Matheus (lido da VM no início desta sessão)",
               "Decisões dele valem até ele mudar: siga sem perguntar de novo. Frentes e pendências: o estado de agora.", ""]
     dec = _decisoes(mods, login)
-    partes += [f"## Decisões em vigor ({len(dec)})"] + [linha_decisao(d) for d in dec] + [""]
+    partes += [f"## Decisões em vigor ({len(dec)})"] + [linha_decisao(d, 180) for d in dec] + [""]
     frentes = mods.m("assuntos").abertos(15)
     partes += ["## Frentes abertas (onde pararam)"] + [
         f"- [{a.get('id')}] {a.get('titulo')} ({a.get('area', 'geral')}, {a.get('estado')}): {_curto(a.get('onde_parou'), 200)}"
