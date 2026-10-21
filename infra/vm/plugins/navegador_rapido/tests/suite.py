@@ -365,6 +365,51 @@ class Suite:
             ok(r["conferido"].startswith("✓"), f"e conferiu: {r['conferido']}")
             await b.close()
 
+    async def t_pagina_grande_inteira_em_arquivo(self):
+        import tempfile
+        import types
+
+        stubs = {"agent": types.ModuleType("agent"), "helpers": types.ModuleType("helpers"),
+                 "helpers.extension": types.ModuleType("helpers.extension")}
+        stubs["agent"].LoopData = type("LoopData", (), {"__init__": lambda s: setattr(s, "extras_temporary", {})})
+        stubs["helpers.extension"].Extension = type("Extension", (), {"__init__": lambda s, agent=None: setattr(s, "agent", agent)})
+        antes = {k: sys.modules.get(k) for k in stubs}
+        sys.modules.update(stubs)
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "navegador_rapido_limitar_teste", RAIZ / "extensions" / "python" / "message_loop_prompts_after" / "_21_limitar_pagina.py")
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+        finally:
+            for k, v in antes.items():
+                sys.modules.pop(k, None) if v is None else sys.modules.__setitem__(k, v)
+        with tempfile.TemporaryDirectory() as tmp:
+            pasta = Path(tmp)
+            pagina = "\n".join(f"linha {i}: " + "x" * 60 for i in range(1, 2001))
+            curto = m.cortar(pagina, "ctxA1", pasta)
+            ok(len(curto) < 21_000, "o passo leva só o começo")
+            arquivos = list(pasta.glob("*.txt"))
+            eq(len(arquivos), 1, "a página inteira foi guardada")
+            eq(arquivos[0].read_text(encoding="utf-8"), pagina, "inteira, sem corte")
+            ok(f"caminho {arquivos[0]}" in curto and "`ler`" in curto, f"diz onde está e com que ferramenta: {curto[-400:]}")
+            ultima = curto.split("[page text cut")[0].rstrip().splitlines()[-1]
+            proxima = int(curto.split(" and inicio ")[1].split(" ")[0])
+            eq(pagina.splitlines()[proxima - 1], f"linha {proxima}: " + "x" * 60, "inicio aponta a linha certa")
+            ok(ultima.startswith(f"linha {proxima - 1}:"), "o início continua logo depois do corte")
+            m.cortar(pagina, "ctxA1", pasta)
+            eq(len(list(pasta.glob("*.txt"))), 1, "a mesma página não é gravada de novo")
+            for n in range(m.GUARDAR + 3):
+                m.cortar(pagina + f"\nvariação {n}", "ctxA1", pasta)
+            eq(len(list(pasta.glob("*.txt"))), m.GUARDAR, "guarda só as últimas")
+            eq(m.cortar("curta", "ctx", pasta), "curta", "página curta fica igual")
+            ok("whole page" not in m.cortar(pagina, "ctx", pasta / "arquivo.txt" / "nao"), "sem pasta: corta sem prometer arquivo")
+            ld = stubs["agent"].LoopData()
+            ld.extras_temporary["browser_context"] = pagina
+            ag = types.SimpleNamespace(context=types.SimpleNamespace(id="ctxB2"))
+            m.PASTA = pasta
+            await m.LimitarPagina(ag).execute(loop_data=ld)
+            ok("ctxB2-" in ld.extras_temporary["browser_context"], "o gancho grava com o id da conversa")
+
     async def t_navegador_que_caiu_reinicia(self):
         c = _correcoes()
         import types

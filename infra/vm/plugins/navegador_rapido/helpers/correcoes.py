@@ -413,8 +413,12 @@ async def pelo_gatilho_da_pagina(page, caminhos: list[str]) -> str:
         return ""
     if await pelo_seletor_de_arquivos(page, anexar, caminhos, espera_ms=2500):  # the button itself opens the window
         return anexar["texto"]
-    await page.wait_for_timeout(600)  # it opened a menu instead
-    ponto = await achar_gatilho(page, GATILHO_COMPUTADOR)
+    ponto = None
+    for _ in range(16):  # it opened a menu instead: up to ~4 s for its items (slow pages, a busy machine)
+        await page.wait_for_timeout(250)
+        ponto = await achar_gatilho(page, GATILHO_COMPUTADOR)
+        if ponto:
+            break
     if ponto and await pelo_seletor_de_arquivos(page, ponto, caminhos, espera_ms=4000):
         return f"{anexar['texto']} → {ponto['texto']}"
     try:
