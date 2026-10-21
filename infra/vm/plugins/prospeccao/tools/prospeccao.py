@@ -147,7 +147,7 @@ def _falas_dele(agent) -> list:
     if getattr(agent, "number", 0):
         return []
     try:
-        return p.falas_de_historico(agent.history.serialize())
+        return pr().falas_de_historico(agent.history.serialize())
     except Exception:
         return []
 

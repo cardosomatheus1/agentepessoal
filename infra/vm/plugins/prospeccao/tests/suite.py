@@ -331,8 +331,23 @@ class Suite:
                                              {"content": {"user_intervention": "manda o link pra ana"}},
                                              {"content": {"tool_result": '"user_message": "manda o link"'}}]}, ensure_ascii=False)
             eq(p.falas_de_historico(hist), ["Envia link p ela"], "só o que ele digitou")
-            src = (Path(__file__).resolve().parents[1] / "tools" / "prospeccao.py").read_text(encoding="utf-8")
-            ok('getattr(agent, "number", 0)' in src and "p.falas_de_historico(agent.history.serialize())" in src, "só no agente principal")
+            # a ferramenta de verdade (com um Tool falso do Agent Zero): 21/10 um nome errado ali recusava toda ordem
+            import types
+            guardados = {k: sys.modules.get(k) for k in ("helpers", "helpers.tool")}
+            sys.modules["helpers"], sys.modules["helpers.tool"] = types.ModuleType("helpers"), types.SimpleNamespace(Response=object, Tool=object)
+            try:
+                spec = importlib.util.spec_from_file_location("prospeccao_tool_teste", Path(__file__).resolve().parents[1] / "tools" / "prospeccao.py")
+                ferramenta = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(ferramenta)
+            finally:
+                for k, v in guardados.items():
+                    if v is None:
+                        sys.modules.pop(k, None)
+                    else:
+                        sys.modules[k] = v
+            hst = types.SimpleNamespace(serialize=lambda: hist)
+            eq(ferramenta._falas_dele(types.SimpleNamespace(number=0, history=hst)), ["Envia link p ela"], "ferramenta lê as falas dele")
+            eq(ferramenta._falas_dele(types.SimpleNamespace(number=1, history=hst)), [], "subagente: o usuário dele é o agente de cima")
             eq(p.ordem_confere("envia link p ela", ["Envia link p ela", "a", "b", "c", "d", "e"]), "", "só as últimas mensagens dele")
             ok(p.ordem_confere("envia link p ela", ["Envia link p ela\n\n(leitura automática das abreviações)"]), "fala com a leitura das abreviações")
             out = p.propor(LOGIN, [{"lead_id": self._aquecido("nova"), "tipo": "dm_abertura", "texto": DM_A, "ordem_matheus": "pode mandar a abertura pra nova"}],
