@@ -256,6 +256,26 @@ class Suite:
         ok(data["args"][2] == pagina, "fora de um passo de ferramenta não mexe")
 
 
+    def t_argumentos_embrulhados_duas_vezes(self):
+        a = _carregar("controle_argumentos_teste", RAIZ / "helpers" / "argumentos.py")
+        # 21/10, 99Food: every click went in like this and the browser only reported its state
+        args = {"tool_name": "browser", "tool_args": {"action": "click", "browser_id": 37, "x": 137, "y": 148}}
+        mesmo = args
+        ok(a.desembrulhar("browser", args), "desembrulha")
+        ok(args is mesmo and args == {"action": "click", "browser_id": 37, "x": 137, "y": 148},
+           "no mesmo dicionário que chega à ferramenta")
+        tres = {"tool_args": {"tool_name": "browser", "tool_args": {"action": "type", "ref": 2, "text": "x"}}}
+        ok(a.desembrulhar("browser", tres) and tres == {"action": "type", "ref": 2, "text": "x"}, "duas camadas")
+        normal = {"action": "content", "browser_id": 37}
+        ok(not a.desembrulhar("browser", normal) and normal == {"action": "content", "browser_id": 37}, "normal fica")
+        outro = {"tool_name": "code_execution_tool", "tool_args": {"code": "1"}}
+        ok(not a.desembrulhar("browser", outro), "nome de outra ferramenta dentro: não mexe")
+        mistura = {"tool_name": "browser", "tool_args": {"action": "click"}, "ref": 3}
+        ok(not a.desembrulhar("browser", mistura), "argumento de verdade junto: não mexe")
+        ok(not a.desembrulhar("browser", None), "sem argumentos")
+        ext = (RAIZ / "extensions" / "python" / "tool_execute_before" / "_05_desembrulhar.py").read_text(encoding="utf-8")
+        ok("argumentos.desembrulhar(" in ext, "a extensão usa a regra")
+
     def t_clique_em_referencia_que_sumiu(self):
         c = _carregar("controle_clique_teste", RAIZ / "helpers" / "clique.py")
         erro = ('Browser click failed: Page.evaluate: BrowserPageContentReferenceError: Browser page content could not find '
