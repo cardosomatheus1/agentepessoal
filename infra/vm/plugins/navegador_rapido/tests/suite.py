@@ -597,6 +597,20 @@ class Suite:
         Core.upload_file = antigo
         eq(c._original(Core, "upload_file", "original_upload")(None), "original", "acha o original dentro do embrulho")
         eq(Core._a0_original_upload_file(None), "original", "e guarda na classe para as próximas versões")
+        # 21/10: o print com números não apareceu no servidor rodando, porque a troca do script só olhava as marcas antigas
+        script = f"navegadorRapidoHidden {c.ROTULO_MARCA} {c.VALOR_MARCA}\n" + c.VALOR_FIM
+
+        def montar(fonte):
+            async def _ensure_content_helper(self, page):
+                return fonte
+            return _ensure_content_helper
+
+        Core._ensure_content_helper = montar(script)
+        c._atualizar_script_vivo(Core)
+        novo = Core._ensure_content_helper.__closure__[0].cell_contents
+        ok(c.ROTULOS_MARCA in novo, "o script vivo ganha os números do print")
+        c._atualizar_script_vivo(Core)
+        eq(Core._ensure_content_helper.__closure__[0].cell_contents, novo, "trocar de novo não duplica")
 
     async def t_espera_pelo_que_importa(self):
         c = _correcoes()

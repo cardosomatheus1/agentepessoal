@@ -584,8 +584,8 @@ def _atualizar_script_vivo(core) -> None:
         except ValueError:
             continue
         if isinstance(atual, str) and "navegadorRapidoHidden" in atual and (
-                ROTULO_MARCA not in atual or VALOR_MARCA not in atual):
-            cell.cell_contents = com_valor_lido(com_rotulo_visual(atual))
+                ROTULO_MARCA not in atual or VALOR_MARCA not in atual or ROTULOS_MARCA not in atual):
+            cell.cell_contents = com_rotulos(com_valor_lido(com_rotulo_visual(atual)))
 
 
 # --- Item 5: JavaScript dialogs (alert / confirm / prompt / beforeunload) ---------------------------------------------
