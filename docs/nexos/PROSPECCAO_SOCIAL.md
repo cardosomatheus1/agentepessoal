@@ -33,3 +33,16 @@ Story, depois do MVP, na frente de crescimento do cliente, **depois do Criador d
   (~15%); planilha 0 respostas e 73% descartados (`docs/ESTUDO_FONTES_2026-10-12.md`).
 - NEXOS já planeja: `ROS-F3-002` identidade externa, `ROS-F3-004` Lead canônico, `ROS-F3-005` Oportunidade,
   `ROS-F3-007` ponto de contato, `ROS-F6-007` não contatar global, `ROS-F8-012` roteamento de lead.
+
+## Testes reais (21/10)
+
+- **Empresa para empresa (Raiz, quem comenta na Saipos e na Anota AI):** 6 posts, 26 comentários, 20 perfis, 1 lead
+  (@zegrillitauna, achado pelo perfil pessoal do dono que comentou; a IA leu o @ do negócio na bio). A maioria dos
+  negócios de comida achados foi recusada por não ter cidade no perfil. Custo US$ 0,14.
+- **Cliente final (exemplo: hamburgueria em Salvador, quem comenta em 3 hamburguerias):** 9 posts, 29 comentários,
+  12 com intenção de compra (41%: "vcs estão funcionando?", "tem no ifood?", "hoje deu vontade"); uma das
+  concorrentes parece ter fechado e os clientes dela procuram onde comer. Custo US$ 0,19. Somente leitura, nenhum dado
+  guardado. Lições: filtro de cidade dos concorrentes é obrigatório (veio um Burger King de El Salvador); repetir com
+  2 ou 3 ramos antes de prometer números.
+- **IA liberada (Matheus, 21/10: "Tanto pro video como pra esse pode usar agente/llm"):** ler perfil e comentário
+  (ramo, cidade, intenção, negócio do dono) e escrever textos; a nota e os limites continuam no código.
