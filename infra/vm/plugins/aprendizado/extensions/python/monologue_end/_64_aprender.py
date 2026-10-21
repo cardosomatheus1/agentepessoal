@@ -75,6 +75,16 @@ def tarefa(historia) -> tuple[str, int, str, list[str]]:
     return texto, passos, fala, carregadas
 
 
+def resultados(historia) -> list:
+    """The tool results of the current task, in order (for helpers/aprender.contornou)."""
+    saida = []
+    for m in list(getattr(historia.current, "messages", []) or []):
+        c = getattr(m, "content", None)
+        if isinstance(c, dict) and "tool_name" in c and "tool_result" in c:
+            saida.append(str(c.get("tool_result") or "")[:2000])
+    return saida
+
+
 def _rodar(ctx_id: str, texto: str, carregadas: list[str], login: str) -> None:
     try:
         a = aprender()
@@ -105,7 +115,8 @@ class Aprender(Extension):
             if conversas.e_rotina(ctx.id):
                 return
             texto, passos, fala, carregadas = tarefa(self.agent.history)
-            if not a.deve_revisar(passos, fala, a.ultimo(ctx.id), time.time()):
+            contorno = a.contornou(resultados(self.agent.history)) if hasattr(a, "contornou") else False
+            if not a.deve_revisar(passos, fala, a.ultimo(ctx.id), time.time(), contorno=contorno):
                 return
             login = str(ctx.get_data("whatsapp_de") or "").strip().lower()
             threading.Thread(target=_rodar, args=(ctx.id, texto, carregadas, login), daemon=True,

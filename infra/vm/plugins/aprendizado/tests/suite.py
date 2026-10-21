@@ -87,6 +87,19 @@ class Suite:
         ok(a.deve_revisar(3, "Mandou duplicado de novo", None, 1000), "'de novo' é correção")
         ok(not a.deve_revisar(20, "x", 1000 - 60, 1000), "revisou há 1 minuto nesta conversa: espera")
         ok(a.deve_revisar(20, "x", 1000 - a.INTERVALO - 1, 1000), "passado o intervalo: revisa")
+        # 21/10: tarefa curta em que um passo falhou e outro caminho funcionou: o caminho que funcionou vira lição
+        reais = ["Browser upload_file failed: upload_file could not resolve selector 'input[type=file]'",
+                 '{"action": {"files": ["KE.xlsx"], "via": "janela de arquivos aberta por \'Anexar arquivo\'"}}',
+                 "Itens Enviados: Tem anexos"]
+        ok(a.contornou(reais), "falhou e depois funcionou")
+        ok(not a.contornou(reais[1:]), "nada falhou: não é contorno")
+        ok(not a.contornou(reais[:1]), "falhou e terminou falhando: não é contorno")
+        ok(a.contornou(["ok", "bash> x\n⟦código de saída 127⟧\n↳ Próximo passo: use python3", "Python 3.13"]),
+           "terminal: o código de saída e a dica contam como falha")
+        ok(a.deve_revisar(3, "manda o e-mail", None, 1000, contorno=True), "contorno: revisa mesmo curta")
+        ok(not a.deve_revisar(3, "manda o e-mail", None, 1000, contorno=False), "sem contorno, curta: não")
+        ok("Um passo FALHOU e outro caminho FUNCIONOU" in a.PROMPT and "Nunca como \"X não funciona\"" in a.PROMPT,
+           "o revisor sabe guardar o caminho que funcionou")
 
     def t_cria_skill_nova_com_marca_e_diario(self):
         a = self.a
@@ -188,6 +201,7 @@ class Suite:
         ]))
         texto, passos, fala, carregadas = m.tarefa(hist)
         eq((passos, fala, carregadas), (2, "manda pro Drive, não por e-mail", ["planilhas-drive"]), "leitura da tarefa")
+        eq(m.resultados(hist), ["ok", "página"], "os resultados das ferramentas, em ordem")
         ok("página" in texto, "texto da tarefa")
 
     def t_so_nas_conversas_do_matheus(self):

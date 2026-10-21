@@ -28,6 +28,7 @@ DESLIGADO = DADOS / "desligado"  # exists = no reviews
 ORIGEM = "aprendizado"
 PASSOS_MIN = 8  # tool results in the task for a review without a correction (Hermes: every 10 tool iterations)
 PASSOS_CORRECAO = 2  # with a correction from him, even a short task is reviewed
+PASSOS_CONTORNO = 3  # a short task where a step failed and a later one worked: the way that worked is the lesson
 INTERVALO = 30 * 60  # seconds between two reviews of the same chat
 CONVERSA_MAX = 60_000  # characters of the task given to the reviewer
 SKILLS_MAX = 40_000  # characters of existing skills shown to the reviewer
@@ -55,6 +56,7 @@ Sinais (qualquer um basta para agir):
 - O Matheus corrigiu estilo, tom, formato, tamanho ou o jeito de fazer ("para de fazer X", "não era isso", "já falei", "sem nexo"). Isso é sinal de PRIMEIRA CLASSE: ponha a preferência na skill que governa essa tarefa, para a próxima vez já começar certo.
 - Ele corrigiu o fluxo, a abordagem ou a ordem dos passos: vira armadilha ou passo explícito.
 - Surgiu uma técnica, um contorno, um caminho de depuração ou um jeito de usar uma ferramenta que vai servir de novo.
+- Um passo FALHOU e outro caminho FUNCIONOU na mesma tarefa: guarde o caminho que funcionou como passo positivo, no lugar do fluxo onde ele entra ("anexar no Outlook: Anexar arquivo → Navegar neste computador → conferir o anexo no rascunho"), para a próxima vez ir direto. Nunca como "X não funciona".
 - Uma skill carregada nesta tarefa estava errada, faltando passo ou desatualizada: corrija AGORA.
 
 Ordem de preferência (escolha a primeira que serve):
@@ -85,12 +87,26 @@ def ligado() -> bool:
         return True
 
 
-def deve_revisar(passos: int, fala: str, ultimo_em: float | None, agora: float | None = None) -> bool:
+# 21/10, Matheus: "tem como ele ver a falha e se autocorrigir?". A failed tool result (the error texts of the browser,
+# the terminal and the argument check, and the hints our plugins add to them) followed by a step that worked.
+FALHOU = re.compile(r"(\bfailed\b|NÃO foi executada|Traceback \(most recent|⟦código de saída [1-9]|↻ |↳ Próximo passo|"
+                    r"Não foi possível|could not|cannot |⚠️ O campo NÃO)", re.I)
+
+
+def contornou(resultados: list) -> bool:
+    """A step failed and a later step worked, in the same task."""
+    falhas = [i for i, r in enumerate(resultados) if FALHOU.search(str(r or ""))]
+    return bool(falhas) and any(not FALHOU.search(str(r or "")) for r in resultados[falhas[0] + 1:])
+
+
+def deve_revisar(passos: int, fala: str, ultimo_em: float | None, agora: float | None = None,
+                 contorno: bool = False) -> bool:
     agora = time.time() if agora is None else agora
     if ultimo_em and agora - ultimo_em < INTERVALO:
         return False
     corrigiu = bool(CORRECAO.search(fala or ""))
-    return passos >= PASSOS_MIN or (corrigiu and passos >= PASSOS_CORRECAO)
+    return (passos >= PASSOS_MIN or (corrigiu and passos >= PASSOS_CORRECAO)
+            or (contorno and passos >= PASSOS_CONTORNO))
 
 
 # ---- the library ----------------------------------------------------------------------------------------------
