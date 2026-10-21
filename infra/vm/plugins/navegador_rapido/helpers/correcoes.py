@@ -375,6 +375,55 @@ async def pelo_seletor_de_arquivos(page, ponto: dict, caminhos: list[str], esper
         return False
 
 
+# Outlook, 21/10 (again): the agent called upload_file with only a selector, so the file went to a hidden field and
+# Outlook answered "Não foi possível anexar" or opened OneDrive's "Carregar em". With no ref, the tool now looks for the
+# trigger itself: an open "from this computer" item first, else the attach button (which may open that menu).
+GATILHO_COMPUTADOR = r"(neste|deste|do|meu) (computador|dispositivo)|this (computer|device)|my (computer|device)|browse (files|computer|this)|procurar (arquivo|no computador)|upload from (computer|device)|carregar do (computador|dispositivo)"
+GATILHO_ANEXAR = r"^(anexar|anexo|attach|adicionar arquivo|add file|enviar arquivo|carregar arquivo|upload( file)?|escolher arquivo|selecionar arquivo|choose file|select file)\b|anexar arquivo|attach file"
+ACHAR_GATILHO_JS = """(padrao) => {
+  const re = new RegExp(padrao, "i");
+  const visivel = (e) => { const r = e.getBoundingClientRect(), s = getComputedStyle(e);
+    return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none" && r.bottom > 0 && r.top < innerHeight; };
+  const alvos = [...document.querySelectorAll('button,[role=button],[role=menuitem],[role=option],a,label,[tabindex]')];
+  for (const e of alvos) {
+    const t = ((e.getAttribute("aria-label") || "") + " " + (e.innerText || "") + " " + (e.getAttribute("title") || "")).replace(/\\s+/g, " ").trim();
+    if (!t || t.length > 80 || !re.test(t) || !visivel(e)) continue;
+    const r = e.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2, texto: t.slice(0, 60) };
+  }
+  return null;
+}"""
+
+
+async def achar_gatilho(page, padrao: str) -> dict | None:
+    try:
+        return await page.evaluate(ACHAR_GATILHO_JS, padrao)
+    except Exception:
+        return None
+
+
+async def pelo_gatilho_da_pagina(page, caminhos: list[str]) -> str:
+    """No ref given: an open "from this computer" item, else the attach button and then that item. Returns what was
+    clicked, or "" when no click opened a file window."""
+    ponto = await achar_gatilho(page, GATILHO_COMPUTADOR)
+    if ponto and await pelo_seletor_de_arquivos(page, ponto, caminhos, espera_ms=4000):
+        return ponto["texto"]
+    anexar = await achar_gatilho(page, GATILHO_ANEXAR)
+    if not anexar:
+        return ""
+    if await pelo_seletor_de_arquivos(page, anexar, caminhos, espera_ms=2500):  # the button itself opens the window
+        return anexar["texto"]
+    await page.wait_for_timeout(600)  # it opened a menu instead
+    ponto = await achar_gatilho(page, GATILHO_COMPUTADOR)
+    if ponto and await pelo_seletor_de_arquivos(page, ponto, caminhos, espera_ms=4000):
+        return f"{anexar['texto']} → {ponto['texto']}"
+    try:
+        await page.keyboard.press("Escape")
+    except Exception:
+        pass
+    return ""
+
+
 def _envio_de_arquivo(core) -> None:
     """Fix 6: upload_file also works on a hidden file field (21/10: claude.ai's attach input has no ref, and the
     agent gave up after 'could not resolve selector' and 'cannot upload through helper-backed reference').
@@ -400,6 +449,10 @@ def _envio_de_arquivo(core) -> None:
                     via = "janela de arquivos aberta pelo clique"
             except Exception:
                 pass
+        else:
+            clicado = await pelo_gatilho_da_pagina(page, caminhos)
+            if clicado:
+                via = f"janela de arquivos aberta por '{clicado}'"
         indice = None
         if not via:
             indice = await enviar_pelo_campo(page, caminhos)
@@ -423,7 +476,7 @@ MARK = "_navegador_rapido_v3"
 MARK_ALVO = "_navegador_rapido_alvo"
 MARK_BAIXADOS = "_navegador_rapido_baixados"
 MARK_ARQUIVO = "_navegador_rapido_arquivo"
-VERSAO_ARQUIVO = 2
+VERSAO_ARQUIVO = 3
 MARK_DIALOGO = "_navegador_rapido_dialogo"
 MARK_DIGITADO = "_navegador_rapido_digitado"
 

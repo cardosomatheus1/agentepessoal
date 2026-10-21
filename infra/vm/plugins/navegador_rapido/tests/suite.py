@@ -236,6 +236,33 @@ class Suite:
                 eq(await pg.evaluate("document.getElementById('onedrive').files.length"), 0, "o campo do OneDrive ficou vazio")
                 ok(not await c.pelo_seletor_de_arquivos(pg, {"x": 5, "y": 300}, [str(arq)], espera_ms=800),
                    "clique que não abre janela: devolve False, sem travar")
+                # 21/10, de novo: o agente chamou upload_file só com seletor; sem ref, a ferramenta acha sozinha o
+                # "Anexar arquivo" (que abre um menu) e depois o "Navegar neste computador" do menu
+                menu = """<input type="file" id="onedrive" style="display:none" multiple>
+                  <input type="file" id="onedrive2" style="display:none" multiple>
+                  <button aria-label="Arquivo">Arquivo</button>
+                  <button aria-label="Anexar arquivo" id="anx">Anexe um arquivo a este item.</button>
+                  <div id="m" role="menu" style="display:none">
+                    <div role="menuitem">Carregar e compartilhar</div>
+                    <div role="menuitem" id="pc">Navegar neste computador</div></div>
+                  <div id="anexos"></div>
+                  <script>
+                    document.getElementById('anx').onclick = () => { document.getElementById('m').style.display = 'block'; };
+                    document.getElementById('pc').onclick = () => {
+                      const i = document.createElement('input'); i.type = 'file';
+                      i.onchange = () => { document.getElementById('anexos').textContent = 'anexo: ' + i.files[0].name; };
+                      i.click();
+                    };
+                  </script>"""
+                await pg.set_content(menu)
+                eq(await c.pelo_gatilho_da_pagina(pg, [str(arq)]), "Anexar arquivo Anexe um arquivo a este item. → "
+                   "Navegar neste computador", "abriu o menu e usou o item do computador")
+                await pg.wait_for_timeout(200)
+                eq(await pg.inner_text("#anexos"), "anexo: revisado.xlsx", "virou anexo")
+                eq(await pg.evaluate("document.getElementById('onedrive').files.length + "
+                                     "document.getElementById('onedrive2').files.length"), 0, "nada no OneDrive")
+                await pg.set_content('<input type="file" id="f" style="display:none"><p>sem botão</p>')
+                eq(await c.pelo_gatilho_da_pagina(pg, [str(arq)]), "", "sem botão de anexar: devolve vazio (vai ao campo)")
                 await b.close()
 
     async def t_janelas_do_site_respondidas_e_avisadas(self):
