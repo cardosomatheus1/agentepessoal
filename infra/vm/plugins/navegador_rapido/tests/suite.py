@@ -390,8 +390,18 @@ class Suite:
             b = await p.chromium.launch(executable_path=exe, headless=True)
             pg = await b.new_page()
             await pg.set_content(html)
+            # como no servidor: o ajudante de DOM antes do script de leitura (a leitura passa por ele)
+            ajudante = c.helper_rapido((js.parent / "browser-dom-helper.js").read_text(encoding="utf-8"))
+            ok(ajudante and c.ELEMENTO_MARCA in ajudante, "o ajudante expõe o elemento vivo")
+            await pg.add_script_tag(content=ajudante)
             await pg.add_script_tag(content=fonte)
             api = "globalThis.__spaceBrowserPageContent__"
+            await pg.evaluate(f"() => {api}.capture(null)")
+            ok(await pg.evaluate("() => Boolean(globalThis.__spaceBrowserDomHelper__?.a0Elemento)"), "ajudante carregado")
+            await pg.fill("#n", "Matheus")
+            ref = "1"  # [input text 1] Nome
+            eq(await pg.evaluate(f"(r) => {api}.a0ValorDe(r)", ref), {"valor": "Matheus"},
+               "a conferência do digitado acha o campo vivo pelo ajudante")
 
             class Core:
                 def _resolve_browser_id(self, b):

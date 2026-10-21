@@ -125,11 +125,21 @@ def com_rotulo_visual(source: str) -> str:
 
 VALOR_FIM = "    fileInputElementFor,\n"
 VALOR_MARCA = "a0ValorDe"
+VIVO_MARCA = "a0VivoV1"  # the page functions that find the live element (also through the DOM helper)
 # Exposes the current value of a captured field, read after typing (Fix 7).
 VALOR_FUNCAO = """    a0ValorDe(referenceId) {
       try {
+        const vivo = (entry) => {
+          if (entry && entry.element && entry.element.isConnected) {
+            return entry.element;
+          }
+          const h = globalThis.__spaceBrowserDomHelper__;
+          const cadeia = entry && Array.isArray(entry.frameChain) ? entry.frameChain : [];
+          return h && h.a0Elemento && entry && entry.nodeId && cadeia.length === 1 && cadeia[0] === h.frameId
+            ? h.a0Elemento(entry.nodeId) : null;
+        };  // a0VivoV1
         const entry = state.entries.get(normalizeReferenceId(referenceId));
-        const el = entry && entry.element;
+        const el = vivo(entry);
         if (!el) {
           return null;
         }
@@ -168,9 +178,18 @@ ROTULOS_FUNCAO = """    a0Rotulos(mostrar) {
         caixa.id = "%(id)s";
         caixa.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none";
         let n = 0;
+        const vivo = (entry) => {
+            if (entry && entry.element && entry.element.isConnected) {
+              return entry.element;
+            }
+            const h = globalThis.__spaceBrowserDomHelper__;
+            const cadeia = entry && Array.isArray(entry.frameChain) ? entry.frameChain : [];
+            return h && h.a0Elemento && entry && entry.nodeId && cadeia.length === 1 && cadeia[0] === h.frameId
+              ? h.a0Elemento(entry.nodeId) : null;
+          };  // a0VivoV1
         for (const [ref, entry] of state.entries) {
-          const el = entry && entry.element;
-          if (!el || entry.helperBacked || !el.isConnected || !el.getBoundingClientRect) {
+          const el = vivo(entry);
+          if (!el || !el.isConnected || !el.getBoundingClientRect) {
             continue;
           }
           const r = el.getBoundingClientRect();
@@ -228,9 +247,27 @@ def script_rapido(source: str) -> str | None:
     return com_rotulos(com_valor_lido(com_rotulo_visual(rapido))) if rapido is not None else None
 
 
+ELEMENTO_FIM = "    captureDocument(payload) {\n      return captureDocument(payload);\n    },\n"
+ELEMENTO_MARCA = "a0Elemento"
+# 21/10: on most sites the page reading goes through the DOM helper and each ref keeps only a parsed COPY of its element
+# (entry.element is not on the page), so reading a typed field back (Fix 7) and the ref numbers on the print found
+# nothing. The helper keeps the live element of each node id in its own frame; this exposes it.
+ELEMENTO_FUNCAO = """    a0Elemento(nodeId) {
+      return elementsByNodeId.get(String(nodeId)) || null;
+    },
+"""
+
+
+def com_elemento_vivo(source: str) -> str:
+    if ELEMENTO_MARCA in source or source.count(ELEMENTO_FIM) != 1:
+        return source
+    return source.replace(ELEMENTO_FIM, ELEMENTO_FIM + ELEMENTO_FUNCAO, 1)
+
+
 def helper_rapido(source: str) -> str | None:
     """DOM helper script with the same fix, or None if it changed upstream."""
-    return _memoize_during(source, "captureDocument")
+    rapido = _memoize_during(source, "captureDocument")
+    return com_elemento_vivo(rapido) if rapido is not None else None
 
 ALVO = "data-a0-alvo"
 
@@ -576,16 +613,36 @@ def _celulas(fn, profundidade: int = 4):
 
 
 def _atualizar_script_vivo(core) -> None:
-    """The fast capture script is fixed when the server first applies these fixes, inside the wrapper's closure; a
-    server already running (deploys do not restart the agent) gets a newer version of it swapped in here."""
+    """The fast capture scripts are fixed when the server first applies these fixes, inside the wrappers' closures; a
+    server already running (deploys do not restart the agent) gets the newer versions swapped in here, rebuilt from
+    Agent Zero's own files (the old ones carry older versions of our functions)."""
+    import sys
+
+    modulo = sys.modules.get(getattr(core, "__module__", ""), None)
+
+    def do_arquivo(nome, montar, atual):
+        caminho = getattr(modulo, nome, None)
+        try:
+            novo = montar(caminho.read_text(encoding="utf-8")) if caminho is not None else None
+        except OSError:
+            novo = None
+        return novo or atual
+
     for cell in _celulas(core._ensure_content_helper):
         try:
             atual = cell.cell_contents
         except ValueError:
             continue
-        if isinstance(atual, str) and "navegadorRapidoHidden" in atual and (
-                ROTULO_MARCA not in atual or VALOR_MARCA not in atual or ROTULOS_MARCA not in atual):
-            cell.cell_contents = com_rotulos(com_valor_lido(com_rotulo_visual(atual)))
+        if isinstance(atual, str) and "navegadorRapidoHidden" in atual and VIVO_MARCA not in atual:
+            novo = do_arquivo("CONTENT_HELPER_PATH", script_rapido, None)
+            cell.cell_contents = novo or com_rotulos(com_valor_lido(com_rotulo_visual(atual)))
+    for cell in _celulas(getattr(core, "_ensure_dom_helper", None)):
+        try:
+            atual = cell.cell_contents
+        except ValueError:
+            continue
+        if isinstance(atual, str) and "captureDocument" in atual and ELEMENTO_MARCA not in atual:
+            cell.cell_contents = do_arquivo("DOM_HELPER_PATH", helper_rapido, None) or com_elemento_vivo(atual)
 
 
 # --- Item 5: JavaScript dialogs (alert / confirm / prompt / beforeunload) ---------------------------------------------
