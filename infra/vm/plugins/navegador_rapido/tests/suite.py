@@ -291,6 +291,11 @@ class Suite:
         eq(c.tecla("ctrl+A"), "Control+a", "combinação")
         eq(c.tecla("a"), "a", "letra fica")
         ok(not c.argumentos_de_teclas({"action": "keyboard", "key": "Enter"}), "certa não muda")
+        # 21/10: keys como texto ("Control+a", "Backspace") era apertado letra por letra
+        args = {"action": "key_chord", "keys": "Control+a"}
+        ok(c.argumentos_de_teclas(args) and args["keys"] == ["Control", "a"], f"keys em texto vira lista: {args}")
+        args = {"action": "key_chord", "keys": "Backspace"}
+        ok(c.argumentos_de_teclas(args) and args["keys"] == ["Backspace"], "uma tecla só, também")
         # scroll sem ref
         args = {"action": "scroll", "browser_id": 3}
         ok(c.argumentos_de_rolagem(args) and args["action"] == "wheel" and args["delta_y"] == 700, "rola para baixo")
@@ -377,6 +382,20 @@ class Suite:
             r = await Core().type(1, "e", "Olá Bruno")
             eq(await pg.inner_text("#e"), "Olá Bruno", "digitou na caixa feita pelo site")
             ok(r["conferido"].startswith("✓"), f"e conferiu: {r['conferido']}")
+
+            # 21/10, Direct do Instagram: a caixa do site acrescenta o texto a cada `type`; dois `type` mandariam duplicado
+            class Acrescenta(Core):
+                _a0_original_type = None  # a classe nova guarda o próprio original (não o herdado de Core)
+
+                async def type(self, browser_id, reference_id, text):
+                    await pg.click("#e")
+                    await pg.keyboard.press("End")
+                    await pg.keyboard.type(text)
+                    return {"ok": True}
+            c._lista_do_site(Acrescenta)
+            await Acrescenta().type(1, "e", "Segue o link")
+            await Acrescenta().type(1, "e", "Segue o link")
+            eq(await pg.inner_text("#e"), "Segue o link", "digitar de novo substitui o que a caixa tinha, sem duplicar")
             await b.close()
 
     async def t_print_com_o_numero_de_cada_ref(self):

@@ -871,6 +871,9 @@ def argumentos_de_teclas(args) -> bool:
     mudou = False
     if isinstance(args.get("key"), str) and args["key"] and tecla(args["key"]) != args["key"]:
         args["key"], mudou = tecla(args["key"]), True
+    if isinstance(args.get("keys"), str) and args["keys"].strip():
+        # 21/10: keys "Control+a" / "Backspace" as one string were pressed letter by letter (typed "Backspace")
+        args["keys"], mudou = [tecla(k) for k in args["keys"].split("+") if k.strip()], True
     if isinstance(args.get("keys"), list):
         novas = [tecla(k) if isinstance(k, str) else k for k in args["keys"]]
         if novas != args["keys"]:
@@ -944,11 +947,12 @@ OPCAO_JS = """(valor) => {
   return { x: r.x + r.width / 2, y: r.y + r.height / 2, texto: norm(e.innerText).slice(0, 60) };
 }"""
 MARK_LISTA = "_navegador_rapido_lista"
+VERSAO_LISTA = 2  # 2: typing into a box drawn by the site replaces its text (21/10)
 
 
 def _lista_do_site(core) -> None:
     original_select = _original(core, "select_option", "original_select")
-    original_type = getattr(core, "type")
+    original_type = _original(core, "type", "original_type")
 
     async def select_option(self, browser_id, ref, value="", values=None):
         try:
@@ -979,7 +983,18 @@ def _lista_do_site(core) -> None:
                 "state": await self._state(resolved_id)}
 
     # 3 failures "cannot type into <div>": a text box drawn by the site (contenteditable editors, search boxes).
+    # 21/10: the Instagram Direct box kept what was there and each `type` added the text again (sent twice would be
+    # worse than not sending): typing into a box drawn by the site now replaces what it holds, like a normal field.
     async def type(self, browser_id, reference_id, text):
+        try:
+            page = self._page(self._resolve_browser_id(browser_id))
+            ponto = await self._point_for(page, reference_id)
+            if await page.evaluate(EDITAVEL_CHEIO_JS, [float(ponto["x"]), float(ponto["y"])]):
+                await page.mouse.click(float(ponto["x"]), float(ponto["y"]))
+                await page.keyboard.press("Control+a")
+                await page.keyboard.press("Delete")
+        except Exception as exc:  # no point for the ref: the original type decides
+            print(f"navegador_rapido: limpar caixa antes de digitar: {exc}", flush=True)
         try:
             return await original_type(self, browser_id, reference_id, text)
         except Exception as exc:
@@ -1002,7 +1017,15 @@ def _lista_do_site(core) -> None:
         return await page.evaluate(PONTO_DO_SELETOR_JS, str(seletor))
 
     core.select_option, core.type, core.a0_ponto_do_seletor = select_option, type, a0_ponto_do_seletor
-    setattr(core, MARK_LISTA, True)
+    setattr(core, MARK_LISTA, VERSAO_LISTA)
+    print(f"navegador_rapido: caixa do site v{VERSAO_LISTA} instalada", flush=True)
+
+
+EDITAVEL_CHEIO_JS = """([x, y]) => {
+  const el = document.elementFromPoint(x, y);
+  const caixa = el && el.closest('[contenteditable]:not([contenteditable="false"])');
+  return !!(caixa && caixa.innerText.trim());
+}"""
 
 
 # 15 + 4 failures "Connection closed while reading from the driver": the browser process died and every later call
@@ -1108,7 +1131,7 @@ def aplicar() -> None:
         _conferir_digitacao(core)
     if not getattr(core, MARK_DIALOGO, False):
         _ouvintes(core)
-    if not getattr(core, MARK_LISTA, False):
+    if getattr(core, MARK_LISTA, False) != VERSAO_LISTA:
         _lista_do_site(core)
     if getattr(core, MARK_PRINT, False) != VERSAO_PRINT:
         _print_rotulado(core)
