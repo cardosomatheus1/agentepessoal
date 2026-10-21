@@ -320,6 +320,27 @@ class Suite:
         ext = (RAIZ / "extensions" / "python" / "tool_execute_before" / "_05_desembrulhar.py").read_text(encoding="utf-8")
         ok("RepairableException(erro)" in ext and "argumentos.conferir(" in ext, "a extensão barra a chamada")
 
+    def t_ferramenta_vai_ao_modelo_com_os_parametros(self):
+        # 21/10: in native mode the browser went to the model with an empty schema, so it guessed names
+        a = _carregar("controle_argumentos_teste3", RAIZ / "helpers" / "argumentos.py")
+        fonte = (
+            "from helpers.tool import Tool\n"
+            "class Navegador(Tool):\n"
+            "    async def execute(self, action: str = '', ref: int | str | None = None, x: float = 0.0,\n"
+            "                      selectors: list[str] | None = None, **kwargs):\n"
+            "        return kwargs.get('operation')\n")
+        e = a.esquema(fonte)
+        eq(e["additionalProperties"], False, "só os parâmetros de verdade")
+        eq(e["properties"]["action"], {"type": "string"}, "tipo simples vai")
+        eq(e["properties"]["x"], {"type": "number"}, "número")
+        eq(e["properties"]["ref"], {}, "união: sem tipo, aceita qualquer")
+        ok("operation" in e["properties"], "o que o corpo lê também vai")
+        eq(a.esquema("class T:\n    async def execute(self, **kwargs):\n        return run(**kwargs)\n"), None,
+           "não dá para saber: fica o do Agent Zero")
+        eq(a.esquema("isto não é python ("), None, "arquivo quebrado: nada")
+        ext = (RAIZ / "extensions" / "python" / "agent_init" / "_25_esquema_das_ferramentas.py").read_text(encoding="utf-8")
+        ok("base.get(\"properties\")" in ext and "argumentos.esquema(" in ext, "só troca o esquema vazio")
+
     def t_clique_em_referencia_que_sumiu(self):
         c = _carregar("controle_clique_teste", RAIZ / "helpers" / "clique.py")
         erro = ('Browser click failed: Page.evaluate: BrowserPageContentReferenceError: Browser page content could not find '

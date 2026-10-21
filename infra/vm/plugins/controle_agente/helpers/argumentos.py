@@ -117,3 +117,58 @@ def conferir(tool_name: str, args, nomes: set | None) -> str:
     return (f"A chamada a '{tool_name}' NÃO foi executada: argumento desconhecido {', '.join(partes)}. "
             f"Argumentos que '{tool_name}' aceita: {', '.join(sorted(nomes))}. "
             "Chame de novo só com esses nomes, direto em tool_args.")
+
+
+# The other half of Hermes' fix: the model sees each tool's real parameters. In native mode Agent Zero sends a plugin
+# tool (the browser, ours) with an EMPTY schema ({"properties": {}, "additionalProperties": true}): the model had to
+# guess names (deltaY, direction, seconds) and sometimes wrapped the call in the text-mode {"tool_name", "tool_args"}.
+# Built from the tool file, without importing it: execute()'s parameters (type from the annotation when it is a plain
+# one) plus the names the body reads; unknown -> None (Agent Zero's schema stays).
+_TIPOS = {"str": "string", "int": "integer", "float": "number", "bool": "boolean", "list": "array", "dict": "object"}
+
+
+def _tipo(anotacao) -> str:
+    import ast
+
+    if isinstance(anotacao, ast.Name):
+        return _TIPOS.get(anotacao.id, "")
+    if isinstance(anotacao, ast.Subscript) and isinstance(anotacao.value, ast.Name):
+        return _TIPOS.get(anotacao.value.id, "")
+    return ""  # unions, Any, None: no type, the model may send any
+
+
+def esquema(fonte: str) -> dict | None:
+    import ast
+
+    try:
+        arvore = ast.parse(fonte)
+    except SyntaxError:
+        return None
+    fn = next((n for c in arvore.body if isinstance(c, ast.ClassDef) for n in c.body
+               if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == "execute"), None)
+    if fn is None:
+        return None
+    segmento = ast.get_source_segment(fonte, fn) or ""
+
+    class _Fonte:  # aceitos() reads the source through inspect.getsource
+        pass
+
+    import inspect
+
+    original = inspect.getsource
+    inspect.getsource = lambda _obj: segmento
+    try:
+        nomes = aceitos(_Fonte)
+    finally:
+        inspect.getsource = original
+    if not nomes:
+        return None
+    props = {}
+    for a in fn.args.args + fn.args.kwonlyargs:
+        if a.arg == "self":
+            continue
+        tipo = _tipo(a.annotation) if a.annotation is not None else ""
+        props[a.arg] = {"type": tipo} if tipo else {}
+    for nome in sorted(nomes - set(props)):
+        props[nome] = {}
+    return {"type": "object", "properties": props, "additionalProperties": False}
