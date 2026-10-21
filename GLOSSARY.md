@@ -55,3 +55,25 @@ _Avoid_: cérebro da empresa, wiki, base de conhecimento
 **Especialista**:
 Um papel com personalidade e regras próprias (Crítico, Designer) que o agente principal chama para uma tarefa e que usa o mesmo Segundo Cérebro; o Matheus não fala com ele direto.
 _Avoid_: bot, subagente, outro agente
+
+### Vídeos
+
+**Molde**:
+Um vídeo-modelo pronto (animação, cenas e limites de texto) que vira o vídeo de qualquer empresa ao receber a Marca e a Ficha dela.
+_Avoid_: template, modelo, tema
+
+**Marca**:
+O que identifica a empresa em todo vídeo: logo, 2 a 4 cores, fonte, @, chamada e voz; preenchida uma vez e reaproveitada.
+_Avoid_: identidade visual, branding, tema
+
+**Ficha**:
+O conteúdo de um vídeo em particular (falas, números, fotos) que preenche os campos de um Molde.
+_Avoid_: roteiro, briefing, formulário
+
+**Prévia**:
+A imagem parada de um Molde já com a Marca do cliente, mostrada para ele escolher antes de gerar o vídeo.
+_Avoid_: thumbnail, amostra, rascunho
+
+**Pedido sem molde**:
+O que o cliente pediu e que nenhum Molde atende; é guardado para decidir quais Moldes construir, nunca criado na hora.
+_Avoid_: molde sob medida, pedido especial

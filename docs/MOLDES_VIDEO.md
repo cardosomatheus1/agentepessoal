@@ -113,6 +113,34 @@ o código é a Main Opus): a escolha do molde é decisão semântica (proposta, 
 publicar é efeito externo e passa pela ação governada, e nada vai a cliente real antes da ROS-F9-013. Esta sessão
 entrega o motor, o catálogo e os testes prontos para a Story.
 
+### Criador de vídeos do NEXOS (decidido com o Matheus em 21/10)
+
+Uma página do NEXOS onde o dono do restaurante faz o próprio vídeo. Entra por Story, depois do MVP atual, como frente
+de crescimento do cliente (não aumenta o primeiro piloto).
+
+- **Quem e para quê:** o dono do restaurante, sozinho; vídeo vertical de 15 a 60 s para Instagram e WhatsApp. Anúncio
+  pago e vídeo longo ficam fora da 1ª versão.
+- **O que ele preenche:** logo e 2 cores (a Marca, guardada depois da 1ª vez), uma frase do que quer e, se quiser,
+  fotos dos pratos; nome, endereço, WhatsApp e cardápio vêm do NEXOS.
+- **Escolha:** a IA sugere 3 Moldes que combinam com a frase, mostrados como Prévia (imagem parada com a Marca dele,
+  grátis); o vídeo, que gasta voz, só é gerado depois da escolha. Ele nunca vê o catálogo inteiro. Entram todos os
+  Moldes do catálogo, menos os que o Matheus rejeitou no AR Board ("pode aprovar os outros, estão bons no geral").
+- **Quando não se encaixa:** conteúdo que não cabe (texto longo, foto ruim, cor sem contraste) é ajustado pelo motor
+  sozinho; pedido que nenhum Molde atende vira Pedido sem molde: a página diz o que não dá e oferece os 3 mais
+  próximos. Nenhum Molde novo é criado na hora; a lista de Pedidos sem molde vira a fila do que construir.
+- **Foto do prato:** só a do cliente (ajuste automático de recorte, luz e tamanho; se continuar ruim, pede outra). A
+  IA nunca inventa foto do prato; no máximo fundo ou ambiente.
+- **Voz e música:** Carolina por padrão ou "sem voz"; música só do banco livre de direitos do motor.
+- **Conferência:** antes de mostrar, as conferências do motor e o Crítico; reprovou, refaz uma vez; reprovou de novo,
+  oferece outro Molde. O cliente nunca vê vídeo reprovado.
+- **Depois de pronto:** até 2 ajustes grátis (cada um gera um vídeo novo); só baixar na 1ª versão (publicar direto
+  fica para depois). Biblioteca do restaurante guarda os vídeos por 90 dias; a Ficha fica para gerar de novo.
+- **Limite e custo:** limite mensal de vídeos por plano (ex.: 10 no básico, 30 no profissional), sem avulso na 1ª
+  versão; ajuste não conta. Custo por vídeo abaixo de US$ 0,15 (texto centavos, voz ~US$ 0,02, foto de fundo só se
+  faltar US$ 0,04 a 0,06; render no próprio servidor).
+- **Onde roda:** uma cópia do motor e do catálogo dentro do NEXOS, como peça própria; nunca dependendo do agente
+  pessoal do Matheus.
+
 ## 7. Catálogo
 
 | # | Molde | Grupo | Onda | Formatos | Situação | Diferencial | Já existe |
