@@ -87,6 +87,35 @@ class Suite:
             eq(await pg.evaluate(c.ALVO_VISIVEL, "[[["), "", "seletor inválido não quebra")
             await b.close()
 
+    async def t_envio_de_arquivo_por_campo_escondido(self):
+        c = _correcoes()
+        campos = [{"accept": "image/*"}, {"accept": ".pdf,.xlsx"}, {"accept": ""}]
+        eq(c.escolher_input(campos, ["/a/planilha.xlsx"]), 2, "o último campo que aceita (sem accept aceita tudo)")
+        eq(c.escolher_input(campos[:2], ["/a/planilha.xlsx"]), 1, "o que aceita .xlsx")
+        eq(c.escolher_input(campos[:2], ["/a/foto.jpg"]), 0, "imagem vai no image/*")
+        eq(c.escolher_input(campos[:1], ["/a/planilha.xlsx"]), None, "nenhum aceita: não força")
+        eq(c.escolher_input([], ["/a/x.xlsx"]), None, "sem campo de arquivo")
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return
+        exe = os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+        if not Path(exe).exists():
+            return
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            arq = Path(tmp) / "76437182_CL.xlsx"
+            arq.write_bytes(b"PK\x03\x04teste")
+            async with async_playwright() as p:
+                b = await p.chromium.launch(executable_path=exe, headless=True)
+                pg = await b.new_page()
+                # como no claude.ai: o campo de arquivo existe, mas escondido, e o botão é que aparece
+                await pg.set_content('<button>Anexar</button><input type="file" id="f" style="display:none" multiple>')
+                eq(await c.enviar_pelo_campo(pg, [str(arq)]), 0, "achou o campo escondido")
+                eq(await pg.evaluate("document.getElementById('f').files[0].name"), "76437182_CL.xlsx",
+                   "o arquivo entrou no campo escondido")
+                await b.close()
+
     async def t_content_usa_o_alvo_visivel(self):
         c = _correcoes()
         recebidos = []

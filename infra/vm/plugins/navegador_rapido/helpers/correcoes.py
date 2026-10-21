@@ -146,9 +146,84 @@ def _baixados(core) -> None:
     setattr(core, MARK_BAIXADOS, True)
 
 
+ARQUIVO = "__arquivo__"  # ref used when the page's file field is hidden (no ref of its own)
+
+
+def escolher_input(campos: list[dict], caminhos: list[str]) -> int | None:
+    """Which <input type=file> gets the files: one whose `accept` takes them, the most recent (last) first.
+    campos: [{"accept": ".xlsx,image/*", ...}] in page order."""
+    import mimetypes
+
+    def aceita(accept: str, caminho: str) -> bool:
+        regras = [r.strip().lower() for r in str(accept or "").split(",") if r.strip()]
+        if not regras:
+            return True
+        ext = "." + caminho.rsplit(".", 1)[-1].lower() if "." in caminho else ""
+        mime = (mimetypes.guess_type(caminho)[0] or "").lower()
+        return any(r == ext or r == mime or (r.endswith("/*") and mime.startswith(r[:-1])) for r in regras)
+
+    for i in range(len(campos) - 1, -1, -1):
+        if all(aceita(campos[i].get("accept", ""), c) for c in caminhos):
+            return i
+    return None
+
+
+async def enviar_pelo_campo(page, caminhos: list[str]) -> int | None:
+    """Puts the files in the page's file field, hidden or not (Playwright allows it); returns its index or None."""
+    campos = page.locator("input[type=file]")
+    infos = [{"accept": await campos.nth(i).get_attribute("accept") or ""} for i in range(await campos.count())]
+    i = escolher_input(infos, caminhos)
+    if i is not None:
+        await campos.nth(i).set_input_files(caminhos)
+    return i
+
+
+def _envio_de_arquivo(core) -> None:
+    """Fix 6: upload_file also works on a hidden file field (21/10: claude.ai's attach input has no ref, and the
+    agent gave up after 'could not resolve selector' and 'cannot upload through helper-backed reference')."""
+    from plugins._browser.tools import browser as ferramenta
+
+    original_resolve = ferramenta.Browser._resolve_ref.__func__
+    original_upload = core.upload_file
+
+    async def _resolve_ref(cls, runtime, browser_id, ref, selector="", action="action", *, required=True):
+        try:
+            return await original_resolve(cls, runtime, browser_id, ref, selector, action, required=required)
+        except Exception:
+            if action == "upload_file":
+                return ARQUIVO
+            raise
+
+    async def upload_file(self, browser_id, ref, path="", paths=None):
+        erro = None
+        if ref != ARQUIVO:
+            try:
+                return await original_upload(self, browser_id, ref, path=path, paths=paths)
+            except Exception as exc:
+                erro = exc
+        caminhos = self._normalize_upload_paths(path=path, paths=paths)
+        await self.ensure_started()
+        resolved_id = self._resolve_browser_id(browser_id)
+        page = self._page(resolved_id)
+        i = await enviar_pelo_campo(page, caminhos)
+        if i is None:
+            raise erro or ValueError("a página não tem campo de arquivo que aceite esse arquivo; clique antes no botão "
+                                     "de anexar (ele cria o campo) e tente upload_file de novo")
+        await self._settle(page, short=True)
+        self._maybe_promote(resolved_id)
+        return {"action": {"files": caminhos, "input": {"via": "campo de arquivo da página", "indice": i},
+                           "ref": ref},
+                "state": await self._state(resolved_id)}
+
+    ferramenta.Browser._resolve_ref = classmethod(_resolve_ref)
+    core.upload_file = upload_file
+    setattr(core, MARK_ARQUIVO, True)
+
+
 MARK = "_navegador_rapido_v3"
 MARK_ALVO = "_navegador_rapido_alvo"
 MARK_BAIXADOS = "_navegador_rapido_baixados"
+MARK_ARQUIVO = "_navegador_rapido_arquivo"
 
 
 def aplicar() -> None:
@@ -159,6 +234,8 @@ def aplicar() -> None:
         _alvo_visivel(core)
     if not getattr(core, MARK_BAIXADOS, False):
         _baixados(core)
+    if not getattr(core, MARK_ARQUIVO, False):
+        _envio_de_arquivo(core)
     if getattr(core, MARK, False):
         return
 
