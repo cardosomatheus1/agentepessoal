@@ -21,7 +21,9 @@ funcionou depois de uma falha). Esta sessão cuida do outro lado: o **defeito da
    - não entra: site fora do ar, captcha, senha errada, falha de terceiros, falta de permissão, avisos de laço sem
      causa de ferramenta por trás (anote no resumo, não conserte no escuro).
 4. Para cada grupo escolhido:
-   - confira no `git log` se outra sessão mexeu nesse plugin nas últimas horas; se sim, pule e diga no resumo;
+   - confira no `git log` se outra sessão mexeu nesse plugin nas **últimas 2 horas** (pode estar trabalhando nele
+     agora); se sim, pule e diga no resumo. Commit mais antigo que isso é trabalho terminado: não impede (21/10: a 1ª
+     rodada pulou tudo por causa dos commits do dia);
    - escreva o teste **com a chamada exata do relatório** (os `args` e o resultado reais) e veja ele **falhar** no
      código atual;
    - conserte no lugar certo (quase sempre `infra/vm/plugins/navegador_rapido`, `controle_agente` ou o plugin da
