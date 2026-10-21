@@ -38,10 +38,21 @@ ou
 VEREDITO: REPROVADO — <o problema principal em uma frase>"""
 
 
+FIM = "__FIM_OPENCODE="
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
 def veredito(saida: str) -> str:
-    """'aprovado', 'reprovado' or '' (no verdict line: the review did not finish)."""
-    achados = re.findall(r"VEREDITO:\s*(APROVADO|REPROVADO)", str(saida or ""), re.I)
-    return achados[-1].lower() if achados else ""
+    """'aprovado', 'reprovado' or '' (the review did not finish: opencode exited with an error or timed out, or its LAST
+    line is not the verdict). The prompt and the files the reviewer reads also contain "VEREDITO:" (OpenCode review of
+    this script, 21/10): only the final line of a run that ended well counts."""
+    texto = _ANSI.sub("", str(saida or ""))
+    fim = re.findall(rf"{FIM}(\d+)", texto)
+    if not fim or fim[-1] != "0":
+        return ""
+    linhas = [l.strip().strip("*`").strip() for l in texto[:texto.rindex(FIM)].splitlines() if l.strip()]
+    m = re.match(r"VEREDITO:\s*(APROVADO|REPROVADO)\b", linhas[-1], re.I) if linhas else None
+    return m.group(1).lower() if m else ""
 
 
 def comando_vm(chave_s3: str, pasta: str, motivo: str) -> str:
@@ -51,7 +62,7 @@ def comando_vm(chave_s3: str, pasta: str, motivo: str) -> str:
             f"docker exec agent-zero mkdir -p {pasta} && docker cp /tmp/{chave_s3} agent-zero:{pasta}/diff.patch && "
             f"echo {p64} | base64 -d > /tmp/{chave_s3}.pedido && docker cp /tmp/{chave_s3}.pedido agent-zero:{pasta}/pedido.md && "
             f"docker exec -w /a0/usr agent-zero sh -c 'timeout 900 {OPENCODE} run --model {MODELO} "
-            f"\"$(cat {pasta}/pedido.md)\" > {pasta}/revisao.md 2>&1; tail -c 6000 {pasta}/revisao.md'")
+            f"\"$(cat {pasta}/pedido.md)\" > {pasta}/revisao.md 2>&1; rc=$?; tail -c 6000 {pasta}/revisao.md; echo; echo {FIM}$rc'")
 
 
 def main(argv: list) -> int:

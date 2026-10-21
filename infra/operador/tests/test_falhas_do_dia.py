@@ -66,12 +66,16 @@ def main() -> int:
     spec = importlib.util.spec_from_file_location("revisar_teste", RAIZ / "infra" / "operador" / "revisar_opencode.py")
     r = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(r)
-    ok(r.veredito("...\nVEREDITO: APROVADO") == "aprovado", "aprovado")
-    ok(r.veredito("VEREDITO: APROVADO no rascunho\n...\nVEREDITO: REPROVADO — quebra o upload") == "reprovado",
-       "vale o último veredito")
-    ok(r.veredito("o modelo parou no meio") == "", "sem veredito: a revisão não terminou (não implanta)")
+    F = r.FIM
+    ok(r.veredito(f"análise...\nVEREDITO: APROVADO\n\n{F}0") == "aprovado", "aprovado na última linha, terminou bem")
+    ok(r.veredito(f"\x1b[0m**VEREDITO: REPROVADO — quebra o upload**\n{F}0") == "reprovado", "com negrito e cor")
+    # o pedido (e o que o revisor lê) contém "VEREDITO: APROVADO": no meio do texto não vale
+    ok(r.veredito(f"Termine com UMA linha: VEREDITO: APROVADO\n$ grep ...\n{F}124") == "", "estourou o tempo: não vale")
+    ok(r.veredito(f"VEREDITO: APROVADO (do pedido)\nlendo arquivos...\n{F}0") == "", "veredito que não é a última linha")
+    ok(r.veredito("VEREDITO: APROVADO") == "", "sem a marca de fim: a revisão não terminou")
     c = r.comando_vm("revisao_1.patch", "/a0/usr/workdir/revisao_opencode/revisao_1", "x'; rm -rf /; echo '")
-    ok("rm -rf" not in c and "opencode2 run --model amazon-bedrock/global.anthropic.claude-opus-5-5" in c,
+    ok("rm -rf" not in c and "opencode2 run --model amazon-bedrock/global.anthropic.claude-opus-5-5" in c
+       and f"echo {F}$rc" in c,
        "o motivo vai em base64 e o modelo é o Opus 5.5")
 
     for m in falhas:
