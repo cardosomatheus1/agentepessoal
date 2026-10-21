@@ -233,6 +233,26 @@ def livre_meta_raiz(analise: dict, tool: str, args: dict, intencao: str, cfg: di
     return bool(META.search(texto)) and not FORA_META.search(texto)
 
 
+NOVENTA_E_NOVE = re.compile(r"\b99\s?food\b|portal da 99|\bna 99\b|\bda 99\b|appshopid|br_t_raizconnect", re.I)
+URL_99 = re.compile(r"https?://([\w-]+\.)*99app\.com(/|$)", re.I)
+FORA_99 = re.compile(r"pagament|cobran|cart[aã]o|boleto|\bpix\b|conta banc|dados banc|repasse|senha|2fa|dois fatores|"
+                     r"e-?mail de recupera|revog|apag|exclu|delet|remov|desativ", re.I)
+
+
+def livre_99food(analise: dict, tool: str, args: dict, intencao: str, cfg: dict, url: str = "") -> bool:
+    """Matheus (21/10): "O agente ta enchendo saco pedindo permissão pra td pro 99, ele precisa de mais liberdade" — the
+    99Food homologation steps in the browser (the developer portal, the test app, the test store and its manager, the
+    forms and the submission for review) go without asking, and he is told. The site's summaries rarely say "99" ("No
+    site aberto, confirmar a criação da loja"), so the page the browser is on counts too. Never this way: payments and
+    bank data, passwords and account security, revoking or deleting, messages to people (other category)."""
+    if not cfg.get("noventa_e_nove_sem_perguntar", True) or (tool or "").lower() != "browser":
+        return False
+    if analise.get("categoria") not in ("contas_reais", "chaves_acesso", "termos", "enviar_analise"):
+        return False
+    texto = f"{intencao} {_texto(args)} {analise.get('resumo', '')}"
+    return bool(URL_99.match(url or "") or NOVENTA_E_NOVE.search(texto)) and not FORA_99.search(texto)
+
+
 def veredito(regras: dict, analise: dict) -> str:
     categoria = analise["categoria"]
     if categoria == "nenhuma":

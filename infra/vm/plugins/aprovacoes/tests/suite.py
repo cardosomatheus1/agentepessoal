@@ -125,6 +125,33 @@ class Suite:
         ok(not rv.livre_meta_raiz({"categoria": "chaves_acesso", "resumo": "token de acesso no Graph API"}, "browser", {},
                                   "", {"instagram_sem_perguntar": False}), "desligável na configuração")
 
+    def t_99food_sem_perguntar(self):
+        rv, cfg = self.rv, {}
+        site = "https://developer-food.99app.com/pt-BR/home"
+        livre = lambda cat, resumo, url=site, intencao="": rv.livre_99food({"categoria": cat, "resumo": resumo},  # noqa: E731
+                                                                           "browser", {"action": "click", "ref": 7}, intencao, cfg, url)
+        # os pedidos reais de 21/10 (log do agent-zero)
+        ok(livre("contas_reais", "No portal da 99, confirmar os dados da loja de teste (nome e AppShopID).", ""),
+           "pelo texto, sem a página")
+        ok(livre("contas_reais", "No site/app aberto, adicionar como gerente a pessoa cujos dados foram preenchidos no formulário."),
+           "pela página da 99")
+        ok(livre("contas_reais", "No site aberto, confirmar a criação da loja com o gerente selecionado."), "criar a loja de teste")
+        ok(livre("enviar_analise", "Enviar o app BR_T_RaizConnect para homologação", ""), "enviar para homologação")
+        ok(livre("chaves_acesso", "Copiar o App Secret do app de teste", "https://food.99app.com/dev"), "outro endereço da 99")
+        ok(not livre("contas_reais", "No site aberto, confirmar a criação da loja", "https://portal.ifood.com.br/x"),
+           "outro site sem falar da 99: pergunta")
+        ok(not livre("mensagem_terceiros", "Enviar pelo Outlook um e-mail para o suporte da 99"), "mensagem a pessoas continua pedindo")
+        ok(not livre("pagamento", "Cadastrar cartão na 99"), "pagamento nunca")
+        ok(not livre("contas_reais", "Cadastrar os dados bancários para repasse na 99"), "dados de banco, não")
+        ok(not livre("contas_reais", "Trocar a senha da conta da 99"), "senha, não")
+        ok(not livre("chaves_acesso", "Revogar a chave do app na 99"), "revogar, não")
+        ok(not livre("contas_reais", "Excluir a loja de teste na 99"), "apagar, não")
+        ok(not livre("contas_reais", "Alterar a conta no 99app.com.evil.io", "https://99app.com.evil.io/"), "endereço parecido não vale")
+        ok(not rv.livre_99food({"categoria": "contas_reais", "resumo": "loja na 99"}, "code_execution_tool", {}, "", cfg, site),
+           "só no navegador")
+        ok(not rv.livre_99food({"categoria": "contas_reais", "resumo": "loja na 99"}, "browser", {}, "",
+                               {"noventa_e_nove_sem_perguntar": False}, site), "desligável na configuração")
+
     # ------------------------------------------------------------------ "Nesta tarefa" (14/10)
 
     def t_nesta_tarefa_so_a_categoria_e_so_esta_tarefa(self):
