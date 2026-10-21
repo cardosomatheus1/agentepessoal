@@ -395,7 +395,8 @@ class Suite:
         erro = ('Browser click failed: Page.evaluate: BrowserPageContentReferenceError: Browser page content could not find '
                 'reference "button 21".')
         ok(c.dica("browser", erro), "o clique que falhou ganha a saída")
-        ok(c.dica("browser", 'BrowserDomHelperSelectorError: Browser DOM helper could not resolve selector "x"'), "seletor também")
+        d = c.dica("browser", 'Browser click failed: click could not resolve selector "button[aria-label=\'Next\']" to a browser ref')
+        ok("não mudou" in d and "mudou depois" not in d, f"seletor: dica certa, não 'a página mudou': {d}")
         ok(not c.dica("browser", "clicked"), "clique que deu certo: nada")
         ok(not c.dica("code_execution_tool", erro), "só no navegador")
         ok(not c.dica("browser", erro + c.DICA), "não repete a dica")

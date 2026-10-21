@@ -671,6 +671,254 @@ def _ouvintes(core) -> None:
     setattr(core, MARK_DIALOGO, True)
 
 
+def desembrulhar(tool_args):
+    """21/10, 38 calls in 4 days: the agent nested its arguments ({"tool_args": {"action": "click", ...}}). The tool
+    runs execute(**tool_args), so action was empty and it silently returned the page state: the agent believed it
+    had clicked. The inner arguments are moved up, in place (the same dict is then passed to the tool)."""
+    if isinstance(tool_args, dict) and isinstance(tool_args.get("tool_args"), dict):
+        dentro = tool_args.pop("tool_args")
+        tool_args.pop("tool_name", None)
+        for k, v in dentro.items():
+            tool_args.setdefault(k, v)
+    return tool_args
+
+
+# ---- 21/10, from the agent's own logs (4 days, every browser call): the failures that repeat the most ----
+
+# 55 failed clicks: `click` with `selector` and no ref ("could not resolve selector \"button[aria-label='Next']\"").
+# The tool only maps a selector to a ref of the page reading, and many elements have none. The selector now goes
+# straight to the page: CSS, `text=...` or `:has-text(...)`; the first visible match is clicked with the mouse.
+PONTO_DO_SELETOR_JS = """(sel) => {
+  const visivel = (e) => { const r = e.getBoundingClientRect(), s = getComputedStyle(e);
+    return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none"; };
+  const norm = (t) => String(t || "").replace(/\\s+/g, " ").trim().toLowerCase();
+  let lista = [];
+  const texto = sel.match(/^text\\s*=\\s*["']?(.+?)["']?$/i) || sel.match(/:has-text\\(\\s*["'](.+?)["']\\s*\\)/i);
+  if (texto) {
+    const t = norm(texto[1]);
+    const todos = [...document.querySelectorAll("a,button,[role],input,label,span,div,li,td,p,h1,h2,h3,h4,option")];
+    const iguais = todos.filter((e) => norm(e.innerText || e.value || e.getAttribute("aria-label")) === t);
+    lista = (iguais.length ? iguais : todos.filter((e) => norm(e.innerText).includes(t)))
+      .sort((a, b) => a.getBoundingClientRect().width * a.getBoundingClientRect().height
+                    - b.getBoundingClientRect().width * b.getBoundingClientRect().height);
+  } else {
+    try { lista = [...document.querySelectorAll(sel)]; } catch (e) { return { erro: "seletor inválido" }; }
+  }
+  const e = lista.find(visivel);
+  if (!e) return { achados: lista.length };
+  e.scrollIntoView({ block: "center", inline: "center" });
+  const r = e.getBoundingClientRect(), tag = e.tagName.toLowerCase();
+  return { achados: lista.length, x: r.x + r.width / 2, y: r.y + r.height / 2, tag,
+           campo: e.isContentEditable || tag === "input" || tag === "textarea" };
+}"""
+COM_SELETOR = {"click", "double_click", "right_click", "hover", "type", "type_submit", "typesubmit"}
+
+
+def _sem(v) -> bool:
+    return v is None or str(v).strip() == ""
+
+
+async def resolver_seletor(args, chamar) -> str:
+    """click/hover/type with only a selector → the mouse on the element the page itself finds. `chamar(method, *a)` is
+    runtime.call. Returns a note for the result ('' when nothing was done)."""
+    if not isinstance(args, dict):
+        return ""
+    acao = str(args.get("action", "")).strip().lower().replace("-", "_")
+    seletor = str(args.get("selector") or "").strip()
+    if acao not in COM_SELETOR or not seletor or not _sem(args.get("ref")) or args.get("x") or args.get("y"):
+        return ""
+    bid = args.get("browser_id")
+    ponto = await chamar("a0_ponto_do_seletor", bid, seletor)
+    if not isinstance(ponto, dict) or "x" not in ponto:
+        achados = (ponto or {}).get("achados", 0) if isinstance(ponto, dict) else 0
+        return (f"\n↻ O seletor {seletor!r} não achou elemento visível na página ({achados} escondido(s)). Leia a página "
+                "(`content`) e use a ref do elemento, ou clique pelas coordenadas do print.")
+    args.pop("selector", None)
+    if acao in ("click", "double_click", "right_click", "hover"):
+        args["x"], args["y"] = ponto["x"], ponto["y"]
+        return ""
+    # type/type_submit: click into the field, replace what is there, type; Enter for type_submit
+    await chamar("mouse", bid, "click", ponto["x"], ponto["y"])
+    if ponto.get("campo"):
+        await chamar("key_chord", bid, ["Control", "a"])
+    if acao == "type":
+        args["action"] = "keyboard"
+        args["key"] = ""
+        return ""
+    await chamar("keyboard", bid, key="", text=str(args.get("text") or ""))
+    args["action"], args["key"], args["text"] = "keyboard", "Enter", ""
+    return ""
+
+
+# 8 failures "Unknown key: ARROWDOWN" / "ENTER": the agent writes key names in capitals.
+TECLAS = {t.lower(): t for t in (
+    "Enter", "Escape", "Tab", "Backspace", "Delete", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End",
+    "PageUp", "PageDown", "Insert", "Space", "Control", "Shift", "Alt", "Meta", "F1", "F2", "F3", "F4", "F5", "F6",
+    "F7", "F8", "F9", "F10", "F11", "F12")}
+TECLAS.update({"esc": "Escape", "return": "Enter", "del": "Delete", "up": "ArrowUp", "down": "ArrowDown",
+               "left": "ArrowLeft", "right": "ArrowRight", "ctrl": "Control", "cmd": "Meta", "pgup": "PageUp",
+               "pgdn": "PageDown", "spacebar": "Space"})
+
+
+def tecla(nome: str) -> str:
+    """'ENTER' → 'Enter', 'ctrl+A' → 'Control+a' (a single letter stays lower case, as typed)."""
+    partes = [p.strip() for p in str(nome or "").split("+")] if len(str(nome or "")) > 1 else [str(nome or "")]
+    return "+".join(TECLAS.get(p.lower(), p.lower() if len(p) == 1 and len(partes) > 1 else p) for p in partes)
+
+
+def argumentos_de_teclas(args) -> bool:
+    if not isinstance(args, dict):
+        return False
+    mudou = False
+    if isinstance(args.get("key"), str) and args["key"] and tecla(args["key"]) != args["key"]:
+        args["key"], mudou = tecla(args["key"]), True
+    if isinstance(args.get("keys"), list):
+        novas = [tecla(k) if isinstance(k, str) else k for k in args["keys"]]
+        if novas != args["keys"]:
+            args["keys"], mudou = novas, True
+    return mudou
+
+
+# 9 + 3 + 1 failures "ref is required for this browser action": scroll/detail/type_submit without a ref.
+def argumentos_de_rolagem(args) -> bool:
+    """scroll with no ref → turn the mouse wheel in the middle of the page (down, or up when asked)."""
+    if not isinstance(args, dict):
+        return False
+    acao = str(args.get("action", "")).strip().lower()
+    if acao != "scroll" or not _sem(args.get("ref")) or str(args.get("selector") or "").strip():
+        return False
+    direcao = str(args.get("direction") or args.get("direcao") or "down").lower()
+    try:
+        quanto = abs(float(args.get("delta_y") or args.get("amount") or args.get("pixels") or 700))
+    except (TypeError, ValueError):
+        quanto = 700.0
+    args.update(action="wheel", x=float(args.get("x") or 640), y=float(args.get("y") or 400), delta_x=0,
+                delta_y=-quanto if direcao in ("up", "cima", "acima", "top") else quanto)
+    for k in ("direction", "direcao", "amount", "pixels"):
+        args.pop(k, None)
+    return True
+
+
+# 17 failures "cannot select helper-backed reference": a list drawn by the site (not a <select>). The tool now opens
+# it with the mouse and clicks the option by its text, like a person.
+OPCAO_JS = """(valor) => {
+  const norm = (t) => String(t || "").replace(/\\s+/g, " ").trim().toLowerCase();
+  const v = norm(valor);
+  const visivel = (e) => { const r = e.getBoundingClientRect(), s = getComputedStyle(e);
+    return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none"; };
+  const todos = [...document.querySelectorAll('[role=option],[role=menuitem],[role=treeitem],li,[class*=option],[class*=item],div,span')]
+    .filter(visivel);
+  const iguais = todos.filter((e) => norm(e.innerText) === v);
+  const lista = iguais.length ? iguais : todos.filter((e) => norm(e.innerText).startsWith(v));
+  lista.sort((a, b) => a.getBoundingClientRect().width * a.getBoundingClientRect().height
+                     - b.getBoundingClientRect().width * b.getBoundingClientRect().height);
+  const e = lista[0];
+  if (!e) return null;
+  e.scrollIntoView({ block: "center" });
+  const r = e.getBoundingClientRect();
+  return { x: r.x + r.width / 2, y: r.y + r.height / 2, texto: norm(e.innerText).slice(0, 60) };
+}"""
+MARK_LISTA = "_navegador_rapido_lista"
+
+
+def _lista_do_site(core) -> None:
+    original_select = _original(core, "select_option", "original_select")
+    original_type = getattr(core, "type")
+
+    async def select_option(self, browser_id, ref, value="", values=None):
+        try:
+            return await original_select(self, browser_id, ref, value=value, values=values)
+        except Exception as exc:
+            if "helper-backed" not in str(exc) and "not a <select>" not in str(exc).lower() \
+                    and "cannot select" not in str(exc).lower():
+                raise
+            erro = exc
+        alvo = (values or [value])[0] if (values or value) else ""
+        resolved_id = self._resolve_browser_id(browser_id)
+        page = self._page(resolved_id)
+        ponto = await self._point_for(page, ref)
+        await page.mouse.click(float(ponto["x"]), float(ponto["y"]))
+        opcao = None
+        for _ in range(12):  # up to ~3 s for the options to appear
+            await page.wait_for_timeout(250)
+            opcao = await page.evaluate(OPCAO_JS, str(alvo))
+            if opcao:
+                break
+        if not opcao:
+            raise ValueError(f"{erro} — abri a lista, mas não achei a opção {alvo!r}; veja o print e clique na opção "
+                             "pelo texto ou pelas coordenadas")
+        await page.mouse.click(float(opcao["x"]), float(opcao["y"]))
+        await self._settle(page, short=True)
+        self._maybe_promote(resolved_id)
+        return {"action": {"ok": True, "via": "lista do site aberta com o mouse", "opcao": opcao["texto"]},
+                "state": await self._state(resolved_id)}
+
+    # 3 failures "cannot type into <div>": a text box drawn by the site (contenteditable editors, search boxes).
+    async def type(self, browser_id, reference_id, text):
+        try:
+            return await original_type(self, browser_id, reference_id, text)
+        except Exception as exc:
+            if "cannot type into" not in str(exc):
+                raise
+        resolved_id = self._resolve_browser_id(browser_id)
+        page = self._page(resolved_id)
+        ponto = await self._point_for(page, reference_id)
+        await page.mouse.click(float(ponto["x"]), float(ponto["y"]))
+        await page.keyboard.press("Control+a")
+        await page.keyboard.type(str(text))
+        await self._settle(page, short=True)
+        lido = await page.evaluate("() => (document.activeElement && (document.activeElement.value ?? "
+                                   "document.activeElement.innerText) || '').slice(0, 300)")
+        return {"action": {"ok": True, "via": "clique + teclado (caixa de texto feita pelo site)"},
+                "conferido": conferir_digitado(text, {"valor": lido}), "state": await self._state(resolved_id)}
+
+    async def a0_ponto_do_seletor(self, browser_id, seletor):
+        page = self._page(self._resolve_browser_id(browser_id))
+        return await page.evaluate(PONTO_DO_SELETOR_JS, str(seletor))
+
+    core.select_option, core.type, core.a0_ponto_do_seletor = select_option, type, a0_ponto_do_seletor
+    setattr(core, MARK_LISTA, True)
+
+
+# 15 + 4 failures "Connection closed while reading from the driver": the browser process died and every later call
+# failed the same way until the agent gave up (the context still looks alive to the tool). Now the dead browser is
+# dropped and started again; open/navigate/list/state are repeated, other actions say to reopen the page.
+CAIU = ("connection closed while reading from the driver", "browser has been closed",
+        "target page, context or browser has been closed", "browser.new_context: target closed")
+REPETIR_DEPOIS_DE_CAIR = {"open", "navigate", "list", "state"}
+MARK_CAIU = "_navegador_rapido_caiu"
+
+
+def navegador_caiu(exc) -> bool:
+    texto = str(exc).lower()
+    return any(c in texto for c in CAIU)
+
+
+def _reinicio_se_cair(runtime_mod) -> None:
+    classe = runtime_mod.BrowserRuntime
+    original_call_for = _original(classe, "call_for", "original_call_for")
+
+    async def call_for(self, context_id, method, *args, **kwargs):
+        try:
+            return await original_call_for(self, context_id, method, *args, **kwargs)
+        except Exception as exc:
+            if method in ("close", "close_context", "a0_reiniciar") or not navegador_caiu(exc):
+                raise
+            print(f"navegador_rapido: o navegador caiu ({exc}); reiniciando", flush=True)
+            await original_call_for(self, context_id, "a0_reiniciar")
+            if method in REPETIR_DEPOIS_DE_CAIR:
+                return await original_call_for(self, context_id, method, *args, **kwargs)
+            raise RuntimeError(f"{exc} — o navegador tinha caído e já foi reiniciado. Abra a página de novo (open ou "
+                               "navigate), leia (content) e refaça esta ação.") from exc
+
+    async def a0_reiniciar(self):
+        await self._discard_stale_context("navegador_rapido: browser driver died; restarting")
+
+    classe.call_for = call_for
+    runtime_mod._BrowserRuntimeCore.a0_reiniciar = a0_reiniciar
+    setattr(classe, MARK_CAIU, True)
+
+
 def aplicar() -> None:
     from plugins._browser.helpers import runtime
 
@@ -685,6 +933,10 @@ def aplicar() -> None:
         _conferir_digitacao(core)
     if not getattr(core, MARK_DIALOGO, False):
         _ouvintes(core)
+    if not getattr(core, MARK_LISTA, False):
+        _lista_do_site(core)
+    if not getattr(runtime.BrowserRuntime, MARK_CAIU, False):
+        _reinicio_se_cair(runtime)
     if getattr(core, MARK, False):
         _atualizar_script_vivo(core)
         return

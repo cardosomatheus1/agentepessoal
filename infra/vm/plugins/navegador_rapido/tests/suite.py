@@ -265,6 +265,144 @@ class Suite:
                 eq(await c.pelo_gatilho_da_pagina(pg, [str(arq)]), "", "sem botão de anexar: devolve vazio (vai ao campo)")
                 await b.close()
 
+    async def t_chamadas_reais_que_falharam_no_registro(self):
+        """21/10: as chamadas exatas do agente que mais falharam em 4 dias de registro."""
+        c = _correcoes()
+        # 38 chamadas embrulhadas: viravam 'state' calado
+        args = {"tool_args": {"action": "click", "browser_id": 46, "x": 381, "y": 449}, "tool_name": "browser"}
+        c.desembrulhar(args)
+        eq(args, {"action": "click", "browser_id": 46, "x": 381, "y": 449}, "argumentos desembrulhados no mesmo dict")
+        eq(c.desembrulhar({"action": "content"}), {"action": "content"}, "normal fica igual")
+        # teclas em maiúsculas
+        args = {"action": "keyboard", "key": "ENTER"}
+        ok(c.argumentos_de_teclas(args) and args["key"] == "Enter", "ENTER → Enter")
+        args = {"action": "key_chord", "keys": ["CONTROL", "a"]}
+        ok(c.argumentos_de_teclas(args) and args["keys"] == ["Control", "a"], "CONTROL → Control")
+        eq(c.tecla("ARROWDOWN"), "ArrowDown", "seta")
+        eq(c.tecla("ctrl+A"), "Control+a", "combinação")
+        eq(c.tecla("a"), "a", "letra fica")
+        ok(not c.argumentos_de_teclas({"action": "keyboard", "key": "Enter"}), "certa não muda")
+        # scroll sem ref
+        args = {"action": "scroll", "browser_id": 3}
+        ok(c.argumentos_de_rolagem(args) and args["action"] == "wheel" and args["delta_y"] == 700, "rola para baixo")
+        args = {"action": "scroll", "direction": "up", "amount": 300}
+        ok(c.argumentos_de_rolagem(args) and args["delta_y"] == -300, "rola para cima")
+        ok(not c.argumentos_de_rolagem({"action": "scroll", "ref": "5"}), "com ref fica")
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return
+        exe = os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+        if not Path(exe).exists():
+            exe = "/a0/tmp/playwright/chromium-1228/chrome-linux/chrome"
+        if not Path(exe).exists():
+            return
+        html = """<button aria-label="Next" id="n" style="margin-top:900px" onclick="this.textContent='clicado'">→</button>
+          <input id="i" value="velho"><div id="e" contenteditable="true" style="width:300px;height:30px"></div>
+          <div id="lista" style="width:200px;height:30px;border:1px solid" onclick="document.getElementById('ops').style.display='block'">Escolha</div>
+          <ul id="ops" style="display:none"><li onclick="document.getElementById('lista').textContent=this.textContent">Bahia</li>
+            <li onclick="document.getElementById('lista').textContent=this.textContent">Sergipe</li></ul>"""
+        async with async_playwright() as p:
+            b = await p.chromium.launch(executable_path=exe, headless=True)
+            pg = await b.new_page()
+            await pg.set_content(html)
+
+            async def chamar(metodo, bid, *a, **k):
+                if metodo == "a0_ponto_do_seletor":
+                    return await pg.evaluate(c.PONTO_DO_SELETOR_JS, a[0])
+                if metodo == "mouse":
+                    return await pg.mouse.click(a[1], a[2])
+                if metodo == "key_chord":
+                    return await pg.keyboard.press("+".join(a[0]))
+                if metodo == "keyboard":
+                    return await pg.keyboard.type(k.get("text", ""))
+
+            # 55 cliques: click com selector "button[aria-label='Next']" e sem ref
+            args = {"action": "click", "browser_id": 1, "selector": "button[aria-label='Next']"}
+            eq(await c.resolver_seletor(args, chamar), "", "achou")
+            ok("selector" not in args and args["x"] > 0, f"virou clique por coordenada: {args}")
+            await pg.mouse.click(args["x"], args["y"])
+            eq(await pg.inner_text("#n"), "clicado", "e o clique pegou o botão (estava fora da tela)")
+            args = {"action": "click", "selector": "text=Escolha"}
+            await c.resolver_seletor(args, chamar)
+            ok("x" in args, "text= também")
+            args = {"action": "type", "selector": "#i", "text": "novo"}
+            await c.resolver_seletor(args, chamar)
+            eq(args["action"], "keyboard", "type por seletor: clica no campo e digita pelo teclado")
+            await pg.keyboard.type(args["text"])
+            eq(await pg.input_value("#i"), "novo", "substituiu o que havia")
+            nota = await c.resolver_seletor({"action": "click", "selector": "#nao-existe"}, chamar)
+            ok("não achou" in nota, "seletor sem elemento: diz o que fazer")
+
+            # 17 select_option em lista feita pelo site; 3 type em <div>
+            class Core:
+                async def select_option(self, browser_id, ref, value="", values=None):
+                    raise RuntimeError('Browser page content cannot select helper-backed reference "1".')
+
+                async def type(self, browser_id, reference_id, text):
+                    raise RuntimeError("Browser DOM helper cannot type into <div>.")
+
+                def _resolve_browser_id(self, b):
+                    return b
+
+                def _page(self, b):
+                    return pg
+
+                async def _point_for(self, page, ref):
+                    return await page.evaluate("(id) => { const r = document.getElementById(id).getBoundingClientRect();"
+                                               " return {x: r.x + r.width / 2, y: r.y + r.height / 2}; }", ref)
+
+                async def _settle(self, page, short=False):
+                    pass
+
+                def _maybe_promote(self, b):
+                    pass
+
+                async def _state(self, b):
+                    return {}
+
+            c._lista_do_site(Core)
+            r = await Core().select_option(1, "lista", value="Sergipe")
+            eq(r["action"]["opcao"], "sergipe", "abriu a lista e clicou na opção")
+            eq(await pg.inner_text("#lista"), "Sergipe", "a lista ficou com a opção")
+            r = await Core().type(1, "e", "Olá Bruno")
+            eq(await pg.inner_text("#e"), "Olá Bruno", "digitou na caixa feita pelo site")
+            ok(r["conferido"].startswith("✓"), f"e conferiu: {r['conferido']}")
+            await b.close()
+
+    async def t_navegador_que_caiu_reinicia(self):
+        c = _correcoes()
+        import types
+
+        chamadas = []
+
+        class Core:
+            async def _discard_stale_context(self, m):
+                chamadas.append("reiniciou")
+
+        class BrowserRuntime:
+            def __init__(self):
+                self.caiu = True
+                self._core = Core()
+
+            async def call_for(self, context_id, method, *a, **k):
+                if method == "a0_reiniciar":
+                    return await getattr(self._core, method)()
+                if self.caiu:
+                    self.caiu = False
+                    raise RuntimeError("BrowserContext.new_page: Connection closed while reading from the driver")
+                return {"ok": method}
+
+        mod = types.SimpleNamespace(BrowserRuntime=BrowserRuntime, _BrowserRuntimeCore=Core)
+        c._reinicio_se_cair(mod)
+        eq(await BrowserRuntime().call_for("x", "open", "https://a"), {"ok": "open"}, "open: reiniciou e repetiu")
+        eq(chamadas, ["reiniciou"], "reiniciou uma vez")
+        try:
+            await BrowserRuntime().call_for("x", "click", 1, "5")
+            ok(False, "clique depois de cair deveria avisar")
+        except RuntimeError as exc:
+            ok("reiniciado" in str(exc) and "Abra a página" in str(exc), f"clique: diz para reabrir: {exc}")
+
     async def t_janelas_do_site_respondidas_e_avisadas(self):
         c = _correcoes()
 

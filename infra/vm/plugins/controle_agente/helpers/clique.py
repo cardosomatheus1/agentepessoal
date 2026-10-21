@@ -8,7 +8,7 @@ step to take, instead of a raw message after which the agent gave up."""
 
 import re
 
-SUMIU = re.compile(r"could not find reference|could not resolve selector|element is not attached|"
+SUMIU = re.compile(r"could not find reference|element is not attached|"
                    r"element is detached|stale element", re.I)
 
 DICA = ("\n\n↻ A página mudou depois que você a leu (ela se redesenha ao carregar): essa referência não existe mais. "
@@ -18,6 +18,11 @@ DICA = ("\n\n↻ A página mudou depois que você a leu (ela se redesenha ao car
 
 # (pattern in the failure, next step). First match wins; SUMIU above comes first.
 OUTROS = [
+    # 21/10: 55 clicks failed like this and the hint said "the page changed", which was false: the selector simply
+    # matches nothing the page reading numbered. (navegador_rapido now resolves click/type selectors on the page.)
+    (re.compile(r"could not resolve selector", re.I),
+     "↻ Esse seletor não corresponde a nenhum elemento numerado da leitura da página (a página não mudou). Leia a "
+     "página (`browser` content) e use a ref do elemento, ou clique pelas coordenadas x,y do print."),
     (re.compile(r"strict mode violation|resolved to \d+ elements", re.I),
      "↻ O seletor achou mais de um elemento. Releia a página (`browser` content) e use a ref certa, ou um seletor mais "
      "específico (o nome do campo, `text=...` ou um atributo único)."),
