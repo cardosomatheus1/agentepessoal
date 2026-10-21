@@ -270,7 +270,7 @@ def contexto_raiz(limite: int = 6000) -> tuple[str, str]:
     return (texto, "") if texto else ("", "Cérebro da Raiz vazio")
 
 
-def decisoes_raiz(limite: int = 4000) -> str:
+def decisoes_raiz(limite: int = 9000) -> str:
     """Matheus's decisions and preferences for the Raiz (posts, videos, prospecção) from the Segundo Cérebro: they come
     after the AR Board criteria were written and win over them (21/10: the Crítico blocked the iFood video citing a
     week-1 criterion that his later "nexo" decision had replaced). "" when the Pasta is not there."""

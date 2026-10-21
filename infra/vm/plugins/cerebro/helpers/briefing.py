@@ -44,7 +44,7 @@ def para_operador(mods, login: str = "matheus", limite: int = 18000) -> str:
     return texto if len(texto) <= limite else texto[:limite] + "\n…(cortado)"
 
 
-def para_revisor(mods, area: str = "raiz", login: str = "matheus", limite: int = 4000) -> str:
+def para_revisor(mods, area: str = "raiz", login: str = "matheus", limite: int = 9000) -> str:
     """'' when there is none. The decisions whose área or tema belongs to `area`."""
     chaves = AREAS_REVISOR.get(area, (area,))
     escolhidas = [d for d in _decisoes(mods, login)
