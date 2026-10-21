@@ -9,6 +9,10 @@
    script checked, for every element, the computed style of every ancestor up to
    <html> (elements x depth style lookups): ~6 s on a big page like Wikipedia. We
    serve both capture scripts with that check memoized while a capture runs.
+4. type/click with a `selector` (no ref) acted on the FIRST match, even when it is hidden.
+   21/10, 99Food login: one password field per login tab. The password went into the
+   hidden one, the visible field stayed empty and "Entrar" never enabled. When the first
+   form-control match is hidden and another is visible, the visible one is used.
 """
 
 import re
@@ -73,13 +77,58 @@ def helper_rapido(source: str) -> str | None:
     """DOM helper script with the same fix, or None if it changed upstream."""
     return _memoize_during(source, "captureDocument")
 
+ALVO = "data-a0-alvo"
+
+# (selector) -> a selector for the first VISIBLE match, or "" when the original already
+# points at it. Only for form controls: a selector used to read a page section is left as is.
+ALVO_VISIVEL = """(sel) => {
+  let els;
+  try { els = [...document.querySelectorAll(sel)]; } catch (e) { return ""; }
+  if (els.length < 2 || !els.every(e => /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(e.tagName))) return "";
+  const visivel = e => {
+    const r = e.getBoundingClientRect(), s = getComputedStyle(e);
+    return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none" && s.opacity !== "0";
+  };
+  const alvo = els.find(visivel);
+  if (!alvo || alvo === els[0]) return "";
+  document.querySelectorAll("[%s]").forEach(e => e.removeAttribute("%s"));
+  alvo.setAttribute("%s", "1");
+  return '[%s="1"]';
+}""" % (ALVO, ALVO, ALVO, ALVO)
+
+
+def _alvo_visivel(core) -> None:
+    """Fix 4: a form-control selector acts on its first VISIBLE match."""
+    original_content = core.content
+
+    # The browser tool resolves a selector to a ref through content({"selector": ...}).
+    async def content(self, browser_id=None, payload=None):
+        sel = (payload or {}).get("selector") if isinstance(payload, dict) else None
+        if isinstance(sel, str) and sel.strip():
+            try:
+                await self.ensure_started()
+                page = self._page(self._resolve_browser_id(browser_id))
+                visivel = await page.evaluate(ALVO_VISIVEL, sel, isolated_context=True)
+                if visivel:
+                    payload = {**payload, "selector": visivel}
+            except Exception as exc:  # never block the original over this
+                print(f"navegador_rapido: alvo visível: {exc}", flush=True)
+        return await original_content(self, browser_id, payload)
+
+    core.content = content
+    setattr(core, MARK_ALVO, True)
+
+
 MARK = "_navegador_rapido_v3"
+MARK_ALVO = "_navegador_rapido_alvo"
 
 
 def aplicar() -> None:
     from plugins._browser.helpers import runtime
 
     core = runtime._BrowserRuntimeCore
+    if not getattr(core, MARK_ALVO, False):
+        _alvo_visivel(core)
     if getattr(core, MARK, False):
         return
 
