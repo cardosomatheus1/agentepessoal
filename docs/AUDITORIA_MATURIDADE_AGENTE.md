@@ -193,6 +193,30 @@ Legenda: **Impacto** na autonomia (alto/médio/baixo). **Porte** do port: P (at�
 
 ---
 
+### Andamento (21/10, fim do dia)
+
+Todos os itens foram feitos na ordem, com teste e implantados, menos o 13 e o 14, medidos e deixados de lado:
+
+| # | Situação | Conferido com o agente de verdade |
+|---|---|---|
+| 1 | feito (`wait`); a conferência de argumentos barrava o `timeout` e foi corrigida (`controle_agente/helpers/argumentos.py`, `EXTRAS`) | sim, na tradução 106.PS |
+| 2, 3, 4 | feitos | — |
+| 5, 7, 9 | feitos | — |
+| 6 | feito (código de saída + próximo passo) | sim: `sleep 50` → o agente esperou com `runtime "output"` em vez de resetar |
+| 8 | feito; faltava o caso sem ref (Outlook): a ferramenta acha "Anexar arquivo" → "Navegar neste computador" | sim: e-mails NCM e tradução enviados com anexo |
+| 10 | feito (juiz do pronto); calibrado com 6 casos reais, 12/12 duas vezes (`objetivo_vivo/tests/bateria_juiz.py`) | sim: aprovou uma resposta correta |
+| 11 | feito (página inteira em `/a0/usr/workdir/paginas`, o corte diz a linha para o `ler`) | — |
+| 12 | feito; no servidor as refs eram cópias do ajudante de DOM e a conferência do digitado (Fix 7) também não achava o campo: as duas agora acham o elemento vivo | sim: print do DuckDuckGo com os números |
+| 13 | **deixado de lado**: em 20 mil chamadas, nenhuma falhou; em 7 dias o proxy viu 2 respostas 503 e as duas passaram na nova tentativa que ele já faz | — |
+| 14 | **deixado de lado**: nenhum erro de contexto estourado em 7 dias (o resumo do `resumo_seguro` age antes) | — |
+| 15 | feito (ferramenta `perguntar`, botões `pg:`) | falta testar no celular |
+
+Além da fila, o registro de 4 dias de chamadas do agente mostrou e foi corrigido: clique por `selector` sem ref (55 falhas, com a dica errada "a página mudou"), lista feita pelo site (17), navegador que caía (19), `type` em `<div>` (3), teclas em maiúsculas e `scroll` sem ref.
+
+Lição do dia: testar cada correção com a chamada exata que o agente fez quando falhou (tirada do registro) e
+conferir no servidor rodando; três correções passaram nos testes locais e não pegaram no servidor (marca booleana que
+impede reinstalar, troca do script vivo, ajudante de DOM ausente no teste).
+
 ## 5. Conferências que ficaram para a VM
 
 - Se o `_browser` da VM é igual a esta cópia, principalmente que não há `page.on("dialog")` nem ação de espera:

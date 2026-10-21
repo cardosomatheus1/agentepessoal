@@ -535,6 +535,72 @@ class Suite:
         ok("cobri X de Y" in regras and "link só depois de abrir de verdade" in regras, "conclusão só com prova")
         ok(regras.count('"""') % 2 == 0, "o texto das regras continua bem fechado")
 
+    async def t_pergunta_com_botoes_e_a_tarefa_continua(self):
+        """21/10: 11 de 578 respostas terminavam perguntando em texto ("1. … 2. …?") e a tarefa parava."""
+        g = _modulo("whatsapp_pergunta_teste", "pergunta.py")
+        texto, botoes = g.montar(LOGIN, "ctxPG", "Corrijo qual arte?", ["Arte do iFood", "Reels de atacado x varejo"])
+        ok(texto.startswith("❓ Corrijo qual arte?") and "2. Reels de atacado x varejo" in texto, f"texto: {texto}")
+        eq([b["id"] for b in botoes], [f"pg:{LOGIN}:ctxPG:0", f"pg:{LOGIN}:ctxPG:1"], "um botão por opção")
+        ok(all(len(b["titulo"]) <= g.TITULO_MAX for b in botoes), f"títulos cabem no botão: {botoes}")
+        for ruim in (["só uma"], ["a", "b", "c", "d"]):
+            try:
+                g.montar(LOGIN, "c", "x", ruim)
+                ok(False, f"deveria recusar {ruim}")
+            except ValueError:
+                pass
+        ctx = _Ctx("ctxPG", dono=LOGIN)
+        ctx.set_data(g.CHAVE, {"pergunta": "Corrijo qual arte?", "opcoes": ["Arte do iFood", "Reels"], "escolha": ""})
+        eq(g.escolher(ctx, "outra_pessoa", "pg:outra_pessoa:ctxPG:0", LOGIN)[0], "", "botão de outra pessoa não vale")
+        eq(g.escolher(ctx, LOGIN, f"pg:{LOGIN}:outraConversa:0", LOGIN)[0], "", "botão de outra conversa não vale")
+        eq(g.escolher(ctx, LOGIN, f"pg:{LOGIN}:ctxPG:9", LOGIN)[0], "", "opção que não existe")
+        eq(g.escolher(ctx, LOGIN, f"pg:{LOGIN}:ctxPG:1", LOGIN), ("Reels", ""), "escolheu")
+        eq(g.escolher(ctx, LOGIN, f"pg:{LOGIN}:ctxPG:0", LOGIN)[0], "", "segundo toque não troca a escolha")
+
+        # a ferramenta: manda com botões, espera, e devolve a escolha na mesma vez
+        tool_mod = types.ModuleType("helpers.tool")
+        tool_mod.Response = lambda message="", break_loop=False: types.SimpleNamespace(message=message, break_loop=break_loop)
+
+        class Tool:
+            async def set_progress(self, texto):
+                self.progresso = texto
+
+        tool_mod.Tool = Tool
+        hp = types.ModuleType("helpers")
+        hp.tool = tool_mod
+        antes = {k: sys.modules.get(k) for k in ("helpers", "helpers.tool", "whatsapp_ponte", "whatsapp_pergunta")}
+        sys.modules.update({"helpers": hp, "helpers.tool": tool_mod, "whatsapp_ponte": self.p, "whatsapp_pergunta": g})
+        try:
+            spec = importlib.util.spec_from_file_location("perguntar_teste", RAIZ / "tools" / "perguntar.py")
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+            self._ponte_responde(None)
+            ctx = _Ctx("ctxPG2", dono=LOGIN)
+            t = m.Perguntar()
+            t.agent = types.SimpleNamespace(context=ctx, intervention=None)
+
+            async def tocar():
+                await asyncio.sleep(1.2)
+                g.escolher(ctx, LOGIN, f"pg:{LOGIN}:ctxPG2:1", LOGIN)
+
+            r, _ = await asyncio.gather(t.execute(pergunta="Agora ou depois?", opcoes=["Agora", "Depois"], minutos=1), tocar())
+            ok("«Depois»" in r.message and not r.break_loop, f"a tarefa continua com a escolha: {r.message}")
+            eq(self.enviados[-1]["botoes"][1]["id"], f"pg:{LOGIN}:ctxPG2:1", "foi com os botões")
+            ok(self.enviados[-1]["tipo"] == "urgente", "chega mesmo no horário de silêncio (é ele quem decide)")
+            # respondeu digitando na conversa
+            t.agent.intervention = types.SimpleNamespace(message="depois das 18h")
+            r = await t.execute(pergunta="Agora ou depois?", opcoes=["Agora", "Depois"], minutos=1)
+            ok("depois das 18h" in r.message and t.agent.intervention is None, f"resposta digitada vale: {r.message}")
+            r = await t.execute(pergunta="x", opcoes=["só uma"])
+            ok("NÃO enviada" in r.message, "opções erradas: diz como chamar")
+        finally:
+            for k, v in antes.items():
+                sys.modules.pop(k, None) if v is None else sys.modules.__setitem__(k, v)
+        rec = (RAIZ / "api" / "receber.py").read_text(encoding="utf-8")
+        trecho = rec.split("async def _botao_pergunta")[1][:1500]
+        ok('botao.startswith("pg:")' in rec and "g.escolher(ctx, usuario, botao, ponte().dono(ctx))" in trecho,
+           "o botão só vale para o dono da conversa")
+        ok("if not ctx.is_running()" in trecho and "communicate(" in trecho, "tarefa que já parou de esperar: a escolha a continua")
+
     def t_pedido_no_navegador_vira_botao_resolver_aqui(self):
         # 14/10, Matheus: resolve the captcha from Telegram, nothing extra (the app panel showed another chat)
         arq = self._tmp / "url.txt"

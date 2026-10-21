@@ -530,6 +530,30 @@ def _para_a_conversa(usuario: str, texto: str) -> dict:
     return _entregar(usuario, texto, [], "", " (botão)")
 
 
+async def _botao_pergunta(usuario: str, botao: str) -> dict:
+    """A button under a question the agent asked with the perguntar tool (helpers/pergunta.py): the choice goes to the
+    chat that asked; when that task already stopped waiting, it arrives there as his message."""
+    from agent import AgentContext, UserMessage
+    from helpers import message_queue as mq
+
+    g = carregar("whatsapp_pergunta", Path(__file__).resolve().parents[1] / "helpers" / "pergunta.py")
+    contexto = (botao.split(":") + ["", "", ""])[2]
+    ctx = AgentContext.get(contexto)
+    if ctx is None or ponte().dono(ctx) != usuario:
+        await asyncio.to_thread(ponte().enviar, usuario, "Essa pergunta já não está mais aberta.")
+        return {"ok": True}
+    escolha, motivo = g.escolher(ctx, usuario, botao, ponte().dono(ctx))
+    if not escolha:
+        await asyncio.to_thread(ponte().enviar, usuario, f"Não registrei: {motivo}.")
+        return {"ok": True}
+    await asyncio.to_thread(ponte().enviar, usuario, f"🔘 {escolha}")
+    if not ctx.is_running():  # the task stopped waiting: the choice continues it
+        texto = g.recado_depois((ctx.get_data(g.CHAVE) or {}).get("pergunta", ""), escolha)
+        mq.log_user_message(ctx, texto, [], None, source=" (botão)")
+        ctx.communicate(UserMessage(message=texto, attachments=[], id=""))
+    return {"ok": True}
+
+
 async def _botao_rotina(usuario: str, botao: str) -> dict:
     """✅ Aplicar / ❌ Não under a routine's proposed improvement: the rotinas helper checks the login and records his
     answer (Aplicar goes through its corrections path, never the routine's prompt)."""
@@ -843,6 +867,8 @@ class Receber(ApiHandler):
             return await _botao_retomar(usuario, botao)
         if botao.startswith("rta:"):  # a routine's proposed improvement (plugins/rotinas/helpers/autoavaliacao.py)
             return await _botao_rotina(usuario, botao)
+        if botao.startswith("pg:"):  # an option of a question the agent asked (tools/perguntar.py)
+            return await _botao_pergunta(usuario, botao)
         if botao.startswith("cs:"):  # the week of posts or a post the Crítico blocked (plugins/conteudo/helpers/semana.py)
             return await _botao_semana(usuario, botao)
 

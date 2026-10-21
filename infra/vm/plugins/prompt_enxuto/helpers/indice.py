@@ -100,6 +100,9 @@ CURTAS: dict[str, str] = {
     "criar_gatilho": "Gatilhos (endereço que um serviço chama quando algo acontece). `acao` criar (`nome`, `instrucao`) | listar | apagar.",
     "whatsapp_enviar": "Manda ao celular do dono desta conversa (só a ele) um arquivo ou recado. `arquivo` (caminho em /a0/usr), "
                        "opcional `legenda`, `texto`. A resposta final já chega sozinha.",
+    "perguntar": "Decisão que só a pessoa pode tomar: pergunta com 2-3 opções em botões no celular e espera a escolha "
+                 "(até 15 min), a tarefa continua com ela. `pergunta`, `opcoes` (lista), opcional `minutos`. Não use para "
+                 "pedir licença do que você pode fazer.",
     "pedir_codigo": "Pede à pessoa, pelo celular, um código de uso único (2FA/SMS) e espera até 10 min. `pergunta` (site e qual código).",
     "whatsapp_guardar_token": "Guarda no cofre, sem você ler, o token ou a chave secreta visível na página da Meta. `campo` token|app_secret.",
     "terminal_isolado": "O computador Linux separado de um convidado. `acao` rodar (`comando`, `tempo`) | enviar (`arquivo`) | "
