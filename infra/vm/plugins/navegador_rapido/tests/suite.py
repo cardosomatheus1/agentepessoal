@@ -122,6 +122,84 @@ class Suite:
                    "o arquivo entrou no campo escondido")
                 await b.close()
 
+    async def t_campo_sem_label_ganha_o_rotulo_visual(self):
+        c = _correcoes()
+        js = next((p for p in (Path("/a0/plugins/_browser/assets/browser-page-content.js"),
+                               Path(os.environ.get("A0SRC", "/nao-existe")) / "plugins/_browser/assets/browser-page-content.js")
+                   if p.exists()), None)
+        if js is None:
+            return
+        fonte = c.script_rapido(js.read_text(encoding="utf-8"))
+        ok(fonte is not None and c.ROTULO_MARCA in fonte, "o script da captura recebe o rótulo visual")
+        eq(c.com_rotulo_visual(fonte), fonte, "aplicar de novo não duplica")
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return
+        exe = os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+        if not Path(exe).exists():
+            exe = "/a0/tmp/playwright/chromium-1228/chrome-linux/chrome"
+        if not Path(exe).exists():
+            return
+        # como na Keeta: o nome do campo fica numa caixa acima, sem <label for>
+        pagina = """<form>
+          <div class="g"><div class="l"><span>*</span> Company Website</div><div class="c"><input type="text"></div></div>
+          <div class="g"><div class="l"><span>*</span> Address</div><div class="c"><input type="text"></div></div>
+          <div class="g"><label for="e">Email</label><input id="e" type="text"></div>
+          <span id="t">Telefone</span><input aria-labelledby="t" type="text">
+        </form>"""
+        async with async_playwright() as p:
+            b = await p.chromium.launch(executable_path=exe, headless=True)
+            pg = await b.new_page()
+            await pg.set_content(pagina)
+            await pg.add_script_tag(content=fonte)
+            texto = await pg.evaluate("async () => JSON.stringify(await globalThis.__spaceBrowserPageContent__.capture())")
+            await b.close()
+        for nome in ("Company Website", "Address", "Email", "Telefone"):
+            ok(nome in texto, f"o campo aparece com o nome {nome!r}")
+
+    async def t_digitou_e_conferiu_o_campo(self):
+        c = _correcoes()
+        ok(c.conferir_digitado("Rua A, 1", {"valor": "Rua A, 1"}).startswith("✓"), "igual: conferido")
+        ok(c.conferir_digitado("71991564477", {"valor": "(71) 99156-4477"}).startswith("✓"), "máscara do site: conferido")
+        ok(c.conferir_digitado("Rua do Rouxinol", {"valor": "https://x"}).startswith("⚠️"), "outro conteúdo: avisa")
+        ok("NÃO ficou" in c.conferir_digitado("Rua A", {"valor": ""}), "campo vazio depois de digitar: avisa")
+        eq(c.conferir_digitado("x", {"valor": None, "senha": True}), "", "senha não é lida")
+        eq(c.conferir_digitado("x", None), "", "sem leitura: nada")
+        js = next((p for p in (Path("/a0/plugins/_browser/assets/browser-page-content.js"),
+                               Path(os.environ.get("A0SRC", "/nao-existe")) / "plugins/_browser/assets/browser-page-content.js")
+                   if p.exists()), None)
+        if js is None:
+            return
+        fonte = c.script_rapido(js.read_text(encoding="utf-8"))
+        ok(c.VALOR_MARCA in fonte, "a API da página ganha a leitura do valor")
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return
+        exe = os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+        if not Path(exe).exists():
+            exe = "/a0/tmp/playwright/chromium-1228/chrome-linux/chrome"
+        if not Path(exe).exists():
+            return
+        async with async_playwright() as p:
+            b = await p.chromium.launch(executable_path=exe, headless=True)
+            pg = await b.new_page()
+            # um site que reformata o que se digita (máscara de telefone)
+            html = r"""<label for="t">Telefone</label><input id="t" type="text"
+              oninput="this.value=this.value.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3')">"""
+            await pg.set_content(html)
+            await pg.add_script_tag(content=fonte)
+            api = "globalThis.__spaceBrowserPageContent__"
+            await pg.evaluate(f"async () => {{ await {api}.capture(); }}")
+            ref = "1"
+            await pg.evaluate(f"(r) => {api}.type(r, '71991564477')", ref)
+            lido = await pg.evaluate(f"(r) => {api}.a0ValorDe(r)", ref)
+            await b.close()
+        ok(isinstance(lido, dict) and "valor" in lido, f"leu o campo: {lido}")
+        eq(lido, {"valor": "(71) 99156-4477"}, "leu o que o site deixou no campo")
+        ok(c.conferir_digitado("71991564477", lido).startswith("✓"), "e a conferência entende a máscara")
+
     async def t_content_usa_o_alvo_visivel(self):
         c = _correcoes()
         recebidos = []

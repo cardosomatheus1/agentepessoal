@@ -68,9 +68,114 @@ def _memoize_during(source: str, entry: str) -> str | None:
     return source.replace(header, wrapper + f"  async function navegadorRapidoOriginal_{entry}(", 1)
 
 
+ROTULO_FIM = "    return [...new Set(collectedLabels.filter(Boolean))];\n  }\n\n  function getLabelText("
+ROTULO_MARCA = "a0RotuloVisual"
+# 21/10, Keeta: the page listed the fields as bare numbers ("[input 12]") because their names were not in a <label for>
+# but in a separate box above them ("* Address"); the agent typed the address into "Company Website". A field with no
+# label of its own now gets the one aria-labelledby points to, or else the short text right before it in the form.
+ROTULO_FUNCAO = """  function a0RotuloVisual(element) {
+    try {
+      const ids = String(element.getAttribute?.("aria-labelledby") || "").split(/\\s+/).filter(Boolean);
+      const porId = ids.map((id) => document.getElementById(id)).filter(Boolean)
+        .map((n) => String(n.innerText || n.textContent || "").replace(/\\s+/g, " ").trim()).join(" ").trim();
+      if (porId) {
+        return porId.slice(0, 80);
+      }
+      let node = element;
+      for (let nivel = 0; nivel < 4 && node && node !== document.body; nivel += 1) {
+        let irmao = node.previousElementSibling;
+        for (let k = 0; irmao && k < 3; k += 1, irmao = irmao.previousElementSibling) {
+          if (irmao.querySelector?.("input,textarea,select,button,[contenteditable=true]")) {
+            break;
+          }
+          const texto = String(irmao.innerText || irmao.textContent || "").replace(/\\s+/g, " ").trim()
+            .replace(/^\\*\\s*/, "").replace(/\\s*\\*$/, "");
+          if (texto && texto.length <= 60) {
+            return texto;
+          }
+          if (texto) {
+            break;
+          }
+        }
+        node = node.parentElement;
+      }
+    } catch {
+      // never break the capture over a label guess
+    }
+    return "";
+  }
+
+"""
+ROTULO_USO = """    if (!collectedLabels.length && /^(INPUT|TEXTAREA|SELECT)$/.test(String(element?.tagName || "").toUpperCase())) {
+      const visual = a0RotuloVisual(element);
+      if (visual) {
+        collectedLabels.push(visual);
+      }
+    }
+"""
+
+
+def com_rotulo_visual(source: str) -> str:
+    """Fields without a label of their own get the visual one (see ROTULO_FUNCAO); unchanged if upstream changed."""
+    if ROTULO_MARCA in source or source.count(ROTULO_FIM) != 1:
+        return source
+    return source.replace(ROTULO_FIM, ROTULO_USO + ROTULO_FIM.replace("  function getLabelText(",
+                                                                      ROTULO_FUNCAO + "  function getLabelText("), 1)
+
+
+VALOR_FIM = "    fileInputElementFor,\n"
+VALOR_MARCA = "a0ValorDe"
+# Exposes the current value of a captured field, read after typing (Fix 7).
+VALOR_FUNCAO = """    a0ValorDe(referenceId) {
+      try {
+        const entry = state.entries.get(normalizeReferenceId(referenceId));
+        const el = entry && entry.element;
+        if (!el) {
+          return null;
+        }
+        const tipo = String(el.getAttribute?.("type") || "").toLowerCase();
+        if (tipo === "password") {
+          return { valor: null, senha: true };
+        }
+        const valor = "value" in el ? el.value : el.textContent;
+        return { valor: String(valor ?? "").slice(0, 300) };
+      } catch {
+        return null;
+      }
+    },
+"""
+
+
+def com_valor_lido(source: str) -> str:
+    """Adds a0ValorDe(ref) to the page API; unchanged if upstream changed."""
+    if VALOR_MARCA in source or source.count(VALOR_FIM) != 1:
+        return source
+    return source.replace(VALOR_FIM, VALOR_FIM + VALOR_FUNCAO, 1)
+
+
+def conferir_digitado(pedido: str, lido) -> str:
+    """The note for a typed field: what is in it now, and a warning when it is not what was typed."""
+    if not isinstance(lido, dict) or lido.get("senha"):
+        return ""
+    valor = lido.get("valor")
+    if valor is None:
+        return ""
+    pedido = str(pedido or "")
+    norm = lambda t: " ".join(str(t).split()).lower()
+    if norm(valor) == norm(pedido) or (pedido and norm(pedido) in norm(valor)):
+        return f"✓ conferido: o campo agora contém {valor!r}."
+    digitos = lambda t: re.sub(r"\D", "", str(t))
+    if digitos(pedido) and digitos(valor) == digitos(pedido):
+        return f"✓ conferido: o site formatou como {valor!r} (mesmos números)."
+    return (f"⚠️ O campo NÃO ficou com o que você digitou: contém {valor!r} (você mandou {pedido!r}). "
+            "O site pode ter reformatado ou recusado. Releia a página; se estiver errado, clique no campo, apague e "
+            "digite de novo, ou use outro campo pelo nome.")
+
+
 def script_rapido(source: str) -> str | None:
-    """Page-content script with the ancestor check memoized, or None if it changed upstream."""
-    return _memoize_during(source, "capture")
+    """Page-content script with the ancestor check memoized and visual field labels, or None if it changed upstream."""
+    rapido = _memoize_during(source, "capture")
+    return com_valor_lido(com_rotulo_visual(rapido)) if rapido is not None else None
 
 
 def helper_rapido(source: str) -> str | None:
@@ -226,6 +331,48 @@ MARK = "_navegador_rapido_v3"
 MARK_ALVO = "_navegador_rapido_alvo"
 MARK_BAIXADOS = "_navegador_rapido_baixados"
 MARK_ARQUIVO = "_navegador_rapido_arquivo"
+MARK_DIGITADO = "_navegador_rapido_digitado"
+
+
+def _conferir_digitacao(core) -> None:
+    """Fix 7: after type/type_submit the field is read back and the result says what it holds now (OpenClaw does not
+    do this; its snapshot shows value=, ours now says it right in the typing result)."""
+    import asyncio
+
+    for nome in ("type", "type_submit"):
+        original = getattr(core, nome)
+
+        async def digitar(self, browser_id, reference_id, text, _original=original):
+            resultado = await _original(self, browser_id, reference_id, text)
+            try:
+                await asyncio.sleep(0.3)
+                page = self._page(self._resolve_browser_id(browser_id))
+                lido = await page.evaluate(
+                    "(ref) => globalThis.__spaceBrowserPageContent__.a0ValorDe ? "
+                    "globalThis.__spaceBrowserPageContent__.a0ValorDe(ref) : null",
+                    reference_id, isolated_context=True)
+                nota = conferir_digitado(text, lido)
+                if nota and isinstance(resultado, dict):
+                    resultado["conferido"] = nota
+            except Exception as exc:  # a page that navigated after Enter has nothing to read: fine
+                print(f"navegador_rapido: conferir digitação: {exc}", flush=True)
+            return resultado
+
+        setattr(core, nome, digitar)
+    setattr(core, MARK_DIGITADO, True)
+
+
+def _atualizar_script_vivo(core) -> None:
+    """The fast capture script is fixed when the server first applies these fixes, inside the wrapper's closure; a
+    server already running (deploys do not restart the agent) gets a newer version of it swapped in here."""
+    for cell in getattr(core._ensure_content_helper, "__closure__", None) or ():
+        try:
+            atual = cell.cell_contents
+        except ValueError:
+            continue
+        if isinstance(atual, str) and "navegadorRapidoHidden" in atual and (
+                ROTULO_MARCA not in atual or VALOR_MARCA not in atual):
+            cell.cell_contents = com_valor_lido(com_rotulo_visual(atual))
 
 
 def aplicar() -> None:
@@ -238,7 +385,10 @@ def aplicar() -> None:
         _baixados(core)
     if not getattr(core, MARK_ARQUIVO, False):
         _envio_de_arquivo(core)
+    if not getattr(core, MARK_DIGITADO, False):
+        _conferir_digitacao(core)
     if getattr(core, MARK, False):
+        _atualizar_script_vivo(core)
         return
 
     from patchright.async_api import Error as PlaywrightError

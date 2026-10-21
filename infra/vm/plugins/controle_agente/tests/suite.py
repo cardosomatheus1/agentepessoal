@@ -352,6 +352,21 @@ class Suite:
         ok(not c.dica("browser", erro + c.DICA), "não repete a dica")
         ext = (RAIZ / "extensions" / "python" / "tool_execute_after" / "_11_clique_que_sumiu.py").read_text(encoding="utf-8")
         ok("clique.dica(" in ext, "a extensão usa a regra")
+        # catálogo de erros do OpenClaw (toAIFriendlyError): cada falha vira o próximo passo
+        casos = {
+            "Browser click failed: strict mode violation: locator('input') resolved to 3 elements": "mais de um",
+            "Browser click failed: <div class=\"cookie\">…</div> intercepts pointer events": "por cima",
+            "Browser type failed: Element is not an <input>, <textarea> or [contenteditable] element": "não aceita texto",
+            "Browser click failed: element is not enabled": "desativado",
+            "Browser type failed: Cannot type text into input[type=number]": "formato",
+            "Browser upload_file failed: Browser ref '8' does not resolve to a file input": "upload_file",
+            "Browser click failed: Timeout 30000ms exceeded.": "Esperou",
+        }
+        for erro, trecho in casos.items():
+            d = c.dica("browser", erro)
+            ok(trecho in d, f"{erro[:50]}… → {d!r}")
+        ok(not c.dica("browser", "Browser click ok"), "sem falha: nada")
+        ok(not c.dica("browser", "Browser click failed: x" + c.OUTROS[0][1]), "não repete dica nenhuma")
 
     def t_delegacoes_seguidas_sem_falar_com_a_pessoa(self):
         # 18/10: ~33 helper calls in 4 h with no answer or notify_user; Matheus repeated "Continua…?" four times

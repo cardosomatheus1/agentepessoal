@@ -67,8 +67,9 @@ class DetectorLoop(Extension):
 
         response.message += (
             f"\n\n⚠️ ATENÇÃO: você já fez exatamente esta ação (`{tool_name}`, mesmos argumentos) e recebeu o mesmo resultado. "
-            "Repetir não vai mudar nada. Use o que já obteve (suas notas), mude de estratégia — para muitas imagens use a "
-            "ferramenta `analisar_imagens` — ou responda ao usuário explicando onde travou. Se continuar repetindo, a tarefa será pausada."
+            "Repetir não vai mudar nada. Mude de caminho agora: releia a página e escolha o alvo pelo nome, use outro "
+            "botão, seletor, ferramenta ou código (para muitas imagens, `analisar_imagens`). Responda ao usuário só se "
+            "já tentou outros caminhos ou se precisa dele. Se continuar repetindo, a tarefa será pausada."
         )
         if n == AVISAR:
             agent.context.log.log(
