@@ -50,6 +50,15 @@ funcionou depois de uma falha). Esta sessão cuida do outro lado: o **defeito da
 6. Acrescente uma linha em `docs/CONSERTO_NOTURNO_DIARIO.md` (data, grupos corrigidos com commits, grupos pulados e
    motivo), commit e push.
 
+## Casos marcados pelo operador
+
+Valem como grupo a consertar mesmo com menos de 3 vezes (efeito grande para o Matheus). Depois de consertado, apague a linha.
+
+- 21/10, portal da 99 (developer-food.99app.com): no formulário da loja de teste, o agente pôs a **senha do cofre no
+  campo "telefone do gerente"**. Ele percebeu, limpou e cancelou, e nada foi enviado. Ache no log a chamada que
+  preencheu o campo (cofre ou `type` com a senha) e faça a ferramenta recusar escrever um segredo do cofre num campo
+  que não é de senha (`type=password`, ou nome/rótulo de senha). O teste usa a chamada real.
+
 ## Limites (não se quebram)
 
 - Nada de dado vivo editado à mão, nada de mensagem a terceiros, nada destrutivo, nenhum PR, push só no branch acima.
