@@ -33,6 +33,13 @@ def _correcoes():
     return m
 
 
+def _ver_tela():
+    spec = importlib.util.spec_from_file_location("navegador_rapido_ver_tela_teste", RAIZ / "helpers" / "ver_tela.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
 # 21/10, 99Food login: one password field per login tab, only the e-mail tab's is visible
 PAGINA = """<form><input id=a type=password style="display:none"><input id=b type=password>
 <input id=c type=text><button id=d style="visibility:hidden">Entrar</button><button id=e>Entrar</button></form>
@@ -114,6 +121,54 @@ class Suite:
         core.pagina = _Pagina(erro=RuntimeError("página fechou"))
         await core.content(1, {"selector": "input"})
         eq(recebidos[-1], {"selector": "input"}, "erro na conferência não bloqueia a leitura")
+
+    def t_print_so_depois_de_acao_que_age(self):
+        v = _ver_tela()
+        eq(v.acao_que_age("browser", {"action": "click", "ref": 3}), "click", "clique mostra a tela")
+        eq(v.acao_que_age("browser", {"action": "Type-Submit"}), "type_submit", "nome normalizado")
+        for acao in ("content", "screenshot", "list", "state", "detail", "close"):
+            eq(v.acao_que_age("browser", {"action": acao}), "", f"{acao} só lê: sem print")
+        eq(v.acao_que_age("code_execution_tool", {"action": "click"}), "", "outra ferramenta não")
+        eq(v.acao_que_age("browser", None), "", "sem argumentos não")
+
+    def t_print_vira_imagem_com_orientacao(self):
+        import tempfile
+
+        from PIL import Image
+
+        v = _ver_tela()
+        with tempfile.TemporaryDirectory() as d:
+            arq = Path(d) / "browser-1.jpg"
+            Image.new("RGB", (1280, 720), "white").save(arq, "JPEG")
+            eq(v.caminho_do_print({"browser_snapshot": {"path": str(arq)}}), str(arq), "acha o print do passo")
+            eq(v.caminho_do_print({"browser_snapshot": {"path": str(arq) + "x"}}), "", "arquivo que não existe")
+            eq(v.caminho_do_print({}), "", "passo sem print")
+            eq(v.caminho_do_print(None), "", "sem log")
+            m = v.mensagem(str(arq), "type")
+            eq(m["preview"], v.MARCA, "marcado como print automático")
+            texto, imagem = m["raw_content"][0]["text"], m["raw_content"][1]
+            ok("`type`" in texto and "1280x720" in texto, "diz a ação e o tamanho (coordenadas do clique)")
+            ok("coordenadas" in texto and "evaluate" in texto, "ensina a clicar pela posição e não por evaluate")
+            ok(imagem["image_url"]["url"].startswith("data:image/jpeg;base64,"), "a imagem vai junto")
+            eq(v.mensagem(str(Path(d) / "nada.jpg"), "click"), None, "arquivo sumiu: nada")
+
+    def t_so_o_ultimo_print_fica(self):
+        v = _ver_tela()
+
+        class Msg:
+            def __init__(self, content):
+                self.content, self.summary = content, ""
+
+            def set_summary(self, s):
+                self.summary = s
+
+        prints = [Msg({"raw_content": [], "preview": v.MARCA}) for _ in range(2)]
+        outra = Msg({"raw_content": [], "preview": "<Image attachments loaded by path>"})
+        texto = Msg("resultado da ferramenta")
+        eq(v.apagar_antigos(prints + [outra, texto]), 2, "os prints automáticos anteriores saem")
+        ok(all(p.summary for p in prints), "viram uma linha de texto")
+        ok(not outra.summary and not texto.summary, "imagem pedida pelo agente e texto ficam")
+        eq(v.apagar_antigos(prints), 0, "não apaga de novo")
 
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
