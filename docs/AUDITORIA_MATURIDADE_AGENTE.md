@@ -209,7 +209,7 @@ Todos os itens foram feitos na ordem, com teste e implantados, menos o 13 e o 14
 | 12 | feito; no servidor as refs eram cópias do ajudante de DOM e a conferência do digitado (Fix 7) também não achava o campo: as duas agora acham o elemento vivo | sim: print do DuckDuckGo com os números |
 | 13 | **deixado de lado**: em 20 mil chamadas, nenhuma falhou; em 7 dias o proxy viu 2 respostas 503 e as duas passaram na nova tentativa que ele já faz | — |
 | 14 | **deixado de lado**: nenhum erro de contexto estourado em 7 dias (o resumo do `resumo_seguro` age antes) | — |
-| 15 | feito (ferramenta `perguntar`, botões `pg:`) | falta testar no celular |
+| 15 | feito (ferramenta `perguntar`, botões `pg:`) | sim: pergunta no Telegram, o toque chegou em 36 s e a tarefa seguiu |
 
 Além da fila, o registro de 4 dias de chamadas do agente mostrou e foi corrigido: clique por `selector` sem ref (55 falhas, com a dica errada "a página mudou"), lista feita pelo site (17), navegador que caía (19), `type` em `<div>` (3), teclas em maiúsculas e `scroll` sem ref.
 
