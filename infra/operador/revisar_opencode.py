@@ -50,7 +50,7 @@ def veredito(saida: str) -> str:
     fim = re.findall(rf"{FIM}(\d+)", texto)
     if not fim or fim[-1] != "0":
         return ""
-    linhas = [l.strip().strip("*`").strip() for l in texto[:texto.rindex(FIM)].splitlines() if l.strip()]
+    linhas = [re.sub(r"[*`_]", "", l).strip() for l in texto[:texto.rindex(FIM)].splitlines() if l.strip()]
     m = re.match(r"VEREDITO:\s*(APROVADO|REPROVADO)\b", linhas[-1], re.I) if linhas else None
     return m.group(1).lower() if m else ""
 
