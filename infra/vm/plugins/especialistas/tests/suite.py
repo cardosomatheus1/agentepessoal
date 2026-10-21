@@ -167,6 +167,20 @@ class Suite:
         m.criticar("mensagem", "Oi, tudo bem?")
         ok("Regra P" in tarefas[1][1] and "Regra 7" not in tarefas[1][1], "mensagem usa os critérios da prospecção")
 
+    def t_criticar_le_as_decisoes_do_matheus(self):
+        # 21/10: his later decisions win over the AR Board criteria (the iFood video was blocked by a week-1 criterion)
+        m = self._e(com_raiz="Raiz", criterios={"conteudo": "Regra antiga: CTA da calculadora."})
+        tarefas = []
+        m.chamar = lambda papel, tarefa, material, login="matheus": tarefas.append(tarefa) or \
+            {"texto": APROVA, "erro": "", "imagens": [], "sem_imagem": []}
+        m.decisoes_raiz = lambda limite=4000: "Decisões… (valem ACIMA dos critérios)\n- #39 [preferencia] marketing.x: áudio antes"
+        m.criticar("post", "Experimente grátis por 15 dias.")
+        ok("## Decisões do Matheus" in tarefas[0] and "áudio antes" in tarefas[0], "as decisões vão na tarefa")
+        ok(tarefas[0].index("Critérios do Matheus") < tarefas[0].index("## Decisões do Matheus"), "depois dos critérios")
+        m.decisoes_raiz = lambda limite=4000: ""
+        m.criticar("post", "Experimente grátis por 15 dias.")
+        ok("## Decisões do Matheus" not in tarefas[1], "sem Pasta: como antes")
+
     def t_criticar_funciona_sem_cerebro_e_sem_criterios(self):
         m = self._e()
         tarefas = []

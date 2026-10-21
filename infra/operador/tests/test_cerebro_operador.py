@@ -66,6 +66,17 @@ def test_desligado_nao_envia():
     assert enviados == []
 
 
+def test_inicio_extrai_so_o_bloco_do_cerebro():
+    spec2 = importlib.util.spec_from_file_location(
+        "cerebro_inicio_teste", Path(__file__).resolve().parents[3] / ".claude" / "hooks" / "cerebro_inicio.py")
+    i = importlib.util.module_from_spec(spec2)
+    spec2.loader.exec_module(i)
+    saida = "lixo do ssm\n<<<CEREBRO>>>\n# Segundo Cérebro\n- #39 [preferencia] marketing.video-audio-antes: x\n<<<FIM-CEREBRO>>>\nfim"
+    assert i.extrair(saida).startswith("# Segundo Cérebro") and "lixo" not in i.extrair(saida)
+    assert i.extrair("falhou a conexão") == ""
+    assert "<<<CEREBRO>>>" not in i.SCRIPT and "<<<FIM-CEREBRO>>>" not in i.SCRIPT, "um erro citando o script não vira bloco"
+
+
 if __name__ == "__main__":
     for nome, f in sorted(globals().items()):
         if nome.startswith("test_"):

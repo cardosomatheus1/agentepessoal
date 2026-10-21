@@ -10,10 +10,12 @@ import datetime as dt
 import fcntl
 import functools
 import hashlib
+import importlib.util
 import math
 import json
 import os
 import re
+import sys
 import tempfile
 import threading
 import time
@@ -1999,6 +2001,21 @@ def _guardar_vereditos(login: str, novos: dict) -> None:
             raise
 
 
+def decisoes_do_matheus() -> str:
+    """His decisions and preferences for the Raiz from the Segundo Cérebro (cerebro/helpers/briefing.py): they win over
+    the playbook and the AR Board criteria when they disagree (21/10). "" without the Pasta."""
+    cerebro = Path(__file__).resolve().parents[2] / "cerebro" / "helpers" / "modulos.py"
+    try:
+        mods = sys.modules.get("cerebro_modulos")
+        if mods is None or "briefing" not in getattr(mods, "CAMINHOS", {}):
+            spec = importlib.util.spec_from_file_location("prospeccao_cerebro_modulos", cerebro)
+            mods = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mods)
+        return str(mods.m("briefing").para_revisor(mods, "raiz") or "")
+    except Exception:
+        return ""
+
+
 def revisar_textos(d: dict, acoes: list, login: str = "") -> dict:
     """{id: {"aprovado": bool, "motivo": str}} from a fresh model against the playbook. Fails closed: when the
     reviewer is unreachable or unclear, nothing is approved here (it goes to the person). With `login`, an item the
@@ -2014,6 +2031,9 @@ def revisar_textos(d: dict, acoes: list, login: str = "") -> dict:
                       + (f"O QUE A PESSOA DISSE: {_disse(lead)}\n" if a["tipo"] == "resposta" else "")
                       + f"TEXTO:\n«{a['texto']}»")
     regras = REVISOR + "\n\n# PLAYBOOK\n" + (playbook.read_text(encoding="utf-8")[:LIMITE_PLAYBOOK] if playbook.exists() else "")
+    decisoes = decisoes_do_matheus()
+    if decisoes:
+        regras += "\n\n# DECISÕES DO MATHEUS\n" + decisoes
     guardados = _ler_vereditos(login) if login else {}
     chaves = {a["id"]: hashlib.sha256(f"{regras}\n{a['tipo']}\n{b.split(chr(10), 1)[1]}".encode()).hexdigest()[:32]
               for a, b in zip(acoes, blocos)}  # the item's id stays out: the same text for the same lead is the same item

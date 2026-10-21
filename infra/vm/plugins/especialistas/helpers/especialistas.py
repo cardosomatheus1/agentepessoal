@@ -270,6 +270,20 @@ def contexto_raiz(limite: int = 6000) -> tuple[str, str]:
     return (texto, "") if texto else ("", "Cérebro da Raiz vazio")
 
 
+def decisoes_raiz(limite: int = 4000) -> str:
+    """Matheus's decisions and preferences for the Raiz (posts, videos, prospecção) from the Segundo Cérebro: they come
+    after the AR Board criteria were written and win over them (21/10: the Crítico blocked the iFood video citing a
+    week-1 criterion that his later "nexo" decision had replaced). "" when the Pasta is not there."""
+    cerebro = PLUGINS / "cerebro" / "helpers"
+    try:
+        mods = sys.modules.get("cerebro_modulos")
+        if mods is None or "briefing" not in getattr(mods, "CAMINHOS", {}):
+            mods = _carregar("especialistas_cerebro_modulos", cerebro / "modulos.py")
+        return str(mods.m("briefing").para_revisor(mods, "raiz", limite=limite) or "")
+    except Exception:
+        return ""
+
+
 def criterios(tipo: str) -> str:
     """Matheus's AR Board criteria for this kind of piece, when they exist (calibracao/<agente>/criterios.md)."""
     pasta = pasta_calibracao()
@@ -318,6 +332,9 @@ def criticar(tipo: str, material, *, login: str = "matheus") -> dict:
     tarefa = (f"Julgue esta peça do tipo **{tipo}** antes de ela ir a público.\n\n"
               f"## Cérebro da Raiz\n{ctx or '(indisponível: ' + nota + '; julgue pelas regras fixas e diga se faltou contexto)'}"
               f"\n\n## Critérios do Matheus (AR Board)\n{crit or '(nenhum registrado para este tipo)'}")
+    dec = decisoes_raiz()
+    if dec:
+        tarefa += f"\n\n## Decisões do Matheus\n{dec}"
     r = chamar("critico", tarefa, material, login=login)
     if r["erro"]:
         veredito = {"veredito": "reprova", "motivos": [f"o crítico não respondeu ({r['erro']})"], "sugestoes": []}

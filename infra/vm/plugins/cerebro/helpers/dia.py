@@ -32,6 +32,10 @@ def compor(p, ts: float | None = None) -> dict:
     velhas = [f for f in pendencias if f.get("estado", "aberto") in ("aberto", "adiado") and f.get("dono", "você") == "você"
               and ts - float(f.get("criado") or ts) > VELHA_DIAS * 86400]
     assuntos = [a for a in p.ler("assuntos") if _no_dia(a.get("atualizado"), ini) and a.get("estado") != "encerrado"]
+    # 21/10: a front nobody touched for a week is either forgotten or over; the note asks which
+    paradas = sorted((a for a in p.ler("assuntos") if a.get("estado") in ("andamento", "parado")
+                      and ts - float(a.get("atualizado") or ts) > VELHA_DIAS * 86400),
+                     key=lambda a: float(a.get("atualizado") or 0))
     lk = lambda tipo, x: p.link(f"{tipo}:{x.get('id')}")  # noqa: E731
     partes = [f"# Nota do dia {time.strftime('%d/%m/%Y', p.agora_local(ts))}", ""]
     partes += ["## Decidido"] + ([f"- {lk('decisao', d)} ({d.get('area', 'geral')})" for d in decisoes] or ["- nada"]) + [""]
@@ -44,6 +48,10 @@ def compor(p, ts: float | None = None) -> dict:
         partes += [f"## Abertas há mais de {VELHA_DIAS} dias"] + [
             f"- {lk('pendencia', f)} (desde {time.strftime('%d/%m', p.agora_local(float(f.get('criado'))))})"
             for f in sorted(velhas, key=lambda f: float(f.get("criado") or 0))[:15]] + [""]
+    if paradas:
+        partes += [f"## Frentes sem movimento há mais de {VELHA_DIAS} dias (ainda valem?)"] + [
+            f"- {lk('assunto', a)} (parada desde {time.strftime('%d/%m', p.agora_local(float(a.get('atualizado'))))}): "
+            f"{a.get('onde_parou') or '…'}" for a in paradas[:10]] + [""]
     texto = p.frontmatter({"status": "fechada", "tags": ["nota-do-dia", dia[:7]]}) + "\n".join(partes).rstrip() + "\n"
     linhas = [f"🧠 Hoje: {len(decisoes)} decisão(ões), {len(assuntos)} assunto(s) andando, "
               f"{len(novas)} pendência(s) nova(s), {len(feitas)} feita(s)."]
@@ -53,8 +61,11 @@ def compor(p, ts: float | None = None) -> dict:
     if velhas:
         linhas.append(f"⏳ {len(velhas)} pendência(s) aberta(s) há mais de {VELHA_DIAS} dias, a mais antiga: "
                       f"{velhas[0].get('titulo')}")
+    if paradas:
+        linhas.append(f"🧭 {len(paradas)} frente(s) sem movimento há {VELHA_DIAS}+ dias, ex.: {paradas[0].get('titulo')}. "
+                      "Ainda vale? Responda \"encerra\" ou o que falta.")
     vazio = not (decisoes or assuntos or novas or feitas)
-    return {"data": dia, "arquivo": p.RAIZ / "Notas-do-dia" / f"{dia}.md", "texto": texto, "resumo": "\n".join(linhas[:3]),
+    return {"data": dia, "arquivo": p.RAIZ / "Notas-do-dia" / f"{dia}.md", "texto": texto, "resumo": "\n".join(linhas[:4]),
             "vazio": vazio}
 
 

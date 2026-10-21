@@ -17,6 +17,8 @@ CAMINHOS = {
     "auditoria": ("cerebro_auditoria", RAIZ / "helpers" / "auditoria.py"),
     "migracao": ("cerebro_migracao", RAIZ / "helpers" / "migracao.py"),
     "raiz": ("cerebro_raiz", RAIZ / "helpers" / "raiz.py"),
+    "briefing": ("cerebro_briefing", RAIZ / "helpers" / "briefing.py"),
+    "trabalho": ("cerebro_trabalho", RAIZ / "helpers" / "trabalho.py"),
     "decisoes": ("memoria_pessoal_decisoes", PLUGINS / "memoria_pessoal" / "helpers" / "decisoes.py"),
     "conversas": ("memoria_pessoal_conversas", PLUGINS / "memoria_pessoal" / "helpers" / "conversas.py"),
     "fios": ("fios_soltos_helper", PLUGINS / "fios_soltos" / "helpers" / "fios.py"),

@@ -16,6 +16,15 @@ glossário em `GLOSSARY.md`). Estrutura dos guias da Playbook Lab: `CLAUDE.md`, 
   (`AAAA-MM-DD-<slug>.md`: resumo, participantes, Decisões e próximos passos com links, `indice.md`); gravar de novo
   completa, nunca apaga. Vem do pós-reunião do `auxiliar` (a resposta dele vira fios e a nota, ligada a eles) ou de
   `cerebro` acao=reuniao (reunião que ele conta no Telegram; próximos passos novos viram Pendências pelo `fios.py`).
+- **Trabalho feito (21/10)**: a anotação também lê o relato do que foi feito (resposta do agente; relatório do
+  operador, que chega pela fila `/a0/usr/segundo_cerebro/entrada` via gancho `Stop` do repositório e
+  `helpers/trabalho.py` + `job_loop/_63_cerebro_trabalho.py`). O relato move frentes e fecha pendências feitas; decisão e
+  pendência nova só com as palavras dele.
+- **As mesmas decisões para todos (21/10, `helpers/briefing.py`)**: o operador começa cada sessão com as decisões em
+  vigor, as frentes e as pendências (gancho `SessionStart`, `.claude/hooks/cerebro_inicio.py`); o Crítico
+  (`especialistas`) e o revisor da prospecção recebem as decisões da Raiz, que valem acima dos critérios do AR Board; o
+  agente recebe, em cada mensagem dele, as notas da Pasta ligadas ao que ele escreveu (`cerebro_relevante`, busca local,
+  sem modelo). A nota do dia pergunta das frentes sem movimento há 7+ dias.
 - **Ferramenta `cerebro`**: consultar, assunto(s), reuniao, desfazer, contexto (entrevista, só grava com o ok dele),
   nota_do_dia, auditoria.
 - **Operador**: `python3 infra/operador/cerebro.py migrar --motivo "…"` (uma vez), `estado`, `auditoria`, `nota`.

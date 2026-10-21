@@ -55,6 +55,24 @@ def bloco(m) -> str:
     return "\n".join(partes)
 
 
+def texto_dele(agent) -> str:
+    msg = getattr(agent, "last_user_message", None)
+    c = getattr(msg, "content", msg)
+    texto = (c.get("user_message") or c.get("message") or "") if isinstance(c, dict) else c
+    return str(texto or "")
+
+
+def relevantes_do_turno(m, agent) -> str:
+    try:
+        abertos = {f"Assuntos/{a['id']}-" for a in m.m("assuntos").abertos(8)}
+        texto = m.m("briefing").relevantes(m, texto_dele(agent))
+        # the open fronts already go in "segundo_cerebro": no repeat
+        linhas = [l for l in texto.splitlines() if not any(l.startswith(f"- [[{x}") for x in abertos)]
+        return "\n".join(linhas) if len(linhas) > 1 else ""
+    except Exception:
+        return ""
+
+
 class CerebroPrompt(Extension):
     async def execute(self, system_prompt: list[str] = [], loop_data: LoopData = LoopData(), **kwargs):
         if not self.agent or self.agent.number != 0:
@@ -73,3 +91,9 @@ class CerebroPrompt(Extension):
                 turno["segundo_cerebro"] = bloco(m)
             if turno["segundo_cerebro"]:
                 extras["segundo_cerebro"] = turno["segundo_cerebro"]
+            # 21/10: the notes that match what he just wrote come with the turn (he should not have to ask the agent
+            # to look; local search, no model, once per message)
+            if "cerebro_relevante" not in turno:
+                turno["cerebro_relevante"] = relevantes_do_turno(m, self.agent)
+            if turno["cerebro_relevante"]:
+                extras["cerebro_relevante"] = turno["cerebro_relevante"]

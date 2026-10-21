@@ -341,6 +341,49 @@ class Suite:
         finally:
             self.limpar()
 
+    def t_briefing_para_operador_revisor_e_turno(self):
+        # 21/10: the same decisions for the agent, the operator and the reviewers; the agent remembers on its own
+        self.preparar()
+        try:
+            b = self.mods.m("briefing")
+            self.d.registrar("matheus", "marketing.video-audio-antes", "Mandar só o áudio para aprovar antes de gerar o vídeo",
+                             tipo="preferencia", citacao="o audio antes de gerar td", area="raiz")
+            self.d.registrar("matheus", "pagamentos", "Nunca pagar nada sem o ok dele", tipo="proibicao",
+                             citacao="nada de pagamento", area="geral")
+            self.d.registrar("matheus", "agente.modelo", "O agente roda no Haiku com conselho do Sonnet",
+                             citacao="troque sonnet por haiku", area="agente")
+            frente = self.a.registrar("Integração 99Food do Raiz Connect", onde_parou="esperando a 99 responder", area="raiz")
+            op = b.para_operador(self.mods)
+            ok(op.index("[proibicao]") < op.index("[preferencia]") < op.index("[decisao]"), "proibições primeiro")
+            ok("Mandar só o áudio" in op and "esperando a 99 responder" in op and "## Pendências dele" in op,
+               f"decisões com texto, frentes e pendências: {op[:400]}")
+            rev = b.para_revisor(self.mods, "raiz")
+            ok("Mandar só o áudio" in rev and "ACIMA dos critérios" in rev, "o revisor da Raiz vê a preferência")
+            ok("Haiku" not in rev and "Nunca pagar" not in rev, "e só o que é da Raiz")
+            eq(b.para_revisor(self.mods, "orbyte"), "", "área sem decisão: nada")
+            rel = b.relevantes(self.mods, "e a integração com a 99food, já responderam?")
+            ok(f"Assuntos/{frente['id']}-" in rel, f"a frente da 99 vem junto da mensagem dele: {rel}")
+            eq(b.relevantes(self.mods, "oi"), "", "mensagem curta: nada")
+        finally:
+            self.limpar()
+
+    def t_nota_do_dia_pergunta_das_frentes_paradas(self):
+        self.preparar()
+        try:
+            dia = self.mods.m("dia")
+            velha = self.a.registrar("Site novo da Orbyte", onde_parou="layout aprovado", area="orbyte",
+                                     agora=time.time() - 10 * 86400)
+            self.a.registrar("Integração 99Food", onde_parou="esperando", area="raiz")
+            nota = dia.compor(self.p)
+            ok("## Frentes sem movimento há mais de 7 dias (ainda valem?)" in nota["texto"] and "site-novo-da-orbyte" in nota["texto"],
+               "a frente parada aparece na nota")
+            ok("🧭 1 frente(s) sem movimento" in nota["resumo"] and "Site novo da Orbyte" in nota["resumo"],
+               f"e no resumo do celular: {nota['resumo']}")
+            ok("integracao-99food" not in nota["texto"].split("(ainda valem?)")[1], "a recente não")
+            eq(velha["estado"], "andamento", "nada muda sozinho: só pergunta")
+        finally:
+            self.limpar()
+
     def t_desfazer_a_ultima_anotacao(self):
         self.preparar()
         try:
