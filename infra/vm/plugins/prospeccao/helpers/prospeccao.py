@@ -1743,7 +1743,11 @@ def falas_de_historico(texto: str) -> list:
             valor = json.loads(f'"{m.group(1)}"')
         except ValueError:
             continue
-        if isinstance(valor, str) and valor.strip() and not _NAO_E_DELE.match(valor):
+        if not isinstance(valor, str):
+            continue
+        if valor.startswith("[Enquanto esta conversa estava ocupada") and "]\n\n" in valor:
+            valor = valor.split("]\n\n", 1)[1]  # whatsapp/paralelas puts its notice before his message: his words follow
+        if valor.strip() and not _NAO_E_DELE.match(valor):
             saida.append(valor)
     return saida[-40:]
 
