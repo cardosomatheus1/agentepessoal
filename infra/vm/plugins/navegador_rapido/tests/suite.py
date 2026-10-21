@@ -152,6 +152,13 @@ class Suite:
             ok(imagem["image_url"]["url"].startswith("data:image/jpeg;base64,"), "a imagem vai junto")
             eq(v.mensagem(str(Path(d) / "nada.jpg"), "click"), None, "arquivo sumiu: nada")
 
+    def t_licoes_no_prompt(self):
+        v = _ver_tela()
+        for trecho in ("tool_args", "print", "coordenadas", "wheel", "evaluate", "três jeitos"):
+            ok(trecho in v.LICOES, f"lição sobre {trecho}")
+        ext = (RAIZ / "extensions" / "python" / "system_prompt" / "_16_licoes_navegador.py").read_text(encoding="utf-8")
+        ok("system_prompt.append(ver_tela.LICOES)" in ext, "a extensão põe as lições no prompt")
+
     def t_so_o_ultimo_print_fica(self):
         v = _ver_tela()
 

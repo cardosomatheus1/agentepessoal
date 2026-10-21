@@ -148,6 +148,7 @@ class Suite:
         texto = saida[0]
         ok("§§secret(NOME)" in texto and "NÃO é falha" in texto and "/senha NOME valor" in texto, "como usar o cofre fica")
         ok("- IG: (sem descrição)" in texto and "cofre_descrever" in texto, "lista e como descrever")
+        ok("mesmo valor" in texto and "não é erro" in texto, "senhas iguais com outro nome na tela não param o agente (21/10)")
         linha = next(l for l in texto.splitlines() if l.startswith("- GMAIL:"))
         ok(len(linha) <= len("- GMAIL: ") + ext.DESCRICAO_MAX and linha.endswith("…"), f"descrição longa cortada: {linha}")
         ok("captcha" not in texto.lower() and "nunca contorne" not in texto, "captcha só nas regras de sempre")

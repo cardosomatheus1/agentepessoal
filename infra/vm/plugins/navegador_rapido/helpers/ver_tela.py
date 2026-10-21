@@ -25,6 +25,16 @@ ORIENTACAO = (
     "com text). Não use evaluate para clicar.")
 
 
+# What the 99Food form taught (21/10), in the system prompt every turn: a fixed text, the prompt cache stays.
+LICOES = """## Navegador: como agir numa página (lições de 21/10)
+- Chame `browser` com os argumentos direto em tool_args (`{"action": "click", "browser_id": 1, "ref": 5}`). Nunca ponha tool_name/tool_args dentro de tool_args.
+- Depois de cada ação que muda a página, você recebe o print dela. Só conte como feito o que aparece no print: campo com o texto, botão habilitado, tela nova.
+- Item sem ref no `content` (menu, aba, item de lista suspensa): clique pelas coordenadas x,y do print.
+- Lista suspensa longa: com ela aberta, role em cima da própria lista (`wheel` com x,y dentro dela e deltaY 300 ou mais), olhe o print e repita até aparecer a opção. Ou digite o texto com ela aberta.
+- Não use `evaluate` para clicar nem para digitar. Ele não dispara os eventos da página, e a página fica como estava.
+- Ação que não mudou nada: não repita a mesma. Tente outro jeito (ref → coordenadas → teclado → endereço direto da tela). Só peça ao Matheus depois de três jeitos diferentes, dizendo quais tentou."""
+
+
 def acao_que_age(tool_name: str, args: dict | None) -> str:
     """The browser action when it changes the page, else ''."""
     if (tool_name or "").lower() != "browser" or not isinstance(args, dict):

@@ -44,6 +44,8 @@ class CofrePrompt(Extension):
                   "navegador, `texto` do `digitar` no celular, desktop, terminal); o valor real entra só na hora e você nunca "
                   "o vê. Depois a página mostra `§§secret(NOME)` ou o campo VAZIO/com pontos: isso NÃO é falha. Digite uma "
                   "vez e siga; só conclua que falhou se o site disser que a senha está errada (aí avise, não tente de novo). "
+                  "Duas senhas com o mesmo valor: a tela pode mostrar o nome da outra (digitou NOVENTAENOVE e aparece "
+                  "FACEBOOK_SENHA). É o mesmo valor, não é erro: siga. "
                   "Faltou uma senha: peça que a pessoa mande `/senha NOME valor` no Telegram/WhatsApp (a mensagem é apagada) "
                   "ou use o **Cofre de senhas** do app; senha solta na conversa não se usa: peça para reenviar com /senha."]
         itens = c.lista(c.dono(self.agent.context))
