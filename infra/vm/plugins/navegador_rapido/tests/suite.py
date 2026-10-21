@@ -396,6 +396,21 @@ class Suite:
             await Acrescenta().type(1, "e", "Segue o link")
             await Acrescenta().type(1, "e", "Segue o link")
             eq(await pg.inner_text("#e"), "Segue o link", "digitar de novo substitui o que a caixa tinha, sem duplicar")
+
+            # 21/10, 2ª vez: a caixa do Direct é uma ref "helper-backed" (num frame), sem ponto; o clique da ferramenta chega
+            class SemPonto(Acrescenta):
+                _a0_original_type = None
+
+                async def _point_for(self, page, ref):
+                    raise RuntimeError('Page.evaluate: BrowserPageContentActionError: Browser page content cannot resolve '
+                                       'point for helper-backed reference "44".')
+
+                async def click(self, browser_id, ref):
+                    await pg.click("#e")
+                    return {}
+            c._lista_do_site(SemPonto)
+            await SemPonto().type(1, "44", "Segue o link")
+            eq(await pg.inner_text("#e"), "Segue o link", "ref sem ponto: limpa pelo clique da ferramenta e não duplica")
             await b.close()
 
     async def t_print_com_o_numero_de_cada_ref(self):

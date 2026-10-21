@@ -947,7 +947,7 @@ OPCAO_JS = """(valor) => {
   return { x: r.x + r.width / 2, y: r.y + r.height / 2, texto: norm(e.innerText).slice(0, 60) };
 }"""
 MARK_LISTA = "_navegador_rapido_lista"
-VERSAO_LISTA = 2  # 2: typing into a box drawn by the site replaces its text (21/10)
+VERSAO_LISTA = 3  # 2: typing into a box drawn by the site replaces its text (21/10); 3: also a ref with no point
 
 
 def _lista_do_site(core) -> None:
@@ -988,12 +988,29 @@ def _lista_do_site(core) -> None:
     async def type(self, browser_id, reference_id, text):
         try:
             page = self._page(self._resolve_browser_id(browser_id))
-            ponto = await self._point_for(page, reference_id)
-            if await page.evaluate(EDITAVEL_CHEIO_JS, [float(ponto["x"]), float(ponto["y"])]):
-                await page.mouse.click(float(ponto["x"]), float(ponto["y"]))
-                await page.keyboard.press("Control+a")
-                await page.keyboard.press("Delete")
-        except Exception as exc:  # no point for the ref: the original type decides
+            try:
+                ponto = await self._point_for(page, reference_id)
+            except Exception:
+                ponto = None
+            if ponto is not None:
+                if await page.evaluate(EDITAVEL_CHEIO_JS, [float(ponto["x"]), float(ponto["y"])]):
+                    await page.mouse.click(float(ponto["x"]), float(ponto["y"]))
+                    await page.keyboard.press("Control+a")
+                    await page.keyboard.press("Delete")
+            else:
+                # 21/10, 2nd time: the Direct box is a "helper-backed" ref (inside a frame) with no point, and the
+                # clearing was skipped. The tool's own click reaches it; then clear the box that took the focus.
+                await self.click(browser_id, reference_id)
+                cheio = False
+                for frame in page.frames:
+                    try:
+                        cheio = cheio or bool(await frame.evaluate(FOCADO_CHEIO_JS))
+                    except Exception:
+                        continue
+                if cheio:
+                    await page.keyboard.press("Control+a")
+                    await page.keyboard.press("Delete")
+        except Exception as exc:  # the original type decides
             print(f"navegador_rapido: limpar caixa antes de digitar: {exc}", flush=True)
         try:
             return await original_type(self, browser_id, reference_id, text)
@@ -1021,6 +1038,11 @@ def _lista_do_site(core) -> None:
     print(f"navegador_rapido: caixa do site v{VERSAO_LISTA} instalada", flush=True)
 
 
+FOCADO_CHEIO_JS = """() => {
+  const a = document.activeElement;
+  const caixa = a && a.closest && a.closest('[contenteditable]:not([contenteditable="false"])');
+  return !!(caixa && caixa.innerText.trim());
+}"""
 EDITAVEL_CHEIO_JS = """([x, y]) => {
   const el = document.elementFromPoint(x, y);
   const caixa = el && el.closest('[contenteditable]:not([contenteditable="false"])');
