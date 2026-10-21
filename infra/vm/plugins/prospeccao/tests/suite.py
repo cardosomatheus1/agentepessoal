@@ -847,17 +847,23 @@ class Suite:
                     return [{"ownerUsername": "marmitadaju", "text": "quanto custa o plano? meu estoque nunca bate",
                              "postUrl": "https://www.instagram.com/p/AAA/"},
                             {"ownerUsername": "usesaipos", "text": "obrigado!", "postUrl": "https://www.instagram.com/p/AAA/"},
-                            {"ownerUsername": "fa_qualquer", "text": "lindo", "postUrl": "https://www.instagram.com/p/AAA/"}]
+                            {"ownerUsername": "fa_qualquer", "text": "lindo", "postUrl": "https://www.instagram.com/p/AAA/"},
+                            {"ownerUsername": "marmitasemdata", "text": "uso e gosto", "postUrl": "https://www.instagram.com/p/AAA/"}]
                 return [{"username": "marmitadaju", "fullName": "Marmita da Ju", "biography": "marmitas fit Salvador",
                          "followersCount": 1800, "private": False, "businessCategoryName": "Restaurante", "latestPosts": [post]},
                         {"username": "fa_qualquer", "fullName": "Fulano", "biography": "", "followersCount": 120,
-                         "private": False, "latestPosts": [post]}]
+                         "private": False, "latestPosts": [post]},
+                        {"username": "marmitasemdata", "fullName": "Marmitaria Central", "biography": "marmitaria em Feira de Santana",
+                         "followersCount": 900, "private": False, "businessCategoryName": "Restaurante", "latestPosts": []}]
             f._apify = apify
             ok(not f.concorrentes_hoje(LOGIN), "nunca rodou: roda")
+            p.rejeitar(LOGIN, [{"handle": "marmitasemdata", "motivo": "sem a data do último post NÃO fixado (ultimo_post AAAA-MM-DD)"}])
             out = f.buscar_concorrentes(LOGIN, p)
             ok(chamadas[1][1]["directUrls"] == ["https://www.instagram.com/p/AAA/"], f"só URL de post vai para os comentários: {chamadas[1]}")
             eq(out["concorrentes"], ["usesaipos", "anotaai.bots"], f"2 concorrentes em rodízio: {out}")
-            eq([c["handle"] for c in out["criados"]], ["marmitadaju"], f"só quem encaixa na rubrica vira lead: {out}")
+            eq([c["handle"] for c in out["criados"]], ["marmitadaju", "marmitasemdata"], f"só quem encaixa na rubrica vira lead: {out}")
+            sem = next(l for l in p.carregar(LOGIN)["leads"] if l["handle"] == "marmitasemdata")
+            ok(sem.get("conferir_atividade"), "sem a data do último post: recusado antes por isso, agora entra e a visita confere")
             ok("usesaipos" not in chamadas[2][1]["usernames"], "a resposta do próprio concorrente não vira perfil a buscar")
             lead = next(l for l in p.carregar(LOGIN)["leads"] if l["handle"] == "marmitadaju")
             ok("comentou no post de @usesaipos" in lead["motivo"] and "quanto custa" in lead["sinal"],

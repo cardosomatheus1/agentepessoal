@@ -631,7 +631,9 @@ def buscar_instagram(login: str, p, termos: int = 3, por_termo: int = 20) -> dic
 def _avaliar(login: str, p, itens: list, item_de, out: dict) -> dict:
     """Profiles returned by Apify -> leads (what fits the rubric), rejected (60 days) or skipped (already known)."""
     dados = p.carregar(login)
-    conhecidos = {l["handle"] for l in dados["leads"]} | set((dados.get("rejeitados") or {}).keys())
+    # refused only because Apify did not bring the last post's date is not a real refusal: looked at again (21/10)
+    conhecidos = {l["handle"] for l in dados["leads"]} | {h for h, v in (dados.get("rejeitados") or {}).items()
+                                                          if not str(v.get("motivo") or "").startswith("sem a data do último post")}
     out.update({"criados": [], "recusados": 0, "ja_conhecidos": 0})
     novos, rejeitar = [], []
     for it in itens:
@@ -736,7 +738,8 @@ def buscar_concorrentes(login: str, p, concorrentes: int = 2, posts: int = 2, po
         dono = next((x.get("ownerUsername") for x in postagens if x.get("url") and x["url"] in str(c.get("postUrl") or "")), "")
         sinais = list(ev.get("sinais") or []) + ["comentou_concorrente"] + (["duvida_compra"] if DUVIDA_COMPRA.search(texto) else []) \
             + (["reclamacao_custo"] if DOR.search(texto) else [])
-        return {"sinais": sinais, "fonte": "Apify concorrentes", "sinal": f"comentou em @{dono or 'concorrente'}: «{texto}»",
+        # no last-post date from Apify: the warm-up visit checks it (a commenter is a warm signal, not refused for it)
+        return {"sinais": sinais, "fonte": "Apify concorrentes", "atividade_pendente": not ev.get("ultimo_post"), "sinal": f"comentou em @{dono or 'concorrente'}: «{texto}»",
                 "motivo": (f"comentou no post de @{dono or 'concorrente'}: «{texto}»; {ev['motivo']}")[:300]}
     return _avaliar(login, p, perfis, item_de, {"concorrentes": escolhidos, "posts": len(postagens),
                                                  "comentarios": len(comentarios), "perfis": len(perfis),
