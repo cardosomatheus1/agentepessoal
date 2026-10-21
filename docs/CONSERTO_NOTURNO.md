@@ -11,7 +11,9 @@ funcionou depois de uma falha). Esta sessão cuida do outro lado: o **defeito da
 ## Passo a passo
 
 1. Branch `ccr-bcbe3101-9u4klv` do `cardosomatheus1/agentepessoal`: `git pull`. Leia o `CLAUDE.md` e
-   `docs/HANDOFF_CONTA_NOVA.md`. As regras deles valem aqui inteiras.
+   `docs/HANDOFF_CONTA_NOVA.md`. As regras deles valem aqui inteiras. O ambiente pode começar sem as ferramentas da
+   AWS (1ª conferência, 21/10): `python3 -c "import boto3" 2>/dev/null || pip install -q boto3` e
+   `command -v aws >/dev/null || pip install -q awscli`.
 2. `python3 infra/operador/falhas_do_dia.py 24` (e `--json` se quiser os grupos inteiros).
 3. Escolha **até 3 grupos** para consertar, nesta ordem de prioridade: mais vezes, mais conversas, efeito maior para o
    Matheus. Só entra grupo que é **defeito nosso** e aconteceu **3 vezes ou mais**:
