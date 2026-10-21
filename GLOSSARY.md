@@ -77,3 +77,13 @@ _Avoid_: thumbnail, amostra, rascunho
 **Pedido sem molde**:
 O que o cliente pediu e que nenhum Molde atende; é guardado para decidir quais Moldes construir, nunca criado na hora.
 _Avoid_: molde sob medida, pedido especial
+
+### Prospecção por interação
+
+**Sinal**:
+Uma interação pública de um perfil com um concorrente ou com a própria empresa (comentário, curtida, seguir de volta), com data; o comentário com dor ou pergunta de compra é o sinal mais forte.
+_Avoid_: engajamento, interação (solto), lead
+
+**Fila do dia**:
+As ações sugeridas para o dia (seguir, curtir, comentar, mandar direct), cada uma com o texto pronto e o motivo, que a pessoa executa com 1 toque.
+_Avoid_: tarefas, automação, rotina (para o produto)
