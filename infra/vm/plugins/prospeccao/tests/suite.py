@@ -841,11 +841,12 @@ class Suite:
             def apify(ator, entrada, max_usd):
                 chamadas.append((ator, entrada))
                 if ator.endswith("post-scraper"):
-                    return [{"url": "https://www.instagram.com/p/AAA/", "ownerUsername": entrada["username"][0]}]
+                    return [{"url": "https://www.instagram.com/p/AAA/", "ownerUsername": entrada["username"][0]},
+                            {"url": "https://www.instagram.com/perfil_que_nao_existe", "error": "not_found"}]
                 if ator.endswith("comment-scraper"):
                     return [{"ownerUsername": "marmitadaju", "text": "quanto custa o plano? meu estoque nunca bate",
                              "postUrl": "https://www.instagram.com/p/AAA/"},
-                            {"ownerUsername": entrada["directUrls"] and "saipos", "text": "obrigado!", "postUrl": "https://www.instagram.com/p/AAA/"},
+                            {"ownerUsername": "usesaipos", "text": "obrigado!", "postUrl": "https://www.instagram.com/p/AAA/"},
                             {"ownerUsername": "fa_qualquer", "text": "lindo", "postUrl": "https://www.instagram.com/p/AAA/"}]
                 return [{"username": "marmitadaju", "fullName": "Marmita da Ju", "biography": "marmitas fit Salvador",
                          "followersCount": 1800, "private": False, "businessCategoryName": "Restaurante", "latestPosts": [post]},
@@ -854,16 +855,17 @@ class Suite:
             f._apify = apify
             ok(not f.concorrentes_hoje(LOGIN), "nunca rodou: roda")
             out = f.buscar_concorrentes(LOGIN, p)
-            eq(out["concorrentes"], ["saipos", "goomer"], f"2 concorrentes em rodízio: {out}")
+            ok(chamadas[1][1]["directUrls"] == ["https://www.instagram.com/p/AAA/"], f"só URL de post vai para os comentários: {chamadas[1]}")
+            eq(out["concorrentes"], ["usesaipos", "anotaai.bots"], f"2 concorrentes em rodízio: {out}")
             eq([c["handle"] for c in out["criados"]], ["marmitadaju"], f"só quem encaixa na rubrica vira lead: {out}")
-            ok("saipos" not in chamadas[2][1]["usernames"], "a resposta do próprio concorrente não vira perfil a buscar")
+            ok("usesaipos" not in chamadas[2][1]["usernames"], "a resposta do próprio concorrente não vira perfil a buscar")
             lead = next(l for l in p.carregar(LOGIN)["leads"] if l["handle"] == "marmitadaju")
-            ok("comentou no post de @saipos" in lead["motivo"] and "quanto custa" in lead["sinal"],
+            ok("comentou no post de @usesaipos" in lead["motivo"] and "quanto custa" in lead["sinal"],
                f"motivo e sinal trazem o comentário e o concorrente: {lead['motivo']} | {lead['sinal']}")
             ok({"comentou_concorrente", "duvida_compra", "reclamacao_custo"} <= set(lead["evidencias"].get("sinais") or []),
                f"pergunta de compra e dor viram sinais: {lead['evidencias']}")
             ok(f.concorrentes_hoje(LOGIN), "rodou hoje: não roda de novo antes de 2 dias")
-            eq(f.buscar_concorrentes(LOGIN, p)["concorrentes"], ["anota.ai", "cardapioweb"], "o rodízio continua")
+            eq(f.buscar_concorrentes(LOGIN, p)["concorrentes"], ["goomer_br", "cardapio.web"], "o rodízio continua")
             ok(f.carregar(LOGIN)["apify"]["usd"] > 0, "o gasto entra na verba do mês")
             d = f.carregar(LOGIN)
             d["apify_usd_mes"] = d["apify"]["usd"]

@@ -520,7 +520,8 @@ PRECO_APIFY = {"apify~instagram-search-scraper": 0.0027, "apify~instagram-profil
                "apify~instagram-post-scraper": 0.0027, "apify~instagram-comment-scraper": 0.0026}  # per item, free plan
 # Matheus, 21/10 (docs/nexos/PROSPECCAO_SOCIAL.md, Q15): two weeks testing leads found among the people who comment on
 # competitors' posts, before it becomes a NEXOS Story. Systems that sell to food producers; changeable in fontes.json.
-CONCORRENTES = ("saipos", "goomer", "anota.ai", "cardapioweb", "consumer.app")
+# handles checked on Instagram on 21/10 (Apify search): Saipos, Anota AI, Goomer, Cardápio Web, Consumer, Sischef
+CONCORRENTES = ("usesaipos", "anotaai.bots", "goomer_br", "cardapio.web", "consumer.br", "sistemasischef")
 DUVIDA_COMPRA = re.compile(r"quanto (custa|é|e)|pre[cç]o|valor|como funciona|tem integra|como (contrato|assino|fa[cç]o)|"
                            r"\bplanos?\b|me (chama|manda)|\binbox\b|\bdm\b", re.I)
 DOR = re.compile(r"(n[aã]o|nunca) bate|preju[ií]zo|perco|perdendo|dif[ií]cil|problema|reclama|p[eé]ssim|ruim|caro|travou|"
@@ -708,7 +709,8 @@ def buscar_concorrentes(login: str, p, concorrentes: int = 2, posts: int = 2, po
         postagens = _apify("apify~instagram-post-scraper", {"username": escolhidos, "resultsLimit": posts},
                            concorrentes * posts * PRECO_APIFY["apify~instagram-post-scraper"] + 0.05)
         gasto["apify~instagram-post-scraper"] = len(postagens)
-        urls = [x["url"] for x in postagens if isinstance(x, dict) and x.get("url")]
+        # a wrong or empty profile comes back as one item with "error" and the profile URL, which the comment actor refuses
+        urls = [x["url"] for x in postagens if isinstance(x, dict) and not x.get("error") and re.search(r"/(p|reel)/", str(x.get("url")))]
         comentarios = _apify("apify~instagram-comment-scraper", {"directUrls": urls, "resultsLimit": por_post},
                              len(urls) * por_post * PRECO_APIFY["apify~instagram-comment-scraper"] + 0.05) if urls else []
         gasto["apify~instagram-comment-scraper"] = len(comentarios)
