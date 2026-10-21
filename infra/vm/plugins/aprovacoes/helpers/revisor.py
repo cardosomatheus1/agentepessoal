@@ -32,7 +32,7 @@ CATEGORIAS = {
 
 # Cheap pre-filter: only actions that may change something outside the agent get reviewed.
 ACOES_BROWSER = {"click", "dblclick", "press", "press_key", "key", "submit", "select", "select_option",
-                 "check", "uncheck", "evaluate", "js", "execute_js", "tap"}
+                 "check", "uncheck", "evaluate", "js", "execute_js", "tap", "dialog"}
 PALAVRAS = re.compile(
     r"envi|submet|confirm|aceit|concord|compr|pag(ar|amento|ue)|cart[aã]o|assin|publi|post|exclu|apag|delet|"
     r"remov|desativ|cancel|transfer|finaliz|conclu|revis[aã]o|an[aá]lise|solicit|contrat|reserv|instal|"

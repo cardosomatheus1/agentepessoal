@@ -424,6 +424,7 @@ MARK_ALVO = "_navegador_rapido_alvo"
 MARK_BAIXADOS = "_navegador_rapido_baixados"
 MARK_ARQUIVO = "_navegador_rapido_arquivo"
 VERSAO_ARQUIVO = 2
+MARK_DIALOGO = "_navegador_rapido_dialogo"
 MARK_DIGITADO = "_navegador_rapido_digitado"
 
 
@@ -455,10 +456,22 @@ def _conferir_digitacao(core) -> None:
     setattr(core, MARK_DIGITADO, True)
 
 
+def _celulas(fn, profundidade: int = 4):
+    """Closure cells of a wrapper and of the wrappers it wraps (other fixes wrap the same method)."""
+    for cell in getattr(fn, "__closure__", None) or ():
+        yield cell
+        try:
+            dentro = cell.cell_contents
+        except ValueError:
+            continue
+        if profundidade and callable(dentro) and getattr(dentro, "__closure__", None):
+            yield from _celulas(dentro, profundidade - 1)
+
+
 def _atualizar_script_vivo(core) -> None:
     """The fast capture script is fixed when the server first applies these fixes, inside the wrapper's closure; a
     server already running (deploys do not restart the agent) gets a newer version of it swapped in here."""
-    for cell in getattr(core._ensure_content_helper, "__closure__", None) or ():
+    for cell in _celulas(core._ensure_content_helper):
         try:
             atual = cell.cell_contents
         except ValueError:
@@ -466,6 +479,143 @@ def _atualizar_script_vivo(core) -> None:
         if isinstance(atual, str) and "navegadorRapidoHidden" in atual and (
                 ROTULO_MARCA not in atual or VALOR_MARCA not in atual):
             cell.cell_contents = com_valor_lido(com_rotulo_visual(atual))
+
+
+# --- Item 5: JavaScript dialogs (alert / confirm / prompt / beforeunload) ---------------------------------------------
+# Playwright dismisses any dialog nobody listens to: a site's "Excluir? OK/Cancelar" became Cancelar, the page did not
+# change and the agent saw "click ok". OpenClaw (pw-session-dialogs.ts, armDialog) and Hermes (browser_dialog_tool.py)
+# record the dialog and let the agent answer. Here: alert → OK; beforeunload → leave (the agent asked to navigate);
+# confirm/prompt → the answer the agent armed with {"action": "dialog", "accept": true} (that goes through the
+# approvals, which review browser actions before this runs), else Cancelar, the safe answer. Every dialog is reported
+# in the next browser result.
+DIALOGOS = "_a0_dialogos"   # on the core class: {context_id: [dialogs not yet reported]}
+ARMADO = "_a0_dialogo_armado"  # on the core class: {context_id: {"accept": bool, "text": str}}
+
+
+def _tabela(core, nome: str) -> dict:
+    if not isinstance(getattr(core, nome, None), dict):
+        setattr(core, nome, {})
+    return getattr(core, nome)
+
+
+async def responder_dialogo(core, contexto: str, dialogo) -> dict:
+    tipo = str(getattr(dialogo, "type", "") or "")
+    armado = _tabela(core, ARMADO).pop(contexto, None)
+    if tipo == "alert":
+        await dialogo.accept()
+        resposta = "OK (era só um aviso)"
+    elif armado is not None and tipo in ("confirm", "prompt"):
+        if armado.get("accept"):
+            texto = armado.get("text")
+            await (dialogo.accept(str(texto)) if texto not in (None, "") else dialogo.accept())
+            resposta = "OK (como você deixou armado)"
+        else:
+            await dialogo.dismiss()
+            resposta = "Cancelar (como você deixou armado)"
+    elif tipo == "beforeunload":
+        await dialogo.accept()
+        resposta = "Sair da página (a navegação que você pediu seguiu)"
+    else:
+        await dialogo.dismiss()
+        resposta = "Cancelar (padrão seguro)"
+    item = {"tipo": tipo, "mensagem": str(getattr(dialogo, "message", "") or "")[:300], "resposta": resposta}
+    _tabela(core, DIALOGOS).setdefault(contexto, []).append(item)
+    return item
+
+
+def aviso_dialogos(itens: list[dict]) -> str:
+    linhas = []
+    for i in itens:
+        linha = f"🗨️ O site abriu uma janela ({i['tipo']}): «{i['mensagem']}». Respondi: {i['resposta']}."
+        if i["resposta"].startswith("Cancelar (padrão"):
+            linha += (' Se era para confirmar (e a ação foi pedida ou já está autorizada), chame browser '
+                      '{"action": "dialog", "accept": true} e repita a mesma ação.')
+        linhas.append(linha)
+    return ("\n\n" + "\n".join(linhas)) if linhas else ""
+
+
+def argumentos_de_dialogo(args, contexto: str, core) -> bool:
+    """browser {"action": "dialog", "accept": bool, "text": "..."} arms the answer to the next dialog of this chat;
+    the tool itself then just reports the page state."""
+    if not isinstance(args, dict) or str(args.get("action", "")).strip().lower() not in ("dialog", "dialogo", "diálogo"):
+        return False
+    aceitar = args.get("accept")
+    aceitar = aceitar if isinstance(aceitar, bool) else str(aceitar).strip().lower() in ("1", "true", "sim", "yes", "ok")
+    _tabela(core, ARMADO)[contexto] = {"accept": aceitar, "text": args.get("text") or args.get("value") or ""}
+    for k in ("accept", "value", "text"):
+        args.pop(k, None)
+    args["action"] = "state"
+    return True
+
+
+# --- Item 9: the page's own errors and failed requests ----------------------------------------------------------------
+# "I clicked and nothing happened" had no diagnosis: Hermes (browser_console) and OpenClaw (console/requests/errors)
+# show the page's console errors, JS exceptions and failed requests. Collected per chat (last 40) and shown with
+# browser {"action": "erros"}.
+EVENTOS = "_a0_eventos"
+EVENTOS_MAX = 40
+
+
+def registrar_evento(core, contexto: str, tipo: str, texto: str) -> None:
+    lista = _tabela(core, EVENTOS).setdefault(contexto, [])
+    lista.append({"tipo": tipo, "texto": str(texto or "")[:300]})
+    del lista[:-EVENTOS_MAX]
+
+
+def argumentos_de_erros(args, contexto: str, core) -> str:
+    """browser {"action": "erros"} → the page state, plus the collected errors (returned, to add to the result)."""
+    if not isinstance(args, dict) or str(args.get("action", "")).strip().lower() not in (
+            "erros", "errors", "console", "requests", "rede"):
+        return ""
+    args["action"] = "state"
+    eventos = _tabela(core, EVENTOS).pop(contexto, [])
+    if not eventos:
+        return "\n\n🔎 Nenhum erro da página nem chamada falhando desde a última vez que olhei."
+    linhas = [f"- [{e['tipo']}] {e['texto']}" for e in eventos[-15:]]
+    return ("\n\n🔎 Erros da página e chamadas que falharam (mais recentes por último):\n" + "\n".join(linhas)
+            + "\nUse isso para entender por que a ação não teve efeito (ex.: 400/422 = o site recusou os dados; "
+              "401/403 = sessão ou permissão; 500 = erro do site, tente de novo depois).")
+
+
+def _ouvintes(core) -> None:
+    """Listeners on every page the tool touches: JS dialogs (item 5) and errors/failed requests (item 9)."""
+    import asyncio
+
+    original = core._ensure_content_helper
+
+    async def _ensure_content_helper(self, page):
+        if not getattr(page, "_a0_ouve_dialogo", False):
+            contexto = str(getattr(self, "context_id", "") or "")
+            classe = type(self)
+
+            def ao_abrir(dialogo):
+                asyncio.ensure_future(responder_dialogo(classe, contexto, dialogo))
+
+            def no_console(msg):
+                if getattr(msg, "type", "") == "error":
+                    registrar_evento(classe, contexto, "console", msg.text)
+
+            def na_resposta(resp):
+                try:
+                    if resp.status >= 400 and resp.request.resource_type in ("xhr", "fetch", "document"):
+                        registrar_evento(classe, contexto, f"HTTP {resp.status}", f"{resp.request.method} {resp.url}")
+                except Exception:
+                    pass
+
+            page.on("dialog", ao_abrir)
+            page.on("console", no_console)
+            page.on("pageerror", lambda exc: registrar_evento(classe, contexto, "erro JS", str(exc)))
+            page.on("requestfailed", lambda req: registrar_evento(
+                classe, contexto, "falhou", f"{req.method} {req.url} ({getattr(req, 'failure', '') or ''})"))
+            page.on("response", na_resposta)
+            try:
+                page._a0_ouve_dialogo = True
+            except Exception:
+                pass
+        return await original(self, page)
+
+    core._ensure_content_helper = _ensure_content_helper
+    setattr(core, MARK_DIALOGO, True)
 
 
 def aplicar() -> None:
@@ -480,6 +630,8 @@ def aplicar() -> None:
         _envio_de_arquivo(core)
     if not getattr(core, MARK_DIGITADO, False):
         _conferir_digitacao(core)
+    if not getattr(core, MARK_DIALOGO, False):
+        _ouvintes(core)
     if getattr(core, MARK, False):
         _atualizar_script_vivo(core)
         return

@@ -99,6 +99,9 @@ class Suite:
         ok(rv.precisa_revisao("browser", {"action": "press", "key": "Enter"}, "enviar a mensagem no Direct"),
            "Enter (envia) continua passando pelo revisor")
         ok(rv.precisa_revisao("browser", {"action": "click", "ref": 3}, "apagar a conversa"), "clique de apagar continua revisado")
+        # 21/10: confirmar a janela "Tem certeza?" do site passa pelo revisor; cancelar não
+        ok(rv.precisa_revisao("browser", {"action": "dialog", "accept": True}, "confirmar a exclusão"),
+           "OK na janela do site é revisado")
 
     def t_meta_da_raiz_sem_perguntar(self):
         rv, cfg = self.rv, {}

@@ -34,6 +34,12 @@ OUTROS = [
     (re.compile(r"element is not enabled|is disabled|not enabled", re.I),
      "↻ O controle está desativado. Complete antes o que o libera (campos obrigatórios, caixa de aceite, escolha "
      "anterior) e tente de novo."),
+    (re.compile(r"cannot select options on|not a <select>|select_option", re.I),
+     "↻ Essa lista não é um <select> de verdade (é feita pelo site). Clique nela para abrir, espere as opções "
+     "(`wait` com o texto da opção) e clique na opção pelo texto (`text=...`) ou pelas coordenadas do print."),
+    (re.compile(r"helper-backed reference|no visible viewport box|cannot resolve point", re.I),
+     "↻ O elemento está dentro de um quadro embutido (iframe) ou sem área visível. Role até ele e clique pelas "
+     "coordenadas x,y do print (`click` com x e y), ou abra o endereço do quadro direto numa aba."),
     (re.compile(r"does not resolve to a file input|cannot upload files", re.I),
      "↻ Para enviar arquivo use `upload_file` só com o `path` (sem ref): o arquivo vai no campo de arquivo da página, "
      "mesmo escondido. Se não houver campo, clique antes no botão de anexar."),

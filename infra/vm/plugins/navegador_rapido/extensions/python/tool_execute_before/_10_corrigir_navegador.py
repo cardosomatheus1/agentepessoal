@@ -17,5 +17,12 @@ class CorrigirNavegador(Extension):
             if tool_name == "browser":
                 module.argumentos_de_upload(tool_args)
                 module.argumentos_de_espera(tool_args)
+                from plugins._browser.helpers import runtime
+
+                ctx = str(self.agent.context.id)
+                module.argumentos_de_dialogo(tool_args, ctx, runtime._BrowserRuntimeCore)
+                erros = module.argumentos_de_erros(tool_args, ctx, runtime._BrowserRuntimeCore)
+                if erros:
+                    self.agent.set_data("_navegador_erros", erros)
         except Exception as exc:  # never block the agent over this
             print(f"navegador_rapido: {exc}", flush=True)

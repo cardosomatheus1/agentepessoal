@@ -410,6 +410,8 @@ class Suite:
             "Browser type failed: Cannot type text into input[type=number]": "formato",
             "Browser upload_file failed: Browser ref '8' does not resolve to a file input": "upload_file",
             "Browser click failed: Timeout 30000ms exceeded.": "Esperou",
+            "Browser select failed: Browser page content cannot select options on <div>.": "não é um <select>",
+            'Browser click failed: cannot resolve point for helper-backed reference "12".': "iframe",
         }
         for erro, trecho in casos.items():
             d = c.dica("browser", erro)

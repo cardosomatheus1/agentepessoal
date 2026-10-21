@@ -238,6 +238,89 @@ class Suite:
                    "clique que não abre janela: devolve False, sem travar")
                 await b.close()
 
+    async def t_janelas_do_site_respondidas_e_avisadas(self):
+        c = _correcoes()
+
+        class Core:
+            pass
+
+        args = {"action": "dialog", "accept": True}
+        ok(c.argumentos_de_dialogo(args, "ctx", Core) and args == {"action": "state"}, "dialog arma e vira state")
+        eq(getattr(Core, c.ARMADO)["ctx"]["accept"], True, "armado para OK")
+        getattr(Core, c.ARMADO).clear()
+        ok(not c.argumentos_de_dialogo({"action": "click"}, "ctx", Core), "outra ação não muda")
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return
+        exe = os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+        if not Path(exe).exists():
+            exe = "/a0/tmp/playwright/chromium-1228/chrome-linux/chrome"
+        if not Path(exe).exists():
+            return
+        import asyncio
+        async with async_playwright() as p:
+            b = await p.chromium.launch(executable_path=exe, headless=True)
+            pg = await b.new_page()
+            pg.on("dialog", lambda d: asyncio.ensure_future(c.responder_dialogo(Core, "ctx", d)))
+            await pg.set_content('<div id="r"></div>'
+                                 '<button id="x" onclick="document.getElementById(\'r\').textContent = '
+                                 'confirm(\'Excluir o rascunho?\') ? \'excluido\' : \'mantido\'">Excluir</button>'
+                                 '<button id="a" onclick="alert(\'Salvo!\')">Salvar</button>')
+            await pg.click("#x")
+            await pg.wait_for_timeout(200)
+            eq(await pg.inner_text("#r"), "mantido", "sem armar: Cancelar (seguro)")
+            c.argumentos_de_dialogo({"action": "dialog", "accept": True}, "ctx", Core)
+            await pg.click("#x")
+            await pg.wait_for_timeout(200)
+            eq(await pg.inner_text("#r"), "excluido", "armado: OK")
+            await pg.click("#a")
+            await pg.wait_for_timeout(200)
+            await b.close()
+        texto = c.aviso_dialogos(getattr(Core, c.DIALOGOS).pop("ctx"))
+        ok("Excluir o rascunho?" in texto and "Cancelar (padrão seguro)" in texto and '"accept": true' in texto,
+           f"o agente fica sabendo o que o site perguntou e como confirmar: {texto}")
+        ok("OK (como você deixou armado)" in texto and "Salvo!" in texto and "OK (era só um aviso)" in texto,
+           "confirmação armada e aviso também aparecem")
+
+    async def t_erros_da_pagina_e_chamadas_que_falharam(self):
+        c = _correcoes()
+
+        class Core:
+            context_id = "ctx9"
+
+            async def _ensure_content_helper(self, page):
+                return None
+
+        c._ouvintes(Core)
+        sem = {"action": "erros"}
+        ok("Nenhum erro" in c.argumentos_de_erros(sem, "ctx9", Core) and sem["action"] == "state", "sem erros: diz")
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return
+        exe = os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+        if not Path(exe).exists():
+            exe = "/a0/tmp/playwright/chromium-1228/chrome-linux/chrome"
+        if not Path(exe).exists():
+            return
+        async with async_playwright() as p:
+            b = await p.chromium.launch(executable_path=exe, headless=True)
+            pg = await b.new_page()
+            await pg.route("https://api.exemplo.test/**", lambda r: r.fulfill(status=422, body='{"erro":"cnpj"}'))
+            await pg.goto("https://api.exemplo.test/pagina")  # documento 422 também conta
+            await Core()._ensure_content_helper(pg)
+            await pg.evaluate("""() => { console.error('Falha ao salvar o formulário');
+                fetch('https://api.exemplo.test/salvar', {method: 'POST'});
+                setTimeout(() => { throw new Error('quebrou'); }, 0); }""")
+            await pg.wait_for_timeout(500)
+            await b.close()
+        args = {"action": "erros"}
+        texto = c.argumentos_de_erros(args, "ctx9", Core)
+        for trecho in ("Falha ao salvar o formulário", "HTTP 422", "POST https://api.exemplo.test/salvar", "quebrou"):
+            ok(trecho in texto, f"mostra {trecho!r}: {texto}")
+        ok("Nenhum erro" in c.argumentos_de_erros({"action": "erros"}, "ctx9", Core), "mostra uma vez e limpa")
+
     def t_reaplica_correcao_nova_no_servidor_ja_rodando(self):
         c = _correcoes()
 
