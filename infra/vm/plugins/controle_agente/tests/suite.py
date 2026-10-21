@@ -203,6 +203,42 @@ class Suite:
         ok("🔁" in r.message or "⚠️" in r.message, f"vaivém é avisado: {r.message!r}")
         ok(laco.ciclo(["x", "a", "b", "a", "b"]) and not laco.ciclo(["a", "a", "a", "a"]), "ciclo só com passos diferentes")
 
+    def t_terminal_mostra_codigo_de_saida_e_o_proximo_passo(self):
+        import subprocess
+
+        t = _carregar("controle_terminal_teste", RAIZ / "helpers" / "terminal.py")
+
+        def rodar(codigo):  # como o Agent Zero: comando de várias linhas vai dentro de { }
+            corpo = t.com_codigo_de_saida(codigo).rstrip("\n")
+            corpo = "{\n" + corpo + "\n}" if "\n" in corpo else corpo
+            return subprocess.run(["bash", "-c", corpo], capture_output=True, text=True).stdout
+
+        ok("⟦código de saída 127⟧" in rodar("comando_que_nao_existe_a0 2>&1"), "comando que não existe: 127")
+        eq(rodar("echo oi"), "oi\n", "comando que deu certo: nada a mais")
+        ok("⟦código de saída 2⟧" in rodar("set -u\nls /nao/existe 2>&1"), "várias linhas: código do último")
+        ok("⟦código de saída 1⟧" in rodar("python3 - <<'PY'\nimport sys\nsys.exit(1)\nPY"), "heredoc continua inteiro")
+        for igual in ("y", "2", "tail -f x &", "cat a |", "echo a \\"):
+            eq(t.com_codigo_de_saida(igual), igual, f"não mexe em {igual!r}")
+        eq(t.com_codigo_de_saida(t.com_codigo_de_saida("ls")), t.com_codigo_de_saida("ls"), "não duplica")
+        # as saídas reais do registro (21/10)
+        rodando = ("bash>sleep 75; ...\n[SYSTEM: Returning control to agent after 30 seconds with no output. Process "
+                   "might be still running. Check previous outputs and decide whether to reset and continue]")
+        d = t.dica(rodando)
+        ok("CONTINUA rodando" in d and 'runtime "output"' in d and "Não use reset" in d, f"comando demorado: {d}")
+        d = t.dica("bash: python: command not found\n⟦código de saída 127⟧")
+        ok("python3" in d, f"python → python3: {d}")
+        d = t.dica("Traceback (most recent call last):\n  File \"x\", line 15\nModuleNotFoundError: No module named 'yaml'")
+        ok("pyyaml" in d and "pip install" in d, f"módulo faltando: {d}")
+        ok("memória" in t.dica("Killed\n⟦código de saída 137⟧"), "morto por memória")
+        ok("código 3" in t.dica("algo deu errado\n⟦código de saída 3⟧"), "falha sem padrão: diz o código")
+        eq(t.dica("grep: x: No such file or directory\n(saída normal de um comando que deu certo)"), "",
+           "saída normal que cita 'not found' sem falhar: nada")
+        eq(t.dica("ok"), "", "sem erro: nada")
+        d = t.dica(rodando + t.dica(rodando))
+        eq(d, "", "não repete a dica")
+        for arq in ("tool_execute_before/_25_codigo_de_saida.py", "tool_execute_after/_13_dica_terminal.py"):
+            ok((RAIZ / "extensions" / "python" / arq).exists(), f"gancho {arq}")
+
     def t_mesma_ferramenta_falhando_com_argumentos_diferentes(self):
         # the loop detector only catches the same arguments with the same result; a new selector each time slipped by
         a = _agente(0)
