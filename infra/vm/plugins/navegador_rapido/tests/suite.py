@@ -405,12 +405,12 @@ class Suite:
                     raise RuntimeError('Page.evaluate: BrowserPageContentActionError: Browser page content cannot resolve '
                                        'point for helper-backed reference "44".')
 
-                async def click(self, browser_id, ref):
-                    await pg.click("#e")
+                async def scroll(self, browser_id, ref):  # A0: scrollIntoView + focus, sem clique
+                    await pg.focus("#e")
                     return {}
             c._lista_do_site(SemPonto)
             await SemPonto().type(1, "44", "Segue o link")
-            eq(await pg.inner_text("#e"), "Segue o link", "ref sem ponto: limpa pelo clique da ferramenta e não duplica")
+            eq(await pg.inner_text("#e"), "Segue o link", "ref sem ponto: foca pela ferramenta, limpa e não duplica")
             await b.close()
 
     async def t_print_com_o_numero_de_cada_ref(self):

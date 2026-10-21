@@ -999,8 +999,9 @@ def _lista_do_site(core) -> None:
                     await page.keyboard.press("Delete")
             else:
                 # 21/10, 2nd time: the Direct box is a "helper-backed" ref (inside a frame) with no point, and the
-                # clearing was skipped. The tool's own click reaches it; then clear the box that took the focus.
-                await self.click(browser_id, reference_id)
+                # clearing was skipped. The tool's own `scroll` reaches it and focuses it without a click (a wrong ref,
+                # e.g. the Send button, is not pressed); only a focused box drawn by the site with text is cleared.
+                await self.scroll(browser_id, reference_id)
                 cheio = False
                 for frame in page.frames:
                     try:
