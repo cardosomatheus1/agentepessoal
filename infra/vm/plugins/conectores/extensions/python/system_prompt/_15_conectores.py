@@ -46,10 +46,10 @@ class ConectoresPrompt(Extension):
                               "sempre dentro da pasta \"Agente\" do Drive (crie se não existir) e mande o link. Edite só arquivos "
                               "que você criou ou que o usuário indicou; não compartilhe com ninguém nem apague arquivos.")
             if any(s in meus for s in ("google", "github")) and _sob_demanda():
-                linhas.append("Sua lista traz só as ferramentas comuns dos conectores (Google: Gmail buscar/ler, Agenda ler, "
-                              "Drive/Docs/Planilhas ler e criar o básico; GitHub: em conversa sobre código). Precisa de outra "
-                              "(editar Doc, formatar Planilha, comentários, issues…)? `conector` acao \"listar\" e \"ativar\": "
-                              "nada deixa de ser possível.")
+                linhas.append("As ferramentas comuns dos conectores (Google: Gmail buscar/ler, Agenda ler, Drive/Docs/Planilhas "
+                              "ler e criar o básico; GitHub: em conversa sobre código) estão no catálogo de `ferramentas_extras`: "
+                              "rode com acao \"usar\" (\"buscar\" mostra os parâmetros). Precisa de outra (editar Doc, formatar Planilha, comentários, issues…)? `conector` "
+                              "acao \"listar\" e \"ativar\" (também pela `ferramentas_extras`): nada deixa de ser possível.")
         if eu == "matheus":
             linhas.append("Claude Code (linha de comando) está instalado: `claude -p \"tarefa\" --output-format json`, rodado na "
                           "pasta do projeto, usa o Claude pela AWS, sem login no site nem captcha. Use para tarefas de código que "

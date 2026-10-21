@@ -377,6 +377,44 @@ class Suite:
                 "vencida": Ctx({"navegador_em_uso_ate": time.time() - 1})}
         ok([c for c, _ in m.escolher(ctxs, 99999)] == ["parada", "vencida"], "a aba em uso pela tela fica aberta")
 
+    def t_time_travel_sem_pastas_pesadas_e_sem_trava_velha(self):
+        import importlib.util as iu
+        import types as tp
+        stubs = {"helpers": tp.ModuleType("helpers"), "helpers.extension": tp.ModuleType("helpers.extension")}
+        stubs["helpers.extension"].Extension = object
+        antes = {k: sys.modules.get(k) for k in stubs}
+        sys.modules.update(stubs)
+        try:
+            spec = iu.spec_from_file_location("limpeza_tt_teste", RAIZ / "extensions" / "python" / "job_loop" /
+                                              "_44_time_travel_leve.py")
+            m = iu.module_from_spec(spec)
+            spec.loader.exec_module(m)
+        finally:
+            for k, v in antes.items():
+                if v is None:
+                    sys.modules.pop(k, None)
+                else:
+                    sys.modules[k] = v
+        tt = tp.SimpleNamespace(EXCLUDED_DIR_NAMES={".git", "node_modules"}, EXCLUDED_DIR_PATTERNS={"*.egg-info"})
+        ok(m.aplicar(tt) > 0 and "agentes" in tt.EXCLUDED_DIR_NAMES, "a pasta das instalações do Hermes/OpenClaw sai")
+        import fnmatch
+        for nome in ("aibusiness", "agentepessoal-wt-correcoes", "erp-saas-video-ifood"):
+            ok(any(fnmatch.fnmatch(nome, p) for p in tt.EXCLUDED_DIR_PATTERNS), f"{nome}: cópia de repositório sai")
+        ok(not any(fnmatch.fnmatch("pesquisas", p) for p in tt.EXCLUDED_DIR_PATTERNS) and
+           "pesquisas" not in tt.EXCLUDED_DIR_NAMES, "o resto da pasta de trabalho continua com histórico")
+        ok(m.aplicar(tt) == 0, "aplicar de novo não muda nada")
+        import tempfile
+        raiz = Path(tempfile.mkdtemp(prefix="limpeza-tt-"))
+        velho, novo = raiz / "a" / "repo.git" / "index.lock", raiz / "b" / "repo.git" / "index.lock"
+        for f in (velho, novo):
+            f.parent.mkdir(parents=True)
+            f.write_text("")
+        agora = time.time()
+        os.utime(velho, (agora - 3600, agora - 3600))
+        ok(m.destravar(raiz, agora, git_rodando=lambda: True) == [], "git escrevendo agora: nenhuma trava sai")
+        ok(m.destravar(raiz, agora, git_rodando=lambda: False) == [str(velho)], "só a trava velha sai")
+        ok(novo.exists(), "a recente fica (pode ser de um git em andamento)")
+
     def t_intervalo_vale_mesmo_recarregando_o_modulo(self):
         # 12/10 review: job-loop extensions are loaded again on every pass, so the "every 10 minutes" kept in a module
         # variable ran every minute; the time now lives in a marker file

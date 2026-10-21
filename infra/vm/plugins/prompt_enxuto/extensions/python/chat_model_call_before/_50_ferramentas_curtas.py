@@ -29,7 +29,9 @@ class FerramentasCurtas(Extension):
             # 21/10: the tools outside the core go behind ferramentas_extras (helpers/sob_demanda.py)
             sd = carregar.modulo("sob_demanda")
             if sd.ligado() and self.agent is not None:
-                lista, ocultas = sd.separar(call_data["a0_responses_function_tools"])
+                mapa = self.agent.get_data("responses_tool_name_map") or {}
+                ativas = self.agent.context.get_data("conectores_ativas") or []
+                lista, ocultas = sd.separar(call_data["a0_responses_function_tools"], sd.ativadas_nativas(ativas, mapa))
                 self.agent.set_data(sd.CHAVE, ocultas)
                 call_data["a0_responses_function_tools"] = sd.com_ponte(lista, ocultas)
         except Exception as exc:

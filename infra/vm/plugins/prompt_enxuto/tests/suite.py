@@ -252,6 +252,10 @@ class Suite:
         eq(sd.buscar(ocultas, "calendar events")[0], "google_get_events_82f4960e", "busca por palavras da descrição")
         eq(sd.buscar(ocultas, "vídeo")[0], "assistir_video", "busca em português")
         eq(sd.buscar(ocultas, ""), [], "busca vazia")
+        sem_obrig = {"parameters": {"type": "object", "properties": {"time_min": {}, "time_max": {}, "calendar_id": {},
+                                                                     "max_results": {}}}, "description": "Eventos."}
+        ok(sd.linha("google_get_events_x", sem_obrig).startswith("- google_get_events_x(time_min?, time_max?, calendar_id?)"),
+           "sem obrigatório: os primeiros opcionais com '?' (o modelo não chuta o nome)")
         eq(sd.args_validos(ocultas["google_get_events_82f4960e"], {}), "faltam os argumentos obrigatórios: time_min",
            "obrigatório que falta é dito pelo nome")
         eq(sd.args_validos(ocultas["google_get_events_82f4960e"], {"time_min": "x"}), "", "argumentos completos")
@@ -261,13 +265,22 @@ class Suite:
         sd = self._sd()
         m = _carregar("enxuto_lista_teste2", EXT / "chat_model_call_before" / "_50_ferramentas_curtas.py")
         m.carregar = self.carregar
-        agente = types.SimpleNamespace(dados={})
+        ativas = []
+        agente = types.SimpleNamespace(dados={"responses_tool_name_map": {"google_get_events_82f4960e": "google.get_events"}},
+                                       context=types.SimpleNamespace(get_data=lambda k: ativas if k == "conectores_ativas" else None))
         agente.set_data = lambda k, v: agente.dados.__setitem__(k, v)
+        agente.get_data = lambda k: agente.dados.get(k)
         dados = {"a0_responses_function_tools": self._lista_mista()}
         _rodar(m.FerramentasCurtas(agent=agente).execute(call_data=dados))
         eq([f["name"] for f in dados["a0_responses_function_tools"]], ["response", "browser", "ferramentas_extras"],
            "lista do modelo só com o núcleo")
         eq(sorted(agente.dados[sd.CHAVE]), ["assistir_video", "google_get_events_82f4960e"], "ocultas guardadas no agente")
+        ativas.append("google.get_events")  # the conectores plugin activated it in this chat
+        dados = {"a0_responses_function_tools": self._lista_mista()}
+        _rodar(m.FerramentasCurtas(agent=agente).execute(call_data=dados))
+        ok("google_get_events_82f4960e" in [f["name"] for f in dados["a0_responses_function_tools"]],
+           "ferramenta de conector ativada na conversa fica na lista (senão ativa e continua sem ver: loop do Gmail)")
+        eq(sorted(agente.dados[sd.CHAVE]), ["assistir_video"], "e sai do catálogo")
         sd.DESLIGADO.write_text("")
         try:
             dados = {"a0_responses_function_tools": self._lista_mista()}

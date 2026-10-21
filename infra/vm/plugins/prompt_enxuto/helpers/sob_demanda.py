@@ -46,16 +46,19 @@ def visivel(nome: str) -> bool:
     return nome in NUCLEO
 
 
-def separar(ferramentas: list) -> tuple[list, dict]:
+def separar(ferramentas: list, ativadas=()) -> tuple[list, dict]:
     """(the list the model gets, {native name: entry} of the hidden ones). Entries that are not plain function
-    tools stay as they are. Nothing is hidden when the bridge itself is not in the list (it would be unreachable)."""
+    tools stay as they are. Nothing is hidden when the bridge itself is not in the list (it would be unreachable).
+    `ativadas`: native names this chat asked for (conectores' `ativar`, or a connector tool already run): they stay
+    in the list, otherwise the agent would activate a tool and still not see it (21/10: it looped on Gmail)."""
+    ativadas = set(ativadas or ())
     nomes = {str(f.get("name") or "") for f in ferramentas or [] if isinstance(f, dict)}
     if PONTE not in nomes:
         return list(ferramentas or []), {}
     lista, ocultas = [], {}
     for f in ferramentas or []:
         nome = str(f.get("name") or "") if isinstance(f, dict) else ""
-        if not nome or visivel(nome) or f.get("type", "function") != "function":
+        if not nome or visivel(nome) or nome in ativadas or f.get("type", "function") != "function":
             lista.append(f)
         else:
             ocultas[nome] = f
@@ -74,8 +77,16 @@ def _resumo(descricao: str) -> str:
     return corte if len(corte) <= 70 else corte[:67].rstrip() + "…"
 
 
+def _opcionais(entrada: dict, n: int = 3) -> list[str]:
+    p = entrada.get("parameters") if isinstance(entrada.get("parameters"), dict) else {}
+    props = p.get("properties") if isinstance(p.get("properties"), dict) else {}
+    return [f"{k}?" for k in list(props)[:n]]
+
+
 def linha(nome: str, entrada: dict) -> str:
-    args = ", ".join(_obrigatorios(entrada))
+    """One catalog line: the required arguments, or, when none is required, the first optional ones (with "?"), so
+    the model does not guess their names (21/10: it called the calendar with start_date instead of time_min)."""
+    args = ", ".join(_obrigatorios(entrada) or _opcionais(entrada))
     out = f"- {nome}({args}): {_resumo(entrada.get('description', ''))}"
     return out if len(out) <= LINHA_MAX else out[:LINHA_MAX - 1].rstrip() + "…"
 
@@ -167,3 +178,9 @@ def args_validos(entrada: dict, args) -> str:
     if faltam:
         return "faltam os argumentos obrigatórios: " + ", ".join(faltam)
     return ""
+
+
+def ativadas_nativas(originais, mapa: dict) -> set[str]:
+    """Native names (google_search_gmail_messages_ad0e4d65) of the original ones (google.search_gmail_messages)."""
+    inverso = {o: n for n, o in (mapa or {}).items()}
+    return {inverso[o] for o in originais or () if o in inverso}
