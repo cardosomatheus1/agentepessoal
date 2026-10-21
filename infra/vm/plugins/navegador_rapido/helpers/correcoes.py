@@ -1001,12 +1001,14 @@ def _print_rotulado(core) -> None:
                     await _no_mundo_do_ajudante(page, ROTULAR_JS, False)
                 except Exception:
                     pass
+        print(f"navegador_rapido: print {'com' if page is not None else 'sem'} números", flush=True)
         if page is not None and isinstance(resultado, dict):
             resultado["rotulos"] = "os números amarelos no print são as refs: clique com action=click e essa ref"
         return resultado
 
     core.screenshot_file = screenshot_file
     setattr(core, MARK_PRINT, True)
+    print("navegador_rapido: print com números instalado", flush=True)
 
 
 def aplicar() -> None:
