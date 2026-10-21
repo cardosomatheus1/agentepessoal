@@ -290,6 +290,85 @@ class Suite:
         ok(set(esquema["properties"]) == {"passos", "feitos"}, "esquema com os argumentos da ferramenta")
         ok(len(prompt) < 1200, f"descrição curta (ela vai em toda chamada): {len(prompt)}")
 
+    async def t_juiz_do_pronto(self):
+        """21/10: o agente disse que o rascunho ia para o Matheus e o campo Para estava vazio."""
+        j = _carregar("objetivo_vivo_juiz_teste", RAIZ / "helpers" / "juiz.py")
+        Item = lambda tipo, cabeca="", conteudo="", args=None: types.SimpleNamespace(  # noqa: E731
+            type=tipo, heading=cabeca, content=conteudo, kvps={"tool_args": args} if args else {})
+        log = [Item("user", conteudo="pedido antigo"), Item("tool", "browser", "velho"),
+               Item("user", conteudo="manda o e-mail com a planilha"),
+               Item("agent", "pensando"),
+               Item("tool", "A0: Using browser", '{"currentUrl": "outlook"}', {"action": "click", "ref": 8}),
+               Item("tool", "A0: Using browser", "rascunho aberto", {"action": "type", "text": "NCM"}),
+               Item("tool", "A0: Using browser", "Não foi possível anexar", {"action": "upload_file"}),
+               Item("warning", "Possível loop", "repetiu")]
+        p = j.provas(log)
+        eq(len(p), 4, "só os passos depois da última mensagem dele, sem pensamento")
+        ok(p[0].startswith("[tool]") and '"click"' in p[0] and "velho" not in " ".join(p), f"provas: {p}")
+        estado = {"pedido": "manda o e-mail com a planilha", "msg_id": "m1"}
+        ok(j.deve_julgar(estado, p, None), "pedido com 3 passos: julga")
+        ok(not j.deve_julgar(estado, p[:2] + ["[warning] x"], None), "menos de 3 passos de ferramenta: não julga")
+        ok(not j.deve_julgar({"pedido": ""}, p, None), "sem pedido: não julga")
+        ok(not j.deve_julgar(estado, p, {"msg_id": "m1", "vezes": 2}), "já barrou 2 vezes este pedido: deixa sair")
+        ok(j.deve_julgar(estado, p, {"msg_id": "m0", "vezes": 2}), "pedido novo: conta de novo")
+        eq(j.contar(estado, {"msg_id": "m1", "vezes": 1}), {"msg_id": "m1", "vezes": 2}, "conta por pedido")
+        eq(j.veredito('ok: {"pronto": false, "falta": "o Para está vazio"}'), {"pronto": False, "falta": "o Para está vazio"},
+           "lê o JSON no meio do texto")
+        eq(j.veredito("não sei"), None, "sem JSON: deixa sair")
+        eq(j.veredito('{"pronto": "talvez"}'), None, "pronto que não é sim/não: deixa sair")
+        ok("PEDIDO DA PESSOA" in j.entrada("x", p, "Enviado.") and "Enviado." in j.entrada("x", p, "Enviado."),
+           "a entrada tem pedido, provas e resposta")
+
+        # o gancho, com o modelo simulado
+        stubs_err = types.ModuleType("helpers.errors")
+
+        class RepairableException(Exception):
+            pass
+
+        stubs_err.RepairableException = RepairableException
+        sys.modules["helpers.errors"] = stubs_err
+        try:
+            ext = _carregar("objetivo_vivo_juiz_ext_teste", EXT / "tool_execute_before" / "_40_juiz_do_pronto.py")
+        finally:
+            sys.modules.pop("helpers.errors", None)
+        ext.carregar.objetivo().TAREFAS = self.o.TAREFAS
+
+        def agente(resposta_do_juiz, number=0):
+            a = Agente(Contexto(dono="matheus", objetivo_vivo=estado), number=number)
+            a.context.log = types.SimpleNamespace(logs=log)
+            a.chamadas = 0
+
+            async def call_utility_model(system="", message="", **k):
+                a.chamadas += 1
+                if isinstance(resposta_do_juiz, Exception):
+                    raise resposta_do_juiz
+                return resposta_do_juiz
+            a.call_utility_model = call_utility_model
+            return a
+
+        a = agente('{"pronto": false, "falta": "o campo Para do rascunho está vazio"}')
+        for vez in (1, 2):
+            try:
+                await ext.JuizDoPronto(a).execute(tool_args={"text": "Enviado para o Matheus."}, tool_name="response")
+                ok(False, "deveria barrar a resposta")
+            except RepairableException as exc:
+                ok("NÃO foi enviada" in str(exc) and "Para do rascunho" in str(exc), f"recado: {exc}")
+        eq(a.context.get_data(j.CHAVE), {"msg_id": "m1", "vezes": 2}, "contou duas")
+        await ext.JuizDoPronto(a).execute(tool_args={"text": "Enviado."}, tool_name="response")
+        eq(a.chamadas, 2, "na 3ª vez nem chama o juiz: a resposta sai")
+        a = agente('{"pronto": true, "falta": ""}')
+        await ext.JuizDoPronto(a).execute(tool_args={"text": "Enviado, conferido em Itens Enviados."}, tool_name="response")
+        eq(a.chamadas, 1, "pronto: sai")
+        a = agente(RuntimeError("modelo fora do ar"))
+        await ext.JuizDoPronto(a).execute(tool_args={"text": "x"}, tool_name="response")
+        eq(a.chamadas, 1, "juiz falhou: a resposta sai")
+        a = agente('{"pronto": false, "falta": "x"}', number=1)
+        await ext.JuizDoPronto(a).execute(tool_args={"text": "x"}, tool_name="response")
+        eq(a.chamadas, 0, "ajudante: não julga")
+        a = agente('{"pronto": false, "falta": "x"}')
+        await ext.JuizDoPronto(a).execute(tool_args={"action": "click"}, tool_name="browser")
+        eq(a.chamadas, 0, "outra ferramenta: não julga")
+
     async def rodar(self, so: str = "") -> dict:
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:
