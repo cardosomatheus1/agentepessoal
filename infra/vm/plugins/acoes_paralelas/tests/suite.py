@@ -144,13 +144,15 @@ class Suite:
            "ferramenta desconhecida é barreira (como no Hermes)")
         for nome, args in [("code_execution_tool", {"runtime": "terminal"}), ("celular", {}), ("whatsapp_enviar", {}),
                            ("call_subordinate", {}), ("prospeccao", {"acao": "buscar"}), ("cerebro", {"acao": "reuniao"}),
+                           ("decisao", {"acao": "registrar"}),
                            ("ferramentas_extras", {"acao": "usar", "nome": "google_create_event_1a2b3c4d"}),
                            ("ferramentas_extras", {"acao": "usar", "nome": "google_send_gmail_message_1a2b3c4d"})]:
             eq(p.admissao(nome, args), None, f"{nome} {args} roda sozinha")
         for nome, args in [("ferramentas_extras", {"acao": "usar", "nome": "google_get_events_82f4960e"}),
                            ("ferramentas_extras", {"acao": "usar", "nome": "github_search_code_4ff82997"}),
                            ("ferramentas_extras", {"acao": "buscar", "texto": "agenda"}),
-                           ("skills_tool", {"action": "load"}), ("cerebro", {"acao": "consultar"})]:
+                           ("skills_tool", {"action": "load"}), ("cerebro", {"acao": "consultar"}),
+                           ("decisao", {"acao": "listar", "busca": "ifood"})]:
             ok(p.admissao(nome, args) is not None, f"{nome} {args} pode ir junto (só lê)")
 
     def t_plano_arquivos_pelo_caminho(self):

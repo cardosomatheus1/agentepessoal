@@ -21,6 +21,7 @@ ACOES_SEGURAS = {
     "skills_tool": ("action", {"search", "list", "load", "read_file"}),
     "cerebro": ("acao", {"consultar", "assuntos"}),
     "fios": ("acao", {"listar"}),
+    "decisao": ("acao", {"listar"}),
     "ferramentas_extras": ("acao", {"buscar"}),
 }
 # connector tools behind ferramentas_extras that only read (Google, GitHub)
