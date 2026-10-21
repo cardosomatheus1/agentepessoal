@@ -95,6 +95,12 @@ class Suite:
         eq(c.escolher_input(campos[:2], ["/a/foto.jpg"]), 0, "imagem vai no image/*")
         eq(c.escolher_input(campos[:1], ["/a/planilha.xlsx"]), None, "nenhum aceita: não força")
         eq(c.escolher_input([], ["/a/x.xlsx"]), None, "sem campo de arquivo")
+        args = {"action": "upload_file", "selector": "input[type=file]", "path": "/a/x.xlsx"}
+        ok(c.argumentos_de_upload(args) and args["ref"] == c.ARQUIVO, "só seletor: vai direto ao campo de arquivo")
+        args = {"action": "upload_file", "ref": "8", "path": "/a/x.xlsx"}
+        ok(not c.argumentos_de_upload(args) and args["ref"] == "8", "ref dada fica (o fallback cuida se falhar)")
+        ok(not c.argumentos_de_upload({"action": "click", "selector": "x"}), "outra ação não muda")
+        ok(not c.argumentos_de_upload(None), "sem argumentos não quebra")
         try:
             from playwright.async_api import async_playwright
         except ImportError:

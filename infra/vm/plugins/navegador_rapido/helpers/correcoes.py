@@ -178,21 +178,24 @@ async def enviar_pelo_campo(page, caminhos: list[str]) -> int | None:
     return i
 
 
+def argumentos_de_upload(args) -> bool:
+    """upload_file with only a selector goes straight to the page's file field. The tool resolves a selector to a
+    ref and a hidden file field has none ("could not resolve selector 'input[type=file]'"); the tool class is
+    reloaded on every call, so this is done on its arguments (tool_execute_before), not by patching it."""
+    if not isinstance(args, dict):
+        return False
+    acao = str(args.get("action", "")).strip().lower().replace("-", "_")
+    if acao != "upload_file" or str(args.get("ref") or "").strip():
+        return False
+    args["ref"] = ARQUIVO
+    return True
+
+
 def _envio_de_arquivo(core) -> None:
     """Fix 6: upload_file also works on a hidden file field (21/10: claude.ai's attach input has no ref, and the
-    agent gave up after 'could not resolve selector' and 'cannot upload through helper-backed reference')."""
-    from plugins._browser.tools import browser as ferramenta
-
-    original_resolve = ferramenta.Browser._resolve_ref.__func__
+    agent gave up after 'could not resolve selector' and 'cannot upload through helper-backed reference').
+    A ref that is not a file field (the attach button) falls back to the page's file field too."""
     original_upload = core.upload_file
-
-    async def _resolve_ref(cls, runtime, browser_id, ref, selector="", action="action", *, required=True):
-        try:
-            return await original_resolve(cls, runtime, browser_id, ref, selector, action, required=required)
-        except Exception:
-            if action == "upload_file":
-                return ARQUIVO
-            raise
 
     async def upload_file(self, browser_id, ref, path="", paths=None):
         erro = None
@@ -215,7 +218,6 @@ def _envio_de_arquivo(core) -> None:
                            "ref": ref},
                 "state": await self._state(resolved_id)}
 
-    ferramenta.Browser._resolve_ref = classmethod(_resolve_ref)
     core.upload_file = upload_file
     setattr(core, MARK_ARQUIVO, True)
 
