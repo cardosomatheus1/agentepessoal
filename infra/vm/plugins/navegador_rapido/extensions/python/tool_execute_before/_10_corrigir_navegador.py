@@ -13,7 +13,7 @@ class CorrigirNavegador(Extension):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         try:
-            args = module.desembrulhar(tool_args)
+            args = tool_args  # already unwrapped by controle_agente (_05_desembrulhar)
             module.aplicar()
             if tool_name == "browser":
                 module.argumentos_de_upload(args)

@@ -13,6 +13,7 @@ argumentos = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(argumentos)
 
 MARCA = "_controle_agente_esquema"
+MARCA_EXTRAS = "_controle_agente_esquema_extras"
 
 
 class EsquemaDasFerramentas(Extension):
@@ -21,6 +22,7 @@ class EsquemaDasFerramentas(Extension):
             from helpers import responses_tools as rt
 
             if getattr(rt._schema_for_tool, MARCA, False):
+                _com_extras(rt)
                 return
             original = rt._schema_for_tool
             cache: dict = {}
@@ -43,5 +45,21 @@ class EsquemaDasFerramentas(Extension):
             setattr(_schema_for_tool, MARCA, True)
             rt._schema_for_tool = _schema_for_tool
             print("controle_agente: ferramentas com esquema de verdade no modo nativo", flush=True)
+            _com_extras(rt)
         except Exception as exc:  # never block the agent over this
             print(f"controle_agente: esquema das ferramentas indisponível: {exc}", flush=True)
+
+
+def _com_extras(rt) -> None:
+    """On top (also on a server already running the wrapper above): the names navegador_rapido turns into real calls
+    (argumentos.EXTRAS) join the schema, with what they do."""
+    if getattr(rt._schema_for_tool, MARCA_EXTRAS, False):
+        return
+    anterior = rt._schema_for_tool
+
+    def _schema_for_tool(agent, tool_name, prompt):
+        return argumentos.esquema_com_extras(anterior(agent, tool_name, prompt), tool_name)
+
+    setattr(_schema_for_tool, MARCA, True)
+    setattr(_schema_for_tool, MARCA_EXTRAS, True)
+    rt._schema_for_tool = _schema_for_tool

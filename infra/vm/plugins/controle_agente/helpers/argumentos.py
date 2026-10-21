@@ -46,6 +46,22 @@ def nomes_do_navegador(tool_name: str, args) -> bool:
 # kwargs/self.args. Like Hermes, it fails OPEN: when the accepted names cannot be known for sure, nothing is blocked.
 IGNORAR = {"thoughts", "headline", "_tool_name"}
 
+# Names the tool's own signature does not have but navegador_rapido turns into a real call before it runs (21/10: the
+# check above refused browser wait's `timeout`, so "wait until the text shows" never ran). Shown to the model in the
+# schema with what they do.
+EXTRAS = {"browser": {
+    "timeout": "segundos (action wait; até 60)",
+    "text_gone": "action wait: espera este texto sumir",
+    "load": "action wait: espera a página terminar de carregar",
+    "direction": "action scroll sem ref: down ou up",
+    "amount": "action scroll sem ref: quantos pixels",
+    "accept": "action dialog: true = OK/aceitar a próxima janela do site, false = cancelar",
+}}
+
+
+def com_extras(tool_name: str, nomes: set | None) -> set | None:
+    return None if nomes is None else nomes | set(EXTRAS.get(str(tool_name or "").lower(), {}))
+
 
 def _nomes_lidos(no, alvo) -> set | None:
     """Literal names read as alvo.get("x") / alvo["x"]; None when alvo is used any other way."""
@@ -172,3 +188,14 @@ def esquema(fonte: str) -> dict | None:
     for nome in sorted(nomes - set(props)):
         props[nome] = {}
     return {"type": "object", "properties": props, "additionalProperties": False}
+
+
+def esquema_com_extras(base, tool_name: str):
+    """The schema plus EXTRAS for this tool (a copy; the base may be cached)."""
+    extras = EXTRAS.get(str(tool_name or "").lower())
+    if not extras or not isinstance(base, dict) or not isinstance(base.get("properties"), dict):
+        return base
+    novo = dict(base, properties=dict(base["properties"]))
+    for nome, texto in extras.items():
+        novo["properties"][nome] = dict(novo["properties"].get(nome) or {}, description=texto)
+    return novo

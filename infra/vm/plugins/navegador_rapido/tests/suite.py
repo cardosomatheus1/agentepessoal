@@ -268,11 +268,6 @@ class Suite:
     async def t_chamadas_reais_que_falharam_no_registro(self):
         """21/10: as chamadas exatas do agente que mais falharam em 4 dias de registro."""
         c = _correcoes()
-        # 38 chamadas embrulhadas: viravam 'state' calado
-        args = {"tool_args": {"action": "click", "browser_id": 46, "x": 381, "y": 449}, "tool_name": "browser"}
-        c.desembrulhar(args)
-        eq(args, {"action": "click", "browser_id": 46, "x": 381, "y": 449}, "argumentos desembrulhados no mesmo dict")
-        eq(c.desembrulhar({"action": "content"}), {"action": "content"}, "normal fica igual")
         # teclas em maiúsculas
         args = {"action": "keyboard", "key": "ENTER"}
         ok(c.argumentos_de_teclas(args) and args["key"] == "Enter", "ENTER → Enter")

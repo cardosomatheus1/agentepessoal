@@ -368,6 +368,18 @@ class Suite:
         eq(a.conferir("x", {"qualquer": 1}, None), "", "sem lista: passa (como o Hermes, falha aberto)")
         ext = (RAIZ / "extensions" / "python" / "tool_execute_before" / "_05_desembrulhar.py").read_text(encoding="utf-8")
         ok("RepairableException(erro)" in ext and "argumentos.conferir(" in ext, "a extensão barra a chamada")
+        # 21/10: a conferência barrou o `timeout` do wait, que o navegador_rapido transforma em espera de verdade
+        com = a.com_extras("browser", nomes)
+        eq(a.conferir("browser", {"action": "wait", "text": "Baixar", "timeout": 60}, com | {"text"}), "",
+           "wait com timeout passa")
+        ok("com_extras(tool_name" in ext, "a extensão usa os extras")
+        eq(a.com_extras("browser", None), None, "sem lista continua sem lista")
+        base = {"type": "object", "properties": {"action": {}}, "additionalProperties": False}
+        novo = a.esquema_com_extras(base, "browser")
+        ok("timeout" in novo["properties"] and "segundos" in novo["properties"]["timeout"]["description"],
+           "o modelo vê o timeout no esquema, com o que faz")
+        ok("timeout" not in base["properties"], "o esquema guardado não é alterado")
+        eq(a.esquema_com_extras(base, "outra"), base, "outra ferramenta fica igual")
 
     def t_ferramenta_vai_ao_modelo_com_os_parametros(self):
         # 21/10: in native mode the browser went to the model with an empty schema, so it guessed names

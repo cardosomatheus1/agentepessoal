@@ -671,18 +671,6 @@ def _ouvintes(core) -> None:
     setattr(core, MARK_DIALOGO, True)
 
 
-def desembrulhar(tool_args):
-    """21/10, 38 calls in 4 days: the agent nested its arguments ({"tool_args": {"action": "click", ...}}). The tool
-    runs execute(**tool_args), so action was empty and it silently returned the page state: the agent believed it
-    had clicked. The inner arguments are moved up, in place (the same dict is then passed to the tool)."""
-    if isinstance(tool_args, dict) and isinstance(tool_args.get("tool_args"), dict):
-        dentro = tool_args.pop("tool_args")
-        tool_args.pop("tool_name", None)
-        for k, v in dentro.items():
-            tool_args.setdefault(k, v)
-    return tool_args
-
-
 # ---- 21/10, from the agent's own logs (4 days, every browser call): the failures that repeat the most ----
 
 # 55 failed clicks: `click` with `selector` and no ref ("could not resolve selector \"button[aria-label='Next']\"").

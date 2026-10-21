@@ -33,6 +33,6 @@ class Desembrulhar(Extension):
                 _ACEITOS[classe] = argumentos.aceitos(classe.execute)
             except Exception:
                 _ACEITOS[classe] = None
-        erro = argumentos.conferir(tool_name, tool_args, _ACEITOS[classe])
+        erro = argumentos.conferir(tool_name, tool_args, argumentos.com_extras(tool_name, _ACEITOS[classe]))
         if erro:
             raise RepairableException(erro)
