@@ -312,9 +312,18 @@ class Suite:
             ok(a["estado"] == "aprovada" and a["ordem_matheus"] == "envia link p ela" and "acima do revisor" in a["revisao"], f"registrada: {a}")
             ev = [e for e in p.eventos(LOGIN, 50) if e["acao"] == a["id"]]
             ok(any("ordem do Matheus" in e["motivo"] for e in ev), f"diário diz que foi ordem dele: {ev}")
-            # as regras duras do playbook continuam
-            out = p.propor(LOGIN, [{"lead_id": self._lead("outra"), "tipo": "resposta", "texto": "Oi — segue o link", "ordem_matheus": "envia link p ela"}], falas)
-            ok(out["recusadas"] and not out["automaticas"], f"regra dura (etapa, travessão) não cai: {out}")
+            # uma ordem vale um envio: a mesma frase não libera texto limpo para outro lead
+            outra = self._lead("outra")
+            p.mudar_etapa(LOGIN, outra, "respondeu", "quero o link")
+            out = p.propor(LOGIN, [{"lead_id": outra, "tipo": "resposta", "texto": texto, "ordem_matheus": "Envia link p ela"}], falas)
+            ok(not out["automaticas"] and "já foi usada" in out["recusadas"][0]["motivo"], f"ordem reaproveitada recusada: {out}")
+            # frase de princípio, negação, abertura: não valem como ordem
+            eq(p.ordem_confere("deve ser acima do revisor", falas), False, "princípio não é ordem de envio")
+            eq(p.ordem_confere("envia link p ela", ["Não envia link p ela ainda"]), False, "negação não vale")
+            eq(p.ordem_confere("envia link p ela", ["Envia link p ela\n\n(leitura automática das abreviações)"]), True, "fala com a leitura das abreviações")
+            out = p.propor(LOGIN, [{"lead_id": self._aquecido("nova"), "tipo": "dm_abertura", "texto": DM_A, "ordem_matheus": "pode mandar a abertura pra nova"}],
+                           ["pode mandar a abertura pra nova"])
+            ok(not out["automaticas"] and "fluxo normal" in out["recusadas"][0]["motivo"], f"abertura não vai por ordem: {out}")
         finally:
             p.revisor = None
 

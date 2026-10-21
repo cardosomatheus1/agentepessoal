@@ -1720,11 +1720,25 @@ def _parecido(a: str, b: str) -> float:
     return difflib.SequenceMatcher(None, a, b).ratio()
 
 
+# an order is a send verb ("envia", "manda", "responde", "pode mandar"), one send, never "não envia"
+VERBO_ORDEM = re.compile(r"\b(envi\w*|mand\w*|respond\w*|pass\w* (o|a|pra|para|p)\b|segue|pode (mandar|enviar|responder))", re.I)
+NEGA_ORDEM = re.compile(r"\b(nao|nunca|ainda nao|espera|segura)\W*$", re.I)
+TIPOS_ORDEM = ("resposta", "seguimento", "dm_lembrete", "parceiro")
+ORDENS_DIA = 5  # the daily limit protects @raiz.connect from a block: an order passes it, but not without end
+
+
 def ordem_confere(ordem: str, falas: list) -> bool:
-    """Whether `ordem` (his words the agent quotes) is in one of his recent messages: a specific phrase, not a bare
-    "sim" (21/10: "Envia link p ela" followed by "Sim 1")."""
+    """Whether `ordem` (his words the agent quotes) is in one of his recent messages: a specific send order, not a bare
+    "sim" (21/10: "Envia link p ela" followed by "Sim 1") and not a phrase he negated ("não envia ainda")."""
     alvo = _normal_ordem(ordem)
-    return len(alvo) >= 10 and any(alvo in _normal_ordem(f) for f in falas or [])
+    if len(alvo) < 10 or not VERBO_ORDEM.search(alvo):
+        return False
+    for f in falas or []:
+        texto = _normal_ordem(re.split(r"\(leitura autom", str(f or ""))[0])
+        i = texto.find(alvo)
+        if i >= 0 and not NEGA_ORDEM.search(texto[max(0, i - 15):i]):
+            return True
+    return False
 
 
 def _normal_ordem(t: str) -> str:
@@ -1776,7 +1790,13 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
         texto = str(item.get("texto") or "").strip()
         ordem = item.get("_ordem") or ""
         motivo = ""
-        if tipo not in TIPOS:
+        if ordem and tipo not in TIPOS_ORDEM:
+            motivo = f"ordem_matheus vale só para {', '.join(TIPOS_ORDEM)} (abertura e aquecimento seguem o fluxo normal)"
+        elif ordem and any(_normal_ordem(a.get("ordem_matheus")) == _normal_ordem(ordem) for a in d["acoes"]):
+            motivo = "essa ordem do Matheus já foi usada num envio: uma ordem vale para um envio só"
+        elif ordem and sum(1 for a in d["acoes"] if a.get("ordem_matheus") and _hoje_local(a["criada"]) == _hoje_local()) >= ORDENS_DIA:
+            motivo = f"já saíram {ORDENS_DIA} envios por ordem dele hoje: avise o Matheus e deixe para amanhã"
+        elif tipo not in TIPOS:
             motivo = f"tipo inválido (use {', '.join(TIPOS)})"
         elif not lead:
             motivo = "lead não encontrado (registre antes)"
