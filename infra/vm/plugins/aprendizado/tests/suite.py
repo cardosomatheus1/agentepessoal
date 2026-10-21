@@ -202,6 +202,9 @@ class Suite:
         texto, passos, fala, carregadas = m.tarefa(hist)
         eq((passos, fala, carregadas), (2, "manda pro Drive, não por e-mail", ["planilhas-drive"]), "leitura da tarefa")
         eq(m.resultados(hist), ["ok", "página"], "os resultados das ferramentas, em ordem")
+        longo = types.SimpleNamespace(current=types.SimpleNamespace(messages=[
+            _msg({"tool_name": "code_execution_tool", "tool_result": "linha\n" * 2000 + "⟦código de saída 1⟧"})]))
+        ok("⟦código de saída 1⟧" in m.resultados(longo)[0], "saída longa: a marca de falha no fim não se perde")
         ok("página" in texto, "texto da tarefa")
 
     def t_so_nas_conversas_do_matheus(self):

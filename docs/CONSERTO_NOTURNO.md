@@ -29,14 +29,20 @@ funcionou depois de uma falha). Esta sessão cuida do outro lado: o **defeito da
      guardado (`_original`), senão o servidor rodando não pega a nova (lição de 21/10);
    - `python3 infra/operador/rodar_suites_locais.py` inteiro passando (com
      `A0SRC=<cópia do código do Agent Zero>` quando o teste usa os scripts do navegador);
-   - commit com o motivo e o número de falhas que resolve, push, `python3 infra/operador/implantar.py <plugin>`;
+   - commit com o motivo e o número de falhas que resolve;
+   - **revisão independente com OpenCode 2 + Opus 5.5** (decisão #35 do Matheus: toda alteração de código passa por
+     ele): `python3 infra/operador/revisar_opencode.py <commit>~1..<commit> "o que a correção resolve"`. Só segue com
+     `VEREDITO: APROVADO`. REPROVADO: corrija o que ele apontou (novo commit) e revise de novo; na 2ª reprovação,
+     reverta e deixe para o resumo. Ponto menor que ele aponte e seja barato: corrija junto. Se o revisor não rodar
+     (saída 2), não implante: conte no resumo;
+   - push, `python3 infra/operador/implantar.py <plugin>`;
    - **confira no servidor**: o log do `agent-zero` (`docker logs`) sem erro do plugin e, quando der, uma chamada de
      teste com `infra/operador/mandar_msg.py` numa conversa nova (mensagem começando com "Teste do operador:"), sem
      mexer em conversa dele.
 5. Resumo para o Matheus, em português curto, com `python3 infra/operador/avisar_matheus.py "texto"` (chega como aviso
    de progresso: de madrugada fica guardado e ele recebe de manhã). Formato:
    `🔧 Conserto da noite: <n> falhas do agente corrigidas` + uma linha por grupo (o que acontecia, quantas vezes, o que
-   mudou) + o que ficou de fora e por quê. Noite sem nada a consertar: não mande nada.
+   mudou) + o que ficou de fora e por quê + "Revisado por OpenCode 2 com Opus 5.5: aprovado" (ou o que ele reprovou). Noite sem nada a consertar: não mande nada.
 6. Acrescente uma linha em `docs/CONSERTO_NOTURNO_DIARIO.md` (data, grupos corrigidos com commits, grupos pulados e
    motivo), commit e push.
 

@@ -63,6 +63,17 @@ def main() -> int:
     ok(base64.b64decode(b64).decode() == 'Corrigi 2 falhas "de hoje"; $(rm -rf /) não roda', "e chega igual")
     ok("tipo='progresso'" in cmd, "aviso de progresso: segura no horário de silêncio")
 
+    spec = importlib.util.spec_from_file_location("revisar_teste", RAIZ / "infra" / "operador" / "revisar_opencode.py")
+    r = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(r)
+    ok(r.veredito("...\nVEREDITO: APROVADO") == "aprovado", "aprovado")
+    ok(r.veredito("VEREDITO: APROVADO no rascunho\n...\nVEREDITO: REPROVADO — quebra o upload") == "reprovado",
+       "vale o último veredito")
+    ok(r.veredito("o modelo parou no meio") == "", "sem veredito: a revisão não terminou (não implanta)")
+    c = r.comando_vm("revisao_1.patch", "/a0/usr/workdir/revisao_opencode/revisao_1", "x'; rm -rf /; echo '")
+    ok("rm -rf" not in c and "opencode2 run --model amazon-bedrock/global.anthropic.claude-opus-5-5" in c,
+       "o motivo vai em base64 e o modelo é o Opus 5.5")
+
     for m in falhas:
         print("FALHA", m)
     print("TESTES", "ok" if not falhas else f"{len(falhas)} falha(s)")

@@ -81,7 +81,9 @@ def resultados(historia) -> list:
     for m in list(getattr(historia.current, "messages", []) or []):
         c = getattr(m, "content", None)
         if isinstance(c, dict) and "tool_name" in c and "tool_result" in c:
-            saida.append(str(c.get("tool_result") or "")[:2000])
+            r = str(c.get("tool_result") or "")
+            saida.append(r if len(r) <= 2000 else r[:1000] + "\n…\n" + r[-1000:])  # the terminal's exit code and the
+            # hints go at the END of a result (OpenCode review, 21/10)
     return saida
 
 
