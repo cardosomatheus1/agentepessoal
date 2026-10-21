@@ -827,6 +827,52 @@ class Suite:
         finally:
             f._apify_token, f._apify = originais
 
+    def t_apify_quem_comenta_nos_concorrentes(self):
+        # Q15 (21/10): posts dos concorrentes -> comentários -> perfis de quem comentou -> mesma rubrica, com o comentário no motivo
+        p, f = self.p, self._fontes()
+        self.em(self.hora(10))
+        originais = (f._apify_token, f._apify)
+        try:
+            f._apify_token = lambda: "tok"
+            chamadas = []
+            ts = lambda dias: dt.datetime.fromtimestamp(p.agora() - dias * 86400, dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")  # noqa: E731
+            post = {"timestamp": ts(2), "isPinned": False, "shortCode": "x", "caption": "marmita de frango"}
+
+            def apify(ator, entrada, max_usd):
+                chamadas.append((ator, entrada))
+                if ator.endswith("post-scraper"):
+                    return [{"url": "https://www.instagram.com/p/AAA/", "ownerUsername": entrada["username"][0]}]
+                if ator.endswith("comment-scraper"):
+                    return [{"ownerUsername": "marmitadaju", "text": "quanto custa o plano? meu estoque nunca bate",
+                             "postUrl": "https://www.instagram.com/p/AAA/"},
+                            {"ownerUsername": entrada["directUrls"] and "saipos", "text": "obrigado!", "postUrl": "https://www.instagram.com/p/AAA/"},
+                            {"ownerUsername": "fa_qualquer", "text": "lindo", "postUrl": "https://www.instagram.com/p/AAA/"}]
+                return [{"username": "marmitadaju", "fullName": "Marmita da Ju", "biography": "marmitas fit Salvador",
+                         "followersCount": 1800, "private": False, "businessCategoryName": "Restaurante", "latestPosts": [post]},
+                        {"username": "fa_qualquer", "fullName": "Fulano", "biography": "", "followersCount": 120,
+                         "private": False, "latestPosts": [post]}]
+            f._apify = apify
+            ok(not f.concorrentes_hoje(LOGIN), "nunca rodou: roda")
+            out = f.buscar_concorrentes(LOGIN, p)
+            eq(out["concorrentes"], ["saipos", "goomer"], f"2 concorrentes em rodízio: {out}")
+            eq([c["handle"] for c in out["criados"]], ["marmitadaju"], f"só quem encaixa na rubrica vira lead: {out}")
+            ok("saipos" not in chamadas[2][1]["usernames"], "a resposta do próprio concorrente não vira perfil a buscar")
+            lead = next(l for l in p.carregar(LOGIN)["leads"] if l["handle"] == "marmitadaju")
+            ok("comentou no post de @saipos" in lead["motivo"] and "quanto custa" in lead["sinal"],
+               f"motivo e sinal trazem o comentário e o concorrente: {lead['motivo']} | {lead['sinal']}")
+            ok({"comentou_concorrente", "duvida_compra", "reclamacao_custo"} <= set(lead["evidencias"].get("sinais") or []),
+               f"pergunta de compra e dor viram sinais: {lead['evidencias']}")
+            ok(f.concorrentes_hoje(LOGIN), "rodou hoje: não roda de novo antes de 2 dias")
+            eq(f.buscar_concorrentes(LOGIN, p)["concorrentes"], ["anota.ai", "cardapioweb"], "o rodízio continua")
+            ok(f.carregar(LOGIN)["apify"]["usd"] > 0, "o gasto entra na verba do mês")
+            d = f.carregar(LOGIN)
+            d["apify_usd_mes"] = d["apify"]["usd"]
+            f.salvar(LOGIN, d)
+            n = len(chamadas)
+            ok("verba do Apify" in f.buscar_concorrentes(LOGIN, p)["erro"] and len(chamadas) == n, "sem verba: não chama")
+        finally:
+            f._apify_token, f._apify = originais
+
     def t_planilha_completa_site_e_partes(self):
         p, f = self.p, self._fontes()
         self.em(self.hora(10))

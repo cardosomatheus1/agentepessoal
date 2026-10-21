@@ -516,7 +516,15 @@ def enriquecer(login: str, p, limite: int = 20, origens: list | None = None) -> 
 APIFY = "https://api.apify.com/v2/acts"
 APIFY_USD_MES = 5.0
 PAUSA_APIFY = 30  # seconds before the second try
-PRECO_APIFY = {"apify~instagram-search-scraper": 0.0027, "apify~instagram-profile-scraper": 0.0026}  # per item, free plan
+PRECO_APIFY = {"apify~instagram-search-scraper": 0.0027, "apify~instagram-profile-scraper": 0.0026,
+               "apify~instagram-post-scraper": 0.0027, "apify~instagram-comment-scraper": 0.0026}  # per item, free plan
+# Matheus, 21/10 (docs/nexos/PROSPECCAO_SOCIAL.md, Q15): two weeks testing leads found among the people who comment on
+# competitors' posts, before it becomes a NEXOS Story. Systems that sell to food producers; changeable in fontes.json.
+CONCORRENTES = ("saipos", "goomer", "anota.ai", "cardapioweb", "consumer.app")
+DUVIDA_COMPRA = re.compile(r"quanto (custa|é|e)|pre[cç]o|valor|como funciona|tem integra|como (contrato|assino|fa[cç]o)|"
+                           r"\bplanos?\b|me (chama|manda)|\binbox\b|\bdm\b", re.I)
+DOR = re.compile(r"(n[aã]o|nunca) bate|preju[ií]zo|perco|perdendo|dif[ií]cil|problema|reclama|p[eé]ssim|ruim|caro|travou|"
+                 r"n[aã]o funciona|suporte|demora", re.I)
 # the big branches alternate with less common productions (Matheus, 14/10: "pensar além em negócios de produção que
 # não são tão comuns"), so the rotation reaches both in the same week
 PALAVRAS_INSTAGRAM = ("marmita fit", "geleia artesanal", "marmitaria", "molho de pimenta artesanal",
@@ -610,10 +618,20 @@ def buscar_instagram(login: str, p, termos: int = 3, por_termo: int = 20) -> dic
     custo = _gastar(d, "apify~instagram-search-scraper", len(itens))
     salvar(login, d)
     cidade_do_termo = {t: _nome_busca(c) for t, c in escolhidos}
+
+    def item_de(it, ev):
+        termo = str(it.get("searchTerm") or "")
+        return {"segmento": ev["segmento"] or p.segmento_rubrica(termo), "cidade": ev["cidade"] or cidade_do_termo.get(termo, ""),
+                "motivo": (f"Apify, busca no Instagram «{termo}»" + ("" if ev["cidade"] else " (cidade da busca)") + f"; {ev['motivo']}")[:300]}
+    return _avaliar(login, p, itens, item_de, {"termos": [t for t, _ in escolhidos], "perfis": len(itens),
+                                                "custo_usd": custo, "mes_usd": d["apify"]["usd"]})
+
+
+def _avaliar(login: str, p, itens: list, item_de, out: dict) -> dict:
+    """Profiles returned by Apify -> leads (what fits the rubric), rejected (60 days) or skipped (already known)."""
     dados = p.carregar(login)
     conhecidos = {l["handle"] for l in dados["leads"]} | set((dados.get("rejeitados") or {}).keys())
-    out = {"termos": [t for t, _ in escolhidos], "perfis": len(itens), "criados": [], "recusados": 0, "ja_conhecidos": 0,
-           "custo_usd": custo, "mes_usd": d["apify"]["usd"]}
+    out.update({"criados": [], "recusados": 0, "ja_conhecidos": 0})
     novos, rejeitar = [], []
     for it in itens:
         perfil = p._perfil_padrao(it) if isinstance(it, dict) else {}
@@ -625,10 +643,7 @@ def buscar_instagram(login: str, p, termos: int = 3, por_termo: int = 20) -> dic
             continue
         conhecidos.add(h)
         ev = p._evidencia(perfil)
-        termo = str(it.get("searchTerm") or "")
-        item = {**ev, "segmento": ev["segmento"] or p.segmento_rubrica(termo),
-                "cidade": ev["cidade"] or cidade_do_termo.get(termo, ""), "origem": "instagram", "fonte": "Apify",
-                "motivo": (f"Apify, busca no Instagram «{termo}»" + ("" if ev["cidade"] else " (cidade da busca)") + f"; {ev['motivo']}")[:300]}
+        item = {**ev, "origem": "instagram", "fonte": "Apify", **item_de(it, ev)}
         r = p.pontuar(item)
         if r.get("rejeitado") or r.get("nota", 0) < p.NOTA_MINIMA:
             rejeitar.append({"handle": h, "motivo": r.get("rejeitado") or f"nota {r.get('nota')}"})
@@ -665,6 +680,71 @@ def conferir_apify(login: str, p, handles: list) -> dict:
     salvar(login, d)
     # a profile Apify did not return is left for the next check (never discarded for a missing answer)
     return p.conferir_perfis(login, itens, "apify")
+
+
+def buscar_concorrentes(login: str, p, concorrentes: int = 2, posts: int = 2, por_post: int = 20) -> dict:
+    """Leads among the people who comment on competitors' recent posts (Q15 test, 21/10): competitor posts -> their
+    comments -> the commenters' profiles -> the same rubric as the Instagram search, with the comment as evidence (a
+    question about buying or a complaint is a signal). Competitors rotate; the competitor's own replies are skipped."""
+    _QUEM["login"] = re.sub(r"[^a-z0-9_.-]", "", login.lower())
+    if not _apify_token():
+        return {"erro": "sem Apify (APIFY_API no cofre)"}
+    d = carregar(login)
+    v = _verba(d)
+    lista = [c for c in (d.get("concorrentes") or CONCORRENTES) if c]
+    perfis_max = concorrentes * posts * por_post
+    custo_max = (concorrentes * posts * PRECO_APIFY["apify~instagram-post-scraper"]
+                 + perfis_max * (PRECO_APIFY["apify~instagram-comment-scraper"] + PRECO_APIFY["apify~instagram-profile-scraper"]))
+    if v["gasto"] + custo_max > v["teto"]:
+        salvar(login, d)
+        return {"erro": f"verba do Apify do mês atingida (US$ {v['gasto']:.2f} de {v['teto']:.2f}); volta no mês que vem"}
+    i = d["apify"].setdefault("cursor_concorrentes", 0) % len(lista)
+    escolhidos = (lista[i:] + lista[:i])[:concorrentes]
+    d["apify"]["cursor_concorrentes"] = i + concorrentes
+    d["apify"]["concorrentes_dia"] = time.strftime("%Y-%m-%d")
+    salvar(login, d)  # a competitor that fails is not retried forever
+    gasto = {}
+    try:
+        postagens = _apify("apify~instagram-post-scraper", {"username": escolhidos, "resultsLimit": posts},
+                           concorrentes * posts * PRECO_APIFY["apify~instagram-post-scraper"] + 0.05)
+        gasto["apify~instagram-post-scraper"] = len(postagens)
+        urls = [x["url"] for x in postagens if isinstance(x, dict) and x.get("url")]
+        comentarios = _apify("apify~instagram-comment-scraper", {"directUrls": urls, "resultsLimit": por_post},
+                             len(urls) * por_post * PRECO_APIFY["apify~instagram-comment-scraper"] + 0.05) if urls else []
+        gasto["apify~instagram-comment-scraper"] = len(comentarios)
+        por_handle = {}
+        for c in comentarios:
+            h = p.normalizar(str(c.get("ownerUsername") or (c.get("owner") or {}).get("username") or ""))
+            if h and h not in escolhidos and h not in por_handle:
+                por_handle[h] = c
+        perfis = _apify("apify~instagram-profile-scraper", {"usernames": list(por_handle)[:perfis_max]},
+                        len(por_handle) * PRECO_APIFY["apify~instagram-profile-scraper"] + 0.05) if por_handle else []
+        gasto["apify~instagram-profile-scraper"] = len(perfis)
+    except Exception as exc:
+        return {"erro": f"Apify não respondeu ({str(exc)[:80]}); tente na próxima rodada", "concorrentes": escolhidos}
+    finally:
+        d = carregar(login)
+        _verba(d)
+        custo = sum(_gastar(d, ator, n) for ator, n in gasto.items())
+        salvar(login, d)
+
+    def item_de(it, ev):
+        c = por_handle.get(p.normalizar(str(it.get("username") or "")), {})
+        texto = " ".join(str(c.get("text") or "").split())[:140]
+        dono = next((x.get("ownerUsername") for x in postagens if x.get("url") and x["url"] in str(c.get("postUrl") or "")), "")
+        sinais = list(ev.get("sinais") or []) + ["comentou_concorrente"] + (["duvida_compra"] if DUVIDA_COMPRA.search(texto) else []) \
+            + (["reclamacao_custo"] if DOR.search(texto) else [])
+        return {"sinais": sinais, "fonte": "Apify concorrentes", "sinal": f"comentou em @{dono or 'concorrente'}: «{texto}»",
+                "motivo": (f"comentou no post de @{dono or 'concorrente'}: «{texto}»; {ev['motivo']}")[:300]}
+    return _avaliar(login, p, perfis, item_de, {"concorrentes": escolhidos, "posts": len(postagens),
+                                                 "comentarios": len(comentarios), "perfis": len(perfis),
+                                                 "custo_usd": custo, "mes_usd": d["apify"]["usd"]})
+
+
+def concorrentes_hoje(login: str) -> bool:
+    """Ran in the last 2 days: every other day keeps the test (~US$ 0.20 a run) inside the US$ 5 Apify month."""
+    dia = (carregar(login).get("apify") or {}).get("concorrentes_dia") or "2000-01-01"
+    return (time.time() - time.mktime(time.strptime(dia, "%Y-%m-%d"))) < 2 * 86400
 
 
 def resumo(login: str) -> str:

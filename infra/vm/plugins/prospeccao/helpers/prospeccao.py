@@ -293,7 +293,7 @@ PONTOS_SEGMENTO = {"marmitaria": 25, "congelados": 25, "cozinha_producao": 25, "
                    "salgados": 20, "doces": 18, "padaria": 15, "restaurante": 15, "outro_alimento": 5}
 CANAIS_VENDA = ("ifood", "encomenda", "delivery", "whatsapp", "loja", "catalogo", "direct")
 SINAIS = ("reajuste", "insumo", "expansao", "contratacao", "cardapio_precos", "kits", "promocao", "reclamacao_custo",
-          "responde_comentarios")
+          "responde_comentarios", "comentou_concorrente", "duvida_compra")
 EXCLUSOES = {"rede": "rede ou franquia", "franquia": "rede ou franquia", "pessoal": "perfil pessoal",
              "privado": "perfil privado", "concorrente": "concorrente/sistema/consultoria",
              "curso": "curso/influenciador (é parceiro, não cliente)", "influencer": "curso/influenciador (é parceiro, não cliente)"}

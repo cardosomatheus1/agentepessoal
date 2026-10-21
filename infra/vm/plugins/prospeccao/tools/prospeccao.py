@@ -324,6 +324,9 @@ class Prospeccao(Tool):
                                                       if p.scripts_conta(login) else "siga com `fontes` e o estoque que há."))
             out = await asyncio.to_thread(f.buscar_instagram, login, p, _numero(kwargs.get("buscas") or kwargs.get("termos"), 3),
                                           _numero(kwargs.get("por_termo"), 20))
+            if not f.concorrentes_hoje(login):  # Q15 test: every other day, quem comenta nos concorrentes rides along
+                conc = await asyncio.to_thread(f.buscar_concorrentes, login, p)
+                out["concorrentes"] = {k: conc.get(k) for k in ("erro", "concorrentes", "comentarios", "criados", "custo_usd") if k in conc}
             pf = p.estoque(login)["por_fonte"]["instagram"]
             if out.get("erro"):
                 return r(f"{out['erro']}. " + (f"Se precisar, use a busca no Instagram (skill, seção 5) para a parte que falta ({pf['faltam']})."
@@ -331,6 +334,17 @@ class Prospeccao(Tool):
             return r(json.dumps({**out, "parte_instagram": pf}, ensure_ascii=False) + "\nCriados já estão registrados e conferidos "
                      "(último post, seguidores, privado). " + (f"Faltam {pf['faltam']}: chame `fontes_instagram` de novo." if pf["faltam"]
                                                                else "Parte do Instagram cheia: pare."))
+        if acao == "fontes_concorrentes":
+            # Q15 test (21/10, docs/nexos/PROSPECCAO_SOCIAL.md): leads among the people commenting on competitors' posts
+            f = fontes()
+            if not f.apify_pronto(login):
+                return r("Sem Apify configurado: esta fonte depende dele. Siga com `fontes_instagram` e `fontes`.")
+            out = await asyncio.to_thread(f.buscar_concorrentes, login, p, _numero(kwargs.get("concorrentes"), 2),
+                                          _numero(kwargs.get("posts"), 2), _numero(kwargs.get("por_post"), 20))
+            if out.get("erro"):
+                return r(f"{out['erro']}. Siga com `fontes_instagram`.")
+            return r(json.dumps(out, ensure_ascii=False) + "\nCriados já estão registrados e conferidos; o motivo de cada um "
+                     "traz o comentário no concorrente (use-o no gancho, sem citar o concorrente pelo nome).")
         if acao == "importar_lista":
             caminho = Path(str(kwargs.get("arquivo") or texto or ""))
             if not caminho.is_file() or caminho.suffix != ".json":
@@ -635,6 +649,6 @@ class Prospeccao(Tool):
         if acao == "metricas":
             return r(json.dumps(p.metricas(login, _numero(dias, 7)), ensure_ascii=False))
         return r("acao: playbook | contexto | registrar | rejeitar | propor | comentar | comentado | proxima | resultado | etapa | "
-                 "caixa_lida | direct_script | ler_direct | falha | fontes | fontes_instagram | conferir_estoque | estoque_conferido | buscar_script | avaliar_api | "
+                 "caixa_lida | direct_script | ler_direct | falha | fontes | fontes_instagram | fontes_concorrentes | conferir_estoque | estoque_conferido | buscar_script | avaliar_api | "
                  "perfis_script | avaliar_perfis | limite_consulta | liberar_consultas | cartao | assumir | devolver | editar | "
                  "apagada | importar_lista | variante | token_meta | hoje | metricas")

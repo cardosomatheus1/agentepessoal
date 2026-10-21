@@ -6,6 +6,7 @@ Prospecção de clientes da Raiz Connect, um a um, pela conta @raiz.connect. Tud
 - "rejeitar": `leads` = lista de {handle, motivo curto} dos perfis examinados que NÃO encaixam (não voltam por 60 dias)
 - "fontes": `limite` (até 40) → repõe a parte do estoque da planilha e do catálogo e diz quanto falta de cada fonte
 - "fontes_instagram": `buscas` (quantas buscas, um número; padrão 3: as palavras a ferramenta escolhe), `por_termo` (padrão 20) → enche a parte do Instagram pelo Apify, sem usar a nossa conta (verba do mês controlada)
+- "fontes_concorrentes": `concorrentes` (padrão 2), `posts` (2), `por_post` (20) → leads entre quem comenta nos posts dos concorrentes (teste de 21/10; também roda sozinho a cada 2 dias junto com `fontes_instagram`)
 - "conferir_estoque" → confere atividade, seguidores e privado dos leads achados fora do Instagram (pelo Apify ou pela API; sem eles, a conferência fica para a visita, ou vem um script se o Matheus ligou os scripts)
 - "estoque_conferido": `dados` = o texto que o script do conferir_estoque devolveu → tira do estoque o que não serve e guarda os números reais
 - "buscar_script": `termos` = lista de buscas (ex.: "marmita fit bh") → script para `browser` evaluate que devolve os @ achados (só com os scripts ligados)
