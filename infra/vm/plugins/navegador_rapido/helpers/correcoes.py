@@ -962,6 +962,7 @@ def _reinicio_se_cair(runtime_mod) -> None:
 
 
 MARK_PRINT = "_navegador_rapido_print_rotulado"
+VERSAO_PRINT = 2  # a version on the class: a server already running gets the newer wrapper (deploys do not restart)
 ROTULAR_JS = ("(mostrar) => globalThis.__spaceBrowserPageContent__ && globalThis.__spaceBrowserPageContent__.a0Rotulos ? "
               "globalThis.__spaceBrowserPageContent__.a0Rotulos(mostrar) : -1")
 
@@ -1001,14 +1002,13 @@ def _print_rotulado(core) -> None:
                     await _no_mundo_do_ajudante(page, ROTULAR_JS, False)
                 except Exception:
                     pass
-        print(f"navegador_rapido: print {'com' if page is not None else 'sem'} números", flush=True)
         if page is not None and isinstance(resultado, dict):
             resultado["rotulos"] = "os números amarelos no print são as refs: clique com action=click e essa ref"
         return resultado
 
     core.screenshot_file = screenshot_file
-    setattr(core, MARK_PRINT, True)
-    print("navegador_rapido: print com números instalado", flush=True)
+    setattr(core, MARK_PRINT, VERSAO_PRINT)
+    print(f"navegador_rapido: print com números v{VERSAO_PRINT} instalado", flush=True)
 
 
 def aplicar() -> None:
@@ -1027,7 +1027,7 @@ def aplicar() -> None:
         _ouvintes(core)
     if not getattr(core, MARK_LISTA, False):
         _lista_do_site(core)
-    if not getattr(core, MARK_PRINT, False):
+    if getattr(core, MARK_PRINT, False) != VERSAO_PRINT:
         _print_rotulado(core)
     if not getattr(runtime.BrowserRuntime, MARK_CAIU, False):
         _reinicio_se_cair(runtime)

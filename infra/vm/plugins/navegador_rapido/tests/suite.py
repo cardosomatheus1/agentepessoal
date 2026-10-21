@@ -419,6 +419,12 @@ class Suite:
             eq(await pg.evaluate("() => document.getElementById('__a0_rotulos__')"), None, "os números somem depois do print")
             r = await Core().screenshot_file(1, full_page=True)
             eq(r["na_tela"], [], "página inteira: sem números")
+            # 21/10: a 1ª versão ficou presa no servidor rodando; reinstalar embrulha o original, não o embrulho antigo
+            setattr(Core, c.MARK_PRINT, True)
+            c._print_rotulado(Core)
+            eq(getattr(Core, c.MARK_PRINT), c.VERSAO_PRINT, "marca com a versão")
+            r = await Core().screenshot_file(1)
+            ok(r["na_tela"] and "rotulos" in r, f"reinstalado continua funcionando: {r}")
             await b.close()
 
     async def t_pagina_grande_inteira_em_arquivo(self):
