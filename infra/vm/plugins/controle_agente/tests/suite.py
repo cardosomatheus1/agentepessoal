@@ -284,6 +284,42 @@ class Suite:
         ok(not a.nomes_do_navegador("code_execution_tool", outra) and outra == {"deltaY": 1}, "só no navegador")
         ok("nomes_do_navegador(" in ext, "a extensão troca os nomes")
 
+    def t_argumento_desconhecido_nao_executa(self):
+        # Hermes Agent's validation, ported: what the tool does not take is an error, not silently dropped
+        a = _carregar("controle_argumentos_teste2", RAIZ / "helpers" / "argumentos.py")
+
+        class Navegador:
+            async def execute(self, action: str = "", ref=None, delta_y: float = 0.0, **kwargs):
+                modo = kwargs.get("clipboard_action") or kwargs.get("operation")
+                return modo
+
+        nomes = a.aceitos(Navegador.execute)
+        eq(nomes, {"action", "ref", "delta_y", "clipboard_action", "operation"}, "assinatura + o que o corpo lê")
+        erro = a.conferir("browser", {"action": "scroll", "ref": 3, "direction": "down"}, nomes)
+        ok("NÃO foi executada" in erro and "'direction'" in erro and "delta_y" in erro, "erro com os nomes aceitos")
+        ok("você quis dizer 'delta_y'" in a.conferir("browser", {"deltay": 1}, nomes), "sugere o nome parecido")
+        eq(a.conferir("browser", {"action": "click", "ref": 2, "thoughts": ["x"]}, nomes), "", "chamada certa passa")
+
+        class Repassa:
+            async def execute(self, **kwargs):
+                return await outro(**kwargs)  # noqa: F821
+
+        class LeArgs:
+            async def execute(self, **kwargs):
+                a = self.args
+                return a
+
+        class SoKwargs:
+            async def execute(self, **kwargs):
+                return self.args.get("code"), self.args["runtime"]
+
+        eq(a.aceitos(Repassa.execute), None, "repassa kwargs: não dá para saber, não bloqueia")
+        eq(a.aceitos(LeArgs.execute), None, "self.args usado de outro jeito: não bloqueia")
+        eq(a.aceitos(SoKwargs.execute), {"code", "runtime"}, "nomes lidos de self.args contam")
+        eq(a.conferir("x", {"qualquer": 1}, None), "", "sem lista: passa (como o Hermes, falha aberto)")
+        ext = (RAIZ / "extensions" / "python" / "tool_execute_before" / "_05_desembrulhar.py").read_text(encoding="utf-8")
+        ok("RepairableException(erro)" in ext and "argumentos.conferir(" in ext, "a extensão barra a chamada")
+
     def t_clique_em_referencia_que_sumiu(self):
         c = _carregar("controle_clique_teste", RAIZ / "helpers" / "clique.py")
         erro = ('Browser click failed: Page.evaluate: BrowserPageContentReferenceError: Browser page content could not find '
