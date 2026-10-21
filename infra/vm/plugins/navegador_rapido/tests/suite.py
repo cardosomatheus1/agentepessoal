@@ -268,6 +268,20 @@ class Suite:
     async def t_chamadas_reais_que_falharam_no_registro(self):
         """21/10: as chamadas exatas do agente que mais falharam em 4 dias de registro."""
         c = _correcoes()
+        # relatório da 1ª noite (21/10): as chamadas exatas
+        args = {"action": "click", "browser_id": 17, "ref": "button 22"}
+        ok(c.argumentos_de_ref(args) and args["ref"] == "22", f"ref 'button 22' vira 22: {args}")
+        args = {"action": "click", "browser_id": 17, "ref": "editable 64"}
+        ok(c.argumentos_de_ref(args) and args["ref"] == "64", "ref 'editable 64' vira 64")
+        args = {"action": "drag", "ref": "[link 3]", "target_ref": "input text 9"}
+        ok(c.argumentos_de_ref(args) and (args["ref"], args["target_ref"]) == ("3", "9"), f"com colchetes e alvo: {args}")
+        ok(not c.argumentos_de_ref({"action": "click", "ref": "22"}), "ref certa fica")
+        ok(not c.argumentos_de_ref({"action": "click", "ref": 22}), "ref número fica")
+        args = {"action": "key_chord", "browser_id": 45, "key": "Enter"}
+        ok(c.argumentos_de_ref(args) and args["keys"] == ["Enter"] and "key" not in args, f"key_chord com key: {args}")
+        args = {"action": "key_chord", "browser_id": 37, "text": "Control+a"}
+        ok(c.argumentos_de_ref(args) and args["keys"] == ["Control", "a"], "key_chord com text")
+        ok(not c.argumentos_de_ref({"action": "key_chord", "keys": ["Escape"]}), "keys certo fica")
         # teclas em maiúsculas
         args = {"action": "keyboard", "key": "ENTER"}
         ok(c.argumentos_de_teclas(args) and args["key"] == "Enter", "ENTER → Enter")

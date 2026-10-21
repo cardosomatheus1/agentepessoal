@@ -18,6 +18,7 @@ class CorrigirNavegador(Extension):
             if tool_name == "browser":
                 module.argumentos_de_upload(args)
                 module.argumentos_de_espera(args)
+                module.argumentos_de_ref(args)
                 module.argumentos_de_teclas(args)
                 module.argumentos_de_rolagem(args)
                 from plugins._browser.helpers import runtime

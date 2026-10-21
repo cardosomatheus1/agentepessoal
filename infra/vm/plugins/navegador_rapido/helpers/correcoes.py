@@ -878,6 +878,32 @@ def argumentos_de_teclas(args) -> bool:
     return mudou
 
 
+# 21/10 night report: 25 clicks with ref "button 22" / "editable 64" (the agent copied the label of "[button 22]" from
+# the page reading) and 3 key_chord calls with `key` or `text` instead of `keys`.
+REF_ESCRITA = re.compile(r"^\[?\s*[A-Za-z][\w -]*?\s+(\d+)\s*\]?$")
+
+
+def argumentos_de_ref(args) -> bool:
+    """ref "button 22" or "[editable 64]" -> "22" / "64"; key_chord with key/text "Control+a" -> keys ["Control", "a"]."""
+    if not isinstance(args, dict):
+        return False
+    mudou = False
+    for campo in ("ref", "target_ref"):
+        valor = args.get(campo)
+        m = REF_ESCRITA.match(valor.strip()) if isinstance(valor, str) else None
+        if m:
+            args[campo], mudou = m.group(1), True
+    acao = str(args.get("action", "")).strip().lower().replace("-", "_")
+    if acao in ("key_chord", "keychord") and not args.get("keys"):
+        texto = str(args.get("key") or args.get("text") or "").strip()
+        if texto:
+            args["keys"] = [t.strip() for t in texto.split("+") if t.strip()]
+            args.pop("key", None)
+            args.pop("text", None)
+            mudou = True
+    return mudou
+
+
 # 9 + 3 + 1 failures "ref is required for this browser action": scroll/detail/type_submit without a ref.
 def argumentos_de_rolagem(args) -> bool:
     """scroll with no ref → turn the mouse wheel in the middle of the page (down, or up when asked)."""
