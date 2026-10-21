@@ -46,7 +46,7 @@ Decisões em vigor (temas):
 Turno:
 Matheus: {dele}
 Assistente: {resposta}
-
+{relato}
 Responda só o JSON:
 {{"decisoes": [{{"tema": "", "decisao": "", "tipo": "decisao", "area": "", "citacao": ""}}],
  "pendencias": [{{"titulo": "", "detalhe": "", "area": "", "prazo": "", "citacao": ""}}],
@@ -72,8 +72,19 @@ def _curto(t, n: int) -> str:
     return t if len(t) <= n else t[:n] + "…"
 
 
-def montar_pedido(dele: list[str], resposta: str, pendencias: list, assuntos: list, decisoes: list) -> str:
-    return PEDIDO.format(
+RELATO = """
+Relato do trabalho feito neste turno (pelo agente ou pelo operador): {texto}
+O relato também conta, mas SÓ para: assuntos (frente de trabalho nova, ou onde uma aberta parou agora: o que foi
+feito, o que falta) e pendencias_feitas (uma pendência aberta que o trabalho concluiu). Nesses dois, a citacao pode ser
+um trecho LITERAL do relato. Decisões e pendências novas continuam só das palavras dele.
+"""
+
+
+def montar_pedido(dele: list[str], resposta: str, pendencias: list, assuntos: list, decisoes: list,
+                  relato: str = "") -> str:
+    """`relato` (21/10, Matheus: "ele deveria atualizar sozinho de acordo com o que tem sido feito"): what was done in
+    the turn, so the fronts and the finished to-dos follow the work itself, not only what he says."""
+    return PEDIDO.format(relato=RELATO.format(texto=_curto(relato, 4000)) if str(relato or "").strip() else "",
         pendencias="\n".join(f"- [{f.get('id')}] {_curto(f.get('titulo'), 120)}" for f in pendencias[:30]) or "(nenhuma)",
         assuntos="\n".join(f"- [{a.get('id')}] {_curto(a.get('titulo'), 100)} — parou: {_curto(a.get('onde_parou'), 120)}"
                            for a in assuntos[:20]) or "(nenhum)",
@@ -106,22 +117,26 @@ def interpretar(saida: str) -> dict | None:
 
 
 def aplicar(propostas: dict, dele: list[str], origem: str, decisoes_mod, fios_mod, assuntos_mod,
-            login: str = "matheus", agora: float | None = None) -> dict:
-    """Check and write; {feito: [(tipo, ref, texto)], descartados: [motivo]}. Same-turn items are linked."""
+            login: str = "matheus", agora: float | None = None, relato: list[str] | None = None) -> dict:
+    """Check and write; {feito: [(tipo, ref, texto)], descartados: [motivo]}. Same-turn items are linked.
+    `relato`: texts of the work done (the agent's or the operator's report); assuntos and pendencias_feitas may quote
+    them, decisions and new to-dos only his words."""
     agora = agora or time.time()
     feito, descartados = [], []
     abertas = {str(f.get("id")): f for f in fios_mod.abertos(login, limite=200)}
+    relato = [r for r in (relato or []) if str(r or "").strip()]
 
-    def ok(p, tipo) -> bool:
-        if not citacao_confere(p.get("citacao", ""), dele):
-            descartados.append(f"{tipo} sem citação literal dele")
-            return False
-        return True
+    def ok(p, tipo, fontes=None) -> bool:
+        if citacao_confere(p.get("citacao", ""), dele) or (fontes and citacao_confere(p.get("citacao", ""), fontes)):
+            return True
+        descartados.append(f"{tipo} sem citação literal{' dele ou do relato' if fontes else ' dele'}")
+        return False
 
     for p in propostas.get("pendencias_feitas") or []:
         fid = str(p.get("id") or "").strip()
-        if fid in abertas and ok(p, "pendência feita"):
-            fios_mod.mesclar(login, [{"id": fid, "estado": "resolvido", "prova": f"ele disse: “{_curto(p['citacao'], 200)}”",
+        if fid in abertas and ok(p, "pendência feita", relato):
+            quem = "ele disse" if citacao_confere(p.get("citacao", ""), dele) else "relato do trabalho"
+            fios_mod.mesclar(login, [{"id": fid, "estado": "resolvido", "prova": f"{quem}: “{_curto(p['citacao'], 200)}”",
                                       "fechado_em": agora}])
             feito.append(("pendencia-feita", f"pendencia:{fid}", abertas[fid].get("titulo", "")))
     novos = []
@@ -148,7 +163,7 @@ def aplicar(propostas: dict, dele: list[str], origem: str, decisoes_mod, fios_mo
             if fid:
                 novos.append(("pendencia", f"pendencia:{fid}", titulo))
     for p in propostas.get("assuntos") or []:
-        if not ok(p, "assunto"):
+        if not ok(p, "assunto", relato):
             continue
         try:
             if str(p.get("id") or "").strip():

@@ -39,11 +39,12 @@ def anotar(ctx_id: str, logs: list, login: str = "matheus") -> dict:
         if est["chats"].get(ctx_id, 0) >= t.get("em", 0):
             return {}
         d, f, a = m.m("decisoes"), m.m("fios"), m.m("assuntos")
-        pedido = cap.montar_pedido(dele, t["resposta"], f.abertos(login, 30), a.abertos(20), d.ativas(login))
+        pedido = cap.montar_pedido(dele, t["resposta"], f.abertos(login, 30), a.abertos(20), d.ativas(login),
+                                   relato=t["resposta"])
         propostas = cap.interpretar(cap.chamar(pedido))
         if propostas is None:
             return {}
-        r = cap.aplicar(propostas, dele, f"conversa {ctx_id}", d, f, a, login)
+        r = cap.aplicar(propostas, dele, f"conversa {ctx_id}", d, f, a, login, relato=[t["resposta"]])
         est["chats"][ctx_id] = t.get("em", time.time())
         if r["feito"]:
             est["ultimo"] = [ref for _t, ref, _x in r["feito"]]

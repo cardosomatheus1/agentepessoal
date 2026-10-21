@@ -21,5 +21,18 @@
       "Bash(python3 infra/operador/rotinas.py:*)",
       "Bash(python3 infra/operador/rodar_suites_locais.py:*)"
     ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/cerebro_operador.py\"",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
   }
 }

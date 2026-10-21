@@ -281,6 +281,66 @@ class Suite:
         finally:
             self.limpar()
 
+    def t_relato_do_trabalho_atualiza_frente_mas_nao_decide(self):
+        # 21/10 (Matheus: "ele deveria atualizar sozinho de acordo com o que tem sido feito")
+        self.preparar()
+        try:
+            cap = self.mods.m("captura")
+            frente = self.a.registrar("Integração iFood do Raiz Connect", onde_parou="homologada", area="raiz")
+            dele = ["Sobre o vídeo, quero que ele seja a postagem de amanhã"]
+            relato = ["Agendei o vídeo iFood + Raiz como post de 21/10 às 11:45 e andei os outros posts um dia."]
+            propostas = cap.interpretar(json.dumps({
+                "decisoes": [{"tema": "raiz.video", "decisao": "Vídeo do iFood sai em 21/10", "tipo": "decisao",
+                              "citacao": "Agendei o vídeo iFood + Raiz como post de 21/10"}],
+                "pendencias": [{"titulo": "Andar os outros posts", "citacao": "andei os outros posts um dia"}],
+                "pendencias_feitas": [{"id": "cc22dd", "citacao": "Agendei o vídeo iFood + Raiz como post de 21/10"}],
+                "assuntos": [{"id": frente["id"], "onde_parou": "vídeo agendado para 21/10 11:45",
+                              "citacao": "Agendei o vídeo iFood + Raiz como post de 21/10 às 11:45"}]}))
+            r = cap.aplicar(propostas, dele, "operador s1", self.d, self.f, self.a, relato=relato)
+            tipos = sorted(t for t, _r, _x in r["feito"])
+            eq(tipos, ["assunto-atualizado", "pendencia-feita"], "o relato move a frente e fecha a pendência feita")
+            ok(sum("sem citação" in x for x in r["descartados"]) == 2,
+               f"decisão e pendência nova citando só o relato são descartadas (só palavras dele): {r['descartados']}")
+            fechada = next(x for x in self.f.carregar("matheus")["fios"] if x["id"] == "cc22dd")
+            ok(fechada["prova"].startswith("relato do trabalho:"), "a prova diz que veio do relato")
+            eq(self.a.achar(self.a.abertos(), frente["id"])["onde_parou"], "vídeo agendado para 21/10 11:45", "onde parou")
+            pedido = cap.montar_pedido(dele, relato[0], [], [], [], relato=relato[0])
+            ok("Relato do trabalho feito" in pedido and "SÓ para: assuntos" in pedido, "o pedido explica o relato")
+            ok("Relato do trabalho" not in cap.montar_pedido(dele, "", [], [], []), "sem relato, o pedido de sempre")
+        finally:
+            self.limpar()
+
+    def t_trabalho_do_operador_vai_para_a_pasta_sozinho(self):
+        self.preparar()
+        try:
+            t = _carregar("cerebro_trabalho_teste", RAIZ / "helpers" / "trabalho.py")
+            entrada = self.tmp / "entrada"
+            entrada.mkdir()
+            (entrada / "20261021T0100-aaaa.json").write_text(json.dumps({
+                "sessao": "s1", "dele": ["Decidi que o vídeo do iFood sai amanhã cedo"],
+                "relato": "Agendei o vídeo para 21/10."}), encoding="utf-8")
+            (entrada / "20261021T0101-bbbb.json").write_text("isso não é json", encoding="utf-8")
+            pedidos, avisos = [], []
+
+            def chamar(pedido):
+                pedidos.append(pedido)
+                return json.dumps({"decisoes": [{"tema": "raiz.video-ifood", "decisao": "O vídeo do iFood sai amanhã cedo",
+                                                 "tipo": "decisao", "area": "raiz",
+                                                 "citacao": "o vídeo do iFood sai amanhã cedo"}]})
+            r = t.processar(self.mods, entrada, chamar=chamar, avisar=lambda login, linha: avisos.append((login, linha)))
+            eq(len(r), 1, "o arquivo ilegível vai para lidos/ sem rodar o modelo")
+            ok(r[0]["feito"] and r[0]["feito"][0].startswith("decisao:"), f"decisão dele registrada: {r}")
+            ok("Relato do trabalho feito" in pedidos[0], "o relato do operador vai junto")
+            ok(avisos and avisos[0][0] == "matheus" and avisos[0][1].startswith("📌 Anotei"), "ele recebe o 📌 Anotei")
+            eq(sorted(p.name for p in entrada.glob("*.json")), [], "nada fica esperando")
+            eq(len(list((entrada / "lidos").glob("*.json"))), 2, "os lidos ficam guardados por uns dias")
+            (entrada / "20261021T0200-cccc.json").write_text(json.dumps({"sessao": "s2", "dele": ["x y z w"]}))
+            for _ in range(t.TENTATIVAS):
+                r = t.processar(self.mods, entrada, chamar=lambda p: 1 / 0)
+            ok("erro" in r[0] and not list(entrada.glob("*.json")), "falha repetida desiste depois de algumas tentativas")
+        finally:
+            self.limpar()
+
     def t_desfazer_a_ultima_anotacao(self):
         self.preparar()
         try:

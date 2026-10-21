@@ -23,11 +23,11 @@ porque erros bobos aconteceram quando duas sessões mexeram na mesma coisa sem r
   do Matheus para aquele caso.
 - **Uma frente, uma sessão:** antes de mexer num plugin, confira no `git log` se outra sessão mexeu nele nas últimas
   horas; se sim, combine pelo Matheus em vez de trabalhar em paralelo.
-- **O que o Matheus decide ou pede na conversa com o operador vai para o Segundo Cérebro** (a anotação automática só lê
-  as conversas dele com o agente): decisão/preferência com a fala literal (`decisoes.registrar`), andamento das frentes
-  (`assuntos.registrar/atualizar`) e pendências (`fios.mesclar`), sempre com `por="operador: <motivo>"`. Antes de
-  encerrar uma leva de trabalho, confira com `pasta.buscar` que o agente acha o que mudou (21/10: 6 decisões e 3
-  frentes do dia estavam fora).
+- **O Segundo Cérebro se atualiza sozinho com o trabalho do operador:** o gancho `Stop` deste repositório
+  (`.claude/hooks/cerebro_operador.py`) manda à VM, a cada resposta, as falas do Matheus e o relato do que foi feito; a
+  anotação automática registra decisões (com a fala literal dele), frentes e pendências e avisa no celular. Não
+  desligue o gancho; escreva no relato final, em português claro, o que foi feito e onde parou. Correção à mão só
+  pelos helpers, com `por="operador: <motivo>"`.
 - Segredos só no cofre/SSM; nunca no chat, em arquivo ou no git. Sem identificador de modelo em commit. PR só se ele
   pedir.
 
