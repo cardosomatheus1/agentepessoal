@@ -1720,25 +1720,27 @@ def _parecido(a: str, b: str) -> float:
     return difflib.SequenceMatcher(None, a, b).ratio()
 
 
-# an order is a send verb ("envia", "manda", "responde", "pode mandar"), one send, never "não envia"
-VERBO_ORDEM = re.compile(r"\b(envi\w*|mand\w*|respond\w*|pass\w* (o|a|pra|para|p)\b|segue|pode (mandar|enviar|responder))", re.I)
-NEGA_ORDEM = re.compile(r"\b(nao|nunca|ainda nao|espera|segura)\W*$", re.I)
+# an order is an imperative send verb ("envia", "manda", "responde", "pode mandar"), never "mandei" or "não envia"
+VERBO_ORDEM = re.compile(r"\b(envi[ae]|mand[ae]|respond[ae]|pode (mandar|enviar|responder)|segue com o envio)\b", re.I)
+NEGA_ORDEM = re.compile(r"\b(nao|nunca|espera|segura)\W*$", re.I)
 TIPOS_ORDEM = ("resposta", "seguimento", "dm_lembrete", "parceiro")
 ORDENS_DIA = 5  # the daily limit protects @raiz.connect from a block: an order passes it, but not without end
+FALAS_ORDEM = 5  # the order is one of his last messages: not something he said long ago
 
 
-def ordem_confere(ordem: str, falas: list) -> bool:
-    """Whether `ordem` (his words the agent quotes) is in one of his recent messages: a specific send order, not a bare
-    "sim" (21/10: "Envia link p ela" followed by "Sim 1") and not a phrase he negated ("não envia ainda")."""
+def ordem_confere(ordem: str, falas: list) -> str:
+    """The message of his (normalized) where `ordem` (his words the agent quotes) is a send order, else "". Only his
+    last FALAS_ORDEM messages count; a bare "sim" (21/10: "Envia link p ela" followed by "Sim 1"), a description
+    and a phrase he negated ("não envia ainda") do not."""
     alvo = _normal_ordem(ordem)
     if len(alvo) < 10 or not VERBO_ORDEM.search(alvo):
-        return False
-    for f in falas or []:
+        return ""
+    for f in reversed((falas or [])[-FALAS_ORDEM:]):
         texto = _normal_ordem(re.split(r"\(leitura autom", str(f or ""))[0])
         i = texto.find(alvo)
         if i >= 0 and not NEGA_ORDEM.search(texto[max(0, i - 15):i]):
-            return True
-    return False
+            return texto
+    return ""
 
 
 def _normal_ordem(t: str) -> str:
@@ -1758,8 +1760,8 @@ def propor(login: str, itens: list, falas: list | None = None) -> dict:
     for i in itens if isinstance(itens, list) else []:
         if isinstance(i, dict) and i.get("_ordem_falsa"):
             out["recusadas"].append({"lead_id": str(i.get("lead_id") or ""), "tipo": str(i.get("tipo") or ""), "motivo": (
-                "ordem_matheus não aparece nas mensagens dele desta conversa: copie as palavras exatas dele (a frase do "
-                "pedido, não só \"sim\"), ou tire o campo e proponha pelo fluxo normal")})
+                "ordem_matheus não confere: precisa ser o pedido de envio dele (\"envia\", \"manda\", \"responde\"...) copiado "
+                f"de uma das {FALAS_ORDEM} últimas mensagens dele, não só \"sim\"; senão tire o campo e proponha pelo fluxo normal")})
     if d["config"].get("auto"):
         out = _auto_aprovar(login, out)
     return out
@@ -1768,8 +1770,9 @@ def propor(login: str, itens: list, falas: list | None = None) -> dict:
 def _marcar_ordem(item, falas):
     if not isinstance(item, dict) or not str(item.get("ordem_matheus") or "").strip():
         return item
-    if ordem_confere(item["ordem_matheus"], falas):
-        return {**item, "_ordem": str(item["ordem_matheus"]).strip()[:200]}
+    fala = ordem_confere(item["ordem_matheus"], falas)
+    if fala:
+        return {**item, "_ordem": str(item["ordem_matheus"]).strip()[:200], "_ordem_fala": fala[:300]}
     return {**item, "_ordem_falsa": True}
 
 
@@ -1792,7 +1795,7 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
         motivo = ""
         if ordem and tipo not in TIPOS_ORDEM:
             motivo = f"ordem_matheus vale só para {', '.join(TIPOS_ORDEM)} (abertura e aquecimento seguem o fluxo normal)"
-        elif ordem and any(_normal_ordem(a.get("ordem_matheus")) == _normal_ordem(ordem) for a in d["acoes"]):
+        elif ordem and any(a.get("ordem_fala") == item["_ordem_fala"] for a in d["acoes"]):
             motivo = "essa ordem do Matheus já foi usada num envio: uma ordem vale para um envio só"
         elif ordem and sum(1 for a in d["acoes"] if a.get("ordem_matheus") and _hoje_local(a["criada"]) == _hoje_local()) >= ORDENS_DIA:
             motivo = f"já saíram {ORDENS_DIA} envios por ordem dele hoje: avise o Matheus e deixe para amanhã"
@@ -1852,7 +1855,7 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
                 "alvo": str(item.get("alvo") or lead["url"])[:200], "base": str(item.get("base") or "")[:300],
                 "estado": "proposta", "criada": agora()}
         if ordem:
-            acao["ordem_matheus"] = ordem
+            acao["ordem_matheus"], acao["ordem_fala"] = ordem, item["_ordem_fala"]
         d["acoes"].append(acao)
         _evento(d, acao, "-", "proposta", f"proposta criada por ordem do Matheus: «{ordem}»" if ordem else "proposta criada")
         ja.add((lid, tipo))

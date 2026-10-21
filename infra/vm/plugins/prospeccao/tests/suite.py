@@ -298,7 +298,7 @@ class Suite:
                 p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": texto + " " * n}])
             out = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": texto}])
             ok("amanhã" in out["recusadas"][0]["motivo"], f"sem a ordem, segue barrado: {out}")
-            falas = ["Envia link p ela", "Sim", "Minha decisao deve ser acima do revisor", "Sim 1"]
+            falas = ["Envia link p ela", "Sim", "Minha decisao deve ser acima do revisor", "Sim 1", "Atualiza a pagina e tenta novamente"]
             # a ordem precisa estar nas falas dele, e não vale só "sim"
             for ordem in ("sim", "manda o link pra Maria agora"):
                 out = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": texto, "ordem_matheus": ordem}], falas)
@@ -318,9 +318,13 @@ class Suite:
             out = p.propor(LOGIN, [{"lead_id": outra, "tipo": "resposta", "texto": texto, "ordem_matheus": "Envia link p ela"}], falas)
             ok(not out["automaticas"] and "já foi usada" in out["recusadas"][0]["motivo"], f"ordem reaproveitada recusada: {out}")
             # frase de princípio, negação, abertura: não valem como ordem
-            eq(p.ordem_confere("deve ser acima do revisor", falas), False, "princípio não é ordem de envio")
-            eq(p.ordem_confere("envia link p ela", ["Não envia link p ela ainda"]), False, "negação não vale")
-            eq(p.ordem_confere("envia link p ela", ["Envia link p ela\n\n(leitura automática das abreviações)"]), True, "fala com a leitura das abreviações")
+            out = p.propor(LOGIN, [{"lead_id": outra, "tipo": "resposta", "texto": texto, "ordem_matheus": "link p ela"}], falas)
+            ok(not out["automaticas"], f"cortar a frase não reaproveita a ordem: {out}")
+            eq(p.ordem_confere("deve ser acima do revisor", falas), "", "princípio não é ordem de envio")
+            eq(p.ordem_confere("mandei o link p ela", ["mandei o link p ela ontem"]), "", "descrição no passado não é ordem")
+            eq(p.ordem_confere("envia link p ela", ["Não envia link p ela ainda"]), "", "negação não vale")
+            eq(p.ordem_confere("envia link p ela", ["Envia link p ela", "a", "b", "c", "d", "e"]), "", "só as últimas mensagens dele")
+            ok(p.ordem_confere("envia link p ela", ["Envia link p ela\n\n(leitura automática das abreviações)"]), "fala com a leitura das abreviações")
             out = p.propor(LOGIN, [{"lead_id": self._aquecido("nova"), "tipo": "dm_abertura", "texto": DM_A, "ordem_matheus": "pode mandar a abertura pra nova"}],
                            ["pode mandar a abertura pra nova"])
             ok(not out["automaticas"] and "fluxo normal" in out["recusadas"][0]["motivo"], f"abertura não vai por ordem: {out}")
