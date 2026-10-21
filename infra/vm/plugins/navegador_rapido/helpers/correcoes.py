@@ -985,9 +985,13 @@ def _print_rotulado(core) -> None:
             try:
                 page = self._page(self._resolve_browser_id(browser_id))
                 await self.content(browser_id, None)
-                if await _no_mundo_do_ajudante(page, ROTULAR_JS, True) <= 0:
+                n = await _no_mundo_do_ajudante(page, ROTULAR_JS, True)
+                if n <= 0:
+                    print(f"navegador_rapido: print sem números ({'script antigo na página' if n < 0 else 'nada visível'})",
+                          flush=True)
                     page = None
-            except Exception:
+            except Exception as exc:
+                print(f"navegador_rapido: print sem números: {type(exc).__name__}: {exc}", flush=True)
                 page = None
         try:
             resultado = await original(self, browser_id, quality=quality, full_page=full_page, path=path)
