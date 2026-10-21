@@ -1,4 +1,5 @@
-"""Arguments the model wrapped twice reach the tool unwrapped (helpers/argumentos.py)."""
+"""Arguments the model wrapped twice reach the tool unwrapped, and browser names in camelCase in snake_case
+(helpers/argumentos.py)."""
 
 import importlib.util
 from pathlib import Path
@@ -13,7 +14,10 @@ _spec.loader.exec_module(argumentos)
 
 class Desembrulhar(Extension):
     async def execute(self, tool_args: dict | None = None, tool_name: str = "", **kwargs):
-        if argumentos.desembrulhar(tool_name, tool_args):
+        mudou = argumentos.desembrulhar(tool_name, tool_args)
+        mudou = argumentos.nomes_do_navegador(tool_name, tool_args) or mudou
+        if mudou:
             tool = getattr(getattr(self.agent, "loop_data", None), "current_tool", None)
             if tool is not None and isinstance(getattr(tool, "args", None), dict) and tool.args is not tool_args:
                 argumentos.desembrulhar(tool_name, tool.args)
+                argumentos.nomes_do_navegador(tool_name, tool.args)

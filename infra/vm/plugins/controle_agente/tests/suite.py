@@ -275,6 +275,14 @@ class Suite:
         ok(not a.desembrulhar("browser", None), "sem argumentos")
         ext = (RAIZ / "extensions" / "python" / "tool_execute_before" / "_05_desembrulhar.py").read_text(encoding="utf-8")
         ok("argumentos.desembrulhar(" in ext, "a extensão usa a regra")
+        rolar = {"action": "wheel", "browser_id": 37, "x": 340, "y": 560, "deltaY": 200}
+        ok(a.nomes_do_navegador("browser", rolar) and rolar == {"action": "wheel", "browser_id": 37, "x": 340, "y": 560,
+                                                                "delta_y": 200}, "deltaY vira delta_y (rolava 0 px)")
+        ambos = {"deltaY": 1, "delta_y": 2}
+        ok(not a.nomes_do_navegador("browser", ambos) and ambos == {"deltaY": 1, "delta_y": 2}, "não sobrescreve")
+        outra = {"deltaY": 1}
+        ok(not a.nomes_do_navegador("code_execution_tool", outra) and outra == {"deltaY": 1}, "só no navegador")
+        ok("nomes_do_navegador(" in ext, "a extensão troca os nomes")
 
     def t_clique_em_referencia_que_sumiu(self):
         c = _carregar("controle_clique_teste", RAIZ / "helpers" / "clique.py")
