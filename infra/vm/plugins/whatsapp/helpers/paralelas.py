@@ -7,10 +7,16 @@ the last exchanges of the parallel chats that moved since the main chat last hea
 Plain functions, tested in tests/suite.py.
 """
 
+import re
+
 VISTAS = "whatsapp_paralelas_vistas"  # main chat data: parallel activity up to this time was already handed over
 CABECALHO = "[Pedido feito pelo celular enquanto"
 MAX_TROCAS = 4
 CORTE = 300
+# 21/10: with no mark yet in the main chat, one forward carried weeks-old parallel chats (gov.br, airsoft) before his
+# "Sim": only chats that moved in the last hours count, and Agent Zero's opening greeting is not an exchange
+JANELA = 6 * 3600
+SAUDACAO = re.compile(r"^\W*hello\W+.{0,6}i'?m\W+\**agent zero", re.I)
 
 
 def _texto_dele(texto: str) -> str:
@@ -31,7 +37,7 @@ def trocas(logs, n: int = MAX_TROCAS, corte: int = CORTE) -> list[str]:
         if tipo == "user":
             texto = _texto_dele(texto)
         texto = " ".join(texto.split())
-        if texto:
+        if texto and not (tipo == "response" and SAUDACAO.match(texto)):
             linhas.append(("Ele: " if tipo == "user" else "Você: ") + texto[:corte])
     return linhas[-n:]
 
@@ -39,7 +45,8 @@ def trocas(logs, n: int = MAX_TROCAS, corte: int = CORTE) -> list[str]:
 def resumo(principal, paralelas, logs_de, agora: float) -> str:
     """Text to put before his message in the main chat ("" when no parallel chat moved since the main one last heard
     from him). Marks what was handed over, so it goes only once."""
-    desde = max(float(principal.get_data(VISTAS) or 0), float(principal.get_data("whatsapp_ultima_entrada") or 0))
+    desde = max(float(principal.get_data(VISTAS) or 0), float(principal.get_data("whatsapp_ultima_entrada") or 0),
+                agora - JANELA)
     blocos = []
     for p in paralelas or []:
         if p is principal or float(p.get_data("whatsapp_ultima_entrada") or 0) <= desde:

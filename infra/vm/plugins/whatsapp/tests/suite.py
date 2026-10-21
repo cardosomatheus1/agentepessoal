@@ -467,6 +467,14 @@ class Suite:
         ok(txt.endswith("]\n\n") and "vale também aqui" in txt, "aviso fecha antes da mensagem dele")
         eq(par.resumo(principal, [velha, p1], logs_de, 210.0), "", "entregue uma vez só")
         eq(par.resumo(_Ctx("m2"), [], logs_de, 1.0), "", "sem paralela, nada muda")
+        # 21/10: sem marca na principal, foram conversas de semanas atrás e a saudação "Hello! I'm Agent Zero"
+        semana = _Ctx("p7", whatsapp_ultima_entrada=1_000.0)
+        semana.logs = [item("user", "gov.br captcha"), item("response", "resolva o captcha")]
+        hoje = _Ctx("p8", whatsapp_ultima_entrada=1_000_000.0)
+        hoje.logs = [item("response", "**Hello! 👋**, I'm **Agent Zero**, your AI assistant. How can I help you today?"),
+                     item("user", "Sim"), item("response", "Ok, sigo na principal.")]
+        txt = par.resumo(_Ctx("m3"), [semana, hoje], logs_de, 1_000_100.0)
+        ok("Ele: Sim" in txt and "gov.br" not in txt and "Agent Zero" not in txt, f"só a paralela recente, sem a saudação: {txt}")
         rec = (RAIZ / "api" / "receber.py").read_text(encoding="utf-8")
         ok("paralelas().resumo(principal, minhas, _logs, time.time())" in rec and "if not paralela:" in rec,
            "a rota da principal usa o resumo; a paralela não")

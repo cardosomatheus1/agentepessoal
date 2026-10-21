@@ -279,6 +279,18 @@ CELULAR_TAREFA = False
 TAREFA_MAX = 12 * 3600  # a task that never reached its end (crash) does not keep it longer than this
 
 
+def rotulo(nome_conversa: str, fala: str) -> str:
+    """What the approval card says it is about. 21/10: the card of an ICMS request said "(Tradução 106.PS)", the name
+    Agent Zero had given the chat for an earlier task. His current request says it better than the chat name."""
+    fala = re.split(r"\s*\(leitura autom|\n", str(fala or "").strip())[0].strip()
+    if fala.startswith("["):  # a forward or an operator note, not his words
+        fala = ""
+    if len(fala) >= 4:
+        return "«" + (fala if len(fala) <= 60 else fala[:59].rstrip() + "…") + "»"
+    nome = str(nome_conversa or "").strip()
+    return nome if nome and nome.lower() not in ("conversa", "chat", "nova conversa") else "uma tarefa"
+
+
 def botoes_celular(ctx_id: str, pid: str) -> list:
     escolhas = [b for b in BOTOES if CELULAR_TAREFA or b[0] != "tarefa"]
     return [{"id": f"aprov:{ctx_id}:{pid}:{d}", "titulo": t} for d, t in escolhas]

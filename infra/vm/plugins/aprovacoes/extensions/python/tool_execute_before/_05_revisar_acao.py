@@ -163,7 +163,10 @@ class RevisarAcao(Extension):
                                   "usuário o que está travando.")
 
         pendente = rv.abrir(ctx.id, analise, tool_name)
-        onde = ctx.name if ctx.name and ctx.name.lower() not in ("conversa", "chat", "nova conversa") else "uma tarefa"
+        msg = getattr(agent, "last_user_message", None)
+        c = getattr(msg, "content", None)
+        fala = str(c.get("user_message") or "") if isinstance(c, dict) else ""
+        onde = rv.rotulo(ctx.name, fala)
         texto = (f"🔐 *Preciso do seu ok* ({onde})\n\n{pendente['resumo']}\n\n"
                  f"_Tipo: {CATEGORIA_LEGIVEL.get(analise['categoria'], analise['categoria'])}_")
         self._registrar(agent, texto.replace("*", "**", 2) + "\n\nResponda **aprovar**, **nesta tarefa**, **sempre** ou **recusar** "

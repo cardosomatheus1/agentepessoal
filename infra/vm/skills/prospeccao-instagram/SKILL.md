@@ -1,7 +1,7 @@
 ---
 name: prospeccao-instagram
 description: "Como fazer a prospecção da Raiz Connect pela conta @raiz.connect no navegador: achar e avaliar leads, aquecer (seguir, curtir, comentar), mandar mensagens no Direct, ler e registrar respostas, sempre pela ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 5.4.1
+version: 5.5.0
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct"]
 trigger_patterns:
   - "prospec"
@@ -18,6 +18,10 @@ leia-o inteiro antes do primeiro texto de cada rodada. Esta skill ensina o como:
 Todo texto passa por um revisor automático; nada vai ao Matheus para aprovar. Reprovado volta com "REESCREVA" e o
 motivo: corrija exatamente isso e mande de novo só esse item (mensagem: `propor`, até 3 versões por perfil e tipo no
 dia; comentário: `comentar`, até 2). `editar` troca o texto de uma ação aprovada que ainda não saiu.
+
+**Ordem do Matheus vale acima do revisor** (decisão #73): quando ele pede um envio específico ("Envia link p ela"),
+proponha com `ordem_matheus` = as palavras exatas do pedido dele (não só o "sim"). Sai sem revisor e fora do limite
+do dia, um envio por mensagem dele. Não diga "deixo para amanhã" a uma ordem dele sem tentar assim.
 
 ## Regras que nunca mudam
 

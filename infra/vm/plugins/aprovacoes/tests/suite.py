@@ -125,6 +125,17 @@ class Suite:
         ok(not rv.livre_meta_raiz({"categoria": "chaves_acesso", "resumo": "token de acesso no Graph API"}, "browser", {},
                                   "", {"instagram_sem_perguntar": False}), "desligável na configuração")
 
+    def t_rotulo_do_pedido_nao_da_conversa(self):
+        rv = self.rv
+        eq = lambda a, b, m: ok(a == b, f"{m}: veio {a!r}")  # noqa: E731
+        eq(rv.rotulo("Tradução 106.PS", 'Mandei mais um icms la no Hotmail, mesmo esquema dos outros, porem nesse caso vc tem q '
+                     'mandar tds arquivos (leitura automática das abreviações desta mensagem: "vc" = você)'),
+           "«Mandei mais um icms la no Hotmail, mesmo esquema dos outros…»", "o pedido atual, não o nome antigo")
+        eq(rv.rotulo("Tradução 106.PS", ""), "Tradução 106.PS", "sem fala: o nome da conversa")
+        eq(rv.rotulo("chat", "[Enquanto esta conversa estava ocupada…]"), "uma tarefa", "aviso encaminhado não é fala dele")
+        ok("rv.rotulo(ctx.name, fala)" in (RAIZ / "extensions/python/tool_execute_before/_05_revisar_acao.py").read_text(encoding="utf-8"),
+           "o cartão usa o rótulo")
+
     def t_99food_sem_perguntar(self):
         rv, cfg = self.rv, {}
         site = "https://developer-food.99app.com/pt-BR/home"
