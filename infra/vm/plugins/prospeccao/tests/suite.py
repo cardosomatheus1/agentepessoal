@@ -324,6 +324,8 @@ class Suite:
             eq(p.ordem_confere("mandei o link p ela", ["mandei o link p ela ontem"]), "", "descrição no passado não é ordem")
             eq(p.ordem_confere("envia link p ela", ["Não envia link p ela ainda"]), "", "negação não vale")
             eq(p.ordem_confere("Não envia link p ela ainda", ["Não envia link p ela ainda"]), "", "negação citada junto não vale")
+            for fala in ("N envia link p ela", "nn envia link p ela", "envia link p ela nem pensar", "jamais envia link p ela"):
+                eq(p.ordem_confere("envia link p ela", [fala]), "", f"abreviação de não: {fala}")
             eq(p.ordem_confere("envia link p ela", ["Envia link p ela?"]), "", "pergunta não é ordem")
             eq(p.ordem_confere("envia link p ela", ["Envia link p ela? Nao, melhor nao"]), "", "voltou atrás")
             hist = json.dumps({"messages": [{"content": {"user_message": "Envia link p ela"}},

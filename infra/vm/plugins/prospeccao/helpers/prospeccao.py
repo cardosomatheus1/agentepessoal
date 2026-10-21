@@ -1722,7 +1722,7 @@ def _parecido(a: str, b: str) -> float:
 
 # an order is an imperative send verb ("envia", "manda", "responde", "pode mandar"), never "mandei" or "não envia"
 VERBO_ORDEM = re.compile(r"\b(envi[ae]|mand[ae]|respond[ae]|pode (mandar|enviar|responder)|segue com o envio)\b", re.I)
-NEGA_ORDEM = re.compile(r"\b(nao|nunca|espera|segura)\b", re.I)  # anywhere in his message: then it is not a plain order
+NEGA_ORDEM = re.compile(r"\b(nao|n|nn|nem|nunca|jamais|espera|segura)\b", re.I)  # anywhere in his message: then it is not a plain order
 DUVIDA_ORDEM = re.compile(r"\?|\b(n[aã]o|melhor n[aã]o|espera|depois vejo)\W*$", re.I)  # a question or he took it back
 TIPOS_ORDEM = ("resposta", "seguimento", "dm_lembrete", "parceiro")
 ORDENS_DIA = 5  # the daily limit protects @raiz.connect from a block: an order passes it, but not without end
