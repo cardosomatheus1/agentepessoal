@@ -200,6 +200,43 @@ class Suite:
         eq(lido, {"valor": "(71) 99156-4477"}, "leu o que o site deixou no campo")
         ok(c.conferir_digitado("71991564477", lido).startswith("✓"), "e a conferência entende a máscara")
 
+    async def t_espera_pelo_que_importa(self):
+        c = _correcoes()
+        args = {"action": "wait", "text": "Pedido enviado", "timeout": 5}
+        ok(c.argumentos_de_espera(args) and args["action"] == "evaluate", "wait vira evaluate")
+        ok("text" not in args and "timeout" not in args, "os argumentos da espera saem")
+        ok(not c.argumentos_de_espera({"action": "click"}), "outra ação não muda")
+        sem = {"action": "wait"}
+        c.argumentos_de_espera(sem)
+        ok('"load": true' in sem["script"], "sem condição: espera a página carregar")
+        longo = {"action": "wait", "url": "x", "timeout": 999}
+        c.argumentos_de_espera(longo)
+        ok('"ms": 60000' in longo["script"], "teto de 60 s")
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return
+        exe = os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+        if not Path(exe).exists():
+            exe = "/a0/tmp/playwright/chromium-1228/chrome-linux/chrome"
+        if not Path(exe).exists():
+            return
+        async with async_playwright() as p:
+            b = await p.chromium.launch(executable_path=exe, headless=True)
+            pg = await b.new_page()
+            await pg.set_content('<div id="s">Enviando...</div><script>setTimeout(() => {'
+                                 'document.getElementById("s").textContent = "Pedido   enviado com sucesso"}, 800)</script>')
+            r = await pg.evaluate(args["script"])
+            ok(r["ok"] and 0.5 <= r["esperou_s"] <= 3, f"esperou o texto aparecer: {r}")
+            sumiu = {"action": "wait", "text_gone": "Enviando", "timeout": 2}
+            c.argumentos_de_espera(sumiu)
+            ok((await pg.evaluate(sumiu["script"]))["ok"], "texto que sumiu")
+            nunca = {"action": "wait", "selector": "#nao-existe", "timeout": 1}
+            c.argumentos_de_espera(nunca)
+            r = await pg.evaluate(nunca["script"])
+            ok(not r["ok"] and "releia" in r["aviso"], f"não aconteceu: diz o próximo passo {r}")
+            await b.close()
+
     async def t_content_usa_o_alvo_visivel(self):
         c = _correcoes()
         recebidos = []

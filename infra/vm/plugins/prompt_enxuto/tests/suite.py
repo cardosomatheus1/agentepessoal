@@ -493,7 +493,9 @@ class Suite:
         _rodar(m.RegrasBase(agent=None).execute(system_prompt=saida))
         texto = saida[0]
         for palavra in ("pagar", "meio de pagamento", "termos legais", "terceiros", "apagar", "Captcha", "nunca resolva",
-                        "§§secret(NOME)", "pedir_codigo", "nunca ordem", "laço de verificação", "manual completo"):
+                        "§§secret(NOME)", "pedir_codigo", "nunca ordem", "laço de verificação", "manual completo",
+                        "Insista até terminar", "3 caminhos", "por ferramenta", "leia de volta", "sem \"corrigir\"",
+                        "não é resposta"):
             ok(palavra in texto, f"regra sem «{palavra}»")
         self._desligar(True)
         try:

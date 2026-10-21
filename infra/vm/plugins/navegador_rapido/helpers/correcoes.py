@@ -296,6 +296,58 @@ def argumentos_de_upload(args) -> bool:
     return True
 
 
+# Item 1 of docs/AUDITORIA_MATURIDADE_AGENTE.md (OpenClaw act:wait, pw-tools-core.interactions.content.ts:146): the
+# agent could only sleep a fixed time, then re-read the page again and again until the loop detector stopped it.
+# browser {"action": "wait", "text"|"text_gone"|"selector"|"url"|"load": ..., "timeout": s} waits for the condition.
+ESPERA_JS = """async (c) => {
+  const fim = Date.now() + c.ms, comeco = Date.now();
+  const norm = (t) => String(t || "").replace(/\\s+/g, " ").toLowerCase();
+  const visivel = (sel) => { try { return [...document.querySelectorAll(sel)].some((e) => {
+    const r = e.getBoundingClientRect(), s = getComputedStyle(e);
+    return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none"; }); } catch (e) { return false; } };
+  const pronto = () => {
+    const corpo = norm(document.body ? document.body.innerText : "");
+    if (c.text && !corpo.includes(norm(c.text))) return false;
+    if (c.text_gone && corpo.includes(norm(c.text_gone))) return false;
+    if (c.selector && !visivel(c.selector)) return false;
+    if (c.url && !location.href.includes(c.url)) return false;
+    if (c.load && document.readyState !== "complete") return false;
+    return true;
+  };
+  while (true) {
+    if (pronto()) return { ok: true, esperou_s: Math.round((Date.now() - comeco) / 100) / 10, url: location.href };
+    if (Date.now() >= fim) return { ok: false, esperou_s: c.ms / 1000, url: location.href,
+      aviso: "não aconteceu no tempo: releia a página (content) e veja o que mudou; talvez outra aba, um aviso por cima ou a ação anterior não pegou" };
+    await new Promise((r) => setTimeout(r, 250));
+  }
+}"""
+ESPERA_CHAVES = ("text", "text_gone", "selector", "url", "load")
+
+
+def argumentos_de_espera(args) -> bool:
+    """browser wait → an evaluate that polls the page for the condition (at most 60 s)."""
+    import json
+
+    if not isinstance(args, dict):
+        return False
+    acao = str(args.get("action", "")).strip().lower().replace("-", "_")
+    if acao not in ("wait", "wait_for", "esperar"):
+        return False
+    cond = {k: args.get(k) for k in ESPERA_CHAVES if args.get(k) not in (None, "", False)}
+    if not cond:
+        cond = {"load": True}
+    try:
+        segundos = float(args.get("timeout") or args.get("seconds") or 15)
+    except (TypeError, ValueError):
+        segundos = 15.0
+    cond["ms"] = int(max(1.0, min(segundos, 60.0)) * 1000)
+    for k in ESPERA_CHAVES + ("timeout", "seconds"):
+        args.pop(k, None)
+    args["action"] = "evaluate"
+    args["script"] = f"({ESPERA_JS})({json.dumps(cond, ensure_ascii=False)})"
+    return True
+
+
 def _envio_de_arquivo(core) -> None:
     """Fix 6: upload_file also works on a hidden file field (21/10: claude.ai's attach input has no ref, and the
     agent gave up after 'could not resolve selector' and 'cannot upload through helper-backed reference').

@@ -4,19 +4,39 @@ A step = tool + arguments + result. Repeating one with the same result changes n
 (seen in practice: a subordinate reloaded the same two image batches for 15+ minutes).
 Steps whose result changes (game moves, growing command output) never match.
 
-- 2nd identical step: the tool result carries a warning telling the agent to change course.
-- 4th identical step: the chat is paused and the user sees why; any new message resumes it.
+- an identical step past the warning limit: the tool result tells the agent to change course;
+- past the pause limit: the chat is paused and the user sees why; any new message resumes it.
+Limits (helpers/laco.py, 21/10, after Hermes and OpenClaw): reading/polling steps count apart and never pause a chat
+with the person; action steps pause on the 8th in a chat, the 5th in a helper or a scheduled round; cycles warn.
 """
 
 import hashlib
+import importlib.util
 import json
+from pathlib import Path
 
 from helpers.extension import Extension
 
+_ARQ = Path(__file__).resolve().parents[3] / "helpers" / "laco.py"
+_spec = importlib.util.spec_from_file_location("controle_agente_laco", _ARQ)
+laco = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(laco)
+
 JANELA = 14  # recent steps remembered per agent
-AVISAR = 2
-PAUSAR = 4
 IGNORAR = {"response", "wait"}
+
+
+def atendida(agent) -> bool:
+    """The main agent answering a person (not a helper, not a scheduled round)."""
+    if getattr(agent, "number", 0):
+        return False
+    try:
+        msg = getattr(agent, "last_user_message", None)
+        c = getattr(msg, "content", None)
+        texto = str(c.get("user_message") or "") if isinstance(c, dict) else str(c or "")
+        return not texto.lstrip().startswith(("## Task", "## Context"))
+    except Exception:
+        return True
 
 
 def _assinatura(tool: str, args: dict, resultado: str) -> str:
@@ -37,11 +57,14 @@ class DetectorLoop(Extension):
         hist = (agent.get_data("_detector_loop_hist") or [])[-(JANELA - 1):] + [sig]
         agent.set_data("_detector_loop_hist", hist)
         n = hist.count(sig)
-        if n < AVISAR:
+        avisar, pausar = laco.limites(laco.consulta(tool_name, args), atendida(agent))
+        if n < avisar:
+            if laco.ciclo(hist) and "🔁" not in str(response.message):
+                response.message += laco.AVISO_CICLO
             return
 
         quem = agent.agent_name
-        if n >= PAUSAR:
+        if pausar and n >= pausar:
             agent.set_data("_detector_loop_hist", [])  # fresh start after the user resumes
             response.message += (
                 f"\n\n⛔ LOOP: esta mesma ação (`{tool_name}`, mesmos argumentos, mesmo resultado) já foi feita {n} vezes. "
@@ -71,7 +94,7 @@ class DetectorLoop(Extension):
             "botão, seletor, ferramenta ou código (para muitas imagens, `analisar_imagens`). Responda ao usuário só se "
             "já tentou outros caminhos ou se precisa dele. Se continuar repetindo, a tarefa será pausada."
         )
-        if n == AVISAR:
+        if n == avisar:
             agent.context.log.log(
                 type="warning", heading="Possível loop",
                 content=f"{quem} repetiu a mesma ação (`{tool_name}`) com o mesmo resultado; avisei para mudar de estratégia.",

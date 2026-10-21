@@ -154,6 +154,55 @@ class Suite:
                     "Achei 5 perfis.", "", "Error: x"):
             ok(not g.falhou("response" if bom == "Error: x" else "browser", bom), f"não é erro: {bom!r}")
 
+    def t_detector_de_laco_com_os_limites_do_hermes(self):
+        det = _extensao("controle_detector_laco_teste", EXT / "tool_execute_after" / "_10_detector_loop.py")
+        laco = det.laco
+
+        def agente(numero=0, tarefa=False):
+            a = _agente(numero)
+            a.get_data, a.set_data = a.data.get, a.data.__setitem__
+            texto = "## Task\nrodada" if tarefa else "faz isso pra mim"
+            a.last_user_message = types.SimpleNamespace(content={"user_message": texto})
+            return a
+
+        def passo(a, tool, args, msg="mesmo resultado"):
+            a.data["_detector_loop_args"] = dict(args)
+            r = types.SimpleNamespace(message=msg, break_loop=False)
+            _sincrono(_nova(det.DetectorLoop, a).execute(response=r, tool_name=tool))
+            return r
+
+        ok(laco.consulta("browser", {"action": "content"}) and laco.consulta("code_execution_tool", {"runtime": "output"}),
+           "ler a página e a saída do comando são consultas")
+        ok(not laco.consulta("browser", {"action": "click"}), "clicar é ação")
+        # conversa com a pessoa: ação repetida avisa na 2ª e só pausa na 8ª
+        a = agente()
+        clique = {"action": "click", "ref": 5}
+        rs = [passo(a, "browser", clique) for _ in range(7)]
+        ok("⚠️" in rs[1].message and not a.context.paused, "2ª: avisa, segue")
+        ok(not a.context.paused, "até a 7ª a conversa não pausa")
+        passo(a, "browser", clique)
+        ok(a.context.paused, "8ª: pausa")
+        # rodada agendada (ninguém olhando): pausa na 5ª
+        b = agente(tarefa=True)
+        for _ in range(5):
+            passo(b, "browser", clique)
+        ok(b.context.paused, "rodada: pausa na 5ª")
+        # reler a página esperando carregar: sem aviso até a 5ª e nunca pausa na conversa
+        c = agente()
+        leituras = [passo(c, "browser", {"action": "content"}) for _ in range(14)]
+        ok("⚠️" not in leituras[3].message and "⚠️" in leituras[4].message, "consulta: avisa só na 5ª")
+        ok(not c.context.paused, "consulta na conversa nunca pausa")
+        # ciclo A,B,A,B
+        d = agente()
+        passo(d, "browser", {"action": "click", "ref": 1}, "a")
+        passo(d, "browser", {"action": "click", "ref": 2}, "b")
+        passo(d, "browser", {"action": "click", "ref": 1}, "a2")
+        passo(d, "browser", {"action": "click", "ref": 2}, "b2")
+        passo(d, "browser", {"action": "click", "ref": 1}, "a2")
+        r = passo(d, "browser", {"action": "click", "ref": 2}, "b2")
+        ok("🔁" in r.message or "⚠️" in r.message, f"vaivém é avisado: {r.message!r}")
+        ok(laco.ciclo(["x", "a", "b", "a", "b"]) and not laco.ciclo(["a", "a", "a", "a"]), "ciclo só com passos diferentes")
+
     def t_mesma_ferramenta_falhando_com_argumentos_diferentes(self):
         # the loop detector only catches the same arguments with the same result; a new selector each time slipped by
         a = _agente(0)

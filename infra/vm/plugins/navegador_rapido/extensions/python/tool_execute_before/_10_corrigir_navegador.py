@@ -16,5 +16,6 @@ class CorrigirNavegador(Extension):
             module.aplicar()
             if tool_name == "browser":
                 module.argumentos_de_upload(tool_args)
+                module.argumentos_de_espera(tool_args)
         except Exception as exc:  # never block the agent over this
             print(f"navegador_rapido: {exc}", flush=True)

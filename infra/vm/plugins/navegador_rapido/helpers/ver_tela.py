@@ -31,6 +31,7 @@ LICOES = """## Navegador: como agir numa página (lições de 21/10)
 - Depois de cada ação que muda a página, você recebe o print dela. Só conte como feito o que aparece no print: campo com o texto, botão habilitado, tela nova.
 - Item sem ref no `content` (menu, aba, item de lista suspensa): clique pelas coordenadas x,y do print.
 - Lista suspensa longa: com ela aberta, role em cima da própria lista (`wheel` com x,y dentro dela e `delta_y` 300 ou mais; o nome é delta_y), olhe o print e repita até aparecer a opção. Ou digite o texto com ela aberta.
+- Esperar a página: `{"action": "wait", "text": "Pedido enviado"}` (também `text_gone`, `selector`, `url`, `load`: true e `timeout` em segundos, até 60). Use em vez de reler a página várias vezes enquanto ela carrega.
 - Não use `evaluate` para clicar nem para digitar. Ele não dispara os eventos da página, e a página fica como estava.
 - Ação que não mudou nada: não repita a mesma. Tente outro jeito (ref → coordenadas → teclado → endereço direto da tela). Só peça ao Matheus depois de três jeitos diferentes, dizendo quais tentou."""
 
