@@ -323,6 +323,7 @@ class Suite:
             eq(p.ordem_confere("deve ser acima do revisor", falas), "", "princípio não é ordem de envio")
             eq(p.ordem_confere("mandei o link p ela", ["mandei o link p ela ontem"]), "", "descrição no passado não é ordem")
             eq(p.ordem_confere("envia link p ela", ["Não envia link p ela ainda"]), "", "negação não vale")
+            eq(p.ordem_confere("Não envia link p ela ainda", ["Não envia link p ela ainda"]), "", "negação citada junto não vale")
             eq(p.ordem_confere("envia link p ela", ["Envia link p ela?"]), "", "pergunta não é ordem")
             eq(p.ordem_confere("envia link p ela", ["Envia link p ela? Nao, melhor nao"]), "", "voltou atrás")
             hist = json.dumps({"messages": [{"content": {"user_message": "Envia link p ela"}},
