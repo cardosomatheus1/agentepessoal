@@ -365,6 +365,62 @@ class Suite:
             ok(r["conferido"].startswith("✓"), f"e conferiu: {r['conferido']}")
             await b.close()
 
+    async def t_print_com_o_numero_de_cada_ref(self):
+        c = _correcoes()
+        js = next((p for p in (Path("/a0/plugins/_browser/assets/browser-page-content.js"),
+                               Path(os.environ.get("A0SRC", "/nao-existe")) / "plugins/_browser/assets/browser-page-content.js")
+                   if p.exists()), None)
+        if js is None:
+            return
+        fonte = c.script_rapido(js.read_text(encoding="utf-8"))
+        ok(c.ROTULOS_MARCA in fonte and c.VALOR_MARCA in fonte, "a API da página ganha os rótulos (e mantém o valor lido)")
+        eq(c.com_rotulos(fonte), fonte, "não duplica")
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return
+        exe = os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+        if not Path(exe).exists():
+            exe = "/a0/tmp/playwright/chromium-1228/chrome-linux/chrome"
+        if not Path(exe).exists():
+            return
+        html = """<h1>Cadastro</h1><div><label for="n">Nome</label><input id="n"><button>Salvar</button>
+          <a href="#x">Ajuda</a></div><div style="margin-top:3000px"><button>Lá embaixo</button></div>"""
+        async with async_playwright() as p:
+            b = await p.chromium.launch(executable_path=exe, headless=True)
+            pg = await b.new_page()
+            await pg.set_content(html)
+            await pg.add_script_tag(content=fonte)
+            api = "globalThis.__spaceBrowserPageContent__"
+
+            class Core:
+                def _resolve_browser_id(self, b):
+                    return b
+
+                def _page(self, b):
+                    return pg
+
+                async def content(self, b, payload):
+                    return await pg.evaluate(f"() => {api}.capture(null)")
+
+                async def screenshot_file(self, browser_id=None, *, quality=80, full_page=False, path=""):
+                    # o que estava na tela na hora do print
+                    return {"na_tela": await pg.evaluate(
+                        "() => [...(document.getElementById('__a0_rotulos__')?.children || [])].map(e => e.textContent)")}
+
+            c._print_rotulado(Core)
+            r = await Core().screenshot_file(1)
+            ok(r["na_tela"], f"o print saiu com números: {r}")
+            ok("refs" in r.get("rotulos", ""), "e o resultado explica os números")
+            leitura = json_texto = str(await pg.evaluate(f"() => {api}.capture(null)"))
+            for numero in r["na_tela"]:
+                ok(f" {numero}]" in json_texto, f"o número {numero} existe na leitura que o agente recebe: {leitura[:400]}")
+            eq(len(r["na_tela"]), 3, f"só os elementos visíveis ganham número (o 'Lá embaixo' fica de fora): {r}")
+            eq(await pg.evaluate("() => document.getElementById('__a0_rotulos__')"), None, "os números somem depois do print")
+            r = await Core().screenshot_file(1, full_page=True)
+            eq(r["na_tela"], [], "página inteira: sem números")
+            await b.close()
+
     async def t_pagina_grande_inteira_em_arquivo(self):
         import tempfile
         import types

@@ -19,7 +19,8 @@ AGEM = {"open", "navigate", "back", "forward", "reload", "click", "double_click"
 
 ORIENTACAO = (
     "Print da página depois de `{acao}` ({largura}x{altura} px; as coordenadas desta imagem são as de "
-    "browser action=click com x e y). Confira olhando: o campo ficou preenchido, o botão habilitou, a tela mudou? "
+    "browser action=click com x e y). Os números em amarelo sobre os elementos são as refs da leitura da página: "
+    "para clicar ou digitar num deles, use a ref (action=click com ref). Confira olhando: o campo ficou preenchido, o botão habilitou, a tela mudou? "
     "Se não, não repita a mesma ação: o elemento que você quer pode não ter ref ou estar escondido. Clique pelas "
     "coordenadas do que aparece aqui (action=click com x,y; para digitar, clique no campo e use action=keyboard "
     "com text). Não use evaluate para clicar.")

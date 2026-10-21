@@ -153,6 +153,56 @@ def com_valor_lido(source: str) -> str:
     return source.replace(VALOR_FIM, VALOR_FIM + VALOR_FUNCAO, 1)
 
 
+# Item 12 (Hermes browser_vision annotate, OpenClaw screenshot-annotate.ts): the screenshot shows each ref's number on
+# its element, so what the agent sees in the image is what it can click by ref (it used to guess x,y or the wrong ref).
+ROTULOS_MARCA = "a0Rotulos"
+ROTULOS_ID = "__a0_rotulos__"
+ROTULOS_MAX = 150
+ROTULOS_FUNCAO = """    a0Rotulos(mostrar) {
+      try {
+        document.getElementById("%(id)s")?.remove();
+        if (!mostrar) {
+          return 0;
+        }
+        const caixa = document.createElement("div");
+        caixa.id = "%(id)s";
+        caixa.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none";
+        let n = 0;
+        for (const [ref, entry] of state.entries) {
+          const el = entry && entry.element;
+          if (!el || entry.helperBacked || !el.isConnected || !el.getBoundingClientRect) {
+            continue;
+          }
+          const r = el.getBoundingClientRect();
+          if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.right < 0 || r.top > innerHeight || r.left > innerWidth) {
+            continue;
+          }
+          const t = document.createElement("div");
+          t.textContent = String(ref);
+          t.style.cssText = "position:fixed;left:" + Math.max(0, r.left - 2) + "px;top:" + Math.max(0, r.top - 2) +
+            "px;font:bold 11px/13px monospace;color:#000;background:#ffe500;border:1px solid #000;padding:0 2px;" +
+            "border-radius:3px;opacity:0.92";
+          caixa.appendChild(t);
+          if (++n >= %(max)d) {
+            break;
+          }
+        }
+        document.documentElement.appendChild(caixa);
+        return n;
+      } catch {
+        return 0;
+      }
+    },
+""" % {"id": ROTULOS_ID, "max": ROTULOS_MAX}
+
+
+def com_rotulos(source: str) -> str:
+    """Adds a0Rotulos(show) to the page API; unchanged if upstream changed."""
+    if ROTULOS_MARCA in source or source.count(VALOR_FIM) != 1:
+        return source
+    return source.replace(VALOR_FIM, VALOR_FIM + ROTULOS_FUNCAO, 1)
+
+
 def conferir_digitado(pedido: str, lido) -> str:
     """The note for a typed field: what is in it now, and a warning when it is not what was typed."""
     if not isinstance(lido, dict) or lido.get("senha"):
@@ -175,7 +225,7 @@ def conferir_digitado(pedido: str, lido) -> str:
 def script_rapido(source: str) -> str | None:
     """Page-content script with the ancestor check memoized and visual field labels, or None if it changed upstream."""
     rapido = _memoize_during(source, "capture")
-    return com_valor_lido(com_rotulo_visual(rapido)) if rapido is not None else None
+    return com_rotulos(com_valor_lido(com_rotulo_visual(rapido))) if rapido is not None else None
 
 
 def helper_rapido(source: str) -> str | None:
@@ -911,6 +961,50 @@ def _reinicio_se_cair(runtime_mod) -> None:
     setattr(classe, MARK_CAIU, True)
 
 
+MARK_PRINT = "_navegador_rapido_print_rotulado"
+ROTULAR_JS = ("(mostrar) => globalThis.__spaceBrowserPageContent__ && globalThis.__spaceBrowserPageContent__.a0Rotulos ? "
+              "globalThis.__spaceBrowserPageContent__.a0Rotulos(mostrar) : -1")
+
+
+async def _no_mundo_do_ajudante(page, js, arg):
+    """The page API lives in patchright's isolated world; plain Playwright (tests) has no such argument."""
+    try:
+        return await page.evaluate(js, arg, isolated_context=True)
+    except TypeError:
+        return await page.evaluate(js, arg)
+
+
+def _print_rotulado(core) -> None:
+    """Each screenshot of the visible area: read the page again (the refs the agent gets next are numbered the same way,
+    in page order), draw the numbers, take the picture, remove them."""
+    original = _original(core, "screenshot_file", "original_print")
+
+    async def screenshot_file(self, browser_id=None, *, quality=80, full_page=False, path=""):
+        page = None
+        if not full_page:
+            try:
+                page = self._page(self._resolve_browser_id(browser_id))
+                await self.content(browser_id, None)
+                if await _no_mundo_do_ajudante(page, ROTULAR_JS, True) <= 0:
+                    page = None
+            except Exception:
+                page = None
+        try:
+            resultado = await original(self, browser_id, quality=quality, full_page=full_page, path=path)
+        finally:
+            if page is not None:
+                try:
+                    await _no_mundo_do_ajudante(page, ROTULAR_JS, False)
+                except Exception:
+                    pass
+        if page is not None and isinstance(resultado, dict):
+            resultado["rotulos"] = "os números amarelos no print são as refs: clique com action=click e essa ref"
+        return resultado
+
+    core.screenshot_file = screenshot_file
+    setattr(core, MARK_PRINT, True)
+
+
 def aplicar() -> None:
     from plugins._browser.helpers import runtime
 
@@ -927,6 +1021,8 @@ def aplicar() -> None:
         _ouvintes(core)
     if not getattr(core, MARK_LISTA, False):
         _lista_do_site(core)
+    if not getattr(core, MARK_PRINT, False):
+        _print_rotulado(core)
     if not getattr(runtime.BrowserRuntime, MARK_CAIU, False):
         _reinicio_se_cair(runtime)
     if getattr(core, MARK, False):
