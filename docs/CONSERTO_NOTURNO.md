@@ -50,6 +50,10 @@ funcionou depois de uma falha). Esta sessão cuida do outro lado: o **defeito da
 6. Acrescente uma linha em `docs/CONSERTO_NOTURNO_DIARIO.md` (data, grupos corrigidos com commits, grupos pulados e
    motivo), commit e push.
 
+O OpenCode 2 da VM roda com o plugin Ponytail 5.3.2 (pedido do Matheus, 21/10): cópia da tag v5.3.2 em
+`/root/.config/opencode/ponytail` (no container `agent-zero`) e `"plugins": ["/root/.config/opencode/ponytail/.opencode/plugins"]`
+em `/root/.config/opencode/opencode.json` (cópia anterior: `opencode.json.before-ponytail.bak`). VM refeita: repetir esses dois passos.
+
 ## Casos marcados pelo operador
 
 Valem como grupo a consertar mesmo com menos de 3 vezes (efeito grande para o Matheus). Depois de consertado, apague a linha.
