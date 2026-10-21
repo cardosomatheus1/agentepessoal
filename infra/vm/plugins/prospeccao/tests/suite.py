@@ -881,6 +881,52 @@ class Suite:
         finally:
             f._apify_token, f._apify = originais
 
+    def t_concorrentes_ia_le_ramo_cidade_e_dono(self):
+        # Matheus, 21/10 ("o que precisar de llm ... pode colocar"): quem comenta costuma ser o perfil pessoal do dono ou
+        # bio sem cidade; a IA lê nome, bio e comentário, o negócio citado vira o lead e a rubrica continua decidindo
+        p, f = self.p, self._fontes()
+        self.em(self.hora(10))
+        originais = (f._apify_token, f._apify, f.classificador)
+        try:
+            f._apify_token = lambda: "tok"
+            ts = dt.datetime.fromtimestamp(p.agora() - 2 * 86400, dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            post = {"timestamp": ts, "isPinned": False, "shortCode": "x", "caption": "tapioca recheada"}
+            perfil = lambda u, nome, bio, seg=0, cat="": {"username": u, "fullName": nome, "biography": bio, "followersCount": seg,  # noqa: E731
+                                                       "private": False, "businessCategoryName": cat, "latestPosts": [post]}
+            pedidos_perfis = []
+
+            def apify(ator, entrada, max_usd):
+                if ator.endswith("post-scraper"):
+                    return [{"url": "https://www.instagram.com/p/BBB/", "ownerUsername": entrada["username"][0]}]
+                if ator.endswith("comment-scraper"):
+                    return [{"ownerUsername": "vivendodetapioca", "text": "o meu nunca bate o estoque", "postUrl": "https://www.instagram.com/p/BBB/"},
+                            {"ownerUsername": "julia.pessoal", "text": "quanto custa?", "postUrl": "https://www.instagram.com/p/BBB/"}]
+                pedidos_perfis.append(entrada["usernames"])
+                if "docesdaju" in entrada["usernames"]:
+                    return [perfil("docesdaju", "Doces da Ju", "brigadeiros por encomenda", 2100, "Confeitaria")]
+                return [perfil("vivendodetapioca", "Vivendo de Tapioca", "tapiocas recheadas, peça pelo direct", 1500),
+                        perfil("julia.pessoal", "Julia", "mãe, empreendedora, dona da @docesdaju", 400)]
+            f._apify = apify
+            f.classificador = lambda pedido: json.dumps({"perfis": [
+                {"handle": "vivendodetapioca", "segmento": "outro_alimento", "cidade": "Recife", "pessoal": False, "negocio": ""},
+                {"handle": "julia.pessoal", "segmento": "", "cidade": "Salvador", "pessoal": True, "negocio": "docesdaju"}]})
+            p.rejeitar(LOGIN, [{"handle": "vivendodetapioca", "motivo": "sem a cidade (confira no perfil)"}])
+            out = f.buscar_concorrentes(LOGIN, p)
+            eq(sorted(c["handle"] for c in out["criados"]), ["docesdaju", "vivendodetapioca"], f"a IA destrava os dois: {out}")
+            eq(pedidos_perfis[1], ["docesdaju"], "o negócio citado pela dona é buscado, não o perfil pessoal")
+            leads = {l["handle"]: l for l in p.carregar(LOGIN)["leads"]}
+            ok(leads["vivendodetapioca"]["cidade"] == "Recife" and "lidos pela IA" in leads["vivendodetapioca"]["motivo"],
+               f"cidade lida pela IA e dito no motivo: {leads['vivendodetapioca']['motivo']}")
+            ok("(o dono, @julia.pessoal, comentou)" in leads["docesdaju"]["sinal"] and "quanto custa" in leads["docesdaju"]["sinal"],
+               f"o comentário da dona vai no sinal do negócio: {leads['docesdaju']['sinal']}")
+            f.classificador = lambda pedido: (_ for _ in ()).throw(RuntimeError("modelo fora"))
+            d = f.carregar(LOGIN)
+            d["apify"]["concorrentes_dia"] = ""
+            f.salvar(LOGIN, d)
+            ok("erro" not in f.buscar_concorrentes(LOGIN, p), "modelo fora do ar: segue só com a rubrica, sem quebrar")
+        finally:
+            f._apify_token, f._apify, f.classificador = originais
+
     def t_planilha_completa_site_e_partes(self):
         p, f = self.p, self._fontes()
         self.em(self.hora(10))

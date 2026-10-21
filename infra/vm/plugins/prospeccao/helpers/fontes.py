@@ -631,9 +631,10 @@ def buscar_instagram(login: str, p, termos: int = 3, por_termo: int = 20) -> dic
 def _avaliar(login: str, p, itens: list, item_de, out: dict) -> dict:
     """Profiles returned by Apify -> leads (what fits the rubric), rejected (60 days) or skipped (already known)."""
     dados = p.carregar(login)
-    # refused only because Apify did not bring the last post's date is not a real refusal: looked at again (21/10)
+    # refused only for missing data (last post's date, city, segment not in the bio) is not a real refusal: looked at
+    # again, now that the AI reads what the bio does not say (21/10)
     conhecidos = {l["handle"] for l in dados["leads"]} | {h for h, v in (dados.get("rejeitados") or {}).items()
-                                                          if not str(v.get("motivo") or "").startswith("sem a data do último post")}
+                                                          if not str(v.get("motivo") or "").startswith(FALTA_DADO)}
     out.update({"criados": [], "recusados": 0, "ja_conhecidos": 0})
     novos, rejeitar = [], []
     for it in itens:
@@ -685,6 +686,44 @@ def conferir_apify(login: str, p, handles: list) -> dict:
     return p.conferir_perfis(login, itens, "apify")
 
 
+FALTA_DADO = ("sem a data do último post", "sem a cidade", "segmento fora do playbook ('')")
+classificador = None  # tests replace it: fn(pedido: str) -> str
+LEITURA = """Leia perfis do Instagram de quem comentou em posts de sistemas para restaurantes e responda só JSON.
+Para cada perfil diga: "segmento" (um destes ou "": {segmentos}), "cidade" (cidade do Brasil citada no nome, na bio
+ou no comentário, ou ""), "pessoal" (true se é o perfil pessoal de alguém, não de um negócio) e "negocio" (o @ do
+negócio de comida que a pessoa cita na bio como dela, sem o @, ou ""). Não invente: sem pista, deixe "".
+Formato: {{"perfis": [{{"handle": "...", "segmento": "...", "cidade": "...", "pessoal": false, "negocio": ""}}]}}
+PERFIS:
+{perfis}"""
+
+
+def _ler_com_ia(p, perfis: list, comentarios: dict) -> dict:
+    """Matheus, 21/10 ("o que precisar de llm pra ajudar no agente ... pode colocar"): who comments on a competitor is
+    often the owner's personal profile or a bio without the city, which the rubric refuses. One cheap model call reads
+    name, bio and comment and proposes segment, city and the business handle; the rubric still decides."""
+    linhas = [{"handle": x.get("username"), "nome": x.get("fullName"), "categoria": x.get("businessCategoryName"),
+               "bio": (x.get("biography") or "")[:300], "comentario": comentarios.get(p.normalizar(str(x.get("username") or "")), "")[:200]}
+              for x in perfis if isinstance(x, dict) and x.get("username") and not x.get("private")]
+    if not linhas:
+        return {}
+    pedido = LEITURA.format(segmentos=", ".join(p.PONTOS_SEGMENTO), perfis=json.dumps(linhas, ensure_ascii=False))
+    try:
+        if classificador:
+            bruto = classificador(pedido)
+        else:
+            body = {"model": p.MODELO_REVISOR, "reasoning": {"effort": "low"}, "input": [{"role": "user", "content": pedido}]}
+            req = urllib.request.Request(f"{p.PROXY}/openai/v1/responses", data=json.dumps(body).encode(),
+                                         headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=120) as r:
+                data = json.loads(r.read())
+            bruto = "".join(c.get("text", "") for it in data.get("output", []) if it.get("type") == "message"
+                            for c in it.get("content", []) if c.get("type") == "output_text")
+        lidos = json.loads(bruto[bruto.find("{"):bruto.rfind("}") + 1]).get("perfis") or []
+    except Exception:
+        return {}  # without the reading the rubric works as before
+    return {p.normalizar(str(x.get("handle") or "")): x for x in lidos if isinstance(x, dict)}
+
+
 def buscar_concorrentes(login: str, p, concorrentes: int = 2, posts: int = 2, por_post: int = 20) -> dict:
     """Leads among the people who comment on competitors' recent posts (Q15 test, 21/10): competitor posts -> their
     comments -> the commenters' profiles -> the same rubric as the Instagram search, with the comment as evidence (a
@@ -723,6 +762,18 @@ def buscar_concorrentes(login: str, p, concorrentes: int = 2, posts: int = 2, po
                 por_handle[h] = c
         perfis = _apify("apify~instagram-profile-scraper", {"usernames": list(por_handle)[:perfis_max]},
                         len(por_handle) * PRECO_APIFY["apify~instagram-profile-scraper"] + 0.05) if por_handle else []
+        lidos = _ler_com_ia(p, perfis, {h: str(c.get("text") or "") for h, c in por_handle.items()})
+        # the owner commented from a personal profile: the lead is the business he names in the bio
+        donos = {p.normalizar(str(v.get("negocio") or "")): h for h, v in lidos.items()
+                 if v.get("pessoal") and v.get("negocio") and p.normalizar(str(v["negocio"])) not in por_handle}
+        if donos:
+            negocios = _apify("apify~instagram-profile-scraper", {"usernames": list(donos)},
+                              len(donos) * PRECO_APIFY["apify~instagram-profile-scraper"] + 0.05)
+            for x in negocios:
+                h = p.normalizar(str(x.get("username") or ""))
+                if h in donos:
+                    por_handle[h] = {**por_handle[donos[h]], "dono": donos[h]}
+            perfis = [x for x in perfis if p.normalizar(str(x.get("username") or "")) not in donos.values()] + negocios
         gasto["apify~instagram-profile-scraper"] = len(perfis)
     except Exception as exc:
         return {"erro": f"Apify não respondeu ({str(exc)[:80]}); tente na próxima rodada", "concorrentes": escolhidos}
@@ -733,14 +784,22 @@ def buscar_concorrentes(login: str, p, concorrentes: int = 2, posts: int = 2, po
         salvar(login, d)
 
     def item_de(it, ev):
-        c = por_handle.get(p.normalizar(str(it.get("username") or "")), {})
+        h = p.normalizar(str(it.get("username") or ""))
+        c = por_handle.get(h, {})
         texto = " ".join(str(c.get("text") or "").split())[:140]
+        ia = lidos.get(h) or lidos.get(c.get("dono")) or {}  # the business inherits what the owner's profile said
+        seg = ev["segmento"] or p.segmento_rubrica(str(ia.get("segmento") or "")) or ""
+        cidade = ev["cidade"] or str(ia.get("cidade") or "")[:60]
+        lido = [n for n, a, b in (("ramo", ev["segmento"], seg), ("cidade", ev["cidade"], cidade)) if b and not a]
+        quem = f" (o dono, @{c['dono']}, comentou)" if c.get("dono") else ""
         dono = next((x.get("ownerUsername") for x in postagens if x.get("url") and x["url"] in str(c.get("postUrl") or "")), "")
         sinais = list(ev.get("sinais") or []) + ["comentou_concorrente"] + (["duvida_compra"] if DUVIDA_COMPRA.search(texto) else []) \
             + (["reclamacao_custo"] if DOR.search(texto) else [])
         # no last-post date from Apify: the warm-up visit checks it (a commenter is a warm signal, not refused for it)
-        return {"sinais": sinais, "fonte": "Apify concorrentes", "atividade_pendente": not ev.get("ultimo_post"), "sinal": f"comentou em @{dono or 'concorrente'}: «{texto}»",
-                "motivo": (f"comentou no post de @{dono or 'concorrente'}: «{texto}»; {ev['motivo']}")[:300]}
+        return {"sinais": sinais, "fonte": "Apify concorrentes", "atividade_pendente": not ev.get("ultimo_post"),
+                "segmento": seg, "cidade": cidade, "sinal": f"comentou em @{dono or 'concorrente'}{quem}: «{texto}»",
+                "motivo": (f"comentou no post de @{dono or 'concorrente'}{quem}: «{texto}»"
+                           + (f" ({' e '.join(lido)} lidos pela IA)" if lido else "") + f"; {ev['motivo']}")[:300]}
     return _avaliar(login, p, perfis, item_de, {"concorrentes": escolhidos, "posts": len(postagens),
                                                  "comentarios": len(comentarios), "perfis": len(perfis),
                                                  "custo_usd": custo, "mes_usd": d["apify"]["usd"]})
