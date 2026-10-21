@@ -4,7 +4,6 @@ report back; plus stages and numbers."""
 import asyncio
 import importlib.util
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -143,25 +142,14 @@ async def _ler_direct_da_tela(context_id: str) -> str:
     return valor if isinstance(valor, str) else json.dumps(valor or {}, ensure_ascii=False)
 
 
-_FALA = re.compile(r'"(?:user_message|user_intervention)"\s*:\s*"((?:[^"\\]|\\.)*)"')
-
-
 def _falas_dele(agent) -> list:
-    """His messages still in this chat's history (the side-chat ones arrive as interventions): what `ordem_matheus`
-    is checked against."""
+    """What he typed in this chat, for `ordem_matheus` (the main agent only: a subagent's "user" is the agent above)."""
+    if getattr(agent, "number", 0):
+        return []
     try:
-        texto = agent.history.serialize()
+        return p.falas_de_historico(agent.history.serialize())
     except Exception:
         return []
-    saida = []
-    for m in _FALA.finditer(texto):
-        try:
-            valor = json.loads(f'"{m.group(1)}"')
-        except ValueError:
-            continue
-        if isinstance(valor, str) and valor.strip():
-            saida.append(valor)
-    return saida[-40:]
 
 
 class Prospeccao(Tool):

@@ -1723,9 +1723,29 @@ def _parecido(a: str, b: str) -> float:
 # an order is an imperative send verb ("envia", "manda", "responde", "pode mandar"), never "mandei" or "não envia"
 VERBO_ORDEM = re.compile(r"\b(envi[ae]|mand[ae]|respond[ae]|pode (mandar|enviar|responder)|segue com o envio)\b", re.I)
 NEGA_ORDEM = re.compile(r"\b(nao|nunca|espera|segura)\W*$", re.I)
+DUVIDA_ORDEM = re.compile(r"\?|\b(n[aã]o|melhor n[aã]o|espera|depois vejo)\W*$", re.I)  # a question or he took it back
 TIPOS_ORDEM = ("resposta", "seguimento", "dm_lembrete", "parceiro")
 ORDENS_DIA = 5  # the daily limit protects @raiz.connect from a block: an order passes it, but not without end
 FALAS_ORDEM = 5  # the order is one of his last messages: not something he said long ago
+
+
+_FALA = re.compile(r'"user_message"\s*:\s*"((?:[^"\\]|\\.)*)"')
+# not his typing: forwards and notices ("[Enquanto…", "[Usuário] Recusou…"), scheduled tasks ("## Task"), e-mails and
+# operator notes the chat receives as a message
+_NAO_E_DELE = re.compile(r"^\s*(\[|#|recado do operador|e-?mail (recebido|de )|de:\s)", re.I)
+
+
+def falas_de_historico(texto: str) -> list:
+    """His typed messages in a serialized Agent Zero history, oldest first (the last 40)."""
+    saida = []
+    for m in _FALA.finditer(texto or ""):
+        try:
+            valor = json.loads(f'"{m.group(1)}"')
+        except ValueError:
+            continue
+        if isinstance(valor, str) and valor.strip() and not _NAO_E_DELE.match(valor):
+            saida.append(valor)
+    return saida[-40:]
 
 
 def ordem_confere(ordem: str, falas: list) -> str:
@@ -1738,7 +1758,7 @@ def ordem_confere(ordem: str, falas: list) -> str:
     for f in reversed((falas or [])[-FALAS_ORDEM:]):
         texto = _normal_ordem(re.split(r"\(leitura autom", str(f or ""))[0])
         i = texto.find(alvo)
-        if i >= 0 and not NEGA_ORDEM.search(texto[max(0, i - 15):i]):
+        if i >= 0 and not NEGA_ORDEM.search(texto[max(0, i - 15):i]) and not DUVIDA_ORDEM.search(str(f)):
             return texto
     return ""
 
