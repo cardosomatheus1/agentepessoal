@@ -70,6 +70,39 @@ class Suite:
     def __init__(self):
         self.resultados = []
 
+    def t_critico_ve_o_video_quadros_e_narracao(self):
+        # 21/10 (Matheus: "pode fazer o do Crítico ver o vídeo"): a Reel goes to the Crítico with frames and narration
+        import shutil
+        import subprocess
+        if not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
+            return  # the VM and CI have ffmpeg; a machine without it cannot make the test video
+        c = _modulo()
+        origem = Path(tempfile.mkdtemp()) / "v.mp4"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=duration=4:size=320x568:rate=10",
+                        "-f", "lavfi", "-i", "sine=frequency=440:duration=4", "-shortest", "-c:v", "libx264",
+                        "-pix_fmt", "yuv420p", "-c:a", "aac", str(origem)], check=True)
+        baixados, ouvidos = [], []
+        c._OUVIR = lambda caminho: ouvidos.append(caminho) or "[0.6s] Pediu pelo iFood?\n[3.0s] Experimente grátis."
+        reel = dict(ITEM, id="reel-critico")
+        m = c.material_do_video(reel, [], baixar=lambda chave, destino: baixados.append(chave) or shutil.copy(origem, destino))
+        ok(baixados == ["conteudo/semana1/pov.mp4"], "baixa o vídeo do S3 uma vez")
+        ok(len(m["imagens"]) == 6 and all(Path(i).exists() for i in m["imagens"]), f"6 quadros: {m['imagens']}")
+        ok(m["quadros"].startswith("ordem das imagens: 1 = segundo 0.2") and "6 = segundo 3.4" in m["quadros"],
+           f"a ordem e o segundo de cada quadro (o último perto do fim, onde fica a chamada): {m['quadros']}")
+        ok(m["narracao"].startswith("[0.6s] Pediu pelo iFood?") and ouvidos[0].endswith("narracao.mp3"),
+           "a narração vem transcrita do áudio do vídeo")
+        m2 = c.material_do_video(reel, ["/capa.jpg"], baixar=lambda *a: 1 / 0)
+        ok(m2["imagens"][0] == "/capa.jpg" and m2["quadros"].startswith("ordem das imagens: 1 = capa"),
+           "a capa vem primeiro; o vídeo já baixado não baixa de novo")
+        c._OUVIR = lambda caminho: 1 / 0
+        (c.PASTA / "cache" / "reel-critico" / "narracao.mp3").unlink()
+        ok(c.material_do_video(reel, [])["narracao"].startswith("(narração não transcrita"),
+           "transcrição que falha vira aviso, não erro")
+        com_roteiro = c.material_do_video(dict(reel, roteiro="Pediu pelo iFood? Chegou no Raiz Connect!"), [])
+        ok(com_roteiro["narracao"] == "Pediu pelo iFood? Chegou no Raiz Connect!", "roteiro do post vale sem transcrever")
+        tipo, mat = c.material_do_post(dict(ITEM, id="reel-sem-arquivo"))
+        ok("video" in mat and "não pôde ser aberto" in mat["video"], "vídeo que não baixa: o Crítico é avisado")
+
     def t_legenda_sem_emoji(self):
         c = _modulo()
         ok(c.validar_legenda("Marca quem já passou por isso.") == "", "texto puro passa")

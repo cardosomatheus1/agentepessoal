@@ -53,12 +53,32 @@ def _token_acesso() -> str:
 def assistir(url: str, pergunta: str, timeout: int = 300, forcar: bool = False) -> str:
     """Gemini (Vertex AI) watches the whole video, picture and sound, from the link; low media resolution
     keeps it cheap. forcar=True skips the VERTEX_OK gate (the one billing test)."""
+    return _gerar([{"fileData": {"fileUri": url, "mimeType": "video/mp4"}}, {"text": pergunta}], timeout, forcar)
+
+
+TRANSCREVER = ("Transcreva a fala deste áudio em português, exatamente como foi dita (sem corrigir), uma frase por linha, "
+               "cada linha começando pelo segundo em que a frase começa, no formato [12.3s] frase. Só a transcrição.")
+
+
+def ouvir(caminho: str, pergunta: str = TRANSCREVER, timeout: int = 180) -> str:
+    """Gemini listens to a short local audio file (sent inline; 21/10: the Crítico gets the narration of a Reel before
+    it goes out). Keep it small (an mp3 of a 40 s Reel is ~0.6 MB)."""
+    import base64
+
+    dados = Path(caminho).read_bytes()
+    if len(dados) > 15 * 1024 * 1024:
+        raise RuntimeError("áudio grande demais para mandar inline")
+    tipo = "audio/mpeg" if str(caminho).lower().endswith(".mp3") else "audio/wav"
+    return _gerar([{"inlineData": {"mimeType": tipo, "data": base64.b64encode(dados).decode()}}, {"text": pergunta}],
+                  timeout, False)
+
+
+def _gerar(partes: list, timeout: int, forcar: bool) -> str:
     if not CREDENCIAL.is_file():
         raise RuntimeError("Vertex AI não configurado (falta a federação AWS→Google)")
     if not (forcar or VERTEX_OK.is_file()):
         raise RuntimeError("Vertex AI ainda não liberado (aguardando conferir que o crédito cobre o uso)")
-    corpo = {"contents": [{"role": "user", "parts": [{"fileData": {"fileUri": url, "mimeType": "video/mp4"}},
-                                                     {"text": pergunta}]}],
+    corpo = {"contents": [{"role": "user", "parts": partes}],
              "generationConfig": {"temperature": 0, "mediaResolution": "MEDIA_RESOLUTION_LOW"}}
     dados, erro = {}, ""
     for tentativa in range(4):  # Vertex answers 500/503/429 now and then (8 of 10 parallel calls once): retry

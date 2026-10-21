@@ -335,6 +335,11 @@ def criticar(tipo: str, material, *, login: str = "matheus") -> dict:
     dec = decisoes_raiz()
     if dec:
         tarefa += f"\n\n## Decisões do Matheus\n{dec}"
+    if isinstance(material, dict) and material.get("narracao"):
+        tarefa += ("\n\n## Vídeo\nAs imagens são quadros do vídeo (a ordem e o segundo de cada uma estão em \"quadros\") e "
+                   "\"narracao\" é a fala com os tempos. Confira: a tela mostra o que a narração diz naquele momento; nenhum "
+                   "texto cortado, sobretudo no último quadro (a chamada); o que a legenda afirma aparece no vídeo. Julgue "
+                   "pelo que vê e ouve aqui, não exija prova que não caberia num vídeo.")
     r = chamar("critico", tarefa, material, login=login)
     if r["erro"]:
         veredito = {"veredito": "reprova", "motivos": [f"o crítico não respondeu ({r['erro']})"], "sugestoes": []}

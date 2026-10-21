@@ -180,6 +180,11 @@ class Suite:
         m.decisoes_raiz = lambda limite=4000: ""
         m.criticar("post", "Experimente grátis por 15 dias.")
         ok("## Decisões do Matheus" not in tarefas[1], "sem Pasta: como antes")
+        m.criticar("post", {"formato": "REELS", "legenda": "x", "narracao": "[0.6s] Pediu pelo iFood?",
+                            "quadros": "ordem das imagens: 1 = segundo 0.2"})
+        ok("## Vídeo" in tarefas[2] and "naquele momento" in tarefas[2] and "texto cortado" in tarefas[2],
+           "Reel com quadros e narração: o Crítico confere tela x fala e letra cortada")
+        ok("## Vídeo" not in tarefas[1], "post sem vídeo: sem essa parte")
 
     def t_criticar_funciona_sem_cerebro_e_sem_criterios(self):
         m = self._e()

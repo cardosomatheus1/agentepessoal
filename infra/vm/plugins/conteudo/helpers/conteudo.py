@@ -477,14 +477,94 @@ def uma_linha(motivos, limite: int = 200) -> str:
 
 def material_do_post(item: dict) -> tuple[str, dict]:
     """(tipo, material) for criticar(): the caption, the format and the local copies of the files when they exist
-    (semana.aprovar() leaves them in cache/<id>/, the same place baixar_post() uses)."""
+    (semana.aprovar() leaves them in cache/<id>/, the same place baixar_post() uses). A Reel also brings what is
+    inside the video (material_do_video): frames and the narration."""
     pasta = PASTA / "cache" / item["id"]
     imagens = [str(pasta / k.rsplit("/", 1)[-1]) for k in list(item.get("arquivos") or []) + ([item["capa"]] if item.get("capa") else [])
                if k.lower().endswith(JPG) and (pasta / k.rsplit("/", 1)[-1]).exists()]
     tipo = "carrossel" if item.get("tipo") == "CARROSSEL" else "post"
     material = {"formato": item.get("tipo"), "legenda": item.get("legenda", ""), "data": item.get("data"),
                 "titulo": (item.get("origem") or {}).get("titulo", ""), "imagens": imagens}
+    if item.get("tipo") == "REELS":
+        try:
+            material.update(material_do_video(item, material["imagens"]))
+        except Exception as exc:  # the Crítico says what it could not see; the gate decides
+            material["video"] = f"o vídeo não pôde ser aberto para a crítica ({type(exc).__name__}: {str(exc)[:120]})"
     return tipo, material
+
+
+# ---- what is inside a Reel (21/10, Matheus: "pode fazer o do Crítico ver o vídeo") --------------------------------
+# The Crítico read only the caption and the cover of a Reel, so it could not check his own AR Board rule ("a tela mostra
+# o que a narração diz no mesmo momento; nada de letra cortada no último quadro") and blocked the iFood video for
+# "fatos não comprovados no material". Now it gets QUADROS frames spread over the video (the last one just before the
+# end, where the CTA is) with their second in the name, and the narration with timestamps.
+QUADROS = (0.06, 0.25, 0.45, 0.65, 0.85)
+FIM_S = 0.6  # the last frame: this many seconds before the end
+_OUVIR = None  # set by the tests; else plugins/video/helpers/gemini.py `ouvir`
+
+
+def _rodar(cmd: list, timeout: int = 120) -> str:
+    import subprocess
+
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    if r.returncode != 0:
+        raise RuntimeError(f"{cmd[0]}: {r.stderr.strip()[-200:]}")
+    return r.stdout
+
+
+def _video_local(item: dict, baixar=None) -> Path:
+    chave = next(k for k in item["arquivos"] if k.lower().endswith(".mp4"))
+    pasta = PASTA / "cache" / item["id"]
+    pasta.mkdir(parents=True, exist_ok=True)
+    destino = pasta / chave.rsplit("/", 1)[-1]
+    if not destino.exists() or destino.stat().st_size == 0:
+        if baixar is None:
+            import urllib.request
+
+            baixar = lambda chave_, caminho: urllib.request.urlretrieve(Api("", "").url(chave_), caminho)  # noqa: E731
+        baixar(chave, str(destino))
+    return destino
+
+
+def _ouvir():
+    if _OUVIR is not None:
+        return _OUVIR
+    caminho = Path(__file__).resolve().parents[2] / "video" / "helpers" / "gemini.py"
+    spec = importlib.util.spec_from_file_location("conteudo_video_gemini", caminho)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m.ouvir
+
+
+def material_do_video(item: dict, imagens: list | None = None, baixar=None) -> dict:
+    """{"imagens": capa + frames (q<n>_<segundo>s.jpg), "narracao": "[0.6s] …" or a note, "quadros": a line per frame}."""
+    video = _video_local(item, baixar)
+    pasta = video.parent / "quadros"
+    pasta.mkdir(exist_ok=True)
+    duracao = float(_rodar(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(video)]))
+    tempos = [round(duracao * f, 1) for f in QUADROS] + [round(max(0.0, duracao - FIM_S), 1)]
+    quadros = []
+    for n, t in enumerate(tempos, 1):
+        destino = pasta / f"q{n}_{t:.1f}s.jpg"
+        if not destino.exists():
+            _rodar(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t}", "-i", str(video), "-frames:v", "1", "-q:v", "3",
+                    "-vf", "scale=720:-2", str(destino)])
+        quadros.append(str(destino))
+    narracao = str(item.get("roteiro") or "").strip()
+    if not narracao:
+        audio = pasta.parent / "narracao.mp3"
+        try:
+            if not audio.exists():
+                _rodar(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), "-vn", "-ac", "1", "-b:a", "64k",
+                        str(audio)])
+            narracao = _ouvir()(str(audio)).strip()
+        except Exception as exc:
+            narracao = f"(narração não transcrita: {type(exc).__name__}: {str(exc)[:120]})"
+    capa = [i for i in (imagens or []) if i not in quadros][:1]
+    ordem = (["capa"] if capa else []) + [f"segundo {t:.1f}" for t in tempos]
+    return {"imagens": capa + quadros, "duracao_s": round(duracao, 1),
+            "quadros": "ordem das imagens: " + "; ".join(f"{n} = {o}" for n, o in enumerate(ordem, 1)),
+            "narracao": narracao}
 
 
 def portao(item: dict, critico=_PADRAO) -> dict:
