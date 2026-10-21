@@ -1,7 +1,7 @@
 ---
 name: pedidos-knauf-claude
 description: "O \"esquema\" dos pedidos de trabalho do Matheus (Knauf) que chegam ao Hotmail: relatório de ICMS, validação de NCM ou tradução de planilha. Baixar TODOS os anexos do e-mail, entregar na conversa pinada certa do Claude (conta seja orbyte), ler a resposta, baixar o arquivo gerado e responder o e-mail só para matheus.cardoso@knauf.com com o arquivo."
-version: 1.1.0
+version: 1.2.0
 tags: ["icms", "ncm", "tradução", "knauf", "hotmail", "claude"]
 trigger_patterns:
   - "icms"
@@ -26,7 +26,7 @@ a ele o que o Claude gerou. "Mesmo esquema dos outros" = este fluxo inteiro, do 
    (nomes e tamanhos) e quantos arquivos estão na pasta de downloads. Faltou um, baixe de novo. Quando ele diz "tds
    arquivos", nenhum fica de fora, nem o packing list.
 3. **Leia cada arquivo** com a ferramenta `ler` (planilha inteira) para saber do que se trata e conferir o tema.
-4. **Claude, conversa pinada do tema** (conta seja orbyte): ICMS → a de ICMS; NCM → "Revisão e validação de NCM para
+4. **Claude, conversa pinada do tema** (conta seja orbyte): ICMS → "Carta de defesa técnica para isenção de ICMS"; NCM → "Revisão e validação de NCM para
    Alemanha"; tradução → a de tradução. Anexe os arquivos com `browser action=upload_file` só com `path`, um por vez,
    e confira cada um aparecendo no campo antes de enviar. Escreva em uma linha o pedido (ex.: "Novo pedido de ICMS,
    mesmo procedimento das vezes anteriores, com todos os arquivos anexos") e envie.
@@ -41,6 +41,10 @@ a ele o que o Claude gerou. "Mesmo esquema dos outros" = este fluxo inteiro, do 
    ordem do pedido: não precisa de outro ok.
 
 ## Armadilhas (21/10)
+- **Você executa, o Matheus julga** (21/10: o agente parou o ICMS porque achou que a carta do Claude tratava mal a
+  primeira instalação). O mérito fiscal (isenção, classificação, o que declarar) é dele e da Knauf: não pare por isso.
+  Mande ao Claude, traga a resposta e, se você ou o Claude virem uma ressalva, escreva-a em destaque no relatório
+  ("⚠️ Ponto de atenção: ..."). Parar só por falha real (arquivo faltando, login, captcha).
 - **Nunca envie um rascunho achado** ("ENC: icms" vazio) para "avançar": primeiro o Claude, depois a resposta ao e-mail
   do pedido com o arquivo gerado.
 - Se o Outlook não reabre o e-mail, volte para a caixa de entrada, busque de novo pela caixa e clique no resultado
