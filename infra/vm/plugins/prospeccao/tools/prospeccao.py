@@ -4,6 +4,7 @@ report back; plus stages and numbers."""
 import asyncio
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -140,6 +141,27 @@ async def _ler_direct_da_tela(context_id: str) -> str:
     res = await rt.call("evaluate", aba["id"], pr().SCRIPT_DIRECT)
     valor = res.get("result", res.get("value")) if isinstance(res, dict) else res
     return valor if isinstance(valor, str) else json.dumps(valor or {}, ensure_ascii=False)
+
+
+_FALA = re.compile(r'"(?:user_message|user_intervention)"\s*:\s*"((?:[^"\\]|\\.)*)"')
+
+
+def _falas_dele(agent) -> list:
+    """His messages still in this chat's history (the side-chat ones arrive as interventions): what `ordem_matheus`
+    is checked against."""
+    try:
+        texto = agent.history.serialize()
+    except Exception:
+        return []
+    saida = []
+    for m in _FALA.finditer(texto):
+        try:
+            valor = json.loads(f'"{m.group(1)}"')
+        except ValueError:
+            continue
+        if isinstance(valor, str) and valor.strip():
+            saida.append(valor)
+    return saida[-40:]
 
 
 class Prospeccao(Tool):
@@ -369,7 +391,7 @@ class Prospeccao(Tool):
             return r(f"{n} perfis anotados como examinados e fora do perfil (não voltam por 60 dias).")
         if acao == "propor":
             itens = acoes if isinstance(acoes, list) else json.loads(acoes or "[]")
-            out = await asyncio.to_thread(p.propor, login, itens)
+            out = await asyncio.to_thread(p.propor, login, itens, _falas_dele(self.agent))
             if out["propostas"]:
                 d = p.carregar(login)
                 pid = p.guardar_pacote(login, [a["id"] for a in out["propostas"]])

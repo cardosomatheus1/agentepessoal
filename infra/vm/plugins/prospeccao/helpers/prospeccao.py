@@ -1720,13 +1720,43 @@ def _parecido(a: str, b: str) -> float:
     return difflib.SequenceMatcher(None, a, b).ratio()
 
 
-def propor(login: str, itens: list) -> dict:
+def ordem_confere(ordem: str, falas: list) -> bool:
+    """Whether `ordem` (his words the agent quotes) is in one of his recent messages: a specific phrase, not a bare
+    "sim" (21/10: "Envia link p ela" followed by "Sim 1")."""
+    alvo = _normal_ordem(ordem)
+    return len(alvo) >= 10 and any(alvo in _normal_ordem(f) for f in falas or [])
+
+
+def _normal_ordem(t: str) -> str:
+    return " ".join(re.sub(r"[^\w@./:-]+", " ", unicodedata.normalize("NFKD", str(t or "")).encode("ascii", "ignore")
+                           .decode().lower()).split())
+
+
+def propor(login: str, itens: list, falas: list | None = None) -> dict:
     """Validate and store proposed actions. Returns {"propostas": [...acoes], "recusadas": [{...,"motivo"}]}. The
-    pre-approval's reviewer runs after the proposals are saved and outside the lock."""
-    d, out = _propor_gravar(login, itens)
+    pre-approval's reviewer runs after the proposals are saved and outside the lock. An item with `ordem_matheus`
+    (his literal words, found in `falas`, his recent messages) is his specific order: Matheus, 21/10, "Minha decisao
+    deve ser acima do revisor" (decision #73). It skips the reviewer and the daily limit; the playbook's hard rules
+    and the lead's state still apply."""
+    itens = [_marcar_ordem(i, falas) for i in itens] if isinstance(itens, list) else itens
+    d, out = _propor_gravar(login, [i for i in itens if not (isinstance(i, dict) and i.get("_ordem_falsa"))]
+                            if isinstance(itens, list) else itens)
+    for i in itens if isinstance(itens, list) else []:
+        if isinstance(i, dict) and i.get("_ordem_falsa"):
+            out["recusadas"].append({"lead_id": str(i.get("lead_id") or ""), "tipo": str(i.get("tipo") or ""), "motivo": (
+                "ordem_matheus não aparece nas mensagens dele desta conversa: copie as palavras exatas dele (a frase do "
+                "pedido, não só \"sim\"), ou tire o campo e proponha pelo fluxo normal")})
     if d["config"].get("auto"):
         out = _auto_aprovar(login, out)
     return out
+
+
+def _marcar_ordem(item, falas):
+    if not isinstance(item, dict) or not str(item.get("ordem_matheus") or "").strip():
+        return item
+    if ordem_confere(item["ordem_matheus"], falas):
+        return {**item, "_ordem": str(item["ordem_matheus"]).strip()[:200]}
+    return {**item, "_ordem_falsa": True}
 
 
 @_transacao
@@ -1744,6 +1774,7 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
         if lead:
             lid = lead["id"]  # the agent may have passed the @
         texto = str(item.get("texto") or "").strip()
+        ordem = item.get("_ordem") or ""
         motivo = ""
         if tipo not in TIPOS:
             motivo = f"tipo inválido (use {', '.join(TIPOS)})"
@@ -1756,7 +1787,7 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
                       "quiser, e aí `prospeccao` acao \"devolver\")")
         elif (lid, tipo) in ja:
             motivo = "já existe essa ação pendente para esse lead"
-        elif d["config"].get("auto") and _versoes_reprovadas(d, lid, tipo) >= VERSOES_REVISOR:
+        elif not ordem and d["config"].get("auto") and _versoes_reprovadas(d, lid, tipo) >= VERSOES_REVISOR:
             motivo = f"o revisor já reprovou {VERSOES_REVISOR} versões hoje: deixe para amanhã"
         elif tipo == "dm_abertura" and lead["etapa"] != "aquecido":
             motivo = "DM de abertura só depois do aquecimento"
@@ -1779,7 +1810,7 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
                       "o Matheus já foi avisado e decide")
         elif tipo == "parceiro" and lead["canal"] != "parceiro":
             motivo = "ação de parceiro só para leads do canal parceiro"
-        elif restantes.get(tipo, 0) <= 0:
+        elif not ordem and restantes.get(tipo, 0) <= 0:
             motivo = f"limite do dia para {tipo} atingido"
         else:
             motivo = validar_texto(tipo, texto, d, lid)
@@ -1800,8 +1831,10 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
         acao = {"id": _id(), "lead_id": lid, "tipo": tipo, "texto": texto[:900], "variante": variante,
                 "alvo": str(item.get("alvo") or lead["url"])[:200], "base": str(item.get("base") or "")[:300],
                 "estado": "proposta", "criada": agora()}
+        if ordem:
+            acao["ordem_matheus"] = ordem
         d["acoes"].append(acao)
-        _evento(d, acao, "-", "proposta", "proposta criada")
+        _evento(d, acao, "-", "proposta", f"proposta criada por ordem do Matheus: «{ordem}»" if ordem else "proposta criada")
         ja.add((lid, tipo))
         restantes[tipo] -= 1
         out["propostas"].append(acao)
@@ -2064,8 +2097,11 @@ def _auto_aprovar(login: str, out: dict) -> dict:
     reviewer does not pass stays a proposal for the person. out gains "automaticas"; "propostas" keeps only the manual."""
     d = carregar(login)  # a snapshot for the reviewer, who may take minutes: nothing is saved from it
     candidatas = [a for a in out["propostas"] if a["tipo"] in AUTO_TIPOS]
-    com_texto = [a for a in candidatas if a["texto"]]
+    com_texto = [a for a in candidatas if a["texto"] and not a.get("ordem_matheus")]
     vereditos = revisar_textos(d, com_texto, login) if com_texto else {}
+    for a in candidatas:
+        if a.get("ordem_matheus"):
+            vereditos[a["id"]] = {"aprovado": True, "motivo": f"ordem do Matheus, acima do revisor: «{a['ordem_matheus']}»"[:200]}
     # the reviewer claimed something is missing that a plain rule shows is there (11/10: it held a reply "for not
     # introducing Matheus nor linking the calculator" — the text did both): ask once more, pointing at the fact
     contraditos = [a for a in com_texto if not vereditos.get(a["id"], {}).get("aprovado") and _contradiz(a, vereditos[a["id"]]["motivo"])]

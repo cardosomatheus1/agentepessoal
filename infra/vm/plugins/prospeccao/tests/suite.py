@@ -281,6 +281,43 @@ class Suite:
         finally:
             p.revisor = None
 
+    def t_ordem_do_matheus_acima_do_revisor(self):
+        # 21/10, Maria's Fit: ele mandou "Envia link p ela", o revisor reprovou 3 versões ("o link deve ser enviado sem
+        # https e sem parâmetros") e o agente parou. Decisão #73: "Minha decisao deve ser acima do revisor".
+        p = self.p
+        self.em(self.hora(10))
+        p.definir_auto(LOGIN, True)
+        try:
+            lid = self._lead("maria_sfit")
+            p.mudar_etapa(LOGIN, lid, "respondeu", "me manda o link da calculadora")
+            reprova = lambda pedido: json.dumps({"itens": [{"id": i, "aprovado": False, "motivo": "O link deve ser enviado sem https e sem parâmetros"}
+                                                           for i in re.findall(r"## Item (\w+) — ", pedido)]})
+            self.p.revisor = reprova
+            texto = "Oi, Maria! Segue a calculadora grátis: raizconnect.com.br/materiais/precificacao/calculadora\nMatheus"
+            for n in range(p.VERSOES_REVISOR):
+                p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": texto + " " * n}])
+            out = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": texto}])
+            ok("amanhã" in out["recusadas"][0]["motivo"], f"sem a ordem, segue barrado: {out}")
+            falas = ["Envia link p ela", "Sim", "Minha decisao deve ser acima do revisor", "Sim 1"]
+            # a ordem precisa estar nas falas dele, e não vale só "sim"
+            for ordem in ("sim", "manda o link pra Maria agora"):
+                out = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": texto, "ordem_matheus": ordem}], falas)
+                ok(not out["automaticas"] and "ordem_matheus" in out["recusadas"][0]["motivo"], f"ordem {ordem!r} recusada: {out}")
+            chamadas = []
+            self.p.revisor = lambda pedido: chamadas.append(pedido) or reprova(pedido)
+            out = p.propor(LOGIN, [{"lead_id": lid, "tipo": "resposta", "texto": texto, "ordem_matheus": "envia link p ela"}], falas)
+            eq([a["lead_id"] for a in out["automaticas"]], [lid], f"a ordem dele passa: {out}")
+            eq(chamadas, [], "nem vai ao revisor")
+            a = out["automaticas"][0]
+            ok(a["estado"] == "aprovada" and a["ordem_matheus"] == "envia link p ela" and "acima do revisor" in a["revisao"], f"registrada: {a}")
+            ev = [e for e in p.eventos(LOGIN, 50) if e["acao"] == a["id"]]
+            ok(any("ordem do Matheus" in e["motivo"] for e in ev), f"diário diz que foi ordem dele: {ev}")
+            # as regras duras do playbook continuam
+            out = p.propor(LOGIN, [{"lead_id": self._lead("outra"), "tipo": "resposta", "texto": "Oi — segue o link", "ordem_matheus": "envia link p ela"}], falas)
+            ok(out["recusadas"] and not out["automaticas"], f"regra dura (etapa, travessão) não cai: {out}")
+        finally:
+            p.revisor = None
+
     def t_auto_revisor_reprova_ou_falha(self):
         p = self.p
         self.em(self.hora(10))
