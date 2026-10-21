@@ -119,8 +119,36 @@ def _alvo_visivel(core) -> None:
     setattr(core, MARK_ALVO, True)
 
 
+def _baixados(core) -> None:
+    """Fix 5: each download also saved under its real name, registered for the next tool result (downloads.py)."""
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.spec_from_file_location("navegador_rapido_downloads", Path(__file__).with_name("downloads.py"))
+    downloads = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(downloads)
+    original_start = core._start
+
+    async def _start(self):
+        await original_start(self)
+        ctx = getattr(self, "context", None)
+        if ctx is None:
+            return
+
+        def ouvir(page):
+            page.on("download", downloads.salvar)
+
+        for page in ctx.pages:
+            ouvir(page)
+        ctx.on("page", ouvir)
+
+    core._start = _start
+    setattr(core, MARK_BAIXADOS, True)
+
+
 MARK = "_navegador_rapido_v3"
 MARK_ALVO = "_navegador_rapido_alvo"
+MARK_BAIXADOS = "_navegador_rapido_baixados"
 
 
 def aplicar() -> None:
@@ -129,6 +157,8 @@ def aplicar() -> None:
     core = runtime._BrowserRuntimeCore
     if not getattr(core, MARK_ALVO, False):
         _alvo_visivel(core)
+    if not getattr(core, MARK_BAIXADOS, False):
+        _baixados(core)
     if getattr(core, MARK, False):
         return
 

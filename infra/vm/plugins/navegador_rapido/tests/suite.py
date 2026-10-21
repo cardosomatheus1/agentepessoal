@@ -177,6 +177,38 @@ class Suite:
         ok(not outra.summary and not texto.summary, "imagem pedida pelo agente e texto ficam")
         eq(v.apagar_antigos(prints), 0, "não apaga de novo")
 
+    async def t_download_fica_com_o_nome_real_e_o_agente_sabe(self):
+        import tempfile
+        spec = importlib.util.spec_from_file_location("navegador_rapido_downloads_teste", RAIZ / "helpers" / "downloads.py")
+        d = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(d)
+        with tempfile.TemporaryDirectory() as tmp:
+            pasta = Path(tmp)
+            reg = pasta / "baixados.jsonl"
+
+            class Download:
+                suggested_filename = "76437182_CL.xlsx"
+                url = "https://outlook.office.com/anexo"
+
+                async def save_as(self, caminho):
+                    Path(caminho).write_bytes(b"x" * 2048)
+
+            primeiro = await d.salvar(Download(), pasta, reg)
+            eq(primeiro, pasta / "76437182_CL.xlsx", "salvo com o nome real")
+            eq((await d.salvar(Download(), pasta, reg)).name, "76437182_CL (2).xlsx", "não sobrescreve o anterior")
+            eq(d.nome_seguro("../../etc/passwd", pasta).parent, pasta, "nome com caminho não sai da pasta")
+            texto = d.aviso(d.a_avisar(reg))
+            ok("76437182_CL.xlsx (2 KB)" in texto and "76437182_CL (2).xlsx" in texto, f"o agente fica sabendo: {texto}")
+            eq(d.a_avisar(reg), [], "avisa uma vez só")
+
+            class Quebrado:
+                suggested_filename = "a.pdf"
+
+                async def save_as(self, caminho):
+                    raise RuntimeError("canceled")
+
+            eq(await d.salvar(Quebrado(), pasta, reg), None, "falha no download não derruba o navegador")
+
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:
