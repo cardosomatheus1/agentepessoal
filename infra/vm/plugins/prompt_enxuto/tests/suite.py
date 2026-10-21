@@ -305,7 +305,7 @@ class Suite:
         async def call_extensions_async(ponto, agente, **kw):
             chamadas.append((ponto, kw.get("tool_name")))
 
-        stubs = {"helpers": types.ModuleType("helpers"), "helpers.tool": types.ModuleType("helpers.tool"),
+        stubs = {"agent": types.ModuleType("agent"), "helpers": types.ModuleType("helpers"), "helpers.tool": types.ModuleType("helpers.tool"),
                  "helpers.extension": types.ModuleType("helpers.extension"),
                  "helpers.responses_tools": types.ModuleType("helpers.responses_tools"),
                  "helpers.mcp_handler": types.ModuleType("helpers.mcp_handler")}
@@ -380,6 +380,17 @@ class Suite:
             ok("não existe" in r.message, "nome desconhecido não roda outra coisa")
             r = _rodar(ponte.execute(acao="usar", nome="assistir_video", args={"url": "u"}))
             ok("não carregou" in r.message, "ferramenta que não carrega: avisa em vez de quebrar")
+            # inside Agent Zero's `parallel` tool: a fresh worker agent, the catalog comes from the parent chat
+            pai = ponte.agent
+            trabalhador = type(pai)()
+            trabalhador.dados = {}
+            trabalhador.context = types.SimpleNamespace(get_data=lambda k: "PAI" if k == "_parallel_parent_context_id" else None)
+            sys.modules["agent"] = types.SimpleNamespace(AgentContext=types.SimpleNamespace(
+                get=lambda cid: types.SimpleNamespace(agent0=pai) if cid == "PAI" else None))
+            ponte.agent = trabalhador
+            chamadas.clear()
+            r = _rodar(ponte.execute(acao="usar", nome="google_get_events", args={"time_min": "x"}))
+            eq(r.message, "[google.get_events] 3 eventos desde x", "no trabalhador da `parallel`: catálogo e nomes do pai")
         finally:
             self._soltar(antes)
 

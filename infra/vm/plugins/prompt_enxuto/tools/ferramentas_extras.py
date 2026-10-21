@@ -27,7 +27,7 @@ class FerramentasExtras(Tool):
     async def execute(self, acao: str = "", texto: str = "", nome: str = "", args=None, **kwargs) -> Response:
         c = _carregar()
         sd, en = c.modulo("sob_demanda"), c.modulo("enxuto")
-        ocultas = self.agent.get_data(sd.CHAVE) or {}
+        ocultas = self.agent.get_data(sd.CHAVE) or self._do_pai(sd.CHAVE) or {}
         acao = str(acao or ("usar" if nome else "buscar")).strip().lower()
         if acao == "buscar":
             nomes = sd.buscar(ocultas, texto or nome)
@@ -60,10 +60,25 @@ class FerramentasExtras(Tool):
                             break_loop=False)
         return await self._rodar(real, args)
 
+    def _do_pai(self, chave: str):
+        """Inside Agent Zero's `parallel` tool the call runs in a fresh worker chat whose agent never made a model call:
+        the catalog and the name map are the parent chat's (21/10: "a ferramenta extra … não existe" there)."""
+        try:
+            pai = self.agent.context.get_data("_parallel_parent_context_id")
+            if not pai:
+                return None
+            from agent import AgentContext
+
+            contexto = AgentContext.get(str(pai))
+            return contexto.agent0.get_data(chave) if contexto else None
+        except Exception:
+            return None
+
     async def _rodar(self, nativo: str, args: dict) -> Response:
         from helpers.responses_tools import original_tool_name
 
-        mapa = self.agent.get_data(type(self.agent).DATA_NAME_RESPONSES_TOOL_NAME_MAP) or {}
+        chave_mapa = type(self.agent).DATA_NAME_RESPONSES_TOOL_NAME_MAP
+        mapa = self.agent.get_data(chave_mapa) or self._do_pai(chave_mapa) or {}
         nome = original_tool_name(nativo, mapa)
         ferramenta = None
         try:

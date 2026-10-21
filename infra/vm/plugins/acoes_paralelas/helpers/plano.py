@@ -94,5 +94,7 @@ ORIENTACAO = (
     "Quando precisar de várias informações que não dependem umas das outras, peça todas na MESMA resposta (várias "
     "chamadas de ferramenta juntas) em vez de uma por vez: buscas, leituras de documento ou arquivo, memória, "
     "consultas à Pasta e leituras do Gmail/Agenda/Drive/GitHub rodam ao mesmo tempo. Só faça uma por vez quando a "
-    "próxima depende do resultado da anterior. Navegador, celular, terminal e mensagens continuam um de cada vez."
+    "próxima depende do resultado da anterior. Navegador, celular, terminal e mensagens continuam um de cada vez. "
+    "Para isso, ponha as chamadas direto na resposta; não use a ferramenta `parallel` (ela roda cada ação numa conversa "
+    "separada, sem o seu contexto). `parallel` fica para tarefas longas em segundo plano."
 )
