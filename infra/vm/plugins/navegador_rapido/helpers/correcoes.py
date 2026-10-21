@@ -348,41 +348,82 @@ def argumentos_de_espera(args) -> bool:
     return True
 
 
+def _original(core, nome: str, livre: str):
+    """The unpatched method: kept on the class since v2 of a fix; from an older wrapper's closure (`livre` is the name of
+    the variable that held it) on a server that is still running an older version (deploys do not restart the agent)."""
+    guardado = getattr(core, f"_a0_original_{nome}", None)
+    if guardado is not None:
+        return guardado
+    atual = getattr(core, nome)
+    codigo = getattr(atual, "__code__", None)
+    if codigo is not None and livre in codigo.co_freevars and atual.__closure__:
+        atual = atual.__closure__[codigo.co_freevars.index(livre)].cell_contents
+    setattr(core, f"_a0_original_{nome}", atual)
+    return atual
+
+
+async def pelo_seletor_de_arquivos(page, ponto: dict, caminhos: list[str], espera_ms: int = 6000) -> bool:
+    """Item 8 (OpenClaw pw-tools-core.downloads.ts:256-268): click the trigger with the mouse and hand the files to the
+    file window it opens. Outlook, 21/10: several hidden file fields, and the one picked by `enviar_pelo_campo` sent the
+    file to OneDrive ("Carregar em"); its "Navegar neste computador" opens the window the email attachment listens to."""
+    try:
+        async with page.expect_file_chooser(timeout=espera_ms) as janela:
+            await page.mouse.click(float(ponto["x"]), float(ponto["y"]))
+        await (await janela.value).set_files(caminhos)
+        return True
+    except Exception:
+        return False
+
+
 def _envio_de_arquivo(core) -> None:
     """Fix 6: upload_file also works on a hidden file field (21/10: claude.ai's attach input has no ref, and the
     agent gave up after 'could not resolve selector' and 'cannot upload through helper-backed reference').
-    A ref that is not a file field (the attach button) falls back to the page's file field too."""
-    original_upload = core.upload_file
+    v2 (item 8): a ref that is not a file field is the trigger: click it and use the file window it opens; only then
+    the page's file field."""
+    original_upload = _original(core, "upload_file", "original_upload")
 
     async def upload_file(self, browser_id, ref, path="", paths=None):
         erro = None
+        caminhos = self._normalize_upload_paths(path=path, paths=paths)
+        await self.ensure_started()
+        resolved_id = self._resolve_browser_id(browser_id)
+        page = self._page(resolved_id)
+        via = ""
         if ref != ARQUIVO:
             try:
                 return await original_upload(self, browser_id, ref, path=path, paths=paths)
             except Exception as exc:
                 erro = exc
-        caminhos = self._normalize_upload_paths(path=path, paths=paths)
-        await self.ensure_started()
-        resolved_id = self._resolve_browser_id(browser_id)
-        page = self._page(resolved_id)
-        i = await enviar_pelo_campo(page, caminhos)
-        if i is None:
-            raise erro or ValueError("a página não tem campo de arquivo que aceite esse arquivo; clique antes no botão "
-                                     "de anexar (ele cria o campo) e tente upload_file de novo")
+            try:
+                ponto = await self._point_for(page, ref)
+                if await pelo_seletor_de_arquivos(page, ponto, caminhos):
+                    via = "janela de arquivos aberta pelo clique"
+            except Exception:
+                pass
+        indice = None
+        if not via:
+            indice = await enviar_pelo_campo(page, caminhos)
+            if indice is None:
+                raise erro or ValueError("a página não tem campo de arquivo que aceite esse arquivo; use upload_file com a "
+                                         "ref do botão que abre a escolha de arquivo (ex.: 'Anexar', 'Navegar neste "
+                                         "computador')")
+            via = "campo de arquivo da página"
         await self._settle(page, short=True)
         self._maybe_promote(resolved_id)
-        return {"action": {"files": caminhos, "input": {"via": "campo de arquivo da página", "indice": i},
-                           "ref": ref},
+        return {"action": {"files": caminhos, "input": {"via": via, "indice": indice}, "ref": ref,
+                           "conferir": "veja no print se o arquivo aparece anexado; se o site abriu outra janela (ex.: "
+                                       "OneDrive), feche-a e use a ref do botão de anexar do computador"},
                 "state": await self._state(resolved_id)}
 
     core.upload_file = upload_file
-    setattr(core, MARK_ARQUIVO, True)
+    setattr(core, MARK_ARQUIVO, VERSAO_ARQUIVO)
 
 
 MARK = "_navegador_rapido_v3"
 MARK_ALVO = "_navegador_rapido_alvo"
 MARK_BAIXADOS = "_navegador_rapido_baixados"
 MARK_ARQUIVO = "_navegador_rapido_arquivo"
+VERSAO_ARQUIVO = 2
 MARK_DIGITADO = "_navegador_rapido_digitado"
 
 
@@ -435,7 +476,7 @@ def aplicar() -> None:
         _alvo_visivel(core)
     if not getattr(core, MARK_BAIXADOS, False):
         _baixados(core)
-    if not getattr(core, MARK_ARQUIVO, False):
+    if getattr(core, MARK_ARQUIVO, False) != VERSAO_ARQUIVO:
         _envio_de_arquivo(core)
     if not getattr(core, MARK_DIGITADO, False):
         _conferir_digitacao(core)

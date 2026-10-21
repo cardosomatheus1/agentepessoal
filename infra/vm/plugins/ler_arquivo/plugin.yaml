@@ -1,0 +1,4 @@
+name: ler_arquivo
+title: Ler arquivo inteiro
+description: Ferramenta ler — lê planilha (valores calculados, todas as linhas, em páginas), Word, PDF (avisa páginas escaneadas), CSV e texto.
+version: 1.0.0

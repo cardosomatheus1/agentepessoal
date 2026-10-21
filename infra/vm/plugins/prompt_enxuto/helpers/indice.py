@@ -78,6 +78,8 @@ CURTAS: dict[str, str] = {
               "`valor`, `fonte`, `codigo`) | listar | paga | ignorar (`id`). Nunca pague.",
     "iniciativa": "Mensagens por iniciativa própria. `acao` contexto | candidatos (`candidatos`: 3–5 {titulo, tipo, nota, "
                   "porque}) | enviar (`titulo`, `texto`, `tipo`, opcional `arquivo`) | aprender (`aprendizado`).",
+    "ler": "Lê arquivo inteiro em páginas: planilha (valores, não fórmulas), csv, docx, pdf, texto. `caminho`, opcional "
+           "`inicio`, `limite`, `aba`.",
     "analisar_imagens": "Analisa muitas imagens uma a uma e devolve texto (e notas em arquivo). `caminhos` (arquivos, pastas "
                         "ou padrões), `pergunta`, opcional `contexto`. Use com mais de ~5 imagens.",
     "decisao": "Decisões da pessoa que valem até ela mudar. `acao` registrar (`tema`, `decisao`, `tipo` decisao|permissao|"

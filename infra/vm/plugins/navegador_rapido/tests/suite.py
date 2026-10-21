@@ -200,6 +200,60 @@ class Suite:
         eq(lido, {"valor": "(71) 99156-4477"}, "leu o que o site deixou no campo")
         ok(c.conferir_digitado("71991564477", lido).startswith("✓"), "e a conferência entende a máscara")
 
+    async def t_upload_pela_janela_de_arquivos_do_botao(self):
+        c = _correcoes()
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return
+        exe = os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+        if not Path(exe).exists():
+            exe = "/a0/tmp/playwright/chromium-1228/chrome-linux/chrome"
+        if not Path(exe).exists():
+            return
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            arq = Path(tmp) / "revisado.xlsx"
+            arq.write_bytes(b"PK\x03\x04x")
+            # como o Outlook: um campo escondido que manda para o OneDrive e um botão que cria, na hora, o campo do anexo
+            html = """<input type="file" id="onedrive" style="display:none">
+              <button id="b" style="position:absolute;left:40px;top:40px;width:200px;height:40px">Navegar neste computador</button>
+              <div id="anexos"></div>
+              <script>
+                document.getElementById('b').onclick = () => {
+                  const i = document.createElement('input'); i.type = 'file';
+                  i.onchange = () => { document.getElementById('anexos').textContent = 'anexo: ' + i.files[0].name; };
+                  i.click();
+                };
+              </script>"""
+            async with async_playwright() as p:
+                b = await p.chromium.launch(executable_path=exe, headless=True)
+                pg = await b.new_page()
+                await pg.set_content(html)
+                ok(await c.pelo_seletor_de_arquivos(pg, {"x": 140, "y": 60}, [str(arq)]), "a janela de arquivos abriu")
+                await pg.wait_for_timeout(200)
+                eq(await pg.inner_text("#anexos"), "anexo: revisado.xlsx", "o arquivo foi para o anexo, não para o OneDrive")
+                eq(await pg.evaluate("document.getElementById('onedrive').files.length"), 0, "o campo do OneDrive ficou vazio")
+                ok(not await c.pelo_seletor_de_arquivos(pg, {"x": 5, "y": 300}, [str(arq)], espera_ms=800),
+                   "clique que não abre janela: devolve False, sem travar")
+                await b.close()
+
+    def t_reaplica_correcao_nova_no_servidor_ja_rodando(self):
+        c = _correcoes()
+
+        class Core:
+            def upload_file(self):
+                return "original"
+
+        original_upload = Core.upload_file
+
+        def antigo(self):  # o embrulho da versão anterior, que guardava o original no fechamento
+            return original_upload(self)
+
+        Core.upload_file = antigo
+        eq(c._original(Core, "upload_file", "original_upload")(None), "original", "acha o original dentro do embrulho")
+        eq(Core._a0_original_upload_file(None), "original", "e guarda na classe para as próximas versões")
+
     async def t_espera_pelo_que_importa(self):
         c = _correcoes()
         args = {"action": "wait", "text": "Pedido enviado", "timeout": 5}

@@ -29,7 +29,7 @@ NUCLEO = frozenset({
     "call_subordinate", "parallel", "wait", "notify_user", "search_engine", "pesquisar", "document_query",
     "memory_load", "lembrar", "decisao", "ficha", "cerebro", "fios", "iniciativa", "celular", "whatsapp_enviar",
     "pedir_codigo", "whatsapp_guardar_token", "consultar_sol", "delegar", "prospeccao", "salvar_rotina",
-    "scheduler", "tarefa_limite", "conversa_externa", "contas", "goal", PONTE,
+    "scheduler", "tarefa_limite", "conversa_externa", "contas", "goal", "ler", PONTE,
 })
 LINHA_MAX = 110  # characters of each hidden tool's line in the bridge description
 _PALAVRA = re.compile(r"[a-z0-9áàâãéêíóôõúç]+")
