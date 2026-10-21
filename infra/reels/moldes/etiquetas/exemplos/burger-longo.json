@@ -1,0 +1,9 @@
+{"_marca": "burger-noite", "_formato": "reel", "rotulo": "Por dentro do pedido", "produto": "Smash duplo com cheddar da casa", "foto": "fotos/burger_smash.jpg",
+ "etiquetas": [
+  {"texto": "Carne moída no dia", "detalhe": "blend de acém e peito, sem tempero"},
+  {"texto": "Pão de brioche", "detalhe": "selado na manteiga na chapa"},
+  {"texto": "Cheddar derretido", "detalhe": "duas fatias, uma em cada carne"},
+  {"texto": "Prensado na chapa"},
+  {"texto": "Montado na hora", "detalhe": "sai da chapa direto para a caixa"}],
+ "preco": 34.9, "unidade": "o lanche", "nota": "valores de exemplo",
+ "_origem": {"etiquetas": "dono", "preco": "dono"}}

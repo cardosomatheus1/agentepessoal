@@ -1,0 +1,15 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "titulo": "Antes de agendar sua coloração, confira tudo isto",
+ "itens": [
+  "Se fez alguma química nos últimos três meses",
+  "Foto da cor que você quer chegar",
+  "Se o couro cabeludo está sem feridas",
+  "Tempo livre: coloração leva umas três horas",
+  "Cabelo lavado no dia anterior, não no dia",
+  "Se tem alergia a algum produto"
+ ],
+ "fecho": "Assim a cor sai do jeito que você sonhou.",
+ "produto": {"foto": "fotos/salao_mechas.jpg", "nome": "Mechas e coloração", "detalhe": "Avaliação do fio antes, sem custo", "convite": "marque a sua"}
+}

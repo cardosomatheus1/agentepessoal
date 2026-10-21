@@ -1,0 +1,10 @@
+{"_marca": "flor-de-sal", "_formato": "reel",
+ "titulo": "A loja online cresceu junto com quem acreditou no artesanal",
+ "medida": "vendas no site por mês", "tipo": "dinheiro",
+ "pontos": [{"rotulo": "abr", "valor": 3200}, {"rotulo": "mai", "valor": 3550}, {"rotulo": "jun", "valor": 4100}, {"rotulo": "jul", "valor": 3980},
+  {"rotulo": "ago", "valor": 4720}, {"rotulo": "set", "valor": 5310}, {"rotulo": "out", "valor": 6020}, {"rotulo": "nov", "valor": 6480},
+  {"rotulo": "dez", "valor": 7900}, {"rotulo": "jan", "valor": 7120}, {"rotulo": "fev", "valor": 8030}, {"rotulo": "mar", "valor": 8650}],
+ "motivo": "Cada sabonete sai do nosso ateliê, feito à mão. Obrigada por escolher o natural.",
+ "exemplo": true,
+ "produto": {"foto": "fotos/lanca-produto_fds_sabonete.jpg", "nome": "Sabonete de argila rosa", "detalhe": "Feito à mão com flor de sal"},
+ "_origem": {"pontos": "dono"}}

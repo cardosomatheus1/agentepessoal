@@ -1,0 +1,4 @@
+{"_marca": "doces-da-lu", "_formato": "reel", "titulo": "Nosso bolo x o bolo comum",
+ "linhas": [{"item": "Feito com ovos", "nos": true, "comum": true}, {"item": "Tem recheio", "nos": true, "comum": true}, {"item": "Vai na caixa", "nos": true, "comum": true}],
+ "produto": {"foto": "fotos/doce_bolo_morango.jpg", "nome": "Bolo de morango"},
+ "_origem": {"linhas": "dono"}}

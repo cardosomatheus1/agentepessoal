@@ -1,0 +1,8 @@
+{"_marca": "doces-da-lu", "_formato": "reel", "produto": "Bolo de pote de chocolate", "foto": "fotos/lanca-produto_doce_pote_chocolate.jpg",
+ "etiquetas": [
+  {"texto": "Feito no dia", "detalhe": "montado de manhã, vendido até a noite"},
+  {"texto": "Sem conservante"},
+  {"texto": "Brigadeiro de panela", "detalhe": "chocolate 50% cacau, mexido na hora"},
+  {"texto": "Pote de 250 ml"}],
+ "preco": 14, "unidade": "o pote", "nota": "valores de exemplo",
+ "_origem": {"etiquetas": "dono", "preco": "dono"}}

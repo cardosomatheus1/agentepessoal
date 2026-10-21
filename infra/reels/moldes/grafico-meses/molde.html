@@ -1,0 +1,198 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo vox-explainer: gráfico de colunas de papel que crescem
+     em degraus, coluna de destaque e seta de caneta com a variação. Portado para o motor (render(t) determinístico). -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+.grade{position:absolute;inset:-6px;pointer-events:none;background-image:repeating-linear-gradient(0deg,color-mix(in srgb,var(--texto) 6%,transparent) 0 2px,transparent 2px 72px),repeating-linear-gradient(90deg,color-mix(in srgb,var(--texto) 6%,transparent) 0 2px,transparent 2px 72px)}
+.kick{position:absolute;left:90px;width:820px;height:52px;line-height:52px;font-family:var(--fb),sans-serif;font-weight:800;font-size:32px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.kick:before{content:'';display:inline-block;width:64px;height:6px;background:var(--destaque);margin-right:22px;vertical-align:middle}
+.nt{position:absolute;left:90px;width:800px;top:1418px;height:44px;font-size:30px;font-weight:700;white-space:nowrap}
+
+/* scene 0 */
+#k0{top:410px}
+#titulo{position:absolute;left:90px;width:830px;top:500px;height:460px;font-size:104px}
+#faixa{position:absolute;left:100px;width:780px;top:1010px;height:90px;font-size:80px;color:var(--destaque);white-space:nowrap;transform:rotate(-3deg)}
+#mini{position:absolute;left:100px;top:1140px;width:420px;height:200px;display:flex;align-items:flex-end;gap:14px}
+#mini i{flex:1;background:color-mix(in srgb,var(--texto) 18%,transparent);border:4px solid var(--texto);transform-origin:50% 100%}
+
+/* scene 1: the chart */
+#k1{top:400px}
+#var{position:absolute;left:90px;width:820px;top:470px;height:110px;line-height:110px;font-size:104px;white-space:nowrap}
+#varS{position:absolute;left:94px;width:820px;top:584px;height:46px;font-size:34px;font-weight:700;white-space:nowrap}
+#graf{position:absolute;left:100px;width:790px;top:640px;height:640px}
+#eixo{position:absolute;left:-10px;right:-10px;top:580px;height:8px;background:var(--texto)}
+.co{position:absolute;bottom:60px;border:5px solid var(--texto);background:color-mix(in srgb,var(--texto) 10%,var(--fundo));transform-origin:50% 100%}
+.co.h{background:var(--destaque)}
+.co:after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,color-mix(in srgb,var(--texto) 10%,transparent) 0 4px,transparent 4px 14px)}
+.co.h:after{display:none}
+.vl{position:absolute;height:44px;line-height:44px;text-align:center;font-size:34px;font-weight:900;white-space:nowrap}
+.vl.h{height:62px;line-height:62px;font-size:52px;color:var(--destaque)}
+.ms{position:absolute;top:596px;height:44px;line-height:44px;text-align:center;font-size:32px;font-weight:800;white-space:nowrap}
+.ms.h{color:var(--destaque)}
+#seta{position:absolute;left:0;top:0;width:790px;height:640px;overflow:visible;pointer-events:none}
+#seta path{fill:none;stroke:var(--texto);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14 12}
+#seta path.ponta{stroke-dasharray:none}
+
+/* scene 2: the reading, on an index card */
+#ficha3{position:absolute;left:90px;width:830px;top:480px;height:640px;
+  background-image:repeating-linear-gradient(0deg,transparent 0 88px,color-mix(in srgb,var(--texto) 12%,transparent) 88px 91px);background-position:0 40px}
+#ficha3 .mg{position:absolute;left:84px;top:0;bottom:0;width:5px;background:var(--destaque);opacity:.7}
+#tab3{position:absolute;left:70px;top:-58px;height:58px;line-height:58px;padding:0 28px;font-size:30px;font-weight:900;letter-spacing:.14em;background:var(--destaque);color:var(--sobre-destaque);white-space:nowrap}
+#leitura{position:absolute;left:130px;width:650px;top:90px;height:500px;font-size:70px}
+
+/* ad close */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:100px;width:880px;top:390px;height:620px;border:12px solid var(--c2);overflow:hidden;box-shadow:18px 20px 0 color-mix(in srgb,var(--texto) 16%,transparent)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fita{position:absolute;width:190px;height:52px;background:color-mix(in srgb,var(--c2) 75%,transparent);z-index:2}
+.pvp{position:absolute;left:120px;top:960px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg);z-index:3}
+.pvk{position:absolute;left:90px;width:790px;top:1060px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+</style></head><body><div id="palco">
+<div class="grade"></div>
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="kick t seg"></div>
+ <div id="titulo" class="tit t seg rv"></div>
+ <div id="faixa" class="mao t seg"></div>
+ <div id="mini"><i style="height:35%"></i><i style="height:55%"></i><i style="height:48%"></i><i style="height:80%"></i><i style="height:100%"></i></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="k1" class="kick t seg"></div>
+ <div id="var" class="tit dest t seg"></div>
+ <div id="varS" class="t t2 seg"></div>
+ <div id="graf"><div id="eixo"></div><svg id="seta" viewBox="0 0 790 640"><path id="sp" pathLength="1"/><path id="spp" class="ponta"/></svg></div>
+ <div id="nt1" class="nt t t2 seg"></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="ficha3" class="cartao"><div class="mg"></div><div id="tab3" class="t seg">O que isso mostra</div><div id="leitura" class="tit t seg rv"></div></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full" id="c3in"></div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Gráfico mês a mês": 3 to 6 months of a real number (orders, clients, sales). The code scales every column against
+// the biggest month, marks the last month, and works out the change from the first month to the last; nothing on
+// screen is typed by hand. Columns grow from the baseline in steps (stop-motion), one after the other, then a dashed
+// pen arrow goes from the first month to the last carrying the change.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const st = (x, n = 6) => x >= 1 ? 1 : Math.floor(x * n) / n;
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(w => /\w/.test(w)).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+const KICK = 'tem aqui pra você';
+function vitrine(F, $m, pai) {
+  const P = F.produto, v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  const f1 = mk('div', 'fita', null, v); Object.assign(f1.style, { left: '70px', top: '370px', transform: 'rotate(-14deg)' });
+  const f2 = mk('div', 'fita', null, v); Object.assign(f2.style, { left: '830px', top: '372px', transform: 'rotate(12deg)' });
+  mk('div', 'pvk mao t seg', P.convite || KICK, v);
+  mk('div', 'pvn tit t seg rv', P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  const linhas = P.nome.length > 19 ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  n.style.height = (linhas * 86) + 'px'; if (d) d.style.top = (1130 + linhas * 86 + 14) + 'px';
+  return v;
+}
+const vitrineLer = F => ler(F.produto.convite || KICK, F.produto.nome, F.produto.detalhe, F.produto.preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eb(p(t, a + 0.05, 0.55)); f.style.opacity = cl(q * 3); f.style.transform = `translateY(${(1 - q) * 140}px) rotate(${-1.5 + (1 - q) * 6}deg)`;
+  $m.filmagem(v.querySelector('.pvf img'), F.produto.foto, t);
+  v.querySelectorAll('.fita').forEach((x, j) => { x.style.opacity = st(p(t, a + 0.45 + j * 0.12, 0.25), 3); });
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
+
+let G = {}, C = [], PV = null;
+function contas(F, $m) {
+  for (const k of ['titulo', 'leitura']) if (/\d/.test(F[k])) $m.erro(`${k}: sem algarismos no texto; os números vão em meses`);
+  if (new Set(F.meses.map(m => m.mes.trim().toLowerCase())).size < F.meses.length) $m.erro('meses repetidos');
+  const vs = F.meses.map(m => m.valor), max = Math.max(...vs);
+  if (max <= 0) $m.erro('todos os meses estão em zero');
+  const din = F.tipo === 'dinheiro';
+  // short label for the column tops: 18.450 -> 18,5 mil (the full number of the last month goes in the headline)
+  // column tops carry no "R$" (the subtitle says the unit), so they fit six narrow columns
+  const curto = v => { const pre = ''; if (v >= 1e6) return pre + $m.num(v / 1e6, 1).replace(/,0$/, '') + ' mi'; if (v >= 1e4) return pre + $m.num(v / 1e3, 1).replace(/,0$/, '') + ' mil'; return $m.num(v, Number.isInteger(v) ? 0 : (din ? 2 : 1)); };
+  const a = vs[0], b = vs[vs.length - 1];
+  let vtxt, vsub;
+  const ms = F.meses;
+  if (a > 0) { const pc = Math.trunc((b - a) / a * 100); vtxt = (pc > 0 ? '+' : '') + $m.num(pc, 0) + '%'; }
+  else { vtxt = (b >= a ? '+' : '') + (din ? 'R$ ' : '') + curto(b - a); }
+  vsub = `de ${ms[0].mes} a ${ms[ms.length - 1].mes}, em ${F.unidade}`;
+  return { max, curto, vtxt, vsub, sobe: b >= a };
+}
+
+Motor.molde({
+  id: 'grafico-meses', formatos: ['reel'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    G = contas(F, $m); const rot = F.rotulo || 'Mês a mês', n = F.meses.length;
+    $('#k0').textContent = rot; $('#k1').textContent = rot;
+    $('#titulo').textContent = F.titulo;
+    $('#faixa').textContent = `de ${F.meses[0].mes} a ${F.meses[n - 1].mes}`;
+    $('#var').textContent = G.vtxt; $('#varS').textContent = G.vsub;
+    // columns scaled by the code against the biggest month; chart is 790 wide, baseline at y 580 of #graf
+    const W = 790, gap = n > 4 ? 22 : 40, w = (W - gap * (n - 1)) / n, Hmax = 360, g = $('#graf');
+    F.meses.forEach((m, k) => {
+      const h = Math.max(10, Hmax * m.valor / G.max), x = k * (w + gap), hero = k === n - 1;
+      const c = mk('div', 'co' + (hero ? ' h' : ''), null, g); Object.assign(c.style, { left: x + 'px', width: w + 'px', height: h + 'px' });
+      const lw = w + gap - 4;
+      const v = mk('div', 'vl t seg' + (hero ? ' h tit' : ''), G.curto(m.valor), g); Object.assign(v.style, { left: (x - (lw - w) / 2) + 'px', width: lw + 'px', top: (580 - h - (hero ? 72 : 54)) + 'px' });
+      const l = mk('div', 'ms t seg' + (hero ? ' h' : ''), m.mes, g); Object.assign(l.style, { left: (x - (lw - w) / 2) + 'px', width: lw + 'px' });
+      C.push({ c, v, l, h, x: x + w / 2, top: 580 - h - (hero ? 72 : 54), valor: m.valor });
+    });
+    // pen arrow from above the first column to above the last one
+    const A = C[0], B = C[n - 1], y0 = A.top - 30, y1 = B.top - 24, ym = Math.min(y0, y1) - 110;
+    const x0 = A.x, x1 = B.x - 6;
+    $('#sp').setAttribute('d', `M${x0} ${y0} C ${x0 + 40} ${ym}, ${x1 - 120} ${ym}, ${x1} ${y1}`);
+    const ang = Math.atan2(y1 - ym, x1 - (x1 - 120)), hx = (d, s) => (x1 - 38 * Math.cos(ang + s)).toFixed(1) + ' ' + (y1 - 38 * Math.sin(ang + s)).toFixed(1);
+    $('#spp').setAttribute('d', `M${hx(0, 0.5)} L ${x1} ${y1} L ${hx(0, -0.5)}`);
+    if (F.nota) $('#nt1').textContent = F.nota; else $('#nt1').remove();
+    $('#leitura').textContent = F.leitura;
+    $('#ficha3').style.height = Math.max(420, Math.ceil(F.leitura.length / 16) * 88 + 200) + 'px';
+    PV = vitrine(F, $m, $('#c3in'));
+    const dados = F.meses.map(m => m.mes + ' ' + G.curto(m.valor)).join(' ');
+    return { duracoes: [ler(rot, F.titulo, $('#faixa').textContent) + 0.3,
+      Math.max(0.5 + n * 0.28 + 2.6, ler(rot, G.vtxt, G.vsub, dados, F.nota) + 0.8), ler('O que isso mostra', F.leitura) + 0.3, vitrineLer(F)] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, cl, ini } = $m;
+    const kick = (sel, a) => { const q = st(p(t, a + 0.05, 0.3), 4); $(sel).style.opacity = q; $(sel).style.transform = `translateX(${(1 - q) * -40}px)`; };
+    // 0: title; the little chart sketch grows in steps
+    $m.cena('#c0', t, 0); kick('#k0', 0);
+    $m.revela('#titulo', t, 0.25, 0.06);
+    $m.entra('#faixa', t, 0.9, 0.4, 20);
+    $$('#mini i').forEach((x, j) => { x.style.transform = `scaleY(${st(p(t, 1.1 + j * 0.1, 0.35), 5)})`; });
+    // 1: the chart
+    const a = ini(1); $m.cena('#c1', t, 1); kick('#k1', a);
+    $('#eixo').style.transform = `scaleX(${st(p(t, a + 0.1, 0.3), 6)})`; $('#eixo').style.transformOrigin = '0 50%';
+    C.forEach((o, k) => {
+      const t0 = a + 0.35 + k * 0.28, q = st(p(t, t0, 0.5), 6);
+      o.c.style.transform = `scaleY(${q})`; o.c.style.opacity = q > 0 ? 1 : 0;
+      o.l.style.opacity = st(p(t, t0, 0.2), 3);
+      const vq = eb(p(t, t0 + 0.45, 0.35)); o.v.style.opacity = cl(vq * 3); o.v.style.transform = `translateY(${(1 - vq) * 24}px) scale(${0.6 + 0.4 * vq})`;
+    });
+    const fim = a + 0.35 + C.length * 0.28 + 0.4;
+    const sq = eio(p(t, fim, 0.7)); $('#sp').style.strokeDashoffset = 0; $('#sp').style.clipPath = 'none';
+    $('#seta').style.clipPath = `inset(-200px ${(1 - sq) * 100}% -200px -40px)`;
+    $('#spp').style.opacity = sq >= 1 ? 1 : 0;
+    { const q = eb(p(t, fim + 0.5, 0.45)); $('#var').style.opacity = cl(q * 3); $('#var').style.transform = `scale(${0.5 + 0.5 * q})`; $('#var').style.transformOrigin = '0 50%'; }
+    $m.entra('#varS', t, fim + 0.75, 0.4, 16);
+    if ($('#nt1')) $('#nt1').style.opacity = eo(p(t, a + 0.6, 0.4));
+    // 2: reading
+    $m.cena('#c2', t, 2);
+    const a3 = ini(2), q3 = eb(p(t, a3 + 0.05, 0.5));
+    $('#ficha3').style.opacity = cl(q3 * 3); $('#ficha3').style.transform = `translateY(${(1 - q3) * 120}px) rotate(${-1.2 + (1 - q3) * -4}deg)`;
+    { const q = st(p(t, a3 + 0.35, 0.3), 3); $('#tab3').style.transform = `translateY(${(1 - q) * 30}px)`; $('#tab3').style.opacity = q; }
+    $m.revela('#leitura', t, a3 + 0.5, 0.06);
+    // 3: product
+    $m.cena('#c3', t, 3); vitrineQuadro(PV, F, $m, t, ini(3));
+  },
+});
+</script></body></html>

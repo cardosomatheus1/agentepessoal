@@ -1,0 +1,19 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "gancho": "Seu carro pronto para a estrada",
+ "nome": "Revisão de viagem",
+ "linha": "Para quem vai pegar estrada nas férias",
+ "foto": "fotos/oficina_interior.jpg",
+ "recursos": [
+  {"titulo": "Freios e suspensão", "detalhe": "Conferidos no elevador"},
+  {"titulo": "Óleo e filtros", "detalhe": "Trocados se precisar"},
+  {"titulo": "Laudo no celular", "detalhe": "Com foto de cada item"}
+ ],
+ "preco": 189,
+ "preco_a_partir": true,
+ "onde": "Agende pelo WhatsApp",
+ "nota": "valores de exemplo",
+ "_origem": {"preco": "dono"}
+}

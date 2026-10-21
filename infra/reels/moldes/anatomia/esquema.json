@@ -1,0 +1,94 @@
+{
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "produto": {
+   "tipo": "texto",
+   "min": 3,
+   "max": 32,
+   "dica": "o produto da foto: Bolo de pote de chocolate"
+  },
+  "rotulo": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "etiqueta acima do nome; padrão: Anatomia"
+  },
+  "foto": {
+   "tipo": "foto",
+   "dica": "foto real do produto de lado, com as camadas ou partes visíveis de cima para baixo (fotos/x.jpg); as faixas são medidas nela"
+  },
+  "enquadre": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "dica": "janela da foto que aparece, em % da altura (de 0 no topo a 100 embaixo): tira mesa ou fundo vazio; as partes ficam dentro dela",
+   "campos": {
+    "de": {
+     "tipo": "numero",
+     "min": 0,
+     "max": 100
+    },
+    "ate": {
+     "tipo": "numero",
+     "min": 0,
+     "max": 100
+    }
+   }
+  },
+  "partes": {
+   "tipo": "lista",
+   "min": 2,
+   "max": 4,
+   "real": true,
+   "dica": "2 a 4 partes de cima para baixo, como são de verdade; cada uma com a faixa da foto onde aparece (de e ate, em % da altura da foto, de 0 no topo a 100 embaixo)",
+   "item": {
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 18,
+     "dica": "Cobertura, Recheio, Massa"
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 40,
+     "obrigatorio": false,
+     "dica": "do que é feita: brigadeiro de panela 50% cacau"
+    },
+    "de": {
+     "tipo": "numero",
+     "min": 0,
+     "max": 100,
+     "dica": "onde a parte começa, % da altura da foto"
+    },
+    "ate": {
+     "tipo": "numero",
+     "min": 0,
+     "max": 100,
+     "dica": "onde termina"
+    }
+   }
+  },
+  "preco": {
+   "tipo": "dinheiro",
+   "real": true,
+   "obrigatorio": false
+  },
+  "unidade": {
+   "tipo": "texto",
+   "max": 14,
+   "obrigatorio": false,
+   "dica": "o pote, a unidade, o serviço"
+  },
+  "fechamento": {
+   "tipo": "texto",
+   "max": 50,
+   "obrigatorio": false,
+   "dica": "sem preço: Encomende pelo link"
+  }
+ },
+ "publico": "cliente_final"
+}

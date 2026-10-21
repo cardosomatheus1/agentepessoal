@@ -1,0 +1,29 @@
+{
+ "_marca": "studio-bella",
+ "pergunta": "Por que o loiro fica amarelado com o tempo mesmo cuidando bem?",
+ "partes": [
+  {
+   "titulo": "O sol abre o fio",
+   "texto": "Sol forte, secador e chapinha quente abrem a camada de fora do fio, e o tom frio vai saindo aos pouc"
+  },
+  {
+   "titulo": "Cloro e água dura",
+   "texto": "Piscina com cloro e alguns tipos de água de torneira deixam resíduo no fio claro e puxam a cor ao am"
+  },
+  {
+   "titulo": "O fundo quente aparece",
+   "texto": "Todo loiro feito em salão tem um fundo amarelado por baixo. Sem cuidado em casa, é ele que aparece."
+  }
+ ],
+ "conclusao": "Loiro bonito é loiro bem cuidado depois do salão, com matização e proteção do so",
+ "fonte": "experiência do salão e orientação dos fabricantes de coloração profiss",
+ "produto": {
+  "foto": "fotos/salao_mechas.jpg",
+  "nome": "Matização com hidratação",
+  "detalhe": "Devolve o tom frio e o brilho",
+  "convite": "agende o seu horário"
+ },
+ "_origem": {
+  "fonte": "dono"
+ }
+}

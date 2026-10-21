@@ -1,0 +1,8 @@
+{"_marca": "studio-bella", "_formato": "reel", "_estilo": "noite",
+ "periodo": "da semana", "titulo": "Quase lá, e a sua cadeira ainda está esperando por você",
+ "meta": 1500, "atual": 1499, "unidade": "atendimentos de hidratação capilar", "unidade_um": "atendimento de hidratação capilar",
+ "motivo": "Batendo a meta, a gente sorteia um dia de cuidado completo entre as clientes.",
+ "pedido": "Agende o seu horário",
+ "exemplo": true,
+ "produto": {"foto": "fotos/salao_depois.jpg", "nome": "Hidratação profunda e escova", "detalhe": "Com avaliação do fio antes, sem custo"},
+ "_origem": {"meta": "dono", "atual": "dono", "motivo": "dono"}}

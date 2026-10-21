@@ -1,0 +1,11 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "story",
+ "titulo": "Cabelo bonito de verdade começa antes da escova",
+ "niveis": [
+  {"nome": "Diagnóstico do fio", "detalhe": "entender o que o seu cabelo pede"},
+  {"nome": "Tratamento contínuo", "detalhe": "hidratação e reconstrução no tempo"},
+  {"nome": "Brilho que dura dias"}
+ ],
+ "produto": {"foto": "fotos/salao_depois.jpg", "nome": "Cronograma capilar completo", "detalhe": "Avaliação do fio sem custo", "convite": "marque a sua avaliação"}
+}

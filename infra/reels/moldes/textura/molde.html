@@ -1,0 +1,166 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- estrutura e movimento adaptados de heygen-com/hyperframes-launches (Apache-2.0), composição texture-launch-video -->
+<style>
+/* the macro photo full bleed; text on it is white over a black gradient (the one allowed literal) */
+.macro{position:absolute;inset:-40px;overflow:hidden}
+.macro img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.esc{position:absolute;left:0;right:0;bottom:0;height:1100px;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.78) 70%)}
+.esc2{position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 42%,rgba(0,0,0,0) 40%,rgba(0,0,0,.55))}
+#gk{position:absolute;left:90px;width:810px;top:1080px;height:50px;font-size:32px;font-weight:800;letter-spacing:.22em;color:#fff;opacity:.85;white-space:nowrap}
+#gt{position:absolute;left:90px;width:810px;top:1140px;height:300px;font-size:92px;line-height:1.02;color:#fff}
+/* the sensory words: letters filled with the texture itself, on the brand ground */
+#pal{position:absolute;left:110px;width:860px;top:480px;height:400px;text-align:center;font-size:220px;line-height:400px;white-space:nowrap}
+#pal span{background-repeat:no-repeat;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:3px color-mix(in srgb,var(--texto) 75%,transparent);padding:0 .06em}
+#idx{position:absolute;left:90px;width:810px;top:950px;height:50px;font-size:32px;font-weight:800;letter-spacing:.22em;text-align:center;white-space:nowrap}
+#fio{position:absolute;left:390px;width:300px;top:1016px;height:6px;border-radius:3px;background:var(--borda);overflow:hidden}
+#fio b{position:absolute;inset:0;background:var(--destaque);transform-origin:0 50%}
+#janela{position:absolute;left:240px;top:1080px;width:600px;height:340px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+#janela img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* the reveal */
+#prod{position:absolute;overflow:hidden;box-shadow:var(--sombra)}
+#prod img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#prod img.tx{z-index:1}
+body.e-pop #prod{outline:6px solid var(--texto)}
+#nm{position:absolute;left:90px;width:810px;top:1130px;height:200px;font-size:96px;line-height:1.02;text-align:center}
+#li{position:absolute;left:90px;width:810px;top:1340px;height:110px;font-size:40px;font-weight:700;line-height:1.25;text-align:center}
+#pr{position:absolute;left:90px;width:810px;height:150px;font-size:130px;line-height:150px;text-align:center;white-space:nowrap}
+#qd{position:absolute;left:90px;width:810px;height:90px;text-align:center}
+#qd>span{display:inline-block;font-size:46px;padding:14px 36px;white-space:nowrap;max-width:810px}
+#on{position:absolute;left:90px;width:810px;height:60px;font-size:38px;font-weight:700;text-align:center;white-space:nowrap}
+body.f-story #gt,body.f-story #gk,body.f-story #nm,body.f-story #li,body.f-story #pr,body.f-story #qd,body.f-story #on{left:110px;width:860px}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="full" id="v0">
+ <div class="macro"><img id="m0" alt=""></div><div class="esc2"></div><div class="esc"></div>
+ <div id="gk" class="t seg"></div>
+ <div id="gt" class="tit t seg"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full" id="v1">
+ <div id="pal" class="tit t seg"><span id="palT"></span></div>
+ <div id="idx" class="t dest seg"></div>
+ <div id="fio"><b></b></div>
+ <div id="janela"><img id="mj" alt=""></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="full" id="v2">
+ <div id="prod"><img id="pf" alt=""><img class="tx" id="pt" alt=""></div>
+ <div id="nm" class="tit t seg"></div>
+ <div id="li" class="t t2 seg"></div>
+ <div id="pr" class="tit t seg"></div>
+ <div id="qd"><span class="chip t seg" id="qdT"></span></div>
+ <div id="on" class="t t2 seg"></div>
+</div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Textura": a sensory launch. The macro photo fills the screen and the camera pushes in slowly; then the words of
+// taste and touch cut in one by one, huge, with the texture itself inside the letters (cut-the-curve: the old word
+// leaves left and blurred, the new one arrives from the right already moving); then an inverse zoom-through pulls
+// back from the texture to the whole product, the name lands, and price and date follow.
+const EO = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+const EI = x => x <= 0 ? 0 : Math.pow(2, 10 * (x - 1));
+const p = (t, a, d) => Math.min(1, Math.max(0, (t - a) / d));
+const pal = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.6 + 0.25 * pal(...s);
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const dia = s => { if (!s) return null; const [a, m, d] = s.split('-').map(Number); return new Date(a, m - 1, d); };
+const ddmm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+// where the texture sits inside the letters for each word (a different patch of the macro each time)
+const PATCH = ['30% 40%', '70% 60%', '45% 75%', '60% 25%', '20% 65%'];
+let Q = {};
+
+Motor.molde({
+  id: 'textura', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    let qd = null;
+    if (F.quando) { const h = dia(F._hoje) || new Date(), h0 = new Date(h.getFullYear(), h.getMonth(), h.getDate()), d = dia(F.quando), n = Math.round((d - h0) / 864e5);
+      if (n < 0) $m.erro(`quando: a data ${ddmm(d)} já passou`); qd = n <= 0 ? 'Já disponível' : n === 1 ? 'Chega amanhã, ' + ddmm(d) : 'Chega ' + DIAS[d.getDay()] + ', ' + ddmm(d); }
+    if (F.preco != null && M._teste && !/exemplo/i.test(F.nota || '')) $m.erro('marca de teste: preço precisa de "nota": "valores de exemplo"');
+    if (new Set(F.palavras.map(w => w.trim().toLowerCase())).size < F.palavras.length) $m.erro('palavras repetidas');
+    $m.filmagem($('#m0'), F.textura, 0); $m.filmagem($('#mj'), F.textura, 0);
+    $m.filmagem($('#pf'), F.foto, 0); $m.filmagem($('#pt'), F.textura, 0);
+    $('#gk').textContent = (F.selo || 'Sinta').toUpperCase();
+    $('#gt').textContent = F.gancho;
+    // the longest word sets the size, so every word lands at the same scale
+    const maior = Math.max(...F.palavras.map(w => w.length));
+    Q.fs = Math.min(280, Math.floor(900 / (maior * 0.56)));
+    $('#pal').style.fontSize = Q.fs + 'px';
+    const src = $m.midia(F.textura);
+    $('#palT').style.backgroundImage = `linear-gradient(color-mix(in srgb,var(--texto) 34%,transparent),color-mix(in srgb,var(--texto) 34%,transparent)),url("${src}")`;
+    $('#palT').textContent = F.palavras.reduce((a, b) => (b.length > a.length ? b : a));
+    $('#idx').textContent = '01 / 05';
+    $('#nm').textContent = F.nome; if (F.nome.length > 16) { $('#nm').style.fontSize = F.nome.length > 28 ? '70px' : '80px'; }
+    const cpl = F.nome.length > 28 ? 30 : F.nome.length > 16 ? 25 : 17, lnm = Math.min(2, Math.ceil(F.nome.length / cpl));
+    if (F.linha) { $('#li').textContent = F.linha; $('#li').style.top = (1130 + lnm * 100 + 20) + 'px'; } else $('#li').remove();
+    const preco = F.preco != null ? (F.preco_a_partir ? 'a partir de ' : '') + $m.brl(F.preco, Number.isInteger(F.preco) ? 0 : 2) : null;
+    let y = 1100;
+    if (preco) { $('#pr').textContent = preco; if (F.preco_a_partir) $('#pr').style.fontSize = '96px'; $('#pr').style.top = y + 'px'; y += 170; } else $('#pr').remove();
+    if (qd) { $('#qdT').textContent = qd; $('#qd').style.top = y + 'px'; y += 106; } else $('#qd').remove();
+    Q.info = !!(preco || qd);
+    if (F.onde) { $('#on').textContent = F.onde; $('#on').style.top = (Q.info ? y : 1130 + lnm * 100 + (F.linha ? 140 : 20)) + 'px'; } else $('#on').remove();
+    $('#nota').textContent = F.nota || '';
+    const d = [Math.max(3.4, ler(F.selo || 'Sinta', F.gancho))];
+    F.palavras.forEach(w => d.push(1.4 + 0.25 * (pal(w) + 2)));
+    d.push(Math.max(3.2, ler(F.nome, F.linha, Q.info ? '' : F.onde)));
+    if (Q.info) d.push(Math.max(3.0, ler(preco, qd, F.onde, F.nota)));
+    const tot = d.reduce((a, b) => a + b, 0) + 3; if (tot < 20) d[0] += 20 - tot;
+    return { duracoes: d };
+  },
+  quadro(t, F, $m) {
+    const { $, ini, fim, cl, lerp, eio } = $m;
+    const nP = F.palavras.length, sR = 1 + nP, sI = sR + 1, ult = Q.info ? sI : sR;
+    // 0: slow push-in on the texture; the hook rises in
+    $m.cena('#c0', t, 0, 0, { trans: 'corte' });
+    const z0 = 1 + 0.22 * p(t, 0, fim(0)), m0 = $('#m0'); m0.style.transform = `scale(${z0})`; m0.style.transformOrigin = '50% 45%';
+    $('#m0').style.scale = ''; $('#m0').style.translate = '';
+    $m.entra('#gk', t, 0.5, 0.6, 20);
+    const gq = EO(p(t, 0.8, 0.8)); $('#gt').style.opacity = gq; $('#gt').style.transform = `translateY(${(1 - gq) * 60}px)`;
+    // leaving 0: zoom-through (grows and blurs into the first word)
+    const o0 = EI(p(t, fim(0) - 0.25, 0.25)); $('#v0').style.transform = `scale(${1 + 0.2 * o0})`; $('#v0').style.filter = o0 > 0 ? `blur(${20 * o0}px)` : 'none'; $('#v0').style.opacity = 1 - 0.85 * o0;
+    // 1..nP: one stage, the word swaps on each beat
+    $m.cena('#c1', t, 1, nP, { trans: 'corte' });
+    // first frame: grow the words until the longest fills the measure (the fit only shrinks)
+    if (!Q.medido) { const e = $('#pal'), sp = $('#palT'); sp.textContent = F.palavras.reduce((x, y) => (y.length > x.length ? y : x)); const fs = parseFloat(getComputedStyle(e).fontSize);
+      e.style.fontSize = Math.min(280, Math.floor(fs * (e.clientWidth - 50) / sp.offsetWidth)) + 'px'; Q.medido = true; }
+    let k = 0; for (let i = 0; i < nP; i++) if (t >= ini(1 + i)) k = i;
+    const a = ini(1 + k), b = fim(1 + k), w = $('#palT');
+    w.textContent = F.palavras[k];
+    $('#idx').textContent = String(k + 1).padStart(2, '0') + ' / ' + String(nP).padStart(2, '0');
+    const qi = EO(p(t, a, k === 0 ? 0.5 : 0.18)), qo = k === nP - 1 ? 0 : EI(p(t, b - 0.12, 0.12));
+    const pw = $('#pal');
+    if (k === 0) { pw.style.transform = `scale(${lerp(0.75, 1, qi)})`; pw.style.filter = qi < 1 ? `blur(${20 * (1 - qi)}px)` : 'none'; pw.style.opacity = lerp(0.15, 1, qi); }
+    else { pw.style.transform = `translateX(${(1 - qi) * 140 - 220 * qo}px)`; pw.style.filter = qi < 1 || qo > 0 ? `blur(${8 * (1 - qi) + 8 * qo}px)` : 'none'; pw.style.opacity = 1; }
+    // texture inside the letters keeps pushing in, on a new patch for each word
+    const bs = 260 + 60 * p(t, a, b - a + 0.3);
+    w.style.backgroundSize = `100% 100%,${bs}% auto`; w.style.backgroundPosition = `0 0,${PATCH[k % PATCH.length]}`;
+    $('#fio b').style.transform = `scaleX(${(k + p(t, a, b - a)) / nP})`;
+    $m.entra('#idx', t, ini(1) + 0.2, 0.4, 0);
+    const jq = EO(p(t, ini(1) + 0.3, 0.7)), jm = $('#mj'); $('#janela').style.opacity = jq; $('#janela').style.transform = `translateY(${(1 - jq) * 60}px)`;
+    jm.style.objectPosition = PATCH[k % PATCH.length]; jm.style.transform = `scale(${1.4 + 0.15 * p(t, a, b - a)})`; jm.style.scale = ''; jm.style.translate = '';
+    const lastOut = EI(p(t, fim(nP) - 0.3, 0.3)); $('#v1').style.filter = lastOut > 0 ? `blur(${16 * lastOut}px)` : ''; $('#v1').style.opacity = 1 - lastOut;
+    // reveal: the texture full screen pulls back into the product photo (inverse zoom-through), then the name
+    $m.cena('#c2', t, sR, ult, { trans: 'corte' });
+    const r0 = ini(sR), q = eio(p(t, r0, 1.3)), up = Q.info ? eio(p(t, ini(sI) - 0.2, 0.9)) : 0;
+    const full = [-40, -40, 1160, $m.H + 80], card = [140, 400, 800, 680], card2 = [240, 400, 600, 600];
+    let r = full.map((v, i) => lerp(v, card[i], q)); r = r.map((v, i) => lerp(v, card2[i], up));
+    const pr = $('#prod'); Object.assign(pr.style, { left: r[0] + 'px', top: r[1] + 'px', width: r[2] + 'px', height: r[3] + 'px', borderRadius: (q * 44) + 'px' });
+    $('#pt').style.opacity = 1 - EO(p(t, r0 + 0.25, 0.9)); $('#pt').style.transform = `scale(${lerp(1.5, 1, q)})`;
+    $m.filmagem($('#pf'), F.foto, t - r0);
+    $m.entra('#nm', t, r0 + 0.9, 0.6, 40); const nmo = EI(p(t, ini(sI) - 0.3, 0.3)) * (Q.info ? 1 : 0);
+    $('#nm').style.opacity *= 1 - nmo;
+    if ($('#li')) { $m.entra('#li', t, r0 + 1.2, 0.6, 20); $('#li').style.opacity *= 1 - nmo; }
+    if (Q.info) {
+      const s = ini(sI);
+      if ($('#pr')) $m.entra('#pr', t, s + 0.2, 0.6, 50);
+      if ($('#qd')) $m.entra('#qd', t, s + 0.5, 0.5, 20, 0.15);
+      if ($('#on')) $m.entra('#on', t, s + 0.7, 0.5, 20);
+      $('#nota').style.opacity = t >= s + 0.2 && t < fim(sI) ? 0.9 : 0;
+    } else { $('#nota').style.opacity = 0; if ($('#on')) $m.entra('#on', t, r0 + 1.4, 0.6, 20); }
+  },
+});
+</script></body></html>

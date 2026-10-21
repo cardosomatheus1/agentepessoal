@@ -1,0 +1,214 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- estrutura e movimento adaptados de heygen-com/hyperframes-launches (Apache-2.0), composição codex-five-hour-limit-replica -->
+<style>
+.blob{position:absolute;overflow:hidden;border-radius:58% 42% 52% 48% / 46% 56% 44% 54%;box-shadow:var(--sombra)}
+.blob img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+body.e-pop .blob{border:6px solid var(--texto)}
+body.e-noite .blob{box-shadow:0 0 0 3px var(--destaque),0 0 60px color-mix(in srgb,var(--destaque) 40%,transparent)}
+.pw{display:inline-block;white-space:nowrap}
+.gl{display:inline-block;transform-origin:50% 100%}
+/* 0: the offer */
+#b0{left:200px;top:400px;width:680px;height:640px}
+#of{position:absolute;left:90px;width:810px;top:1090px;height:250px;font-size:96px;line-height:1.04;text-align:center}
+#dt0{position:absolute;left:90px;width:810px;top:1350px;height:110px;font-size:40px;font-weight:700;line-height:1.25;text-align:center}
+/* 1: the board of slots and the split-flap counter */
+#cont{position:absolute;left:90px;width:810px;top:390px;height:300px;text-align:center;font-size:280px;line-height:300px;white-space:nowrap}
+.sl{position:relative;display:inline-block;vertical-align:top;width:.62em;height:300px}
+.sl b{position:absolute;left:0;right:0;top:0;text-align:center;font-weight:900}
+.sl b.v{transform-origin:50% 12%}.sl b.n{transform-origin:50% 88%}
+#rot{position:absolute;left:90px;width:810px;top:700px;height:60px;font-size:44px;font-weight:800;text-align:center;white-space:nowrap}
+#grade{position:absolute;left:90px;width:810px;top:800px;height:520px}
+.cel{position:absolute;border-radius:22%;border:5px solid var(--destaque);display:flex;align-items:center;justify-content:center;color:var(--texto2)}
+.cel i{position:absolute;inset:-5px;border-radius:22%;background:var(--texto2);opacity:0}
+.cel .ico{position:relative;font-size:.5em;opacity:0;color:var(--fundo)}
+body.e-vidro .cel,body.e-noite .cel{background:color-mix(in srgb,var(--destaque) 16%,transparent)}
+#ct{position:absolute;left:90px;width:810px;top:1340px;height:50px;font-size:32px;font-weight:600;text-align:center;white-space:nowrap}
+/* 2: the headline on an arc */
+#arco{position:absolute;left:60px;width:960px;top:540px;height:340px;padding:0 70px;font-size:150px;line-height:340px;text-align:center;white-space:nowrap}
+#ate{position:absolute;left:90px;width:810px;top:940px;height:90px;text-align:center}
+#ate>span{display:inline-block;font-size:48px;padding:14px 36px;white-space:nowrap;max-width:810px}
+#dt2{position:absolute;left:90px;width:810px;top:1060px;height:120px;font-size:42px;font-weight:700;line-height:1.3;text-align:center}
+/* 3: how to get one: a box where the request is typed, the send disc */
+#b3{left:340px;top:400px;width:400px;height:380px}
+#pr{position:absolute;left:90px;width:810px;top:820px;height:130px;font-size:110px;line-height:130px;text-align:center;white-space:nowrap}
+#pk{position:absolute;left:90px;width:810px;top:780px;height:44px;font-size:32px;font-weight:800;letter-spacing:.14em;text-align:center}
+#cx{position:absolute;left:90px;width:810px;top:1000px;height:170px;border-radius:85px;padding:0 160px 0 56px;display:flex;align-items:center}
+#cx .tx{width:100%;height:120px;font-size:46px;font-weight:700;line-height:1.2;display:flex;align-items:center}
+#cx .ph{position:absolute;left:56px;right:160px;top:0;height:170px;font-size:44px;font-weight:600;line-height:170px;white-space:nowrap;opacity:.6}
+#cx .car{display:inline-block;width:5px;height:1.05em;background:var(--destaque);vertical-align:-.15em;margin-left:4px}
+#cx .env{position:absolute;right:26px;top:27px;width:116px;height:116px;border-radius:50%;background:var(--texto);color:var(--fundo);display:flex;align-items:center;justify-content:center;font-size:54px}
+#cx .env .ico{transform:rotate(-90deg)}
+body.f-story #of,body.f-story #dt0,body.f-story #rot,body.f-story #ct,body.f-story #ate,body.f-story #dt2,body.f-story #pr,body.f-story #pk{left:110px;width:860px}
+body.f-story #cx{left:110px;width:860px}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full"><div class="voo full">
+ <div class="blob" id="b0"><img id="f0" alt=""></div>
+ <div id="of" class="tit t seg"></div>
+ <div id="dt0" class="t t2 seg"></div>
+</div></div></div>
+
+<div class="cena" id="c1"><div class="cam full"><div class="voo full" id="v1">
+ <div id="cont" class="tit dest t seg"></div>
+ <div id="rot" class="t seg"></div>
+ <div id="grade" data-leitura="nao"></div>
+ <div id="ct" class="t t2 seg"></div>
+</div></div></div>
+
+<div class="cena" id="c2"><div class="cam full"><div class="voo full">
+ <div id="arco" class="tit t seg"></div>
+ <div id="ate"><span class="chip t seg" id="ateT"></span></div>
+ <div id="dt2" class="t t2 seg"></div>
+</div></div></div>
+
+<div class="cena" id="c3"><div class="cam full"><div class="voo full">
+ <div class="blob" id="b3"><img id="f3" alt=""></div>
+ <div id="pk" class="t dest seg"></div>
+ <div id="pr" class="tit t seg"></div>
+ <div id="cx" class="cartao"><div class="ph t" id="phx"></div><div class="tx t seg" id="cxt"></div><div class="env" id="env"></div></div>
+</div></div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Vagas": urgency told with real numbers. The offer springs in on a soft blob; a board of slots fills one by
+// one while a split-flap counter flips down from the total to what is left (the code does total minus taken);
+// the camera dives into the number and the headline lands glyph by glyph on an arc; then the request is typed
+// into a box and sent. No slot left: the template refuses. The count has a date and is never restarted.
+const EO = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+const EI = x => x <= 0 ? 0 : Math.pow(2, 10 * (x - 1));
+const p = (t, a, d) => Math.min(1, Math.max(0, (t - a) / d));
+const pal = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.6 + 0.25 * pal(...s);
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const dia = s => { if (!s) return null; const [a, m, d] = s.split('-').map(Number); return new Date(a, m - 1, d); };
+const ddmm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+// spring that overshoots once (blob arrival: 0.72 -> 1.078 -> 1)
+const mola = x => x <= 0 ? 0 : 1 - Math.exp(-x / 0.12) * Math.cos(2 * Math.PI * x / 0.42);
+function voo(e, t, a, b, sai = 0.3) {
+  const qi = EO(p(t, a, 0.55)), qo = EI(p(t, b - sai, sai));
+  e.style.transform = `scale(${(1 + 0.12 * (1 - qi)) * (1 - 0.1 * qo)})`;
+  e.style.filter = qi < 1 || qo > 0 ? `blur(${10 * (1 - qi) + 12 * qo}px)` : 'none';
+  e.style.opacity = Math.min(1, qi * 3) * (1 - qo);
+}
+// split-flap / glyph-by-glyph text
+function glifos(e, txt) { e.textContent = ''; txt.split(/\s+/).forEach((w, i) => { if (i) e.append(' '); const ws = mk('span', 'pw', null, e); [...w].forEach(c => mk('span', 'gl', c, ws)); }); }
+let Q = {};
+
+Motor.molde({
+  id: 'vagas', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    const un = F.unidade || 'vagas', um = F.unidade_um || 'vaga';
+    const livres = F.total - F.ocupadas;
+    // the numbers are the code's; nothing left (or more taken than exist) refuses
+    if (F.ocupadas > F.total) $m.erro(`ocupadas (${F.ocupadas}) maior que o total (${F.total})`);
+    else if (livres <= 0) $m.erro(`esgotado: ${F.total} de ${F.total} ${un} ocupadas; sem ${um} livre o molde não gera`);
+    if (!Number.isInteger(F.total) || !Number.isInteger(F.ocupadas)) $m.erro('total e ocupadas são números inteiros');
+    const h = dia(F._hoje) || new Date(), h0 = new Date(h.getFullYear(), h.getMonth(), h.getDate());
+    const dc = dia(F.contagem), nc = Math.round((h0 - dc) / 864e5);
+    if (nc < 0) $m.erro('contagem: data no futuro');
+    if (nc > 3) $m.erro(`contagem de ${ddmm(dc)} tem ${nc} dias: atualize o número antes de postar`);
+    let ate = null;
+    if (F.prazo) { const d = dia(F.prazo), n = Math.round((d - h0) / 864e5); if (n < 0) $m.erro(`prazo: ${ddmm(d)} já passou`); ate = n === 0 ? 'Só até hoje' : n === 1 ? 'Até amanhã, ' + ddmm(d) : 'Até ' + DIAS[d.getDay()] + ', ' + ddmm(d); }
+    if (F.preco != null && M._teste && !/exemplo/i.test(F.nota || '')) $m.erro('marca de teste: preço precisa de "nota": "valores de exemplo"');
+    $m.filmagem($('#f0'), F.foto, 0); $m.filmagem($('#f3'), F.foto, 0);
+    glifos($('#of'), F.oferta); if (F.oferta.length > 20) $('#of').style.fontSize = '80px';
+    if (F.detalhe) { $('#dt0').textContent = F.detalhe; const l = F.oferta.length > 16 ? 2 : 1; $('#dt0').style.top = (1090 + l * (F.oferta.length > 20 ? 84 : 100) + 40) + 'px'; } else $('#dt0').remove();
+    // counter slots: as many as the total has digits
+    const dig = String(F.total).length;
+    for (let i = 0; i < dig; i++) { const s = mk('span', 'sl', null, $('#cont')); mk('b', 'v', null, s); mk('b', 'n', null, s); }
+    $('#cont').querySelectorAll('b').forEach(b => { b.textContent = '8'; });
+    $('#rot').textContent = `${un} livres de ${F.total}`;
+    // the board: rows and columns by the total
+    const T = F.total, cols = T <= 4 ? T : T <= 9 ? (T <= 6 ? 3 : 5) : T <= 16 ? 4 : T <= 30 ? 6 : T <= 42 ? 7 : 8, rows = Math.ceil(T / cols), gap = 18;
+    const sz = Math.min(170, (810 - gap * (cols - 1)) / cols, (500 - gap * (rows - 1)) / rows), w = cols * sz + gap * (cols - 1);
+    for (let i = 0; i < T; i++) { const c = mk('div', 'cel', null, $('#grade')); Object.assign(c.style, { width: sz + 'px', height: sz + 'px', left: ((810 - w) / 2 + (i % cols) * (sz + gap)) + 'px', top: (Math.floor(i / cols) * (sz + gap)) + 'px', fontSize: sz + 'px' }); mk('i', null, null, c); c.insertAdjacentHTML('beforeend', $m.icone('x')); }
+    $('#grade').style.height = (rows * (sz + gap)) + 'px'; $('#ct').style.top = (800 + rows * (sz + gap) + 16) + 'px';
+    $('#ct').textContent = 'Contagem de ' + ddmm(dc);
+    // headline: true words, from the code
+    const poucas = livres <= Math.max(2, Math.round(T * 0.3));
+    const head = livres === 1 ? `Só 1 ${um}` : poucas ? `Só ${livres} ${un}` : `${livres} ${un} livres`;
+    glifos($('#arco'), head); if (head.length > 11) $('#arco').style.fontSize = Math.max(84, Math.round(150 * 11 / head.length)) + 'px';
+    if (ate) $('#ateT').textContent = ate; else $('#ate').remove();
+    if (F.detalhe) $('#dt2').textContent = F.detalhe; else $('#dt2').remove();
+    
+    // reserve
+    const preco = F.preco != null ? $m.brl(F.preco, Number.isInteger(F.preco) ? 0 : 2) : null;
+    if (preco) { $('#pr').textContent = preco; if (F.preco_rotulo) $('#pk').textContent = F.preco_rotulo.toUpperCase(); else $('#pk').remove(); }
+    else { $('#pr').remove(); $('#pk').remove(); $('#cx').style.top = '880px'; $('#b3').style.height = '420px'; }
+    $('#phx').textContent = 'Como garantir a sua';
+    glifos(mk('div', null, null, $('#cxt')), F.como);
+    $('#env').innerHTML = $m.icone('seta');
+    $('#nota').textContent = F.nota || '';
+    Q = { livres, T, dig };
+    return { duracoes: [Math.max(2.8, ler(F.oferta, F.detalhe)), Math.max(4.4, 2.4 + ler(`${livres} ${un} livres de ${T}`, 'Contagem de 00/00')), Math.max(3.0, ler(head, ate, F.detalhe)),
+      Math.max(3.8, 0.6 + 0.045 * F.como.length + ler(F.preco_rotulo, preco, F.como, F.nota))] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, ini, fim, cl, lerp } = $m;
+    for (let i = 0; i < 4; i++) { $m.cena('#c' + i, t, i, i, { trans: 'corte' }); if (i !== 1) voo($('#c' + i + ' .voo'), t, ini(i), fim(i)); }
+    // 0: blob springs in and breathes; the name grows glyph by glyph from the baseline, accent then text color
+    const sp = mola(t - 0.1), b0 = $('#b0');
+    b0.style.transform = `scale(${0.72 + 0.28 * sp}) rotate(${Math.sin(t * 0.9) * 2}deg)`; b0.style.opacity = cl((t - 0.1) * 6);
+    b0.style.borderRadius = `${58 + 6 * Math.sin(t * 1.3)}% ${42 - 6 * Math.sin(t * 1.3)}% ${52 + 5 * Math.cos(t)}% ${48 - 5 * Math.cos(t)}% / 46% 56% 44% 54%`;
+    $m.filmagem($('#f0'), F.foto, t);
+    const glQ = (e, t0, passo, cor = true) => e.querySelectorAll('.gl').forEach((g, i) => { const q = p(t, t0 + i * passo, 0.37), s = EO(q); g.style.transform = `scaleY(${s})`; g.style.opacity = q > 0 ? 1 : 0; if (cor) g.style.color = q > 0 && t < t0 + i * passo + 0.5 ? 'var(--destaque)' : ''; });
+    glQ($('#of'), 0.45, 0.035);
+    if ($('#dt0')) $m.entra('#dt0', t, 1.1, 0.5, 20);
+    // 1: the board fills, the counter flips down; at the end the camera dives into the number
+    const a1 = ini(1), v1 = $('#v1'), qi = EO(p(t, a1, 0.5));
+    const occ = F.ocupadas, t0 = a1 + 0.7, dur = Math.min(2.2, 0.12 * occ + 0.6), passo = occ ? dur / occ : 0;
+    const ev = j => t0 + j * passo;   // time slot j gets taken
+    let k = 0; for (let j = 0; j < occ; j++) if (t >= ev(j)) k = j + 1;
+    const cur = Q.T - k, prev = k > 0 ? Q.T - k + 1 : Q.T, f = k > 0 ? p(t, ev(k - 1), 0.22) : 1;
+    const pad = v => String(v).padStart(Q.dig, ' ');
+    $$('#cont .sl').forEach((s, i) => {
+      const a = pad(prev)[i], b = pad(cur)[i], v = s.querySelector('.v'), n = s.querySelector('.n');
+      if (a === b || f >= 1) { v.textContent = b; v.style.transform = ''; n.textContent = ''; }
+      else { v.textContent = a; n.textContent = b; v.style.transform = `scaleY(${cl(1 - f * 2.2)})`; n.style.transform = `scaleY(${EO(cl((f - 0.3) / 0.7))})`; }
+    });
+    $$('#grade .cel').forEach((c, j) => {
+      const on = EO(p(t, a1 + 0.2 + j * 0.012, 0.4)), tk = j < occ ? p(t, ev(j), 0.25) : 0;
+      c.style.opacity = on; c.style.transform = `scale(${(0.6 + 0.4 * on) * (1 - 0.12 * Math.sin(Math.PI * tk))})`;
+      c.querySelector('i').style.opacity = tk; c.querySelector('.ico').style.opacity = tk;
+      // the free ones pulse once the count settles
+      if (j >= occ) { const pu = p(t, t0 + dur + 0.3, 0.6); c.style.transform = `scale(${1 + 0.08 * Math.sin(Math.PI * pu)})`; c.style.borderColor = pu > 0 ? 'var(--bom)' : ''; }
+    });
+    $m.entra('#rot', t, a1 + 0.4, 0.5, 20); $m.entra('#ct', t, a1 + 0.8, 0.5, 10);
+    const b1 = fim(1), dv = p(t, b1 - 0.55, 0.55), dz = EI(dv);
+    const cR = $('#cont').getBoundingClientRect();
+    v1.style.transformOrigin = '540px 540px';
+    v1.style.transform = `scale(${(1 + 0.12 * (1 - qi)) * (1 + 7 * dz)})`; v1.style.filter = qi < 1 ? `blur(${10 * (1 - qi)}px)` : 'none';
+    v1.style.opacity = Math.min(1, qi * 3) * (1 - dv * dv);
+    ['#grade', '#rot', '#ct'].forEach(s => { $(s).style.opacity = (+$(s).style.opacity || 1) * (1 - EO(p(t, b1 - 0.7, 0.25))); });
+    // 2: headline glyphs: a small ghost first, then up to 1.45x, lifted and leaning, settling on the arc
+    const a2 = ini(2), ar = $('#arco'), gs = [...ar.querySelectorAll('.gl')];
+    if (!Q.arco) { const r = ar.getBoundingClientRect(); Q.arco = gs.map(g => { const c = (g.offsetLeft + g.offsetWidth / 2) - r.width / 2; return c / (r.width / 2); }); }
+    gs.forEach((g, i) => {
+      const u = Q.arco[i] || 0, y = 46 * u * u - 20, rot = 16 * u * 0.9, q = p(t, a2 + 0.25 + i * 0.05, 0.45);
+      const s = q <= 0 ? 0 : q < 0.25 ? lerp(0.3, 1.45, q / 0.25) : lerp(1.45, 1, EO((q - 0.25) / 0.75));
+      g.style.opacity = q > 0 ? Math.min(1, 0.4 + q * 2) : 0; g.style.color = q > 0 && q < 0.25 ? 'var(--texto2)' : q < 1 ? 'var(--destaque)' : '';
+      g.style.transformOrigin = '50% 60%'; g.style.transform = `translateY(${y - 30 * (1 - EO(q))}px) rotate(${rot * (1 + 0.6 * (1 - EO(q)))}deg) scale(${s})`;
+    });
+    if ($('#ate')) $m.entra('#ate', t, a2 + 0.6 + gs.length * 0.05, 0.5, 20, 0.15);
+    if ($('#dt2')) $m.entra('#dt2', t, a2 + 0.8 + gs.length * 0.05, 0.5, 20);
+    // 3: the box lands from big, the request is typed glyph by glyph, the send disc pulses
+    const a3 = ini(3), b3 = $('#b3');
+    b3.style.transform = `scale(${0.72 + 0.28 * mola(t - a3 - 0.05)})`; b3.style.opacity = cl((t - a3) * 6); $m.filmagem($('#f3'), F.foto, t);
+    if ($('#pk')) $m.entra('#pk', t, a3 + 0.3, 0.5, 20);
+    if ($('#pr')) $m.entra('#pr', t, a3 + 0.35, 0.6, 40);
+    const cx = $('#cx'), qb = EO(p(t, a3 + 0.5, 0.6)); cx.style.opacity = cl(qb * 3); cx.style.transform = `scale(${lerp(1.6, 1, qb)})`;
+    const ty = a3 + 1.0, gx = [...$('#cxt').querySelectorAll('.gl')], vel = 0.045;
+    $('#phx').style.opacity = t < ty ? 0.6 * qb : 0;
+    gx.forEach((g, i) => { const q = p(t, ty + i * vel, 0.28); g.style.opacity = q > 0 ? 1 : 0; g.style.transform = `translateY(${(1 - EO(q)) * 18}px)`; g.style.color = q > 0 && q < 1 ? 'var(--destaque)' : ''; });
+    const fimTx = ty + gx.length * vel + 0.3, pu = p(t, fimTx, 0.35);
+    $('#env').style.transform = `scale(${1 + 0.08 * Math.sin(Math.PI * pu)})`;
+    $('#env').style.background = pu > 0 ? 'var(--destaque)' : ''; $('#env').style.color = pu > 0 ? 'var(--sobre-destaque)' : '';
+    $('#nota').style.opacity = t >= a3 + 0.4 && t < fim(3) ? 0.9 : 0;
+  },
+});
+</script></body></html>

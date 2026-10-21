@@ -1,0 +1,85 @@
+{
+ "publico": "dono_de_negocio",
+ "nota": "Para quem vende a outros negócios (sistema, contabilidade, agência, consultoria, fornecedor) mostrar onde a venda se perde: de quem viu até quem comprou, em 3 a 5 etapas. As larguras, a conversão de cada etapa, a taxa do começo ao fim e a etapa que mais perde são contas do código.",
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "tecnologica",
+ "campos": {
+  "titulo": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 60,
+   "dica": "pergunta sem algarismos: Onde os seus clientes estão se perdendo?"
+  },
+  "periodo": {
+   "tipo": "texto",
+   "min": 4,
+   "max": 24,
+   "dica": "em setembro, no último mês, em uma semana"
+  },
+  "etapas": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 5,
+   "item": {
+    "rotulo": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 24,
+     "dica": "Viram o post, Chamaram no direct, Pediram orçamento, Fecharam"
+    },
+    "valor": {
+     "tipo": "numero",
+     "min": 1,
+     "max": 9999999,
+     "real": true
+    }
+   },
+   "dica": "na ordem do caminho; cada etapa é parte da anterior (menor ou igual)"
+  },
+  "dica": {
+   "tipo": "texto",
+   "min": 20,
+   "max": 90,
+   "dica": "o que fazer na etapa que mais perde, sem algarismos"
+  },
+  "exemplo": {
+   "tipo": "booleano",
+   "obrigatorio": false,
+   "dica": "true quando os números são de exemplo: mostra 'valores de exemplo'"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false
+    }
+   },
+   "dica": "fecho de anúncio: o serviço que ajuda a fechar o vazamento, com foto real"
+  }
+ }
+}

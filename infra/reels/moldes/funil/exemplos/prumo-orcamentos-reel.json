@@ -1,0 +1,35 @@
+{
+ "_marca": "prumo-contabil",
+ "_formato": "reel",
+ "titulo": "Quantos pedidos de orçamento viram cliente?",
+ "periodo": "em setembro",
+ "etapas": [
+  {
+   "rotulo": "Visitaram o site",
+   "valor": 1840
+  },
+  {
+   "rotulo": "Pediram orçamento",
+   "valor": 96
+  },
+  {
+   "rotulo": "Receberam proposta",
+   "valor": 71
+  },
+  {
+   "rotulo": "Fecharam contrato",
+   "valor": 19
+  }
+ ],
+ "dica": "Quem pede orçamento já quer comprar. Proposta clara no mesmo dia segura mais gente.",
+ "exemplo": true,
+ "produto": {
+  "foto": "fotos/manifesto_escritorio_contabil.jpg",
+  "nome": "Contabilidade sem papelada",
+  "detalhe": "Abertura, impostos e folha num lugar só",
+  "convite": "fale com a gente"
+ },
+ "_origem": {
+  "etapas": "dono"
+ }
+}

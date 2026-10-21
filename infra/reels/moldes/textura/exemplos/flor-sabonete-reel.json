@@ -1,0 +1,17 @@
+{
+ "_marca": "flor-de-sal",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "selo": "Feche os olhos",
+ "gancho": "Argila, sal e calêndula na palma da mão",
+ "textura": "fotos/lanca-produto_fds_sabonete_textura.jpg",
+ "palavras": ["Macio", "Suave", "Natural", "Perfumado"],
+ "foto": "fotos/lanca-produto_fds_sabonete.jpg",
+ "nome": "Sabonete de argila rosa",
+ "linha": "Feito à mão, curado por quarenta dias",
+ "preco": 29.9,
+ "quando": "2026-10-28",
+ "onde": "Na loja e no site",
+ "nota": "valores de exemplo",
+ "_origem": {"preco": "dono"}
+}

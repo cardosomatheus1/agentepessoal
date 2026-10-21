@@ -1,0 +1,11 @@
+{"_marca": "oficina-do-ze", "_formato": "reel", "_estilo": "claro", "rotulo": "Rotina da oficina", "titulo": "Como funciona a semana da oficina inteira",
+ "dias": [
+  {"dia": "segunda", "o_que": "Orçamento e diagnóstico eletrônico", "hora": "08:00"},
+  {"dia": "terca", "o_que": "Troca de óleo sem agendamento"},
+  {"dia": "quarta", "o_que": "Alinhamento e balanceamento", "foto": "fotos/oficina_alinhamento.jpg"},
+  {"dia": "quinta", "o_que": "Revisão de freios", "foto": "fotos/oficina_freio.jpg"},
+  {"dia": "sexta", "o_que": "Ar-condicionado: limpeza e carga", "foto": "fotos/oficina_ar.jpg"},
+  {"dia": "sabado", "o_que": "Atendimento até meio-dia", "hora": "08:00"},
+  {"dia": "domingo", "o_que": "Fechado para descanso da equipe"}],
+ "foto": "fotos/oficina_fachada.jpg", "fechamento": "Escolha o melhor dia e agende pelo WhatsApp",
+ "_origem": {"dias": "dono"}}

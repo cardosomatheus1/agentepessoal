@@ -1,0 +1,16 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "story",
+ "_hoje": "2026-10-21",
+ "gancho": "A luz certa muda tudo",
+ "nome": "Mechas iluminadas",
+ "linha": "Coloração pensada para o tom da sua pele",
+ "foto": "fotos/salao_mechas.jpg",
+ "recursos": [
+  {"titulo": "Avaliação do fio", "detalhe": "Antes de começar, sem custo"},
+  {"titulo": "Tom sob medida", "detalhe": "Escolhido com você no espelho"},
+  {"titulo": "Hidratação inclusa", "detalhe": "Brilho que dura mais"}
+ ],
+ "disponivel": "2026-11-03",
+ "onde": "Com hora marcada no salão"
+}

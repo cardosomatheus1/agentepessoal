@@ -1,0 +1,16 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "story",
+ "titulo": "Sua festa inteira sai daqui",
+ "centro": "Doces da Lu",
+ "ramos": [
+  {"nome": "Bolos de festa", "icone": "bolo"},
+  {"nome": "Docinhos", "icone": "brilho"},
+  {"nome": "Bolo de pote", "icone": "xicara"},
+  {"nome": "Kit festa", "icone": "presente"},
+  {"nome": "Entrega no dia", "icone": "moto"}
+ ],
+ "onde": "pra sua festa",
+ "produto": {"foto": "fotos/doce_kit_festa.jpg", "nome": "Kit festa", "detalhe": "Bolo e docinhos com entrega no dia", "convite": "encomende o seu"},
+ "_origem": {"ramos": "dono"}
+}

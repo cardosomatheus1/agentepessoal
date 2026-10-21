@@ -1,0 +1,123 @@
+{
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "tecnologica",
+ "campos": {
+  "titulo": {
+   "tipo": "texto",
+   "min": 12,
+   "max": 50,
+   "dica": "Você sabia que a gente faz tudo isso?"
+  },
+  "centro": {
+   "tipo": "texto",
+   "min": 3,
+   "max": 26,
+   "dica": "o meio do mapa: o nome do negócio ou o que ele faz"
+  },
+  "ramos": {
+   "tipo": "lista",
+   "min": 4,
+   "max": 8,
+   "item": {
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 22
+    },
+    "icone": {
+     "tipo": "escolha",
+     "opcoes": [
+      "check",
+      "estrela",
+      "relogio",
+      "calendario",
+      "local",
+      "telefone",
+      "chat",
+      "carrinho",
+      "moto",
+      "cartao",
+      "dinheiro",
+      "presente",
+      "coracao",
+      "fogo",
+      "etiqueta",
+      "caixa",
+      "camera",
+      "tesoura",
+      "chave",
+      "bolo",
+      "xicara",
+      "pata",
+      "casa",
+      "pessoa",
+      "pessoas",
+      "megafone",
+      "brilho",
+      "folha",
+      "alerta",
+      "link",
+      "grafico",
+      "percentual",
+      "trofeu",
+      "balao",
+      "lupa",
+      "carro",
+      "haltere",
+      "dente",
+      "vestido",
+      "garfo"
+     ]
+    }
+   },
+   "real": true,
+   "dica": "produtos ou serviços que o negócio oferece de verdade (confirmado pelo dono); a contagem é do código"
+  },
+  "onde": {
+   "tipo": "texto",
+   "max": 24,
+   "obrigatorio": false,
+   "dica": "depois do número: num lugar só, pra sua festa (padrão: pra você)"
+  },
+  "fecho": {
+   "tipo": "texto",
+   "max": 70,
+   "obrigatorio": false
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"
+  }
+ },
+ "publico": "cliente_final"
+}

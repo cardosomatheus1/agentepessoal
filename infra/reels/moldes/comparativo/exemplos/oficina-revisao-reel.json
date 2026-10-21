@@ -1,0 +1,16 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "titulo": "Revisão aqui x revisão do jeito antigo",
+ "comum": "o jeito antigo",
+ "linhas": [
+  {"item": "Orçamento por foto antes", "nos": true, "comum": false},
+  {"item": "Peça velha devolvida na mão", "nos": true, "comum": false},
+  {"item": "Prazo de entrega combinado", "nos": true, "comum": true},
+  {"item": "Garantia escrita do serviço", "nos": true, "comum": false},
+  {"item": "Aviso pelo WhatsApp ao terminar", "nos": true, "comum": false}
+ ],
+ "fecho": "Você sabe o que foi feito e quanto custou.",
+ "produto": {"foto": "fotos/oficina_entrega_chave.jpg", "nome": "Revisão completa", "detalhe": "Deixe de manhã e busque no fim do dia", "preco": 290, "convite": "agende a sua"},
+ "_origem": {"linhas": "dono", "produto": "dono"}
+}

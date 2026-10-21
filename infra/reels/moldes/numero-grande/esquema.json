@@ -1,0 +1,107 @@
+{
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "leve",
+ "publico": "cliente_final",
+ "campos": {
+  "rotulo": {
+   "tipo": "texto",
+   "max": 28,
+   "obrigatorio": false,
+   "dica": "selo pequeno no topo; padrão: Um número"
+  },
+  "gancho": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 60,
+   "dica": "Só no mês passado, a gente atendeu (sem algarismos: o número vai em numero)"
+  },
+  "numero": {
+   "tipo": "numero",
+   "min": 0.01,
+   "max": 999999999,
+   "real": true,
+   "dica": "o número de verdade (do caixa, da agenda, do sistema)"
+  },
+  "tipo": {
+   "tipo": "escolha",
+   "opcoes": [
+    "quantidade",
+    "dinheiro",
+    "porcentagem"
+   ],
+   "obrigatorio": false,
+   "dica": "como mostrar o número; padrão quantidade"
+  },
+  "unidade": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "o que o número conta: clientes atendidos, pedidos entregues (obrigatória fora de dinheiro)"
+  },
+  "por": {
+   "tipo": "objeto",
+   "obrigatorio": false,
+   "campos": {
+    "quantidade": {
+     "tipo": "numero",
+     "min": 1,
+     "max": 100000,
+     "real": true
+    },
+    "unidade": {
+     "tipo": "texto",
+     "max": 24,
+     "dica": "dia de portas abertas, cliente, semana"
+    }
+   },
+   "dica": "divide o número para dar contexto (o código faz a conta): 26 dias de portas abertas"
+  },
+  "contexto": {
+   "tipo": "texto",
+   "min": 15,
+   "max": 90,
+   "dica": "o que esse número quer dizer, sem algarismos"
+  },
+  "licao": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 70,
+   "dica": "o recado para quem assiste, sem algarismos"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"
+  }
+ }
+}

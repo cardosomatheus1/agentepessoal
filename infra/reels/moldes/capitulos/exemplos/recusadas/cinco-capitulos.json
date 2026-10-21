@@ -1,0 +1,9 @@
+{"_marca": "oficina-do-ze", "_formato": "reel",
+ "assunto": "O que conferir no carro antes de viajar",
+ "capitulos": [
+  {"titulo": "Pneus", "detalhe": "Calibragem certa e o estepe."}, {"titulo": "Freios", "detalhe": "Os barulhos que avisam."},
+  {"titulo": "Óleo", "detalhe": "Como olhar o nível com o motor frio."}, {"titulo": "Luzes", "detalhe": "Faróis, setas e luz de freio."},
+  {"titulo": "Documentos", "detalhe": "O que levar no porta-luvas."}
+ ],
+ "fecho": "Salva para a próxima viagem",
+ "produto": {"foto": "fotos/oficina_freio.jpg", "nome": "Revisão de viagem"}}

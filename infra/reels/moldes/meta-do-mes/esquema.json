@@ -1,0 +1,27 @@
+{
+ "publico": "cliente_final",
+ "nota": "Qualquer negócio que conta o que faz (pedidos, atendimentos, revisões, peças, inscrições) mostra a meta do período e quanto falta. O preenchimento, a porcentagem (arredondada para baixo) e o que falta são contas do código; meta já batida vai para o molde Marco.",
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "animada",
+ "campos": {
+  "periodo": {"tipo": "texto", "min": 3, "max": 16, "dica": "como completa 'META ...': de outubro, do mês, da semana, de novembro"},
+  "titulo": {"tipo": "texto", "min": 8, "max": 56, "dica": "chamada sem algarismos: Bora bater essa juntos?"},
+  "meta": {"tipo": "numero", "min": 2, "max": 999999, "real": true, "dica": "quantidade inteira que o negócio quer chegar no período"},
+  "atual": {"tipo": "numero", "min": 0, "max": 999999, "real": true, "dica": "quantidade feita até hoje (do sistema ou do dono); menor que a meta"},
+  "unidade": {"tipo": "texto", "min": 3, "max": 34, "dica": "no plural, o que se conta: pedidos, revisões, atendimentos, cestas entregues"},
+  "unidade_um": {"tipo": "texto", "max": 34, "obrigatorio": false, "dica": "no singular, usado quando falta 1"},
+  "ate": {"tipo": "data", "real": true, "obrigatorio": false, "dica": "último dia da meta (AAAA-MM-DD); os dias que faltam são contados a partir de _hoje"},
+  "motivo": {"tipo": "texto", "min": 12, "max": 90, "real": true, "dica": "o que acontece quando bater, prometido pelo dono, sem algarismos"},
+  "pedido": {"tipo": "texto", "min": 4, "max": 30, "dica": "frase curta antes do produto: Garanta o seu, Agende a sua"},
+  "exemplo": {"tipo": "booleano", "obrigatorio": false, "dica": "true quando os números são de exemplo: mostra 'valores de exemplo'"},
+  "produto": {"tipo": "objeto", "campos": {
+    "foto": {"tipo": "foto", "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"},
+    "nome": {"tipo": "texto", "min": 3, "max": 30},
+    "detalhe": {"tipo": "texto", "max": 50, "obrigatorio": false},
+    "preco": {"tipo": "dinheiro", "real": true, "obrigatorio": false},
+    "convite": {"tipo": "texto", "max": 26, "obrigatorio": false, "dica": "frase curta antes do nome; sem ela entra o pedido"}
+   }, "dica": "fecho de anúncio: o que ajuda a bater a meta, com foto real"}
+ },
+ "especiais": {"_hoje": "data de publicação (AAAA-MM-DD); sem ela, hoje. Os dias até 'ate' contam a partir dela."}
+}

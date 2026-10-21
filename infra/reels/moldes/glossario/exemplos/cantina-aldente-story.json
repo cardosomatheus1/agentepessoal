@@ -1,0 +1,20 @@
+{
+ "_marca": "cantina-da-vo",
+ "_formato": "story",
+ "termo": "Al dente",
+ "silabas": "al den·te",
+ "classe": "jeito de cozinhar",
+ "definicao": "Massa cozida no ponto certo: macia por fora e ainda firme no meio, sem desmanchar no molho.",
+ "pratica": "A lasanha chega na sua casa com camadas inteiras, sem virar papa no caminho.",
+ "produto": {
+  "foto": "fotos/cantina_lasanha.jpg",
+  "nome": "Lasanha da vó",
+  "detalhe": "Massa caseira, molho de tomate e queijo",
+  "preco": 38,
+  "convite": "peça a sua"
+ },
+ "_origem": {
+  "produto": "dono"
+ },
+ "nota": "valores de exemplo"
+}

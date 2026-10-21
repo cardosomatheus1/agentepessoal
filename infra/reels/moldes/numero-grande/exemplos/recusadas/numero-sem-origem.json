@@ -1,0 +1,10 @@
+{
+ "_marca": "cantina-da-vo",
+ "_formato": "reel",
+ "gancho": "Só neste mês, saíram da nossa cozinha",
+ "numero": 1250,
+ "unidade": "marmitas",
+ "contexto": "Comida de casa para quem não tem tempo de cozinhar no meio da semana.",
+ "licao": "Almoço resolvido, sem fila.",
+ "produto": {"foto": "fotos/cantina_marmita.jpg", "nome": "Marmita da semana"}
+}

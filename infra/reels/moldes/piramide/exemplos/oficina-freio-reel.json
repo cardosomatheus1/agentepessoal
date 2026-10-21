@@ -1,0 +1,35 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "_estilo": "noite",
+ "titulo": "Prioridade na manutenção do carro",
+ "niveis": [
+  {
+   "nome": "Freio",
+   "detalhe": "pastilha e fluido em dia"
+  },
+  {
+   "nome": "Pneus e suspensão",
+   "detalhe": "o carro no chão"
+  },
+  {
+   "nome": "Óleo e filtros",
+   "detalhe": "motor sem desgaste"
+  },
+  {
+   "nome": "Conforto",
+   "detalhe": "ar e som funcionando"
+  }
+ ],
+ "fecho": "Primeiro o que segura o carro, depois o resto.",
+ "produto": {
+  "foto": "fotos/oficina_freio.jpg",
+  "nome": "Revisão de freio",
+  "detalhe": "Com orçamento por foto antes",
+  "preco": 180,
+  "convite": "agende a sua"
+ },
+ "_origem": {
+  "produto": "dono"
+ }
+}

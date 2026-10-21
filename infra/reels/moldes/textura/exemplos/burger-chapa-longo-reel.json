@@ -1,0 +1,14 @@
+{
+ "_marca": "burger-noite",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "selo": "Escuta a chapa",
+ "gancho": "Prensado na hora, até a borda ficar crocante",
+ "textura": "fotos/burger_chapa.jpg",
+ "palavras": ["Crocante", "Suculento", "Na brasa"],
+ "foto": "fotos/burger_smash.jpg",
+ "nome": "Smash duplo de borda crocante e cheddar",
+ "preco": 34.9,
+ "nota": "valores de exemplo",
+ "_origem": {"preco": "dono"}
+}

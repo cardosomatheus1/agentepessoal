@@ -1,0 +1,212 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo vox-explainer: papel com régua, número em foco
+     (rack focus), círculo de caneta do editor, entrada em degraus. Tudo portado para o motor (render(t) determinístico). -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* editorial layer shared by the Vox family: construction grid, kicker with rule, cut-out photo, note */
+.grade{position:absolute;inset:-6px;pointer-events:none;background-image:repeating-linear-gradient(0deg,color-mix(in srgb,var(--texto) 6%,transparent) 0 2px,transparent 2px 72px),repeating-linear-gradient(90deg,color-mix(in srgb,var(--texto) 6%,transparent) 0 2px,transparent 2px 72px)}
+.kick{position:absolute;left:90px;width:820px;height:52px;line-height:52px;font-family:var(--fb),sans-serif;font-weight:800;font-size:32px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.kick:before{content:'';display:inline-block;width:64px;height:6px;background:var(--destaque);margin-right:22px;vertical-align:middle}
+.nt{position:absolute;left:90px;width:800px;top:1418px;height:44px;font-size:30px;font-weight:700;white-space:nowrap}
+.mao{font-family:H,cursive}
+svg.traco{position:absolute;overflow:visible;pointer-events:none}
+svg.traco path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* scene 0: hook */
+#k0{top:410px}
+#gancho{position:absolute;left:90px;width:830px;top:540px;height:520px;font-size:110px}
+#olha{position:absolute;left:120px;width:600px;top:1170px;height:80px;font-size:64px;color:var(--destaque);white-space:nowrap;transform:rotate(-3deg)}
+#seta0{left:560px;top:1130px;width:260px;height:300px}
+
+/* scenes 1-2: the number in focus, then it climbs and the context comes in */
+#k1{top:410px}
+#grupo{position:absolute;inset:0;transform-origin:500px 780px}
+#luz{position:absolute;left:0;top:380px;width:1000px;height:800px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--destaque) 18%,transparent),transparent)}
+.num{position:absolute;left:90px;width:820px;top:560px;height:440px;line-height:440px;text-align:center;font-size:400px;letter-spacing:-.04em;white-space:nowrap;font-variant-numeric:tabular-nums}
+#fantasma{filter:blur(30px);opacity:.12;transform:scale(1.12)}
+#circ{left:-10px;top:550px;width:1020px;height:460px}
+#circ path{stroke:var(--destaque);stroke-width:16}
+#unid{position:absolute;left:90px;width:820px;top:1030px;height:110px;font-size:80px;text-align:center;white-space:nowrap}
+#contexto{position:absolute;left:90px;width:810px;top:750px;height:300px;font-size:56px;font-weight:700;line-height:1.18}
+#por{position:absolute;left:90px;width:810px;top:1080px;height:250px;padding:30px 40px}
+#por .r{height:44px;font-size:30px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;color:var(--texto2)}
+#por .v{height:110px;line-height:110px;font-size:96px;white-space:nowrap}
+#por .u{height:46px;font-size:36px;font-weight:700;white-space:nowrap}
+#por.curto{height:220px}
+
+/* scene 3: the takeaway on a ruled index card */
+#ficha3{position:absolute;left:90px;width:830px;top:470px;height:720px;
+  background-image:repeating-linear-gradient(0deg,transparent 0 88px,color-mix(in srgb,var(--texto) 12%,transparent) 88px 91px);background-position:0 40px}
+#ficha3 .mg{position:absolute;left:84px;top:0;bottom:0;width:5px;background:var(--destaque);opacity:.7}
+#tab3{position:absolute;left:70px;top:-58px;height:58px;line-height:58px;padding:0 28px;font-size:30px;font-weight:900;letter-spacing:.14em;background:var(--destaque);color:var(--sobre-destaque);white-space:nowrap}
+#licao{position:absolute;left:130px;width:650px;top:90px;height:560px;font-size:76px}
+
+/* ad close: the product with its real photo, pinned like a cut-out */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:100px;width:880px;top:390px;height:620px;border:12px solid var(--c2);overflow:hidden;box-shadow:18px 20px 0 color-mix(in srgb,var(--texto) 16%,transparent)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fita{position:absolute;width:190px;height:52px;background:color-mix(in srgb,var(--c2) 75%,transparent);z-index:2}
+.pvp{position:absolute;left:120px;top:960px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg);z-index:3}
+.pvk{position:absolute;left:90px;width:790px;top:1060px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+</style></head><body><div id="palco">
+<div class="grade"></div>
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="kick t seg"></div>
+ <div id="gancho" class="tit t seg rv"></div>
+ <div id="olha" class="mao t seg">olha esse número</div>
+ <svg class="traco" id="seta0" viewBox="0 0 260 300"><path pathLength="1" stroke="var(--texto)" stroke-width="7" d="M30 20 C 150 30, 220 110, 170 250 M170 250 L 125 215 M170 250 L 205 205"/></svg>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="k1" class="kick t seg"></div>
+ <div id="grupo">
+  <div id="luz"></div>
+  <div id="fantasma" class="num tit" aria-hidden="true"></div>
+  <div id="numero" class="num tit t seg"></div>
+  <svg class="traco" id="circ" viewBox="0 0 1020 460"><path pathLength="1" id="circp"/></svg>
+  <div id="unid" class="tit t seg"></div>
+ </div>
+ <div id="contexto" class="t seg rv"></div>
+ <div id="por" class="cartao"><div class="r t">Na conta</div><div class="v tit dest t seg" id="porv"></div><div class="u t seg" id="poru"></div></div>
+ <div id="nt1" class="nt t t2 seg"></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full">
+ <div id="ficha3" class="cartao"><div class="mg"></div><div id="tab3" class="t seg">O recado</div><div id="licao" class="tit t seg rv"></div></div>
+</div></div>
+
+<div class="cena" id="c4"><div class="cam full" id="c4in"></div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Número grande": one real number that tells a story. The hook, then the number comes into focus (rack focus) and
+// the editor circles it; it climbs and the context arrives with a figure the code works out (per day, per client);
+// the takeaway on an index card; the post closes on the product. Free texts carry no digits: every number shown
+// comes from a numeric field, so nothing on screen is made up.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const st = (x, n = 6) => x >= 1 ? 1 : Math.floor(x * n) / n;          // stepped progress: the stop-motion snap
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(w => /\w/.test(w)).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+// hand-drawn loop (a bit more than one turn, wobbly) around a box, deterministic
+function laco(cx, cy, rx, ry) {
+  let d = ''; const n = 96;
+  for (let i = 0; i <= n; i++) { const u = i / n, a = -2.3 + u * Math.PI * 2.16, w = 1 + 0.025 * Math.sin(3 * a + 1) + 0.07 * u;
+    d += (i ? ' L ' : 'M ') + (cx + Math.cos(a) * rx * w).toFixed(1) + ' ' + (cy + Math.sin(a) * ry * w).toFixed(1); }
+  return d;
+}
+// ad close (every post ends taking the viewer to the product, AR Board 13/10)
+const KICK = 'tem aqui pra você';
+function vitrine(F, $m, pai) {
+  const P = F.produto, v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  const f1 = mk('div', 'fita', null, v); Object.assign(f1.style, { left: '70px', top: '370px', transform: 'rotate(-14deg)' });
+  const f2 = mk('div', 'fita', null, v); Object.assign(f2.style, { left: '830px', top: '372px', transform: 'rotate(12deg)' });
+  mk('div', 'pvk mao t seg', P.convite || KICK, v);
+  mk('div', 'pvn tit t seg rv', P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  const linhas = P.nome.length > 19 ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  n.style.height = (linhas * 86) + 'px'; if (d) d.style.top = (1130 + linhas * 86 + 14) + 'px';
+  return v;
+}
+const vitrineLer = F => ler(F.produto.convite || KICK, F.produto.nome, F.produto.detalhe, F.produto.preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eb(p(t, a + 0.05, 0.55)); f.style.opacity = cl(q * 3); f.style.transform = `translateY(${(1 - q) * 140}px) rotate(${-1.5 + (1 - q) * 6}deg)`;
+  $m.filmagem(v.querySelector('.pvf img'), F.produto.foto, t);
+  v.querySelectorAll('.fita').forEach((x, j) => { const k = st(p(t, a + 0.45 + j * 0.12, 0.25), 3); x.style.opacity = k; });
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
+
+let N = {}, PV = null;
+function contas(F, $m) {
+  for (const k of ['gancho', 'contexto', 'licao']) if (/\d/.test(F[k])) $m.erro(`${k}: sem algarismos no texto; o número vai no campo numero (o código mostra e faz a conta)`);
+  const tipo = F.tipo || 'quantidade';
+  if (tipo !== 'dinheiro' && !F.unidade) $m.erro('unidade: diga o que o número conta (clientes atendidos, pedidos, carros)');
+  if (tipo === 'porcentagem' && F.numero > 100) $m.erro('porcentagem acima de 100');
+  if (tipo === 'porcentagem' && F.por) $m.erro('"por" não serve para porcentagem');
+  const casas = Number.isInteger(F.numero) ? 0 : (tipo === 'dinheiro' ? 2 : 1);
+  const fmt = v => tipo === 'dinheiro' ? $m.brl(v, casas) : tipo === 'porcentagem' ? $m.num(v, casas) + '%' : $m.num(v, casas);
+  let por = null;
+  if (F.por) {
+    if (F.por.quantidade > F.numero) $m.erro('por.quantidade maior que o número: a conta daria menos de um');
+    const v = F.numero / F.por.quantidade, exato = Math.abs(v - Math.round(v)) < 1e-9;
+    const c = exato ? 0 : (v < 10 || tipo === 'dinheiro' ? (tipo === 'dinheiro' ? 2 : 1) : 0);
+    por = { v, exato, txt: (exato ? '' : 'cerca de ') + (tipo === 'dinheiro' ? $m.brl(v, c) : $m.num(v, c)) };
+  }
+  return { tipo, fmt, por };
+}
+
+Motor.molde({
+  id: 'numero-grande', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    N = contas(F, $m);
+    $('#k0').textContent = F.rotulo || 'Um número'; $('#k1').textContent = F.rotulo || 'Um número';
+    $('#gancho').textContent = F.gancho;
+    const s = N.fmt(F.numero);
+    $('#numero').textContent = s; $('#fantasma').textContent = s;
+    const fs = Math.min(400, Math.floor(2000 / Math.max(3, s.length))); $('#numero').style.fontSize = fs + 'px'; $('#fantasma').style.fontSize = fs + 'px';
+    const w = Math.min(470, 0.3 * fs * s.length + 110);
+    $('#circp').setAttribute('d', laco(510, 230, w, 200));
+    $('#ficha3').style.height = Math.max(420, Math.ceil(F.licao.length / 15) * 90 + 220) + 'px';
+    if (F.unidade) $('#unid').textContent = F.unidade; else $('#unid').remove();
+    $('#contexto').textContent = F.contexto;
+    if (N.por) { $('#porv').textContent = N.por.txt; $('#poru').textContent = 'por ' + F.por.unidade;
+      $('#por').style.width = Math.min(810, Math.max(480, N.por.txt.length * 56 + 100, (F.por.unidade.length + 4) * 21 + 100)) + 'px'; }
+    else { $('#por').remove(); $('#contexto').style.height = '420px'; $('#contexto').style.fontSize = '62px'; }
+    if (F.nota) $('#nt1').textContent = F.nota; else $('#nt1').remove();
+    $('#licao').textContent = F.licao;
+    PV = vitrine(F, $m, $('#c4in'));
+    const d1 = Math.max(4.2, 1.9 + ler(F.rotulo || 'Um número', s, F.unidade));
+    return { duracoes: [ler(F.rotulo || 'Um número', F.gancho, 'olha esse número') + 0.3, d1,
+      0.6 + ler(F.contexto, N.por ? 'Na conta ' + N.por.txt + ' por ' + F.por.unidade : '', F.nota), ler('O recado', F.licao) + 0.3, vitrineLer(F)] };
+  },
+  quadro(t, F, $m) {
+    const { $, p, eo, eo5, eio, eb, cl, ini } = $m;
+    // 0: hook
+    $m.cena('#c0', t, 0);
+    { const q = st(p(t, 0.05, 0.3), 4); $('#k0').style.opacity = q; $('#k0').style.transform = `translateX(${(1 - q) * -40}px)`; }
+    $m.revela('#gancho', t, 0.25, 0.06);
+    const a0 = ini(1) - 1.5;
+    $m.entra('#olha', t, Math.max(0.9, a0), 0.35, 20);
+    $('#seta0 path').style.strokeDasharray = 1; $('#seta0 path').style.strokeDashoffset = 1 - eo(p(t, Math.max(1.0, a0 + 0.1), 0.5));
+    // 1-2: the number (one stage, so it stays put while the context comes in)
+    $m.cena('#c1', t, 1, 2);
+    const a = ini(1), b = ini(2);
+    { const q = st(p(t, a + 0.05, 0.3), 4); $('#k1').style.opacity = q * (1 - p(t, b, 0.25)); $('#k1').style.transform = `translateX(${(1 - q) * -40}px)`; }
+    const lz = eo(p(t, a + 0.1, 0.8)); $('#luz').style.opacity = lz; $('#luz').style.transform = `scale(${0.5 + 0.5 * lz})`;
+    // rack focus: blurred and a little small, then sharp while it counts up
+    const f = eo(p(t, a + 0.2, 0.9));
+    $('#numero').style.filter = `blur(${(1 - f) * 18}px)`; $('#numero').style.opacity = cl(f * 2.5); $('#numero').style.transform = `scale(${0.94 + 0.06 * f})`;
+    $m.conta('#numero', t, a + 0.2, 1.3, F.numero, N.fmt);
+    $('#fantasma').style.opacity = 0.22 * cl(f * 2);
+    $m.conta('#fantasma', t, a + 0.2, 1.3, F.numero, N.fmt);
+    // the editor's circle, drawn by hand
+    const c = eio(p(t, a + 1.45, 0.6)); $('#circp').style.strokeDasharray = 1; $('#circp').style.strokeDashoffset = 1 - c; $('#circ').style.opacity = c > 0 ? 1 : 0;
+    if ($('#unid')) { const u = eb(p(t, a + 1.2, 0.45)); $('#unid').style.opacity = cl(u * 3); $('#unid').style.transform = `translateY(${(1 - u) * 40}px)`; }
+    // 2: climbs (stepped) and the context arrives
+    const sobe = eio(p(t, b - 0.05, 0.55));
+    $('#grupo').style.transform = `translateY(${-250 * sobe}px) scale(${1 - 0.5 * sobe})`;
+    $('#luz').style.opacity = lz * (1 - 0.6 * sobe);
+    $m.revela('#contexto', t, b + 0.35, 0.05);
+    $('#contexto').style.opacity = t >= b ? 1 : 0;
+    if ($('#por')) { const q = eb(p(t, b + 0.9, 0.5)); $('#por').style.opacity = cl(q * 3); $('#por').style.transform = `translateY(${(1 - q) * 80}px) rotate(${(1 - q) * -3}deg)`; }
+    if ($('#nt1')) $('#nt1').style.opacity = eo(p(t, b + 1.2, 0.4));
+    // 3: takeaway card
+    $m.cena('#c3', t, 3);
+    const a3 = ini(3), q3 = eb(p(t, a3 + 0.05, 0.5));
+    $('#ficha3').style.opacity = cl(q3 * 3); $('#ficha3').style.transform = `translateY(${(1 - q3) * 120}px) rotate(${-1.2 + (1 - q3) * -4}deg)`;
+    { const q = st(p(t, a3 + 0.35, 0.3), 3); $('#tab3').style.transform = `translateY(${(1 - q) * 30}px)`; $('#tab3').style.opacity = q; }
+    $m.revela('#licao', t, a3 + 0.5, 0.06);
+    // 4: product
+    $m.cena('#c4', t, 4); vitrineQuadro(PV, F, $m, t, ini(4));
+  },
+});
+</script></body></html>

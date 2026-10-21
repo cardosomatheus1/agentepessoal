@@ -1,0 +1,268 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo kallaway -->
+<style>
+/* Kallaway layer (dark, lit instruments): aurora bloom from below, dot grid, glowing kicker and numbers */
+.aur{position:absolute;left:-25%;right:-25%;bottom:-28%;height:80%;z-index:1;pointer-events:none;transform-origin:50% 100%;
+  background:radial-gradient(50% 55% at 50% 100%,color-mix(in srgb,var(--destaque) 50%,transparent) 0%,color-mix(in srgb,var(--destaque) 16%,transparent) 45%,transparent 75%)}
+.pts{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.55;background-image:radial-gradient(color-mix(in srgb,var(--texto) 22%,transparent) 2px,transparent 2.6px);background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(90% 70% at 50% 55%,#000 30%,transparent 80%);mask-image:radial-gradient(90% 70% at 50% 55%,#000 30%,transparent 80%)}
+body.e-claro .aur,body.e-papel .aur{opacity:.55}body.e-pop .aur{opacity:.35}
+.cena{z-index:2}
+.kick{font-family:var(--fb),sans-serif;font-weight:800;font-size:34px;letter-spacing:.18em;text-transform:uppercase;color:var(--destaque);white-space:nowrap;height:46px;line-height:46px}
+.luz{text-shadow:0 0 26px color-mix(in srgb,var(--destaque) 60%,transparent),0 0 80px color-mix(in srgb,var(--destaque) 30%,transparent)}
+body.e-claro .luz,body.e-papel .luz,body.e-pop .luz{text-shadow:none}
+.num{font-family:var(--ft),sans-serif;font-weight:900;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.03em;white-space:nowrap}
+.gnum{background-image:linear-gradient(170deg,var(--texto) 20%,var(--destaque) 85%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.08em}
+body.e-pop .gnum{background-image:none;color:var(--texto)}
+
+/* scene 0: the goal */
+#k0{position:absolute;left:90px;top:400px;width:820px}
+#tit0{position:absolute;left:90px;top:470px;width:820px;height:300px;font-size:92px}
+#alvo{position:absolute;left:84px;top:820px;width:830px;height:300px;font-size:280px}
+#uni0{position:absolute;left:90px;top:1130px;width:820px;height:140px;font-size:62px;line-height:1.1}
+#ate0{position:absolute;left:90px;top:1300px;height:72px;line-height:72px;font-size:38px;padding:0 30px;white-space:nowrap}
+
+/* scene 1: the dial */
+#k1{position:absolute;left:90px;top:400px;width:820px}
+#dial{position:absolute;left:70px;top:560px;width:840px;height:560px}
+#dial svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#halo{position:absolute;left:110px;top:220px;width:620px;height:620px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--destaque) 30%,transparent) 0%,transparent 65%)}
+#pct{position:absolute;left:170px;top:280px;width:500px;height:190px;text-align:center;font-size:180px}
+.tk{position:absolute;top:500px;width:120px;height:40px;font-size:30px;font-weight:800;text-align:center;white-space:nowrap}
+#tk0{left:-20px}#tk1{left:740px}
+#lin1{position:absolute;left:90px;top:1150px;width:820px;height:130px;display:flex;align-items:baseline;gap:22px}
+#at1{flex:none;height:130px;font-size:130px}
+#de1{flex:1;min-width:0;height:64px;font-size:52px;font-weight:800;white-space:nowrap}
+#uni1{position:absolute;left:90px;top:1290px;width:820px;height:70px;font-size:48px;font-weight:700;white-space:nowrap}
+
+/* scene 2: what is left */
+#k2{position:absolute;left:90px;top:400px;width:820px}
+#falta{position:absolute;left:84px;top:470px;width:830px;height:360px;font-size:340px}
+#uni2{position:absolute;left:90px;top:840px;width:820px;height:150px;font-size:66px;line-height:1.1}
+#barra{position:absolute;left:90px;top:1060px;width:820px;height:64px;border-radius:999px;background:color-mix(in srgb,var(--texto) 12%,transparent);overflow:visible}
+#bfeito{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:color-mix(in srgb,var(--texto) 55%,transparent)}
+#bfalta{position:absolute;top:-6px;bottom:-6px;right:0;border-radius:999px;border:5px solid var(--destaque);box-shadow:0 0 30px color-mix(in srgb,var(--destaque) 60%,transparent)}
+#bl{position:absolute;left:90px;top:1150px;width:780px;height:50px;display:flex;justify-content:space-between;font-size:34px;font-weight:800}
+#bl div{height:48px;white-space:nowrap}
+#dias2{position:absolute;left:90px;top:1250px;width:820px;height:80px;font-size:52px;white-space:nowrap}
+
+/* scene 3: why it matters */
+#k3{position:absolute;left:90px;top:400px;width:820px}
+#card3{position:absolute;left:90px;top:480px;width:820px;height:640px;padding:60px 60px}
+#card3 .ic{width:120px;height:120px;border-radius:34px;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:70px;box-shadow:0 0 50px color-mix(in srgb,var(--destaque) 55%,transparent)}
+#mot{margin-top:40px;height:380px;font-size:66px;line-height:1.14}
+#mini{position:absolute;left:90px;top:1180px;width:820px;height:36px;border-radius:999px;background:color-mix(in srgb,var(--texto) 12%,transparent)}
+#mini i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--destaque);box-shadow:0 0 24px color-mix(in srgb,var(--destaque) 60%,transparent)}
+#minit{position:absolute;left:90px;top:1232px;width:820px;height:48px;font-size:34px;font-weight:800;white-space:nowrap}
+
+/* ad close: the product with its real photo */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:0 0 0 3px color-mix(in srgb,var(--destaque) 70%,transparent),0 0 60px color-mix(in srgb,var(--destaque) 40%,transparent)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1062px;height:50px;line-height:50px}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+</style></head><body><div id="palco">
+<div class="aur" id="aur"></div><div class="pts"></div>
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="kick t seg"></div>
+ <div id="tit0" class="tit t seg rv"></div>
+ <div id="alvo" class="num gnum luz t seg"></div>
+ <div id="uni0" class="tit t seg"></div>
+ <div id="ate0" class="chip t seg"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="k1" class="kick t seg">ATÉ AGORA</div>
+ <div id="dial">
+  <div id="halo"></div>
+  <svg viewBox="0 0 840 560">
+   <path id="trilho" d="M 50 470 A 370 370 0 0 1 790 470" fill="none" style="stroke:color-mix(in srgb,var(--texto) 14%,transparent)" stroke-width="54" stroke-linecap="round"/>
+   <g id="marcas"></g>
+   <path id="arco" d="M 50 470 A 370 370 0 0 1 790 470" fill="none" stroke="var(--destaque)" stroke-width="54" stroke-linecap="round" style="filter:drop-shadow(0 0 16px var(--destaque))"/>
+   <g id="agulha"><circle cx="420" cy="100" r="40" fill="var(--destaque)" style="filter:drop-shadow(0 0 22px var(--destaque))"/><circle cx="420" cy="100" r="20" fill="var(--sobre-destaque)"/></g>
+  </svg>
+  <div id="pct" class="num luz t seg"></div>
+  <div id="tk0" class="tk t t2">0</div><div id="tk1" class="tk t t2">100%</div>
+ </div>
+ <div id="lin1"><div id="at1" class="num gnum t seg"></div><div id="de1" class="t t2 seg"></div></div>
+ <div id="uni1" class="t seg"></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="k2" class="kick t seg"></div>
+ <div id="falta" class="num gnum luz t seg"></div>
+ <div id="uni2" class="tit t seg"></div>
+ <div id="barra"><div id="bfeito"></div><div id="bfalta"></div></div>
+ <div id="bl"><div id="bl0" class="t t2 seg"></div><div id="bl1" class="t dest seg"></div></div>
+ <div id="dias2" class="tit dest t seg"></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full">
+ <div id="k3" class="kick t seg">SE A GENTE BATER</div>
+ <div id="card3" class="cartao"><div class="ic" id="ic3"></div><div><div id="mot" class="tit t seg rv"></div></div></div>
+ <div id="mini"><i id="minii"></i></div>
+ <div id="minit" class="t t2 seg"></div>
+</div></div>
+
+<div class="cena" id="c4"><div class="cam full" id="c4in"></div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Meta do mês": a goal the business set and how far it got. The code works out the fill (atual / meta), the
+// percentage (rounded down, never up) and what is left; the needle of the dial sweeps to it, then the remainder
+// counts down from the goal. A deadline is optional and real; the days left are counted from _hoje.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+// reading time: the check asks 0.8 s + 0.25 s per new word; a little margin on top
+const ler = (...s) => 1.0 + 0.25 * palavras(...s);
+// focus pull (Kallaway entrance): fades up while the blur resolves to sharp
+function foco(e, t, t0, d = 0.7, dy = 40, bl = 16) {
+  if (typeof e === 'string') e = Motor.$(e); if (!e) return 0;
+  const q = Motor.eo5(Motor.p(t, t0, d)); e.style.opacity = q; e.style.transform = `translateY(${(1 - q) * dy}px)`; e.style.filter = q < 1 ? `blur(${((1 - q) * bl).toFixed(1)}px)` : 'none'; return q;
+}
+function quando(s, hora) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/.exec(s || ''); if (!m) return null;
+  const [h, mi] = hora ? hora.split(':').map(Number) : [m[4] ? +m[4] : 0, m[5] ? +m[5] : 0];
+  return new Date(+m[1], +m[2] - 1, +m[3], h, mi);
+}
+const ddmm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+// ad close
+function vitrine(F, $m, pai) {
+  const P = F.produto, v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk kick t seg', P.convite || F.pedido, v);
+  mk('div', 'pvn tit t seg rv', P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  const linhas = P.nome.length > 20 ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  n.style.height = (linhas * 86) + 'px'; if (d) d.style.top = (1130 + linhas * 86 + 14) + 'px';
+  return v;
+}
+const vitrineLer = F => ler(F.produto.convite || F.pedido, F.produto.nome, F.produto.detalhe, F.produto.preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.8)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`; f.style.filter = q < 1 ? `blur(${(1 - q) * 18}px)` : 'none';
+  $m.filmagem(v.querySelector('.pvf img'), F.produto.foto, t);
+  foco(v.querySelector('.pvk'), t, a + 0.35, 0.6, 20, 10);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) foco(pd, t, a + 1.0, 0.6, 20, 8);
+}
+
+let D = {}, PV = null;
+const ARC = Math.PI * 370;
+function checar(F, $m) {
+  if (!Number.isInteger(F.meta) || !Number.isInteger(F.atual)) $m.erro('meta e atual: números inteiros (quantidade)');
+  if (F.atual >= F.meta) $m.erro('a meta já foi batida: use o molde Marco para comemorar');
+  if (/\d/.test(F.titulo + ' ' + F.motivo)) $m.erro('titulo e motivo sem algarismos: os números saem de meta e atual, pelo código');
+  const falta = F.meta - F.atual;
+  if (falta === 1 && !F.unidade_um) $m.erro('falta 1: preencha unidade_um (singular)');
+  const pct = Math.floor(F.atual / F.meta * 100);
+  let dias = null, fim = null;
+  if (F.ate) {
+    const hoje = F._hoje ? quando(F._hoje) : new Date(); fim = quando(F.ate, '23:59');
+    if (!hoje || !fim) $m.erro('ate e _hoje: data no formato AAAA-MM-DD');
+    else if (fim <= hoje) $m.erro('o prazo da meta já passou: o post não pode sair depois dele');
+    else dias = Math.round((new Date(fim.getFullYear(), fim.getMonth(), fim.getDate()) - new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())) / 864e5);
+  }
+  return { falta, pct, frac: F.atual / F.meta, dias, fim };
+}
+
+Motor.molde({
+  id: 'meta-do-mes', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $, num } = $m;
+    D = checar(F, $m);
+    const uFalta = D.falta === 1 ? F.unidade_um : F.unidade;
+    $('#k0').textContent = 'META ' + F.periodo;
+    $('#tit0').textContent = F.titulo;
+    $('#alvo').textContent = num(F.meta);
+    $('#uni0').textContent = F.unidade;
+    if (D.fim) $('#ate0').textContent = 'até ' + ddmm(D.fim); else $('#ate0').remove();
+    // dial ticks every 10%
+    let g = '';
+    for (let i = 0; i <= 10; i++) { const a = Math.PI * (1 - i / 10), r0 = i % 5 ? 318 : 300, r1 = 340;
+      g += `<line x1="${(420 + r0 * Math.cos(a)).toFixed(1)}" y1="${(470 - r0 * Math.sin(a)).toFixed(1)}" x2="${(420 + r1 * Math.cos(a)).toFixed(1)}" y2="${(470 - r1 * Math.sin(a)).toFixed(1)}" stroke="var(--texto2)" stroke-width="${i % 5 ? 4 : 7}" stroke-linecap="round"/>`; }
+    $('#marcas').innerHTML = g;
+    $('#arco').setAttribute('stroke-dasharray', ARC.toFixed(1));
+    $('#pct').textContent = D.pct + '%';
+    $('#at1').textContent = num(F.atual);
+    $('#de1').textContent = 'de ' + num(F.meta);
+    $('#uni1').textContent = F.unidade;
+    $('#k2').textContent = D.falta === 1 ? 'FALTA' : 'FALTAM';
+    $('#falta').textContent = num(D.falta);
+    $('#uni2').textContent = uFalta;
+    $('#bl0').textContent = num(F.atual) + ' até agora';
+    $('#bl1').textContent = 'meta ' + num(F.meta);
+    if (D.dias != null) $('#dias2').textContent = D.dias === 0 ? 'e o prazo é hoje' : D.dias === 1 ? 'e o prazo é amanhã' : `e ${D.dias} dias pela frente`;
+    else $('#dias2').remove();
+    $('#ic3').innerHTML = $m.icone('trofeu');
+    $('#mot').textContent = F.motivo;
+    $('#minit').textContent = `${D.pct}% da meta ${F.periodo}`;
+    PV = vitrine(F, $m, $('#c4in'));
+    const nt = F.nota || (F.exemplo ? 'valores de exemplo' : ''); $('#nota').textContent = nt;
+    return { duracoes: [
+      Math.max(3.4, ler('META', F.periodo, F.titulo, 'X', F.unidade, D.fim ? 'até X' : '')),
+      Math.max(5.0, 1.2 + ler('ATÉ AGORA X% 0 100% X de X', F.unidade)),
+      Math.max(4.0, 0.5 + ler('FALTAM X', uFalta, 'X até agora meta X', D.dias != null ? 'e X dias pela frente' : '')),
+      Math.max(3.6, ler('SE A GENTE BATER', F.motivo, 'X% da meta', F.periodo)),
+      Math.max(3.4, vitrineLer(F)) ] };
+  },
+  quadro(t, F, $m) {
+    const { $, p, eo, eo5, eio, eb, cl, lerp, ini, num } = $m;
+    // aurora breathes under everything (finite sine, deterministic)
+    $('#aur').style.transform = `scale(${1 + 0.05 * Math.sin(t * 0.9)})`;
+    $('#aur').style.opacity = '';
+    // 0: the goal
+    let a = ini(0); $m.cena('#c0', t, 0);
+    foco('#k0', t, a + 0.1, 0.6, 20, 8);
+    $m.revela('#tit0', t, a + 0.3, 0.06);
+    const al = foco('#alvo', t, a + 0.8, 0.9, 80, 24); $m.conta('#alvo', t, a + 0.8, 1.2, F.meta, v => num(Math.round(v)));
+    $('#alvo').style.transform += ` scale(${0.85 + 0.15 * al})`;
+    foco('#uni0', t, a + 1.2, 0.6, 30, 10);
+    if ($('#ate0')) { const s = eb(p(t, a + 1.6, 0.5)); $('#ate0').style.opacity = cl(s * 2); $('#ate0').style.transform = `scale(${s})`; }
+    // 1: the dial (the moment of the video): needle and arc sweep together to the fill, the % counts with them
+    a = ini(1); $m.cena('#c1', t, 1);
+    foco('#k1', t, a + 0.1, 0.6, 20, 8);
+    const dq = eb(p(t, a + 0.15, 0.8)); $('#dial').style.opacity = cl(dq * 2); $('#dial').style.transform = `scale(${0.8 + 0.2 * dq})`;
+    const v = eio(p(t, a + 0.6, 1.8)) * D.frac;
+    // a small overshoot settles the needle like a real gauge
+    const ov = Math.sin(p(t, a + 2.4, 0.6) * Math.PI) * 0.02 * (1 - p(t, a + 2.4, 0.6));
+    $('#arco').setAttribute('stroke-dashoffset', (ARC * (1 - v)).toFixed(1));
+    $('#agulha').setAttribute('transform', `rotate(${(-90 + 180 * (v + ov)).toFixed(2)} 420 470)`);
+    $('#pct').textContent = Math.floor(v / D.frac * D.pct) + '%';
+    const hb = 0.75 + 0.25 * Math.sin(t * 2.2); $('#halo').style.opacity = cl(p(t, a + 0.6, 1)) * hb; $('#halo').style.transform = `scale(${0.9 + 0.12 * hb})`;
+    // the count rides the same progress as the needle, so number, arc and % always agree
+    foco('#lin1', t, a + 1.6, 0.7, 40, 14); $('#at1').textContent = num(Math.round(F.atual * v / D.frac));
+    foco('#uni1', t, a + 1.9, 0.6, 30, 10);
+    // 2: what is left: counts down from the goal to the remainder
+    a = ini(2); $m.cena('#c2', t, 2);
+    foco('#k2', t, a + 0.1, 0.6, 20, 8);
+    const fq = foco('#falta', t, a + 0.2, 0.8, 60, 24); $('#falta').style.transform += ` scale(${0.9 + 0.1 * fq})`;
+    $m.conta('#falta', t, a + 0.2, 1.3, D.falta, x => num(Math.round(x)), F.meta);
+    foco('#uni2', t, a + 0.7, 0.6, 30, 10);
+    const bq = eo(p(t, a + 0.8, 0.9)); $('#barra').style.opacity = cl(bq * 3);
+    $('#bfeito').style.width = (820 * D.frac * bq).toFixed(1) + 'px';
+    $('#bfalta').style.width = (820 * (1 - D.frac)).toFixed(1) + 'px';
+    const pul = 0.65 + 0.35 * Math.sin((t - a) * 4); $('#bfalta').style.opacity = p(t, a + 1.5, 0.4) * pul;
+    foco('#bl', t, a + 1.0, 0.6, 20, 8);
+    if ($('#dias2')) foco('#dias2', t, a + 1.5, 0.6, 30, 12);
+    // 3: why it matters
+    a = ini(3); $m.cena('#c3', t, 3);
+    foco('#k3', t, a + 0.1, 0.6, 20, 8);
+    const cq = eb(p(t, a + 0.15, 0.7)); $('#card3').style.opacity = cl(cq * 2); $('#card3').style.transform = `translateY(${(1 - cq) * 120}px)`;
+    const iq = eb(p(t, a + 0.4, 0.5)); $('#ic3').style.transform = `scale(${iq}) rotate(${(1 - iq) * -30}deg)`;
+    $m.revela('#mot', t, a + 0.55, 0.05);
+    $('#mini').style.opacity = cl(p(t, a + 0.9, 0.4)); $('#minii').style.width = (820 * D.frac * eo(p(t, a + 1.0, 0.9))).toFixed(1) + 'px';
+    foco('#minit', t, a + 1.1, 0.6, 20, 8);
+    // 4: product
+    $m.cena('#c4', t, 4); vitrineQuadro(PV, F, $m, t, ini(4));
+    $('#nota').style.opacity = t < ini(4) ? 1 : 0;
+  },
+});
+</script></body></html>

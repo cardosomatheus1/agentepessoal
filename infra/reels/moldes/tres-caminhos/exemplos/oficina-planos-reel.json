@@ -1,0 +1,41 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "_estilo": "vidro",
+ "titulo": "Três jeitos de cuidar do seu carro",
+ "opcoes": [
+  {
+   "nome": "Básica",
+   "preco": 150,
+   "itens": [
+    "Óleo e filtro",
+    "Checagem de freio"
+   ]
+  },
+  {
+   "nome": "Completa",
+   "preco": 290,
+   "itens": [
+    "Tudo da básica",
+    "Suspensão",
+    "Alinhamento"
+   ]
+  },
+  {
+   "nome": "Viagem",
+   "preco": 380,
+   "itens": [
+    "Tudo da completa",
+    "Ar-condicionado",
+    "Leva e traz"
+   ]
+  }
+ ],
+ "precos_de_exemplo": true,
+ "produto": {
+  "foto": "fotos/oficina_interior.jpg",
+  "nome": "Revisão completa",
+  "detalhe": "Orçamento por foto antes de mexer",
+  "convite": "agende a sua"
+ }
+}

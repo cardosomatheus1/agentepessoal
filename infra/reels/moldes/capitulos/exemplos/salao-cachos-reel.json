@@ -1,0 +1,30 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "_estilo": "noite",
+ "assunto": "Cuidados com os cachos entre uma visita e outra no salão",
+ "capitulos": [
+  {
+   "titulo": "Lavagem sem ressecar o fio",
+   "detalhe": "Quantas vezes lavar e com que água."
+  },
+  {
+   "titulo": "Finalização que dura",
+   "detalhe": "A ordem dos produtos que segura a definição."
+  },
+  {
+   "titulo": "Dormir sem desmanchar",
+   "detalhe": "Fronha, touca e o jeito certo de prender."
+  },
+  {
+   "titulo": "Hora de voltar ao salão",
+   "detalhe": "Os sinais de que o fio pede hidratação."
+  }
+ ],
+ "fecho": "Manda para aquela amiga cacheada",
+ "produto": {
+  "foto": "fotos/salao_cachos.jpg",
+  "nome": "Day after de cachos",
+  "detalhe": "Hidratação, corte e finalização"
+ }
+}

@@ -1,0 +1,25 @@
+{
+ "publico": "cliente_final",
+ "nota": "Qualquer negócio mostra um hábito real dos clientes ('1 em cada 3 clientes pede com entrega', 'escolhe a revisão completa', 'volta no mesmo mês'). A proporção mais simples, os ícones preenchidos e a porcentagem saem de quantos e total, pelo código; quando não é exata aparece 'cerca de'.",
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "titulo": {"tipo": "texto", "min": 10, "max": 60, "dica": "pergunta sem algarismos: Sabe como a maioria pede?"},
+  "quem": {"tipo": "texto", "min": 3, "max": 24, "dica": "no plural, quem é contado: clientes, motoristas, noivas, alunos"},
+  "fazem": {"tipo": "texto", "min": 6, "max": 48, "dica": "o que essa parte faz, sem algarismos: pedem com entrega"},
+  "periodo": {"tipo": "texto", "min": 4, "max": 24, "dica": "em setembro, no último mês, este ano"},
+  "quantos": {"tipo": "numero", "min": 1, "max": 9999999, "real": true, "dica": "quantos fizeram (do sistema ou do dono)"},
+  "total": {"tipo": "numero", "min": 2, "max": 9999999, "real": true, "dica": "de quantos no total"},
+  "icone": {"tipo": "escolha", "opcoes": ["pessoa", "pessoas", "carro", "moto", "bolo", "xicara", "garfo", "tesoura", "carrinho", "casa", "coracao", "estrela", "caixa", "dente", "haltere", "vestido", "pata", "presente", "cartao", "chave"], "dica": "o ícone que se repete na barra"},
+  "conclusao": {"tipo": "texto", "min": 20, "max": 100, "dica": "o que isso quer dizer para o cliente, sem algarismos"},
+  "exemplo": {"tipo": "booleano", "obrigatorio": false, "dica": "true quando os números são de exemplo: mostra 'valores de exemplo'"},
+  "produto": {"tipo": "objeto", "campos": {
+    "foto": {"tipo": "foto", "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"},
+    "nome": {"tipo": "texto", "min": 3, "max": 30},
+    "detalhe": {"tipo": "texto", "max": 50, "obrigatorio": false},
+    "preco": {"tipo": "dinheiro", "real": true, "obrigatorio": false},
+    "convite": {"tipo": "texto", "max": 26, "obrigatorio": false}
+   }, "dica": "fecho de anúncio: o produto ou serviço de que o número fala, com foto real"}
+ }
+}

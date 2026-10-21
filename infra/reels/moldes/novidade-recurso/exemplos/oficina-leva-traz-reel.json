@@ -1,0 +1,15 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "recurso": "Leva e traz do seu carro",
+ "icone": "carro",
+ "foto": "fotos/oficina_entrega_chave.jpg",
+ "passos": ["Você marca o horário pelo WhatsApp", "A gente busca o carro na sua porta", "Devolve pronto, com o laudo"],
+ "antes": "Perder a manhã esperando na oficina",
+ "agora": "Seu carro vai e volta sem você sair de casa",
+ "a_partir": "2026-11-03",
+ "condicao": "Sem custo até 5 km",
+ "onde": "Agende pelo WhatsApp",
+ "_origem": {"condicao": "dono"}
+}

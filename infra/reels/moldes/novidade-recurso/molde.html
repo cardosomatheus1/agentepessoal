@@ -1,0 +1,184 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- estrutura e movimento adaptados de heygen-com/hyperframes-launches (Apache-2.0), composição HF-heygen-stripe -->
+<style>
+/* a precise grid under everything; cards sit on it like product UI */
+#grade{position:absolute;inset:0;pointer-events:none}
+#grade i{position:absolute;background:var(--borda)}
+#grade i.h{left:0;right:0;height:2px;transform-origin:0 50%}
+#grade i.v{top:0;bottom:0;width:2px;transform-origin:50% 0}
+.lab{font-size:30px;font-weight:800;letter-spacing:.2em;white-space:nowrap}
+/* 0: lockup */
+#kick{position:absolute;left:90px;width:810px;top:720px;height:60px;text-align:center}
+#kick>span{display:inline-block;font-size:34px;letter-spacing:.16em;padding:12px 30px;white-space:nowrap}
+#rec{position:absolute;left:90px;width:810px;top:810px;height:330px;font-size:112px;line-height:1.02;text-align:center}
+/* 1: the feature card */
+#card{position:absolute;left:110px;width:780px;top:400px;height:1060px;overflow:hidden;padding:0}
+#card .ph{position:absolute;left:0;right:0;top:0;height:400px;overflow:hidden}
+#card .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#card .novo{position:absolute;left:34px;top:34px;font-size:30px;letter-spacing:.14em;padding:10px 24px;white-space:nowrap}
+#card .cab{position:absolute;left:40px;right:40px;top:440px;height:120px}
+#card .ic{position:absolute;left:0;top:10px;width:100px;height:100px;border-radius:28px;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:58px}
+#card .nm{position:absolute;left:126px;top:4px;width:440px;height:112px;font-size:46px;line-height:1.08;display:flex;align-items:center}
+#card .tg{position:absolute;right:0;top:30px;width:120px;height:66px;border-radius:33px;background:var(--borda)}
+#card .tg b{position:absolute;inset:0;border-radius:33px;background:var(--bom);opacity:0}
+#card .tg i{position:absolute;left:7px;top:7px;width:52px;height:52px;border-radius:50%;background:var(--cartao);box-shadow:var(--sombra)}
+body.e-vidro #card .tg i,body.e-noite #card .tg i{background:var(--texto)}
+#card .div{position:absolute;left:40px;right:40px;top:590px;height:2px;background:var(--borda);transform-origin:0 50%}
+.ps{position:absolute;left:40px;right:40px;height:120px}
+.ps .n{position:absolute;left:0;top:22px;width:76px;height:76px;border-radius:50%;border:4px solid var(--destaque);color:var(--destaque);display:flex;align-items:center;justify-content:center;font-family:var(--ft),sans-serif;font-weight:900;font-size:40px}
+.ps .n.ok{background:var(--destaque);color:var(--sobre-destaque)}
+.ps .tx{position:absolute;left:104px;top:10px;width:596px;height:100px;font-size:40px;font-weight:700;line-height:1.18;display:flex;align-items:center}
+/* 2: before and now, a line each */
+.ln{position:absolute;left:90px;width:810px;height:260px}
+.ln .lab{position:absolute;left:0;top:0;width:400px;height:44px}
+.ln .tx{position:absolute;left:0;top:56px;width:810px;height:190px;font-size:64px;line-height:1.1}
+#la .tx{opacity:.55}
+/* strike and underline follow every line of the text (one background per line fragment) */
+.ln .tx span{-webkit-box-decoration-break:clone;box-decoration-break:clone;background-repeat:no-repeat}
+#la .tx span{background-image:linear-gradient(var(--ruim),var(--ruim));background-position:0 56%;background-size:calc(var(--k,0) * 100%) 9px}
+#lb .tx span{background-image:linear-gradient(var(--destaque),var(--destaque));background-position:0 100%;background-size:calc(var(--k,0) * 100%) 9px;padding-bottom:6px}
+#lb .tx{color:var(--texto)}
+#seta{position:absolute;left:90px;width:120px;height:120px;font-size:96px;color:var(--destaque)}
+/* 3: available from */
+#cal{position:absolute;left:390px;top:440px;width:300px;height:320px;overflow:hidden}
+#cal .mes{position:absolute;left:0;right:0;top:0;height:96px;background:var(--destaque);color:var(--sobre-destaque);font-size:46px;letter-spacing:.14em;text-align:center;line-height:96px}
+#cal .dd{position:absolute;left:0;right:0;top:96px;height:224px;font-size:170px;line-height:224px;text-align:center}
+#ap{position:absolute;left:90px;width:810px;top:820px;height:56px;text-align:center}
+#dt{position:absolute;left:90px;width:810px;top:890px;height:130px;font-size:100px;line-height:130px;text-align:center;white-space:nowrap}
+#ex{position:absolute;left:90px;width:810px;top:1060px;height:90px;text-align:center}
+#ex>span{display:inline-block;font-size:48px;padding:14px 36px;white-space:nowrap;max-width:810px}
+#ex2{position:absolute;left:90px;width:810px;top:1170px;height:60px;font-size:38px;font-weight:700;text-align:center;white-space:nowrap}
+body.f-story #rec,body.f-story #kick,body.f-story .ln,body.f-story #ap,body.f-story #dt,body.f-story #ex,body.f-story #ex2{left:110px;width:860px}
+body.f-story .ln .tx{width:860px}
+body.f-story #card{left:90px;width:900px}body.f-story #card .nm{width:560px}body.f-story .ps .tx{width:716px}
+</style></head><body><div id="palco">
+<div id="grade" style="z-index:1"></div>
+
+<div class="cena" id="c0"><div class="cam full"><div class="voo full">
+ <div id="kick"><span class="chip t seg" id="kickT"></span></div>
+ <div id="rec" class="tit t seg"></div>
+</div></div></div>
+
+<div class="cena" id="c1"><div class="cam full"><div class="voo full">
+ <div id="card" class="cartao">
+  <div class="ph"><img id="foto" alt=""><span class="novo chip t seg">NOVO</span></div>
+  <div class="cab"><div class="ic" id="ic"></div><div class="nm tit t seg" id="nm"></div><div class="tg"><b></b><i></i></div></div>
+  <div class="div"></div>
+  <div id="pss"></div>
+ </div>
+</div></div></div>
+
+<div class="cena" id="c2"><div class="cam full"><div class="voo full">
+ <div class="ln" id="la"><div class="lab t t2">ANTES</div><div class="tx tit t seg"><span></span></div></div>
+ <div id="seta"></div>
+ <div class="ln" id="lb"><div class="lab t dest">AGORA</div><div class="tx tit t seg"><span></span></div></div>
+</div></div></div>
+
+<div class="cena" id="c3"><div class="cam full"><div class="voo full">
+ <div id="cal" class="cartao"><div class="mes tit t" id="mes"></div><div class="dd tit t seg" id="dd"></div></div>
+ <div id="ap" class="lab t dest seg">DISPONÍVEL A PARTIR DE</div>
+ <div id="dt" class="tit t seg"></div>
+ <div id="ex"><span class="chip t seg" id="exT"></span></div>
+ <div id="ex2" class="t t2 seg"></div>
+</div></div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Novidade de recurso": one new feature or service, announced like a product launch. The name lands with its
+// motion blur clearing, grows slowly and speeds out; the feature shows up as product UI on a precise grid (photo
+// header, its toggle switching on, how it works step by step); a before line gets struck through and the now
+// line takes its place; then "disponível a partir de" with a calendar tile. Arrivals ease out (expo), leavings
+// ease in and keep travelling into the cut.
+const EO = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+const EI = x => x <= 0 ? 0 : Math.pow(2, 10 * (x - 1));
+const pal = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.6 + 0.25 * pal(...s);
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const MES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+const dia = s => { if (!s) return null; const [a, m, d] = s.split('-').map(Number); return new Date(a, m - 1, d); };
+const ddmm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+const p = (t, a, d) => Math.min(1, Math.max(0, (t - a) / d));
+// a scene's inner layer arrives in flight (big and blurred, shrinking into place) and leaves the same way
+function voo(e, t, a, b, sai = 0.3) {
+  const qi = EO(p(t, a, 0.6)), qo = EI(p(t, b - sai, sai));
+  e.style.transform = `scale(${(1 + 0.14 * (1 - qi)) * (1 + 0.12 * qo)})`;
+  e.style.filter = qi < 1 || qo > 0 ? `blur(${12 * (1 - qi) + 14 * qo}px)` : 'none';
+  e.style.opacity = Math.min(1, qi * 3) * (1 - qo);
+}
+let Q = {};
+
+Motor.molde({
+  id: 'novidade-recurso', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    const h = dia(F._hoje) || new Date(), h0 = new Date(h.getFullYear(), h.getMonth(), h.getDate()), d = dia(F.a_partir), n = Math.round((d - h0) / 864e5);
+    if (n < 0) $m.erro(`a_partir: a data ${ddmm(d)} já passou`);
+    if (F.antes.trim().toLowerCase() === F.agora.trim().toLowerCase()) $m.erro('antes e agora são iguais');
+    if (F.preco != null && M._teste && !/exemplo/i.test(F.nota || '')) $m.erro('marca de teste: preço precisa de "nota": "valores de exemplo"');
+    // grid: verticals and horizontals on a 90 px rhythm, drawn in at the start
+    for (let x = 90; x < 1080; x += 180) mk('i', 'v', null, $('#grade')).style.left = x + 'px';
+    for (let y = 400; y < $m.H; y += 180) mk('i', 'h', null, $('#grade')).style.top = y + 'px';
+    $('#kickT').innerHTML = $m.icone('brilho') + ' '; $('#kickT').append(F.kicker || 'NOVIDADE');
+    $('#rec').textContent = F.recurso;
+    if (F.recurso.length > 22) { $('#rec').style.fontSize = '92px'; }
+    $m.filmagem($('#foto'), F.foto, 0);
+    $('#ic').innerHTML = $m.icone(F.icone || 'brilho');
+    $('#nm').textContent = F.recurso;
+    F.passos.forEach((s, j) => { const r = mk('div', 'ps', null, $('#pss')); r.style.top = (630 + j * 135) + 'px'; mk('div', 'n', String(j + 1), r); mk('div', 'tx t seg', s, r); });
+    $('#card').style.height = (680 + F.passos.length * 135) + 'px';
+    $('#la .tx span').textContent = F.antes; $('#lb .tx span').textContent = F.agora;
+    // vertical rhythm of the before/now scene by the length of each line
+    const lin = s => Math.min(3, Math.ceil(s.length / 21));
+    const ha = 70 + lin(F.antes) * 72, hb = 70 + lin(F.agora) * 72, tot = ha + 140 + hb, y0 = Math.round(920 - tot / 2);
+    Object.assign($('#la').style, { top: y0 + 'px', height: ha + 'px' }); $('#la .tx').style.height = (lin(F.antes) * 72 + 6) + 'px';
+    $('#seta').innerHTML = $m.icone('seta'); Object.assign($('#seta').style, { top: (y0 + ha + 10) + 'px', transform: 'rotate(90deg)' });
+    Object.assign($('#lb').style, { top: (y0 + ha + 140) + 'px', height: (hb + 20) + 'px' }); $('#lb .tx').style.height = (lin(F.agora) * 72 + 6) + 'px';
+    // available from: the weekday and month are the code's
+    $('#mes').textContent = MES[d.getMonth()]; $('#dd').textContent = String(d.getDate());
+    $('#dt').textContent = n === 0 ? 'hoje, ' + ddmm(d) : n === 1 ? 'amanhã, ' + ddmm(d) : DIAS[d.getDay()] + ', ' + ddmm(d);
+    const preco = F.preco != null ? (F.preco_a_partir ? 'a partir de ' : '') + $m.brl(F.preco, Number.isInteger(F.preco) ? 0 : 2) : null;
+    if (preco) $('#exT').textContent = preco; else if (F.condicao) $('#exT').textContent = F.condicao; else $('#ex').remove();
+    if (preco && F.condicao) $('#ex2').textContent = F.condicao; else if (F.onde) $('#ex2').textContent = F.onde; else $('#ex2').remove();
+    $('#nota').textContent = F.nota || '';
+    return { duracoes: [Math.max(2.6, ler(F.kicker || 'NOVIDADE', F.recurso)), Math.max(4.4, 0.8 + ler('NOVO', ...F.passos)), Math.max(4.2, 0.6 + ler('ANTES', F.antes, 'AGORA', F.agora)),
+      Math.max(3.6, ler('Disponível a partir de', $('#dt').textContent, preco || F.condicao, preco && F.condicao ? F.condicao : F.onde, F.nota))] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, ini, fim, cl } = $m;
+    // grid draws in once and stays
+    $$('#grade i').forEach((g, i) => { const q = EO(p(t, 0.05 + i * 0.03, 0.9)); g.style.transform = g.classList.contains('h') ? `scaleX(${q})` : `scaleY(${q})`; g.style.opacity = 0.7; });
+    $('#grade').style.opacity = 1 - p(t, ini(4), 0.4);
+    for (let i = 0; i < 4; i++) { $m.cena('#c' + i, t, i, i, { trans: 'corte' }); voo($('#c' + i + ' .voo'), t, ini(i), fim(i)); }
+    // 0: lockup; the name keeps growing slowly while held (no stillness), then ramps out
+    $m.entra('#kick', t, 0.15, 0.5, 24);
+    const r = $('#rec'), q0 = EO(p(t, 0.25, 0.7));
+    r.style.opacity = cl(q0 * 2); r.style.filter = q0 < 1 ? `blur(${14 * (1 - q0)}px)` : 'none';
+    r.style.transform = `scale(${1.06 - 0.06 * q0 + 0.025 * p(t, 0.9, fim(0))})`;
+    // 1: card lands; the toggle switches on; steps tick one by one
+    const a1 = ini(1), c = $('#card');
+    const tg = EO(p(t, a1 + 0.7, 0.4)); $('#card .tg i').style.transform = `translateX(${tg * 54}px)`; $('#card .tg b').style.opacity = tg;
+    $('#card .div').style.transform = `scaleX(${EO(p(t, a1 + 0.5, 0.8))})`;
+    $m.filmagem($('#foto'), F.foto, t);
+    $m.entra('#card .novo', t, a1 + 0.9, 0.4, 0, 0.3);
+    $$('.ps').forEach((s, j) => { const a = a1 + 1.0 + j * 0.45; $m.entra(s, t, a, 0.5, 30); s.querySelector('.n').classList.toggle('ok', t >= a + 0.9 + j * 0.2); if (t >= a + 0.9 + j * 0.2) s.querySelector('.n').innerHTML = $m.icone('check'); else s.querySelector('.n').textContent = String(j + 1); });
+    // 2: before, struck through; the arrow; now, underlined
+    const a2 = ini(2);
+    $m.entra('#la', t, a2 + 0.1, 0.5, 30);
+    $('#la .tx span').style.setProperty('--k', EO(p(t, a2 + 0.9, 0.6)));
+    $m.entra('#seta', t, a2 + 1.2, 0.4, -20); $('#seta').style.transform += ' rotate(90deg)';
+    $m.entra('#lb', t, a2 + 1.4, 0.6, 40);
+    $('#lb .tx span').style.setProperty('--k', EO(p(t, a2 + 2.0, 0.6)));
+    // 3: calendar tile flips down, date and condition
+    const a3 = ini(3), qc = EO(p(t, a3 + 0.1, 0.8));
+    $('#cal').style.opacity = cl(qc * 3); $('#cal').style.transform = `perspective(900px) rotateX(${(1 - qc) * 80}deg)`; $('#cal').style.transformOrigin = '50% 0';
+    $m.entra('#ap', t, a3 + 0.5, 0.5, 20); $m.entra('#dt', t, a3 + 0.65, 0.6, 30);
+    if ($('#ex')) $m.entra('#ex', t, a3 + 1.0, 0.5, 20, 0.15);
+    if ($('#ex2')) $m.entra('#ex2', t, a3 + 1.2, 0.5, 20);
+    $('#nota').style.opacity = t >= a3 + 1 && t < fim(3) ? 0.9 : 0;
+  },
+});
+</script></body></html>

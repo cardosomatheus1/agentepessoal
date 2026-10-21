@@ -1,0 +1,43 @@
+{
+ "_marca": "cantina-da-vo",
+ "titulo": "Marmitas entregues por mês",
+ "unidade": "marmitas",
+ "meses": [
+  {
+   "mes": "mar",
+   "valor": 500
+  },
+  {
+   "mes": "abr",
+   "valor": 620
+  },
+  {
+   "mes": "mai",
+   "valor": 702
+  },
+  {
+   "mes": "jun",
+   "valor": 688
+  },
+  {
+   "mes": "jul",
+   "valor": 815
+  },
+  {
+   "mes": "ago",
+   "valor": 940
+  },
+  {
+   "mes": "set",
+   "valor": 1148
+  }
+ ],
+ "leitura": "Cada mês mais gente trocando o almoço corrido por comida de casa.",
+ "produto": {
+  "foto": "fotos/cantina_marmita.jpg",
+  "nome": "Marmita do dia"
+ },
+ "_origem": {
+  "meses": "sistema"
+ }
+}

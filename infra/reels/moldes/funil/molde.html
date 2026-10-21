@@ -1,0 +1,240 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo kallaway -->
+<style>
+/* Kallaway layer (dark, lit instruments): aurora bloom from below, dot grid, glowing kicker and numbers */
+.aur{position:absolute;left:-25%;right:-25%;bottom:-28%;height:80%;z-index:1;pointer-events:none;transform-origin:50% 100%;
+  background:radial-gradient(50% 55% at 50% 100%,color-mix(in srgb,var(--destaque) 50%,transparent) 0%,color-mix(in srgb,var(--destaque) 16%,transparent) 45%,transparent 75%)}
+.pts{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.55;background-image:radial-gradient(color-mix(in srgb,var(--texto) 22%,transparent) 2px,transparent 2.6px);background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(90% 70% at 50% 55%,#000 30%,transparent 80%);mask-image:radial-gradient(90% 70% at 50% 55%,#000 30%,transparent 80%)}
+body.e-claro .aur,body.e-papel .aur{opacity:.55}body.e-pop .aur{opacity:.35}
+.cena{z-index:2}
+.kick{font-family:var(--fb),sans-serif;font-weight:800;font-size:34px;letter-spacing:.18em;text-transform:uppercase;color:var(--destaque);white-space:nowrap;height:46px;line-height:46px}
+.luz{text-shadow:0 0 26px color-mix(in srgb,var(--destaque) 60%,transparent),0 0 80px color-mix(in srgb,var(--destaque) 30%,transparent)}
+body.e-claro .luz,body.e-papel .luz,body.e-pop .luz{text-shadow:none}
+.num{font-family:var(--ft),sans-serif;font-weight:900;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.03em;white-space:nowrap}
+.gnum{background-image:linear-gradient(170deg,var(--texto) 20%,var(--destaque) 85%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.08em}
+body.e-pop .gnum{background-image:none;color:var(--texto)}
+
+/* scene 0: the question */
+#k0{position:absolute;left:90px;top:400px;width:820px}
+#tit0{position:absolute;left:90px;top:470px;width:820px;height:420px;font-size:100px}
+#ico0{position:absolute;left:250px;top:900px;width:480px;height:380px}
+#ico0 i{position:absolute;left:50%;height:70px;border-radius:999px;background:var(--destaque);box-shadow:0 0 40px color-mix(in srgb,var(--destaque) 55%,transparent)}
+#per0{position:absolute;left:90px;top:1290px;height:72px;line-height:72px;font-size:38px;padding:0 30px;white-space:nowrap}
+
+/* scene 1: the funnel */
+#k1{position:absolute;left:90px;top:390px;width:820px}
+#fun{position:absolute;left:0;top:450px;width:1080px;height:1030px}
+.et{position:absolute;left:0;width:1080px}
+.et .rot{position:absolute;left:90px;top:0;width:560px;height:46px;font-size:36px;font-weight:800;white-space:nowrap}
+.et .cv{position:absolute;right:170px;top:-4px;height:52px;line-height:52px;font-size:32px;padding:0 20px;white-space:nowrap}
+.et .cv .ico{margin-right:6px}
+.et .bd{position:absolute;top:54px;height:104px;border-radius:30px;background:linear-gradient(180deg,color-mix(in srgb,var(--destaque) 90%,var(--texto)),var(--destaque));
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--texto) 30%,transparent) inset,0 0 44px color-mix(in srgb,var(--destaque) 45%,transparent);display:flex;align-items:center;justify-content:center}
+body.e-pop .et .bd{box-shadow:none;border:5px solid var(--texto)}
+.et .bd .v{height:84px;font-size:72px;color:var(--sobre-destaque)}
+#gotas{position:absolute;inset:0;pointer-events:none}
+#gotas b{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--texto);box-shadow:0 0 14px var(--destaque)}
+
+/* scene 2: the result */
+#k2{position:absolute;left:90px;top:400px;width:820px}
+#tot{position:absolute;left:84px;top:460px;width:830px;height:300px;font-size:280px}
+#tot2{position:absolute;left:90px;top:770px;width:820px;height:80px;font-size:66px;white-space:nowrap}
+#tot3{position:absolute;left:90px;top:860px;width:820px;height:56px;font-size:38px;font-weight:700;white-space:nowrap}
+#vaz{position:absolute;left:90px;top:960px;width:820px;height:400px;padding:44px 50px}
+#vaz .lb{height:46px;font-size:32px;font-weight:800;letter-spacing:.14em;color:var(--ruim);white-space:nowrap}
+#vaz .de{margin-top:22px;height:60px;font-size:46px;font-weight:800;white-space:nowrap}
+#vaz .pa{margin-top:6px;height:60px;font-size:46px;font-weight:800;white-space:nowrap}
+#vaz .pa .ico{color:var(--ruim)}
+#vaz .pc{margin-top:22px;height:96px;font-size:84px;white-space:nowrap}
+
+/* scene 3: what to do */
+#k3{position:absolute;left:90px;top:400px;width:820px}
+#card3{position:absolute;left:90px;top:480px;width:820px;height:600px;padding:60px 60px}
+#card3 .ic{width:120px;height:120px;border-radius:34px;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:70px;box-shadow:0 0 50px color-mix(in srgb,var(--destaque) 55%,transparent)}
+#dica{margin-top:40px;height:340px;font-size:62px;line-height:1.14}
+
+/* ad close */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:0 0 0 3px color-mix(in srgb,var(--destaque) 70%,transparent),0 0 60px color-mix(in srgb,var(--destaque) 40%,transparent)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1062px;height:50px;line-height:50px}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+</style></head><body><div id="palco">
+<div class="aur" id="aur"></div><div class="pts"></div>
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="kick t seg">O CAMINHO DO CLIENTE</div>
+ <div id="tit0" class="tit t seg rv"></div>
+ <div id="ico0"></div>
+ <div id="per0" class="chip t seg"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="k1" class="kick t seg"></div>
+ <div id="fun"><div id="gotas"></div></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="k2" class="kick t seg">NO FIM DO CAMINHO</div>
+ <div id="tot" class="num gnum luz t seg"></div>
+ <div id="tot2" class="tit t seg"></div>
+ <div id="tot3" class="t t2 seg"></div>
+ <div id="vaz" class="cartao"><div class="lb t">ONDE MAIS SE PERDE</div><div class="de t seg"></div><div class="pa t seg"></div><div class="pc num t seg"></div></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full">
+ <div id="k3" class="kick t seg">O QUE FAZER</div>
+ <div id="card3" class="cartao"><div class="ic" id="ic3"></div><div><div id="dica" class="tit t seg rv"></div></div></div>
+</div></div>
+
+<div class="cena" id="c4"><div class="cam full" id="c4in"></div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Funil": from the first contact to the customer, in 3 to 5 stages counted by the business. The code checks every
+// stage is at most the one before, scales the bands (width grows with the square root of the count, so a small last
+// stage still reads), works out the conversion of each step, the end-to-end rate and the step that loses the most.
+// Dots fall through the funnel and drop out at each step in the same proportion as the real numbers.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+// reading time: the check asks 0.8 s + 0.25 s per new word; a little margin on top
+const ler = (...s) => 1.0 + 0.25 * palavras(...s);
+function foco(e, t, t0, d = 0.7, dy = 40, bl = 16) {
+  if (typeof e === 'string') e = Motor.$(e); if (!e) return 0;
+  const q = Motor.eo5(Motor.p(t, t0, d)); e.style.opacity = q; e.style.transform = `translateY(${(1 - q) * dy}px)`; e.style.filter = q < 1 ? `blur(${((1 - q) * bl).toFixed(1)}px)` : 'none'; return q;
+}
+function vitrine(F, $m, pai) {
+  const P = F.produto, v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk kick t seg', P.convite || 'tem aqui pra você', v);
+  mk('div', 'pvn tit t seg rv', P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  const linhas = P.nome.length > 20 ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  n.style.height = (linhas * 86) + 'px'; if (d) d.style.top = (1130 + linhas * 86 + 14) + 'px';
+  return v;
+}
+const vitrineLer = F => ler(F.produto.convite || 'tem aqui pra você', F.produto.nome, F.produto.detalhe, F.produto.preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.8)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`; f.style.filter = q < 1 ? `blur(${(1 - q) * 18}px)` : 'none';
+  $m.filmagem(v.querySelector('.pvf img'), F.produto.foto, t);
+  foco(v.querySelector('.pvk'), t, a + 0.35, 0.6, 20, 10);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) foco(pd, t, a + 1.0, 0.6, 20, 8);
+}
+
+// percentage in pt-BR: one decimal under 10%, rounded down so a rate is never shown higher than it is
+const pc = x => { const v = x * 100; if (v >= 10) return Math.floor(v) + '%'; const d = Math.floor(v * 10) / 10; return Motor.num(d, Number.isInteger(d) ? 0 : 1) + '%'; };
+let D = {}, PV = null, ET = [], GOTAS = [];
+const ROW = n => n >= 5 ? 196 : n === 4 ? 236 : 280, CX = 490;
+function checar(F, $m) {
+  const v = F.etapas.map(e => e.valor);
+  if (v.some(x => !Number.isInteger(x))) $m.erro('etapas: valores inteiros (pessoas, pedidos)');
+  for (let i = 1; i < v.length; i++) if (v[i] > v[i - 1]) $m.erro(`etapa ${i + 1} (${F.etapas[i].rotulo}) maior que a anterior: num funil cada etapa é parte da anterior`);
+  if (/\d/.test(F.titulo + ' ' + F.dica)) $m.erro('titulo e dica sem algarismos: os números saem das etapas, pelo código');
+  const conv = v.map((x, i) => i ? x / v[i - 1] : 1);
+  let k = 1; for (let i = 2; i < v.length; i++) if (conv[i] < conv[k]) k = i;
+  return { v, conv, total: v[v.length - 1] / v[0], k };
+}
+
+Motor.molde({
+  id: 'funil', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $, num } = $m;
+    D = checar(F, $m);
+    const n = F.etapas.length, row = ROW(n);
+    $('#tit0').textContent = F.titulo;
+    [1, 0.7, 0.42, 0.2].forEach((w, i) => { const b = mk('i', null, null, $('#ico0')); b.style.width = (480 * w) + 'px'; b.style.top = (i * 100) + 'px'; b.style.marginLeft = (-240 * w) + 'px'; });
+    $('#per0').textContent = F.periodo;
+    $('#k1').textContent = F.periodo;
+    ET = F.etapas.map((e, i) => {
+      const r = mk('div', 'et', null, $('#fun')); r.style.top = (i * row) + 'px';
+      mk('div', 'rot t seg', e.rotulo, r);
+      if (i) { const c = mk('div', 'cv chip t seg', null, r); c.innerHTML = $m.icone('seta') ; c.append(pc(D.conv[i])); c.querySelector('.ico').style.transform = 'rotate(90deg)'; }
+      const w = 300 + 520 * Math.sqrt(D.v[i] / D.v[0]), bd = mk('div', 'bd', null, r); bd.style.width = w + 'px'; bd.style.left = (CX - w / 2) + 'px';
+      mk('div', 'v num t seg', num(e.valor), bd);
+      return { r, w };
+    });
+    // falling dots: each one survives a step with the step's real conversion (deterministic: rnd per dot and step)
+    GOTAS = [];
+    for (let j = 0; j < 36; j++) { let fim = n; for (let i = 1; i < n; i++) if (Motor.rnd(j * 13 + i * 7) > D.conv[i]) { fim = i; break; }
+      const b = mk('b', null, null, $('#gotas')); GOTAS.push({ b, fim, fase: Motor.rnd(j * 3 + 1), x: Motor.rnd(j * 5 + 2) * 2 - 1, lado: Motor.rnd(j * 11) > 0.5 ? 1 : -1 }); }
+    $('#tot').textContent = pc(D.total);
+    const ult = F.etapas[n - 1], pri = F.etapas[0];
+    $('#tot2').textContent = `${num(ult.valor)} de ${num(pri.valor)}`;
+    $('#tot3').innerHTML = ''; $('#tot3').append(pri.rotulo + ' '); $('#tot3').insertAdjacentHTML('beforeend', $m.icone('seta')); $('#tot3').append(' ' + ult.rotulo);
+    $('#vaz .de').textContent = F.etapas[D.k - 1].rotulo;
+    $('#vaz .pa').innerHTML = $m.icone('seta') + ' '; $('#vaz .pa').append(F.etapas[D.k].rotulo);
+    $('#vaz .pc').textContent = 'passam ' + pc(D.conv[D.k]);
+    $('#ic3').innerHTML = $m.icone('brilho');
+    $('#dica').textContent = F.dica;
+    PV = vitrine(F, $m, $('#c4in'));
+    $('#nota').textContent = F.nota || (F.exemplo ? 'valores de exemplo' : '');
+    const linhas = F.etapas.map(e => e.rotulo + ' X X%').join(' ');
+    return { duracoes: [
+      Math.max(3.2, ler('O CAMINHO DO CLIENTE', F.titulo, F.periodo)),
+      Math.max(5.5, 0.8 + n * 0.55 + ler(F.periodo, linhas)),
+      Math.max(4.6, 0.4 + ler('NO FIM DO CAMINHO X%', $('#tot2').textContent, $('#tot3').textContent, 'ONDE MAIS SE PERDE', F.etapas[D.k - 1].rotulo, F.etapas[D.k].rotulo, 'passam X%')),
+      Math.max(3.6, ler('O QUE FAZER', F.dica)),
+      Math.max(3.4, vitrineLer(F)) ] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eb, cl, ini, num } = $m;
+    $('#aur').style.transform = `scale(${1 + 0.05 * Math.sin(t * 0.9)})`;
+    const n = F.etapas.length, row = ROW(n);
+    // 0: question; a small glowing funnel stacks under it
+    let a = ini(0); $m.cena('#c0', t, 0);
+    foco('#k0', t, a + 0.1, 0.6, 20, 8);
+    $m.revela('#tit0', t, a + 0.3, 0.06);
+    $$('#ico0 i').forEach((b, i) => { const q = eb(p(t, a + 0.8 + i * 0.15, 0.5)); b.style.opacity = cl(q * 2); b.style.transform = `scaleX(${q}) translateY(${Math.sin(t * 2 + i) * 4}px)`; });
+    const s0 = eb(p(t, a + 1.4, 0.5)); $('#per0').style.opacity = cl(s0 * 2); $('#per0').style.transform = `scale(${s0})`;
+    // 1: the funnel builds stage by stage; counts run up; conversion chips pop between stages
+    a = ini(1); $m.cena('#c1', t, 1);
+    foco('#k1', t, a + 0.1, 0.6, 20, 8);
+    ET.forEach((e, i) => {
+      const t0 = a + 0.3 + i * 0.55, q = eo5(p(t, t0, 0.7));
+      e.r.style.opacity = cl(q * 2); e.r.style.filter = q < 1 ? `blur(${(1 - q) * 14}px)` : 'none';
+      const bd = e.r.querySelector('.bd'); bd.style.transform = `scaleX(${0.3 + 0.7 * q})`;
+      $m.conta(e.r.querySelector('.v'), t, t0, 0.9, F.etapas[i].valor, x => num(Math.round(x)));
+      const c = e.r.querySelector('.cv'); if (c) { const s = eb(p(t, t0 + 0.35, 0.45)); c.style.opacity = cl(s * 2); c.style.transform = `scale(${s})`; }
+    });
+    // dots: fall at a steady pace; one that does not pass a step slides out sideways and fades at that step
+    const yb = i => i * row + 106, full = a + 0.3 + n * 0.55;
+    GOTAS.forEach((g, j) => {
+      const per = 2.6, u = ((t - a) / per + g.fase) % 1, vivo = t > a + 0.8;
+      const yy = u * (yb(n - 1) + 60), i = Math.min(n - 1, Math.floor(yy / row));
+      const x = CX + g.x * 100;
+      let op = vivo ? 0.9 : 0, dx = 0;
+      if (g.fim < n && yy > yb(g.fim) - 60) { const k = cl((yy - (yb(g.fim) - 60)) / 60); op *= 1 - k; dx = g.lado * k * 120; }
+      if (yy > yb(n - 1) + 30) op *= cl(1 - (yy - yb(n - 1) - 30) / 30);
+      // a dot passes behind the label line of each stage (it never sits on the words)
+      const em = yy - Math.floor(yy / row) * row; op *= cl((em - 50) / 10) * cl((row - 6 - em) / 10);
+      g.b.style.opacity = op * cl(p(t, full - 1, 1)); g.b.style.left = (x + dx) + 'px'; g.b.style.top = yy + 'px';
+    });
+    // 2: end-to-end rate and the leakiest step
+    a = ini(2); $m.cena('#c2', t, 2);
+    foco('#k2', t, a + 0.1, 0.6, 20, 8);
+    const tq = foco('#tot', t, a + 0.2, 0.8, 60, 24); $('#tot').style.transform += ` scale(${0.88 + 0.12 * tq})`;
+    $m.conta('#tot', t, a + 0.2, 1.1, D.total, pc, 1);
+    foco('#tot2', t, a + 0.7, 0.6, 30, 10); foco('#tot3', t, a + 0.9, 0.6, 20, 8);
+    const vq = eb(p(t, a + 1.1, 0.7)); $('#vaz').style.opacity = cl(vq * 2); $('#vaz').style.transform = `translateY(${(1 - vq) * 100}px)`;
+    const pul = 0.5 + 0.5 * Math.sin((t - a) * 4); $('#vaz').style.boxShadow = p(t, a + 1.8, 0.3) ? `0 0 0 3px color-mix(in srgb,var(--ruim) ${Math.round(40 + 40 * pul)}%,transparent),0 0 ${30 + 30 * pul}px color-mix(in srgb,var(--ruim) 40%,transparent)` : '';
+    // 3: what to do
+    a = ini(3); $m.cena('#c3', t, 3);
+    foco('#k3', t, a + 0.1, 0.6, 20, 8);
+    const cq = eb(p(t, a + 0.15, 0.7)); $('#card3').style.opacity = cl(cq * 2); $('#card3').style.transform = `translateY(${(1 - cq) * 120}px)`;
+    const iq = eb(p(t, a + 0.4, 0.5)); $('#ic3').style.transform = `scale(${iq}) rotate(${(1 - iq) * -30}deg)`;
+    $m.revela('#dica', t, a + 0.55, 0.05);
+    // 4: product
+    $m.cena('#c4', t, 4); vitrineQuadro(PV, F, $m, t, ini(4));
+    $('#nota').style.opacity = t < ini(4) ? 1 : 0;
+  },
+});
+</script></body></html>

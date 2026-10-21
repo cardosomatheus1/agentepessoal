@@ -1,0 +1,42 @@
+{
+ "_marca": "oficina-do-ze",
+ "rotulo": "Revisões no mês",
+ "titulo": "Valor em revisões preventivas por mês",
+ "unidade": "reais",
+ "tipo": "dinheiro",
+ "meses": [
+  {
+   "mes": "mai",
+   "valor": 8200
+  },
+  {
+   "mes": "jun",
+   "valor": 9650
+  },
+  {
+   "mes": "jul",
+   "valor": 12400
+  },
+  {
+   "mes": "ago",
+   "valor": 11900
+  },
+  {
+   "mes": "set",
+   "valor": 15350
+  }
+ ],
+ "leitura": "Mais gente fazendo revisão antes de viajar, em vez de pagar conserto na estrada.",
+ "produto": {
+  "foto": "fotos/oficina_interior.jpg",
+  "nome": "Revisão antes da viagem",
+  "detalhe": "Freios, óleo, pneus e suspensão",
+  "preco": 290,
+  "convite": "agende a sua"
+ },
+ "_origem": {
+  "meses": "sistema",
+  "produto": "dono"
+ },
+ "nota": "valores de exemplo"
+}

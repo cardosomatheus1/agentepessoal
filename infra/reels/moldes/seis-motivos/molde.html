@@ -1,0 +1,110 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo vox-explainer (overview grid6) -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* six reasons in a 2x3 grid: the empty grid is printed first (dashed outlines, numbers only), then each tile lights
+   up in turn (ink wipe on twos, icon pops, text in); the lit tile is the only accent shape, earlier ones keep an outline */
+#folha{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(color-mix(in srgb,var(--texto) 6%,transparent) 2px,transparent 2px),linear-gradient(90deg,color-mix(in srgb,var(--texto) 6%,transparent) 2px,transparent 2px);background-size:72px 72px}
+#tit{position:absolute;left:84px;top:388px;width:800px;height:176px;font-size:76px;line-height:1.04}
+#tsub{position:absolute;left:66px;top:568px;width:836px;height:10px;background:var(--texto);transform-origin:0 50%}
+#grade{position:absolute;left:60px;top:604px;width:840px;height:860px}
+.tl{position:absolute;width:408px;height:270px;border-radius:6px}
+.tl .bd{position:absolute;inset:0;border:4px dashed color-mix(in srgb,var(--texto) 40%,transparent);border-radius:6px}
+.tl .fx{position:absolute;inset:0;background:var(--destaque);border-radius:6px;transform-origin:0 50%;transform:scaleX(0)}
+.tl .ok{position:absolute;inset:0;border:5px solid var(--destaque);border-radius:6px;background:var(--cartao);opacity:0}
+.tl .nn{position:absolute;left:24px;top:18px;width:120px;height:56px;font-family:var(--ft);font-weight:900;font-size:50px;line-height:56px;white-space:nowrap}
+.tl .ic{position:absolute;right:24px;top:20px;font-size:76px;line-height:1}
+.tl .tx{position:absolute;left:24px;top:110px;width:360px;height:140px;font-size:44px;font-weight:800;line-height:1.08}
+.tl.on .nn,.tl.on .ic,.tl.on .tx{color:var(--sobre-destaque)}
+.tl.ja .nn,.tl.ja .ic{color:var(--destaque)}
+.tl.ja .tx{color:var(--texto)}
+/* closing */
+#fotoC{position:absolute;left:110px;top:400px;width:860px;height:600px;border:14px solid var(--cartao);outline:5px solid var(--texto);overflow:hidden;box-shadow:var(--sombra)}
+#fotoC img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#fita{position:absolute;left:440px;top:372px;width:200px;height:56px;background:color-mix(in srgb,var(--c2) 70%,transparent);transform:rotate(-4deg);z-index:2}
+#mini{position:absolute;left:84px;top:1046px;width:820px;height:110px;display:flex;gap:16px}
+#mini .m{width:118px;height:104px;border-radius:6px;background:var(--destaque);color:var(--sobre-destaque);font-size:58px;display:flex;align-items:center;justify-content:center}
+#fech{position:absolute;left:84px;top:1186px;width:820px;height:250px;font-size:80px;line-height:1.05}
+</style></head><body><div id="palco">
+<div id="folha"></div>
+<div class="cena" id="cG"><div class="cam full">
+ <div id="tit" class="tit t seg rv"></div><div id="tsub"></div>
+ <div id="grade"></div>
+</div></div>
+<div class="cena" id="cF"><div class="cam full">
+ <div id="fotoC"><img alt=""></div><div id="fita"></div>
+ <div id="mini"></div>
+ <div id="fech" class="tit t seg rv"></div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+const tw = t => Math.floor(t * 12) / 12;  // Vox cadence: on twos
+function tempoDeLer($m, F, base) {
+  let d = base.slice();
+  for (let it = 0; it < 5; it++) {
+    const S = [0]; d.forEach(x => S.push(+(S[S.length - 1] + x).toFixed(3))); S.push(S[S.length - 1] + 3);
+    $m.S = S; $m.N = S.length - 1;
+    let antes = new Set(), mudou = false;
+    d = d.map((x, i) => { $m.def.quadro(Math.max(S[i], S[i + 1] - 0.08), F, $m);
+      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').filter(w => /[\p{L}\d]/u.test(w)).length; }); agora.forEach(s => antes.add(s));
+      const min = +(0.8 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
+    if (!mudou) break;
+  }
+  return d;
+}
+let D = {};
+Motor.molde({
+  id: 'seis-motivos', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    if (new Set(F.motivos.map(x => x.texto.trim().toLowerCase())).size < 6) $m.erro('motivos: há motivo repetido');
+    if (/\b(melhor|maior|único|unico|mais barato)\b.*\b(da cidade|do brasil|do bairro|da região|do mundo)\b/i.test(F.motivos.map(x => x.texto).join(' | '))) $m.erro('motivos: "o melhor da cidade" e parecidos só com prova; troque por um fato do negócio');
+    $('#tit').textContent = F.titulo || '6 motivos para escolher a gente';
+    if (F.titulo && !/\b6\b|seis/i.test(F.titulo)) $m.erro('titulo: diga que são 6 motivos (6 ou seis no título)');
+    F.motivos.forEach((m, k) => {
+      const e = document.createElement('div'); e.className = 'tl'; e.style.left = (k % 2) * 432 + 'px'; e.style.top = Math.floor(k / 2) * 295 + 'px';
+      e.innerHTML = '<i class="bd"></i><i class="ok"></i><i class="fx"></i><div class="nn t"></div><div class="ic"></div><div class="tx t seg"></div>';
+      e.querySelector('.nn').textContent = String(k + 1).padStart(2, '0');
+      e.querySelector('.ic').innerHTML = $m.icone(m.icone);
+      e.querySelector('.tx').textContent = m.texto;
+      $('#grade').appendChild(e);
+      const mi = document.createElement('div'); mi.className = 'm'; mi.innerHTML = $m.icone(m.icone); $('#mini').appendChild(mi);
+    });
+    $('#fotoC img').src = $m.midia(F.foto);
+    $('#fech').textContent = F.fechamento;
+    $('#nota').textContent = F.nota || '';
+    return { duracoes: tempoDeLer($m, F, [2.0, 1.9, 1.9, 1.9, 1.9, 1.9, 2.4, 3.2]) };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eb, cl, ini, fim } = $m, T = tw(t);
+    // scene 0: title and the empty printed grid; scenes 1..6: one tile lights per scene
+    $m.cena('#cG', t, 0, 6, { push: 0.012 });
+    $m.revela('#tit', t, 0.1);
+    $('#tsub').style.transform = `scaleX(${eo5(p(T, 0.5, 0.4))})`;
+    $$('.tl').forEach((e, k) => {
+      const q = eb(p(T, 0.35 + k * 0.1, 0.35)); e.style.opacity = cl(q * 3); e.style.transform = `translateY(${(1 - q) * 50}px)`;
+      const a = ini(k + 1), on = t >= a && t < fim(k + 1), ja = t >= fim(k + 1);
+      const w = on ? eo(p(T, a + 0.05, 0.35)) : 0;
+      e.querySelector('.fx').style.transform = `scaleX(${w})`;
+      e.querySelector('.ok').style.opacity = ja ? 1 : 0;
+      e.classList.toggle('on', on && w > 0.5); e.classList.toggle('ja', ja);
+      const ic = eb(p(T, a + 0.25, 0.35)); e.querySelector('.ic').style.transform = t >= a ? `scale(${ic}) rotate(${(1 - ic) * -30}deg)` : 'scale(1)';
+      e.querySelector('.ic').style.opacity = t >= a ? 1 : 0.25;
+      const tx = e.querySelector('.tx'); tx.style.opacity = t >= a ? cl(p(T, a + 0.3, 0.2) * 1.0) : 0;
+      tx.style.transform = `translateY(${(1 - eo(p(T, a + 0.3, 0.3))) * 20}px)`;
+      e.style.zIndex = on ? 2 : 1;
+      if (t >= a) e.style.transform = `scale(${on ? 1 + 0.04 * eb(p(T, a, 0.3)) : 1})`;
+    });
+    // closing: the product, the six reasons as six lit icons, the line
+    const aF = ini(7); $m.cena('#cF', t, 7);
+    const fq = eb(p(T, aF, 0.45)); $('#fotoC').style.transform = `rotate(${-2 + (1 - fq) * 10}deg) scale(${0.7 + 0.3 * fq})`; $('#fotoC').style.opacity = cl(fq * 3);
+    $m.filmagem($('#fotoC img'), F.foto, t - aF);
+    const ft = eb(p(T, aF + 0.4, 0.3)); $('#fita').style.opacity = cl(ft * 3); $('#fita').style.transform = `rotate(-4deg) scale(${ft})`;
+    $$('#mini .m').forEach((m, k) => { const q = eb(p(T, aF + 0.35 + k * 0.08, 0.3)); m.style.opacity = cl(q * 3); m.style.transform = `scale(${q})`; });
+    $m.revela('#fech', t, aF + 0.7);
+    $('#nota').style.opacity = t < fim(7) ? 1 : 0;
+  },
+});
+</script></body></html>

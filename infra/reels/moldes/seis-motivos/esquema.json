@@ -1,0 +1,92 @@
+{
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "animada",
+ "campos": {
+  "titulo": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 44,
+   "obrigatorio": false,
+   "dica": "tem de dizer 6 ou seis; padrão: 6 motivos para escolher a gente"
+  },
+  "motivos": {
+   "tipo": "lista",
+   "min": 6,
+   "max": 6,
+   "real": true,
+   "dica": "exatamente 6 motivos, cada um um FATO do negócio confirmado pelo dono (entrega no dia, garantia de 90 dias, horário estendido); nada de 'o melhor da cidade'",
+   "item": {
+    "texto": {
+     "tipo": "texto",
+     "min": 4,
+     "max": 30,
+     "dica": "curto: Orçamento sem compromisso"
+    },
+    "icone": {
+     "tipo": "escolha",
+     "opcoes": [
+      "alerta",
+      "balao",
+      "bolo",
+      "brilho",
+      "cadeado",
+      "caixa",
+      "calendario",
+      "camera",
+      "carrinho",
+      "carro",
+      "cartao",
+      "casa",
+      "chat",
+      "chave",
+      "check",
+      "coracao",
+      "dente",
+      "dinheiro",
+      "estrela",
+      "etiqueta",
+      "fogo",
+      "folha",
+      "garfo",
+      "grafico",
+      "haltere",
+      "info",
+      "link",
+      "local",
+      "lupa",
+      "megafone",
+      "moto",
+      "pata",
+      "percentual",
+      "pessoa",
+      "pessoas",
+      "presente",
+      "relogio",
+      "seta",
+      "telefone",
+      "tesoura",
+      "trofeu",
+      "vestido",
+      "xicara"
+     ],
+     "dica": "ícone que combina com o motivo"
+    }
+   }
+  },
+  "foto": {
+   "tipo": "filmagem",
+   "dica": "foto real do negócio, produto ou serviço (fotos/x.jpg), no fechamento"
+  },
+  "fechamento": {
+   "tipo": "texto",
+   "min": 8,
+   "max": 56,
+   "dica": "o convite: Agora só falta o seu carro aqui"
+  }
+ },
+ "publico": "cliente_final"
+}

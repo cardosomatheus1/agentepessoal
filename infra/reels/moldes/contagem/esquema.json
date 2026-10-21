@@ -1,0 +1,23 @@
+{
+ "publico": "cliente_final",
+ "nota": "Qualquer negócio conta o tempo até uma data real: lançamento, inauguração, evento ou fim de uma promoção. Dias e horas saem do código, contados do dia do post (_hoje) até a data; data passada não gera, promoção de mais de 31 dias também não. O vídeo mostra a data, nunca uma contagem que reinicia.",
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "animada",
+ "campos": {
+  "tipo": {"tipo": "escolha", "opcoes": ["lancamento", "fim_promocao", "inauguracao", "evento"], "dica": "muda o selo e o verbo: chega, termina, abre, começa"},
+  "titulo": {"tipo": "texto", "min": 8, "max": 50, "dica": "chamada sem algarismos: Prepara o coração"},
+  "o_que": {"tipo": "texto", "min": 3, "max": 40, "dica": "o que vem, sem algarismos: Panetone trufado da casa"},
+  "data": {"tipo": "data", "real": true, "dica": "AAAA-MM-DD; precisa estar no futuro em relação ao post"},
+  "hora": {"tipo": "hora", "obrigatorio": false, "real": true, "dica": "HH:MM; sem ela, 00:00 (fim de promoção: 23:59)"},
+  "detalhe": {"tipo": "texto", "min": 15, "max": 90, "dica": "o que vai ter ou o que acaba, só o que o dono confirmou"},
+  "produto": {"tipo": "objeto", "campos": {
+    "foto": {"tipo": "foto", "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"},
+    "nome": {"tipo": "texto", "min": 3, "max": 30},
+    "detalhe": {"tipo": "texto", "max": 50, "obrigatorio": false},
+    "preco": {"tipo": "dinheiro", "real": true, "obrigatorio": false},
+    "convite": {"tipo": "texto", "max": 26, "obrigatorio": false}
+   }, "dica": "fecho de anúncio: o produto, serviço ou lugar da data, com foto real"}
+ },
+ "especiais": {"_hoje": "data do post (AAAA-MM-DD ou AAAA-MM-DDTHH:MM); sem ela, agora. O tempo que falta é contado a partir dela."}
+}

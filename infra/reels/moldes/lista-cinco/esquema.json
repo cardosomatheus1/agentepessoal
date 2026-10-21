@@ -1,0 +1,17 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "titulo": {"tipo": "texto", "min": 8, "max": 48, "dica": "o que os itens são, SEM o número (o código põe a quantidade): coisas que fazem o seu pedido chegar perfeito"},
+  "rotulo": {"tipo": "texto", "max": 24, "obrigatorio": false, "dica": "etiqueta pequena acima do número na capa; padrão: Anota aí"},
+  "itens": {"tipo": "lista", "min": 3, "max": 5, "dica": "3 a 5 itens, na ordem em que entram; cada um ganha o seu número",
+   "item": {
+    "texto": {"tipo": "texto", "min": 3, "max": 40, "dica": "o item em poucas palavras: Revisar o freio a cada 10 mil km"},
+    "detalhe": {"tipo": "texto", "max": 56, "obrigatorio": false, "dica": "uma linha de explicação, sem promessa que o negócio não cumpre"}
+   }},
+  "foto": {"tipo": "filmagem", "dica": "foto real do produto ou serviço do negócio (fotos/x.jpg), mostrada no fechamento"},
+  "fechamento": {"tipo": "texto", "min": 8, "max": 60, "dica": "liga a lista ao negócio: Aqui a gente cuida das cinco"}
+ },
+ "publico": "cliente_final"
+}

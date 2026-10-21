@@ -1,0 +1,16 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "inspiradora",
+ "campos": {
+  "gancho": {"tipo": "texto", "min": 8, "max": 40, "dica": "título escrito à mão sobre a folha (ex.: 'Tudo começa no papel')"},
+  "etapas": {"tipo": "lista", "min": 2, "max": 3, "item": {"texto": {"tipo": "texto", "max": 34}, "foto": {"tipo": "foto"}}, "dica": "2 ou 3 etapas reais do processo, cada uma com a foto daquela etapa (vira desenho a lápis)"},
+  "foto": {"tipo": "filmagem", "dica": "foto real do produto ou serviço pronto (fotos/x.jpg): primeiro em lápis, depois revelada em cor"},
+  "nome": {"tipo": "texto", "max": 40, "dica": "nome do produto ou serviço pronto"},
+  "detalhe": {"tipo": "texto", "max": 36, "obrigatorio": false},
+  "preco": {"tipo": "dinheiro", "obrigatorio": false, "real": true},
+  "preco_a_partir": {"tipo": "booleano", "obrigatorio": false},
+  "quando": {"tipo": "data", "obrigatorio": false, "dica": "dia em que chega (AAAA-MM-DD); data passada é recusada"}
+ },
+ "especiais": {"_hoje": "data de publicação (AAAA-MM-DD); sem ela, a data de hoje"}
+}

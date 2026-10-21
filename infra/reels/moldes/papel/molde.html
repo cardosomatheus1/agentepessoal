@@ -1,0 +1,175 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- estrutura e movimento adaptados de heygen-com/hyperframes-launches (Apache-2.0), composição claude-paper-launch -->
+<style>
+/* paper: every card is a sheet in the brand's colors with fibers; dark styles get a darker sheet, same craft */
+:root{--papel:var(--cartao);--tinta:var(--texto)}
+body.e-vidro,body.e-noite{--papel:color-mix(in srgb,var(--fundo2) 82%,var(--texto) 12%)}
+.folha{position:absolute;background:var(--papel);color:var(--tinta);box-shadow:var(--sombra)}
+.folha:before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.9;
+ background:repeating-linear-gradient(8deg,color-mix(in srgb,var(--texto) 4%,transparent) 0 1px,transparent 1px 5px),repeating-linear-gradient(-71deg,color-mix(in srgb,var(--texto) 3%,transparent) 0 1px,transparent 1px 9px)}
+.sombra{position:absolute;inset:0;background:var(--texto);opacity:0;pointer-events:none}
+#st{position:absolute;inset:0;perspective:1800px}
+/* torn strips in the background collage */
+.tira{position:absolute;height:300px;transform-origin:50% 50%}
+.tira.a{background:var(--c1)}.tira.b{background:var(--c2)}.tira.c{background:var(--fundo2)}.tira.d{background:var(--papel)}
+.fita{position:absolute;width:170px;height:54px;background:color-mix(in srgb,var(--c2) 70%,transparent);opacity:.85;z-index:3}
+/* the hook card, folded in half at first */
+#cg{left:110px;top:640px;width:780px;height:520px;transform-origin:50% 0}
+#gk{position:absolute;left:60px;top:46px;width:600px;height:56px;font-size:44px;color:var(--destaque)}
+#gt{position:absolute;left:60px;top:116px;width:660px;height:360px;font-size:76px;line-height:1.06}
+/* product: photo glued on a sheet, two strips of tape */
+#cf{left:190px;top:400px;width:700px;height:780px;transform-origin:50% 0}
+#cf .ph{position:absolute;left:28px;top:28px;right:28px;bottom:28px;overflow:hidden;background:var(--fundo2)}
+#cf .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#ct{left:120px;top:1200px;width:770px;height:250px;transform-origin:50% 0}
+#cn{position:absolute;left:44px;top:30px;width:682px;height:56px;font-size:46px;color:var(--destaque)}
+#nm{position:absolute;left:44px;top:88px;width:682px;height:140px;font-size:66px;line-height:1.04}
+/* details: notes that open like folded slips */
+.nota-p{position:absolute;left:120px;width:770px;height:150px;transform-origin:0 50%;display:flex;align-items:center}
+.nota-p .k{position:absolute;left:30px;top:41px;width:68px;height:68px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:40px}
+.nota-p .tx{position:absolute;left:124px;top:22px;width:610px;height:106px;font-size:46px;font-weight:800;line-height:1.12;display:flex;align-items:center}
+/* the ticket: price above the perforation, when and where below */
+#tk{left:150px;top:960px;width:720px;height:470px;transform-origin:50% 0;
+ -webkit-mask:radial-gradient(circle 34px at 0 var(--furo),transparent 33px,#000 34px) left/51% 100% no-repeat,radial-gradient(circle 34px at 100% var(--furo),transparent 33px,#000 34px) right/51% 100% no-repeat;
+ mask:radial-gradient(circle 34px at 0 var(--furo),transparent 33px,#000 34px) left/51% 100% no-repeat,radial-gradient(circle 34px at 100% var(--furo),transparent 33px,#000 34px) right/51% 100% no-repeat}
+#tk .pk{position:absolute;left:50px;right:50px;top:36px;height:50px;font-size:34px;font-weight:800;letter-spacing:.12em;text-align:center}
+#tk .pr{position:absolute;left:50px;right:50px;top:84px;height:150px;font-size:130px;line-height:150px;text-align:center;white-space:nowrap}
+#tk .furo{position:absolute;left:46px;right:46px;height:0;border-top:5px dashed var(--borda)}
+#tk .qd{position:absolute;left:50px;right:50px;height:66px;font-size:48px;font-weight:900;text-align:center;white-space:nowrap}
+#tk .on{position:absolute;left:50px;right:50px;height:52px;font-size:36px;font-weight:700;text-align:center;white-space:nowrap}
+#tk .so{position:absolute;left:50px;right:50px;height:92px;font-size:72px;line-height:92px;text-align:center;white-space:nowrap}
+body.e-pop .folha{box-shadow:10px 10px 0 var(--texto);border:4px solid var(--texto)}
+body.e-noite .folha{box-shadow:0 0 0 2px color-mix(in srgb,var(--destaque) 60%,transparent),0 0 36px color-mix(in srgb,var(--destaque) 30%,transparent)}
+body.f-story #cg,body.f-story #ct{left:100px;width:880px}body.f-story #gt,body.f-story #nm,body.f-story #cn{width:780px}
+body.f-story .nota-p{width:860px}body.f-story .nota-p .tx{width:700px}
+</style></head><body><div id="palco">
+
+<div class="cena" id="cP"><div class="cam full"><div id="st">
+ <div id="tiras"></div>
+ <div class="folha" id="cg"><div id="gk" class="mao t seg"></div><div id="gt" class="tit t seg"></div><div class="sombra"></div></div>
+ <div class="folha" id="cf"><div class="ph"><img id="foto" alt=""></div><div class="fita" style="left:-40px;top:-14px;transform:rotate(-24deg)"></div><div class="fita" style="right:-40px;top:-14px;transform:rotate(22deg)"></div><div class="sombra"></div></div>
+ <div class="folha" id="ct"><div id="cn" class="mao t seg"></div><div id="nm" class="tit t seg"></div><div class="sombra"></div></div>
+ <div id="notas"></div>
+ <div class="folha" id="tk"><div class="sombra"></div></div>
+</div></div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Papel": a launch told in cut paper. Torn strips in the brand colors slide in and pile up into a collage, a
+// folded card opens with the hook, the product photo is glued on a sheet with tape, the name comes on a folded
+// tag, the details open like slips one by one and the price and date come on a perforated ticket. Calm motion:
+// everything settles (expo out), folds close when leaving (expo in) so the next sheet arrives in the same gesture.
+const EO = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+const EI = x => x <= 0 ? 0 : Math.pow(2, 10 * (x - 1));
+const pal = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.8 + 0.25 * pal(...s);
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const dia = s => { if (!s) return null; const [a, m, d] = s.split('-').map(Number); return new Date(a, m - 1, d); };
+const ddmm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+// a torn edge: a polygon whose top and bottom rims wobble (seeded, so every frame is the same)
+function rasgo(seed, n = 26, amp = 9) {
+  const r = i => Motor.rnd(seed * 31 + i), cima = [], baixo = [];
+  for (let i = 0; i <= n; i++) { const x = (i / n) * 100; cima.push(`${x}% ${(r(i) * amp).toFixed(1)}%`); baixo.unshift(`${x}% ${(100 - r(i + 99) * amp).toFixed(1)}%`); }
+  return `polygon(${cima.join(',')},${baixo.join(',')})`;
+}
+// strips: [class, top, rotation, side it comes from]
+const TIRAS = [['a', 250, -8, -1], ['c', 1290, 6, 1], ['b', 560, 5, 1], ['d', 1520, -4, -1], ['a', 40, 3, 1]];
+let Q = {};
+// fold: hinge at the top edge, opening from folded (angle) to flat; closing falls backwards
+function dobra(e, t, a0, b, ang = -100, dur = 0.9) {
+  if (!e) return;
+  const qi = EO(p2(t, a0, dur)), qo = b == null ? 0 : EI(p2(t, b - 0.4, 0.4));
+  const rot = ang * (1 - qi) + 92 * qo;
+  e.style.opacity = t < a0 ? 0 : 1 - (qo > 0.8 ? (qo - 0.8) * 5 : 0);
+  e.style.transform = `${e.dataset.base || ''} rotateX(${rot}deg)`;
+  const s = e.querySelector(':scope > .sombra'); if (s) s.style.opacity = 0.35 * Math.min(1, Math.abs(rot) / 90);
+}
+const p2 = (t, a, d) => Math.min(1, Math.max(0, (t - a) / d));
+
+Motor.molde({
+  id: 'papel', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    let qd = null;
+    if (F.quando) {
+      const h = dia(F._hoje) || new Date(), h0 = new Date(h.getFullYear(), h.getMonth(), h.getDate()), d = dia(F.quando), n = Math.round((d - h0) / 864e5);
+      if (n < 0) $m.erro(`quando: a data ${ddmm(d)} já passou`);
+      qd = n <= 0 ? 'Já disponível' : n === 1 ? 'Chega amanhã, ' + ddmm(d) : 'Chega ' + DIAS[d.getDay()] + ', ' + ddmm(d);
+    }
+    if (F.preco != null && M._teste && !/exemplo/i.test(F.nota || '')) $m.erro('marca de teste: preço precisa de "nota": "valores de exemplo"');
+    // collage strips with torn edges
+    TIRAS.forEach(([c, y, r, lado], i) => { const s = mk('div', 'tira folha ' + c, null, $('#tiras')); s.style.top = y + 'px'; s.style.left = '-120px'; s.style.width = '1320px'; s.style.height = (150 + Motor.rnd(i * 7) * 140) + 'px'; s.style.clipPath = rasgo(i + 1); s.dataset.r = r; s.dataset.l = lado; });
+    $('#gk').textContent = F.selo || 'Novidade';
+    $('#gt').textContent = F.gancho;
+    { const l = Math.min(4, Math.ceil(F.gancho.length / 15)), h = 140 + l * 84; Object.assign($('#cg').style, { height: (h + 30) + 'px', top: (900 - h / 2) + 'px' }); $('#gt').style.height = (l * 84) + 'px'; }
+    $m.filmagem($('#foto'), F.foto, 0);
+    $('#cn').textContent = F.selo || 'Novidade'; $('#nm').textContent = F.nome;
+    if (F.nome.length <= 18) { $('#nm').style.fontSize = '84px'; $('#ct').style.height = '220px'; }
+    $('#cf').dataset.base = 'rotate(-2deg)'; $('#ct').dataset.base = 'rotate(1.5deg)'; $('#cg').dataset.base = 'rotate(-1deg)';
+    const n = F.detalhes.length, passo = n === 3 ? 172 : 200, y0 = n === 3 ? 950 : 990;
+    F.detalhes.forEach((d, j) => { const e = mk('div', 'nota-p folha', null, $('#notas')); e.style.top = (y0 + j * passo) + 'px'; e.style.clipPath = rasgo(40 + j, 14, 5);
+      e.dataset.base = `rotate(${[-1.2, 1, -0.6][j]}deg)`; const k = mk('div', 'k', null, e); k.innerHTML = $m.icone('check'); mk('div', 'tx t seg', d, e); mk('div', 'sombra', null, e); });
+    // ticket: price, perforation, date and place (only what exists)
+    const tk = $('#tk'), preco = F.preco != null ? $m.brl(F.preco, Number.isInteger(F.preco) ? 0 : 2) : null;
+    let y = 40;
+    if (preco) { if (F.preco_a_partir) { mk('div', 'pk t dest', 'A PARTIR DE', tk); y = 84; } else y = 60; const pr = mk('div', 'pr tit t seg', preco, tk); pr.style.top = y + 'px'; y += 170; }
+    else if (F.condicao) { const so = mk('div', 'so tit t seg', F.condicao, tk); so.style.top = '70px'; y = 190; }
+    const topo = !!(preco || F.condicao);
+    if (topo) { const furo = mk('div', 'furo', null, tk); furo.style.top = y + 'px'; tk.style.setProperty('--furo', (y + 2) + 'px'); y += 40; }
+    else { tk.style.setProperty('--furo', '-100px'); y = 50; }
+    if (qd) { const q = mk('div', (topo ? 'qd' : 'so') + ' tit t seg', qd, tk); q.style.top = y + 'px'; y += topo ? 76 : 110; }
+    if (F.onde) { const o = mk('div', 'on t t2 seg', F.onde, tk); o.style.top = y + 'px'; y += 62; }
+    tk.style.height = (y + 40) + 'px';
+    Q.tk = !!(preco || qd || F.onde || F.condicao);
+    if (!Q.tk) tk.remove();
+    if (preco && F.condicao) { const so = mk('div', 'on t t2 seg', F.condicao, $('#tk')); so.style.top = (y - 6) + 'px'; tk.style.height = (y + 96) + 'px'; }
+    $('#nota').textContent = F.nota || '';
+    const d = [Math.max(3.2, ler(F.selo || 'Novidade', F.gancho)), Math.max(3.6, ler(F.nome)), Math.max(4.2, 0.6 * n + ler(...F.detalhes))];
+    if (Q.tk) d.push(Math.max(3.8, ler(preco ? 'a partir de R$ 0' : '', qd, F.onde, F.condicao, F.nota)));
+    // a calm paper film never feels rushed: stretch to at least 20 s with the final
+    const tot = d.reduce((a, b) => a + b, 0) + 3; if (tot < 20) return { duracoes: d.map(x => +(x * (17 / (tot - 3))).toFixed(2)) };
+    return { duracoes: d };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, ini, fim, lerp, eio } = $m;
+    const nS = Q.tk ? 4 : 3;
+    $m.cena('#cP', t, 0, nS - 1, { trans: 'fade' });
+    // strips slide in one after another and keep drifting slowly (the collage breathes)
+    $$('.tira').forEach((s, i) => {
+      const q = EO(p2(t, 0.05 + i * 0.16, 0.9)), l = +s.dataset.l, r = +s.dataset.r;
+      const drift = Math.sin(t * 0.25 + i) * 14 + (t - 2) * 3 * l;
+      s.style.transform = `translateX(${(1 - q) * 1400 * l + drift}px) rotate(${r * (0.6 + 0.4 * q)}deg)`;
+    });
+    // 0: hook card unfolds, 1: the product sheet and its tag, 2: the slips, 3: the ticket
+    dobra($('#cg'), t, 0.55, fim(0));
+    // product sheet: comes down from the top and settles; shrinks up when the slips arrive
+    const cf = $('#cf'), qf = EO(p2(t, ini(1) - 0.1, 1.0)), sub = eio(p2(t, ini(2) - 0.2, 0.9));
+    cf.style.opacity = t >= ini(1) - 0.1 ? 1 : 0;
+    const sc = lerp(1, 0.66, sub), dx = lerp(0, 4, sub), y = (1 - qf) * -900;
+    cf.style.transformOrigin = '50% 0';
+    cf.style.transform = `translateY(${y}px) translateX(${dx}px) scale(${sc}) rotate(${lerp(-2 + (1 - qf) * -8, 3, sub)}deg)`;
+    $m.filmagem($('#foto'), F.foto, t);
+    dobra($('#ct'), t, ini(1) + 0.7, fim(1));
+    $$('.nota-p').forEach((e, j) => {
+      const a = ini(2) + 0.35 + j * 0.45, qi = EO(p2(t, a, 0.8)), qo = EI(p2(t, fim(2) - 0.4, 0.4));
+      const rot = -95 * (1 - qi) + 90 * qo;
+      e.style.opacity = t < a ? 0 : 1 - (qo > 0.8 ? (qo - 0.8) * 5 : 0);
+      e.style.transform = `${e.dataset.base} rotateY(${rot}deg)`;
+      e.querySelector('.sombra').style.opacity = 0.35 * Math.min(1, Math.abs(rot) / 90);
+    });
+    if (Q.tk) {
+      const tk = $('#tk'), a = ini(3) + 0.15, q = EO(p2(t, a, 1.0));
+      tk.style.opacity = t < a ? 0 : 1;
+      tk.style.transform = `translateX(${(1 - q) * 1100}px) rotate(${(1 - q) * 9 - 1.5}deg)`;
+      // the stub below the perforation gives a small tug once it lands
+      const tug = Math.sin(Math.PI * p2(t, a + 1.2, 0.5)) * 6; tk.querySelectorAll('.qd,.on').forEach(x => { x.style.transform = `translateY(${tug}px)`; });
+      tk.querySelector('.sombra').style.opacity = 0;
+    }
+    $('#nota').style.opacity = Q.tk && t >= ini(3) + 0.6 && t < fim(3) ? 0.9 : 0;
+  },
+});
+</script></body></html>

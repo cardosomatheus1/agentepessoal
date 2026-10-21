@@ -1,0 +1,7 @@
+{"_marca": "studio-bella", "_formato": "story", "rotulo": "Agenda do salão",
+ "dias": [
+  {"dia": "terca", "o_que": "Coloração e mechas", "hora": "09:00", "foto": "fotos/salao_mechas.jpg"},
+  {"dia": "quinta", "o_que": "Corte e escova", "foto": "fotos/salao_escova.jpg"},
+  {"dia": "sabado", "o_que": "Manicure até as 18h", "hora": "08:00"}],
+ "foto": "fotos/salao_interior.jpg", "fechamento": "Escolha o seu dia e marque pelo link", "selo": "Horário marcado",
+ "_origem": {"dias": "dono"}}

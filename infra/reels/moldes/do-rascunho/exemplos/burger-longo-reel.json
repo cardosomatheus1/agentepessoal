@@ -1,0 +1,15 @@
+{
+ "_marca": "burger-noite",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "gancho": "Desenhado antes de ir pra chapa",
+ "etapas": [
+  {"texto": "Blend moldado na mão", "foto": "fotos/burger_blend.jpg"},
+  {"texto": "Montado na hora do pedido", "foto": "fotos/burger_montando.jpg"}
+ ],
+ "foto": "fotos/burger_smash.jpg",
+ "nome": "Smash duplo com cheddar e cebola tostada",
+ "preco": 34.9,
+ "nota": "valores de exemplo",
+ "_origem": {"preco": "dono"}
+}

@@ -1,0 +1,7 @@
+{"_marca": "doces-da-lu", "_formato": "reel", "_estilo": "papel", "rotulo": "Por dentro do pote", "produto": "Bolo de pote morango e chantilly", "foto": "fotos/lanca-produto_doce_pote_morango.jpg",
+ "partes": [
+  {"nome": "Chantilly da casa", "detalhe": "batido na hora com um morango inteiro", "de": 7, "ate": 36},
+  {"nome": "Morango fresco", "detalhe": "fatiado no dia, entre camadas de creme", "de": 38, "ate": 66},
+  {"nome": "Massa branca", "detalhe": "pão de ló de baunilha bem molhadinho", "de": 66, "ate": 78}],
+ "preco": 15.5, "unidade": "o pote", "nota": "valores de exemplo",
+ "_origem": {"partes": "dono", "preco": "dono"}}

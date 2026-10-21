@@ -1,0 +1,33 @@
+{
+ "_marca": "oficina-do-ze",
+ "pergunta": "Por que o freio começa a chiar?",
+ "foto": "fotos/oficina_freio.jpg",
+ "partes": [
+  {
+   "titulo": "A pastilha gasta",
+   "texto": "Toda freada raspa um pouco da pastilha. Com o tempo, sobra pouca borracha de atrito."
+  },
+  {
+   "titulo": "O aviso de metal",
+   "texto": "Quando ela está no fim, uma plaquinha de metal encosta no disco e faz o chiado de propósito."
+  },
+  {
+   "titulo": "Esperar sai caro",
+   "texto": "Se rodar muito assim, o metal risca o disco e a troca, que era só da pastilha, fica bem maior."
+  }
+ ],
+ "conclusao": "Freio chiando é recado do carro. Escute cedo.",
+ "fonte": "manual do fabricante e o dia a dia da oficina",
+ "produto": {
+  "foto": "fotos/oficina_freio.jpg",
+  "nome": "Revisão de freios",
+  "detalhe": "Pastilhas, discos e fluido conferidos",
+  "preco": 89,
+  "convite": "agende a sua"
+ },
+ "_origem": {
+  "fonte": "dono",
+  "produto": "dono"
+ },
+ "nota": "valores de exemplo"
+}

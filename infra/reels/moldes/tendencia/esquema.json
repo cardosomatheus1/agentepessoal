@@ -1,0 +1,25 @@
+{
+ "publico": "cliente_final",
+ "nota": "Qualquer negócio mostra um número real que cresceu ao longo de semanas ou meses (pedidos, agendamentos, clientes novos, vendas) e agradece. O eixo começa no zero, a variação (arredondada para baixo), o melhor período e o desenho saem dos pontos, pelo código; linha que não subiu não gera.",
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "inspiradora",
+ "campos": {
+  "titulo": {"tipo": "texto", "min": 10, "max": 60, "dica": "chamada sem algarismos: Olha o que vocês fizeram com a nossa entrega"},
+  "medida": {"tipo": "texto", "min": 6, "max": 30, "dica": "o que a linha conta: pedidos por semana, agendamentos por mês"},
+  "tipo": {"tipo": "escolha", "opcoes": ["quantidade", "dinheiro"], "obrigatorio": false, "dica": "dinheiro mostra R$; sem ele, quantidade"},
+  "pontos": {"tipo": "lista", "min": 4, "max": 12, "item": {
+    "rotulo": {"tipo": "texto", "min": 2, "max": 8, "dica": "sem 1, ago, set"},
+    "valor": {"tipo": "numero", "min": 0, "max": 99999999, "real": true}
+   }, "dica": "na ordem do tempo, do mais antigo ao mais novo"},
+  "motivo": {"tipo": "texto", "min": 20, "max": 100, "dica": "agradecimento ou o que mudou, sem algarismos"},
+  "exemplo": {"tipo": "booleano", "obrigatorio": false, "dica": "true quando os números são de exemplo: mostra 'valores de exemplo'"},
+  "produto": {"tipo": "objeto", "campos": {
+    "foto": {"tipo": "foto", "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"},
+    "nome": {"tipo": "texto", "min": 3, "max": 30},
+    "detalhe": {"tipo": "texto", "max": 50, "obrigatorio": false},
+    "preco": {"tipo": "dinheiro", "real": true, "obrigatorio": false},
+    "convite": {"tipo": "texto", "max": 26, "obrigatorio": false}
+   }, "dica": "fecho de anúncio: o produto ou serviço que cresceu, com foto real"}
+ }
+}

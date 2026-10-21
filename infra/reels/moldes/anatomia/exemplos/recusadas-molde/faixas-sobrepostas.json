@@ -1,0 +1,3 @@
+{"_marca": "burger-noite", "produto": "Smash duplo", "foto": "fotos/burger_smash.jpg",
+ "partes": [{"nome": "Pão", "de": 34, "ate": 60}, {"nome": "Carne", "de": 53, "ate": 69}],
+ "_origem": {"partes": "dono"}}

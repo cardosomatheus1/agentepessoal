@@ -1,0 +1,40 @@
+{
+ "_marca": "cantina-da-vo",
+ "_formato": "reel",
+ "titulo": "Os pratos mais pedidos de setembro",
+ "unidade": "pedidos",
+ "itens": [
+  {
+   "nome": "Lasanha da vó",
+   "quantidade": 214
+  },
+  {
+   "nome": "Feijoada de sábado",
+   "quantidade": 301
+  },
+  {
+   "nome": "Marmita do dia",
+   "quantidade": 388
+  },
+  {
+   "nome": "Coxinha de frango e catupiry",
+   "quantidade": 176
+  },
+  {
+   "nome": "Pizza de forno a lenha",
+   "quantidade": 152
+  }
+ ],
+ "produto": {
+  "foto": "fotos/cantina_marmita.jpg",
+  "nome": "Marmita do dia",
+  "detalhe": "Arroz, feijão, mistura e salada",
+  "preco": 22,
+  "convite": "peça a sua"
+ },
+ "_origem": {
+  "itens": "sistema",
+  "produto": "dono"
+ },
+ "nota": "valores de exemplo"
+}

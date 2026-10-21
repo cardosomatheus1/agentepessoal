@@ -1,0 +1,79 @@
+{
+ "publico": "cliente_final",
+ "nota": "Abertura em capítulos para um vídeo ou série mais longa de qualquer negócio (cuidados depois do serviço, como conservar, como escolher, o que vem na manutenção). Cada capítulo ganha um cartão de seção diferente; a numeração e o 'capítulo X de N' saem da lista, pelo código.",
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "tecnologica",
+ "campos": {
+  "serie": {
+   "tipo": "texto",
+   "max": 24,
+   "obrigatorio": false,
+   "dica": "selo da série: GUIA RÁPIDO, MANUAL DA CASA; sem ele, EXPLICADO EM PARTES"
+  },
+  "assunto": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 60,
+   "dica": "o tema do vídeo: Como fazer o seu bolo durar mais"
+  },
+  "capitulos": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 4,
+   "item": {
+    "titulo": {
+     "tipo": "texto",
+     "min": 4,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "min": 10,
+     "max": 50,
+     "dica": "uma frase do que o capítulo ensina"
+    }
+   },
+   "dica": "3 ou 4 tópicos, na ordem em que o vídeo explica"
+  },
+  "fecho": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 60,
+   "dica": "Salva para consultar quando precisar"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço de que o vídeo fala, com foto real"
+  }
+ }
+}

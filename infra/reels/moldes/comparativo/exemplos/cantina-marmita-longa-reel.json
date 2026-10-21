@@ -1,0 +1,17 @@
+{
+ "_marca": "cantina-da-vo",
+ "_formato": "reel",
+ "titulo": "Marmita caseira de verdade x marmita congelada",
+ "nos": "A gente",
+ "linhas": [
+  {"item": "Feita no mesmo dia da entrega", "nos": true, "comum": false},
+  {"item": "Feijão temperado na hora", "nos": true, "comum": false},
+  {"item": "Cardápio novo toda semana", "nos": true, "comum": false},
+  {"item": "Entrega no horário do almoço", "nos": true, "comum": true},
+  {"item": "Sem conservante na receita", "nos": true, "comum": false},
+  {"item": "Embalagem que vai ao micro-ondas", "nos": true, "comum": true}
+ ],
+ "fecho": "Comida de casa, sem ninguém precisar cozinhar.",
+ "produto": {"foto": "fotos/cantina_marmita.jpg", "nome": "Marmita caseira da semana", "detalhe": "Cinco pratos, entrega na segunda", "preco": 118, "convite": "peça a sua"},
+ "_origem": {"linhas": "dono", "produto": "dono"}
+}

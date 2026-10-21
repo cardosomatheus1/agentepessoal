@@ -1,0 +1,20 @@
+{
+ "_marca": "oficina-do-ze",
+ "rotulo": "Palavra de oficina",
+ "termo": "Alinhamento e balanceamento",
+ "classe": "serviço de oficina",
+ "definicao": "Alinhar é deixar as rodas apontando reto. Balancear é tirar o peso torto da roda, que faz o volante tremer.",
+ "pratica": "Pneu que dura mais, carro que não puxa para o lado e volante firme na estrada.",
+ "foto": "fotos/oficina_alinhamento.jpg",
+ "produto": {
+  "foto": "fotos/oficina_alinhamento.jpg",
+  "nome": "Alinhamento e balanceamento",
+  "detalhe": "Com conferência dos pneus",
+  "preco": 120,
+  "convite": "agende o seu"
+ },
+ "_origem": {
+  "produto": "dono"
+ },
+ "nota": "valores de exemplo"
+}

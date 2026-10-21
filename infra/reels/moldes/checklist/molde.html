@@ -1,0 +1,219 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo kallaway -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* ---- kallaway kit: aurora bloom from below, dot grid, glass hairline, glow (all from brand tokens) ---- */
+.aura{position:absolute;inset:0;pointer-events:none}
+.aura .bloom{position:absolute;left:-25%;right:-25%;bottom:-28%;height:70%;transform-origin:50% 100%;
+  background:radial-gradient(50% 50% at 50% 62%,color-mix(in srgb,var(--destaque) 40%,transparent) 0%,color-mix(in srgb,var(--destaque) 12%,transparent) 46%,transparent 76%)}
+.aura .pontos{position:absolute;inset:-60px;background-image:radial-gradient(circle,color-mix(in srgb,var(--texto) 15%,transparent) 1.7px,transparent 2.3px);background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(75% 55% at 50% 50%,#000 25%,transparent 80%);mask-image:radial-gradient(75% 55% at 50% 50%,#000 25%,transparent 80%)}
+body.e-claro .aura .bloom,body.e-papel .aura .bloom{opacity:.55}
+body.e-pop .aura .bloom{opacity:.35}
+body.e-vidro .vid,body.e-noite .vid{box-shadow:var(--sombra),inset 0 1.5px 0 color-mix(in srgb,var(--texto) 24%,transparent)}
+body.e-vidro .glow,body.e-noite .glow{text-shadow:0 0 26px color-mix(in srgb,var(--destaque) 55%,transparent)}
+.kick{font-size:32px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--destaque);white-space:nowrap;line-height:50px}
+.kick .pt{display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--destaque);margin-right:18px;vertical-align:2px;box-shadow:0 0 16px var(--destaque)}
+/* ad close: the product with its real photo */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+body.e-vidro .pvf,body.e-noite .pvf{box-shadow:var(--sombra),0 0 0 2px color-mix(in srgb,var(--destaque) 70%,transparent),0 0 60px color-mix(in srgb,var(--destaque) 35%,transparent)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1058px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+
+
+/* gauge: ring that fills as the items get checked */
+.gau{position:absolute}
+.gau svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.gau .tr{fill:none;stroke:color-mix(in srgb,var(--texto) 14%,transparent)}
+.gau .ar{fill:none;stroke:var(--destaque);stroke-linecap:round}
+body.e-vidro .gau .ar,body.e-noite .gau .ar{filter:drop-shadow(0 0 10px color-mix(in srgb,var(--destaque) 80%,transparent))}
+.gau .nu{position:absolute;left:0;right:0;top:50%;text-align:center;white-space:nowrap}
+.gau .ok{position:absolute;inset:16%;border-radius:50%;background:var(--bom);color:var(--sobre-bom);display:flex;align-items:center;justify-content:center;opacity:0}
+.gau .ok svg{position:static;width:60%;height:60%;transform:none;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---- scene 0 ---- */
+#k0{position:absolute;left:90px;top:400px;width:820px;height:50px}
+#tit0{position:absolute;left:90px;width:830px;top:470px;height:420px;font-size:96px}
+#g0{left:390px;width:300px;height:300px}
+#g0 .nu{height:110px;margin-top:-55px;font-size:96px;line-height:110px}
+
+/* ---- scene 1: the list ---- */
+#g1{left:80px;top:390px;width:200px;height:200px}
+#g1 .nu{height:70px;margin-top:-35px;font-size:56px;line-height:70px}
+#tit1{position:absolute;left:320px;width:600px;top:392px;height:196px;font-size:52px;display:flex;align-items:center}
+#tit1>div{width:100%}
+#lista{position:absolute;left:70px;width:840px;top:640px}
+.it{position:absolute;left:0;width:840px}
+.it .fx{position:absolute;inset:7px 0;border-radius:26px;overflow:hidden}
+.it .fx i{position:absolute;top:0;bottom:0;width:180px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--bom) 45%,transparent),transparent);transform:skewX(-18deg);opacity:0}
+.it .cx{position:absolute;left:28px;top:50%;width:84px;height:84px;margin-top:-42px;border-radius:24px;border:4px solid color-mix(in srgb,var(--texto) 45%,transparent);color:var(--sobre-bom)}
+.it .cx .en{position:absolute;inset:-4px;border-radius:24px;background:var(--bom);transform:scale(0)}
+.it .cx svg{position:absolute;inset:10px;width:56px;height:56px;fill:none;stroke:currentColor;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.it .cx .onda{position:absolute;inset:-4px;border-radius:28px;border:4px solid var(--bom);opacity:0}
+.it .tx{position:absolute;left:140px;width:670px;top:50%;height:110px;margin-top:-55px;font-size:44px;line-height:52px;font-weight:800;display:flex;align-items:center}
+.it .tx>div{width:100%}
+
+/* ---- scene 2: all checked ---- */
+#g2{left:340px;top:470px;width:400px;height:400px}
+#g2 .nu{height:120px;margin-top:-60px;font-size:110px;line-height:120px}
+#l2{position:absolute;left:90px;width:820px;top:910px;height:90px;font-size:72px;line-height:90px;text-align:center;white-space:nowrap}
+#fecho{position:absolute;left:110px;width:780px;top:1030px;height:200px;font-size:52px;font-weight:800;line-height:1.15;text-align:center}
+</style></head><body><div id="palco">
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="kick t seg"></div>
+ <div id="tit0" class="tit glow t seg rv"></div>
+ <div id="g0" class="gau"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="g1" class="gau"></div>
+ <div id="tit1" class="tit t seg"><div></div></div>
+ <div id="lista"></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="g2" class="gau"></div>
+ <div id="l2" class="tit glow t seg"></div>
+ <div id="fecho" class="t t2 seg rv"></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full" id="c3in"></div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Antes de pedir, confira": 3 to 6 things the customer checks before ordering or booking. Each row gets its box
+// ticked with a flash and a ripple, a light sweeps the row, and a ring gauge fills with the count the code keeps
+// ("3 de 5"); when the ring closes it turns into a big check. The post ends on the product.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(w => /\w/.test(w)).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+const SVG_SIM = '<svg viewBox="0 0 24 24"><path pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" d="M4 12.5l5 5L20 6.5"/></svg>';
+const SVG_NAO = '<svg viewBox="0 0 24 24"><path pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" d="M6 6l12 12M18 6L6 18"/></svg>';
+// focus pull: glides up while the blur resolves to sharp
+function foco(e, t, t0, dur = 0.7, dy = 50, blur = 16) {
+  if (typeof e === 'string') e = Motor.$(e); if (!e) return 0;
+  const q = Motor.eo5(Motor.p(t, t0, dur)); e.style.opacity = q; e.style.transform = `translateY(${(1 - q) * dy}px)`; e.style.filter = q < 1 ? `blur(${((1 - q) * blur).toFixed(1)}px)` : 'none'; return q;
+}
+function aura($m) { const a = mk('div', 'aura'); mk('div', 'bloom', null, a); mk('div', 'pontos', null, a); $m.$('#fundo').after(a); return a; }
+function auraQuadro($m, t) { const a = $m.$('.aura'); if (!a) return; a.firstChild.style.transform = `scale(${1 + 0.05 * Math.sin(t * 0.9)})`; a.lastChild.style.transform = `translateY(${-(t * 7) % 46}px)`; }
+function kick(e, txt) { e.textContent = ''; mk('span', 'pt', null, e); e.append(txt); }
+function vitrine(F, $m, pai, convite) {
+  const P = F.produto, v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk mao t seg', P.convite || convite, v);
+  const n = mk('div', 'pvn tit t seg rv', P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  const d = P.detalhe ? mk('div', 'pvd t t2 seg', P.detalhe, v) : null;
+  const linhas = P.nome.length > 17 ? 2 : 1; n.style.height = (linhas * 86) + 'px';
+  if (d) d.style.top = (1130 + linhas * 86 + 14) + 'px';
+  return v;
+}
+const vitrineLer = (F, convite) => ler(F.produto.convite || convite, F.produto.nome, F.produto.detalhe, F.produto.preco != null ? 'R$' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.8)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`; f.style.filter = q < 1 ? `blur(${(1 - q) * 14}px)` : 'none';
+  $m.filmagem(v.querySelector('.pvf img'), F.produto.foto, t);
+  foco(v.querySelector('.pvk'), t, a + 0.35, 0.6, 24, 10);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) foco(pd, t, a + 1.0, 0.6, 20, 8);
+}
+
+// ---- end of kit ----
+
+let PV = null, N = 0;
+const R = 80, C = +(2 * Math.PI * R).toFixed(2);
+const CHK = '<svg viewBox="0 0 24 24"><path pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" d="M4 12.5l5 5L20 6.5"/></svg>';
+function gauge(el, esp, $m) {
+  el.innerHTML = `<svg viewBox="0 0 200 200"><circle class="tr" cx="100" cy="100" r="${R}" stroke-width="${esp}"/><circle class="ar" cx="100" cy="100" r="${R}" stroke-width="${esp}" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg>`;
+  mk('div', 'nu tit t seg', '', el); const ok = mk('div', 'ok', null, el); ok.innerHTML = CHK;
+}
+function gaugeQuadro(el, f) { el.querySelector('.ar').setAttribute('stroke-dashoffset', (C * (1 - f)).toFixed(2)); }
+const conf = (k, n) => `${k} de ${n}`;
+function checar(F, $m) {
+  const vistos = new Set(); F.itens.forEach(s => { const k = s.trim().toLowerCase(); if (vistos.has(k)) $m.erro('itens: item repetido: ' + s); vistos.add(k); });
+}
+const CONV = 'peça o seu';
+
+Motor.molde({
+  id: 'checklist', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m; checar(F, $m); aura($m);
+    N = F.itens.length;
+    kick($('#k0'), 'Checklist');
+    $('#tit0').textContent = F.titulo;
+    const lt = Math.min(4, Math.ceil(F.titulo.length / 15)), ht = lt * 100, g0 = 390 + Math.max(0, Math.floor((1060 - (70 + ht + 60 + 300)) / 2));
+    $('#k0').style.top = g0 + 'px'; $('#tit0').style.top = (g0 + 70) + 'px'; $('#tit0').style.height = (ht + 10) + 'px'; $('#g0').style.top = (g0 + 70 + ht + 60) + 'px';
+    gauge($('#g0'), 14, $m); $('#g0 .nu').textContent = `0/${N}`;
+    gauge($('#g1'), 16, $m); $('#g1 .nu').textContent = `${N}/${N}`;
+    $('#tit1 div').textContent = F.titulo;
+    // short lists get taller rows and the whole block (gauge, title, rows) sits in the middle of the free area
+    const rh = Math.min(170, Math.floor(800 / N)), off = Math.floor((800 - N * rh) / 2);
+    $('#g1').style.top = (390 + off) + 'px'; $('#tit1').style.top = (392 + off) + 'px'; $('#lista').style.top = (640 + off) + 'px';
+    F.itens.forEach((s, i) => {
+      const r = mk('div', 'it', null, $('#lista')); r.style.top = (i * rh) + 'px'; r.style.height = rh + 'px';
+      const fx = mk('div', 'fx cartao vid', null, r); mk('i', null, null, fx);
+      const cx = mk('div', 'cx', null, r); mk('div', 'en', null, cx); cx.insertAdjacentHTML('beforeend', CHK); mk('div', 'onda', null, cx);
+      const tx = mk('div', 'tx t seg', null, r); mk('div', null, s, tx);
+    });
+    gauge($('#g2'), 14, $m); $('#g2 .nu').textContent = `${N}/${N}`;
+    $('#l2').textContent = conf(N, N) + ' conferido';
+    $('#fecho').textContent = F.fecho || 'Tudo certo, agora é só pedir.';
+    PV = vitrine(F, $m, $('#c3in'), F.produto.convite || CONV);
+    return { duracoes: [
+      Math.max(3.2, ler('Checklist', F.titulo, '0/' + N)),
+      Math.max(1.3 + N * 0.95 + 1.2, ler(F.itens.join(' '), 'n/n') + 0.6),
+      Math.max(3.2, ler(conf(N, N) + ' conferido', F.fecho || 'Tudo certo, agora é só pedir.') + 0.5),
+      Math.max(3.6, vitrineLer(F, CONV)),
+    ] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, cl, ini } = $m;
+    auraQuadro($m, t);
+    // 0: title over the empty gauge, which breathes
+    $m.cena('#c0', t, 0); const a0 = ini(0);
+    foco('#k0', t, a0 + 0.1, 0.6, 20, 8);
+    $m.revela('#tit0', t, a0 + 0.3, 0.07);
+    const q0 = eb(p(t, a0 + 0.9, 0.7)); $('#g0').style.opacity = cl(q0 * 2); $('#g0').style.transform = `scale(${0.6 + 0.4 * q0})`;
+    gaugeQuadro($('#g0'), 0.06 + 0.04 * Math.sin(t * 3));
+    // 1: rows enter, each box gets ticked; the gauge counts what was ticked
+    $m.cena('#c1', t, 1); const a1 = ini(1);
+    const qg = eb(p(t, a1 + 0.1, 0.6)); $('#g1').style.opacity = cl(qg * 2); $('#g1').style.transform = `scale(${0.6 + 0.4 * qg})`;
+    foco('#tit1', t, a1 + 0.2, 0.6, 20, 10);
+    // the ticks spread over the scene, so the list keeps moving while it is read
+    const t0 = a1 + 0.9, passo = Math.max(0.95, ($m.fim(1) - a1 - 2.2) / N);
+    let feitos = 0;
+    $$('#lista .it').forEach((r, i) => {
+      foco(r, t, a1 + 0.4 + i * 0.12, 0.6, 50, 10);
+      const ti = t0 + i * passo, cx = r.querySelector('.cx');
+      const qe = eb(p(t, ti, 0.35)); cx.querySelector('.en').style.transform = `scale(${qe})`;
+      cx.style.borderColor = t >= ti ? 'var(--bom)' : '';
+      cx.querySelector('path').style.strokeDashoffset = 1 - eo(p(t, ti + 0.12, 0.3));
+      const w = p(t, ti + 0.15, 0.6), on = cx.querySelector('.onda'); on.style.opacity = w > 0 && w < 1 ? 1 - w : 0; on.style.transform = `scale(${1 + w * 0.8})`;
+      const g = Math.exp(-Math.max(0, t - ti) * 3) * (t >= ti); cx.style.boxShadow = g > 0.01 ? `0 0 ${40 * g}px color-mix(in srgb,var(--bom) ${60 * g}%,transparent)` : 'none';
+      const sw = p(t, ti + 0.05, 0.55), li = r.querySelector('.fx i'); li.style.opacity = sw > 0 && sw < 1 ? 1 : 0; li.style.left = (-200 + sw * 1100) + 'px';
+      r.querySelector('.tx').style.transform = `translateX(${Math.sin(Math.PI * cl((t - ti) / 0.4)) * 10}px)`;
+      if (t >= ti + 0.1) feitos++;
+    });
+    let f = 0; for (let i = 0; i < N; i++) f += eo5(p(t, t0 + i * passo + 0.1, 0.4)); gaugeQuadro($('#g1'), f / N);
+    $('#g1 .nu').textContent = `${feitos}/${N}`;
+    // 2: the ring closes in green and turns into a big check
+    $m.cena('#c2', t, 2); const a2 = ini(2);
+    const qa = eb(p(t, a2 + 0.1, 0.6)); $('#g2').style.opacity = cl(qa * 2); $('#g2').style.transform = `scale(${0.7 + 0.3 * qa})`;
+    $('#g2 .ar').style.stroke = 'var(--bom)';
+    gaugeQuadro($('#g2'), (N - 1) / N + eo5(p(t, a2 + 0.3, 0.5)) / N);
+    const qk = eb(p(t, a2 + 0.8, 0.5)); const ok = $('#g2 .ok'); ok.style.opacity = cl(qk * 3); ok.style.transform = `scale(${qk}) rotate(${(1 - qk) * -60}deg)`;
+    ok.querySelector('path').style.strokeDashoffset = 1 - eo(p(t, a2 + 0.95, 0.4));
+    $('#g2 .nu').style.opacity = 1 - cl(qk * 3);
+    foco('#l2', t, a2 + 0.9, 0.6, 30, 10);
+    $m.revela('#fecho', t, a2 + 1.3, 0.05);
+    // 3: product
+    $m.cena('#c3', t, 3); vitrineQuadro(PV, F, $m, t, ini(3));
+  },
+});
+</script></body></html>

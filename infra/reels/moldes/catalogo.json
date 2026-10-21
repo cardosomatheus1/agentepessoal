@@ -1417,6 +1417,1264 @@
     "Aguarda aprovação do Matheus no AR Board antes de o agente escolher sozinho."
    ],
    "publico": "cliente_final"
+  },
+  {
+   "id": "anatomia",
+   "nome": "Anatomia do produto",
+   "grupo": "Ensinar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Um produto em camadas ou partes aberto como desenho técnico (doce, lanche, prato, peça, embalagem): cada parte ganha uma cota na foto e um rótulo com do que é feita; no fim a foto se separa em fatias.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "18 a 22 s",
+   "voz": "não (música)",
+   "midia": "1 foto real do produto de lado, com as partes visíveis de cima para baixo",
+   "cenas": [
+    "capa: nome e foto na moldura sobre papel quadriculado, com uma linha de varredura",
+    "uma parte por cena: a faixa acende (o resto escurece), a cota se desenha na borda da foto e o rótulo com cantoneiras chega por uma linha de chamada",
+    "vista explodida: a foto é cortada nas faixas e as fatias se afastam, cada rótulo acompanhando a sua",
+    "fechamento: foto, nome e preço (opcional) ou convite",
+    "final"
+   ],
+   "ficha": {
+    "produto": "até 32",
+    "foto": "do produto, de lado",
+    "partes": "2 a 4, de cima para baixo: nome até 18, detalhe até 40, faixa de e ate em % da altura da foto (dado real)",
+    "enquadre": "opcional: janela da foto em %",
+    "preco": "opcional, real",
+    "fechamento": "sem preço, até 50"
+   },
+   "diferencial": "Vista explodida: a própria foto do cliente é fatiada nas camadas e se abre; as faixas e o encaixe dos rótulos são calculados pelo código.",
+   "exemplos": [
+    "Confeitaria: bolo de pote (cobertura, brigadeiro, creme, massa)",
+    "Hamburgueria: smash (pão, carnes, base)",
+    "Doce de festa ou torta em camadas"
+   ],
+   "regras": [
+    "Partes de cima para baixo, sem sobrepor, dentro da foto e do enquadre (o molde recusa). Composição é dado real com _origem."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "capitulos",
+   "nome": "Capítulos",
+   "grupo": "Ensinar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Abertura em capítulos para uma explicação mais longa (cuidados depois do serviço, como conservar, o que conferir), com 3 ou 4 tópicos anunciados em sequência.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "30 a 39 s",
+   "voz": "não (música)",
+   "midia": "foto real do produto ou serviço no fecho",
+   "cenas": [
+    "assunto com uma barra por capítulo",
+    "um cartão de seção por capítulo, cada um com entrada própria: portal que abre, palavras que sobem do desfoque, túnel de anéis, linha de luz",
+    "índice acendendo capítulo por capítulo e a frase de fecho",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "serie": "até 24 letras, opcional",
+    "assunto": "até 60 letras",
+    "capitulos": "3 ou 4 (título até 30, detalhe até 50)",
+    "fecho": "até 60 letras",
+    "produto": "foto real, nome, detalhe, preço opcional"
+   },
+   "diferencial": "Quatro cartões de seção diferentes (portal, subida, túnel, linha de luz) em sequência; numeração e 'capítulo X de N' feitos pelo código.",
+   "exemplos": [
+    "Confeitaria: como fazer o bolo durar mais",
+    "Oficina: o que conferir antes de viajar",
+    "Salão: cuidados com os cachos"
+   ],
+   "regras": [
+    "Numeração e 'capítulo X de N' saem da lista, pelo código.",
+    "Só o que o vídeo longo de fato explica; nada inventado."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "checklist",
+   "nome": "Antes de pedir, confira",
+   "grupo": "Vender",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Lista o que o cliente confere antes de encomendar, agendar ou comprar, para o pedido chegar completo e sem ida e volta.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "21 a 30 s",
+   "voz": "não (música)",
+   "midia": "1 foto real no fecho de anúncio",
+   "cenas": [
+    "título com o medidor vazio",
+    "itens entram e cada caixa é marcada com brilho, onda e luz passando, enquanto o medidor enche ('3/5')",
+    "o anel fecha em verde e vira um ✓ grande: 'N de N conferido'",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 50",
+    "itens": "3 a 6, até 48 letras",
+    "fecho": "até 50, opcional",
+    "produto": "foto real do produto ou serviço, nome até 30, detalhe até 50, preço opcional (real), convite até 26"
+   },
+   "diferencial": "Medidor em anel que enche a cada ✓ e fecha num check grande; diferente da lista para salvar do passo a passo.",
+   "exemplos": [
+    "Confeitaria: antes de encomendar o bolo",
+    "Oficina: antes de pegar a estrada",
+    "Salão: antes de agendar a coloração"
+   ],
+   "regras": [
+    "A contagem é do código. O molde recusa item repetido. O motor não tem efeito sonoro: o 'tique' é só visual (sem som próprio, a música do banco segue)."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "comparativo",
+   "nome": "Nós x o comum",
+   "grupo": "Vender",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Mostra numa tabela o que o negócio faz e o jeito comum do mercado não faz (serviço, produto ou atendimento), sem citar ninguém.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "19 a 27 s",
+   "voz": "não (música)",
+   "midia": "1 foto real no fecho de anúncio",
+   "cenas": [
+    "versus: 'Aqui' x 'o comum' com o título",
+    "tabela: cada linha entra e ganha o ✓ e o x um a um, com a nossa coluna acesa e uma luz descendo",
+    "placar contado pelo código ('5 de 5' x '1 de 5') em barras",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 50",
+    "nos": "rótulo da nossa coluna, até 10 (padrão: Aqui)",
+    "comum": "'o comum' ou 'o jeito antigo'",
+    "linhas": "3 a 6: item até 34 + sim/não dos dois lados (real, _origem)",
+    "fecho": "até 60, opcional",
+    "produto": "foto real do produto ou serviço, nome até 30, detalhe até 50, preço opcional (real), convite até 26"
+   },
+   "diferencial": "Tabela de recursos que se marca linha a linha; o placar é contado pelo código.",
+   "exemplos": [
+    "Oficina: revisão com orçamento por foto x o jeito antigo",
+    "Salão: escova com proteção térmica x a escova comum",
+    "Marmitaria: feita no dia x marmita congelada"
+   ],
+   "regras": [
+    "Nunca citar concorrente: a outra coluna é só 'o comum' ou 'o jeito antigo'. As linhas são afirmações sobre o negócio e exigem _origem. O molde recusa tabela sem nenhuma linha em que só a gente marca e item repetido."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "contagem",
+   "nome": "Contagem",
+   "grupo": "Vender",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Quanto falta para uma data real: lançamento, inauguração, evento ou fim de uma promoção, contado do dia do post.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "24 a 29 s",
+   "voz": "não (música)",
+   "midia": "foto real do produto, serviço ou lugar no fecho",
+   "cenas": [
+    "selo do tipo, chamada, o que vem e a data",
+    "relógio: o ponteiro dá voltas rápidas e o arco para no tempo que falta, os dias contando no meio",
+    "cronômetro dias e horas, fila de dias de hoje até a data com um pulso correndo",
+    "o que vem ou o que acaba",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "tipo": "lançamento, fim de promoção, inauguração ou evento",
+    "titulo": "até 50 letras, sem algarismos",
+    "o_que": "até 40 letras, sem algarismos",
+    "data": "data real",
+    "hora": "hora opcional, real",
+    "detalhe": "até 90 letras",
+    "produto": "foto real, nome, detalhe, preço opcional"
+   },
+   "diferencial": "Relógio que gira até o tempo que falta e cronômetro de dias e horas, tudo calculado do dia do post até a data; mostra a data, nunca contagem que reinicia.",
+   "exemplos": [
+    "Confeitaria: lançamento da torta",
+    "Hamburgueria: fim do combo",
+    "Salão: inauguração da nova unidade",
+    "Oficina: sábado de check-up"
+   ],
+   "regras": [
+    "Dias, horas e a fila de dias são contas do código a partir de _hoje (o dia do post).",
+    "Data e hora só com origem (dono ou sistema).",
+    "Data passada não gera; promoção de mais de 31 dias e data a mais de 120 dias também não.",
+    "Nada de contagem que reinicia: o vídeo mostra a data a que conta."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "do-rascunho",
+   "nome": "Do rascunho ao pronto",
+   "grupo": "Lançar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Produto ou serviço contado do rascunho até o pronto, como um storyboard: cada etapa real do processo em quadro de lápis e o resultado revelado em cor. Serve para confeitaria, ateliê, hamburgueria, marcenaria, estética.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "20 a 30 s",
+   "voz": "não (música)",
+   "midia": "2 a 3 fotos reais das etapas e 1 do produto pronto",
+   "cenas": [
+    "folha com o título escrito à mão; os quadros vazios desenham a lápis",
+    "câmera entra no quadro 1: a foto da etapa vira desenho a lápis, com legenda à mão",
+    "a corrente leva ao quadro seguinte (2 ou 3 etapas)",
+    "quadro final: o produto em lápis e a cor revelando em diagonal; nome, detalhe, preço e data",
+    "final"
+   ],
+   "ficha": {
+    "gancho": "até 40",
+    "etapas": "2 a 3 (texto até 34 e foto)",
+    "foto": "1 (pronto)",
+    "nome": "até 40",
+    "detalhe": "opcional, até 36",
+    "preco": "opcional, real",
+    "quando": "data opcional"
+   },
+   "diferencial": "O desenho a lápis é a própria foto traçada por um filtro de bordas (nada inventado), e o produto pronto revela a cor por cima do traço.",
+   "exemplos": [
+    "Confeitaria: bolo de morango",
+    "Ateliê: vestido sob medida",
+    "Hamburgueria: smash duplo"
+   ],
+   "regras": [
+    "Cada quadro precisa de uma foto diferente, da etapa que a legenda diz.",
+    "Data passada é recusada; em marca de teste o preço exige 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "etiquetas",
+   "nome": "Etiquetas no produto",
+   "grupo": "Vender",
+   "onda": 3,
+   "origem": null,
+   "situacao": "As características de um produto ou serviço ('sem conservante', 'feito no dia', 'peça com nota fiscal') caem como post-its em cima da foto, uma por vez.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "17 a 24 s",
+   "voz": "não (música)",
+   "midia": "1 foto real do produto ou serviço",
+   "cenas": [
+    "nome do produto e a foto colada com fita",
+    "uma cena por característica: o post-it cai com fita, gira e assenta (a foto treme no impacto); quando chega o próximo, ele encolhe para a borda",
+    "fechamento: foto, nome e etiqueta de preço (opcional) ou o convite",
+    "final"
+   ],
+   "ficha": {
+    "produto": "até 34",
+    "foto": "do produto",
+    "etiquetas": "3 a 5: texto até 22, detalhe opcional até 38 (dado real do dono)",
+    "preco": "opcional, real",
+    "unidade": "opcional, até 14",
+    "fechamento": "sem preço, até 50"
+   },
+   "diferencial": "Post-its com fita batendo na foto do produto, nas cores da marca; o anterior estaciona na borda para o produto continuar à vista.",
+   "exemplos": [
+    "Confeitaria: bolo de pote feito no dia, sem conservante",
+    "Oficina: revisão do freio com peça com nota fiscal e garantia",
+    "Hamburgueria: carne moída no dia, pão brioche"
+   ],
+   "regras": [
+    "Cada característica é dado real com _origem; nada de promessa de saúde. Preço só real; valor de teste leva nota 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "explica",
+   "nome": "Por que isso acontece?",
+   "grupo": "Ensinar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Explica em três partes curtas por que algo acontece no ramo (o preço que mudou, o barulho do carro, a cor que desbota), com a fonte da explicação, e fecha no produto ou serviço.",
+   "formatos": [
+    "reel"
+   ],
+   "duracao": "42 a 45 s",
+   "voz": "não (música)",
+   "midia": "1 foto opcional do assunto; foto real do produto no fecho",
+   "cenas": [
+    "pergunta com recorte de foto (ou três fichas numeradas)",
+    "parte 1 no círculo",
+    "parte 2 na ficha pautada",
+    "parte 3 na TV de tubo ligando",
+    "resumo com as três partes, recado e fonte",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "pergunta": "até 64 letras, sem algarismos",
+    "foto": "opcional",
+    "partes": "3 (título até 34, texto até 100), sem algarismos",
+    "conclusao": "até 80",
+    "fonte": "real, até 70 (com origem)",
+    "produto": "foto, nome, detalhe, preço real opcional"
+   },
+   "diferencial": "Três cartões de capítulo diferentes em sequência (círculo que estoura, ficha pautada que cai, TV que liga com linha de luz e chiado): a explicação vira um minidocumentário.",
+   "exemplos": [
+    "Confeitaria: por que o chocolate ficou mais caro",
+    "Oficina: por que o freio começa a chiar",
+    "Salão: por que o loiro fica amarelado"
+   ],
+   "regras": [
+    "A fonte da explicação é obrigatória e precisa de origem (dono ou sistema); sem ela o molde não gera.",
+    "Sem algarismos nos textos: este molde explica, não cita número (número vai em numero-grande ou grafico-meses).",
+    "Sem saúde, política ou religião sem fonte.",
+    "Texto que levaria o vídeo além de 45 s é recusado pelo molde (o tempo de leitura não encolhe)."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "funil",
+   "nome": "Funil",
+   "grupo": "Ensinar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Mostra onde a venda se perde, de quem viu até quem comprou, em 3 a 5 etapas contadas pelo negócio, para quem vende a outros negócios (sistema, contabilidade, agência, consultoria, fornecedor).",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "30 a 36 s",
+   "voz": "não (música)",
+   "midia": "foto real do serviço no fecho",
+   "cenas": [
+    "pergunta com um funil pequeno se empilhando",
+    "funil montando etapa por etapa: faixas com largura do código, números contando, conversão de cada passo e pontos que caem e escapam na mesma proporção",
+    "taxa do começo ao fim e a etapa que mais perde, acesa",
+    "o que fazer nessa etapa",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 60 letras, sem algarismos",
+    "periodo": "até 24 letras",
+    "etapas": "3 a 5 (rótulo, valor real), cada uma menor ou igual à anterior",
+    "dica": "até 90 letras, sem algarismos",
+    "exemplo": "opcional: mostra 'valores de exemplo'",
+    "produto": "foto real, nome, detalhe, preço opcional"
+   },
+   "diferencial": "Funil de faixas acesas com pontos que caem e escapam em cada etapa na proporção real; o código acha sozinho o maior vazamento.",
+   "exemplos": [
+    "Contabilidade: do site ao contrato",
+    "Sistema de agendamento: do story à cadeira",
+    "Assistente de vendas: do anúncio ao cliente"
+   ],
+   "regras": [
+    "Larguras, conversões, taxa do começo ao fim e a etapa que mais perde são contas do código.",
+    "Valor de cada etapa só com origem (dono ou sistema); etapa maior que a anterior não gera.",
+    "Títulos e dica sem algarismos; números de exemplo mostram 'valores de exemplo'."
+   ],
+   "publico": "dono_de_negocio"
+  },
+  {
+   "id": "glossario",
+   "nome": "O que é?",
+   "grupo": "Ensinar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Explica em palavras simples um termo do ramo que o cliente ouve e não entende (matização, alinhamento, al dente) e o que ele muda na prática.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "23 a 27 s",
+   "voz": "não (música)",
+   "midia": "1 foto opcional do termo; foto real do produto no fecho",
+   "cenas": [
+    "'O que é' e o termo no marca-texto",
+    "verbete de dicionário: termo, sílabas, etiqueta, régua e definição",
+    "na prática, na ficha pautada com a foto presa",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "termo": "até 28 letras",
+    "silabas": "opcional, até 34",
+    "classe": "opcional, até 22",
+    "definicao": "até 130",
+    "pratica": "até 90",
+    "foto": "opcional",
+    "produto": "foto, nome, detalhe, preço real opcional"
+   },
+   "diferencial": "O verbete que se monta como num dicionário (termo, sílabas, etiqueta que estoura, régua de tinta, definição com recuo); o termo longo ou curto muda o layout pelo código.",
+   "exemplos": [
+    "Salão: o que é matização",
+    "Oficina: o que é alinhamento e balanceamento",
+    "Restaurante: o que é massa al dente"
+   ],
+   "regras": [
+    "Definição sem jargão, conferida pelo dono.",
+    "Sem termo de saúde ou estética regulada sem fonte."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "grafico-meses",
+   "nome": "Gráfico mês a mês",
+   "grupo": "Engajar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "A evolução de um número real do negócio em 3 a 6 meses (pedidos, clientes, faturamento), com a variação calculada e o que ela mostra.",
+   "formatos": [
+    "reel"
+   ],
+   "duracao": "23 a 28 s",
+   "voz": "não (música)",
+   "midia": "foto real do produto no fecho",
+   "cenas": [
+    "título e os meses do período",
+    "colunas crescendo em degraus, o último mês em destaque, seta de caneta com a variação",
+    "o que o gráfico mostra na ficha pautada",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 56 letras, sem algarismos",
+    "unidade": "até 20",
+    "tipo": "quantidade ou dinheiro",
+    "meses": "3 a 6 (mês até 9 letras, valor real)",
+    "leitura": "até 90, sem algarismos",
+    "produto": "foto, nome, detalhe, preço real opcional"
+   },
+   "diferencial": "Colunas de papel que crescem em degraus, uma depois da outra, e a seta de caneta do primeiro ao último mês; alturas e variação feitas pelo código.",
+   "exemplos": [
+    "Restaurante: marmitas entregues por mês",
+    "Salão: clientes novas por indicação",
+    "Oficina: valor em revisões preventivas por mês"
+   ],
+   "regras": [
+    "Valores dos meses só com origem (dono ou sistema).",
+    "A variação é do primeiro ao último mês, sem arredondar para cima.",
+    "Valores de exemplo aparecem com a nota 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "linha-do-tempo",
+   "nome": "Linha do tempo",
+   "grupo": "Institucional",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Conta a história do negócio em 3 a 6 datas, da abertura até hoje, para o cliente confiar em quem está por trás.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "24 a 39 s",
+   "voz": "não (música)",
+   "midia": "fotos reais opcionais em cada data; 1 foto no fecho",
+   "cenas": [
+    "título e 'de AAAA até hoje'",
+    "um ponto por data: a câmera anda no trilho, o ano grande rola até a data e abre o cartão do fato (com foto, se houver)",
+    "'N anos de história' contado pelo código, com o trilho em miniatura",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 50",
+    "marcos": "3 a 6: ano + fato até 54 + foto opcional (real, _origem)",
+    "fecho": "até 60, opcional",
+    "produto": "foto real do produto ou serviço, nome até 30, detalhe até 50, preço opcional (real), convite até 26"
+   },
+   "diferencial": "Trilho horizontal com câmera andando e o ano rolando de uma data à outra; diferente do 'marco' (um número só).",
+   "exemplos": [
+    "Oficina de pai para filho, da garagem ao galpão",
+    "Confeitaria que começou no forno de casa",
+    "Hamburgueria do food truck à casa própria"
+   ],
+   "regras": [
+    "Datas e fatos contados pelo dono (_origem). O código põe em ordem de ano, recusa ano no futuro e calcula os anos de história; nada de data estimada."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "lista-cinco",
+   "nome": "Lista numerada",
+   "grupo": "Ensinar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Lista curta de 3 a 5 coisas que o cliente precisa saber, conferir ou combinar ('5 coisas para checar antes de viajar', 'cuidados que fazem o resultado durar'), fechando no produto ou serviço do negócio.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "23 a 29 s",
+   "voz": "não (música)",
+   "midia": "1 foto real do produto ou serviço (fechamento)",
+   "cenas": [
+    "capa: a quantidade como número gigante vazado num círculo, preenchendo de tinta, e o título",
+    "folha de caderno (pautas, furos, margem): um item por cena, cada um entrando com o seu número vazado que se preenche e um marca-texto",
+    "fechamento: foto colada como recorte com fita, a frase e um visto para cada item",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 48 letras, sem o número (o código conta os itens)",
+    "itens": "3 a 5: texto até 40, detalhe opcional até 56",
+    "foto": "do negócio",
+    "fechamento": "até 60",
+    "rotulo": "opcional, até 24"
+   },
+   "diferencial": "O número da capa sai da contagem dos itens pelo código; caderno com cada número vazado enchendo de tinta, no ritmo picado (12 quadros por segundo) do estilo editorial.",
+   "exemplos": [
+    "Oficina: 5 coisas para checar antes de pegar a estrada",
+    "Salão: 3 cuidados que mantêm o cacho definido",
+    "Confeitaria: 4 coisas para combinar antes de encomendar o bolo"
+   ],
+   "regras": [
+    "Título sem número: a quantidade vem da lista. Item repetido recusa. Só dica que o negócio sustenta."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "mapa",
+   "nome": "Mapa do que a gente faz",
+   "grupo": "Vender",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Mostra tudo o que o negócio oferece de uma vez, para quem só conhece um produto ou serviço descobrir os outros.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "21 a 26 s",
+   "voz": "não (música)",
+   "midia": "nenhuma no mapa (ícones de um conjunto fixo); 1 foto real no fecho",
+   "cenas": [
+    "título com o núcleo pulsando",
+    "mapa mental: o centro acende e de 4 a 8 ramos se desenham, cada um com faísca correndo até o ícone e o nome",
+    "contagem pelo código ('8 coisas num lugar só')",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 50",
+    "centro": "até 26 (nome do negócio ou o que faz)",
+    "ramos": "4 a 8: nome até 22 + ícone (real, _origem)",
+    "onde": "até 24, opcional",
+    "fecho": "até 70, opcional",
+    "produto": "foto real do produto ou serviço, nome até 30, detalhe até 50, preço opcional (real), convite até 26"
+   },
+   "diferencial": "Mapa mental que se desenha a partir do centro; posições calculadas pelo código dentro da área livre.",
+   "exemplos": [
+    "Oficina: não é só troca de óleo",
+    "Confeitaria: a festa inteira sai daqui",
+    "Salão: cabelo e unhas no mesmo lugar"
+   ],
+   "regras": [
+    "Só o que o negócio oferece de verdade (_origem do dono). Nomes de ramo em cima do ícone na metade de cima, para a linha nunca cruzar o texto. O molde recusa ramo repetido."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "meta-do-mes",
+   "nome": "Meta do mês",
+   "grupo": "Engajar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "O negócio mostra a meta do período (pedidos, atendimentos, revisões, peças) e quanto falta para chegar lá, chamando o cliente a ajudar a bater.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "27 a 31 s",
+   "voz": "não (música)",
+   "midia": "foto real do produto ou serviço no fecho",
+   "cenas": [
+    "selo 'META DE …', chamada e a meta grande acendendo",
+    "mostrador: a agulha e o arco varrem até o preenchido, a porcentagem conta junto",
+    "o que falta descendo da meta até o resto, barra com o vão aceso e os dias até o prazo",
+    "o que acontece quando bater (promessa do dono)",
+    "produto com foto e convite",
+    "final"
+   ],
+   "ficha": {
+    "periodo": "até 16 letras (de outubro, da semana)",
+    "titulo": "até 56 letras, sem algarismos",
+    "meta": "número real",
+    "atual": "número real, menor que a meta",
+    "unidade": "até 34 letras, no plural (e unidade_um opcional)",
+    "ate": "data opcional, real",
+    "motivo": "até 90 letras, real",
+    "pedido": "até 30 letras",
+    "produto": "foto real, nome, detalhe, preço opcional"
+   },
+   "diferencial": "Mostrador que acende: a agulha e o arco varrem até o preenchido calculado pelo código e o resto conta para baixo a partir da meta.",
+   "exemplos": [
+    "Confeitaria: bolos de pote de outubro",
+    "Oficina: revisões completas de novembro",
+    "Salão: atendimentos de hidratação da semana"
+   ],
+   "regras": [
+    "Preenchimento, porcentagem (arredondada para baixo), o que falta e os dias até o prazo são contas do código.",
+    "Meta, atual, prazo e motivo só com origem (dono ou sistema).",
+    "Meta já batida não gera (vai para o molde Marco); prazo vencido não gera.",
+    "Título e motivo sem algarismos; números de exemplo mostram 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "multiplicador",
+   "nome": "Multiplicou",
+   "grupo": "Engajar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Algo do negócio que multiplicou (pedidos pelo link, clientes de um plano, entregas): o antes e o agora reais e quantas vezes cresceu, com o que mudou para crescer.",
+   "formatos": [
+    "reel"
+   ],
+   "duracao": "27 a 29 s",
+   "voz": "não (música)",
+   "midia": "foto real do produto no fecho",
+   "cenas": [
+    "o que cresceu e 'quanto cresceu?'",
+    "o bloco de antes pousa na linha",
+    "cópias do bloco empilham e o fator conta até o resultado",
+    "o que mudou na ficha pautada",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "assunto": "até 56 letras, sem algarismos",
+    "unidade": "até 26",
+    "antes": "valor real e quando",
+    "agora": "valor real e quando",
+    "motivo": "até 90, sem algarismos",
+    "produto": "foto, nome, detalhe, preço real opcional"
+   },
+   "diferencial": "A pilha de blocos: o 'antes' vira a unidade e as cópias caem em degraus até o 'agora', a última pela metade se for o caso; o fator é dividido e arredondado para baixo pelo código.",
+   "exemplos": [
+    "Confeitaria: encomendas de bolo de pote pelo link",
+    "Hamburgueria: pedidos pelo delivery próprio",
+    "Oficina: empresas no plano de frota"
+   ],
+   "regras": [
+    "Antes e agora só com origem (dono ou sistema).",
+    "Menos de uma vez e meia ou mais de doze vezes recusa o molde (use numero-grande ou grafico-meses).",
+    "O fator é arredondado para baixo: nunca mostra mais crescimento do que houve."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "novidade-recurso",
+   "nome": "Novidade de recurso",
+   "grupo": "Lançar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Um serviço ou facilidade nova anunciada como lançamento de produto digital: leva e traz, entrega até mais tarde, agendamento pelo link, assinatura semanal. Serve para oficina, restaurante, salão, clínica e serviços.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "20 a 26 s",
+   "voz": "não (música)",
+   "midia": "1 foto real do serviço",
+   "cenas": [
+    "grade fina desenha; o nome do recurso entra com o desfoque limpando e cresce devagar",
+    "cartão de app: foto, ícone, chave que liga, passos que ganham check",
+    "linha de antes riscada, seta, linha de agora sublinhada",
+    "calendário que vira com 'disponível a partir de' (dia da semana e mês do código), preço ou condição",
+    "final"
+   ],
+   "ficha": {
+    "recurso": "até 34",
+    "icone": "opcional, da lista",
+    "foto": "1",
+    "passos": "2 a 3, até 38",
+    "antes": "até 46",
+    "agora": "até 46",
+    "a_partir": "data",
+    "preco": "opcional, real",
+    "condicao": "opcional, real, até 30",
+    "onde": "opcional, até 36"
+   },
+   "diferencial": "O recurso vira tela de produto: cartão com chave que liga e passos com check sobre uma grade precisa; risco no antes e sublinhado no agora, linha por linha.",
+   "exemplos": [
+    "Oficina: leva e traz do carro",
+    "Hamburgueria: entrega até a 1h",
+    "Restaurante: marmita da semana por assinatura"
+   ],
+   "regras": [
+    "Data de início passada é recusada; dia da semana e mês são do código.",
+    "Antes e agora iguais são recusados.",
+    "Preço e condição só com _origem; em marca de teste o preço exige 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "numero-grande",
+   "nome": "Número grande",
+   "grupo": "Engajar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Um número real do negócio que conta uma história (atendimentos do mês, pedidos do sábado, clientes que voltam), com o contexto calculado pelo código e um recado.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "27 a 31 s",
+   "voz": "não (música)",
+   "midia": "foto real do produto no fecho",
+   "cenas": [
+    "gancho com seta de caneta",
+    "o número entra em foco contando e é circulado à mão",
+    "o número sobe e chega o contexto com a conta (por dia, por cliente)",
+    "recado na ficha pautada",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "gancho": "até 60 letras, sem algarismos",
+    "numero": "real (quantidade, R$ ou %)",
+    "unidade": "até 22",
+    "por": "opcional: quantidade real e unidade (o código divide)",
+    "contexto": "até 90, sem algarismos",
+    "licao": "até 70",
+    "produto": "foto, nome, detalhe, preço real opcional"
+   },
+   "diferencial": "Foco de câmera no número (desfocado para nítido enquanto conta) e o círculo de caneta do editor em volta; a conta do contexto é do código.",
+   "exemplos": [
+    "Oficina: carros revisados no mês e quantos por dia",
+    "Confeitaria: faturamento das festas de setembro por festa",
+    "Salão: clientes que voltam no mês seguinte"
+   ],
+   "regras": [
+    "Número e divisor só com origem (dono ou sistema).",
+    "Textos sem algarismos: todo número na tela vem de um campo numérico.",
+    "Valores de exemplo aparecem com a nota 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "papel",
+   "nome": "Lançamento em papel",
+   "grupo": "Lançar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Novidade contada em papel recortado, com calor de coisa feita à mão: cartão dobrado, foto colada com fita, bilhetes e tíquete. Serve para comida caseira, produto artesanal, serviço de salão ou ateliê.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "20 a 26 s",
+   "voz": "não (música)",
+   "midia": "1 foto real do produto ou serviço",
+   "cenas": [
+    "tiras de papel rasgado nas cores da marca entram e formam a colagem; o cartão abre com a frase",
+    "foto colada na folha com duas fitas; a etiqueta do nome desdobra",
+    "2 ou 3 bilhetes abrem um a um com os detalhes",
+    "tíquete picotado com preço, data e onde (só o que existe)",
+    "final"
+   ],
+   "ficha": {
+    "selo": "opcional, até 20 (letra de mão)",
+    "gancho": "até 52",
+    "nome": "até 40",
+    "foto": "1",
+    "detalhes": "2 a 3, até 34",
+    "preco": "opcional, real",
+    "condicao": "opcional, real, até 30",
+    "quando": "data opcional",
+    "onde": "opcional, até 36"
+   },
+   "diferencial": "Colagem de papel com bordas rasgadas geradas pelo código, dobras que abrem e fecham no mesmo gesto e o tíquete picotado no fim.",
+   "exemplos": [
+    "Restaurante: lasanha da casa",
+    "Loja: sabonete artesanal",
+    "Salão: finalização de cachos"
+   ],
+   "regras": [
+    "Data passada é recusada.",
+    "Preço e condição só com _origem; em marca de teste o preço exige 'valores de exemplo'.",
+    "Sem preço, condição, data e onde o tíquete não aparece."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "piramide",
+   "nome": "Pirâmide",
+   "grupo": "Ensinar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Explica prioridades ou o que faz um produto ou serviço bem feito, do fundamento (base) ao resultado que o cliente leva (topo).",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "22 a 28 s",
+   "voz": "não (música)",
+   "midia": "1 foto real no fecho de anúncio",
+   "cenas": [
+    "título sobre o contorno da pirâmide se desenhando",
+    "pirâmide montada da base ao topo: cada degrau cai e assenta, com a etiqueta ligada por tracejado",
+    "câmera mergulha no topo, que brilha sob um feixe de luz",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 50",
+    "niveis": "3 a 5, da base ao topo: nome até 20, detalhe até 36 (opcional)",
+    "fecho": "até 70, opcional",
+    "produto": "foto real do produto ou serviço, nome até 30, detalhe até 50, preço opcional (real), convite até 26"
+   },
+   "diferencial": "Degraus que assentam um a um da base ao topo e a câmera que mergulha no topo.",
+   "exemplos": [
+    "Confeitaria: o que faz um bolo de festa dar certo",
+    "Oficina: prioridade na manutenção do carro",
+    "Salão: cabelo bonito começa antes da escova"
+   ],
+   "regras": [
+    "A ordem da ficha é da base para o topo; a geometria sai do número de níveis. O molde recusa nível repetido."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "proporcao",
+   "nome": "Proporção",
+   "grupo": "Engajar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Um hábito real dos clientes contado pelo negócio: '1 em cada 3 clientes pede com entrega', '7 em cada 10 motoristas fazem a revisão antes de viajar'.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "25 a 29 s",
+   "voz": "não (música)",
+   "midia": "foto real do produto ou serviço no fecho",
+   "cenas": [
+    "pergunta com o ícone do negócio flutuando num anel aceso",
+    "'1 em cada 3' batendo e a barra de ícones enchendo um a um",
+    "a conta por trás: quantos de quantos, barra e porcentagem",
+    "o que isso quer dizer",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 60 letras, sem algarismos",
+    "quem": "até 24 letras, plural",
+    "fazem": "até 48 letras",
+    "periodo": "até 24 letras",
+    "quantos": "número real",
+    "total": "número real",
+    "icone": "um da lista",
+    "conclusao": "até 100 letras, sem algarismos",
+    "produto": "foto real, nome, detalhe, preço opcional"
+   },
+   "diferencial": "Barra de ícones que acendem um a um; a proporção mais simples (2, 3, 4, 5 ou 10) é achada pelo código, com 'cerca de' quando não é exata.",
+   "exemplos": [
+    "Comida caseira: 1 em cada 3 clientes pede com entrega",
+    "Oficina: 7 em cada 10 motoristas revisam antes de viajar",
+    "Salão: 3 em cada 4 clientes voltam para a manutenção"
+   ],
+   "regras": [
+    "Proporção, ícones acesos e porcentagem (arredondada para baixo) saem de quantos e total, pelo código.",
+    "Quantos e total só com origem (dono ou sistema); proporção que arredonda para nenhum ou todos não gera.",
+    "Textos sem algarismos; números de exemplo mostram 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "ranking",
+   "nome": "Ranking do mês",
+   "grupo": "Vender",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Os 3 a 5 mais vendidos, pedidos ou agendados do mês, contados do último ao primeiro, com o campeão revelado no fim; vitrine do cardápio ou dos serviços.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "23 a 28 s",
+   "voz": "não (música)",
+   "midia": "foto real do campeão no fecho",
+   "cenas": [
+    "TOP N carimbado e título",
+    "lista numerada do último ao segundo, barras em degraus, primeiro escondido",
+    "#1 com a faixa de campeão, a quantidade e a vantagem sobre o segundo",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 44 letras, sem algarismos",
+    "unidade": "até 14 (pedidos, vendidos, horários)",
+    "itens": "3 a 5 (nome até 28, quantidade real)",
+    "produto": "foto, nome, detalhe, preço real opcional"
+   },
+   "diferencial": "Contagem regressiva com o primeiro lugar escondido e a faixa de campeão de pontas recortadas; ordem, barras e vantagem saem dos números pelo código.",
+   "exemplos": [
+    "Restaurante: os pratos mais pedidos de setembro",
+    "Salão: os serviços que mais encheram a agenda",
+    "Oficina: o que mais saiu da oficina no mês"
+   ],
+   "regras": [
+    "Quantidades só com origem (dono ou sistema); o código ordena.",
+    "Empate recusa o molde: o ranking precisa de números diferentes.",
+    "Valores de exemplo aparecem com a nota 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "revelacao",
+   "nome": "Revelação",
+   "grupo": "Lançar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Produto ou serviço novo apresentado como lançamento de marca grande: palco escuro, a luz revela a foto e o nome entra em letra grande. Serve para prato novo, serviço novo de salão ou oficina, produto novo de loja.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "20 a 28 s",
+   "voz": "não (música)",
+   "midia": "1 foto real do produto ou serviço",
+   "cenas": [
+    "palco escuro, a luz passa e acende a foto; frase curta palavra por palavra",
+    "a foto sobe e o nome entra em letra grande, com uma linha",
+    "3 recursos em lista: o ativo acende, a câmera passeia pela foto",
+    "preço com brilho passando, quando chega (dia da semana do código) e onde",
+    "final"
+   ],
+   "ficha": {
+    "gancho": "até 44 letras",
+    "nome": "até 40",
+    "linha": "opcional, até 60",
+    "foto": "1",
+    "foco": "opcional: centro, cima, baixo, esquerda, direita",
+    "recursos": "3 (título até 24, detalhe até 40)",
+    "preco": "opcional, real",
+    "disponivel": "data opcional",
+    "onde": "opcional, até 40"
+   },
+   "diferencial": "Um palco só, sem corte: a foto é um objeto que a câmera leva de cena em cena; varredura de luz e lista de recursos que acende um por vez.",
+   "exemplos": [
+    "Hamburgueria: smash de costela",
+    "Salão: mechas iluminadas",
+    "Oficina: revisão de viagem",
+    "Confeitaria: bolo de pote"
+   ],
+   "regras": [
+    "Data passada é recusada; dia da semana e 'amanhã' são do código.",
+    "Preço só com _origem; em marca de teste o preço exige a nota 'valores de exemplo'.",
+    "Sem preço, data e onde o molde recusa (a cena de oferta ficaria vazia).",
+    "A foto aparece em até 1,6 s (não esconder o produto no Reel)."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "roteiro-semana",
+   "nome": "Roteiro da semana",
+   "grupo": "Engajar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "O que acontece em cada dia da semana no negócio (prato do dia, dia de cada serviço, horário diferente), riscado dia a dia como uma agenda de papel. Não é agenda de horários livres.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "15 a 24 s",
+   "voz": "não (música)",
+   "midia": "1 foto real do negócio; foto opcional por dia",
+   "cenas": [
+    "título e a folha de agenda com as caixas dos dias impressas",
+    "um dia por cena: a caixa do dia acende, o texto é escrito e marcado; quando chega o próximo, o anterior é riscado à caneta e ganha um visto; a foto do dia cola no canto",
+    "fechamento: foto, convite e carimbo 'Toda semana é assim'",
+    "final"
+   ],
+   "ficha": {
+    "dias": "3 a 7, na ordem: dia, o que acontece até 34, hora e foto opcionais (dado real do dono)",
+    "foto": "do negócio",
+    "fechamento": "até 56",
+    "titulo": "opcional, até 44",
+    "rotulo": "opcional",
+    "selo": "opcional, até 28"
+   },
+   "diferencial": "Agenda de papel riscada à caneta, dia a dia; a ordem da semana é conferida pelo código.",
+   "exemplos": [
+    "Restaurante: o prato especial de cada dia",
+    "Salão: coloração na terça, corte e escova na quinta",
+    "Oficina: o serviço de cada dia da semana"
+   ],
+   "regras": [
+    "Dias na ordem e sem repetir (o molde recusa); rotina é dado real com _origem."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "sabia-que",
+   "nome": "Você sabia?",
+   "grupo": "Atrair",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Uma curiosidade do ramo em forma de pergunta, com a resposta revelada e a fonte, ligada ao jeito do negócio trabalhar.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "20 a 23 s",
+   "voz": "não (música)",
+   "midia": "foto real do negócio; foto opcional da pergunta",
+   "cenas": [
+    "TV antiga ligando (linha de luz, tremida, linhas de varredura) com 'Você sabia?'",
+    "a pergunta na página, com o círculo de destaque e a foto colada",
+    "as luzes baixam: a resposta entra em foco num holofote, com a explicação e a fonte",
+    "a foto do negócio e a ligação com ele",
+    "final"
+   ],
+   "ficha": {
+    "tema": "opcional, até 26",
+    "pergunta": "até 90, termina com ?",
+    "resposta": "até 14 (real)",
+    "explica": "até 100 (real)",
+    "fonte": "até 60 (real, obrigatória)",
+    "foto": "do negócio",
+    "ligacao": "até 72"
+   },
+   "diferencial": "TV ligando e resposta saindo do desfoque num holofote; sem fonte o molde não gera.",
+   "exemplos": [
+    "Pizzaria: quanto tempo a massa descansa",
+    "Oficina: prazo de troca de óleo mesmo andando pouco",
+    "Salão: quantas vezes lavar o cabelo cacheado"
+   ],
+   "regras": [
+    "Resposta, explicação e fonte são dado real com _origem; saúde e estética só com fonte que sustente."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "seis-motivos",
+   "nome": "Seis motivos",
+   "grupo": "Vender",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Seis motivos concretos para escolher o negócio (garantia, prazo, atendimento, forma de pagamento), um acendendo de cada vez numa grade.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "22 a 24 s",
+   "voz": "não (música)",
+   "midia": "1 foto real do negócio (fechamento)",
+   "cenas": [
+    "título e a grade 2x3 impressa vazia (contornos tracejados, só os números)",
+    "uma cena por motivo: o quadro enche de cor da esquerda para a direita, o ícone salta e o texto entra; os anteriores ficam com contorno",
+    "fechamento: foto colada, os seis ícones em fila e o convite",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "opcional, até 44, tem de dizer 6 ou seis",
+    "motivos": "exatamente 6, até 30 letras, cada um com ícone (dado real do dono)",
+    "foto": "do negócio",
+    "fechamento": "até 56"
+   },
+   "diferencial": "Grade de seis quadros que acendem um a um; só um quadro colorido por vez.",
+   "exemplos": [
+    "Oficina: orçamento antes de mexer, peça velha devolvida, garantia",
+    "Restaurante: comida feita no dia, entrega até as 14h",
+    "Salão: avaliação do fio, horário cumprido, alicate esterilizado"
+   ],
+   "regras": [
+    "Motivos são fatos do negócio confirmados pelo dono (_origem). 'O melhor da cidade' e parecidos são recusados pelo molde."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "tendencia",
+   "nome": "Tendência",
+   "grupo": "Institucional",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Um número real que cresceu ao longo de semanas ou meses (pedidos, agendamentos, clientes novos, vendas) e o agradecimento a quem fez crescer.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "27 a 33 s",
+   "voz": "não (música)",
+   "midia": "foto real do produto ou serviço no fecho",
+   "cenas": [
+    "chamada e o ponto de partida",
+    "linha desenhada ponto a ponto com a ponta acesa; o número grande mostra cada ponto real que ela alcança",
+    "variação do começo ao fim contando, linha pequena e o melhor período",
+    "agradecimento ou o que mudou",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 60 letras, sem algarismos",
+    "medida": "até 30 letras",
+    "tipo": "quantidade ou dinheiro",
+    "pontos": "4 a 12 (rótulo, valor real)",
+    "motivo": "até 100 letras, sem algarismos",
+    "produto": "foto real, nome, detalhe, preço opcional"
+   },
+   "diferencial": "Linha que se desenha ponto a ponto com a ponta brilhando; eixo do zero, variação e melhor período calculados pelo código.",
+   "exemplos": [
+    "Hamburgueria: pedidos do delivery por semana",
+    "Oficina: agendamentos por mês",
+    "Cosméticos artesanais: vendas do site (valores de exemplo)"
+   ],
+   "regras": [
+    "Eixo começa no zero; variação (arredondada para baixo), melhor período e desenho são contas do código.",
+    "Cada ponto só com origem (dono ou sistema); linha que não subiu não gera.",
+    "O número grande só mostra pontos reais, nunca valor entre dois pontos; números de exemplo mostram 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "textura",
+   "nome": "Textura",
+   "grupo": "Lançar",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Lançamento sensorial: a foto bem de perto do produto, palavras de sabor e toque com a textura dentro das letras, e o produto inteiro no fim. Serve para comida, cosmético, tecido, café, produto artesanal.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "20 a 26 s",
+   "voz": "não (música)",
+   "midia": "1 foto macro do produto e 1 do produto inteiro",
+   "cenas": [
+    "foto macro em tela cheia com aproximação lenta e a frase",
+    "3 a 5 palavras enormes com a textura dentro das letras, trocando com corte em curva",
+    "a textura recua até virar a foto do produto; nome e linha",
+    "preço, data e onde (só se houver preço ou data)",
+    "final"
+   ],
+   "ficha": {
+    "selo": "opcional, até 16",
+    "gancho": "até 44",
+    "textura": "1 foto macro",
+    "palavras": "3 a 5, até 12 letras",
+    "foto": "1",
+    "nome": "até 40",
+    "linha": "opcional, até 56",
+    "preco": "opcional, real",
+    "quando": "data opcional",
+    "onde": "opcional, até 36"
+   },
+   "diferencial": "A foto do próprio produto preenche as letras das palavras sensoriais; zoom de volta da textura ao produto inteiro.",
+   "exemplos": [
+    "Loja: sabonete de argila",
+    "Restaurante: lasanha da casa",
+    "Hamburgueria: smash de borda crocante"
+   ],
+   "regras": [
+    "As palavras são do dono e verdadeiras sobre o produto; palavra repetida é recusada.",
+    "Data passada é recusada; em marca de teste o preço exige 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "tres-caminhos",
+   "nome": "Três caminhos",
+   "grupo": "Vender",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Três opções lado a lado (tamanhos, planos, pacotes) para o cliente escolher a dele.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "21 a 27 s",
+   "voz": "não (música)",
+   "midia": "fotos reais opcionais de cada opção; 1 foto no fecho",
+   "cenas": [
+    "título com três barras subindo",
+    "três painéis sobem um após o outro com nome, preço, preço por unidade calculado e o que inclui",
+    "uma luz passa pelos três e pousa no mais pedido (só se a ficha disser) ou pergunta 'qual é o seu?'",
+    "produto com foto",
+    "final"
+   ],
+   "ficha": {
+    "titulo": "até 50",
+    "opcoes": "3: nome até 20, preço, rende + unidade, até 3 itens de 24, foto (todos opcionais menos o nome)",
+    "mais_pedido": "1, 2 ou 3, opcional (real, _origem)",
+    "precos_de_exemplo": "sim/não",
+    "fecho": "até 50, opcional",
+    "produto": "foto real do produto ou serviço, nome até 30, detalhe até 50, preço opcional (real), convite até 26"
+   },
+   "diferencial": "Três painéis com a luz que escolhe; o destaque só existe com dado real e o preço por unidade é do código.",
+   "exemplos": [
+    "Confeitaria: bolo pequeno, médio e grande",
+    "Oficina: revisão básica, completa e de viagem",
+    "Salão: escova, hidratação e cronograma"
+   ],
+   "regras": [
+    "Nada inventado: 'o mais pedido' só com _origem; preço nas três ou em nenhuma, com _origem.opcoes ou com precos_de_exemplo (que põe 'valores de exemplo' na tela). O molde recusa preço sem origem, rende sem preço ou sem unidade e nome repetido."
+   ],
+   "publico": "cliente_final"
+  },
+  {
+   "id": "vagas",
+   "nome": "Vagas contadas",
+   "grupo": "Vender",
+   "onda": 3,
+   "origem": null,
+   "situacao": "Urgência honesta: poucas vagas, horários ou unidades, com o número real. Serve para turma, agenda do mês, encomenda de data festiva, revisão de temporada, kit limitado.",
+   "formatos": [
+    "reel",
+    "story"
+   ],
+   "duracao": "20 a 26 s",
+   "voz": "não (música)",
+   "midia": "1 foto real do produto ou serviço",
+   "cenas": [
+    "foto em forma orgânica entra com mola; o nome cresce letra por letra",
+    "quadro de vagas enche uma a uma e o contador vira (split-flap) do total até o que sobra; data da contagem",
+    "a câmera mergulha no número; a frase entra letra por letra num arco, com prazo",
+    "o pedido é digitado numa caixa e enviado; preço opcional",
+    "final"
+   ],
+   "ficha": {
+    "oferta": "até 34",
+    "detalhe": "opcional, até 60",
+    "foto": "1",
+    "unidade": "plural, padrão 'vagas'",
+    "unidade_um": "singular, padrão 'vaga'",
+    "total": "real, 1 a 60",
+    "ocupadas": "real",
+    "contagem": "data da contagem (até 3 dias)",
+    "prazo": "data opcional",
+    "preco": "opcional, real",
+    "como": "até 40 (digitado)"
+   },
+   "diferencial": "Contador split-flap que desce do total até as livres enquanto o quadro enche, conta feita pelo código; mergulho no número e frase em arco.",
+   "exemplos": [
+    "Salão: datas de dia da noiva",
+    "Confeitaria: kits de festa",
+    "Oficina: horários de revisão"
+   ],
+   "regras": [
+    "Livres = total menos ocupadas, pelo código; sem vaga livre (ou ocupadas acima do total) o molde recusa.",
+    "Total e ocupadas só com _origem; contagem com mais de 3 dias ou no futuro é recusada; nada de contagem que reinicia.",
+    "Prazo passado é recusado; em marca de teste o preço exige 'valores de exemplo'."
+   ],
+   "publico": "cliente_final"
   }
  ],
  "nota_duracao": "Durações medidas nas fichas de teste da rodada 2 (13/10), já com o tempo mínimo de leitura: 0,8 s + 0,25 s por palavra nova em cada cena sem narração."

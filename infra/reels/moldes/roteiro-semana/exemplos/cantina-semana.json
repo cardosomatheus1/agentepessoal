@@ -1,0 +1,9 @@
+{"_marca": "cantina-da-vo", "_formato": "reel", "titulo": "O prato especial de cada dia",
+ "dias": [
+  {"dia": "segunda", "o_que": "Marmita de frango assado"},
+  {"dia": "terca", "o_que": "Lasanha da casa", "foto": "fotos/cantina_lasanha.jpg"},
+  {"dia": "quarta", "o_que": "Dia da feijoada", "hora": "11:00", "foto": "fotos/cantina_feijoada.jpg"},
+  {"dia": "quinta", "o_que": "Coxinha de frango na hora", "foto": "fotos/cantina_coxinhas.jpg"},
+  {"dia": "sexta", "o_que": "Pizza no forno a lenha", "hora": "18:00", "foto": "fotos/cantina_pizza.jpg"}],
+ "foto": "fotos/cantina_marmita.jpg", "fechamento": "Qual dia é o seu? Peça pelo WhatsApp",
+ "_origem": {"dias": "dono"}}

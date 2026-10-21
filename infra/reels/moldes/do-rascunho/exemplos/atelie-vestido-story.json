@@ -1,0 +1,15 @@
+{
+ "_marca": "sem-logo",
+ "_formato": "story",
+ "_estilo": "papel",
+ "_hoje": "2026-10-21",
+ "gancho": "Seu vestido começa no papel",
+ "etapas": [
+  {"texto": "O tecido escolhido com você", "foto": "fotos/atelie_tecidos.jpg"},
+  {"texto": "Costura feita à mão", "foto": "fotos/atelie_maquina.jpg"},
+  {"texto": "Ajuste na prova", "foto": "fotos/atelie_vestido.jpg"}
+ ],
+ "foto": "fotos/atelie_noiva.jpg",
+ "nome": "Vestido sob medida",
+ "detalhe": "Três provas até ficar perfeito"
+}

@@ -1,0 +1,30 @@
+{
+ "_marca": "nexos",
+ "_formato": "reel",
+ "titulo": "Sua equipe responde rápido o bastante para não perder venda?",
+ "periodo": "em uma semana de anúncio",
+ "etapas": [
+  {
+   "rotulo": "Clicaram no anúncio",
+   "valor": 2600
+  },
+  {
+   "rotulo": "Mandaram mensagem",
+   "valor": 410
+  },
+  {
+   "rotulo": "Viraram cliente",
+   "valor": 38
+  }
+ ],
+ "dica": "Mensagem que espera esfria. Responder na hora, com o preço na mão, muda o fim.",
+ "exemplo": true,
+ "produto": {
+  "foto": "fotos/manifesto_telas_espalhadas.jpg",
+  "nome": "Atendimento NEXOS",
+  "detalhe": "Conversas, vendas e margem num painel"
+ },
+ "_origem": {
+  "etapas": "dono"
+ }
+}

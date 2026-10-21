@@ -1,0 +1,22 @@
+{
+ "_marca": "oficina-do-ze",
+ "assunto": "As empresas que fazem a revisão da frota aqui",
+ "unidade": "empresas atendidas",
+ "antes": {
+  "valor": 10,
+  "quando": "no ano passado"
+ },
+ "agora": {
+  "valor": 11,
+  "quando": "hoje"
+ },
+ "motivo": "Revisão marcada no mesmo dia da semana e carro devolvido no fim da tarde.",
+ "produto": {
+  "foto": "fotos/oficina_frota.jpg",
+  "nome": "Plano de frota"
+ },
+ "_origem": {
+  "antes": "dono",
+  "agora": "dono"
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "inspiradora",
+ "campos": {
+  "titulo": {"tipo": "texto", "min": 12, "max": 50, "dica": "Como a gente chegou até aqui"},
+  "marcos": {"tipo": "lista", "min": 3, "max": 6, "real": true,
+   "item": {
+    "ano": {"tipo": "numero", "min": 1900, "max": 2100},
+    "texto": {"tipo": "texto", "min": 6, "max": 54},
+    "foto": {"tipo": "filmagem", "obrigatorio": false, "dica": "foto real daquele momento (fotos/x.jpg)"}
+   },
+   "dica": "datas e fatos contados pelo dono; o código põe em ordem de ano, recusa ano futuro e conta os anos de história"},
+  "fecho": {"tipo": "texto", "max": 60, "obrigatorio": false},
+  "produto": {"tipo": "objeto", "campos": {
+    "foto": {"tipo": "foto", "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"},
+    "nome": {"tipo": "texto", "min": 3, "max": 30},
+    "detalhe": {"tipo": "texto", "max": 50, "obrigatorio": false},
+    "preco": {"tipo": "dinheiro", "real": true, "obrigatorio": false},
+    "convite": {"tipo": "texto", "max": 26, "obrigatorio": false}
+   }, "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"}
+ },
+ "publico": "cliente_final"
+}

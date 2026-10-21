@@ -174,7 +174,7 @@
     "texto": {
      "tipo": "texto",
      "min": 20,
-     "max": 240,
+     "max": 260,
      "real": true
     }
    }

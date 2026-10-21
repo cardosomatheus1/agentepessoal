@@ -1,0 +1,19 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "inspiradora",
+ "campos": {
+  "selo": {"tipo": "texto", "max": 16, "obrigatorio": false, "dica": "palavra pequena sobre a frase de abertura (padrão: SINTA)"},
+  "gancho": {"tipo": "texto", "min": 8, "max": 44, "dica": "frase sobre a foto de perto"},
+  "textura": {"tipo": "filmagem", "dica": "foto bem de perto (macro) do próprio produto ou material: massa, creme, tecido, espuma, sal"},
+  "palavras": {"tipo": "lista", "min": 3, "max": 5, "item": {"tipo": "texto", "min": 3, "max": 12}, "dica": "3 a 5 palavras de sabor, toque ou cheiro que são verdade sobre o produto"},
+  "foto": {"tipo": "filmagem", "dica": "foto real do produto inteiro (fotos/x.jpg), revelada no fim"},
+  "nome": {"tipo": "texto", "max": 40},
+  "linha": {"tipo": "texto", "max": 56, "obrigatorio": false},
+  "preco": {"tipo": "dinheiro", "obrigatorio": false, "real": true},
+  "preco_a_partir": {"tipo": "booleano", "obrigatorio": false},
+  "quando": {"tipo": "data", "obrigatorio": false, "dica": "dia em que chega (AAAA-MM-DD); data passada é recusada"},
+  "onde": {"tipo": "texto", "max": 36, "obrigatorio": false}
+ },
+ "especiais": {"_hoje": "data de publicação (AAAA-MM-DD); sem ela, a data de hoje"}
+}

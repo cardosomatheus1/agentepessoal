@@ -1,0 +1,6 @@
+{"_marca": "oficina-do-ze", "_formato": "story", "_hoje": "2026-11-06T08:00",
+ "tipo": "evento", "titulo": "Sábado de check-up grátis", "o_que": "Mutirão de calibragem e luzes",
+ "data": "2026-11-07", "hora": "08:30",
+ "detalhe": "Calibragem, luzes e nível de óleo conferidos sem custo, por ordem de chegada.",
+ "produto": {"foto": "fotos/oficina_pneu.jpg", "nome": "Check-up de viagem", "convite": "passa aqui"},
+ "_origem": {"data": "dono", "hora": "dono"}}

@@ -1,0 +1,175 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo vox-explainer: verbete de dicionário (termo, sílabas,
+     etiqueta, régua de tinta e definição com recuo) e ficha pautada. Portado para o motor (render(t) determinístico). -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+.grade{position:absolute;inset:-6px;pointer-events:none;background-image:repeating-linear-gradient(0deg,color-mix(in srgb,var(--texto) 6%,transparent) 0 2px,transparent 2px 72px),repeating-linear-gradient(90deg,color-mix(in srgb,var(--texto) 6%,transparent) 0 2px,transparent 2px 72px)}
+.kick{position:absolute;left:90px;width:820px;height:52px;line-height:52px;font-family:var(--fb),sans-serif;font-weight:800;font-size:32px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.kick:before{content:'';display:inline-block;width:64px;height:6px;background:var(--destaque);margin-right:22px;vertical-align:middle}
+
+/* scene 0: "O que é ...?" */
+#k0{top:410px}
+#oque{position:absolute;left:90px;width:820px;top:520px;height:120px;line-height:120px;font-size:110px;white-space:nowrap}
+#termo0W{position:absolute;left:90px;width:830px;top:660px;height:400px}
+#mk0{position:absolute;left:-14px;top:0;height:100%;background:var(--destaque);transform-origin:0 50%;transform:skewX(-6deg)}
+#termo0{position:absolute;left:0;top:0;width:800px;height:400px;font-size:150px;color:var(--sobre-destaque);padding:0 10px}
+#qm{position:absolute;left:640px;top:1090px;width:280px;height:340px;text-align:center;font-size:330px;line-height:340px;color:var(--destaque);opacity:.9}
+
+/* scene 1: the dictionary entry */
+#k1{top:410px}
+#verb{position:absolute;left:90px;width:830px;top:490px;height:930px}
+#termo1{position:absolute;left:0;top:0;width:820px;font-size:100px}
+#lin1{position:absolute;left:0;width:820px;height:60px;display:flex;align-items:center;gap:22px}
+#sil{flex:none;height:56px;line-height:56px;font-size:44px;font-style:italic;font-weight:500;white-space:nowrap}
+#cls{flex:none;height:56px;line-height:56px;padding:0 20px;font-size:30px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;background:var(--destaque);color:var(--sobre-destaque);transform:skewX(-6deg)}
+#regua{position:absolute;left:0;width:820px;height:6px;background:var(--texto);transform-origin:0 50%}
+#defW{position:absolute;left:0;width:820px;border-left:10px solid var(--destaque);padding-left:36px}
+#def{width:730px;font-size:64px;font-weight:700;line-height:1.2}
+
+/* scene 2: in practice, on a ruled index card */
+#ph2{position:absolute;left:150px;top:420px;width:620px;height:380px;border:12px solid var(--c2);overflow:hidden;box-shadow:16px 18px 0 color-mix(in srgb,var(--texto) 16%,transparent)}
+#ph2 img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fita{position:absolute;width:190px;height:52px;background:color-mix(in srgb,var(--c2) 75%,transparent);z-index:2}
+#ficha2{position:absolute;left:90px;width:830px;top:860px;height:520px;
+  background-image:repeating-linear-gradient(0deg,transparent 0 80px,color-mix(in srgb,var(--texto) 12%,transparent) 80px 83px);background-position:0 36px}
+#ficha2 .mg{position:absolute;left:84px;top:0;bottom:0;width:5px;background:var(--destaque);opacity:.7}
+#tab2{position:absolute;left:70px;top:-58px;height:58px;line-height:58px;padding:0 28px;font-size:30px;font-weight:900;letter-spacing:.14em;background:var(--destaque);color:var(--sobre-destaque);white-space:nowrap}
+#pratica{position:absolute;left:130px;width:640px;top:60px;height:420px;font-size:60px}
+#ficha2.sem{top:480px;height:700px}
+#ficha2.sem #pratica{top:90px;height:560px;font-size:72px}
+
+/* ad close */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:100px;width:880px;top:390px;height:620px;border:12px solid var(--c2);overflow:hidden;box-shadow:18px 20px 0 color-mix(in srgb,var(--texto) 16%,transparent)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:960px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg);z-index:3}
+.pvk{position:absolute;left:90px;width:790px;top:1060px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+</style></head><body><div id="palco">
+<div class="grade"></div>
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="kick t seg"></div>
+ <div id="oque" class="tit t seg">O que é</div>
+ <div id="termo0W"><div id="mk0"></div><div id="termo0" class="tit t seg"></div></div>
+ <div id="qm" class="tit">?</div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="k1" class="kick t seg"></div>
+ <div id="verb">
+  <div id="termo1" class="tit t seg"></div>
+  <div id="lin1"><div id="sil" class="t t2 seg"></div><div id="cls" class="t seg"></div></div>
+  <div id="regua"></div>
+  <div id="defW"><div id="def" class="t seg rv"></div></div>
+ </div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="ph2"><img id="ph2i" alt=""></div>
+ <div class="fita" id="fa" style="left:110px;top:400px;transform:rotate(-14deg)"></div>
+ <div class="fita" id="fb" style="left:620px;top:396px;transform:rotate(10deg)"></div>
+ <div id="ficha2" class="cartao"><div class="mg"></div><div id="tab2" class="t seg">Na prática</div><div id="pratica" class="tit t seg rv"></div></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full" id="c3in"></div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Glossário": one word of the trade explained in plain words, as a dictionary entry. "O que é X?" with the marker
+// sweeping behind the word; then the entry assembles (word, syllables, label, ink rule, definition with a hanging
+// border); then what it means in practice on a ruled index card, with the photo pinned on top; the post closes on the
+// product or service. Layout positions are worked out from the length of the word, so long and short terms fit.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const st = (x, n = 6) => x >= 1 ? 1 : Math.floor(x * n) / n;
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(w => /\w/.test(w)).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+const KICK = 'tem aqui pra você';
+function vitrine(F, $m, pai) {
+  const P = F.produto, v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  const f1 = mk('div', 'fita', null, v); Object.assign(f1.style, { left: '70px', top: '370px', transform: 'rotate(-14deg)' });
+  const f2 = mk('div', 'fita', null, v); Object.assign(f2.style, { left: '830px', top: '372px', transform: 'rotate(12deg)' });
+  mk('div', 'pvk mao t seg', P.convite || KICK, v);
+  mk('div', 'pvn tit t seg rv', P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  const linhas = P.nome.length > 19 ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  n.style.height = (linhas * 86) + 'px'; if (d) d.style.top = (1130 + linhas * 86 + 14) + 'px';
+  return v;
+}
+const vitrineLer = F => ler(F.produto.convite || KICK, F.produto.nome, F.produto.detalhe, F.produto.preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eb(p(t, a + 0.05, 0.55)); f.style.opacity = cl(q * 3); f.style.transform = `translateY(${(1 - q) * 140}px) rotate(${-1.5 + (1 - q) * 6}deg)`;
+  $m.filmagem(v.querySelector('.pvf img'), F.produto.foto, t);
+  v.querySelectorAll('.fita').forEach((x, j) => { x.style.opacity = st(p(t, a + 0.45 + j * 0.12, 0.25), 3); });
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
+
+let PV = null, L = {};
+Motor.molde({
+  id: 'glossario', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    const rot = F.rotulo || 'Glossário';
+    $('#k0').textContent = rot; $('#k1').textContent = rot;
+    // scene 0: the word on the marker; one, two or three lines by length (the marker hugs the text)
+    const n0 = F.termo.length <= 9 ? 1 : F.termo.length <= 18 ? 2 : 3, fs0 = n0 === 3 ? 110 : 150, lh0 = Math.round(fs0 * 1.04);
+    $('#termo0').textContent = F.termo + '?'; $('#termo0').style.fontSize = fs0 + 'px';
+    const h0 = n0 * lh0 + 20; $('#termo0W').style.height = h0 + 'px'; $('#termo0').style.height = h0 + 'px';
+    $('#mk0').style.width = Math.min(860, 0.62 * fs0 * Math.min(F.termo.length + 1, n0 === 1 ? 99 : 14) + 50) + 'px';
+    $('#qm').style.top = Math.min(1100, 660 + h0 + 40) + 'px';
+    // scene 1: the entry, stacked from the length of the word
+    const n1 = F.termo.length <= 14 ? 1 : 2, h1 = n1 * 104 + 10;
+    $('#termo1').textContent = F.termo; $('#termo1').style.height = h1 + 'px';
+    let y = h1 + 16;
+    if (F.silabas) $('#sil').textContent = F.silabas; else $('#sil').remove();
+    const cls = F.classe || 'palavra do dia a dia', wc = Math.min(630, cls.length * 26 + 56);
+    $('#cls').textContent = cls; $('#cls').style.width = wc + 'px';
+    if (F.silabas) $('#sil').style.width = Math.min(820 - wc - 22, F.silabas.length * 25 + 20) + 'px';
+    $('#lin1').style.top = y + 'px'; y += 84;
+    $('#regua').style.top = y + 'px'; y += 40;
+    $('#defW').style.top = y + 'px';
+    const hd = Math.min(930 - y, Math.ceil(F.definicao.length / 19) * 80 + 20); $('#def').style.height = hd + 'px';
+    $('#def').textContent = F.definicao;
+    // scene 2
+    $('#pratica').textContent = F.pratica;
+    if (F.foto) $m.filmagem($('#ph2i'), F.foto, 0); else { ['#ph2', '#fa', '#fb'].forEach(s => $(s).remove()); $('#ficha2').classList.add('sem'); $('#ficha2').style.height = Math.max(440, Math.ceil(F.pratica.length / 16) * 88 + 200) + 'px'; }
+    PV = vitrine(F, $m, $('#c3in'));
+    return { duracoes: [ler(rot, 'O que é', F.termo) + 0.6, ler(rot, F.termo, F.silabas, F.classe || 'palavra do dia a dia', F.definicao) + 0.8,
+      ler('Na prática', F.pratica) + 0.4, vitrineLer(F)] };
+  },
+  quadro(t, F, $m) {
+    const { $, p, eo, eo5, eio, eb, el, cl, ini } = $m;
+    const kick = (sel, a) => { const q = st(p(t, a + 0.05, 0.3), 4); $(sel).style.opacity = q; $(sel).style.transform = `translateX(${(1 - q) * -40}px)`; };
+    // 0: "O que é" + the word, the marker sweeps behind it, the question mark swings in
+    $m.cena('#c0', t, 0); kick('#k0', 0);
+    $m.entra('#oque', t, 0.2, 0.35, 30);
+    $('#mk0').style.transform = `skewX(-6deg) scaleX(${eo(p(t, 0.5, 0.45))})`;
+    { const q = st(p(t, 0.65, 0.35), 4); $('#termo0').style.opacity = q; $('#termo0').style.transform = `translateY(${(1 - q) * 30}px)`; }
+    { const q = el(p(t, 0.9, 1.1)); $('#qm').style.opacity = cl(q * 2); $('#qm').style.transform = `rotate(${(1 - q) * -50 + Math.sin(t * 2) * 4}deg) translateY(${(1 - q) * -200}px)`; }
+    // 1: the entry assembles
+    const a = ini(1); $m.cena('#c1', t, 1); kick('#k1', a);
+    { const q = eo5(p(t, a + 0.15, 0.4)); $('#termo1').style.opacity = q; $('#termo1').style.clipPath = `inset(0 ${(1 - q) * 100}% -20px 0)`; }
+    if ($('#sil')) { const q = st(p(t, a + 0.45, 0.3), 4); $('#sil').style.opacity = q; $('#sil').style.transform = `translateY(${(1 - q) * 12}px)`; }
+    { const q = eb(p(t, a + 0.6, 0.35)); $('#cls').style.opacity = cl(q * 3); $('#cls').style.transform = `skewX(-6deg) scale(${0.4 + 0.6 * q})`; $('#cls').style.transformOrigin = '0 50%'; }
+    $('#regua').style.transform = `scaleX(${eo(p(t, a + 0.85, 0.4))})`;
+    { const q = st(p(t, a + 1.15, 0.3), 5); $('#defW').style.opacity = q > 0 ? 1 : 0; $('#defW').style.borderLeftColor = ''; }
+    $m.revela('#def', t, a + 1.2, 0.045);
+    // 2: in practice
+    const b = ini(2); $m.cena('#c2', t, 2);
+    if ($('#ph2')) { const q = eb(p(t, b + 0.1, 0.5)); $('#ph2').style.opacity = cl(q * 3); $('#ph2').style.transform = `translateY(${(1 - q) * -120}px) rotate(${-3 + (1 - q) * -6}deg)`; $m.filmagem($('#ph2i'), F.foto, t);
+      [$('#fa'), $('#fb')].forEach((x, j) => { x.style.opacity = st(p(t, b + 0.5 + j * 0.12, 0.25), 3); }); }
+    { const q = eb(p(t, b + 0.3, 0.5)); $('#ficha2').style.opacity = cl(q * 3); $('#ficha2').style.transform = `translateY(${(1 - q) * 140}px) rotate(${-1 + (1 - q) * 3}deg)`; }
+    { const q = st(p(t, b + 0.6, 0.3), 3); $('#tab2').style.opacity = q; $('#tab2').style.transform = `translateY(${(1 - q) * 30}px)`; }
+    $m.revela('#pratica', t, b + 0.75, 0.06);
+    // 3: product
+    $m.cena('#c3', t, 3); vitrineQuadro(PV, F, $m, t, ini(3));
+  },
+});
+</script></body></html>

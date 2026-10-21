@@ -1,0 +1,157 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- estrutura e movimento adaptados de heygen-com/hyperframes-launches (Apache-2.0), composição frame-md-launch-storyboard -->
+<style>
+:root{--papel:var(--cartao)}
+body.e-vidro,body.e-noite{--papel:color-mix(in srgb,var(--fundo2) 82%,var(--texto) 12%)}
+body.e-pop{--papel:var(--fundo2)}
+#tira{position:absolute;left:0;top:0;width:10px;height:10px;transform-origin:0 0}
+.qd{position:absolute;top:430px;width:760px;height:600px}
+.qd .fl{position:absolute;inset:0;background:var(--papel);box-shadow:var(--sombra)}
+.qd .fl:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(8deg,color-mix(in srgb,var(--texto) 4%,transparent) 0 1px,transparent 1px 5px)}
+.qd .im{position:absolute;left:26px;top:26px;right:26px;bottom:26px;overflow:hidden}
+.qd .im img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.qd .sk{filter:url(#lapis)}
+.qd .tom{filter:grayscale(1) contrast(1.2);opacity:.12;mix-blend-mode:multiply}
+body.e-vidro .qd .tom,body.e-noite .qd .tom{mix-blend-mode:screen;opacity:.1}
+.qd svg.borda{position:absolute;left:-10px;top:-10px;width:780px;height:620px;overflow:visible}
+.qd svg.borda path{fill:none;stroke:var(--texto);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.lapis{position:absolute;left:0;top:0;width:34px;height:240px;transform-origin:50% 100%;z-index:5}
+.lapis b{position:absolute;left:0;right:0;top:0;height:190px;background:var(--destaque);border-radius:6px 6px 0 0}
+.lapis i{position:absolute;left:0;top:190px;width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:50px solid var(--c2)}
+.lapis u{position:absolute;left:12px;top:228px;width:10px;height:12px;background:var(--texto);border-radius:0 0 5px 5px}
+.cap{position:absolute;top:1070px;width:740px;height:240px}
+.cap .lab{position:absolute;left:0;top:0;width:500px;height:44px;font-size:30px;font-weight:800;letter-spacing:.2em;white-space:nowrap}
+.cap .tx{position:absolute;left:0;top:50px;width:740px;height:180px;font-size:70px;line-height:1.05}
+.cap .nm{position:absolute;left:0;top:50px;width:740px;height:190px;font-size:84px;line-height:1.02}
+.cap .de{position:absolute;left:0;width:740px;height:56px;font-size:38px;font-weight:700;white-space:nowrap}
+.cap .ch{position:absolute;left:0;width:740px;height:84px}
+.cap .ch>span{display:inline-block;font-size:44px;padding:12px 32px;white-space:nowrap;max-width:740px}
+#titulo{position:absolute;left:90px;width:810px;top:400px;height:300px;font-size:104px;line-height:1;text-align:center}
+#risco{position:absolute;left:240px;top:700px;width:600px;height:40px;overflow:visible}
+#risco path{fill:none;stroke:var(--destaque);stroke-width:9;stroke-linecap:round}
+</style></head><body><div id="palco">
+<svg width="0" height="0" style="position:absolute"><filter id="lapis" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+ <feColorMatrix type="saturate" values="0"/>
+ <feGaussianBlur stdDeviation="1.7" result="b"/>
+ <feConvolveMatrix in="b" order="3" kernelMatrix="-1 -1 -1 -1 8 -1 -1 -1 -1" preserveAlpha="true" result="e"/>
+ <feColorMatrix in="e" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  6 6 6 0 -0.16" result="a"/>
+ <feFlood style="flood-color:var(--texto)" result="cor"/>
+ <feComposite in="cor" in2="a" operator="in"/>
+</filter></svg>
+
+<div class="cena" id="cS"><div class="cam full">
+ <div id="titulo" class="mao t seg"></div>
+ <svg id="risco" viewBox="0 0 600 40"><path d="M6 26 C 120 10, 260 34, 380 18 S 560 14, 594 22"/></svg>
+ <div id="tira"></div>
+</div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Do rascunho": from sketch to the real thing, told as a storyboard. A sheet of empty pencil frames draws in;
+// the camera moves into frame one and the current carries left frame by frame: each frame is the real photo of a
+// step drawn in pencil (the photo itself traced by an edge filter, not an invented drawing) with a handwritten
+// caption; the last frame is the finished product, sketched first and then developed into the color photo.
+const EO = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+const EI = x => x <= 0 ? 0 : Math.pow(2, 10 * (x - 1));
+const p = (t, a, d) => Math.min(1, Math.max(0, (t - a) / d));
+const pal = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.8 + 0.25 * pal(...s);
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const dia = s => { if (!s) return null; const [a, m, d] = s.split('-').map(Number); return new Date(a, m - 1, d); };
+const ddmm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+const PASSO = 820, X0 = 160;
+// a hand-drawn rectangle: two loose passes with seeded wobble
+function borda(seed) {
+  const r = i => (Motor.rnd(seed * 17 + i) - 0.5) * 10, w = 770, h = 610;
+  const pas = k => `M${5 + r(k)} ${5 + r(k + 1)} L${w + r(k + 2)} ${4 + r(k + 3)} L${w - 2 + r(k + 4)} ${h + r(k + 5)} L${3 + r(k + 6)} ${h - 2 + r(k + 7)} Z`;
+  return `<svg class="borda" viewBox="0 0 780 620"><path d="${pas(0)}"/><path d="${pas(9)}" style="opacity:.45"/></svg>`;
+}
+let Q = {};
+
+Motor.molde({
+  id: 'do-rascunho', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    let qd = null;
+    if (F.quando) { const h = dia(F._hoje) || new Date(), h0 = new Date(h.getFullYear(), h.getMonth(), h.getDate()), d = dia(F.quando), n = Math.round((d - h0) / 864e5);
+      if (n < 0) $m.erro(`quando: a data ${ddmm(d)} já passou`); qd = n <= 0 ? 'Já disponível' : n === 1 ? 'Chega amanhã, ' + ddmm(d) : 'Chega ' + DIAS[d.getDay()] + ', ' + ddmm(d); }
+    if (F.preco != null && M._teste && !/exemplo/i.test(F.nota || '')) $m.erro('marca de teste: preço precisa de "nota": "valores de exemplo"');
+    const fotos = F.etapas.map(e => e.foto).concat(F.foto);
+    if (new Set(fotos).size < fotos.length) $m.erro('cada quadro precisa de uma foto diferente (uma por etapa e a do produto pronto)');
+    $('#titulo').textContent = F.gancho;
+    const N = F.etapas.length + 1, tira = $('#tira');
+    for (let j = 0; j < N; j++) {
+      const ult = j === N - 1, q = mk('div', 'qd', null, tira); q.style.left = (X0 + j * PASSO) + 'px';
+      mk('div', 'fl', null, q);
+      const im = mk('div', 'im', null, q), src = ult ? F.foto : F.etapas[j].foto;
+      const sk = mk('img', 'sk', null, im), tom = mk('img', 'tom', null, im); $m.filmagem(sk, src, 0); $m.filmagem(tom, src, 0);
+      if (ult) { const c = mk('img', 'cor', null, im); $m.filmagem(c, src, 0); }
+      q.insertAdjacentHTML('beforeend', borda(j + 1));
+      const lp = mk('div', 'lapis', null, q); mk('b', null, null, lp); mk('i', null, null, lp); mk('u', null, null, lp);
+      const cap = mk('div', 'cap', null, tira); cap.style.left = (X0 + j * PASSO) + 'px';
+      mk('div', 'lab t dest', ult ? 'PRONTO' : 'QUADRO ' + String(j + 1).padStart(2, '0'), cap);
+      if (!ult) { const tx = mk('div', 'tx mao t seg', F.etapas[j].texto, cap); if (F.etapas[j].texto.length <= 18) tx.style.height = '90px'; }
+      else {
+        const nm = mk('div', 'nm tit t seg', F.nome, cap), l = F.nome.length > 19 ? 2 : 1; nm.style.height = (l * 88 + 6) + 'px';
+        if (l === 2 && F.nome.length > 26) nm.style.fontSize = '70px';
+        let y = 50 + l * 88 + 16;
+        if (F.detalhe) { const d = mk('div', 'de t t2 seg', F.detalhe, cap); d.style.top = y + 'px'; y += 64; }
+        const pr = F.preco != null ? (F.preco_a_partir ? 'a partir de ' : '') + $m.brl(F.preco, Number.isInteger(F.preco) ? 0 : 2) : null;
+        const ch = pr || qd; if (ch) { const c = mk('div', 'ch', null, cap); c.style.top = y + 'px'; mk('span', 'chip t seg', ch, c); y += 92; }
+        if (pr && qd) { const d = mk('div', 'de t t2 seg', qd, cap); d.style.top = y + 'px'; y += 64; }
+        cap.style.height = (y + 10) + 'px';
+        Q.capH = y; Q.preco = pr; Q.qd = qd;
+      }
+    }
+    // overview: the whole sheet fits under the title
+    const W = N * PASSO - 60; Q.s0 = 900 / W; Q.N = N;
+    $('#nota').textContent = F.nota || ''; Object.assign($('#nota').style, { bottom: 'auto', top: (1070 + (Q.capH || 300) + 6) + 'px', left: X0 + 'px', textAlign: 'left' });
+    const d = [Math.max(3.4, ler(F.gancho))].concat(F.etapas.map(e => Math.max(3.2, 0.8 + ler('QUADRO 01', e.texto))));
+    d.push(Math.max(5.0, 1.6 + ler('PRONTO', F.nome, F.detalhe, Q.preco, Q.qd, F.nota)));
+    const tot = d.reduce((a, b) => a + b, 0) + 3; if (tot < 21) return { duracoes: d.map(x => +(x * (18 / (tot - 3))).toFixed(2)) };
+    return { duracoes: d };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, ini, fim, eio, lerp, cl } = $m;
+    const N = Q.N;
+    $m.cena('#cS', t, 0, N);
+    // camera: overview during the hook, then frame j centered; each move eases out of the cut (leftward current)
+    const ov = [90 - X0 * Q.s0, 820 - 430 * Q.s0, Q.s0];
+    let cam = ov;
+    for (let j = 0; j < N; j++) { const q = eio(p(t, ini(1 + j) - 0.35, 1.0)); const alvo = [-j * PASSO, 0, 1]; cam = cam.map((v, k) => lerp(v, alvo[k], q)); }
+    $('#tira').style.transform = `translate(${cam[0]}px,${cam[1]}px) scale(${cam[2]})`;
+    // hook title and its pencil underline leave upwards as the camera dives in
+    const sai = eio(p(t, ini(1) - 0.4, 0.6));
+    $m.entra('#titulo', t, 0.2, 0.7, 30); $('#titulo').style.opacity *= 1 - sai; $('#titulo').style.transform += ` translateY(${-200 * sai}px)`;
+    const rp = $('#risco path'), L = 640; rp.style.strokeDasharray = L; rp.style.strokeDashoffset = L * (1 - EO(p(t, 1.0, 0.8))); $('#risco').style.opacity = 1 - sai;
+    $$('.qd').forEach((q, j) => {
+      const ult = j === N - 1, a = ini(1 + j);
+      // the empty frames draw in on the overview, one after another
+      q.querySelectorAll('svg.borda path').forEach((pa, k) => { const Lb = 2800; pa.style.strokeDasharray = Lb; pa.style.strokeDashoffset = Lb * (1 - EO(p(t, 0.5 + j * 0.25 + k * 0.3, 1.0))); });
+      q.querySelector('.fl').style.opacity = EO(p(t, 0.4 + j * 0.25, 0.8));
+      // the pencil sketch is drawn left to right when the frame is reached, the pencil riding its edge
+      const dr = p(t, a + 0.15, 1.4), de = EO(dr);
+      ['.sk', '.tom'].forEach(s => { const im = q.querySelector(s); im.style.clipPath = `inset(0 ${(1 - de) * 100}% 0 0)`; $m.filmagem(im, ult ? F.foto : F.etapas[j].foto, t); });
+      const lp = q.querySelector('.lapis'), on = dr > 0 && dr < 1;
+      lp.style.opacity = on ? 1 : 0; lp.style.transform = `translate(${26 + de * 708 - 17}px,${300 + Math.sin(t * 18) * 70 - 240}px) rotate(${20 + Math.sin(t * 9) * 6}deg)`;
+      if (ult) {
+        // develop: the color photo sweeps in over the sketch along a diagonal
+        const c = q.querySelector('.cor'), dv = EO(p(t, a + 1.6, 1.2)), x = dv * 150;
+        c.style.clipPath = `polygon(0 0, ${x}% 0, ${x - 40}% 100%, 0 100%)`; $m.filmagem(c, F.foto, t);
+        q.style.transform = `scale(${1 + 0.04 * EO(p(t, a + 1.6, 3))})`;
+      }
+    });
+    $$('.cap').forEach((c, j) => {
+      const a = ini(1 + j), b = j === N - 1 ? 1e9 : fim(1 + j);
+      const q = EO(p(t, a + 0.5, 0.6)), o = EI(p(t, b - 0.3, 0.3));
+      c.style.opacity = q * (1 - o); c.style.transform = `translateY(${(1 - q) * 30}px)`;
+      if (j === N - 1) { c.querySelectorAll('.de,.ch').forEach((e, k) => $m.entra(e, t, a + 2.2 + k * 0.3, 0.5, 20)); const nm = c.querySelector('.nm'); $m.entra(nm, t, a + 1.8, 0.6, 30); }
+    });
+    $('#nota').style.opacity = t >= ini(N) + 2.2 && t < fim(N) ? 0.9 : 0;
+  },
+});
+</script></body></html>

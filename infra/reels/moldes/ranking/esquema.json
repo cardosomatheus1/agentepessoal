@@ -1,0 +1,79 @@
+{
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "animada",
+ "publico": "cliente_final",
+ "campos": {
+  "rotulo": {
+   "tipo": "texto",
+   "max": 28,
+   "obrigatorio": false,
+   "dica": "selo do topo; padrão: Ranking do mês"
+  },
+  "titulo": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 44,
+   "dica": "Os mais pedidos de setembro (sem algarismos: o código põe TOP e a quantidade)"
+  },
+  "unidade": {
+   "tipo": "texto",
+   "min": 2,
+   "max": 14,
+   "dica": "o que os números contam: pedidos, vendidos, horários"
+  },
+  "itens": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 5,
+   "item": {
+    "nome": {
+     "tipo": "texto",
+     "min": 2,
+     "max": 28
+    },
+    "quantidade": {
+     "tipo": "numero",
+     "min": 0.1,
+     "max": 9999999,
+     "real": true
+    }
+   },
+   "dica": "em qualquer ordem: o código ordena pelos números do sistema ou do caixa"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: em geral o primeiro lugar, com foto real"
+  }
+ }
+}

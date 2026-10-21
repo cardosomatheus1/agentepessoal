@@ -1,0 +1,20 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "tecnologica",
+ "campos": {
+  "kicker": {"tipo": "texto", "max": 18, "obrigatorio": false, "dica": "etiqueta acima do nome (padrão: NOVIDADE)"},
+  "recurso": {"tipo": "texto", "max": 34, "dica": "o novo serviço ou facilidade (ex.: 'Leva e traz do seu carro', 'Agendamento pelo link')"},
+  "icone": {"tipo": "escolha", "obrigatorio": false, "opcoes": ["brilho", "relogio", "calendario", "local", "telefone", "chat", "carrinho", "moto", "cartao", "dinheiro", "presente", "caixa", "chave", "carro", "casa", "pessoa", "pessoas", "check", "cadeado", "link", "garfo", "tesoura", "estrela"]},
+  "foto": {"tipo": "filmagem", "dica": "foto real do serviço ou facilidade (fotos/x.jpg)"},
+  "passos": {"tipo": "lista", "min": 2, "max": 3, "item": {"tipo": "texto", "max": 38}, "dica": "como funciona, em 2 ou 3 passos"},
+  "antes": {"tipo": "texto", "min": 6, "max": 46, "dica": "como era antes (vai riscado)"},
+  "agora": {"tipo": "texto", "min": 6, "max": 46, "dica": "como fica agora"},
+  "a_partir": {"tipo": "data", "dica": "dia em que começa (AAAA-MM-DD); dia da semana e mês são do código; data passada é recusada"},
+  "preco": {"tipo": "dinheiro", "obrigatorio": false, "real": true},
+  "preco_a_partir": {"tipo": "booleano", "obrigatorio": false},
+  "condicao": {"tipo": "texto", "max": 30, "obrigatorio": false, "real": true, "dica": "condição real (ex.: 'Sem custo extra'), com _origem"},
+  "onde": {"tipo": "texto", "max": 36, "obrigatorio": false}
+ },
+ "especiais": {"_hoje": "data de publicação (AAAA-MM-DD); sem ela, a data de hoje"}
+}

@@ -1,0 +1,33 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "rotulo": "Mais feitos no mês",
+ "titulo": "O que mais saiu da oficina este mês",
+ "unidade": "carros",
+ "itens": [
+  {
+   "nome": "Troca de óleo",
+   "quantidade": 142
+  },
+  {
+   "nome": "Alinhamento e balanceamento",
+   "quantidade": 97
+  },
+  {
+   "nome": "Freios",
+   "quantidade": 61
+  }
+ ],
+ "produto": {
+  "foto": "fotos/oficina_oleo.jpg",
+  "nome": "Troca de óleo",
+  "detalhe": "Com filtro e checagem de níveis",
+  "preco": 149,
+  "convite": "agende a sua"
+ },
+ "_origem": {
+  "itens": "sistema",
+  "produto": "dono"
+ },
+ "nota": "valores de exemplo"
+}

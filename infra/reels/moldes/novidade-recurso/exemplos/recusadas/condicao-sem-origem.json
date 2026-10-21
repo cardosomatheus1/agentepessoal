@@ -1,0 +1,10 @@
+{
+ "_marca": "oficina-do-ze",
+ "recurso": "Leva e traz do seu carro",
+ "foto": "fotos/oficina_entrega_chave.jpg",
+ "passos": ["Você marca o horário", "A gente busca o carro"],
+ "antes": "Perder a manhã na oficina",
+ "agora": "Seu carro vai e volta",
+ "a_partir": "2026-11-03",
+ "condicao": "Sem custo até 5 km"
+}

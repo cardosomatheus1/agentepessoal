@@ -1,0 +1,26 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "tecnologica",
+ "campos": {
+  "titulo": {"tipo": "texto", "min": 12, "max": 50, "dica": "o que se compara: Por que a nossa revisão demora menos"},
+  "nos": {"tipo": "texto", "max": 10, "obrigatorio": false, "dica": "rótulo da nossa coluna (padrão: Aqui)"},
+  "comum": {"tipo": "escolha", "opcoes": ["o comum", "o jeito antigo"], "obrigatorio": false, "dica": "rótulo da outra coluna; nunca o nome de um concorrente"},
+  "linhas": {"tipo": "lista", "min": 3, "max": 6, "real": true,
+   "item": {
+    "item": {"tipo": "texto", "min": 4, "max": 34},
+    "nos": {"tipo": "booleano"},
+    "comum": {"tipo": "booleano"}
+   },
+   "dica": "o que o negócio faz de verdade (confirmado pelo dono); o placar é contado pelo código"},
+  "fecho": {"tipo": "texto", "max": 60, "obrigatorio": false, "dica": "frase depois do placar"},
+  "produto": {"tipo": "objeto", "campos": {
+    "foto": {"tipo": "foto", "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"},
+    "nome": {"tipo": "texto", "min": 3, "max": 30},
+    "detalhe": {"tipo": "texto", "max": 50, "obrigatorio": false},
+    "preco": {"tipo": "dinheiro", "real": true, "obrigatorio": false},
+    "convite": {"tipo": "texto", "max": 26, "obrigatorio": false, "dica": "frase curta antes do nome: agende a sua"}
+   }, "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"}
+ },
+ "publico": "cliente_final"
+}

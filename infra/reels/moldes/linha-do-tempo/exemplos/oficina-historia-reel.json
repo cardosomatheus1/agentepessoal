@@ -1,0 +1,15 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "titulo": "Da garagem do meu pai até a oficina de hoje",
+ "marcos": [
+  {"ano": 2016, "texto": "Mudamos pro galpão e compramos o elevador", "foto": "fotos/oficina_interior.jpg"},
+  {"ano": 1998, "texto": "Meu pai abre a garagem com um fusca no capô", "foto": "fotos/oficina_garagem_antiga.jpg"},
+  {"ano": 2009, "texto": "Eu entro de aprendiz e assumo os freios"},
+  {"ano": 2021, "texto": "Chega o alinhamento computadorizado", "foto": "fotos/oficina_alinhamento.jpg"},
+  {"ano": 2024, "texto": "Orçamento por foto no WhatsApp pra todo cliente"}
+ ],
+ "fecho": "A mesma confiança, agora com mais ferramenta.",
+ "produto": {"foto": "fotos/oficina_entrega_chave.jpg", "nome": "Revisão completa", "detalhe": "Deixe de manhã e busque no fim do dia", "preco": 290, "convite": "agende a sua"},
+ "_origem": {"marcos": "dono", "produto": "dono"}
+}

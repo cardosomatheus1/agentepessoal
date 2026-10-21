@@ -1,0 +1,145 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo vox-explainer (section crt / circle + stat spotlight) -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* "Você sabia?": an old TV powers on (bright line, flicker, scanlines, color split) with the question of the day;
+   the question is set on the page behind a circle; then the lights go down and the answer comes into focus in a
+   spotlight (rack focus from blur); the source is printed under it; last, the business's photo and the link */
+#folha{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(color-mix(in srgb,var(--texto) 6%,transparent) 2px,transparent 2px),linear-gradient(90deg,color-mix(in srgb,var(--texto) 6%,transparent) 2px,transparent 2px);background-size:72px 72px}
+.kick{font-weight:800;text-transform:uppercase;letter-spacing:.16em;white-space:nowrap}
+/* TV */
+#tv{position:absolute;left:100px;top:450px;width:880px;height:780px;border-radius:56px;background:var(--fundo2);border:6px solid var(--texto);box-shadow:var(--sombra)}
+#tela{position:absolute;left:44px;top:44px;width:680px;height:680px;border-radius:70px/50px;background:var(--tela);overflow:hidden;color:var(--sobre-tela)}
+#tela .lin{position:absolute;inset:0;background:repeating-linear-gradient(0deg,color-mix(in srgb,var(--sobre-tela) 7%,transparent) 0 2px,transparent 2px 6px);pointer-events:none}
+#tela .vin{position:absolute;inset:0;background:radial-gradient(ellipse 80% 70% at 50% 50%,transparent 55%,color-mix(in srgb,var(--tela) 85%,transparent));pointer-events:none}
+#flash{position:absolute;left:0;right:0;top:338px;height:4px;background:var(--sobre-tela);transform:scaleX(0)}
+#cont{position:absolute;inset:0;opacity:0}
+#canal{position:absolute;left:56px;top:70px;width:560px;height:44px;font-size:30px;line-height:44px;color:var(--ac)}
+#vs{position:absolute;left:56px;top:190px;width:580px;height:330px;font-size:150px;line-height:.98}
+#rec{position:absolute;left:56px;top:590px;width:40px;height:40px}
+#rec i{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--ac);margin-right:14px;vertical-align:-2px}
+.bot{position:absolute;right:46px;width:76px;height:76px;border-radius:50%;border:6px solid var(--texto);background:var(--cartao)}
+#grade{position:absolute;right:52px;top:400px;width:64px;height:220px;background:repeating-linear-gradient(0deg,var(--texto) 0 6px,transparent 6px 22px);opacity:.5}
+/* question on the page */
+#circ{position:absolute;left:540px;top:400px;width:470px;height:470px;border-radius:50%;border:22px solid var(--destaque)}
+#kq{position:absolute;left:84px;top:430px;width:600px;height:44px;font-size:32px;line-height:44px}
+#perg{position:absolute;left:84px;top:500px;width:820px;height:560px;font-size:86px;line-height:1.04}
+#scrap{position:absolute;left:520px;top:1110px;width:380px;height:300px;border:12px solid var(--cartao);outline:4px solid var(--texto);overflow:hidden;transform:rotate(4deg);box-shadow:var(--sombra)}
+body.e-vidro #scrap,body.e-noite #scrap{border-color:var(--fundo2)}
+#scrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* spotlight answer */
+#escuro{position:absolute;inset:0;background:var(--tela)}
+#pool{position:absolute;left:90px;top:470px;width:900px;height:700px;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,color-mix(in srgb,var(--ac) 38%,transparent) 0%,color-mix(in srgb,var(--ac) 12%,transparent) 45%,transparent 70%)}
+#kr{position:absolute;left:84px;top:420px;width:820px;height:44px;font-size:32px;line-height:44px;text-align:center;color:var(--ac)}
+#respB,#resp{position:absolute;left:84px;top:620px;width:820px;height:300px;font-size:200px;line-height:300px;text-align:center;white-space:nowrap;color:var(--sobre-tela)}
+#respB{filter:blur(22px);opacity:.5}
+#expl{position:absolute;left:104px;top:960px;width:780px;height:300px;font-size:54px;font-weight:700;line-height:1.14;text-align:center;color:var(--sobre-tela)}
+#fonte{position:absolute;left:104px;top:1300px;width:780px;height:100px;font-size:30px;font-weight:600;line-height:1.2;text-align:center;color:var(--sobre-tela);opacity:.8}
+/* the business */
+#fotoC{position:absolute;left:110px;top:400px;width:860px;height:640px;border:14px solid var(--cartao);outline:5px solid var(--texto);overflow:hidden;box-shadow:var(--sombra)}
+body.e-vidro #fotoC,body.e-noite #fotoC{border-color:var(--fundo2)}
+#fotoC img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#lig{position:absolute;left:84px;top:1086px;width:820px;height:340px;font-size:70px;line-height:1.06}
+</style></head><body><div id="palco">
+<div id="folha"></div>
+<div class="cena" id="c0"><div class="cam full">
+ <div id="tv"><div id="tela"><div id="flash"></div><div id="cont">
+  <div id="canal" class="kick t seg"></div>
+  <div id="vs" class="tit t seg"></div>
+  <div id="rec"><i></i></div>
+ </div><div class="lin"></div><div class="vin"></div></div>
+ <div class="bot" style="top:60px"></div><div class="bot" style="top:170px"></div><div id="grade"></div></div>
+</div></div>
+<div class="cena" id="c1"><div class="cam full">
+ <div id="circ"></div>
+ <div id="kq" class="kick t seg"></div>
+ <div id="perg" class="tit t seg rv"></div>
+ <div id="scrap"><img alt=""></div>
+</div></div>
+<div class="cena" id="c2"><div class="cam full">
+ <div id="escuro"></div><div id="pool"></div>
+ <div id="kr" class="kick t seg"></div>
+ <div id="respB" class="tit"></div><div id="resp" class="tit t seg"></div>
+ <div id="expl" class="t seg rv"></div>
+ <div id="fonte" class="t seg"></div>
+</div></div>
+<div class="cena" id="c3"><div class="cam full">
+ <div id="fotoC"><img alt=""></div>
+ <div id="lig" class="tit t seg rv"></div>
+</div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+const tw = t => Math.floor(t * 12) / 12;  // Vox cadence: on twos
+function tempoDeLer($m, F, base) {
+  let d = base.slice();
+  for (let it = 0; it < 5; it++) {
+    const S = [0]; d.forEach(x => S.push(+(S[S.length - 1] + x).toFixed(3))); S.push(S[S.length - 1] + 3);
+    $m.S = S; $m.N = S.length - 1;
+    let antes = new Set(), mudou = false;
+    d = d.map((x, i) => { $m.def.quadro(Math.max(S[i], S[i + 1] - 0.08), F, $m);
+      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').filter(w => /[\p{L}\d]/u.test(w)).length; }); agora.forEach(s => antes.add(s));
+      const min = +(0.8 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
+    if (!mudou) break;
+  }
+  return d;
+}
+Motor.molde({
+  id: 'sabia-que', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m, T = $m.T;
+    if (!/\?\s*$/.test(F.pergunta)) $m.erro('pergunta: termina com ponto de interrogação');
+    // the screen is always a dark register made from the brand's own background, with the text and accent that read on it
+    const escuro = $m.contraste('#ffffff', T.fundo) > $m.contraste('#111114', T.fundo);
+    const tela = escuro ? $m.mix(T.fundo, '#000000', 0.45) : $m.mix(T.texto, T.c1, 0.12);
+    const sob = $m.sobre(tela);
+    const ac = [T.destaque, T.c2, T.c1].find(c => $m.contraste(c, tela) >= 3) || sob;
+    const r = document.documentElement.style; r.setProperty('--tela', tela); r.setProperty('--sobre-tela', sob); r.setProperty('--ac', ac);
+    $('#canal').textContent = F.tema || 'Curiosidade do dia';
+    $('#vs').textContent = 'Você sabia?';
+    $('#kq').textContent = F.tema || 'Curiosidade do dia';
+    $('#perg').textContent = F.pergunta;
+    if (F.foto_pergunta) $('#scrap img').src = $m.midia(F.foto_pergunta); else $('#scrap').remove();
+    if (!F.foto_pergunta) $('#perg').style.height = '880px';
+    $('#kr').textContent = 'Resposta';
+    $('#resp').textContent = F.resposta; $('#respB').textContent = F.resposta;
+    $('#expl').textContent = F.explica;
+    $('#fonte').textContent = 'Fonte: ' + F.fonte;
+    $('#fotoC img').src = $m.midia(F.foto);
+    $('#lig').textContent = F.ligacao;
+    return { duracoes: tempoDeLer($m, F, [2.6, 3.0, 4.0, 3.2]) };
+  },
+  quadro(t, F, $m) {
+    const { $, p, eo, eo5, eb, cl, ini } = $m, T = tw(t);
+    // 0: TV powers on
+    $m.cena('#c0', t, 0, 0, { push: 0.03 });
+    const tq = eb(p(T, 0, 0.4)); $('#tv').style.transform = `translateY(${(1 - tq) * 200}px) rotate(${(1 - tq) * -4}deg)`; $('#tv').style.opacity = cl(tq * 3);
+    const f1 = eo(p(t, 0.35, 0.18)), f2 = p(t, 0.53, 0.22);
+    $('#flash').style.transform = `scaleX(${f1}) scaleY(${1 + 140 * f2})`; $('#flash').style.opacity = f2 >= 1 ? 0 : 1 - f2 * 0.9;
+    const on = t >= 0.7, fl = on && t < 1.2 ? (Math.floor(t * 12) % 2 ? 0.55 : 1) : on ? 1 : 0;
+    $('#cont').style.opacity = fl;
+    const jit = on && t > 1.3 ? (Math.floor(t * 10) % 2 ? 3 : -3) : 0;
+    $('#vs').style.textShadow = on ? `${jit}px 0 0 var(--ac), ${-jit}px 0 0 color-mix(in srgb,var(--sobre-tela) 40%,transparent)` : 'none';
+    $('#rec i').style.opacity = Math.floor(t * 2) % 2 ? 0.2 : 1;
+    // 1: the question, circle behind it on twos
+    const a1 = ini(1); $m.cena('#c1', t, 1);
+    const cq = eb(p(T, a1, 0.4)); $('#circ').style.transform = `scale(${cq})`;
+    $m.entra('#kq', T, a1 + 0.1, 0.3, 0);
+    $m.revela('#perg', t, a1 + 0.25);
+    if ($('#scrap')) { const sq = eb(p(T, a1 + 0.6, 0.4)); $('#scrap').style.opacity = cl(sq * 3); $('#scrap').style.transform = `translateX(${(1 - sq) * 120}px) rotate(${4 + (1 - sq) * 10}deg)`; $m.filmagem($('#scrap img'), F.foto_pergunta, t - a1); }
+    // 2: lights down, the answer racks into focus in the spotlight
+    const a2 = ini(2); $m.cena('#c2', t, 2, 2, { trans: 'fade', ent: 0.35 });
+    const pq = eo(p(t, a2 + 0.1, 0.6)); $('#pool').style.transform = `scale(${0.5 + 0.5 * pq})`; $('#pool').style.opacity = pq;
+    $m.entra('#kr', T, a2 + 0.2, 0.3, 0);
+    const rq = eo5(p(t, a2 + 0.35, 0.7)); $('#resp').style.filter = `blur(${(1 - rq) * 16}px)`; $('#resp').style.opacity = cl(rq * 2); $('#resp').style.transform = `scale(${0.94 + 0.06 * rq})`;
+    $('#respB').style.opacity = 0.45 * rq;
+    $m.revela('#expl', t, a2 + 1.0);
+    $m.entra('#fonte', T, a2 + 1.5, 0.3, 10);
+    // 3: the business
+    const a3 = ini(3); $m.cena('#c3', t, 3);
+    const fq = eb(p(T, a3, 0.45)); $('#fotoC').style.transform = `rotate(${-2 + (1 - fq) * 10}deg) scale(${0.7 + 0.3 * fq})`; $('#fotoC').style.opacity = cl(fq * 3);
+    $m.filmagem($('#fotoC img'), F.foto, t - a3);
+    $m.revela('#lig', t, a3 + 0.45);
+  },
+});
+</script></body></html>

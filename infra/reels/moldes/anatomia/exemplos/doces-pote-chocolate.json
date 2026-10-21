@@ -1,0 +1,8 @@
+{"_marca": "doces-da-lu", "_formato": "reel", "produto": "Bolo de pote de chocolate", "foto": "fotos/lanca-produto_doce_pote_chocolate.jpg",
+ "partes": [
+  {"nome": "Cobertura", "detalhe": "raspas e lascas de chocolate", "de": 22, "ate": 37},
+  {"nome": "Brigadeiro", "detalhe": "de panela, chocolate 50% cacau", "de": 40, "ate": 55},
+  {"nome": "Creme", "detalhe": "mousse de morango batida no dia", "de": 56, "ate": 67},
+  {"nome": "Massa", "detalhe": "pão de ló de chocolate molhado", "de": 67, "ate": 88}],
+ "preco": 14, "unidade": "o pote", "nota": "valores de exemplo",
+ "_origem": {"partes": "dono", "preco": "dono"}}

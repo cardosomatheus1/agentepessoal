@@ -1,0 +1,172 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- estrutura e movimento adaptados de heygen-com/hyperframes-launches (Apache-2.0), composição heygen-apple-motion -->
+<style>
+/* one continuous stage: the photo is a single object the camera keeps moving (no cut between beats) */
+#st{position:absolute;inset:0}
+#halo{position:absolute;left:-160px;top:180px;width:1400px;height:1400px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--c1) 55%,transparent),transparent);filter:blur(40px);opacity:0}
+#piso{position:absolute;left:140px;width:800px;height:120px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--destaque) 45%,transparent),transparent);filter:blur(10px)}
+#obj{position:absolute;border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra)}
+body.e-pop #obj{border:6px solid var(--texto);box-shadow:14px 14px 0 var(--texto)}
+body.e-papel #obj{border-radius:10px;border:14px solid var(--cartao)}
+body.e-noite #obj{box-shadow:0 0 0 2px var(--destaque),0 0 60px color-mix(in srgb,var(--destaque) 40%,transparent)}
+#obj img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* the light sweep: a soft band crossing the object (and later the price) */
+.var{position:absolute;inset:0;overflow:hidden;pointer-events:none;mix-blend-mode:screen}
+body.e-claro .var,body.e-papel .var,body.e-pop .var{mix-blend-mode:soft-light}
+.var i{position:absolute;top:-20%;bottom:-20%;width:38%;background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--texto) 55%,transparent) 50%,transparent);transform:skewX(-14deg)}
+body.e-claro .var i,body.e-papel .var i{background:linear-gradient(100deg,transparent,var(--cartao) 50%,transparent)}
+#escuro{position:absolute;inset:0;background:var(--fundo);pointer-events:none}
+/* type */
+.pw{display:inline-block;will-change:transform}
+#gancho{position:absolute;left:90px;width:810px;top:1330px;height:140px;font-size:58px;text-align:center}
+#nome{position:absolute;left:90px;width:810px;top:1095px;height:250px;font-size:118px;line-height:1;text-align:center}
+#linha{position:absolute;left:90px;width:810px;top:1360px;height:110px;font-size:40px;font-weight:700;line-height:1.25;text-align:center}
+/* feature list: the active row is lit, the others wait in the dark */
+.rec{position:absolute;left:90px;width:810px;height:170px}
+.rec .bar{position:absolute;left:0;top:8px;width:6px;height:154px;border-radius:3px;background:var(--borda);overflow:hidden}
+.rec .bar b{position:absolute;left:0;right:0;top:0;height:100%;background:var(--destaque);transform-origin:50% 0}
+.rec .n{position:absolute;left:36px;top:0;width:300px;height:40px;font-size:30px;font-weight:800;letter-spacing:.18em}
+.rec .ti{position:absolute;left:36px;top:40px;width:774px;height:76px;font-size:66px;white-space:nowrap}
+.rec .de{position:absolute;left:36px;top:114px;width:774px;height:48px;font-size:34px;font-weight:600;white-space:nowrap}
+/* availability */
+#pk{position:absolute;left:90px;width:810px;height:52px;font-size:36px;font-weight:800;letter-spacing:.14em;text-align:center}
+#preco{position:absolute;left:0;width:810px;height:170px;font-size:150px;line-height:170px;text-align:center;white-space:nowrap}
+#precoW{position:absolute;left:90px;width:810px;height:170px;overflow:hidden}
+#qd{position:absolute;left:90px;width:810px;height:90px;text-align:center}
+#qd span{display:inline-block;font-size:46px;padding:14px 38px;white-space:nowrap;max-width:810px}
+#onde{position:absolute;left:90px;width:810px;height:60px;font-size:38px;font-weight:700;text-align:center;white-space:nowrap}
+body.f-story #gancho,body.f-story #nome,body.f-story #linha,body.f-story #pk,body.f-story #precoW,body.f-story #qd,body.f-story #onde{left:80px;width:920px}
+body.f-story #preco{left:0;width:920px}
+</style></head><body><div id="palco">
+
+<div class="cena" id="cR"><div class="cam full"><div id="st">
+ <div id="halo"></div><div id="piso"></div>
+ <div id="obj"><img id="foto" alt=""><div id="escuro"></div><div class="var" id="var1"><i></i></div></div>
+ <div id="gancho" class="tit t seg"></div>
+ <div id="nome" class="tit t seg"></div>
+ <div id="linha" class="t t2 seg"></div>
+ <div id="recs"></div>
+ <div id="pk" class="t dest seg"></div>
+ <div id="precoW"><div id="preco" class="tit t seg"></div><div class="var" id="var2"><i></i></div></div>
+ <div id="qd"><span class="chip t seg" id="qdT"></span></div>
+ <div id="onde" class="t t2 seg"></div>
+</div></div></div>
+
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Revelação": premium reveal of a new product or service. Dark stage, a light sweep wakes the photo up, the
+// photo rises and the camera keeps moving it while the name lands in big type, three short features light up
+// one at a time, then price and availability. One ease family (expo out arriving, expo in leaving), words on a
+// damped spring three frames apart.
+const EO = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+const EI = x => x <= 0 ? 0 : Math.pow(2, 10 * (x - 1));
+const mola = x => x <= 0 ? 1 : Math.exp(-x / 0.15) * Math.cos(2 * Math.PI * x / 0.3);
+const pal = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+const ler = (...s) => 1.6 + 0.25 * pal(...s);
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const dia = s => { if (!s) return null; const [a, m, d] = s.split('-').map(Number); return new Date(a, m - 1, d); };
+const ddmm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+// words of a line as inline blocks, so each can ride its own spring
+function molas(e, txt) { e.textContent = ''; txt.split(/\s+/).forEach((w, i) => { if (i) e.append(' '); mk('span', 'pw', w, e); }); }
+function molaQuadro(e, t, t0, passo = 0.1, alto = 44) { [...e.querySelectorAll('.pw')].forEach((w, i) => { const x = t - t0 - i * passo; w.style.opacity = x < 0 ? 0 : Math.min(1, x / 0.13); w.style.transform = `translateY(${alto * mola(x)}px)`; }); }
+// rectangles of the photo along the film: keyframe per scene, the camera eases between them
+const R = { abre: [200, 420, 680, 860], nome: [250, 400, 580, 650], rec: [90, 390, 900, 500], fim: [290, 400, 500, 560] };
+// where the product sits in the photo (ficha `foco`); each feature drifts a little around it
+const FOCO = { centro: [50, 50], cima: [50, 25], baixo: [50, 78], esquerda: [28, 50], direita: [72, 50] };
+const DESVIO = [[-12, -6], [12, 0], [0, 8]];
+let Q = {};
+
+Motor.molde({
+  id: 'revelacao', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    // availability: the weekday and "tomorrow" are the code's; a past date refuses the template
+    let qd = null;
+    if (F.disponivel) {
+      const h = dia(F._hoje) || new Date(), h0 = new Date(h.getFullYear(), h.getMonth(), h.getDate()), d = dia(F.disponivel), n = Math.round((d - h0) / 864e5);
+      if (n < 0) $m.erro(`disponivel: a data ${ddmm(d)} já passou`);
+      qd = n <= 0 ? 'Já disponível' : n === 1 ? 'Chega amanhã, ' + ddmm(d) : 'Chega ' + DIAS[d.getDay()] + ', ' + ddmm(d);
+    }
+    if (F.preco == null && !qd && !F.onde) $m.erro('a cena final de oferta precisa de preço, data ou onde encontrar');
+    // a test brand has no real prices: an R$ value there must say it is an example
+    if (F.preco != null && M._teste && !/exemplo/i.test(F.nota || '')) $m.erro('marca de teste: preço precisa de "nota": "valores de exemplo"');
+    $m.filmagem($('#foto'), F.foto, 0);
+    molas($('#gancho'), F.gancho);
+    molas($('#nome'), F.nome);
+    if (F.nome.length <= 16) { Object.assign($('#nome').style, { top: '1170px', height: '170px' }); $('#linha').style.top = '1320px'; }
+    if (F.linha) $('#linha').textContent = F.linha; else $('#linha').remove();
+    F.recursos.forEach((r, j) => {
+      const d = mk('div', 'rec', null, $('#recs')); d.style.top = (950 + j * 185) + 'px';
+      mk('div', 'bar', null, d).appendChild(mk('b'));
+      mk('div', 'n t dest', String(j + 1).padStart(2, '0'), d);
+      mk('div', 'ti tit t seg', r.titulo, d);
+      if (r.detalhe) mk('div', 'de t t2 seg', r.detalhe, d); else d.querySelector('.ti').style.top = '64px';
+    });
+    // availability block stacked from the top by what exists
+    let y = 1010;
+    const preco = F.preco != null ? $m.brl(F.preco, Number.isInteger(F.preco) ? 0 : 2) : null;
+    if (preco) {
+      if (F.preco_a_partir) { $('#pk').textContent = 'A PARTIR DE'; $('#pk').style.top = y + 'px'; y += 56; } else $('#pk').remove();
+      $('#preco').textContent = preco; $('#precoW').style.top = y + 'px'; y += 190;
+    } else { $('#pk').remove(); $('#precoW').remove(); }
+    if (qd) { $('#qdT').textContent = qd; $('#qd').style.top = y + 'px'; y += 110; } else $('#qd').remove();
+    if (F.onde) { $('#onde').textContent = F.onde; $('#onde').style.top = y + 'px'; } else $('#onde').remove();
+    $('#nota').textContent = F.nota || '';
+    Q = { preco, qd };
+    const rd = F.recursos.map(r => Math.max(2.4, ler(r.titulo, r.detalhe)));
+    const d = [Math.max(2.8, ler(F.gancho)), Math.max(3.0, ler(F.nome, F.linha)), ...rd, Math.max(3.2, ler(Q.preco ? 'a partir de R$ 0' : '', qd, F.onde, F.nota))];
+    return { duracoes: d };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eio, lerp, cl, ini, fim } = $m;
+    const nR = F.recursos.length, sF = 2 + nR;  // scenes: 0 hook, 1 name, 2..sF-1 features, sF offer
+    $m.cena('#cR', t, 0, sF);
+    // the photo's path: opens big in the dark, rises, widens for the features, steps back for the offer
+    const alvo = i => i === 0 ? R.abre : i === 1 ? R.nome : i < sF ? R.rec : R.fim;
+    let r = R.abre.slice();
+    for (let i = 1; i <= sF; i++) { if (alvo(i) === alvo(i - 1)) continue; const q = eio(p(t, ini(i) - 0.35, 0.95)); r = r.map((v, k) => lerp(v, alvo(i)[k], q)); }
+    const sobe = EO(p(t, 0.1, 1.5));
+    const o = $('#obj'); Object.assign(o.style, { left: r[0] + 'px', top: (r[1] + 260 * (1 - sobe)) + 'px', width: r[2] + 'px', height: r[3] + 'px' });
+    o.style.opacity = cl(sobe * 2.5);
+    $('#piso').style.top = (r[1] + r[3] + 260 * (1 - sobe) - 50) + 'px'; $('#piso').style.opacity = 0.9 * sobe * (1 - eio(p(t, ini(1), 0.6)));
+    // the stage is dark until the light comes up (the photo shows by 1.6 s: no long hide in a Reel)
+    $('#escuro').style.opacity = 0.9 * (1 - EO(p(t, 0.35, 1.3)));
+    $('#halo').style.opacity = (['claro', 'papel'].includes($m.ESTILO) ? 0.3 : 0.6) * EO(p(t, 0.3, 1.6));
+    $('#halo').style.transform = `translateY(${-120 * eio(p(t, ini(1), 1.2))}px) scale(${1 + 0.06 * Math.sin(t * 0.6)})`;
+    // light sweeps: one waking the photo, one at each new beat
+    const sw = (el, a, d) => { const k = p(t, a, d); el.querySelector('i').style.left = (-45 + 160 * k) + '%'; el.style.opacity = k > 0 && k < 1 ? 1 : 0; };
+    let a0 = 0.45; for (let i = 0; i <= sF; i++) if (t >= ini(i) + (i ? 0.5 : 0.45)) a0 = ini(i) + (i ? 0.5 : 0.45);
+    sw($('#var1'), a0, 1.1);
+    const im = $('#foto'); $m.filmagem(im, F.foto, t);
+    let fx = `${FOCO[F.foco || 'centro'][0]}% ${FOCO[F.foco || 'centro'][1]}%`, z = 1; const fc = FOCO[F.foco || 'centro'];
+    for (let j = 0; j < nR; j++) if (t >= ini(2 + j) - 0.2 && t < ini(sF)) { fx = `${cl(fc[0] + DESVIO[j % 3][0], 0, 100)}% ${cl(fc[1] + DESVIO[j % 3][1], 0, 100)}%`; z = 1 + 0.12 * EO(p(t, ini(2 + j) - 0.2, 1.4)); }
+    im.style.objectPosition = fx; im.style.transformOrigin = fx; im.style.transform = `scale(${z})`;
+    // leaving: shrinking and blurring into the next beat (matched vector with the shrinking arrival)
+    const sai = (e, b) => { if (!e) return; const q = EI(p(t, b - 0.3, 0.3)); e.style.opacity = (+e.style.opacity || 0) * (1 - q); e.style.filter = `blur(${12 * q}px)`; e.style.transform += ` scale(${1 - 0.1 * q})`; };
+    // 0: hook
+    const g = $('#gancho'); g.style.opacity = 1; g.style.transform = ''; molaQuadro(g, t, 0.9, 0.1); sai(g, fim(0));
+    // 1: name, huge, word by word on the spring; the line under it settles
+    const n = $('#nome'); n.style.opacity = t >= ini(1) ? 1 : 0; n.style.transform = `scale(${1.08 - 0.08 * EO(p(t, ini(1), 0.8))})`; molaQuadro(n, t, ini(1) + 0.5, 0.1, 60); sai(n, fim(1));
+    const li = $('#linha'); if (li) { $m.entra(li, t, ini(1) + 0.9, 0.6, 24); sai(li, fim(1)); }
+    // 2..: features; the active row lights and its bar fills while the camera drifts across the photo
+    $$('.rec').forEach((d, j) => {
+      const a = ini(2), on = EO(p(t, a + 0.1 + j * 0.12, 0.6)), act = cl(p(t, ini(2 + j), 0.35)) - (j < nR - 1 ? cl(p(t, ini(3 + j), 0.35)) : 0);
+      d.style.opacity = on * (0.26 + 0.74 * act); d.style.transform = `translateY(${(1 - on) * 50}px) translateX(${act * 8}px)`;
+      d.querySelector('.bar b').style.transform = `scaleY(${p(t, ini(2 + j), fim(2 + j) - ini(2 + j))})`;
+      d.querySelector('.bar b').style.opacity = act > 0.01 ? 1 : 0.0;
+      sai(d, ini(sF));
+    });
+    // last: price rises with its own sweep, then when and where
+    const s = ini(sF);
+    if ($('#pk')) $m.entra('#pk', t, s + 0.3, 0.6, 20);
+    if ($('#precoW')) { const q = EO(p(t, s + 0.4, 0.9)); const pr = $('#preco'); pr.style.transform = `translateY(${(1 - q) * 100}%)`; pr.style.opacity = t >= s + 0.4 ? 1 : 0; sw($('#var2'), s + 1.1, 1.0); }
+    if ($('#qd')) $m.entra('#qd', t, s + 0.9, 0.6, 30, 0.1);
+    if ($('#onde')) $m.entra('#onde', t, s + 1.15, 0.6, 20);
+    $('#nota').style.opacity = t >= s + 0.4 && t < fim(sF) ? 0.9 * EO(p(t, s + 0.4, 0.5)) : 0;
+  },
+});
+</script></body></html>

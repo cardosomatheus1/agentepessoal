@@ -1,0 +1,13 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
+ "titulo": "Qual tamanho de bolo é o da sua festa?",
+ "opcoes": [
+  {"nome": "Pequeno", "preco": 90, "rende": 15, "unidade": "fatias", "itens": ["Um recheio", "Até 15 pessoas"]},
+  {"nome": "Médio", "preco": 150, "rende": 30, "unidade": "fatias", "itens": ["Dois recheios", "Até 30 pessoas"]},
+  {"nome": "Grande", "preco": 240, "rende": 50, "unidade": "fatias", "itens": ["Dois recheios", "Topo de papel", "Até 50 pessoas"]}
+ ],
+ "mais_pedido": "2",
+ "produto": {"foto": "fotos/doce_bolo_morango.jpg", "nome": "Bolo de morango", "detalhe": "Encomendas com três dias de antecedência", "convite": "encomende o seu"},
+ "_origem": {"opcoes": "dono", "mais_pedido": "sistema"}
+}

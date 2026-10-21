@@ -1,0 +1,18 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "gancho": "Começou num rascunho",
+ "etapas": [
+  {"texto": "Morango escolhido na feira", "foto": "fotos/doce_morangos_bancada.jpg"},
+  {"texto": "Camada por camada", "foto": "fotos/doce_montando_morango.jpg"}
+ ],
+ "foto": "fotos/doce_bolo_morango.jpg",
+ "nome": "Bolo de morango",
+ "detalhe": "Massa branca e chantilly fresco",
+ "preco": 120,
+ "preco_a_partir": true,
+ "quando": "2026-10-24",
+ "nota": "valores de exemplo",
+ "_origem": {"preco": "dono"}
+}

@@ -1,0 +1,261 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo kallaway -->
+<style>
+/* Kallaway layer (dark, lit instruments): aurora bloom from below, dot grid, glowing kicker and numbers */
+.aur{position:absolute;left:-25%;right:-25%;bottom:-28%;height:80%;z-index:1;pointer-events:none;transform-origin:50% 100%;
+  background:radial-gradient(50% 55% at 50% 100%,color-mix(in srgb,var(--destaque) 50%,transparent) 0%,color-mix(in srgb,var(--destaque) 16%,transparent) 45%,transparent 75%)}
+.pts{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.55;background-image:radial-gradient(color-mix(in srgb,var(--texto) 22%,transparent) 2px,transparent 2.6px);background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(90% 70% at 50% 55%,#000 30%,transparent 80%);mask-image:radial-gradient(90% 70% at 50% 55%,#000 30%,transparent 80%)}
+body.e-claro .aur,body.e-papel .aur{opacity:.55}body.e-pop .aur{opacity:.35}
+.cena{z-index:2}
+.kick{font-family:var(--fb),sans-serif;font-weight:800;font-size:34px;letter-spacing:.18em;text-transform:uppercase;color:var(--destaque);white-space:nowrap;height:46px;line-height:46px}
+.luz{text-shadow:0 0 26px color-mix(in srgb,var(--destaque) 60%,transparent),0 0 80px color-mix(in srgb,var(--destaque) 30%,transparent)}
+body.e-claro .luz,body.e-papel .luz,body.e-pop .luz{text-shadow:none}
+.num{font-family:var(--ft),sans-serif;font-weight:900;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.03em;white-space:nowrap}
+.gnum{background-image:linear-gradient(170deg,var(--texto) 20%,var(--destaque) 85%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.08em}
+body.e-pop .gnum{background-image:none;color:var(--texto)}
+/* scene 0: what is coming */
+#k0{position:absolute;left:90px;top:400px;width:820px}
+#tit0{position:absolute;left:90px;top:470px;width:820px;height:300px;font-size:84px}
+#oq0{position:absolute;left:90px;top:820px;width:820px;height:330px;font-size:120px;line-height:1.02}
+#dt0{position:absolute;left:90px;top:1200px;height:76px;line-height:76px;font-size:40px;padding:0 32px;white-space:nowrap}
+
+/* scene 1: the clockface */
+#k1{position:absolute;left:90px;top:400px;width:820px}
+#rel{position:absolute;left:110px;top:500px;width:760px;height:760px}
+#rel svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#relh{position:absolute;left:80px;top:80px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--destaque) 26%,transparent) 0%,transparent 68%)}
+#rn{position:absolute;left:180px;top:250px;width:400px;height:220px;text-align:center;font-size:230px}
+#ru{position:absolute;left:180px;top:480px;width:400px;height:56px;text-align:center;font-size:42px;font-weight:800;letter-spacing:.2em;white-space:nowrap}
+#rx{position:absolute;left:90px;top:1300px;width:820px;height:70px;font-size:54px;white-space:nowrap}
+
+/* scene 2: the timer and the days in a row */
+#k2{position:absolute;left:90px;top:400px;width:820px}
+#tim{position:absolute;left:90px;top:470px;width:820px;height:380px;padding:40px 30px;display:flex;align-items:center;justify-content:center;gap:10px}
+#tim .bl{flex:none;width:330px;text-align:center}
+#tim .d{height:220px;font-size:220px}
+#tim .l{height:46px;margin-top:8px;font-size:34px;font-weight:800;letter-spacing:.2em;white-space:nowrap}
+#tim .cl{flex:none;width:60px;height:220px;font-size:180px;line-height:200px;text-align:center;color:var(--destaque)}
+#trilho{position:absolute;left:90px;top:920px;width:760px;height:120px}
+#trilho .dd{position:absolute;top:50px;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:color-mix(in srgb,var(--texto) 25%,transparent)}
+#trilho .dd.on{background:var(--texto)}
+#trilho .alvo{position:absolute;top:30px;width:60px;height:60px;margin-left:-30px;border-radius:50%;background:var(--destaque);box-shadow:0 0 0 10px color-mix(in srgb,var(--destaque) 30%,transparent),0 0 50px var(--destaque)}
+#trilho .lh{position:absolute;top:58px;height:4px;left:0;background:color-mix(in srgb,var(--texto) 18%,transparent)}
+#trilho .pulso{position:absolute;top:44px;width:32px;height:32px;margin-left:-16px;border-radius:50%;background:var(--destaque);box-shadow:0 0 30px var(--destaque)}
+#tl0,#tl1{position:absolute;top:1050px;height:46px;font-size:34px;font-weight:800;white-space:nowrap}
+#tl0{left:90px;width:300px}#tl1{left:450px;width:400px;text-align:right}
+#dt2{position:absolute;left:90px;top:1150px;width:820px;height:80px;font-size:58px;white-space:nowrap}
+#hj2{position:absolute;left:90px;top:1240px;width:820px;height:50px;font-size:34px;font-weight:700;white-space:nowrap}
+
+/* scene 3: what it is */
+#k3{position:absolute;left:90px;top:400px;width:820px}
+#card3{position:absolute;left:90px;top:480px;width:820px;height:600px;padding:60px 60px}
+#card3 .ic{width:120px;height:120px;border-radius:34px;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:70px;box-shadow:0 0 50px color-mix(in srgb,var(--destaque) 55%,transparent)}
+#det{margin-top:40px;height:340px;font-size:62px;line-height:1.14}
+
+/* ad close */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:0 0 0 3px color-mix(in srgb,var(--destaque) 70%,transparent),0 0 60px color-mix(in srgb,var(--destaque) 40%,transparent)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1062px;height:50px;line-height:50px}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+</style></head><body><div id="palco">
+<div class="aur" id="aur"></div><div class="pts"></div>
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="kick t seg"></div>
+ <div id="tit0" class="tit t seg rv"></div>
+ <div id="oq0" class="tit dest luz t seg rv"></div>
+ <div id="dt0" class="chip t seg"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="k1" class="kick t seg"></div>
+ <div id="rel">
+  <div id="relh"></div>
+  <svg viewBox="0 0 760 760">
+   <circle cx="380" cy="380" r="350" fill="none" style="stroke:color-mix(in srgb,var(--texto) 10%,transparent)" stroke-width="3"/>
+   <circle cx="380" cy="380" r="300" fill="none" style="stroke:color-mix(in srgb,var(--texto) 12%,transparent)" stroke-width="34"/>
+   <g id="tiques"></g>
+   <circle id="arc" cx="380" cy="380" r="300" fill="none" stroke="var(--destaque)" stroke-width="34" stroke-linecap="round" transform="rotate(-90 380 380)" style="filter:drop-shadow(0 0 16px var(--destaque))"/>
+   <g id="ponteiro"><circle cx="380" cy="80" r="22" fill="var(--texto)" style="filter:drop-shadow(0 0 14px var(--destaque))"/></g>
+  </svg>
+  <div id="rn" class="num gnum luz t seg"></div>
+  <div id="ru" class="t dest seg"></div>
+ </div>
+ <div id="rx" class="tit t seg"></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="k2" class="kick t seg">CONTAGEM</div>
+ <div id="tim" class="cartao"><div class="bl"><div class="d num gnum t seg" id="td"></div><div class="l t t2 seg" id="tdl"></div></div><div class="cl tit" id="tc">:</div><div class="bl"><div class="d num gnum t seg" id="th"></div><div class="l t t2 seg" id="thl"></div></div></div>
+ <div id="trilho"></div>
+ <div id="tl0" class="t t2 seg">hoje</div><div id="tl1" class="t dest seg"></div>
+ <div id="dt2" class="tit t seg"></div>
+ <div id="hj2" class="t t2 seg"></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full">
+ <div id="k3" class="kick t seg"></div>
+ <div id="card3" class="cartao"><div class="ic" id="ic3"></div><div><div id="det" class="tit t seg rv"></div></div></div>
+</div></div>
+
+<div class="cena" id="c4"><div class="cam full" id="c4in"></div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Contagem": the time left until a real date (a launch, an opening, an event, or the end of a promotion). Days and
+// hours are worked out by the code from the day of posting (_hoje, or now) to the date; a date in the past is refused,
+// and so is a promotion of more than 31 days. Never a timer that restarts: the video shows the date it counts to.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+// reading time: the check asks 0.8 s + 0.25 s per new word; a little margin on top
+const ler = (...s) => 1.0 + 0.25 * palavras(...s);
+function foco(e, t, t0, d = 0.7, dy = 40, bl = 16) {
+  if (typeof e === 'string') e = Motor.$(e); if (!e) return 0;
+  const q = Motor.eo5(Motor.p(t, t0, d)); e.style.opacity = q; e.style.transform = `translateY(${(1 - q) * dy}px)`; e.style.filter = q < 1 ? `blur(${((1 - q) * bl).toFixed(1)}px)` : 'none'; return q;
+}
+function vitrine(F, $m, pai) {
+  const P = F.produto, v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk kick t seg', P.convite || 'tem aqui pra você', v);
+  mk('div', 'pvn tit t seg rv', P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  const linhas = P.nome.length > 20 ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  n.style.height = (linhas * 86) + 'px'; if (d) d.style.top = (1130 + linhas * 86 + 14) + 'px';
+  return v;
+}
+const vitrineLer = F => ler(F.produto.convite || 'tem aqui pra você', F.produto.nome, F.produto.detalhe, F.produto.preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.8)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`; f.style.filter = q < 1 ? `blur(${(1 - q) * 18}px)` : 'none';
+  $m.filmagem(v.querySelector('.pvf img'), F.produto.foto, t);
+  foco(v.querySelector('.pvk'), t, a + 0.35, 0.6, 20, 10);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) foco(pd, t, a + 1.0, 0.6, 20, 8);
+}
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const TIPO = { lancamento: ['LANÇAMENTO', 'chega'], fim_promocao: ['ÚLTIMOS DIAS', 'termina'], inauguracao: ['INAUGURAÇÃO', 'abre'], evento: ['VEM AÍ', 'começa'] };
+function quando(s, hora) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/.exec(s || ''); if (!m) return null;
+  const [h, mi] = hora ? hora.split(':').map(Number) : [m[4] ? +m[4] : 0, m[5] ? +m[5] : 0];
+  return new Date(+m[1], +m[2] - 1, +m[3], h, mi);
+}
+const ddmm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+const hh = d => d.getHours() + 'h' + (d.getMinutes() ? String(d.getMinutes()).padStart(2, '0') : '');
+const p2 = x => String(x).padStart(2, '0');
+let D = {}, PV = null;
+function checar(F, $m) {
+  const hoje = F._hoje ? quando(F._hoje) : new Date();
+  const fim = quando(F.data, F.hora || (F.tipo === 'fim_promocao' ? '23:59' : '00:00'));
+  if (!hoje || !fim) { $m.erro('data e _hoje: formato AAAA-MM-DD'); return {}; }
+  const min = Math.floor((fim - hoje) / 6e4);
+  if (min <= 0) $m.erro('a data já passou: a contagem não pode sair depois dela');
+  const d0 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()), d1 = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
+  const cal = Math.round((d1 - d0) / 864e5);
+  if (F.tipo === 'fim_promocao' && cal > 31) $m.erro('promoção de mais de 31 dias não é contagem de fim: use outro molde');
+  if (cal > 120) $m.erro('mais de 120 dias: longe demais para contagem');
+  if (/\d/.test(F.titulo + ' ' + F.o_que)) $m.erro('titulo e o_que sem algarismos: data e hora saem dos campos, pelo código');
+  const dias = Math.floor(min / 1440), horas = Math.floor((min % 1440) / 60), mins = min % 60;
+  return { hoje, fim, min, dias, horas, mins, cal };
+}
+
+Motor.molde({
+  id: 'contagem', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    D = checar(F, $m); if (!D.fim) return { duracoes: [3] };
+    const [kick, verbo] = TIPO[F.tipo];
+    const quandoTxt = `${DIAS[D.fim.getDay()]}, ${ddmm(D.fim)}` + (F.hora ? ' às ' + hh(D.fim) : '');
+    $('#k0').textContent = kick; $('#tit0').textContent = F.titulo; $('#oq0').textContent = F.o_que; $('#dt0').textContent = quandoTxt;
+    // stack title, what and date by their estimated lines, so a short title leaves no hole
+    const n1 = Math.min(3, Math.ceil(F.titulo.length / 18)), n2 = Math.min(3, Math.ceil(F.o_que.length / 12));
+    const y1 = 470 + n1 * 90 + 60; $("#tit0").style.height = (n1 * 90 + 10) + 'px';
+    Object.assign($('#oq0').style, { top: y1 + 'px', height: (n2 * 124 + 10) + "px" }); $("#dt0").style.top = (y1 + n2 * 124 + 50) + 'px';
+    $('#k1').textContent = 'FALTAM';
+    // the big unit: days, or hours on the last day; the ring is one month (or one day) of time
+    D.grande = D.dias >= 1 ? D.dias : D.horas; D.unid = D.dias >= 1 ? (D.dias === 1 ? 'DIA' : 'DIAS') : (D.horas === 1 ? 'HORA' : 'HORAS');
+    D.frac = D.dias >= 1 ? Math.min(1, D.min / (30 * 1440)) : D.min / 1440;
+    $('#rn').textContent = D.grande; $('#ru').textContent = D.unid;
+    $('#rx').textContent = `${verbo[0].toUpperCase() + verbo.slice(1)} ${DIAS[D.fim.getDay()]}, ${ddmm(D.fim)}`;
+    let g = ''; for (let i = 0; i < 60; i++) { const a = i / 60 * 2 * Math.PI, big = i % 5 === 0, r0 = big ? 236 : 252, r1 = 268;
+      g += `<line x1="${(380 + r0 * Math.sin(a)).toFixed(1)}" y1="${(380 - r0 * Math.cos(a)).toFixed(1)}" x2="${(380 + r1 * Math.sin(a)).toFixed(1)}" y2="${(380 - r1 * Math.cos(a)).toFixed(1)}" style="stroke:color-mix(in srgb,var(--texto) ${big ? 60 : 25}%,transparent)" stroke-width="${big ? 6 : 3}" stroke-linecap="round"/>`; }
+    $('#tiques').innerHTML = g;
+    D.C = 2 * Math.PI * 300; $('#arc').setAttribute('stroke-dasharray', D.C.toFixed(1));
+    // timer: days and hours, or hours and minutes on the last day
+    const [x1, l1, x2, l2] = D.dias >= 1 ? [D.dias, D.dias === 1 ? 'DIA' : 'DIAS', D.horas, D.horas === 1 ? 'HORA' : 'HORAS'] : [D.horas, D.horas === 1 ? 'HORA' : 'HORAS', D.mins, 'MIN'];
+    D.tim = [x1, x2]; $('#td').textContent = p2(x1); $('#tdl').textContent = l1; $('#th').textContent = p2(x2); $('#thl').textContent = l2;
+    // a dot per day from today to the date (up to a month), the date glowing at the end
+    if (D.cal >= 1 && D.cal <= 31) {
+      const tr = $('#trilho'), n = D.cal, w = 700; mk('div', 'lh', null, tr).style.width = '730px';
+      for (let i = 0; i < n; i++) { const d = mk('div', 'dd' + (i === 0 ? ' on' : ''), null, tr); d.style.left = (10 + i * w / n) + 'px'; }
+      mk('div', 'pulso', null, tr); const al = mk('div', 'alvo', null, tr); al.style.left = '730px';
+      $('#tl1').textContent = ddmm(D.fim);
+    } else { $('#trilho').remove(); $('#tl0').remove(); $('#tl1').remove(); $('#dt2').style.top = '960px'; $('#hj2').style.top = '1050px'; }
+    $('#dt2').textContent = quandoTxt;
+    $('#hj2').textContent = 'contando de ' + ddmm(D.hoje) + ', dia deste post';
+    $('#k3').textContent = 'O QUE ' + verbo.toUpperCase();
+    $('#ic3').innerHTML = $m.icone(F.tipo === 'fim_promocao' ? 'etiqueta' : F.tipo === 'inauguracao' ? 'casa' : 'brilho');
+    $('#det').textContent = F.detalhe;
+    PV = vitrine(F, $m, $('#c4in'));
+    $('#nota').textContent = F.nota || '';
+    return { duracoes: [
+      Math.max(3.4, 0.2 + ler(kick, F.titulo, F.o_que, quandoTxt)),
+      Math.max(4.4, 1.2 + ler('FALTAM X', D.unid, $('#rx').textContent)),
+      Math.max(4.2, 0.4 + ler('CONTAGEM X X', l1, l2, 'hoje X', quandoTxt, $('#hj2').textContent)),
+      Math.max(3.6, ler('O QUE', verbo, F.detalhe)),
+      Math.max(3.4, vitrineLer(F)) ] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, cl, ini } = $m;
+    $('#aur').style.transform = `scale(${1 + 0.05 * Math.sin(t * 0.9)})`;
+    // 0: what is coming
+    let a = ini(0); $m.cena('#c0', t, 0);
+    foco('#k0', t, a + 0.1, 0.6, 20, 8);
+    $m.revela('#tit0', t, a + 0.3, 0.06);
+    $m.revela('#oq0', t, a + 0.8, 0.08, 0.7);
+    const s0 = eb(p(t, a + 1.4, 0.5)); $('#dt0').style.opacity = cl(s0 * 2); $('#dt0').style.transform = `scale(${s0})`;
+    // 1: clockface: the hand spins a few fast laps, then the arc settles on the time left while the number runs up
+    a = ini(1); $m.cena('#c1', t, 1);
+    foco('#k1', t, a + 0.1, 0.6, 20, 8);
+    const rq = eb(p(t, a + 0.1, 0.8)); $('#rel').style.opacity = cl(rq * 2); $('#rel').style.transform = `scale(${0.75 + 0.25 * rq}) rotate(${(1 - rq) * -20}deg)`;
+    const u = eio(p(t, a + 0.5, 1.8)), voltas = 2 + D.frac;
+    $('#ponteiro').setAttribute('transform', `rotate(${(u * voltas * 360).toFixed(2)} 380 380)`);
+    const af = cl((u * voltas - 2) / D.frac || 0); $('#arc').setAttribute('stroke-dashoffset', (D.C * (1 - (u * voltas >= 2 ? D.frac * af : 0))).toFixed(1));
+    $m.conta('#rn', t, a + 0.5, 1.8, D.grande, x => String(Math.round(x)));
+    const hb = 0.7 + 0.3 * Math.sin(t * 2.4); $('#relh').style.opacity = hb * cl(p(t, a + 0.6, 0.8));
+    foco('#ru', t, a + 1.0, 0.6, 20, 8);
+    foco('#rx', t, a + 1.8, 0.6, 30, 12);
+    // 2: timer and the row of days; a pulse runs from today to the date
+    a = ini(2); $m.cena('#c2', t, 2);
+    foco('#k2', t, a + 0.1, 0.6, 20, 8);
+    const tq = eb(p(t, a + 0.15, 0.7)); $('#tim').style.opacity = cl(tq * 2); $('#tim').style.transform = `translateY(${(1 - tq) * 80}px)`;
+    $m.conta('#td', t, a + 0.3, 1.0, D.tim[0], x => p2(Math.round(x))); $m.conta('#th', t, a + 0.45, 1.0, D.tim[1], x => p2(Math.round(x)));
+    $('#tc').style.opacity = 0.35 + 0.65 * (Math.floor((t - a) * 2) % 2 ? 0.3 : 1);
+    const tr = $('#trilho');
+    if (tr) {
+      const dd = $$('.dd', tr); dd.forEach((d, i) => { const q = eb(p(t, a + 0.6 + i * 0.03, 0.3)); d.style.transform = `scale(${q})`; });
+      const al = $('.alvo', tr), aq = eb(p(t, a + 0.6 + dd.length * 0.03, 0.5)); al.style.transform = `scale(${aq * (1 + 0.12 * Math.sin(t * 5))})`;
+      $('.lh', tr).style.transform = `scaleX(${eo(p(t, a + 0.6, 0.8))})`; $('.lh', tr).style.transformOrigin = '0 50%';
+      const ps = $('.pulso', tr), k = ((t - a - 1.4) % 1.6) / 1.6; ps.style.left = (10 + 720 * eio(cl(k))) + 'px'; ps.style.opacity = t > a + 1.4 ? Math.sin(Math.PI * cl(k)) : 0;
+      foco('#tl0', t, a + 0.8, 0.5, 10, 6); foco('#tl1', t, a + 1.0, 0.5, 10, 6);
+    }
+    foco('#dt2', t, a + 1.0, 0.6, 30, 12); foco('#hj2', t, a + 1.3, 0.6, 20, 8);
+    // 3: what it is
+    a = ini(3); $m.cena('#c3', t, 3);
+    foco('#k3', t, a + 0.1, 0.6, 20, 8);
+    const cq = eb(p(t, a + 0.15, 0.7)); $('#card3').style.opacity = cl(cq * 2); $('#card3').style.transform = `translateY(${(1 - cq) * 120}px)`;
+    const i3 = eb(p(t, a + 0.4, 0.5)); $('#ic3').style.transform = `scale(${i3}) rotate(${(1 - i3) * -30}deg)`;
+    $m.revela('#det', t, a + 0.55, 0.05);
+    // 4: product
+    $m.cena('#c4', t, 4); vitrineQuadro(PV, F, $m, t, ini(4));
+    $('#nota').style.opacity = t < ini(4) ? 1 : 0;
+  },
+});
+</script></body></html>

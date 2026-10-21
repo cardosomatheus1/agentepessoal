@@ -1,0 +1,16 @@
+{
+ "_marca": "burger-noite",
+ "_formato": "story",
+ "_hoje": "2026-10-21",
+ "kicker": "AGORA TEM",
+ "recurso": "Entrega até a 1h da manhã",
+ "icone": "moto",
+ "foto": "fotos/delivery.jpg",
+ "passos": ["Peça pelo link da bio", "O burger sai da chapa na hora"],
+ "antes": "A cozinha fechava às 23h",
+ "agora": "Seu smash chega até a 1h",
+ "a_partir": "2026-10-24",
+ "preco": 6,
+ "nota": "valores de exemplo",
+ "_origem": {"preco": "dono"}
+}

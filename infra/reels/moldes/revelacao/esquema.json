@@ -1,0 +1,85 @@
+{
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "inspiradora",
+ "campos": {
+  "gancho": {
+   "tipo": "texto",
+   "min": 8,
+   "max": 44,
+   "dica": "frase curta do escuro, antes da luz (ex.: 'Pensado em cada detalhe')"
+  },
+  "nome": {
+   "tipo": "texto",
+   "max": 40,
+   "dica": "nome do produto ou serviço novo, em letra grande"
+  },
+  "linha": {
+   "tipo": "texto",
+   "max": 60,
+   "obrigatorio": false,
+   "dica": "uma linha que diz o que é"
+  },
+  "foto": {
+   "tipo": "filmagem",
+   "dica": "foto real do produto ou serviço (fotos/x.jpg); é ela que a luz revela"
+  },
+  "foco": {
+   "tipo": "escolha",
+   "obrigatorio": false,
+   "opcoes": [
+    "centro",
+    "cima",
+    "baixo",
+    "esquerda",
+    "direita"
+   ],
+   "dica": "onde o produto está na foto (a câmera se aproxima dali nos recursos)"
+  },
+  "recursos": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "item": {
+    "titulo": {
+     "tipo": "texto",
+     "max": 24
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 40,
+     "obrigatorio": false
+    }
+   },
+   "dica": "3 coisas que o cliente ganha; só o que é verdade"
+  },
+  "preco": {
+   "tipo": "dinheiro",
+   "obrigatorio": false,
+   "real": true,
+   "dica": "preço real com _origem.preco"
+  },
+  "preco_a_partir": {
+   "tipo": "booleano",
+   "obrigatorio": false,
+   "dica": "true mostra 'a partir de' sobre o preço"
+  },
+  "disponivel": {
+   "tipo": "data",
+   "obrigatorio": false,
+   "dica": "dia em que fica disponível (AAAA-MM-DD); o dia da semana é do código; data passada é recusada"
+  },
+  "onde": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false,
+   "dica": "onde encontrar (na loja, no delivery, com hora marcada)"
+  }
+ },
+ "especiais": {
+  "_hoje": "data de publicação (AAAA-MM-DD); sem ela, a data de hoje"
+ }
+}

@@ -1,0 +1,93 @@
+{
+ "formatos": [
+  "reel"
+ ],
+ "voz": "nao",
+ "musica": "leve",
+ "publico": "cliente_final",
+ "campos": {
+  "rotulo": {
+   "tipo": "texto",
+   "max": 28,
+   "obrigatorio": false,
+   "dica": "selo do topo; padrão: Mês a mês"
+  },
+  "titulo": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 56,
+   "dica": "Clientes atendidos por mês (sem algarismos)"
+  },
+  "unidade": {
+   "tipo": "texto",
+   "min": 2,
+   "max": 20,
+   "dica": "o que os números contam: pedidos, clientes, carros"
+  },
+  "tipo": {
+   "tipo": "escolha",
+   "opcoes": [
+    "quantidade",
+    "dinheiro"
+   ],
+   "obrigatorio": false
+  },
+  "meses": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 6,
+   "item": {
+    "mes": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 9,
+     "dica": "abr, maio, setembro"
+    },
+    "valor": {
+     "tipo": "numero",
+     "min": 0,
+     "max": 999999999,
+     "real": true
+    }
+   },
+   "dica": "do mais antigo ao mais recente; o código desenha as colunas e calcula a variação"
+  },
+  "leitura": {
+   "tipo": "texto",
+   "min": 15,
+   "max": 90,
+   "dica": "o que o gráfico mostra, sem algarismos"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço do gráfico, com foto real"
+  }
+ }
+}

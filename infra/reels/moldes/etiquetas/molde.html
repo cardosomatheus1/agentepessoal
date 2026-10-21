@@ -1,0 +1,126 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo vox-explainer (label sticky / definition) -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* the product photo pasted on the page; each feature lands on it as a sticky note slapped down with tape, dropping
+   with a rotation overshoot on twos; the photo jolts on every landing. Closing: product name and the price tag */
+#folha{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(color-mix(in srgb,var(--texto) 6%,transparent) 2px,transparent 2px),linear-gradient(90deg,color-mix(in srgb,var(--texto) 6%,transparent) 2px,transparent 2px);background-size:72px 72px}
+.kick{font-weight:800;text-transform:uppercase;letter-spacing:.16em;white-space:nowrap}
+#kick{position:absolute;left:84px;top:392px;width:800px;height:46px;font-size:32px;line-height:46px}
+#nome{position:absolute;left:84px;top:444px;width:820px;height:150px;font-size:72px;line-height:1.02}
+#foto{position:absolute;left:70px;top:620px;width:940px;height:860px;border:14px solid var(--cartao);outline:5px solid var(--texto);overflow:hidden;box-shadow:var(--sombra);transform-origin:50% 60%}
+body.e-vidro #foto,body.e-noite #foto{border-color:var(--fundo2)}
+#foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fitaP{position:absolute;width:190px;height:54px;background:color-mix(in srgb,var(--fundo2) 78%,transparent);border:2px solid color-mix(in srgb,var(--texto) 12%,transparent);z-index:3}
+.nt{position:absolute;width:400px;height:270px;background:var(--nb);color:var(--sb);box-shadow:0 16px 24px rgba(0,0,0,.28);transform-origin:0 0;z-index:4}
+.nt .fn{position:absolute;left:156px;top:-22px;width:90px;height:42px;background:color-mix(in srgb,var(--fundo2) 70%,transparent);border:2px solid color-mix(in srgb,var(--texto) 14%,transparent);transform:rotate(-3deg)}
+.nt .tm{position:absolute;left:24px;top:34px;width:352px;height:124px;font-family:var(--ft);font-weight:900;font-size:56px;line-height:1.04}
+.nt.sem .tm{height:200px;font-size:62px;display:flex;align-items:center}
+.nt .dt{position:absolute;left:24px;top:170px;width:352px;height:86px;font-size:30px;font-weight:600;line-height:1.12;border-top:3px solid currentColor;padding-top:6px}
+/* closing */
+#fotoF{position:absolute;left:110px;top:400px;width:860px;height:640px;border:14px solid var(--cartao);outline:5px solid var(--texto);overflow:hidden;box-shadow:var(--sombra)}
+body.e-vidro #fotoF,body.e-noite #fotoF{border-color:var(--fundo2)}
+#fotoF img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#nomeF{position:absolute;left:84px;top:1080px;width:820px;height:170px;font-size:80px;line-height:1.02}
+#preco{position:absolute;left:84px;top:1276px;height:120px;display:flex;align-items:center;gap:20px}
+#pv{height:120px;padding:0 40px;font-family:var(--ft);font-weight:900;font-size:78px;line-height:120px;background:var(--destaque);color:var(--sobre-destaque);transform:rotate(-2deg);white-space:nowrap}
+#pu{width:300px;height:56px;font-size:40px;font-weight:700;white-space:nowrap}
+#fech{position:absolute;left:84px;top:1290px;width:820px;height:120px;font-size:50px;font-weight:800;line-height:1.1}
+</style></head><body><div id="palco">
+<div id="folha"></div>
+<div class="cena" id="cE"><div class="cam full">
+ <div id="kick" class="kick dest t seg"></div>
+ <div id="nome" class="tit t seg rv"></div>
+ <div id="foto"><img alt=""></div>
+ <i class="fitaP" id="f1" style="left:90px;top:596px;transform:rotate(-8deg)"></i><i class="fitaP" id="f2" style="left:800px;top:600px;transform:rotate(7deg)"></i>
+ <div id="notas"></div>
+</div></div>
+<div class="cena" id="cF"><div class="cam full">
+ <div id="fotoF"><img alt=""></div>
+ <div id="nomeF" class="tit t seg rv"></div>
+ <div id="preco" class="seg"><div id="pv" class="t"></div><div id="pu" class="t t2"></div></div>
+ <div id="fech" class="t seg rv"></div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+const tw = t => Math.floor(t * 12) / 12;  // Vox cadence: on twos
+function tempoDeLer($m, F, base) {
+  let d = base.slice();
+  for (let it = 0; it < 5; it++) {
+    const S = [0]; d.forEach(x => S.push(+(S[S.length - 1] + x).toFixed(3))); S.push(S[S.length - 1] + 3);
+    $m.S = S; $m.N = S.length - 1;
+    let antes = new Set(), mudou = false;
+    d = d.map((x, i) => { $m.def.quadro(Math.max(S[i], S[i + 1] - 0.08), F, $m);
+      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').filter(w => /[\p{L}\d]/u.test(w)).length; }); agora.forEach(s => antes.add(s));
+      const min = +(0.8 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
+    if (!mudou) break;
+  }
+  return d;
+}
+let D = {};
+Motor.molde({
+  id: 'etiquetas', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m, T = $m.T, n = F.etiquetas.length;
+    if (new Set(F.etiquetas.map(e => e.texto.trim().toLowerCase())).size < n) $m.erro('etiquetas: há etiqueta repetida');
+    D.n = n;
+    $('#kick').textContent = F.rotulo || 'O que vem nele';
+    $('#nome').textContent = F.produto;
+    $('#foto img').src = $m.midia(F.foto); $('#fotoF img').src = $m.midia(F.foto);
+    // sticky colors come from the brand: the second color and the first, lightened, with the text that reads on them
+    const cores = [$m.mix(T.c2, '#ffffff', 0.3), $m.mix(T.c1, '#ffffff', 0.45)];
+    // zigzag slots over the photo, spread from the top of the photo to the bottom of the free area
+    const y0 = 650, y1 = 1300;
+    F.etiquetas.forEach((e, k) => {
+      const d = document.createElement('div'); d.className = 'nt' + (e.detalhe ? '' : ' sem');
+      const c = cores[k % 2]; d.style.setProperty('--nb', c); d.style.setProperty('--sb', $m.sobre(c));
+      d.innerHTML = '<i class="fn"></i><div class="tm t seg"></div>' + (e.detalhe ? '<div class="dt t"></div>' : '');
+      d.querySelector('.tm').textContent = e.texto; if (e.detalhe) d.querySelector('.dt').textContent = e.detalhe;
+      // lands big over the middle of the photo, then is parked small on the photo's edge when the next one lands
+      const py = n > 1 ? y0 + k * (y1 - y0) / (n - 1) : y0;
+      d.style.left = '290px'; d.style.top = '820px'; d.dataset.px = (k % 2 ? 698 : 64) - 290; d.dataset.py = py - 820;
+      d.dataset.r = k % 2 ? 4 - (k % 3) : -4 - (k % 3);
+      $('#notas').appendChild(d);
+    });
+    $('#nomeF').textContent = F.produto;
+    if (F.preco != null) { $('#pv').textContent = $m.brl(F.preco); $('#pu').textContent = F.unidade || ''; $('#fech').remove(); if (!F.unidade) $('#pu').remove(); }
+    else { $('#preco').remove(); if (F.fechamento) $('#fech').textContent = F.fechamento; else $('#fech').remove(); }
+    if (F.preco == null && F.unidade) $m.erro('unidade: só com preço');
+    $('#nota').textContent = F.nota || '';
+    return { duracoes: tempoDeLer($m, F, [2.2, ...F.etiquetas.map(() => 2.0), 3.0]) };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eb, cl, ini, fim } = $m, n = D.n, T = tw(t);
+    $m.cena('#cE', t, 0, n, { push: 0.015 });
+    $m.entra('#kick', T, 0.05, 0.3, 0);
+    $m.revela('#nome', t, 0.15);
+    // the photo is pasted: drops in tilted, two tape strips hold it
+    const fq = eb(p(T, 0.2, 0.45));
+    let bump = 0;
+    $$('.nt').forEach((d, k) => { const a = ini(k + 1); const dt = t - a - 0.3; if (dt > 0 && dt < 0.25) bump = Math.max(bump, Math.sin(dt / 0.25 * Math.PI)); });
+    $('#foto').style.opacity = cl(fq * 3);
+    $('#foto').style.transform = `rotate(${-1.2 + (1 - fq) * 8}deg) scale(${(0.8 + 0.2 * fq) * (1 - 0.012 * bump)})`;
+    $m.filmagem($('#foto img'), F.foto, t);
+    ['#f1', '#f2'].forEach((s, k) => { const q = eb(p(T, 0.6 + k * 0.1, 0.25)); $(s).style.opacity = cl(q * 3); });
+    // each sticky slaps down in its scene: falls from above, rotation overshoots, settles
+    $$('.nt').forEach((d, k) => {
+      const a = ini(k + 1), q = eb(p(T, a + 0.05, 0.3)), r = +d.dataset.r;
+      d.style.opacity = t >= a ? 1 : 0;
+      const pk = k < n - 1 ? eb(p(T, ini(k + 2), 0.35)) : 0, x = pk * +d.dataset.px, y = (1 - q) * -220 + pk * +d.dataset.py;
+      d.style.transform = `translate(${x}px,${y}px) rotate(${r + (1 - q) * 16}deg) scale(${(1.15 - 0.15 * q) * (1 - 0.48 * pk)})`;
+      d.style.zIndex = 4 + (pk > 0.5 ? 0 : 10);
+      d.style.boxShadow = `0 ${16 + (1 - q) * 40}px ${24 + (1 - q) * 30}px rgba(0,0,0,${0.28 - 0.12 * (1 - q)})`;
+      const de = d.querySelector('.dt'); if (de) { const dq = p(T, a + 0.45, 0.25); de.style.opacity = dq * (1 - (k < n - 1 ? p(T, ini(k + 2), 0.15) : 0)); }
+    });
+    // closing: the photo stays, the stickies are cleared, name and price
+    const aF = ini(n + 1); $m.cena('#cF', t, n + 1);
+    const fo = eb(p(T, aF, 0.4)); $('#fotoF').style.transform = `rotate(${1.5 - (1 - fo) * 6}deg) scale(${0.85 + 0.15 * fo})`; $m.filmagem($('#fotoF img'), F.foto, t);
+    $m.revela('#nomeF', t, aF + 0.15);
+    if ($('#preco')) { const q = eb(p(T, aF + 0.55, 0.35)); $('#pv').style.transform = `rotate(-2deg) scale(${q})`; $('#pv').style.opacity = cl(q * 3); if ($('#pu')) $m.entra('#pu', T, aF + 0.8, 0.3, 20); }
+    if ($('#fech')) $m.revela('#fech', t, aF + 0.5);
+    $('#nota').style.opacity = t >= aF && t < fim(n + 1) ? 1 : 0;
+  },
+});
+</script></body></html>

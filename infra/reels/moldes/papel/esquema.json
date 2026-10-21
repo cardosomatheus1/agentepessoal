@@ -1,0 +1,18 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "selo": {"tipo": "texto", "max": 20, "obrigatorio": false, "dica": "palavra escrita à mão no cartão (padrão: 'Novidade')"},
+  "gancho": {"tipo": "texto", "min": 8, "max": 52, "dica": "frase do cartão que abre dobrado"},
+  "nome": {"tipo": "texto", "max": 40, "dica": "nome do produto ou serviço novo"},
+  "foto": {"tipo": "filmagem", "dica": "foto real do produto ou serviço (fotos/x.jpg), colada na folha"},
+  "detalhes": {"tipo": "lista", "min": 2, "max": 3, "item": {"tipo": "texto", "max": 34}, "dica": "2 ou 3 bilhetes que abrem um a um; só o que é verdade"},
+  "preco": {"tipo": "dinheiro", "obrigatorio": false, "real": true, "dica": "preço real com _origem.preco; vai no tíquete"},
+  "preco_a_partir": {"tipo": "booleano", "obrigatorio": false},
+  "condicao": {"tipo": "texto", "max": 30, "obrigatorio": false, "real": true, "dica": "condição real (ex.: 'Frete grátis no bairro'), com _origem"},
+  "quando": {"tipo": "data", "obrigatorio": false, "dica": "dia em que chega (AAAA-MM-DD); data passada é recusada"},
+  "onde": {"tipo": "texto", "max": 36, "obrigatorio": false, "dica": "onde encontrar"}
+ },
+ "especiais": {"_hoje": "data de publicação (AAAA-MM-DD); sem ela, a data de hoje"}
+}

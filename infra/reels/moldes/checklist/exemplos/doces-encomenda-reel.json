@@ -1,0 +1,20 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
+ "_estilo": "noite",
+ "titulo": "Antes de encomendar seu bolo, confira",
+ "itens": [
+  "Data e horário da festa",
+  "Quantas pessoas vão comer",
+  "Sabor da massa e do recheio",
+  "Tema ou foto de referência",
+  "Retirada ou entrega no endereço"
+ ],
+ "fecho": "Com isso em mãos, seu pedido sai em minutos.",
+ "produto": {
+  "foto": "fotos/doce_entrega_caixa.jpg",
+  "nome": "Bolo de festa",
+  "detalhe": "Encomendas com três dias de antecedência",
+  "convite": "encomende o seu"
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "rotulo": "Clientes de volta",
+ "gancho": "De cada cem clientes que fazem mechas aqui, voltam",
+ "numero": 87,
+ "tipo": "porcentagem",
+ "unidade": "no mês seguinte",
+ "contexto": "Quem cuida da cor aqui volta para a manutenção. Isso diz mais que qualquer propaganda.",
+ "licao": "Cor bonita é cor bem cuidada depois.",
+ "produto": {"foto": "fotos/salao_mechas.jpg", "nome": "Mechas e coloração", "detalhe": "Avaliação do fio antes, sem custo", "convite": "agende o seu horário"},
+ "_origem": {"numero": "sistema"}
+}

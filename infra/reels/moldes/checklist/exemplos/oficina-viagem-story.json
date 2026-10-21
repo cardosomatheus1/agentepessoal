@@ -1,0 +1,12 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "story",
+ "titulo": "Antes de pegar a estrada, confira",
+ "itens": [
+  "Calibragem dos pneus e do estepe",
+  "Nível do óleo e da água",
+  "Freio sem barulho nem vibração"
+ ],
+ "produto": {"foto": "fotos/oficina_pneu.jpg", "nome": "Check-up de viagem", "detalhe": "Pronto em uma hora, sem marcar", "preco": 89, "convite": "passe aqui antes"},
+ "_origem": {"produto": "dono"}
+}

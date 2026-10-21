@@ -1,0 +1,6 @@
+{"_marca": "oficina-do-ze", "_formato": "reel",
+ "titulo": "Desde que a agenda ficou online, a oficina não para", "medida": "agendamentos por mês",
+ "pontos": [{"rotulo": "mai", "valor": 110}, {"rotulo": "jun", "valor": 93}, {"rotulo": "jul", "valor": 88}, {"rotulo": "ago", "valor": 64}],
+ "motivo": "Marcar ficou mais fácil para você e o carro sai no horário combinado.",
+ "produto": {"foto": "fotos/oficina_oleo.jpg", "nome": "Troca de óleo"},
+ "_origem": {"pontos": "sistema"}}

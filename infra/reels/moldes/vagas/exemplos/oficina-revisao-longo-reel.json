@@ -1,0 +1,18 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "oferta": "Revisão completa antes da viagem",
+ "foto": "fotos/oficina_interior.jpg",
+ "unidade": "horários",
+ "unidade_um": "horário",
+ "total": 12,
+ "ocupadas": 7,
+ "contagem": "2026-10-21",
+ "prazo": "2026-10-25",
+ "preco": 189,
+ "preco_rotulo": "a revisão",
+ "como": "Agende pelo WhatsApp",
+ "nota": "valores de exemplo",
+ "_origem": {"total": "dono", "ocupadas": "dono", "preco": "dono"}
+}

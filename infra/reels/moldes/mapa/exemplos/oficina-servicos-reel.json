@@ -1,0 +1,52 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "_estilo": "vidro",
+ "titulo": "Não é só troca de óleo. Olha tudo que a gente faz",
+ "centro": "Oficina do Zé",
+ "ramos": [
+  {
+   "nome": "Troca de óleo",
+   "icone": "chave"
+  },
+  {
+   "nome": "Freios",
+   "icone": "alerta"
+  },
+  {
+   "nome": "Alinhamento",
+   "icone": "carro"
+  },
+  {
+   "nome": "Ar-condicionado",
+   "icone": "folha"
+  },
+  {
+   "nome": "Suspensão",
+   "icone": "haltere"
+  },
+  {
+   "nome": "Revisão completa",
+   "icone": "check"
+  },
+  {
+   "nome": "Diagnóstico",
+   "icone": "lupa"
+  },
+  {
+   "nome": "Leva e traz",
+   "icone": "local"
+  }
+ ],
+ "onde": "num lugar só",
+ "fecho": "Deixou o carro aqui, sai resolvido.",
+ "produto": {
+  "foto": "fotos/oficina_interior.jpg",
+  "nome": "Revisão completa",
+  "detalhe": "Orçamento por foto antes de mexer",
+  "convite": "agende a sua"
+ },
+ "_origem": {
+  "ramos": "dono"
+ }
+}

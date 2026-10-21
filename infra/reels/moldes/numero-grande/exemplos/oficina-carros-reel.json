@@ -1,0 +1,13 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "reel",
+ "gancho": "No mês passado, passaram pelo nosso elevador",
+ "numero": 312,
+ "unidade": "carros revisados",
+ "por": {"quantidade": 26, "unidade": "dia de portão aberto"},
+ "contexto": "Gente que parou de esperar o barulho virar problema e veio antes.",
+ "licao": "Revisão em dia sai mais barato que conserto de estrada.",
+ "produto": {"foto": "fotos/oficina_interior.jpg", "nome": "Revisão completa", "detalhe": "Deixe de manhã e busque no fim do dia", "preco": 290, "convite": "agende a sua"},
+ "_origem": {"numero": "sistema", "por": "dono", "produto": "dono"},
+ "nota": "valores de exemplo"
+}

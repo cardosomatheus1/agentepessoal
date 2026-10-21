@@ -1,0 +1,154 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo vox-explainer (overview numlist / outline) -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* "N coisas que...": a cover with the count as a giant outlined numeral that fills with ink, then a notebook page
+   (ruled lines, punched holes, margin rule) where each item enters with its own outlined number on twos */
+#folha{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(color-mix(in srgb,var(--texto) 6%,transparent) 2px,transparent 2px),linear-gradient(90deg,color-mix(in srgb,var(--texto) 6%,transparent) 2px,transparent 2px);background-size:72px 72px}
+.kick{font-weight:800;text-transform:uppercase;letter-spacing:.16em;white-space:nowrap}
+/* cover */
+#kick0{position:absolute;left:84px;top:400px;width:760px;height:46px;font-size:34px;line-height:46px}
+#circ{position:absolute;left:250px;top:470px;width:560px;height:560px;border-radius:50%;background:var(--destaque)}
+#numW{position:absolute;left:180px;top:450px;width:700px;height:600px}
+.num{position:absolute;left:0;top:0;width:700px;height:600px;font-family:var(--ft);font-weight:900;font-size:520px;line-height:600px;letter-spacing:-.04em;white-space:nowrap;text-align:center}
+#numO{color:transparent;-webkit-text-stroke:12px var(--sobre-destaque)}
+#numF{color:var(--sobre-destaque);-webkit-text-stroke:12px var(--sobre-destaque)}
+#tit0{position:absolute;left:84px;top:1070px;width:820px;height:300px;font-size:84px;line-height:1.04}
+#sub0{position:absolute;left:84px;top:1392px;width:820px;height:12px;background:var(--destaque);transform-origin:0 50%}
+/* notebook page */
+#pag{position:absolute;left:52px;top:376px;width:858px;height:1100px;overflow:hidden;background:var(--cartao);border:4px solid var(--texto);border-radius:6px}
+body.e-vidro #pag{backdrop-filter:blur(24px)}
+body.e-pop #pag{box-shadow:14px 14px 0 var(--texto)}
+body.e-noite #pag{box-shadow:0 0 0 2px var(--destaque),0 0 40px color-mix(in srgb,var(--destaque) 40%,transparent)}
+#regua{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent 0 70px,color-mix(in srgb,var(--texto) 11%,transparent) 70px 72px)}
+#margem{position:absolute;left:96px;top:0;bottom:0;width:4px;background:color-mix(in srgb,var(--destaque) 70%,transparent)}
+.furo{position:absolute;left:28px;width:34px;height:34px;border-radius:50%;background:var(--fundo);border:3px solid color-mix(in srgb,var(--texto) 25%,transparent)}
+#cab{position:absolute;left:128px;top:34px;width:680px;height:118px;font-size:46px;line-height:1.12}
+.lin{position:absolute;left:0;right:0}
+.lin .n{position:absolute;left:104px;top:0;width:124px;font-family:var(--ft);font-weight:900;letter-spacing:-.03em;text-align:center;white-space:nowrap}
+.lin .no{color:transparent;-webkit-text-stroke:5px var(--texto)}
+.lin .nf{color:var(--destaque);-webkit-text-stroke:5px var(--texto)}
+.lin .tx{position:absolute;left:246px;top:0;width:580px;font-weight:800;line-height:1.1}
+.lin .mkb{position:absolute;left:232px;top:-6px;width:604px;z-index:0;background:color-mix(in srgb,var(--destaque) 26%,transparent);transform-origin:0 50%;transform:skewX(-3deg) scaleX(0)}
+.lin .dt{position:absolute;left:246px;width:580px;font-weight:600;line-height:1.14}
+/* closing: the product pasted as a cutout, the line and the numbers lined up */
+#fotoC{position:absolute;left:110px;top:400px;width:860px;height:640px;border:14px solid var(--cartao);outline:5px solid var(--texto);overflow:hidden;box-shadow:var(--sombra)}
+#fotoC img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#fita{position:absolute;left:440px;top:372px;width:200px;height:56px;background:color-mix(in srgb,var(--c2) 70%,transparent);transform:rotate(-4deg);z-index:2}
+#fech{position:absolute;left:84px;top:1086px;width:820px;height:200px;font-size:80px;line-height:1.06}
+#fila{position:absolute;left:84px;top:1316px;width:800px;height:130px;display:flex;gap:18px}
+#fila .bn{width:118px;height:118px;border:5px solid var(--texto);border-radius:4px;background:var(--destaque);color:var(--sobre-destaque);font-family:var(--ft);font-weight:900;font-size:76px;line-height:108px;text-align:center}
+#fila .bn .ico{font-size:40px;vertical-align:4px}
+</style></head><body><div id="palco">
+<div id="folha"></div>
+<div class="cena" id="c0"><div class="cam full">
+ <div id="kick0" class="kick dest t seg"></div>
+ <div id="circ"></div>
+ <div id="numW"><div class="num" id="numO"></div><div class="num" id="numF"></div></div>
+ <div id="tit0" class="tit t seg rv"></div>
+ <div id="sub0"></div>
+</div></div>
+<div class="cena" id="cL"><div class="cam full">
+ <div id="pag"><div id="regua"></div><div id="margem"></div>
+  <div class="furo" style="top:220px"></div><div class="furo" style="top:540px"></div><div class="furo" style="top:860px"></div>
+  <div id="cab" class="tit t seg"></div>
+ </div>
+</div></div>
+<div class="cena" id="cF"><div class="cam full">
+ <div id="fotoC"><img alt=""></div><div id="fita"></div>
+ <div id="fech" class="tit t seg rv"></div>
+ <div id="fila" data-leitura="nao"></div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// Vox cadence: motion on twos (12 steps a second), so entrances snap and stutter instead of gliding
+const tw = t => Math.floor(t * 12) / 12;
+// the scene lasts what its new text needs to be read (0.8 s + 0.25 s per new word), measured on the real frame
+function tempoDeLer($m, F, base) {
+  let d = base.slice();
+  for (let it = 0; it < 5; it++) {
+    const S = [0]; d.forEach(x => S.push(+(S[S.length - 1] + x).toFixed(3))); S.push(S[S.length - 1] + 3);
+    $m.S = S; $m.N = S.length - 1;
+    let antes = new Set(), mudou = false;
+    d = d.map((x, i) => { $m.def.quadro(Math.max(S[i], S[i + 1] - 0.08), F, $m);
+      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').filter(w => /[\p{L}\d]/u.test(w)).length; }); agora.forEach(s => antes.add(s));
+      const min = +(0.8 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
+    if (!mudou) break;
+  }
+  return d;
+}
+const EXT = ['', 'uma', 'duas', 'três', 'quatro', 'cinco'];
+let D = {};
+Motor.molde({
+  id: 'lista-cinco', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m, n = F.itens.length;
+    const vistos = new Set(F.itens.map(i => i.texto.trim().toLowerCase()));
+    if (vistos.size < n) $m.erro('itens: há item repetido');
+    if (/^\s*\d/.test(F.titulo)) $m.erro('titulo: sem o número; o código põe a quantidade de itens');
+    D.n = n;
+    // the count is the number of items, never typed
+    $('#kick0').textContent = F.rotulo || 'Anota aí';
+    $('#numO').textContent = n; $('#numF').textContent = n;
+    $('#tit0').textContent = F.titulo;
+    $('#cab').textContent = `${n} ${F.titulo}`;
+    const top = 166, area = 1100 - top - 14, h = area / n;
+    F.itens.forEach((it, k) => {
+      const l = document.createElement('div'); l.className = 'lin'; l.style.top = (top + k * h) + 'px'; l.style.height = (h - 4) + 'px';
+      const nh = Math.min(170, h - 24), fs = Math.round(nh * 0.92);
+      l.innerHTML = `<div class="n no t"></div><div class="n nf"></div><i class="mkb"></i><div class="tx t seg"></div>${it.detalhe ? '<div class="dt t t2"></div>' : ''}`;
+      l.querySelectorAll('.n').forEach(e => { e.textContent = k + 1; e.style.height = nh + 'px'; e.style.fontSize = fs + 'px'; e.style.lineHeight = nh + 'px'; });
+      const tx = l.querySelector('.tx'), inn = h - 8, th = it.detalhe ? Math.round(inn * 0.57) : Math.min(inn, 150);
+      tx.textContent = it.texto; tx.style.height = th + 'px'; tx.style.fontSize = Math.min(58, Math.floor(th / 2.3)) + 'px';
+      l.querySelector('.mkb').style.height = (th + 12) + 'px';
+      if (it.detalhe) { const dt = l.querySelector('.dt'), dh = inn - th - 4; dt.textContent = it.detalhe; dt.style.top = (th + 4) + 'px'; dt.style.height = dh + 'px'; dt.style.fontSize = Math.min(40, Math.floor(dh / 2.3)) + 'px'; }
+      l.dataset.inn = inn; $('#pag').appendChild(l);
+    });
+    $('#fotoC img').src = $m.midia(F.foto);
+    $('#fech').textContent = F.fechamento;
+    for (let k = 0; k < n; k++) { const b = document.createElement('div'); b.className = 'bn'; b.innerHTML = $m.icone('check'); $('#fila').appendChild(b); }
+    $('#nota').textContent = F.nota || '';
+    const dur = tempoDeLer($m, F, [2.8, ...F.itens.map(() => 2.2), 3.2]); D.montado = true;
+    return { duracoes: dur };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eb, cl, ini, fim } = $m, n = D.n, T = tw(t);
+    // once the text is fitted: each item and its detail sit together, centered in their line
+    if (D.montado && !D.junto) { D.junto = true; $$('.lin').forEach(l => {
+      const tx = l.querySelector('.tx'), dt = l.querySelector('.dt'), alt = e => { const h0 = e.style.height; e.style.height = 'auto'; const h = Math.ceil(e.offsetHeight); e.style.height = h0; return h; };
+      const h1 = Math.min(alt(tx), tx.clientHeight), h2 = dt ? Math.min(alt(dt), dt.clientHeight) : 0, tot = h1 + (dt ? 6 + h2 : 0), off = Math.max(0, (+l.dataset.inn - tot) / 2);
+      tx.style.top = off + 'px'; tx.style.height = (h1 + 2) + 'px'; const mk = l.querySelector('.mkb'); mk.style.top = (off - 6) + 'px'; mk.style.height = (h1 + 14) + 'px';
+      if (dt) { dt.style.top = (off + h1 + 6) + 'px'; dt.style.height = (h2 + 2) + 'px'; } }); }
+    // cover: the outlined numeral stamps in, then ink fills it from the bottom
+    $m.cena('#c0', t, 0);
+    const qc = eb(p(T, 0.05, 0.4)); $('#circ').style.transform = `scale(${qc})`;
+    const q0 = eb(p(T, 0.25, 0.4)); $('#numW').style.opacity = cl(q0 * 3); $('#numW').style.transform = `rotate(${(1 - q0) * -8}deg) scale(${0.6 + 0.4 * q0})`;
+    $('#numF').style.clipPath = `inset(${(1 - eo(p(t, 0.7, 0.6))) * 100}% 0 0 0)`;
+    $m.entra('#kick0', T, 0.05, 0.3, 0);
+    $m.revela('#tit0', t, 0.6);
+    $('#sub0').style.transform = `scaleX(${eo5(p(t, 1.2, 0.5))})`;
+    // notebook: one item per scene
+    const a1 = ini(1); $m.cena('#cL', t, 1, n, { push: 0.02 });
+    const pq = eb(p(T, a1, 0.45)); $('#pag').style.transform = `translateY(${(1 - pq) * 260}px) rotate(${(1 - pq) * 4 - 0.8}deg)`;
+    $m.entra('#cab', T, a1 + 0.15, 0.3, 16);
+    $$('.lin').forEach((l, k) => {
+      const a = ini(k + 1), atual = t >= a && t < fim(k + 1);
+      const q = eb(p(T, a + 0.1, 0.4)); l.style.opacity = cl(q * 3); l.style.transform = `translateX(${(1 - q) * -110}px)`;
+      const nq = eb(p(T, a + 0.2, 0.3)); l.querySelector('.no').style.transform = `scale(${0.5 + 0.5 * nq})`;
+      const f = l.querySelector('.nf'); f.style.transform = l.querySelector('.no').style.transform; f.style.clipPath = `inset(${(1 - eo(p(t, a + 0.45, 0.35))) * 100}% 0 0 0)`;
+      const mk = l.querySelector('.mkb'); mk.style.transform = `skewX(-3deg) scaleX(${atual ? eo5(p(t, a + 0.5, 0.4)) : 0})`;
+      l.querySelector('.tx').style.opacity = !atual && t >= fim(k + 1) ? 0.6 : 1;
+    });
+    // closing
+    const aF = ini(n + 1); $m.cena('#cF', t, n + 1);
+    const fq = eb(p(T, aF, 0.45)); $('#fotoC').style.transform = `rotate(${-2.5 + (1 - fq) * 10}deg) scale(${0.7 + 0.3 * fq})`; $('#fotoC').style.opacity = cl(fq * 3);
+    $m.filmagem($('#fotoC img'), F.foto, t - aF);
+    const ft = eb(p(T, aF + 0.4, 0.3)); $('#fita').style.opacity = cl(ft * 3); $('#fita').style.transform = `rotate(-4deg) scale(${ft})`;
+    $m.revela('#fech', t, aF + 0.5);
+    $$('#fila .bn').forEach((b, k) => { const q = eb(p(T, aF + 0.9 + k * 0.12, 0.3)); b.style.opacity = cl(q * 3); b.style.transform = `translateY(${(1 - q) * -60}px) rotate(${(k % 2 ? 4 : -4) * (1 - q)}deg)`; });
+    $('#nota').style.opacity = t < fim(n + 1) ? 1 : 0;
+  },
+});
+</script></body></html>

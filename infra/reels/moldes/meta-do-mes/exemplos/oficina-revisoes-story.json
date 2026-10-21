@@ -1,0 +1,7 @@
+{"_marca": "oficina-do-ze", "_formato": "story", "_hoje": "2026-11-03",
+ "periodo": "de novembro", "titulo": "Carro revisado antes das férias de fim de ano",
+ "meta": 120, "atual": 47, "unidade": "revisões completas", "unidade_um": "revisão completa", "ate": "2026-11-30",
+ "motivo": "Batendo a meta, a oficina abre também aos sábados em dezembro.",
+ "pedido": "Agende a sua",
+ "produto": {"foto": "fotos/oficina_interior.jpg", "nome": "Revisão completa de viagem", "detalhe": "Freios, óleo, pneus e suspensão", "convite": "antes de pegar a estrada"},
+ "_origem": {"meta": "dono", "atual": "sistema", "ate": "dono", "motivo": "dono"}}

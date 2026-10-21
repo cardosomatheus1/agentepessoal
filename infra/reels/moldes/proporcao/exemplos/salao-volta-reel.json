@@ -1,0 +1,8 @@
+{"_marca": "studio-bella", "_formato": "reel", "_estilo": "vidro",
+ "titulo": "Quantas clientes voltam para manter o tratamento capilar?",
+ "quem": "clientes de tratamento", "fazem": "voltam em até um mês para a manutenção", "periodo": "neste semestre",
+ "quantos": 90, "total": 120, "icone": "tesoura",
+ "conclusao": "Cabelo tratado pede manutenção. Marcar a volta já na saída garante o seu horário.",
+ "exemplo": true,
+ "produto": {"foto": "fotos/salao_depois.jpg", "nome": "Manutenção capilar mensal", "detalhe": "Hidratação e finalização"},
+ "_origem": {"quantos": "dono", "total": "dono"}}

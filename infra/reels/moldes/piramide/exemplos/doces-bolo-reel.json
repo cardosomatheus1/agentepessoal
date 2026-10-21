@@ -1,0 +1,14 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
+ "titulo": "O que faz um bolo de festa dar certo",
+ "niveis": [
+  {"nome": "Massa fresca", "detalhe": "assada no dia anterior à entrega"},
+  {"nome": "Recheio na medida", "detalhe": "nem seco, nem escorrendo"},
+  {"nome": "Montagem firme", "detalhe": "não tomba no caminho da festa"},
+  {"nome": "Acabamento", "detalhe": "do jeito que você pediu"},
+  {"nome": "Sorriso na mesa"}
+ ],
+ "fecho": "Tudo isso pra hora do parabéns sair perfeita.",
+ "produto": {"foto": "fotos/doce_bolo_morango.jpg", "nome": "Bolo de morango", "detalhe": "Encomendas com três dias de antecedência", "convite": "encomende o seu"}
+}

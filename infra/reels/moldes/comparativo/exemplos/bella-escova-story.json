@@ -1,0 +1,13 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "story",
+ "titulo": "Escova que dura x escova comum",
+ "nos": "Aqui",
+ "linhas": [
+  {"item": "Lavagem com produto pro seu fio", "nos": true, "comum": false},
+  {"item": "Proteção térmica antes", "nos": true, "comum": false},
+  {"item": "Horário marcado, sem espera", "nos": true, "comum": false}
+ ],
+ "produto": {"foto": "fotos/salao_escova.jpg", "nome": "Escova modelada", "detalhe": "Com hidratação rápida inclusa", "convite": "marque a sua"},
+ "_origem": {"linhas": "dono"}
+}

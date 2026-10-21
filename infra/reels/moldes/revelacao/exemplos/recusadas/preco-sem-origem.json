@@ -1,0 +1,8 @@
+{
+ "_marca": "burger-noite",
+ "gancho": "Doze horas de fogo baixo",
+ "nome": "Smash de costela",
+ "foto": "fotos/burger_costela.jpg",
+ "recursos": [{"titulo": "Costela desfiada"}, {"titulo": "Cheddar cremoso"}, {"titulo": "Pão brioche"}],
+ "preco": 36.9
+}

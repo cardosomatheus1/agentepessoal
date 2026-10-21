@@ -1,0 +1,66 @@
+{
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "produto": {
+   "tipo": "texto",
+   "min": 3,
+   "max": 34,
+   "dica": "o produto ou serviço da foto: Bolo de pote de chocolate"
+  },
+  "rotulo": {
+   "tipo": "texto",
+   "max": 26,
+   "obrigatorio": false,
+   "dica": "etiqueta pequena acima do nome; padrão: O que vem nele"
+  },
+  "foto": {
+   "tipo": "filmagem",
+   "dica": "foto real do produto ou serviço (fotos/x.jpg); as etiquetas caem em cima dela"
+  },
+  "etiquetas": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 5,
+   "real": true,
+   "dica": "3 a 5 características VERDADEIRAS, confirmadas pelo dono (sem conservante, feito no dia, peça com nota fiscal); nada de promessa de saúde",
+   "item": {
+    "texto": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 22,
+     "dica": "curta, cabe num post-it: Feito no dia"
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 38,
+     "obrigatorio": false,
+     "dica": "uma linha que prova: assado de manhã, vendido até a noite"
+    }
+   }
+  },
+  "preco": {
+   "tipo": "dinheiro",
+   "real": true,
+   "obrigatorio": false,
+   "dica": "preço real praticado; sem ele aparece o fechamento"
+  },
+  "unidade": {
+   "tipo": "texto",
+   "max": 14,
+   "obrigatorio": false,
+   "dica": "o que o preço compra: o pote, a dúzia, o serviço"
+  },
+  "fechamento": {
+   "tipo": "texto",
+   "max": 50,
+   "obrigatorio": false,
+   "dica": "sem preço: Encomende até quinta"
+  }
+ },
+ "publico": "cliente_final"
+}

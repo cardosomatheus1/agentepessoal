@@ -1,0 +1,222 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo kallaway -->
+<style>
+/* Kallaway layer (dark, lit instruments): aurora bloom from below, dot grid, glowing kicker and numbers */
+.aur{position:absolute;left:-25%;right:-25%;bottom:-28%;height:80%;z-index:1;pointer-events:none;transform-origin:50% 100%;
+  background:radial-gradient(50% 55% at 50% 100%,color-mix(in srgb,var(--destaque) 50%,transparent) 0%,color-mix(in srgb,var(--destaque) 16%,transparent) 45%,transparent 75%)}
+.pts{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.55;background-image:radial-gradient(color-mix(in srgb,var(--texto) 22%,transparent) 2px,transparent 2.6px);background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(90% 70% at 50% 55%,#000 30%,transparent 80%);mask-image:radial-gradient(90% 70% at 50% 55%,#000 30%,transparent 80%)}
+body.e-claro .aur,body.e-papel .aur{opacity:.55}body.e-pop .aur{opacity:.35}
+.cena{z-index:2}
+.kick{font-family:var(--fb),sans-serif;font-weight:800;font-size:34px;letter-spacing:.18em;text-transform:uppercase;color:var(--destaque);white-space:nowrap;height:46px;line-height:46px}
+.luz{text-shadow:0 0 26px color-mix(in srgb,var(--destaque) 60%,transparent),0 0 80px color-mix(in srgb,var(--destaque) 30%,transparent)}
+body.e-claro .luz,body.e-papel .luz,body.e-pop .luz{text-shadow:none}
+.num{font-family:var(--ft),sans-serif;font-weight:900;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.03em;white-space:nowrap}
+.gnum{background-image:linear-gradient(170deg,var(--texto) 20%,var(--destaque) 85%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.08em}
+body.e-pop .gnum{background-image:none;color:var(--texto)}
+/* scene 0: the question */
+#k0{position:absolute;left:90px;top:400px;width:820px}
+#tit0{position:absolute;left:90px;top:470px;width:820px;height:420px;font-size:100px}
+#ic0{position:absolute;left:300px;top:930px;width:380px;height:380px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:220px;color:var(--destaque);
+  border:4px solid color-mix(in srgb,var(--destaque) 60%,transparent);box-shadow:0 0 70px color-mix(in srgb,var(--destaque) 35%,transparent),inset 0 0 50px color-mix(in srgb,var(--destaque) 25%,transparent)}
+#ic0 .ico{filter:drop-shadow(0 0 18px var(--destaque))}
+
+/* scene 1: the ratio and the pictobar */
+#rz{position:absolute;left:90px;top:400px;width:820px;height:200px;display:flex;align-items:baseline;gap:26px;white-space:nowrap}
+#rz .a,#rz .b{flex:none;height:200px;font-size:200px}
+#rz .m{flex:none;height:80px;font-size:64px}
+#rzp{position:absolute;left:90px;top:400px;width:820px;height:46px}
+#rz.aprox{top:460px}
+#pic{position:absolute;left:90px;width:820px;top:680px;height:470px}
+#pic .u{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:36px;color:color-mix(in srgb,var(--texto) 28%,transparent);border:3px dashed color-mix(in srgb,var(--texto) 22%,transparent)}
+#pic .u .on{position:absolute;inset:-3px;border-radius:36px;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;box-shadow:0 0 50px color-mix(in srgb,var(--destaque) 55%,transparent)}
+#faz{position:absolute;left:90px;top:1190px;width:820px;height:230px;font-size:72px;line-height:1.08}
+
+/* scene 2: the count behind it */
+#k2{position:absolute;left:90px;top:400px;width:820px}
+#cnt{position:absolute;left:90px;top:470px;width:820px;height:260px;display:flex;align-items:baseline;gap:24px;white-space:nowrap}
+#cnt .a{flex:none;height:250px;font-size:240px}
+#cnt .b{flex:1;min-width:0;height:90px;font-size:76px}
+#cq{position:absolute;left:90px;top:760px;width:820px;height:140px;font-size:56px;line-height:1.14}
+#pb{position:absolute;left:90px;top:960px;width:820px;height:56px;border-radius:999px;background:color-mix(in srgb,var(--texto) 12%,transparent);overflow:hidden}
+#pb i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--destaque);box-shadow:0 0 30px color-mix(in srgb,var(--destaque) 60%,transparent)}
+#pp{position:absolute;left:90px;top:1050px;width:820px;height:150px;font-size:150px}
+#pp2{position:absolute;left:90px;top:1210px;width:820px;height:50px;font-size:36px;font-weight:700;white-space:nowrap}
+
+/* scene 3: what it means */
+#k3{position:absolute;left:90px;top:400px;width:820px}
+#card3{position:absolute;left:90px;top:480px;width:820px;height:600px;padding:60px 60px}
+#card3 .ic{width:120px;height:120px;border-radius:34px;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:70px;box-shadow:0 0 50px color-mix(in srgb,var(--destaque) 55%,transparent)}
+#conc{margin-top:40px;height:340px;font-size:62px;line-height:1.14}
+
+/* ad close */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:0 0 0 3px color-mix(in srgb,var(--destaque) 70%,transparent),0 0 60px color-mix(in srgb,var(--destaque) 40%,transparent)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1062px;height:50px;line-height:50px}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+</style></head><body><div id="palco">
+<div class="aur" id="aur"></div><div class="pts"></div>
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="kick t seg"></div>
+ <div id="tit0" class="tit t seg rv"></div>
+ <div id="ic0"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="rzp" class="kick t seg">CERCA DE</div>
+ <div id="rz"><div class="a num gnum luz t seg"></div><div class="m tit t seg">em cada</div><div class="b num gnum luz t seg"></div></div>
+ <div id="pic"></div>
+ <div id="faz" class="tit t seg rv"></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="k2" class="kick t seg">NA CONTA</div>
+ <div id="cnt"><div class="a num gnum luz t seg"></div><div class="b tit t2 t seg"></div></div>
+ <div id="cq" class="tit t seg"></div>
+ <div id="pb"><i></i></div>
+ <div id="pp" class="num dest luz t seg"></div>
+ <div id="pp2" class="t t2 seg"></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full">
+ <div id="k3" class="kick t seg">O QUE ISSO DIZ</div>
+ <div id="card3" class="cartao"><div class="ic" id="ic3"></div><div><div id="conc" class="tit t seg rv"></div></div></div>
+</div></div>
+
+<div class="cena" id="c4"><div class="cam full" id="c4in"></div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Proporção": "1 em cada 3 clientes …". The ficha gives the real count (quantos of total); the code finds the
+// simplest "a em cada b" (b is 2, 3, 4, 5 or 10) that matches it, says "cerca de" when it is not exact, fills a icons out of
+// b, and shows the count and the percentage behind it (rounded down). Rates that round to none or all are refused.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+// reading time: the check asks 0.8 s + 0.25 s per new word; a little margin on top
+const ler = (...s) => 1.0 + 0.25 * palavras(...s);
+function foco(e, t, t0, d = 0.7, dy = 40, bl = 16) {
+  if (typeof e === 'string') e = Motor.$(e); if (!e) return 0;
+  const q = Motor.eo5(Motor.p(t, t0, d)); e.style.opacity = q; e.style.transform = `translateY(${(1 - q) * dy}px)`; e.style.filter = q < 1 ? `blur(${((1 - q) * bl).toFixed(1)}px)` : 'none'; return q;
+}
+function vitrine(F, $m, pai) {
+  const P = F.produto, v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk kick t seg', P.convite || 'tem aqui pra você', v);
+  mk('div', 'pvn tit t seg rv', P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  const linhas = P.nome.length > 20 ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  n.style.height = (linhas * 86) + 'px'; if (d) d.style.top = (1130 + linhas * 86 + 14) + 'px';
+  return v;
+}
+const vitrineLer = F => ler(F.produto.convite || 'tem aqui pra você', F.produto.nome, F.produto.detalhe, F.produto.preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.8)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`; f.style.filter = q < 1 ? `blur(${(1 - q) * 18}px)` : 'none';
+  $m.filmagem(v.querySelector('.pvf img'), F.produto.foto, t);
+  foco(v.querySelector('.pvk'), t, a + 0.35, 0.6, 20, 10);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) foco(pd, t, a + 1.0, 0.6, 20, 8);
+}
+let D = {}, PV = null;
+// natural denominators only ("1 em cada 3", "7 em cada 10"; nobody says "5 em cada 7")
+const BASES = [2, 3, 4, 5, 10];
+function razao(q, n) {
+  const r = q / n;
+  for (const b of BASES) { const a = Math.round(r * b); if (a >= 1 && a < b && q * b === a * n) return { a, b, exato: true }; }
+  for (const b of BASES.slice(0, 4)) { const a = Math.round(r * b); if (a >= 1 && a < b && Math.abs(a / b - r) <= 0.015) return { a, b, exato: false }; }
+  const a = Math.round(r * 10); return { a, b: 10, exato: false };
+}
+function checar(F, $m) {
+  if (!Number.isInteger(F.quantos) || !Number.isInteger(F.total)) $m.erro('quantos e total: números inteiros');
+  if (F.quantos > F.total) $m.erro('quantos não pode ser maior que o total');
+  if (/\d/.test(F.titulo + ' ' + F.conclusao + ' ' + F.fazem)) $m.erro('titulo, fazem e conclusao sem algarismos: a proporção sai de quantos e total, pelo código');
+  const z = razao(F.quantos, F.total);
+  if (z.a < 1 || z.a >= z.b) $m.erro('proporção perto de nenhum ou de todos: não cabe em "X em cada 10"; use outro molde');
+  z.pct = Math.floor(F.quantos / F.total * 100);
+  return z;
+}
+
+Motor.molde({
+  id: 'proporcao', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $, num } = $m;
+    D = checar(F, $m);
+    $('#k0').textContent = F.periodo;
+    $('#tit0').textContent = F.titulo;
+    $('#ic0').innerHTML = $m.icone(F.icone);
+    $('#rz .a').textContent = D.a; $('#rz .b').textContent = D.b;
+    if (D.exato) $('#rzp').remove(); else $('#rz').classList.add('aprox');
+    // pictobar: up to 5 in a row, 6 to 10 in two rows; size follows the count
+    const por = D.b <= 5 ? D.b : Math.ceil(D.b / 2), linhas = D.b <= 5 ? 1 : 2, gap = 24;
+    const lado = Math.min(220, Math.floor((820 - gap * (por - 1)) / por)), alto = linhas * lado + (linhas - 1) * gap;
+    const y0 = (470 - alto) / 2;
+    for (let i = 0; i < D.b; i++) {
+      const u = mk('div', 'u', null, $('#pic')), c = i % por, l = Math.floor(i / por);
+      Object.assign(u.style, { left: (c * (lado + gap)) + 'px', top: (y0 + l * (lado + gap)) + 'px', width: lado + 'px', height: lado + 'px', fontSize: Math.round(lado * 0.56) + 'px' });
+      u.innerHTML = $m.icone(F.icone);
+      if (i < D.a) { const o = mk('div', 'on', null, u); o.innerHTML = $m.icone(F.icone); }
+    }
+    $('#faz').textContent = F.quem + ' ' + F.fazem;
+    $('#cnt .a').textContent = num(F.quantos); $('#cnt .b').textContent = 'de ' + num(F.total);
+    $('#cq').textContent = F.quem + ' ' + F.periodo;
+    $('#pp').textContent = D.pct + '%';
+    $('#pp2').textContent = D.exato ? 'exatamente ' + D.a + ' em cada ' + D.b : 'arredondado: cerca de ' + D.a + ' em cada ' + D.b;
+    $('#ic3').innerHTML = $m.icone('info');
+    $('#conc').textContent = F.conclusao;
+    PV = vitrine(F, $m, $('#c4in'));
+    $('#nota').textContent = F.nota || (F.exemplo ? 'valores de exemplo' : '');
+    return { duracoes: [
+      Math.max(3.2, ler(F.periodo, F.titulo)),
+      Math.max(4.6, 0.6 + D.b * 0.18 + ler('cerca de X em cada X', F.quem, F.fazem)),
+      Math.max(4.2, 0.4 + ler('NA CONTA X de X', F.quem, F.periodo, 'X%', $('#pp2').textContent)),
+      Math.max(3.6, ler('O QUE ISSO DIZ', F.conclusao)),
+      Math.max(3.4, vitrineLer(F)) ] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eb, cl, ini, num } = $m;
+    $('#aur').style.transform = `scale(${1 + 0.05 * Math.sin(t * 0.9)})`;
+    // 0: question with the icon floating in a lit ring
+    let a = ini(0); $m.cena('#c0', t, 0);
+    foco('#k0', t, a + 0.1, 0.6, 20, 8);
+    $m.revela('#tit0', t, a + 0.3, 0.06);
+    const iq = eb(p(t, a + 0.8, 0.7)); $('#ic0').style.opacity = cl(iq * 2); $('#ic0').style.transform = `scale(${0.6 + 0.4 * iq}) translateY(${Math.sin(t * 1.8) * 10}px)`;
+    // 1: the ratio lands, then the icons fill one by one (the moment of the video)
+    a = ini(1); $m.cena('#c1', t, 1);
+    if ($('#rzp')) foco('#rzp', t, a + 0.05, 0.5, 20, 8);
+    const ra = eb(p(t, a + 0.1, 0.6)), rb = eb(p(t, a + 0.45, 0.6));
+    $('#rz .a').style.transform = `scale(${0.5 + 0.5 * ra})`; $('#rz .a').style.opacity = cl(ra * 2);
+    foco($('#rz .m'), t, a + 0.3, 0.5, 20, 10);
+    $('#rz .b').style.transform = `scale(${0.5 + 0.5 * rb})`; $('#rz .b').style.opacity = cl(rb * 2);
+    $$('#pic .u').forEach((u, i) => {
+      const q = eo5(p(t, a + 0.5 + i * 0.07, 0.5)); u.style.opacity = q; u.style.transform = `translateY(${(1 - q) * 50}px)`;
+      const o = u.querySelector('.on'); if (o) { const s = eb(p(t, a + 1.1 + i * 0.22, 0.45)); o.style.opacity = cl(s * 2); o.style.transform = `scale(${s})`; }
+    });
+    $m.revela('#faz', t, a + 1.3 + D.a * 0.22, 0.05);
+    // 2: the count behind the ratio
+    a = ini(2); $m.cena('#c2', t, 2);
+    foco('#k2', t, a + 0.1, 0.6, 20, 8);
+    foco('#cnt', t, a + 0.2, 0.7, 50, 20); $m.conta('#cnt .a', t, a + 0.2, 1.0, F.quantos, x => num(Math.round(x)));
+    foco('#cq', t, a + 0.5, 0.6, 30, 10);
+    $('#pb').style.opacity = cl(p(t, a + 0.7, 0.3)); $('#pb i').style.width = (820 * F.quantos / F.total * eo(p(t, a + 0.8, 1.0))).toFixed(1) + 'px';
+    foco('#pp', t, a + 0.8, 0.6, 30, 16); $m.conta('#pp', t, a + 0.8, 1.0, D.pct, x => Math.round(x) + '%');
+    foco('#pp2', t, a + 1.3, 0.6, 20, 8);
+    // 3: what it means
+    a = ini(3); $m.cena('#c3', t, 3);
+    foco('#k3', t, a + 0.1, 0.6, 20, 8);
+    const cq = eb(p(t, a + 0.15, 0.7)); $('#card3').style.opacity = cl(cq * 2); $('#card3').style.transform = `translateY(${(1 - cq) * 120}px)`;
+    const i3 = eb(p(t, a + 0.4, 0.5)); $('#ic3').style.transform = `scale(${i3}) rotate(${(1 - i3) * -30}deg)`;
+    $m.revela('#conc', t, a + 0.55, 0.05);
+    // 4: product
+    $m.cena('#c4', t, 4); vitrineQuadro(PV, F, $m, t, ini(4));
+    $('#nota').style.opacity = t < ini(4) ? 1 : 0;
+  },
+});
+</script></body></html>

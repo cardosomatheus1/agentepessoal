@@ -1,0 +1,189 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo vox-explainer (lower-third bracket / label) -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* a product as a technical drawing: the photo sits in a blueprint frame, each part's band gets a dimension bracket
+   on the photo's edge and a bracketed label with a leader line; then the photo is cut along the bands and the
+   slices pull apart (exploded view), each label riding its slice. Bands come from the ficha in % of the photo height */
+#folha{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(color-mix(in srgb,var(--texto) 7%,transparent) 2px,transparent 2px),linear-gradient(90deg,color-mix(in srgb,var(--texto) 7%,transparent) 2px,transparent 2px);background-size:60px 60px}
+.kick{font-weight:800;text-transform:uppercase;letter-spacing:.16em;white-space:nowrap}
+#kick{position:absolute;left:72px;top:420px;width:820px;height:44px;font-size:30px;line-height:44px}
+#tit{position:absolute;left:72px;top:470px;width:330px;height:340px;font-size:68px;line-height:1.04}
+#kick2{position:absolute;left:72px;top:384px;width:820px;height:44px;font-size:30px;line-height:44px}
+#moldura{position:absolute;border:12px solid var(--cartao);outline:4px solid var(--texto);box-shadow:var(--sombra)}
+body.e-vidro #moldura,body.e-noite #moldura{border-color:var(--fundo2)}
+.mira{position:absolute;width:40px;height:40px;border-color:var(--destaque);border-style:solid;border-width:0}
+.fat{position:absolute;overflow:hidden}
+.fat img{position:absolute;left:0;max-width:none}
+.fat .esc{position:absolute;inset:0;background:color-mix(in srgb,var(--fundo) 60%,transparent);opacity:0}
+#scan{position:absolute;height:6px;background:var(--destaque);box-shadow:0 0 24px var(--destaque);opacity:0}
+#tra{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:visible;pointer-events:none}
+#tra path{fill:none;stroke:var(--destaque);stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+#tra circle{fill:var(--destaque)}
+.lb{position:absolute;left:72px;width:330px}
+.lb .nm{position:relative;width:330px;font-family:var(--ft);font-weight:900;font-size:50px;line-height:1.04;padding:10px 14px}
+.lb .c1,.lb .c2{position:absolute;width:30px;height:30px;border:0 solid var(--destaque)}
+.lb .c1{left:0;top:0;border-left-width:6px;border-top-width:6px}
+.lb .c2{right:0;bottom:0;border-right-width:6px;border-bottom-width:6px}
+.lb .dt{width:330px;margin-top:6px;padding:6px 14px;font-size:30px;font-weight:600;line-height:1.14;background:var(--cartao);border-left:6px solid var(--destaque)}
+body.e-vidro .lb .dt,body.e-noite .lb .dt{background:color-mix(in srgb,var(--fundo2) 85%,transparent)}
+/* closing */
+#fotoF{position:absolute;left:110px;top:400px;width:860px;height:640px;border:14px solid var(--cartao);outline:5px solid var(--texto);overflow:hidden;box-shadow:var(--sombra)}
+body.e-vidro #fotoF,body.e-noite #fotoF{border-color:var(--fundo2)}
+#fotoF img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#nomeF{position:absolute;left:84px;top:1080px;width:820px;height:170px;font-size:78px;line-height:1.02}
+#preco{position:absolute;left:84px;top:1280px;height:120px;display:flex;align-items:center;gap:20px}
+#pv{height:120px;padding:0 40px;font-family:var(--ft);font-weight:900;font-size:78px;line-height:120px;background:var(--destaque);color:var(--sobre-destaque);transform:rotate(-2deg);white-space:nowrap}
+#pu{width:300px;height:56px;font-size:40px;font-weight:700;white-space:nowrap}
+#fech{position:absolute;left:84px;top:1290px;width:820px;height:120px;font-size:50px;font-weight:800;line-height:1.1}
+</style></head><body><div id="palco">
+<div id="folha"></div>
+<div class="cena" id="cA"><div class="cam full">
+ <div id="kick" class="kick dest t seg"></div>
+ <div id="tit" class="tit t seg rv"></div>
+ <div id="kick2" class="kick dest t seg"></div>
+ <div id="moldura"></div>
+ <div id="fatias"></div>
+ <div id="scan"></div>
+ <svg id="tra"></svg>
+ <div id="rotulos"></div>
+</div></div>
+<div class="cena" id="cF"><div class="cam full">
+ <div id="fotoF"><img alt=""></div>
+ <div id="nomeF" class="tit t seg rv"></div>
+ <div id="preco" class="seg"><div id="pv" class="t"></div><div id="pu" class="t t2"></div></div>
+ <div id="fech" class="t seg rv"></div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+const tw = t => Math.floor(t * 12) / 12;  // Vox cadence: on twos
+function tempoDeLer($m, F, base) {
+  let d = base.slice();
+  for (let it = 0; it < 5; it++) {
+    const S = [0]; d.forEach(x => S.push(+(S[S.length - 1] + x).toFixed(3))); S.push(S[S.length - 1] + 3);
+    $m.S = S; $m.N = S.length - 1;
+    let antes = new Set(), mudou = false;
+    d = d.map((x, i) => { $m.def.quadro(Math.max(S[i], S[i + 1] - 0.08), F, $m);
+      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').filter(w => /[\p{L}\d]/u.test(w)).length; }); agora.forEach(s => antes.add(s));
+      const min = +(0.8 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
+    if (!mudou) break;
+  }
+  return d;
+}
+const NS = 'http://www.w3.org/2000/svg';
+const GAP = 34;          // space between slices in the exploded view
+let D = {};
+Motor.molde({
+  id: 'anatomia', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m, P = F.partes, n = P.length;
+    // the bands are checked by the code: inside the photo, top to bottom, not overlapping, not too thin to see
+    P.forEach((x, k) => {
+      if (x.ate <= x.de) $m.erro(`partes[${k + 1}]: "ate" tem de ser maior que "de"`);
+      if (x.ate - x.de < 4) $m.erro(`partes[${k + 1}]: faixa fina demais (menos de 4% da foto)`);
+      if (k && x.de < P[k - 1].ate) $m.erro(`partes[${k + 1}]: começa antes do fim da parte anterior (de cima para baixo, sem sobrepor)`);
+    });
+    if (new Set(P.map(x => x.nome.trim().toLowerCase())).size < n) $m.erro('partes: nome repetido');
+    D.n = n;
+    $('#kick').textContent = F.rotulo || 'Anatomia';
+    $('#tit').textContent = F.produto;
+    $('#kick2').textContent = 'Peça por peça';
+    // slices: cut at every band edge; the photo is drawn at its own proportion (bands are % of its height)
+    // optional vertical window of the photo (to leave out empty table or background); bands stay in % of the whole photo
+    const E = F.enquadre || { de: 0, ate: 100 }; D.ct = E.de; D.cb = E.ate;
+    if (E.ate - E.de < 30) $m.erro('enquadre: janela pequena demais (mínimo 30% da altura da foto)');
+    if (P.some(x => x.de < E.de || x.ate > E.ate)) $m.erro('partes: toda parte tem de estar dentro do enquadre');
+    const cortes = [...new Set([E.de, ...P.flatMap(x => [x.de, x.ate]), E.ate])].sort((a, b) => a - b);
+    D.cortes = cortes; D.parteFatia = P.map(x => cortes.indexOf(x.de));
+    for (let j = 0; j < cortes.length - 1; j++) { const f = document.createElement('div'); f.className = 'fat'; f.innerHTML = '<img alt=""><i class="esc"></i>'; f.querySelector('img').src = $m.midia(F.foto); $('#fatias').appendChild(f); }
+    P.forEach((x, k) => {
+      const l = document.createElement('div'); l.className = 'lb';
+      l.innerHTML = `<div class="nm t seg"><i class="c1"></i><i class="c2"></i><span></span></div>${x.detalhe ? '<div class="dt t"></div>' : ''}`;
+      l.querySelector('.nm span').textContent = x.nome; if (x.detalhe) l.querySelector('.dt').textContent = x.detalhe;
+      $('#rotulos').appendChild(l);
+      const g = document.createElementNS(NS, 'g'); g.innerHTML = '<path class="br" pathLength="1" stroke-dasharray="1 1"/><path class="ld" pathLength="1" stroke-dasharray="1 1"/><circle r="9"/>'; $('#tra').appendChild(g);
+    });
+    $('#fotoF img').src = $m.midia(F.foto);
+    $('#nomeF').textContent = F.produto;
+    if (F.preco != null) { $('#pv').textContent = $m.brl(F.preco); $('#pu').textContent = F.unidade || ''; $('#fech').remove(); if (!F.unidade) $('#pu').remove(); }
+    else { $('#preco').remove(); if (F.fechamento) $('#fech').textContent = F.fechamento; else $('#fech').remove(); }
+    if (F.preco == null && F.unidade) $m.erro('unidade: só com preço');
+    $('#nota').textContent = F.nota || '';
+    D.geo = null;
+    const d = tempoDeLer($m, F, [2.4, ...P.map(() => 2.3), 2.8, 3.0]);
+    return { duracoes: d };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, cl, ini, fim } = $m, n = D.n, T = tw(t), P = F.partes;
+    // photo geometry, once its real size is known; room is kept for the exploded view to fit the free area
+    const img0 = $('.fat img');
+    if (!D.geo || !D.geo.ok) {
+      const nw = img0.naturalWidth || 1000, nh = img0.naturalHeight || 1000, asp = nw / nh, K = D.cortes.length - 1, jan = (D.cb - D.ct) / 100;
+      // the window's height fills the box; the sides are cropped at the center, keeping at least 60% of the width
+      let h = Math.min(860, 1040 - GAP * (K - 1)), ih = h / jan, iw = ih * asp;
+      if (iw * 0.6 > 560) { iw = 560 / 0.6; ih = iw / asp; h = ih * jan; }
+      const w = Math.min(560, iw);
+      const x = 1010 - w, y = 945 - h / 2;
+      D.geo = { w, h, x, y, K, iw, ih, ix: (w - iw) / 2, ok: !!img0.naturalWidth };
+    }
+    const G = D.geo, Y = c => (c - D.ct) / (D.cb - D.ct) * G.h;
+    const aX = ini(n + 1), eq = eio(p(T, aX + 0.1, 0.6));                  // explode progress
+    const off = j => (j - (G.K - 1) / 2) * GAP * eq;
+    $m.cena('#cA', t, 0, n + 1, { push: 0.01 });
+    $m.entra('#kick', T, 0.05, 0.3, 0); $m.revela('#tit', t, 0.15);
+    const tq = t < ini(1) ? 1 : 1 - p(t, ini(1), 0.2); $('#kick').style.opacity = Math.min(+$('#kick').style.opacity || 1, tq); $('#tit').style.opacity = tq;
+    $('#kick2').style.opacity = t >= aX ? eo(p(T, aX + 0.3, 0.3)) : 0;
+    // frame + slices
+    const fq = eb(p(T, 0.2, 0.45)), pop = `rotate(${(1 - fq) * 6}deg) scale(${0.8 + 0.2 * fq})`;
+    const mo = $('#moldura'); Object.assign(mo.style, { left: (G.x - 12) + 'px', top: (G.y - 12) + 'px', width: (G.w + 24) + 'px', height: (G.h + 24) + 'px' });
+    mo.style.opacity = cl(fq * 3) * (1 - eq); mo.style.transform = pop;
+    let atual = -1; for (let k = 0; k < n; k++) if (t >= ini(k + 1) && t < fim(k + 1)) atual = k;
+    $$('.fat').forEach((f, j) => {
+      const y0 = Y(D.cortes[j]), y1 = Y(D.cortes[j + 1]);
+      Object.assign(f.style, { left: G.x + 'px', top: (G.y + y0 + off(j)) + 'px', width: G.w + 'px', height: (y1 - y0) + 'px' });
+      const im = f.querySelector('img'); im.style.width = G.iw + 'px'; im.style.height = G.ih + 'px'; im.style.left = G.ix + 'px'; im.style.top = (-D.ct / 100 * G.ih - y0) + 'px';
+      f.style.opacity = cl(fq * 3); f.style.transform = eq > 0 ? 'none' : pop; f.style.transformOrigin = `${G.w / 2}px ${G.h / 2 - y0}px`;
+      const dono = D.parteFatia.indexOf(j);
+      f.querySelector('.esc').style.opacity = atual >= 0 && dono !== atual ? 1 : (eq > 0 && dono < 0 ? 0.6 * eq : 0);
+    });
+    // scan line on the cover
+    const sc = p(t, 0.7, 1.1); Object.assign($('#scan').style, { left: G.x + 'px', width: G.w + 'px', top: (G.y + sc * G.h) + 'px', opacity: sc > 0 && sc < 1 ? 1 : 0 });
+    // labels: wanted at the middle of their band (moving with the slices), pushed apart so none overlaps
+    const LW = Math.max(300, Math.min(420, G.x - 22 - 50 - 72)), lbs = $$('.lb');
+    lbs.forEach(l => { l.style.width = LW + 'px'; l.querySelectorAll('.nm,.dt').forEach(e => { e.style.width = LW + 'px'; }); });
+    const alt = lbs.map(l => l.offsetHeight || 150);
+    const meio = P.map((x, k) => G.y + Y((x.de + x.ate) / 2) + off(D.parteFatia[k]));
+    const ys = meio.map((m, k) => m - alt[k] / 2);
+    for (let k = 1; k < n; k++) ys[k] = Math.max(ys[k], ys[k - 1] + alt[k - 1] + 18);
+    const fundo = 1470; if (ys[n - 1] + alt[n - 1] > fundo) { ys[n - 1] = fundo - alt[n - 1]; for (let k = n - 2; k >= 0; k--) ys[k] = Math.min(ys[k], ys[k + 1] - alt[k] - 18); }
+    if (ys[0] < 400) { ys[0] = 400; for (let k = 1; k < n; k++) ys[k] = Math.max(ys[k], ys[k - 1] + alt[k - 1] + 18); }
+    const gs = [...$('#tra').children];
+    lbs.forEach((l, k) => {
+      const a = ini(k + 1), vis = t >= a, q = eb(p(T, a + 0.35, 0.35));
+      l.style.top = ys[k] + 'px'; l.style.opacity = vis ? cl(q * 3) * (atual >= 0 && atual !== k ? 0.5 : 1) : 0;
+      l.style.transform = `translateX(${(1 - q) * -60}px)`;
+      const dt = l.querySelector('.dt'); if (dt) dt.style.opacity = vis ? p(T, a + 0.6, 0.2) : 0;
+      // dimension bracket on the photo's left edge, then the leader line to the label
+      const x = P[k], y0 = G.y + Y(x.de) + off(D.parteFatia[k]) + 4, y1 = G.y + Y(x.ate) + off(D.parteFatia[k]) - 4, bx = G.x - 22, ym = (y0 + y1) / 2;
+      const g = gs[k], br = g.querySelector('.br'), ld = g.querySelector('.ld'), c = g.querySelector('circle');
+      br.setAttribute('d', `M${bx + 16} ${y0} H${bx} V${y1} H${bx + 16}`);
+      const ly = ys[k] + 34, lx = 72 + LW + 10;
+      ld.setAttribute('d', `M${bx} ${ym} H${(bx + lx) / 2} V${ly} H${lx}`);
+      const bq = vis ? eo(p(T, a + 0.05, 0.3)) : 0, lq = vis ? eo(p(T, a + 0.25, 0.3)) : 0;
+      br.setAttribute('stroke-dashoffset', 1 - bq); ld.setAttribute('stroke-dashoffset', 1 - lq);
+      br.style.visibility = bq > 0 ? 'visible' : 'hidden'; ld.style.visibility = lq > 0 ? 'visible' : 'hidden';
+      c.setAttribute('cx', bx); c.setAttribute('cy', ym); c.style.opacity = bq;
+      g.style.opacity = atual >= 0 && atual !== k ? 0.45 : 1;
+    });
+    // closing
+    const aF = ini(n + 2); $m.cena('#cF', t, n + 2);
+    const fo = eb(p(T, aF, 0.4)); $('#fotoF').style.transform = `rotate(${1.5 - (1 - fo) * 6}deg) scale(${0.85 + 0.15 * fo})`; $m.filmagem($('#fotoF img'), F.foto, t);
+    $m.revela('#nomeF', t, aF + 0.15);
+    if ($('#preco')) { const q = eb(p(T, aF + 0.55, 0.35)); $('#pv').style.transform = `rotate(-2deg) scale(${q})`; $('#pv').style.opacity = cl(q * 3); if ($('#pu')) $m.entra('#pu', T, aF + 0.8, 0.3, 20); }
+    if ($('#fech')) $m.revela('#fech', t, aF + 0.5);
+    $('#nota').style.opacity = t >= aF && t < fim(n + 2) ? 1 : 0;
+  },
+});
+</script></body></html>

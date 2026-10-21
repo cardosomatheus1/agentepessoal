@@ -1,0 +1,13 @@
+{
+ "_marca": "burger-noite",
+ "_formato": "reel",
+ "gancho": "Neste sábado, a chapa não parou e saíram",
+ "numero": 486,
+ "unidade": "smash burgers",
+ "por": {"quantidade": 6, "unidade": "hora de chapa ligada"},
+ "contexto": "Fila na porta e pedido no aplicativo ao mesmo tempo, sem deixar ninguém esperando frio.",
+ "licao": "Sábado que vem tem mais. Chega cedo!",
+ "produto": {"foto": "fotos/burger_smash.jpg", "nome": "Smash duplo", "detalhe": "Dois blends, cheddar e cebola na chapa", "preco": 32.9, "convite": "peça o seu"},
+ "_origem": {"numero": "sistema", "por": "dono", "produto": "dono"},
+ "nota": "valores de exemplo"
+}

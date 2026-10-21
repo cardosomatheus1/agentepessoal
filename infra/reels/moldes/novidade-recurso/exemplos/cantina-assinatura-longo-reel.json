@@ -1,0 +1,17 @@
+{
+ "_marca": "cantina-da-vo",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "recurso": "Marmita da semana por assinatura",
+ "icone": "calendario",
+ "foto": "fotos/cantina_marmita.jpg",
+ "passos": ["Escolha os pratos no domingo", "Receba cinco marmitas na segunda", "Pague uma vez por semana"],
+ "antes": "Pensar todo dia no que almoçar no trabalho",
+ "agora": "A semana de almoço resolvida de uma vez só",
+ "a_partir": "2026-10-21",
+ "preco": 110,
+ "preco_a_partir": true,
+ "onde": "Entrega no centro e região",
+ "nota": "valores de exemplo",
+ "_origem": {"preco": "dono"}
+}

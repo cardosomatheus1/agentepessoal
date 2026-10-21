@@ -1,0 +1,243 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../motor/motor.css">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo kallaway -->
+<style>
+/* Kallaway layer (dark, lit instruments): aurora bloom from below, dot grid, glowing kicker and numbers */
+.aur{position:absolute;left:-25%;right:-25%;bottom:-28%;height:80%;z-index:1;pointer-events:none;transform-origin:50% 100%;
+  background:radial-gradient(50% 55% at 50% 100%,color-mix(in srgb,var(--destaque) 50%,transparent) 0%,color-mix(in srgb,var(--destaque) 16%,transparent) 45%,transparent 75%)}
+.pts{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.55;background-image:radial-gradient(color-mix(in srgb,var(--texto) 22%,transparent) 2px,transparent 2.6px);background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(90% 70% at 50% 55%,#000 30%,transparent 80%);mask-image:radial-gradient(90% 70% at 50% 55%,#000 30%,transparent 80%)}
+body.e-claro .aur,body.e-papel .aur{opacity:.55}body.e-pop .aur{opacity:.35}
+.cena{z-index:2}
+.kick{font-family:var(--fb),sans-serif;font-weight:800;font-size:34px;letter-spacing:.18em;text-transform:uppercase;color:var(--destaque);white-space:nowrap;height:46px;line-height:46px}
+.luz{text-shadow:0 0 26px color-mix(in srgb,var(--destaque) 60%,transparent),0 0 80px color-mix(in srgb,var(--destaque) 30%,transparent)}
+body.e-claro .luz,body.e-papel .luz,body.e-pop .luz{text-shadow:none}
+.num{font-family:var(--ft),sans-serif;font-weight:900;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.03em;white-space:nowrap}
+.gnum{background-image:linear-gradient(170deg,var(--texto) 20%,var(--destaque) 85%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.08em}
+body.e-pop .gnum{background-image:none;color:var(--texto)}
+/* scene 0: the question */
+#k0{position:absolute;left:90px;top:400px;width:820px}
+#tit0{position:absolute;left:90px;top:470px;width:820px;height:420px;font-size:100px}
+#ini0{position:absolute;left:90px;top:960px;width:820px;height:46px;font-size:34px;font-weight:800;letter-spacing:.14em;white-space:nowrap}
+#ini1{position:absolute;left:84px;top:1010px;width:830px;height:200px;font-size:190px}
+#ini2{position:absolute;left:90px;top:1220px;width:820px;height:60px;font-size:44px;font-weight:700;white-space:nowrap}
+
+/* scene 1: the line drawing point by point */
+#k1{position:absolute;left:90px;top:400px;width:820px}
+#vivo{position:absolute;left:84px;top:460px;width:830px;height:170px;font-size:160px}
+#vrot{position:absolute;left:90px;top:640px;width:820px;height:50px;font-size:36px;font-weight:700;white-space:nowrap}
+#graf{position:absolute;left:90px;top:720px;width:820px;height:540px}
+#graf svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#graf .xl{position:absolute;top:556px;width:140px;margin-left:-70px;height:44px;font-size:30px;font-weight:700;text-align:center;white-space:nowrap}
+#ponta{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:var(--destaque);box-shadow:0 0 0 8px color-mix(in srgb,var(--destaque) 30%,transparent),0 0 50px var(--destaque)}
+
+/* scene 2: the variation */
+#k2{position:absolute;left:90px;top:400px;width:820px}
+#var{position:absolute;left:84px;top:460px;width:830px;height:300px;font-size:280px}
+#de2{position:absolute;left:90px;top:790px;width:820px;height:90px;font-size:76px;white-space:nowrap}
+#de3{position:absolute;left:90px;top:890px;width:820px;height:60px;font-size:42px;font-weight:700;white-space:nowrap}
+#mini{position:absolute;left:90px;top:1000px;width:820px;height:260px}
+#mini svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#melhor{position:absolute;left:90px;top:1300px;height:72px;line-height:72px;font-size:36px;padding:0 30px;white-space:nowrap}
+
+/* scene 3: thanks / what it means */
+#k3{position:absolute;left:90px;top:400px;width:820px}
+#card3{position:absolute;left:90px;top:480px;width:820px;height:600px;padding:60px 60px}
+#card3 .ic{width:120px;height:120px;border-radius:34px;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:70px;box-shadow:0 0 50px color-mix(in srgb,var(--destaque) 55%,transparent)}
+#mot{margin-top:40px;height:340px;font-size:62px;line-height:1.14}
+
+/* ad close */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:90px;width:900px;top:390px;height:640px;border-radius:var(--raio);overflow:hidden;box-shadow:0 0 0 3px color-mix(in srgb,var(--destaque) 70%,transparent),0 0 60px color-mix(in srgb,var(--destaque) 40%,transparent)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:955px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg)}
+.pvk{position:absolute;left:90px;width:790px;top:1062px;height:50px;line-height:50px}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+</style></head><body><div id="palco">
+<div class="aur" id="aur"></div><div class="pts"></div>
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="kick t seg"></div>
+ <div id="tit0" class="tit t seg rv"></div>
+ <div id="ini0" class="t t2 seg"></div>
+ <div id="ini1" class="num gnum luz t seg"></div>
+ <div id="ini2" class="t t2 seg"></div>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="k1" class="kick t seg"></div>
+ <div id="vivo" class="num gnum luz t seg"></div>
+ <div id="vrot" class="t t2 seg"></div>
+ <div id="graf">
+  <svg viewBox="0 0 820 540">
+   <defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--destaque);stop-opacity:.38"/><stop offset="1" style="stop-color:var(--destaque);stop-opacity:0"/></linearGradient>
+    <clipPath id="corte"><rect id="corteR" x="-30" y="-60" width="0" height="640"/></clipPath></defs>
+   <g id="grade"></g>
+   <path id="areaP" fill="url(#area)" clip-path="url(#corte)"/>
+   <path id="linha" fill="none" stroke="var(--destaque)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 14px var(--destaque))"/>
+   <g id="bolas"></g>
+  </svg>
+  <div id="ponta"></div>
+ </div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="k2" class="kick t seg"></div>
+ <div id="var" class="num gnum luz t seg"></div>
+ <div id="de2" class="tit t seg"></div>
+ <div id="de3" class="t t2 seg"></div>
+ <div id="mini"><svg viewBox="0 0 820 260"><path id="miniA" fill="url(#area)"/><path id="miniL" fill="none" stroke="var(--destaque)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 12px var(--destaque))"/><circle id="miniB" r="18" fill="var(--destaque)"/></svg></div>
+ <div id="melhor" class="chip t seg"></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full">
+ <div id="k3" class="kick t seg">O QUE ISSO QUER DIZER</div>
+ <div id="card3" class="cartao"><div class="ic" id="ic3"></div><div><div id="mot" class="tit t seg rv"></div></div></div>
+</div></div>
+
+<div class="cena" id="c4"><div class="cam full" id="c4in"></div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Tendência": a real count over 4 to 12 periods (weeks, months) drawn point by point. The axis starts at zero, so the
+// slope is never exaggerated; the code works out the variation from the first to the last point (rounded down), the
+// best period and the positions of every point. A line that did not go up is refused: this template shows growth.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+// reading time: the check asks 0.8 s + 0.25 s per new word; a little margin on top
+const ler = (...s) => 1.0 + 0.25 * palavras(...s);
+function foco(e, t, t0, d = 0.7, dy = 40, bl = 16) {
+  if (typeof e === 'string') e = Motor.$(e); if (!e) return 0;
+  const q = Motor.eo5(Motor.p(t, t0, d)); e.style.opacity = q; e.style.transform = `translateY(${(1 - q) * dy}px)`; e.style.filter = q < 1 ? `blur(${((1 - q) * bl).toFixed(1)}px)` : 'none'; return q;
+}
+function vitrine(F, $m, pai) {
+  const P = F.produto, v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  mk('div', 'pvk kick t seg', P.convite || 'tem aqui pra você', v);
+  mk('div', 'pvn tit t seg rv', P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  const linhas = P.nome.length > 20 ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  n.style.height = (linhas * 86) + 'px'; if (d) d.style.top = (1130 + linhas * 86 + 14) + 'px';
+  return v;
+}
+const vitrineLer = F => ler(F.produto.convite || 'tem aqui pra você', F.produto.nome, F.produto.detalhe, F.produto.preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eo5, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eo5(p(t, a + 0.05, 0.8)); f.style.opacity = q; f.style.transform = `translateY(${(1 - q) * 120}px) scale(${0.92 + 0.08 * q})`; f.style.filter = q < 1 ? `blur(${(1 - q) * 18}px)` : 'none';
+  $m.filmagem(v.querySelector('.pvf img'), F.produto.foto, t);
+  foco(v.querySelector('.pvk'), t, a + 0.35, 0.6, 20, 10);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) foco(pd, t, a + 1.0, 0.6, 20, 8);
+}
+let D = {}, PV = null;
+const GW = 820, GH = 540;
+function checar(F, $m) {
+  const v = F.pontos.map(x => x.valor);
+  if (v[0] <= 0) $m.erro('o primeiro ponto precisa ser maior que zero para calcular a variação');
+  if (v[v.length - 1] <= v[0]) $m.erro('a linha não subiu do primeiro ao último ponto: este molde mostra crescimento');
+  if (/\d/.test(F.titulo + ' ' + F.motivo)) $m.erro('titulo e motivo sem algarismos: os números saem dos pontos, pelo código');
+  const max = Math.max(...v), topo = max * 1.12, n = v.length;
+  const pts = v.map((x, i) => [i / (n - 1) * GW, GH - x / topo * GH]);
+  let best = 0; v.forEach((x, i) => { if (x > v[best]) best = i; });
+  const varp = Math.floor((v[n - 1] - v[0]) / v[0] * 100);
+  // cumulative length along the line, to draw it at a steady pace and know which point the tip is on
+  const len = [0]; for (let i = 1; i < n; i++) len.push(len[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  return { v, pts, best, varp, len, n, topo };
+}
+const fmt = (F, x) => F.tipo === 'dinheiro' ? Motor.brl(x, Number.isInteger(x) || x >= 1000 ? 0 : 2) : Motor.num(x, Number.isInteger(x) ? 0 : 1);
+
+Motor.molde({
+  id: 'tendencia', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $, num } = $m;
+    D = checar(F, $m);
+    const P = F.pontos, n = D.n, ult = P[n - 1], pri = P[0];
+    $('#k0').textContent = F.medida;
+    $('#tit0').textContent = F.titulo;
+    $('#ini0').textContent = 'COMEÇOU EM'; $('#ini1').textContent = fmt(F, pri.valor); $('#ini2').textContent = pri.rotulo;
+    $('#k1').textContent = F.medida;
+    $('#vivo').textContent = fmt(F, Math.max(...D.v)); $('#vrot').textContent = P.reduce((a, b) => a.rotulo.length >= b.rotulo.length ? a : b).rotulo;
+    // horizontal guides at a quarter, half and three quarters of the top
+    let g = ''; [0.25, 0.5, 0.75, 1].forEach(k => { const y = (GH - GH * k).toFixed(1); g += `<line x1="0" y1="${y}" x2="${GW}" y2="${y}" style="stroke:color-mix(in srgb,var(--texto) ${k === 1 ? 0 : 12}%,transparent)" stroke-width="2" stroke-dasharray="6 12"/>`; });
+    g += `<line x1="0" y1="${GH}" x2="${GW}" y2="${GH}" style="stroke:color-mix(in srgb,var(--texto) 30%,transparent)" stroke-width="3"/>`;
+    $('#grade').innerHTML = g;
+    const d = D.pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
+    $('#linha').setAttribute('d', d); $('#linha').setAttribute('stroke-dasharray', D.len[n - 1].toFixed(1));
+    $('#areaP').setAttribute('d', d + ` L${GW} ${GH} L0 ${GH} Z`);
+    $('#bolas').innerHTML = D.pts.map(q => `<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="13" fill="var(--texto)" style="filter:drop-shadow(0 0 8px var(--destaque))"/>`).join('');
+    // x labels: first, last and evenly spaced in between, at most 5
+    const passo = Math.ceil((n - 1) / 4);
+    P.forEach((x, i) => { if (i === 0 || i === n - 1 || (i % passo === 0 && n - 1 - i >= passo)) { const l = mk('div', 'xl t t2', x.rotulo, $('#graf')); l.style.left = D.pts[i][0] + 'px';
+      if (i === 0) Object.assign(l.style, { marginLeft: '0px', textAlign: 'left' }); if (i === n - 1) Object.assign(l.style, { marginLeft: '-140px', textAlign: 'right' }); } });
+    $('#k2').textContent = 'DO COMEÇO AO FIM';
+    $('#var').textContent = '+' + D.varp + '%';
+    $('#de2').textContent = fmt(F, pri.valor) + '  para  ' + fmt(F, ult.valor);
+    $('#de3').textContent = F.medida + ', de ' + pri.rotulo + ' a ' + ult.rotulo;
+    const sx = 820 / GW, sy = 260 / GH, dm = D.pts.map((q, i) => (i ? 'L' : 'M') + (q[0] * sx).toFixed(1) + ' ' + (q[1] * sy).toFixed(1)).join(' ');
+    $('#miniL').setAttribute('d', dm); $('#miniA').setAttribute('d', dm + ' L820 260 L0 260 Z');
+    $('#miniB').setAttribute('cx', (D.pts[D.best][0] * sx).toFixed(1)); $('#miniB').setAttribute('cy', (D.pts[D.best][1] * sy).toFixed(1));
+    $('#melhor').innerHTML = $m.icone('trofeu') + ' '; $('#melhor').append('melhor: ' + P[D.best].rotulo + ', ' + fmt(F, P[D.best].valor));
+    $('#ic3').innerHTML = $m.icone('coracao');
+    $('#mot').textContent = F.motivo;
+    PV = vitrine(F, $m, $('#c4in'));
+    $('#nota').textContent = F.nota || (F.exemplo ? 'valores de exemplo' : '');
+    const desenho = 0.6 + 0.32 * n;
+    return { duracoes: [
+      Math.max(3.4, ler(F.medida, F.titulo, 'COMEÇOU EM X', pri.rotulo)),
+      Math.max(desenho + 1.6, ler(F.medida, 'X', P.map(x => x.rotulo).join(' '))),
+      Math.max(4.4, 0.4 + ler('DO COMEÇO AO FIM X% X para X', $('#de3').textContent, $('#melhor').textContent)),
+      Math.max(3.6, ler('O QUE ISSO QUER DIZER', F.motivo)),
+      Math.max(3.4, vitrineLer(F)) ] };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, cl, ini, lerp } = $m;
+    $('#aur').style.transform = `scale(${1 + 0.05 * Math.sin(t * 0.9)})`;
+    const n = D.n;
+    // 0: question and the starting point
+    let a = ini(0); $m.cena('#c0', t, 0);
+    foco('#k0', t, a + 0.1, 0.6, 20, 8);
+    $m.revela('#tit0', t, a + 0.3, 0.06);
+    foco('#ini0', t, a + 0.9, 0.6, 20, 8); foco('#ini1', t, a + 1.0, 0.8, 50, 22); foco('#ini2', t, a + 1.2, 0.6, 20, 8);
+    // 1: the line draws point by point; the tip glows and the big number follows the point it reaches
+    a = ini(1); $m.cena('#c1', t, 1);
+    foco('#k1', t, a + 0.1, 0.6, 20, 8);
+    $('#graf').style.opacity = cl(p(t, a + 0.1, 0.4));
+    const d0 = a + 0.5, u = cl((t - d0) / (0.32 * n)), L = D.len[n - 1], s = u * L;
+    let i = 1; while (i < n - 1 && D.len[i] < s) i++;
+    const k = cl((s - D.len[i - 1]) / ((D.len[i] - D.len[i - 1]) || 1)), x = lerp(D.pts[i - 1][0], D.pts[i][0], k), y = lerp(D.pts[i - 1][1], D.pts[i][1], k);
+    $('#linha').setAttribute('stroke-dashoffset', (L - s).toFixed(1));
+    $('#corteR').setAttribute('width', (x + 30).toFixed(1));
+    $('#ponta').style.left = x + 'px'; $('#ponta').style.top = y + 'px'; $('#ponta').style.opacity = t > d0 ? 1 : 0;
+    $('#ponta').style.transform = `scale(${1 + 0.15 * Math.sin(t * 6)})`;
+    $$('#bolas circle').forEach((c, j) => { const q = eb(p(t, d0 + (D.len[j] / L) * 0.32 * n - 0.05, 0.35)); c.setAttribute('r', (13 * q).toFixed(1)); });
+    $$('#graf .xl').forEach((l, j) => { l.style.opacity = cl(p(t, d0 + 0.2 * j, 0.4)); });
+    // the number shows only real points: the last one the tip has reached (never a value in between)
+    let at = 0; for (let j = 0; j < n; j++) if (D.len[j] <= s + 0.5) at = j;
+    $('#vivo').textContent = fmt(F, D.v[at]);
+    $('#vrot').textContent = F.pontos[at].rotulo;
+    foco('#vivo', t, a + 0.2, 0.6, 30, 14); foco('#vrot', t, a + 0.3, 0.5, 20, 8);
+    // 2: the variation
+    a = ini(2); $m.cena('#c2', t, 2);
+    foco('#k2', t, a + 0.1, 0.6, 20, 8);
+    const vq = foco('#var', t, a + 0.2, 0.8, 60, 24); $('#var').style.transform += ` scale(${0.85 + 0.15 * vq})`;
+    $m.conta('#var', t, a + 0.2, 1.2, D.varp, x2 => '+' + Math.round(x2) + '%');
+    foco('#de2', t, a + 0.6, 0.6, 30, 10); foco('#de3', t, a + 0.8, 0.6, 20, 8);
+    $('#mini').style.opacity = cl(p(t, a + 0.9, 0.5)); $('#mini').style.clipPath = `inset(-40px ${(1 - eo(p(t, a + 0.9, 1.0))) * 100}% -40px -40px)`;
+    const mb = eb(p(t, a + 1.8, 0.4)); $('#miniB').setAttribute('r', (18 * mb * (1 + 0.15 * Math.sin(t * 5))).toFixed(1));
+    const sm = eb(p(t, a + 1.9, 0.5)); $('#melhor').style.opacity = cl(sm * 2); $('#melhor').style.transform = `scale(${sm})`;
+    // 3: what it means
+    a = ini(3); $m.cena('#c3', t, 3);
+    foco('#k3', t, a + 0.1, 0.6, 20, 8);
+    const cq = eb(p(t, a + 0.15, 0.7)); $('#card3').style.opacity = cl(cq * 2); $('#card3').style.transform = `translateY(${(1 - cq) * 120}px)`;
+    const i3 = eb(p(t, a + 0.4, 0.5)); $('#ic3').style.transform = `scale(${i3}) rotate(${(1 - i3) * -30}deg)`;
+    $m.revela('#mot', t, a + 0.55, 0.05);
+    // 4: product
+    $m.cena('#c4', t, 4); vitrineQuadro(PV, F, $m, t, ini(4));
+    $('#nota').style.opacity = t < ini(4) ? 1 : 0;
+  },
+});
+</script></body></html>

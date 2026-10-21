@@ -1,0 +1,59 @@
+{
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "animada",
+ "campos": {
+  "tema": {
+   "tipo": "texto",
+   "max": 26,
+   "obrigatorio": false,
+   "dica": "assunto curto, aparece na TV: Sobre o óleo do motor; padrão: Curiosidade do dia"
+  },
+  "pergunta": {
+   "tipo": "texto",
+   "min": 15,
+   "max": 90,
+   "dica": "a curiosidade em forma de pergunta, terminando com ?: Quanto tempo a massa da pizza descansa antes de ir ao forno?"
+  },
+  "foto_pergunta": {
+   "tipo": "filmagem",
+   "obrigatorio": false,
+   "dica": "foto real do que a pergunta fala (fotos/x.jpg), colada ao lado"
+  },
+  "resposta": {
+   "tipo": "texto",
+   "min": 1,
+   "max": 14,
+   "real": true,
+   "dica": "a resposta curta que acende no foco: 48 horas, 3 vezes, 10 mil km"
+  },
+  "explica": {
+   "tipo": "texto",
+   "min": 15,
+   "max": 100,
+   "real": true,
+   "dica": "por que, em uma ou duas frases"
+  },
+  "fonte": {
+   "tipo": "texto",
+   "min": 4,
+   "max": 60,
+   "real": true,
+   "dica": "de onde vem: manual do fabricante, a receita da casa, uma norma; sem fonte não gera"
+  },
+  "foto": {
+   "tipo": "filmagem",
+   "dica": "foto real do negócio ou do produto (fotos/x.jpg), no fechamento"
+  },
+  "ligacao": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 72,
+   "dica": "liga a curiosidade ao negócio: Por isso a nossa massa descansa dois dias"
+  }
+ },
+ "publico": "cliente_final"
+}

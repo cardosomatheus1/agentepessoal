@@ -1,0 +1,30 @@
+{
+ "_marca": "doces-da-lu",
+ "pergunta": "Por que o chocolate ficou mais caro?",
+ "foto": "fotos/lanca-produto_doce_pote_chocolate.jpg",
+ "partes": [
+  {
+   "titulo": "A colheita encolheu",
+   "texto": "Chuva fora de hora e doença nas plantações derrubaram a colheita de cacau na África Ocidental."
+  },
+  {
+   "titulo": "Pouco cacau, muita procura",
+   "texto": "Com menos cacau e o mundo inteiro querendo chocolate, o preço subiu para todo mundo."
+  },
+  {
+   "titulo": "Chegou na nossa receita",
+   "texto": "O chocolate do recheio ficou mais caro no fornecedor. A receita continua a mesma."
+  }
+ ],
+ "conclusao": "Por isso o preço mudou um pouco. O sabor não mudou nada.",
+ "fonte": "fornecedores de chocolate e notícias sobre a safra de cacau",
+ "produto": {
+  "foto": "fotos/lanca-produto_doce_pote_chocolate.jpg",
+  "nome": "Bolo de pote de chocolate",
+  "detalhe": "Massa, brigadeiro e raspas de chocolate",
+  "convite": "peça o seu"
+ },
+ "_origem": {
+  "fonte": "dono"
+ }
+}

@@ -1,0 +1,7 @@
+{"_marca": "oficina-do-ze", "_formato": "story",
+ "titulo": "O que os motoristas escolhem antes de viajar?",
+ "quem": "motoristas", "fazem": "fazem a revisão completa antes da estrada", "periodo": "no último feriado",
+ "quantos": 37, "total": 52, "icone": "carro",
+ "conclusao": "Quem revisa antes viaja tranquilo. Freio, óleo e pneus conferidos numa visita só.",
+ "produto": {"foto": "fotos/oficina_interior.jpg", "nome": "Revisão de viagem", "detalhe": "Pronta no mesmo dia", "convite": "agende a sua"},
+ "_origem": {"quantos": "sistema", "total": "sistema"}}

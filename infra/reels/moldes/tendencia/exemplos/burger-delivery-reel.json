@@ -1,0 +1,8 @@
+{"_marca": "burger-noite", "_formato": "reel",
+ "titulo": "Olha o que vocês fizeram com o nosso delivery",
+ "medida": "pedidos por semana",
+ "pontos": [{"rotulo": "sem 1", "valor": 118}, {"rotulo": "sem 2", "valor": 126}, {"rotulo": "sem 3", "valor": 121}, {"rotulo": "sem 4", "valor": 140},
+  {"rotulo": "sem 5", "valor": 152}, {"rotulo": "sem 6", "valor": 149}, {"rotulo": "sem 7", "valor": 171}, {"rotulo": "sem 8", "valor": 192}],
+ "motivo": "Cada pedido conta. Obrigado por chamar a gente nas noites de fome, o smash segue saindo quentinho.",
+ "produto": {"foto": "fotos/burger_smash.jpg", "nome": "Smash duplo", "detalhe": "Pão brioche, cheddar e molho da casa", "preco": 34, "convite": "peça o seu"},
+ "_origem": {"pontos": "sistema", "produto": "dono"}}

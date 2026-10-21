@@ -1,0 +1,27 @@
+{
+ "_marca": "oficina-do-ze",
+ "_formato": "story",
+ "serie": "antes da estrada",
+ "assunto": "O que conferir no carro antes de viajar",
+ "capitulos": [
+  {
+   "titulo": "Pneus e estepe",
+   "detalhe": "Calibragem certa e o sinal de pneu no fim."
+  },
+  {
+   "titulo": "Freios",
+   "detalhe": "Os barulhos que pedem troca de pastilha."
+  },
+  {
+   "titulo": "Óleo e água",
+   "detalhe": "Os níveis em dois minutos, com o motor frio."
+  }
+ ],
+ "fecho": "Assiste até o fim e salva para a próxima viagem",
+ "produto": {
+  "foto": "fotos/oficina_freio.jpg",
+  "nome": "Revisão de viagem",
+  "detalhe": "Pronta no mesmo dia",
+  "convite": "agende a sua"
+ }
+}

@@ -1,0 +1,38 @@
+{
+ "_marca": "agendaja",
+ "_formato": "story",
+ "titulo": "Do direct à cadeira: onde a cliente desiste?",
+ "periodo": "no último mês",
+ "etapas": [
+  {
+   "rotulo": "Viram os stories",
+   "valor": 4200
+  },
+  {
+   "rotulo": "Chamaram no direct",
+   "valor": 310
+  },
+  {
+   "rotulo": "Receberam horários",
+   "valor": 180
+  },
+  {
+   "rotulo": "Marcaram",
+   "valor": 122
+  },
+  {
+   "rotulo": "Vieram",
+   "valor": 104
+  }
+ ],
+ "dica": "Mandar o link da agenda na primeira resposta tira a espera que faz desistir.",
+ "exemplo": true,
+ "produto": {
+  "foto": "fotos/salao_interior.jpg",
+  "nome": "Agenda online AgendaJá",
+  "detalhe": "A cliente escolhe o horário sozinha"
+ },
+ "_origem": {
+  "etapas": "sistema"
+ }
+}

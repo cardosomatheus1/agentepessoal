@@ -1,0 +1,3 @@
+{"_marca": "oficina-do-ze", "_formato": "reel", "titulo": "Olha tudo que a gente faz", "centro": "Oficina do Zé",
+ "ramos": [{"nome": "Freios", "icone": "carro"}, {"nome": "Óleo", "icone": "chave"}, {"nome": "freios", "icone": "carro"}, {"nome": "Pneus", "icone": "carro"}],
+ "produto": {"foto": "fotos/oficina_interior.jpg", "nome": "Revisão completa"}, "_origem": {"ramos": "dono"}}

@@ -1,0 +1,10 @@
+{"_marca": "studio-bella", "_formato": "reel", "_estilo": "noite", "titulo": "6 motivos para marcar o seu horário no salão",
+ "motivos": [
+  {"texto": "Avaliação do fio antes de tudo", "icone": "lupa"},
+  {"texto": "Horário marcado, hora cumprida", "icone": "relogio"},
+  {"texto": "Agenda aberta todo sábado", "icone": "calendario"},
+  {"texto": "Produto profissional puro", "icone": "brilho"},
+  {"texto": "Alicate esterilizado na hora", "icone": "check"},
+  {"texto": "Cafezinho e wi-fi na espera", "icone": "xicara"}],
+ "foto": "fotos/salao_interior.jpg", "fechamento": "Escolha o seu horário pelo link da bio",
+ "_origem": {"motivos": "dono"}}

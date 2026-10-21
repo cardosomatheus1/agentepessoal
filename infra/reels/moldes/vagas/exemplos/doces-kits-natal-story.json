@@ -1,0 +1,18 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "story",
+ "_hoje": "2026-10-21",
+ "oferta": "Kit de festa para 30 pessoas",
+ "detalhe": "Bolo e docinhos, retirada no sábado",
+ "foto": "fotos/doce_kit_festa.jpg",
+ "unidade": "kits",
+ "unidade_um": "kit",
+ "total": 40,
+ "ocupadas": 31,
+ "contagem": "2026-10-20",
+ "preco": 289,
+ "preco_rotulo": "o kit",
+ "como": "Encomende pelo link da bio",
+ "nota": "valores de exemplo",
+ "_origem": {"total": "dono", "ocupadas": "dono", "preco": "dono"}
+}

@@ -1,0 +1,24 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
+ "titulo": "Os doces mais vendidos do mês",
+ "unidade": "vendidos",
+ "itens": [
+  {
+   "nome": "Brigadeiro",
+   "quantidade": 900
+  },
+  {
+   "nome": "Bolo de pote",
+   "quantidade": 300
+  },
+  {
+   "nome": "Pão de mel",
+   "quantidade": 120
+  }
+ ],
+ "produto": {
+  "foto": "fotos/doce_brigadeiros_caixa.jpg",
+  "nome": "Caixa de brigadeiros"
+ }
+}

@@ -1,0 +1,3 @@
+{"_marca": "oficina-do-ze", "_formato": "reel", "titulo": "Prioridade na manutenção do carro",
+ "niveis": [{"nome": "Freio"}, {"nome": "Pneus"}, {"nome": "Óleo"}, {"nome": "Filtros"}, {"nome": "Bateria"}, {"nome": "Som"}],
+ "produto": {"foto": "fotos/oficina_freio.jpg", "nome": "Revisão"}}

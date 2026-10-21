@@ -1,0 +1,241 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo vox-explainer: três cartões de capítulo (círculo,
+     ficha pautada e TV de tubo ligando), recorte de foto com fita e seta de caneta. Portado para o motor
+     (render(t) determinístico, cores e fontes da marca). -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+.grade{position:absolute;inset:-6px;pointer-events:none;background-image:repeating-linear-gradient(0deg,color-mix(in srgb,var(--texto) 6%,transparent) 0 2px,transparent 2px 72px),repeating-linear-gradient(90deg,color-mix(in srgb,var(--texto) 6%,transparent) 0 2px,transparent 2px 72px)}
+.kick{position:absolute;left:90px;width:820px;height:52px;line-height:52px;font-family:var(--fb),sans-serif;font-weight:800;font-size:32px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.kick:before{content:'';display:inline-block;width:64px;height:6px;background:var(--destaque);margin-right:22px;vertical-align:middle}
+.fita{position:absolute;width:190px;height:52px;background:color-mix(in srgb,var(--c2) 75%,transparent);z-index:2}
+svg.traco{position:absolute;overflow:visible;pointer-events:none}
+svg.traco path{fill:none;stroke:var(--texto);stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+
+/* scene 0: the question */
+#k0{top:410px}
+#perg{position:absolute;left:90px;width:830px;top:490px;height:400px;font-size:96px}
+#ph0{position:absolute;left:340px;top:940px;width:540px;height:400px;border:12px solid var(--c2);overflow:hidden;box-shadow:18px 20px 0 color-mix(in srgb,var(--texto) 16%,transparent)}
+#ph0 img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#tres{position:absolute;left:80px;width:250px;top:960px;height:190px;font-size:58px;line-height:1;color:var(--destaque);transform:rotate(-5deg)}
+#seta0{left:130px;top:1160px;width:220px;height:200px}
+#perg.semfoto{height:520px;font-size:110px}
+#tres.semfoto{top:960px;width:700px;height:90px;white-space:nowrap}
+#leque{position:absolute;left:0;top:0;width:0;height:0}
+#leque .lc{position:absolute;top:1090px;width:230px;height:290px;display:flex;align-items:center;justify-content:center;font-size:120px;border-radius:12px}
+#leque .lc:nth-child(2){background:var(--destaque);color:var(--sobre-destaque);border-color:var(--destaque)}
+#seta0.semfoto{display:none}
+
+/* section 1: CIRCLE (the one eye-magnet shape, pops behind the headline) */
+#k1{top:410px}
+#circ1{position:absolute;left:300px;top:470px;width:660px;height:660px;border-radius:50%;background:color-mix(in srgb,var(--destaque) 42%,transparent)}
+#circ1 i{position:absolute;inset:-26px;border-radius:50%;border:6px solid var(--destaque)}
+#n1{position:absolute;left:560px;top:520px;width:340px;height:300px;line-height:300px;text-align:center;font-size:300px;opacity:.16;white-space:nowrap}
+#t1{position:absolute;left:90px;width:800px;top:600px;height:420px;font-size:112px}
+#x1{position:absolute;left:90px;width:780px;top:1080px;height:300px;font-size:56px;font-weight:700;line-height:1.2}
+
+/* section 2: INDEX CARD (ruled card, red margin, tab) */
+#card2{position:absolute;left:90px;width:830px;top:470px;height:900px;
+  background-image:repeating-linear-gradient(0deg,transparent 0 86px,color-mix(in srgb,var(--texto) 12%,transparent) 86px 89px);background-position:0 120px}
+#card2 .mg{position:absolute;left:84px;top:0;bottom:0;width:5px;background:var(--ruim);opacity:.6}
+#tab2{position:absolute;left:70px;top:-58px;height:58px;line-height:58px;padding:0 28px;font-size:30px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;background:var(--destaque);color:var(--sobre-destaque);white-space:nowrap}
+#ref2{position:absolute;left:120px;width:640px;top:40px;height:44px;font-size:30px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+#t2{position:absolute;left:130px;width:640px;top:130px;height:300px;font-size:96px}
+#x2{position:absolute;left:130px;width:640px;top:470px;height:380px;font-size:54px;font-weight:700;line-height:1.6}
+
+/* section 3: CRT (an old TV switching on; the screen inverts the brand colors so it works on any style) */
+#tv{position:absolute;left:80px;width:840px;top:460px;height:920px;border-radius:70px;padding:46px;background:var(--fundo2);border:6px solid var(--texto);box-shadow:16px 18px 0 color-mix(in srgb,var(--texto) 16%,transparent)}
+#tela{position:relative;width:100%;height:100%;border-radius:46px/56px;overflow:hidden;background:var(--texto);color:var(--fundo)}
+#cont3{position:absolute;inset:0}
+#ch3{position:absolute;left:40px;top:34px;width:500px;height:44px;font-size:30px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;color:color-mix(in srgb,var(--fundo) 70%,var(--texto))}
+#t3{position:absolute;left:44px;width:640px;top:150px;height:360px;font-size:104px;text-shadow:-4px 0 color-mix(in srgb,var(--destaque) 80%,transparent),4px 0 color-mix(in srgb,var(--c2) 80%,transparent)}
+#x3{position:absolute;left:44px;width:640px;top:540px;height:250px;font-size:52px;font-weight:700;line-height:1.24}
+#scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 3px,color-mix(in srgb,var(--fundo) 22%,transparent) 3px 6px)}
+#vig3{position:absolute;inset:0;pointer-events:none;background:radial-gradient(90% 90% at 50% 50%,transparent 60%,color-mix(in srgb,var(--fundo) 55%,transparent) 100%)}
+#flash{position:absolute;left:0;right:0;top:50%;height:10px;margin-top:-5px;background:var(--fundo)}
+
+/* recap */
+#k4{top:410px}
+#rec{position:absolute;left:90px;width:820px;top:490px;height:330px}
+.ri{position:absolute;left:0;width:820px;height:96px;display:flex;align-items:center;gap:22px;border-bottom:3px dashed var(--borda)}
+.ri .c{flex:none;width:64px;height:64px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:flex;align-items:center;justify-content:center;font-size:40px}
+.ri .tx{flex:1;height:60px;line-height:60px;font-size:46px;font-weight:800;white-space:nowrap}
+#conc{position:absolute;left:90px;width:800px;top:880px;height:420px;font-size:80px}
+#fonte{position:absolute;left:90px;width:800px;top:1330px;height:84px;font-size:30px;font-weight:700}
+
+/* ad close */
+.vend{position:absolute;inset:0}
+.pvf{position:absolute;left:100px;width:880px;top:390px;height:620px;border:12px solid var(--c2);overflow:hidden;box-shadow:18px 20px 0 color-mix(in srgb,var(--texto) 16%,transparent)}
+.pvf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvp{position:absolute;left:120px;top:960px;height:100px;line-height:100px;font-size:62px;padding:0 34px;white-space:nowrap;transform:rotate(-4deg);z-index:3}
+.pvk{position:absolute;left:90px;width:790px;top:1060px;height:72px;font-size:58px;color:var(--destaque);white-space:nowrap}
+.pvn{position:absolute;left:90px;width:790px;top:1130px;height:172px;font-size:78px}
+.pvd{position:absolute;left:90px;width:790px;top:1300px;height:90px;font-size:38px;font-weight:700}
+</style></head><body><div id="palco">
+<div class="grade"></div>
+
+<div class="cena" id="c0"><div class="cam full">
+ <div id="k0" class="kick t seg">Por que isso acontece?</div>
+ <div id="perg" class="tit t seg rv"></div>
+ <div id="ph0"><img id="ph0i" alt=""></div>
+ <div class="fita" id="fa0" style="left:300px;top:920px;transform:rotate(-12deg)"></div>
+ <div class="fita" id="fb0" style="left:740px;top:918px;transform:rotate(10deg)"></div>
+ <div id="tres" class="mao t seg">explicado em três partes</div>
+ <div id="leque"></div>
+ <svg class="traco" id="seta0" viewBox="0 0 220 200"><path pathLength="1" d="M30 20 C 40 120, 110 170, 200 150 M200 150 L 160 120 M200 150 L 165 185"/></svg>
+</div></div>
+
+<div class="cena" id="c1"><div class="cam full">
+ <div id="k1" class="kick t seg">Parte 01</div>
+ <div id="circ1"><i></i></div>
+ <div id="n1" class="tit">01</div>
+ <div id="t1" class="tit t seg rv"></div>
+ <div id="x1" class="t seg rv"></div>
+</div></div>
+
+<div class="cena" id="c2"><div class="cam full">
+ <div id="card2" class="cartao"><div class="mg"></div><div id="tab2" class="t seg">Parte 02</div>
+  <div id="ref2" class="t t2 seg">Ficha 02 de 03</div>
+  <div id="t2" class="tit t seg"></div><div id="x2" class="t seg rv"></div></div>
+</div></div>
+
+<div class="cena" id="c3"><div class="cam full">
+ <div id="tv"><div id="tela">
+  <div id="cont3"><div id="ch3" class="t seg">Parte 03</div><div id="t3" class="tit t seg"></div><div id="x3" class="t seg"></div></div>
+  <div id="scan"></div><div id="vig3"></div><div id="flash"></div>
+ </div></div>
+</div></div>
+
+<div class="cena" id="c4"><div class="cam full">
+ <div id="k4" class="kick t seg">Resumindo</div>
+ <div id="rec"></div>
+ <div id="conc" class="tit t seg rv"></div>
+ <div id="fonte" class="t t2 seg"></div>
+</div></div>
+
+<div class="cena" id="c5"><div class="cam full" id="c5in"></div></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+// "Por que isso acontece?": an explainer in three short parts, each on its own chapter card from the editorial
+// family: part 1 on the circle (the one eye-magnet shape pops behind the headline), part 2 on a ruled index card,
+// part 3 on an old TV that switches on (bright line, flicker, scanlines, color fringe on the title). A recap ticks
+// the three parts, the takeaway and the source; the post closes on the product. The explanation needs a source
+// (real, with origin) and carries no digits: this template explains, it does not quote numbers.
+const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
+const st = (x, n = 6) => x >= 1 ? 1 : Math.floor(x * n) / n;
+const palavras = (...s) => s.filter(Boolean).join(' ').split(/\s+/).filter(w => /\w/.test(w)).length;
+const ler = (...s) => 1.3 + 0.25 * palavras(...s);
+const KICK = 'tem aqui pra você';
+function vitrine(F, $m, pai) {
+  const P = F.produto, v = mk('div', 'vend', null, pai);
+  const f = mk('div', 'pvf', null, v); $m.filmagem(mk('img', null, null, f), P.foto, 0);
+  const f1 = mk('div', 'fita', null, v); Object.assign(f1.style, { left: '70px', top: '370px', transform: 'rotate(-14deg)' });
+  const f2 = mk('div', 'fita', null, v); Object.assign(f2.style, { left: '830px', top: '372px', transform: 'rotate(12deg)' });
+  mk('div', 'pvk mao t seg', P.convite || KICK, v);
+  mk('div', 'pvn tit t seg rv', P.nome, v);
+  if (P.preco != null) mk('div', 'pvp chip tit t seg', $m.brl(P.preco, Number.isInteger(P.preco) ? 0 : 2), v);
+  if (P.detalhe) mk('div', 'pvd t t2 seg', P.detalhe, v);
+  const linhas = P.nome.length > 19 ? 2 : 1, n = v.querySelector('.pvn'), d = v.querySelector('.pvd');
+  n.style.height = (linhas * 86) + 'px'; if (d) d.style.top = (1130 + linhas * 86 + 14) + 'px';
+  return v;
+}
+const vitrineLer = F => ler(F.produto.convite || KICK, F.produto.nome, F.produto.detalhe, F.produto.preco != null ? 'R$ 0' : '');
+function vitrineQuadro(v, F, $m, t, a) {
+  const { p, eb, cl } = $m;
+  const f = v.querySelector('.pvf'), q = eb(p(t, a + 0.05, 0.55)); f.style.opacity = cl(q * 3); f.style.transform = `translateY(${(1 - q) * 140}px) rotate(${-1.5 + (1 - q) * 6}deg)`;
+  $m.filmagem(v.querySelector('.pvf img'), F.produto.foto, t);
+  v.querySelectorAll('.fita').forEach((x, j) => { x.style.opacity = st(p(t, a + 0.45 + j * 0.12, 0.25), 3); });
+  $m.entra(v.querySelector('.pvk'), t, a + 0.35, 0.5, 20);
+  $m.revela(v.querySelector('.pvn'), t, a + 0.45, 0.06);
+  const pp = v.querySelector('.pvp'); if (pp) { const s = eb(p(t, a + 0.8, 0.5)); pp.style.opacity = cl(s * 2); pp.style.transform = `rotate(-4deg) scale(${s})`; }
+  const pd = v.querySelector('.pvd'); if (pd) $m.entra(pd, t, a + 1.0, 0.5, 20);
+}
+// text heights from length (chars per line at that size), so short and long sections both sit well
+const alto = (txt, porLinha, lh, min, max) => Math.max(min, Math.min(max, Math.ceil(txt.length / porLinha) * lh + 8));
+
+let PV = null;
+Motor.molde({
+  id: 'explica', formatos: ['reel'],
+  montar(F, M, $m) {
+    const { $ } = $m;
+    const S = F.partes;
+    ['pergunta', 'conclusao'].forEach(k => { if (/\d/.test(F[k])) $m.erro(`${k}: sem algarismos; este molde explica, não cita número`); });
+    S.forEach((s, i) => { if (/\d/.test(s.titulo + s.texto)) $m.erro(`partes[${i + 1}]: sem algarismos; este molde explica, não cita número`); });
+    $('#perg').textContent = F.pergunta;
+    if (F.foto) $m.filmagem($('#ph0i'), F.foto, 0);
+    else { ['#ph0', '#fa0', '#fb0'].forEach(s => $(s).remove()); ['#perg', '#tres', '#seta0'].forEach(s => $(s).classList.add('semfoto'));
+      // no photo: three index cards fanned out, one per part, as the teaser
+      ['01', '02', '03'].forEach((n, i) => { const c = mk('div', 'lc cartao tit', n, $('#leque')); c.style.left = (110 + i * 250) + 'px'; c.dataset.r = [-7, 2, 8][i]; }); }
+    // part 1: headline over the circle, text under it
+    $('#t1').textContent = S[0].titulo; const h1 = alto(S[0].titulo, 13, 116, 120, 480); $('#t1').style.height = h1 + 'px';
+    // the circle sits behind the headline, sized by it; the text goes under whichever ends lower
+    const D = Math.max(460, Math.min(680, h1 + 300)), cx = 680, cy = 600 + h1 / 2;
+    Object.assign($('#circ1').style, { width: D + 'px', height: D + 'px', left: (cx - D / 2) + 'px', top: Math.max(470, cy - D / 2) + 'px' });
+    Object.assign($('#n1').style, { left: (cx - 170) + 'px', top: (Math.max(470, cy - D / 2) + D - 310) + 'px' });
+    const y1 = Math.max(600 + h1 + 60, Math.max(470, cy - D / 2) + D + 30), hx1 = alto(S[0].texto, 26, 68, 70, 1440 - y1);
+    $('#x1').textContent = S[0].texto; $('#x1').style.top = y1 + 'px'; $('#x1').style.height = hx1 + 'px';
+    // part 2: index card
+    $('#t2').textContent = S[1].titulo; const h2 = alto(S[1].titulo, 12, 100, 110, 310); $('#t2').style.height = h2 + 'px';
+    $('#x2').textContent = S[1].texto; $('#x2').style.top = (130 + h2 + 40) + 'px'; const hx2 = alto(S[1].texto, 22, 87, 90, 440); $('#x2').style.height = hx2 + 'px';
+    $('#card2').style.height = Math.min(900, 130 + h2 + 40 + hx2 + 80) + 'px';
+    // part 3: TV
+    $('#t3').textContent = S[2].titulo; const h3 = alto(S[2].titulo, 11, 108, 112, 330); $('#t3').style.height = h3 + 'px';
+    $('#x3').textContent = S[2].texto; $('#x3').style.top = (150 + h3 + 40) + 'px'; const hx3 = alto(S[2].texto, 23, 65, 66, 340); $('#x3').style.height = hx3 + 'px';
+    const tvh = Math.max(820, Math.min(920, 150 + h3 + 40 + hx3 + 100)); $('#tv').style.height = tvh + 'px'; $('#tv').style.top = Math.max(440, 470 + (920 - tvh) / 3) + 'px';
+    // recap: the three parts ticked, takeaway, source
+    S.forEach((s, i) => { const r = mk('div', 'ri', null, $('#rec')); r.style.top = (i * 108) + 'px'; const c = mk('div', 'c', null, r); c.innerHTML = $m.icone('check'); mk('div', 'tx t seg', s.titulo, r); });
+    $('#conc').textContent = F.conclusao; const hc = alto(F.conclusao, 18, 84, 90, 420); $('#conc').style.height = hc + 'px';
+    $('#fonte').textContent = 'Fonte: ' + F.fonte; $('#fonte').style.top = (880 + hc + 40) + 'px';
+    PV = vitrine(F, $m, $('#c5in'));
+    const sec = (i, extra) => ler('Parte 0' + (i + 1), S[i].titulo, S[i].texto, extra) + 0.1;
+    const d = [ler('Por que isso acontece?', F.pergunta, 'explicado em três partes'), sec(0), sec(1, 'Ficha 02 de 03'), sec(2) + 0.4,
+      ler('Resumindo', F.conclusao, 'Fonte: ' + F.fonte) + 0.9, vitrineLer(F)];
+    // a Reel explainer past 45 s loses the viewer: long texts are refused instead of rushed (reading time is fixed)
+    const total = d.reduce((x, y) => x + y, 0) + 3;
+    if (total > 45.5) $m.erro(`texto longo demais: o vídeo daria ${total.toFixed(0)} s (máximo 45); encurte as partes ou a conclusão`);
+    return { duracoes: d };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eio, eb, el, cl, ini } = $m;
+    const kick = (sel, a) => { const q = st(p(t, a + 0.05, 0.3), 4); $(sel).style.opacity = q; $(sel).style.transform = `translateX(${(1 - q) * -40}px)`; };
+    // 0: the question; the photo is pasted in like a cut-out
+    $m.cena('#c0', t, 0); kick('#k0', 0);
+    $m.revela('#perg', t, 0.25, 0.06);
+    if ($('#ph0')) { const q = eb(p(t, 0.6, 0.5)); $('#ph0').style.opacity = cl(q * 3); $('#ph0').style.transform = `translateX(${(1 - q) * 160}px) rotate(${2.5 + (1 - q) * 10}deg)`; $m.filmagem($('#ph0i'), F.foto, t);
+      [$('#fa0'), $('#fb0')].forEach((x, j) => { x.style.opacity = st(p(t, 1.0 + j * 0.12, 0.25), 3); }); }
+    $m.entra('#tres', t, 1.2, 0.4, 20);
+    $$('#leque .lc').forEach((c, j) => { const q = eb(p(t, 1.4 + j * 0.15, 0.45)); c.style.opacity = cl(q * 3); c.style.transform = `translateY(${(1 - q) * 200}px) rotate(${+c.dataset.r * q}deg)`; });
+    $('#seta0 path').style.strokeDasharray = 1; $('#seta0 path').style.strokeDashoffset = 1 - eo(p(t, 1.5, 0.5));
+    // 1: circle pops (overshoot), headline wipes up, text word by word
+    const a1 = ini(1); $m.cena('#c1', t, 1); kick('#k1', a1);
+    { const q = eb(p(t, a1 + 0.15, 0.45)); $('#circ1').style.opacity = cl(q * 3); $('#circ1').style.transform = `scale(${q})`; }
+    { const q = st(p(t, a1 + 0.3, 0.3), 4); $('#n1').style.opacity = 0.16 * q; $('#n1').style.transform = `translateX(${(1 - q) * 40}px)`; }
+    $m.revela('#t1', t, a1 + 0.4, 0.07);
+    $m.revela('#x1', t, a1 + 0.9, 0.04);
+    // 2: the index card drops in tilted, tab snaps, title and text
+    const a2 = ini(2); $m.cena('#c2', t, 2);
+    { const q = eb(p(t, a2 + 0.05, 0.5)); $('#card2').style.opacity = cl(q * 3); $('#card2').style.transform = `translateY(${(1 - q) * 160}px) rotate(${-1.4 + (1 - q) * -5}deg)`; }
+    { const q = st(p(t, a2 + 0.4, 0.3), 3); $('#tab2').style.opacity = q; $('#tab2').style.transform = `translateY(${(1 - q) * 30}px)`; }
+    { const q = st(p(t, a2 + 0.5, 0.28), 4); $('#ref2').style.opacity = q; $('#ref2').style.transform = `translateX(${(1 - q) * -16}px)`; }
+    { const q = eo5(p(t, a2 + 0.6, 0.45)); $('#t2').style.opacity = q; $('#t2').style.clipPath = `inset(${(1 - q) * 100}% 0 -20px 0)`; $('#t2').style.transform = `translateY(${(1 - q) * 22}px)`; }
+    $m.revela('#x2', t, a2 + 0.9, 0.04);
+    // 3: the TV powers on: a bright line opens, the picture flickers in steps, the title jitters
+    const a3 = ini(3); $m.cena('#c3', t, 3);
+    { const q = eb(p(t, a3 + 0.05, 0.45)); $('#tv').style.opacity = cl(q * 3); $('#tv').style.transform = `scale(${0.85 + 0.15 * q})`; }
+    const fx = p(t, a3 + 0.35, 0.18), fy = p(t, a3 + 0.53, 0.22);
+    $('#flash').style.opacity = fx > 0 && fy < 1 ? 1 - fy : 0; $('#flash').style.transform = `scaleX(${eo(fx)}) scaleY(${1 + 110 * eo(fy)})`;
+    const on = t >= a3 + 0.7, pisca = t < a3 + 1.2 ? (Math.floor((t - a3) * 20) % 2 ? 0.55 : 1) : 1;
+    $('#cont3').style.opacity = on ? pisca : 0;
+    const jit = t > a3 + 1.3 ? (Math.floor(t * 10) % 2 ? 2 : -2) : 0; $('#t3').style.transform = `translateX(${jit}px)`;
+    $('#tela').style.background = on || fx > 0 ? '' : 'var(--fundo)';
+    // 4: recap
+    const a4 = ini(4); $m.cena('#c4', t, 4); kick('#k4', a4);
+    $$('.ri').forEach((r, j) => { const q = eb(p(t, a4 + 0.2 + j * 0.18, 0.4)); r.style.opacity = cl(q * 3); r.style.transform = `translateX(${(1 - q) * -80}px)`;
+      const c = r.querySelector('.c'), k = eb(p(t, a4 + 0.4 + j * 0.18, 0.35)); c.style.transform = `scale(${k})`; });
+    $m.revela('#conc', t, a4 + 0.9, 0.06);
+    $m.entra('#fonte', t, a4 + 1.4, 0.4, 16);
+    // 5: product
+    $m.cena('#c5', t, 5); vitrineQuadro(PV, F, $m, t, ini(5));
+  },
+});
+</script></body></html>

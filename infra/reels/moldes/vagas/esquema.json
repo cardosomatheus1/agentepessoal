@@ -1,0 +1,20 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "animada",
+ "campos": {
+  "oferta": {"tipo": "texto", "max": 34, "dica": "o que tem vaga ou estoque limitado (turma, horário, kit, encomenda)"},
+  "detalhe": {"tipo": "texto", "max": 60, "obrigatorio": false, "dica": "quando ou como acontece (ex.: 'Sábado, das 9h às 12h')"},
+  "foto": {"tipo": "filmagem", "dica": "foto real do produto ou serviço (fotos/x.jpg)"},
+  "unidade": {"tipo": "texto", "max": 14, "obrigatorio": false, "dica": "plural do que acaba (padrão 'vagas'; ex.: 'kits', 'horários')"},
+  "unidade_um": {"tipo": "texto", "max": 14, "obrigatorio": false, "dica": "singular (padrão 'vaga')"},
+  "total": {"tipo": "numero", "min": 1, "max": 60, "real": true, "dica": "quantas existem no total"},
+  "ocupadas": {"tipo": "numero", "min": 0, "max": 60, "real": true, "dica": "quantas já foram; o código calcula as livres e recusa se não sobrar nenhuma"},
+  "contagem": {"tipo": "data", "dica": "dia em que o número foi contado (AAAA-MM-DD); mais de 3 dias é recusado"},
+  "prazo": {"tipo": "data", "obrigatorio": false, "dica": "até quando vale (AAAA-MM-DD); data passada é recusada"},
+  "preco": {"tipo": "dinheiro", "obrigatorio": false, "real": true},
+  "preco_rotulo": {"tipo": "texto", "max": 24, "obrigatorio": false, "dica": "ex.: 'por pessoa', 'o kit'"},
+  "como": {"tipo": "texto", "min": 6, "max": 40, "dica": "como garantir (digitado na caixa: 'Responda QUERO no direct')"}
+ },
+ "especiais": {"_hoje": "data de publicação (AAAA-MM-DD); sem ela, a data de hoje"}
+}

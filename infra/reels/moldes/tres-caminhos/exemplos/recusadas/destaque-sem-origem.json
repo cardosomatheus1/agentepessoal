@@ -1,0 +1,3 @@
+{"_marca": "doces-da-lu", "_formato": "reel", "titulo": "Qual tamanho de bolo é o seu?",
+ "opcoes": [{"nome": "Pequeno"}, {"nome": "Médio"}, {"nome": "Grande"}], "mais_pedido": "2",
+ "produto": {"foto": "fotos/doce_bolo_morango.jpg", "nome": "Bolo de morango"}}

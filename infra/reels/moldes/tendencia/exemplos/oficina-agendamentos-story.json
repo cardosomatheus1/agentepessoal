@@ -1,0 +1,7 @@
+{"_marca": "oficina-do-ze", "_formato": "story",
+ "titulo": "Desde que a agenda ficou online, a oficina não para",
+ "medida": "agendamentos por mês",
+ "pontos": [{"rotulo": "mai", "valor": 64}, {"rotulo": "jun", "valor": 71}, {"rotulo": "jul", "valor": 88}, {"rotulo": "ago", "valor": 93}, {"rotulo": "set", "valor": 110}],
+ "motivo": "Marcar ficou mais fácil para você e o carro sai no horário combinado. Valeu pela confiança.",
+ "produto": {"foto": "fotos/oficina_oleo.jpg", "nome": "Troca de óleo com filtro", "detalhe": "Com hora marcada, sem fila", "convite": "agende a sua"},
+ "_origem": {"pontos": "sistema"}}

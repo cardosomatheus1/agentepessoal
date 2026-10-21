@@ -1,0 +1,10 @@
+{"_marca": "oficina-do-ze", "_formato": "reel",
+ "motivos": [
+  {"texto": "Orçamento antes de mexer", "icone": "cartao"},
+  {"texto": "Peça velha devolvida", "icone": "caixa"},
+  {"texto": "Garantia de 90 dias", "icone": "cadeado"},
+  {"texto": "Foto de cada etapa no WhatsApp", "icone": "camera"},
+  {"texto": "Sala de espera com café", "icone": "xicara"},
+  {"texto": "Leva e traz no bairro", "icone": "carro"}],
+ "foto": "fotos/oficina_entrega_chave.jpg", "fechamento": "Agora só falta o seu carro aqui",
+ "_origem": {"motivos": "dono"}}

@@ -1,0 +1,83 @@
+{
+ "formatos": [
+  "reel"
+ ],
+ "voz": "nao",
+ "musica": "leve",
+ "publico": "cliente_final",
+ "campos": {
+  "pergunta": {
+   "tipo": "texto",
+   "min": 12,
+   "max": 64,
+   "dica": "Por que o preço do chocolate subiu? (sem algarismos)"
+  },
+  "foto": {
+   "tipo": "filmagem",
+   "obrigatorio": false,
+   "dica": "foto real do assunto da pergunta (fotos/x.jpg), colada como recorte"
+  },
+  "partes": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "item": {
+    "titulo": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 34
+    },
+    "texto": {
+     "tipo": "texto",
+     "min": 15,
+     "max": 100
+    }
+   },
+   "dica": "três partes da explicação, em ordem: causa, efeito, o que muda para o cliente (sem algarismos)"
+  },
+  "conclusao": {
+   "tipo": "texto",
+   "min": 10,
+   "max": 80,
+   "dica": "o recado final, sem algarismos"
+  },
+  "fonte": {
+   "tipo": "texto",
+   "min": 5,
+   "max": 70,
+   "real": true,
+   "dica": "de onde vem a explicação: fornecedor, fabricante, órgão oficial, experiência do dono"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false,
+     "dica": "frase curta antes do nome: peça o seu, agende já"
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço do assunto, com foto real"
+  }
+ }
+}

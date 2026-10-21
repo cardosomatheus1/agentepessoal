@@ -1,0 +1,116 @@
+{
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "animada",
+ "campos": {
+  "titulo": {
+   "tipo": "texto",
+   "min": 12,
+   "max": 50,
+   "dica": "Qual plano combina com você?"
+  },
+  "opcoes": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 3,
+   "item": {
+    "nome": {
+     "tipo": "texto",
+     "min": 2,
+     "max": 20
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "obrigatorio": false,
+     "dica": "nas três ou em nenhuma; preço de verdade pede _origem.opcoes, inventado pede precos_de_exemplo"
+    },
+    "rende": {
+     "tipo": "numero",
+     "min": 1,
+     "max": 1000,
+     "obrigatorio": false,
+     "dica": "quantas unidades; o código divide o preço"
+    },
+    "unidade": {
+     "tipo": "texto",
+     "max": 12,
+     "obrigatorio": false,
+     "dica": "no plural: fatias, pessoas, sessões"
+    },
+    "itens": {
+     "tipo": "lista",
+     "min": 1,
+     "max": 3,
+     "obrigatorio": false,
+     "item": {
+      "tipo": "texto",
+      "min": 2,
+      "max": 24
+     }
+    },
+    "foto": {
+     "tipo": "foto",
+     "obrigatorio": false,
+     "dica": "foto real da opção"
+    }
+   },
+   "dica": "as três opções na ordem em que aparecem (do menor ao maior, do básico ao completo)"
+  },
+  "mais_pedido": {
+   "tipo": "escolha",
+   "opcoes": [
+    "1",
+    "2",
+    "3"
+   ],
+   "obrigatorio": false,
+   "real": true,
+   "dica": "só se o dono ou o sistema disser qual sai mais; sem isso nenhuma é destacada"
+  },
+  "precos_de_exemplo": {
+   "tipo": "booleano",
+   "obrigatorio": false,
+   "dica": "true quando os preços não são os de verdade: aparece 'valores de exemplo'"
+  },
+  "fecho": {
+   "tipo": "texto",
+   "max": 50,
+   "obrigatorio": false,
+   "dica": "frase da decisão (padrão: Qual é o seu? Comenta aqui.)"
+  },
+  "produto": {
+   "tipo": "objeto",
+   "campos": {
+    "foto": {
+     "tipo": "foto",
+     "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"
+    },
+    "nome": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 30
+    },
+    "detalhe": {
+     "tipo": "texto",
+     "max": 50,
+     "obrigatorio": false
+    },
+    "preco": {
+     "tipo": "dinheiro",
+     "real": true,
+     "obrigatorio": false
+    },
+    "convite": {
+     "tipo": "texto",
+     "max": 26,
+     "obrigatorio": false
+    }
+   },
+   "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"
+  }
+ },
+ "publico": "cliente_final"
+}

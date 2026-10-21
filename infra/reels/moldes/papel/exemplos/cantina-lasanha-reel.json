@@ -1,0 +1,15 @@
+{
+ "_marca": "cantina-da-vo",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "selo": "Receita nova",
+ "gancho": "A receita de domingo agora sai todo dia",
+ "nome": "Lasanha da Vó",
+ "foto": "fotos/cantina_lasanha.jpg",
+ "detalhes": ["Massa aberta à mão", "Molho de tomate de panela", "Serve bem duas pessoas"],
+ "preco": 42,
+ "quando": "2026-10-23",
+ "onde": "No balcão e no delivery",
+ "nota": "valores de exemplo",
+ "_origem": {"preco": "dono"}
+}

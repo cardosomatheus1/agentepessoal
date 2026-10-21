@@ -1,0 +1,15 @@
+{
+ "_marca": "flor-de-sal",
+ "_formato": "story",
+ "_hoje": "2026-10-21",
+ "selo": "Feito à mão",
+ "gancho": "Cada barra cura por quarenta dias",
+ "nome": "Sabonete de argila rosa com calêndula",
+ "foto": "fotos/lanca-produto_fds_sabonete.jpg",
+ "detalhes": ["Argila rosa e óleo vegetal", "Embalado em papel kraft"],
+ "preco": 29.9,
+ "condicao": "Frete grátis acima de R$ 120",
+ "onde": "Na loja e no site",
+ "nota": "valores de exemplo",
+ "_origem": {"preco": "dono", "condicao": "dono"}
+}

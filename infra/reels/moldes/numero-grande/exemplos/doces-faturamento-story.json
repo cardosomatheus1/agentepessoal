@@ -1,0 +1,14 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "story",
+ "rotulo": "Festas de setembro",
+ "gancho": "Em setembro, as encomendas de festa somaram",
+ "numero": 18450.5,
+ "tipo": "dinheiro",
+ "por": {"quantidade": 41, "unidade": "festa"},
+ "contexto": "Cada real veio de uma família que confiou a mesa da festa à nossa cozinha.",
+ "licao": "Obrigada! Outubro já tem data reservada, garanta a sua.",
+ "produto": {"foto": "fotos/doce_kit_festa.jpg", "nome": "Kit festa com bolo e docinhos", "detalhe": "Bolo e docinhos com entrega no dia", "convite": "reserve a sua data"},
+ "_origem": {"numero": "sistema", "por": "sistema"},
+ "nota": "valores de exemplo"
+}

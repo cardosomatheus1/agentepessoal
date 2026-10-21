@@ -1,0 +1,19 @@
+{
+ "formatos": ["reel", "story"],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "titulo": {"tipo": "texto", "min": 12, "max": 50, "dica": "Antes de agendar, confira estes pontos"},
+  "itens": {"tipo": "lista", "min": 3, "max": 6, "item": {"tipo": "texto", "min": 4, "max": 48},
+   "dica": "o que o cliente confere antes de pedir, agendar ou encomendar; a contagem é do código"},
+  "fecho": {"tipo": "texto", "max": 50, "obrigatorio": false, "dica": "depois de tudo conferido (padrão: Tudo certo, agora é só pedir.)"},
+  "produto": {"tipo": "objeto", "campos": {
+    "foto": {"tipo": "foto", "dica": "foto real do produto ou serviço, registrada em midia/fotos/indice.json"},
+    "nome": {"tipo": "texto", "min": 3, "max": 30},
+    "detalhe": {"tipo": "texto", "max": 50, "obrigatorio": false},
+    "preco": {"tipo": "dinheiro", "real": true, "obrigatorio": false},
+    "convite": {"tipo": "texto", "max": 26, "obrigatorio": false}
+   }, "dica": "fecho de anúncio: o produto ou serviço que o post vende, com foto real"}
+ },
+ "publico": "cliente_final"
+}

@@ -1,0 +1,34 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "story",
+ "rotulo": "Agenda de outubro",
+ "titulo": "Os serviços que mais encheram a agenda",
+ "unidade": "horários",
+ "itens": [
+  {
+   "nome": "Escova",
+   "quantidade": 96
+  },
+  {
+   "nome": "Mechas e coloração",
+   "quantidade": 124
+  },
+  {
+   "nome": "Manicure",
+   "quantidade": 88
+  },
+  {
+   "nome": "Corte",
+   "quantidade": 71
+  }
+ ],
+ "produto": {
+  "foto": "fotos/salao_mechas.jpg",
+  "nome": "Mechas e coloração",
+  "detalhe": "Avaliação do fio antes, sem custo",
+  "convite": "agende o seu horário"
+ },
+ "_origem": {
+  "itens": "sistema"
+ }
+}

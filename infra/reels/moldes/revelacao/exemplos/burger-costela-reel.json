@@ -1,0 +1,31 @@
+{
+ "_marca": "burger-noite",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "gancho": "Doze horas de fogo baixo",
+ "nome": "Smash de costela",
+ "linha": "Costela desfiada no pão brioche, direto da chapa",
+ "foto": "fotos/burger_costela.jpg",
+ "foco": "baixo",
+ "recursos": [
+  {
+   "titulo": "Costela desfiada",
+   "detalhe": "Assada devagar, desfiada na hora"
+  },
+  {
+   "titulo": "Cheddar cremoso",
+   "detalhe": "Derretido em cima da carne"
+  },
+  {
+   "titulo": "Pão brioche",
+   "detalhe": "Selado na manteiga"
+  }
+ ],
+ "preco": 36.9,
+ "disponivel": "2026-10-24",
+ "onde": "No salão e no delivery",
+ "nota": "valores de exemplo",
+ "_origem": {
+  "preco": "dono"
+ }
+}

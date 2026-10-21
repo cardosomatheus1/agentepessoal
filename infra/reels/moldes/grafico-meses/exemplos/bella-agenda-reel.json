@@ -1,0 +1,30 @@
+{
+ "_marca": "studio-bella",
+ "rotulo": "Agenda do salão",
+ "titulo": "Clientes novas que chegaram por indicação",
+ "unidade": "clientes",
+ "meses": [
+  {
+   "mes": "julho",
+   "valor": 18
+  },
+  {
+   "mes": "agosto",
+   "valor": 26
+  },
+  {
+   "mes": "setembro",
+   "valor": 41
+  }
+ ],
+ "leitura": "Quem sai daqui contente traz a amiga. Obrigada por cada indicação!",
+ "produto": {
+  "foto": "fotos/salao_corte.jpg",
+  "nome": "Corte e finalização",
+  "detalhe": "Com lavagem e escova",
+  "convite": "traga uma amiga"
+ },
+ "_origem": {
+  "meses": "sistema"
+ }
+}

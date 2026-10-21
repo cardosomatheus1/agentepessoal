@@ -1,0 +1,12 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "story",
+ "titulo": "Do forno de casa pra sua festa",
+ "marcos": [
+  {"ano": 2019, "texto": "Primeiros bolos de pote pros vizinhos", "foto": "fotos/doce_bolo_pote.jpg"},
+  {"ano": 2021, "texto": "Primeira festa inteira feita por nós", "foto": "fotos/doce_kit_festa.jpg"},
+  {"ano": 2023, "texto": "Cozinha nova e entrega no dia"}
+ ],
+ "produto": {"foto": "fotos/doce_bolo_morango.jpg", "nome": "Bolo de morango", "detalhe": "Encomendas com três dias de antecedência", "convite": "encomende o seu"},
+ "_origem": {"marcos": "dono"}
+}

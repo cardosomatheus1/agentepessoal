@@ -1,0 +1,16 @@
+{
+ "_marca": "burger-noite",
+ "_formato": "reel",
+ "titulo": "Seis anos de chapa quente, do food truck à casa",
+ "marcos": [
+  {"ano": 2020, "texto": "Um food truck na praça, só sexta e sábado à noite"},
+  {"ano": 2021, "texto": "O smash duplo vira o mais pedido da cidade", "foto": "fotos/burger_smash.jpg"},
+  {"ano": 2022, "texto": "Entrega própria até meia-noite em todo o bairro"},
+  {"ano": 2023, "texto": "Abrimos a casa com balcão e salão", "foto": "fotos/inauguracao_burger_salao.jpg"},
+  {"ano": 2024, "texto": "Chega o burger de costela desfiada", "foto": "fotos/burger_costela.jpg"},
+  {"ano": 2025, "texto": "Milkshake da casa entra no cardápio fixo"}
+ ],
+ "fecho": "E a chapa continua quente toda noite.",
+ "produto": {"foto": "fotos/burger_smash.jpg", "nome": "Smash duplo da casa", "detalhe": "Pão, dois blends e cheddar derretido", "convite": "peça o seu hoje"},
+ "_origem": {"marcos": "dono"}
+}

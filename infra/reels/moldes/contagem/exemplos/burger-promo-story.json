@@ -1,0 +1,6 @@
+{"_marca": "burger-noite", "_formato": "story", "_hoje": "2026-10-23T18:30",
+ "tipo": "fim_promocao", "titulo": "Corre que ainda dá tempo", "o_que": "Combo da madrugada",
+ "data": "2026-10-24",
+ "detalhe": "Smash, batata e refri no preço do combo de sempre só até sábado à noite.",
+ "produto": {"foto": "fotos/burger_combo.jpg", "nome": "Combo smash com batata e refri", "preco": 39.9},
+ "_origem": {"data": "dono", "produto": "dono"}}

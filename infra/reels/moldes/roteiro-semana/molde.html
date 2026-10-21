@@ -1,0 +1,141 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- linguagem visual adaptada do Herk Edit Kit (MIT), estilo vox-explainer (overview outline / checklist) -->
+<link rel="stylesheet" href="../motor/motor.css">
+<style>
+/* the week as a planner page: the day boxes are printed first, then each day is written in, marked, and crossed off
+   with a pen stroke when the next one starts; a day's photo can be pasted on top */
+#folha{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(color-mix(in srgb,var(--texto) 6%,transparent) 2px,transparent 2px),linear-gradient(90deg,color-mix(in srgb,var(--texto) 6%,transparent) 2px,transparent 2px);background-size:72px 72px}
+.kick{font-weight:800;text-transform:uppercase;letter-spacing:.16em;white-space:nowrap}
+#kick{position:absolute;left:84px;top:384px;width:600px;height:44px;font-size:30px;line-height:44px}
+#tit{position:absolute;left:84px;top:430px;width:600px;height:124px;font-size:58px;line-height:1.04}
+#pag{position:absolute;left:52px;top:574px;width:858px;height:900px;background:var(--cartao);border:4px solid var(--texto);border-radius:6px;overflow:hidden}
+body.e-vidro #pag{backdrop-filter:blur(24px)}
+body.e-pop #pag{box-shadow:14px 14px 0 var(--texto)}
+body.e-noite #pag{box-shadow:0 0 0 2px var(--destaque),0 0 40px color-mix(in srgb,var(--destaque) 40%,transparent)}
+#regua{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent 0 70px,color-mix(in srgb,var(--texto) 10%,transparent) 70px 72px)}
+.lin{position:absolute;left:0;right:0}
+.lin .dia{position:absolute;left:26px;top:0;bottom:0;width:150px;border:4px solid var(--texto);border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--cartao)}
+.lin .dia .ab{width:140px;height:52px;font-family:var(--ft);font-weight:900;font-size:46px;line-height:52px;text-align:center;white-space:nowrap}
+.lin .dia .hr{width:140px;height:40px;font-size:32px;font-weight:700;line-height:40px;text-align:center;white-space:nowrap}
+.lin .dia .ck{position:absolute;right:-18px;top:-18px;width:48px;height:48px;border-radius:50%;background:var(--bom);color:var(--sobre-bom);font-size:32px;display:flex;align-items:center;justify-content:center;transform:scale(0)}
+.lin.on .dia{background:var(--destaque);border-color:var(--destaque);color:var(--sobre-destaque)}
+.lin .mkb{position:absolute;left:196px;right:20px;top:6px;bottom:6px;background:color-mix(in srgb,var(--destaque) 24%,transparent);transform-origin:0 50%;transform:skewX(-3deg) scaleX(0)}
+.lin .oq{position:absolute;left:212px;top:0;bottom:0;width:600px;display:flex;align-items:center}
+.lin .oq .t{width:600px;font-size:46px;font-weight:800;line-height:1.08}
+.lin svg.risco{position:absolute;left:204px;top:0;width:620px;height:100%;overflow:visible}
+.lin svg.risco path{fill:none;stroke:var(--texto);stroke-width:7;stroke-linecap:round}
+#polo{position:absolute;left:706px;top:372px;width:300px;height:220px;background:var(--cartao);border:3px solid var(--texto);padding:12px 12px 34px;box-shadow:var(--sombra);z-index:6}
+body.e-vidro #polo,body.e-noite #polo{background:var(--fundo2)}
+#polo .q{position:relative;width:100%;height:100%;overflow:hidden}
+#polo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* closing */
+#fotoC{position:absolute;left:110px;top:400px;width:860px;height:640px;border:14px solid var(--cartao);outline:5px solid var(--texto);overflow:hidden;box-shadow:var(--sombra)}
+body.e-vidro #fotoC,body.e-noite #fotoC{border-color:var(--fundo2)}
+#fotoC img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#fech{position:absolute;left:84px;top:1090px;width:820px;height:250px;font-size:78px;line-height:1.05}
+#selo{position:absolute;left:84px;top:1360px;height:84px;padding:0 30px;font-size:40px;font-weight:800;line-height:76px;border:4px solid var(--texto);white-space:nowrap;transform:rotate(-2deg)}
+</style></head><body><div id="palco">
+<div id="folha"></div>
+<div class="cena" id="cS"><div class="cam full">
+ <div id="kick" class="kick dest t seg"></div>
+ <div id="tit" class="tit t seg rv"></div>
+ <div id="pag"><div id="regua"></div><div id="linhas"></div>
+ </div>
+ <div id="polo"><div class="q"><img alt=""></div></div>
+</div></div>
+<div class="cena" id="cF"><div class="cam full">
+ <div id="fotoC"><img alt=""></div>
+ <div id="fech" class="tit t seg rv"></div>
+ <div id="selo" class="t seg"></div>
+</div></div>
+<div class="nota" id="nota"></div>
+</div>
+<script src="../motor/motor.js"></script>
+<script>
+const tw = t => Math.floor(t * 12) / 12;  // Vox cadence: on twos
+function tempoDeLer($m, F, base) {
+  let d = base.slice();
+  for (let it = 0; it < 5; it++) {
+    const S = [0]; d.forEach(x => S.push(+(S[S.length - 1] + x).toFixed(3))); S.push(S[S.length - 1] + 3);
+    $m.S = S; $m.N = S.length - 1;
+    let antes = new Set(), mudou = false;
+    d = d.map((x, i) => { $m.def.quadro(Math.max(S[i], S[i + 1] - 0.08), F, $m);
+      const agora = new Set($m.textosVisiveis()); let n = 0; agora.forEach(s => { if (!antes.has(s)) n += s.split(' ').filter(w => /[\p{L}\d]/u.test(w)).length; }); agora.forEach(s => antes.add(s));
+      const min = +(0.8 + 0.25 * n).toFixed(2); if (x < min - 0.01) { mudou = true; return min; } return x; });
+    if (!mudou) break;
+  }
+  return d;
+}
+const SEMANA = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+const AB = { segunda: 'SEG', terca: 'TER', quarta: 'QUA', quinta: 'QUI', sexta: 'SEX', sabado: 'SÁB', domingo: 'DOM' };
+const hh = h => { const [a, b] = h.split(':').map(Number); return a + 'h' + (b ? String(b).padStart(2, '0') : ''); };
+let D = {};
+Motor.molde({
+  id: 'roteiro-semana', formatos: ['reel', 'story'],
+  montar(F, M, $m) {
+    const { $ } = $m, n = F.dias.length;
+    // the days go in week order, each once (the code checks; the agent does not reorder)
+    const pos = F.dias.map(d => SEMANA.indexOf(d.dia));
+    if (new Set(pos).size < n) $m.erro('dias: o mesmo dia aparece duas vezes');
+    if (pos.some((x, i) => i && x < pos[i - 1])) $m.erro('dias: fora da ordem da semana (segunda a domingo)');
+    D.n = n;
+    $('#kick').textContent = F.rotulo || 'A nossa semana';
+    $('#tit').textContent = F.titulo || 'O que acontece em cada dia por aqui';
+    const top = 34, h = Math.min(n <= 4 ? 180 : 150, (900 - 2 * top) / n), gap = 12, blk = n * h, y0 = top;
+    $('#pag').style.height = Math.min(900, blk + 2 * top) + 'px';
+    F.dias.forEach((d, k) => {
+      const l = document.createElement('div'); l.className = 'lin'; l.style.top = (y0 + k * h + gap / 2) + 'px'; l.style.height = (h - gap) + 'px';
+      l.innerHTML = `<div class="dia" data-leitura="nao"><div class="ab t"></div>${d.hora ? '<div class="hr t"></div>' : ''}<div class="ck">${$m.icone('check')}</div></div><i class="mkb"></i><div class="oq"><div class="t seg"></div></div><svg class="risco" viewBox="0 0 620 100" preserveAspectRatio="none"><path d="M4 ${56 + (k % 2 ? 4 : -4)} C 160 ${40 + (k % 3) * 6}, 330 ${66 - (k % 2) * 8}, 616 ${48 + (k % 2) * 6}" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/></svg>`;
+      l.querySelector('.ab').textContent = AB[d.dia];
+      if (d.hora) l.querySelector('.hr').textContent = hh(d.hora);
+      const oq = l.querySelector('.oq .t'); oq.textContent = d.o_que; oq.style.maxHeight = (h - gap - 8) + 'px'; oq.style.height = (h - gap - 8) + 'px';
+      oq.style.display = 'flex'; oq.style.alignItems = 'center';
+      if (h < 120) oq.style.fontSize = '40px';
+      $('#linhas').appendChild(l);
+    });
+    D.y0 = y0; D.h = h;
+    const comFoto = F.dias.filter(d => d.foto);
+    if (!comFoto.length) $('#polo').remove();
+    $('#fotoC img').src = $m.midia(F.foto);
+    $('#fech').textContent = F.fechamento;
+    $('#selo').textContent = F.selo || 'Toda semana é assim';
+    $('#nota').textContent = F.nota || '';
+    return { duracoes: tempoDeLer($m, F, [2.4, ...F.dias.map(() => 1.9), 3.2]) };
+  },
+  quadro(t, F, $m) {
+    const { $, $$, p, eo, eo5, eb, cl, ini, fim } = $m, n = D.n, T = tw(t);
+    $m.cena('#cS', t, 0, n, { push: 0.012 });
+    $m.entra('#kick', T, 0.05, 0.3, 0);
+    $m.revela('#tit', t, 0.15);
+    const pq = eb(p(T, 0.3, 0.45)); $('#pag').style.transform = `translateY(${(1 - pq) * 300}px) rotate(${(1 - pq) * 3 - 0.6}deg)`;
+    let atual = -1;
+    $$('.lin').forEach((l, k) => {
+      const a = ini(k + 1), b = fim(k + 1);
+      const di = l.querySelector('.dia'), q = eb(p(T, 0.55 + k * 0.08, 0.3)); di.style.transform = `scale(${q}) rotate(${(1 - q) * -10}deg)`;
+      const on = t >= a && t < b; if (on) atual = k; l.classList.toggle('on', on);
+      // written in when its day comes
+      const oq = l.querySelector('.oq .t'), wq = eo(p(T, a + 0.15, 0.35));
+      oq.style.opacity = t >= a ? 1 : 0; oq.style.clipPath = `inset(-10px ${(1 - wq) * 100}% -10px -10px)`;
+      l.querySelector('.mkb').style.transform = `skewX(-3deg) scaleX(${on ? eo5(p(t, a + 0.35, 0.35)) : 0})`;
+      // crossed off when the next day starts (the last one at the end of its own beat)
+      const ts = k < n - 1 ? ini(k + 2) : b - 0.55, sq = eo(p(t, ts, 0.3));
+      const rp = l.querySelector('svg.risco path'); rp.setAttribute('stroke-dashoffset', 1 - sq); rp.style.visibility = sq > 0 ? 'visible' : 'hidden';
+      oq.style.opacity = t >= a ? 1 - 0.45 * sq : 0;
+      const ck = l.querySelector('.ck'), cq = eb(p(T, ts + 0.2, 0.3)); ck.style.transform = `scale(${cq})`;
+    });
+    // the day's photo, pasted on the corner
+    if ($('#polo')) {
+      const d = atual >= 0 ? F.dias[atual] : null, po = $('#polo');
+      if (d && d.foto) { const a = ini(atual + 1), q = eb(p(T, a + 0.1, 0.35)); po.style.opacity = cl(q * 3); po.style.transform = `rotate(${(atual % 2 ? 4 : -3) + (1 - q) * 12}deg) scale(${0.7 + 0.3 * q})`; $m.filmagem(po.querySelector('img'), d.foto, t - a); }
+      else po.style.opacity = 0;
+    }
+    // closing
+    const aF = ini(n + 1); $m.cena('#cF', t, n + 1);
+    const fq = eb(p(T, aF, 0.45)); $('#fotoC').style.transform = `rotate(${-2 + (1 - fq) * 10}deg) scale(${0.7 + 0.3 * fq})`; $('#fotoC').style.opacity = cl(fq * 3);
+    $m.filmagem($('#fotoC img'), F.foto, t - aF);
+    $m.revela('#fech', t, aF + 0.4);
+    const sq = eb(p(T, aF + 1.0, 0.3)); $('#selo').style.opacity = cl(sq * 3); $('#selo').style.transform = `rotate(-2deg) scale(${0.5 + 0.5 * sq})`;
+    $('#nota').style.opacity = t < fim(n + 1) ? 1 : 0;
+  },
+});
+</script></body></html>

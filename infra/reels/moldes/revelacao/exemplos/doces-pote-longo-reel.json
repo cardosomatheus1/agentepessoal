@@ -1,0 +1,18 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
+ "_hoje": "2026-10-21",
+ "gancho": "Camada por camada, sem pressa",
+ "nome": "Bolo de pote de chocolate com brigadeiro",
+ "foto": "fotos/lanca-produto_doce_pote_chocolate.jpg",
+ "recursos": [
+  {"titulo": "Massa fofinha", "detalhe": "Chocolate meio amargo"},
+  {"titulo": "Brigadeiro de colher"},
+  {"titulo": "Pote de 250 ml", "detalhe": "Com tampa, pronto para levar"}
+ ],
+ "preco": 16,
+ "preco_a_partir": true,
+ "disponivel": "2026-10-21",
+ "nota": "valores de exemplo",
+ "_origem": {"preco": "dono"}
+}

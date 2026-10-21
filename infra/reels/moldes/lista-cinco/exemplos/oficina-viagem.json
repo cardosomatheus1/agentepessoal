@@ -1,0 +1,8 @@
+{"_marca": "oficina-do-ze", "_formato": "reel", "titulo": "coisas para checar antes de pegar a estrada",
+ "itens": [
+  {"texto": "Calibragem dos pneus", "detalhe": "com o pneu frio, inclusive o estepe"},
+  {"texto": "Nível e validade do óleo"},
+  {"texto": "Pastilhas de freio", "detalhe": "barulho ao frear é sinal de desgaste"},
+  {"texto": "Luzes e setas funcionando"},
+  {"texto": "Palhetas do limpador", "detalhe": "se arrastam ou deixam faixas, troque"}],
+ "foto": "fotos/oficina_pneu.jpg", "fechamento": "A gente confere as cinco numa revisão só"}

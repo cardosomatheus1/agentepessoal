@@ -1,0 +1,77 @@
+{
+ "formatos": [
+  "reel",
+  "story"
+ ],
+ "voz": "nao",
+ "musica": "leve",
+ "campos": {
+  "rotulo": {
+   "tipo": "texto",
+   "max": 26,
+   "obrigatorio": false,
+   "dica": "etiqueta pequena acima do título; padrão: A nossa semana"
+  },
+  "titulo": {
+   "tipo": "texto",
+   "min": 8,
+   "max": 44,
+   "obrigatorio": false,
+   "dica": "padrão: O que acontece em cada dia por aqui"
+  },
+  "dias": {
+   "tipo": "lista",
+   "min": 3,
+   "max": 7,
+   "real": true,
+   "dica": "a rotina REAL da semana, na ordem (segunda a domingo), cada dia uma vez; só os dias que têm algo",
+   "item": {
+    "dia": {
+     "tipo": "escolha",
+     "opcoes": [
+      "segunda",
+      "terca",
+      "quarta",
+      "quinta",
+      "sexta",
+      "sabado",
+      "domingo"
+     ]
+    },
+    "o_que": {
+     "tipo": "texto",
+     "min": 3,
+     "max": 34,
+     "dica": "o que acontece nesse dia: Dia da feijoada, Chegam as peças, Agenda de noivas"
+    },
+    "hora": {
+     "tipo": "hora",
+     "obrigatorio": false,
+     "dica": "a partir de que horas (HH:MM), se ajuda"
+    },
+    "foto": {
+     "tipo": "filmagem",
+     "obrigatorio": false,
+     "dica": "foto real do que acontece nesse dia (fotos/x.jpg), colada no canto"
+    }
+   }
+  },
+  "foto": {
+   "tipo": "filmagem",
+   "dica": "foto real do negócio ou do produto (fotos/x.jpg), no fechamento"
+  },
+  "fechamento": {
+   "tipo": "texto",
+   "min": 8,
+   "max": 56,
+   "dica": "o convite: Qual dia é o seu? Reserve pelo WhatsApp"
+  },
+  "selo": {
+   "tipo": "texto",
+   "max": 28,
+   "obrigatorio": false,
+   "dica": "carimbo pequeno no fechamento; padrão: Toda semana é assim"
+  }
+ },
+ "publico": "cliente_final"
+}

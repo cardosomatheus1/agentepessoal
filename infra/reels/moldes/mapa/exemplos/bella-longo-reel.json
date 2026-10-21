@@ -1,0 +1,42 @@
+{
+ "_marca": "studio-bella",
+ "_formato": "reel",
+ "titulo": "Tudo que o seu cabelo e as suas unhas precisam",
+ "centro": "Studio Bella Beleza Total",
+ "ramos": [
+  {
+   "nome": "Corte feminino",
+   "icone": "tesoura"
+  },
+  {
+   "nome": "Mechas e coloração",
+   "icone": "brilho"
+  },
+  {
+   "nome": "Hidratação profunda",
+   "icone": "folha"
+  },
+  {
+   "nome": "Manicure e pedicure",
+   "icone": "coracao"
+  },
+  {
+   "nome": "Escova modelada",
+   "icone": "estrela"
+  },
+  {
+   "nome": "Penteado para festas",
+   "icone": "vestido"
+  }
+ ],
+ "fecho": "Marque tudo no mesmo dia e saia pronta.",
+ "produto": {
+  "foto": "fotos/salao_interior.jpg",
+  "nome": "Dia de beleza completo",
+  "detalhe": "Cabelo e unhas no mesmo horário",
+  "convite": "marque o seu"
+ },
+ "_origem": {
+  "ramos": "dono"
+ }
+}

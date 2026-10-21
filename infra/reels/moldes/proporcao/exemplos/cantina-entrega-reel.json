@@ -1,0 +1,7 @@
+{"_marca": "cantina-da-vo", "_formato": "reel",
+ "titulo": "Sabe como a maioria pede a marmita?",
+ "quem": "clientes", "fazem": "pedem com entrega", "periodo": "em setembro",
+ "quantos": 412, "total": 1236, "icone": "pessoa",
+ "conclusao": "A entrega virou o jeito favorito de almoçar com a gente. Pede até as onze que chega quentinha.",
+ "produto": {"foto": "fotos/cantina_marmita.jpg", "nome": "Marmita caseira", "detalhe": "Arroz, feijão, mistura e salada", "preco": 22, "convite": "peça a sua"},
+ "_origem": {"quantos": "sistema", "total": "sistema", "produto": "dono"}}

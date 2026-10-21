@@ -1,0 +1,31 @@
+{
+ "_marca": "doces-da-lu",
+ "_formato": "reel",
+ "serie": "guia rápido",
+ "assunto": "Como fazer o seu bolo durar mais",
+ "capitulos": [
+  {
+   "titulo": "Geladeira certa",
+   "detalhe": "Onde guardar e quanto tempo cada recheio dura."
+  },
+  {
+   "titulo": "Na hora de cortar",
+   "detalhe": "A faca que não desmancha as camadas."
+  },
+  {
+   "titulo": "O que sobrou",
+   "detalhe": "Como embalar a fatia para não ressecar."
+  },
+  {
+   "titulo": "Pode congelar?",
+   "detalhe": "Quais bolos vão ao freezer e como descongelar."
+  }
+ ],
+ "fecho": "Salva para consultar quando o bolo chegar",
+ "produto": {
+  "foto": "fotos/doce_bolo_morango.jpg",
+  "nome": "Bolo de morango",
+  "detalhe": "Encomendas com dois dias de antecedência",
+  "convite": "encomende o seu"
+ }
+}

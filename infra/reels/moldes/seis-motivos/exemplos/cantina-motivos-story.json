@@ -1,0 +1,10 @@
+{"_marca": "cantina-da-vo", "_formato": "story", "titulo": "Seis motivos para almoçar com a gente hoje",
+ "motivos": [
+  {"texto": "Comida feita no dia", "icone": "relogio"},
+  {"texto": "Feijão de panela de pressão", "icone": "fogo"},
+  {"texto": "Marmita que vai ao micro-ondas", "icone": "caixa"},
+  {"texto": "Entrega até as 14h", "icone": "moto"},
+  {"texto": "Cardápio novo todo dia", "icone": "garfo"},
+  {"texto": "Paga no Pix ou no cartão", "icone": "cartao"}],
+ "foto": "fotos/cantina_marmita.jpg", "fechamento": "Peça a sua até as 11h",
+ "_origem": {"motivos": "dono"}}

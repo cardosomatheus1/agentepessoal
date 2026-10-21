@@ -1,0 +1,23 @@
+{
+ "_marca": "doces-da-lu",
+ "pergunta": "Por que o chocolate ficou mais caro?",
+ "partes": [
+  {
+   "titulo": "A colheita encolheu",
+   "texto": "Chuva fora de hora derrubou a colheita de cacau."
+  },
+  {
+   "titulo": "Pouco cacau",
+   "texto": "Com menos cacau, o preço subiu para todo mundo."
+  },
+  {
+   "titulo": "Na nossa receita",
+   "texto": "O chocolate do recheio ficou mais caro."
+  }
+ ],
+ "conclusao": "Por isso o preço mudou um pouco.",
+ "produto": {
+  "foto": "fotos/doce_bolo_pote.jpg",
+  "nome": "Bolo de pote"
+ }
+}

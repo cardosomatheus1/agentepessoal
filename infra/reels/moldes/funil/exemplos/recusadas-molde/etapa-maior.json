@@ -1,0 +1,6 @@
+{"_marca": "nexos", "_formato": "reel",
+ "titulo": "Sua equipe responde rápido o bastante?", "periodo": "em uma semana",
+ "etapas": [{"rotulo": "Clicaram no anúncio", "valor": 260}, {"rotulo": "Mandaram mensagem", "valor": 410}, {"rotulo": "Viraram cliente", "valor": 38}],
+ "dica": "Mensagem que espera mais de uma hora esfria. Responder na hora muda o fim do funil.",
+ "produto": {"foto": "fotos/manifesto_telas_espalhadas.jpg", "nome": "Atendimento NEXOS"},
+ "_origem": {"etapas": "dono"}}

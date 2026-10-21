@@ -1,0 +1,27 @@
+{
+ "_marca": "doces-da-lu",
+ "assunto": "As encomendas de bolo de pote pelo link",
+ "unidade": "potes por semana",
+ "antes": {
+  "valor": 40,
+  "quando": "em março"
+ },
+ "agora": {
+  "valor": 118,
+  "quando": "em setembro"
+ },
+ "motivo": "Pedido direto pelo link, com entrega no mesmo dia para quem pede até as dez.",
+ "produto": {
+  "foto": "fotos/doce_bolo_pote.jpg",
+  "nome": "Bolo de pote",
+  "detalhe": "Ninho com morango, brigadeiro e maracujá",
+  "preco": 14,
+  "convite": "peça o seu"
+ },
+ "_origem": {
+  "antes": "sistema",
+  "agora": "sistema",
+  "produto": "dono"
+ },
+ "nota": "valores de exemplo"
+}
