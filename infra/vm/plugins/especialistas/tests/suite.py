@@ -130,8 +130,9 @@ class Suite:
         body, login, tempo = enviados[0]
         ok(body["reasoning"]["effort"] == "low" and tempo == m.TEMPO, "o Crítico segue no esforço de sempre")
         m.chamar("designer", "Desenhe.", "x")
-        ok(enviados[1][0]["reasoning"]["effort"] == "high" and enviados[1][2] == 360,
-           "o Designer pensa mais e espera mais (22/10: errava contagem e promessa no esforço baixo)")
+        ok(enviados[1][0]["reasoning"]["effort"] == "medium" and enviados[1][2] < 240,
+           "o Designer pensa mais, dentro dos 240 s do proxy (22/10: no alto as correções morriam caladas)")
+        ok("não mostra 99Food" in m.TELAS["cozinha-kds.jpg"], "o Designer sabe o que cada tela mostra")
         eq(login, "teste_ana", "o dono vai no cabeçalho")
         eq(body["model"], "openai.gpt-6-luna", "modelo")
         eq(body["instructions"], m.PAPEIS["critico"], "o SOUL vai como instruções")
@@ -439,6 +440,16 @@ class Suite:
         eq(d["critica"]["veredito"], "aprova", "a versão revisada é a que vale")
         eq(d["spec"]["ficha"]["pergunta"], "Custo alto?", "ficha nova")
         eq(d["revisoes"], [["CMV sem explicação"]], "fica registrado o que foi corrigido")
+        # a revision call that fails is said, never silent
+        fichas[:] = [{"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel",
+                      "ficha": {"_marca": "raiz", "pergunta": "Margem baixa?"}}]
+        vereditos[:] = [json.dumps({"veredito": "reprova", "motivos": ["fraco"], "sugestoes": []})]
+        m.chamar = lambda papel, tarefa, material, login="matheus": (
+            {"texto": json.dumps(fichas.pop(0)), "erro": "", "imagens": [], "sem_imagem": []} if papel == "designer" and fichas
+            else {"texto": "", "erro": "TimeoutError", "imagens": [], "sem_imagem": []} if papel == "designer"
+            else {"texto": vereditos.pop(0) if vereditos else APROVA, "erro": "", "imagens": [], "sem_imagem": []})
+        d = m.desenhar("Carrossel da Raiz")
+        ok(any("não respondeu à revisão (TimeoutError)" in f for f in d["falta"]), d["falta"])
 
     def t_video_da_raiz_sai_so_previa_e_narracao(self):
         # decision #39: a narrated video goes to Matheus as audio first; the video is made only after he approves

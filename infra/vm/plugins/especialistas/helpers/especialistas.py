@@ -29,8 +29,9 @@ MODELO = "openai.gpt-6-luna"
 TEMPO = 120
 # 22/10: on "low" the Designer miscounted lines and promised in the title what the text did not deliver (4 real runs,
 # all reproved); it thinks harder and waits longer. The Crítico keeps its setting.
-ESFORCO = {"designer": "high"}
-TEMPO_PAPEL = {"designer": 360}
+# "high" went past the host proxy's 240 s on the big correction prompts and the calls died silently: "medium".
+ESFORCO = {"designer": "medium"}
+TEMPO_PAPEL = {"designer": 230}
 RAIZ = Path(__file__).resolve().parents[1]
 # next to this plugin (repository, live install); a staging copy alone in /tmp uses the installed ones
 PLUGINS = RAIZ.parent if (RAIZ.parent / "cerebro").exists() else Path("/a0/usr/plugins")
@@ -548,8 +549,23 @@ def _chamada_da_marca() -> str:
         chamada = json.loads((pasta_moldes() / "marcas" / "raiz" / "marca.json").read_text(encoding="utf-8")).get("chamada")
     except Exception:
         return ""
-    return (f"A cena final da Raiz mostra a chamada \"{chamada}\": a última fala de um vídeo narrado diz isso (sem mandar "
-            "para outro lugar).\n\n") if chamada else ""
+    return (f"A cena final da Raiz mostra a chamada \"{chamada}\" (a oferta Lucro na Mão em 30 Dias: em 30 dias o dono vê "
+            "quanto sobra em cada produto). A última fala de um vídeo narrado liga a ideia da peça a essa oferta e diz a "
+            "chamada; a legenda termina com o mesmo passo concreto (toque no link da bio), nunca \"saiba mais\" ou "
+            "\"conheça\".\n\n") if chamada else ""
+
+
+# what each screen shows (22/10: a line said "99Food" over the kitchen screen, which shows iFood and table orders only)
+TELAS = {
+    "cozinha-kds.jpg": "cozinha (KDS): pedido da mesa ao lado de dois pedidos com o selo iFood, com o tempo de cada um; não mostra 99Food",
+    "mapa-de-mesas.jpg": "mapa de mesas do salão: cada mesa livre ou ocupada, com tempo e valor da conta",
+    "cmv-real.jpg": "CMV do mês (quanto do faturamento virou custo), a meta e quanto escapou entre a ficha técnica e o estoque",
+    "visao-executiva.jpg": "visão executiva: quanto sobrou no mês, receita, CMV, despesas, ponto de empate, caixa e contas vencidas",
+    "dashboard-restaurante.jpg": "dashboard do restaurante: faturamento do dia, ticket médio, pedidos, itens mais vendidos, formas de pagamento",
+    "dre.jpg": "DRE gerencial: receita, custos, despesas e resultado do período",
+    "curva-abc-custos.jpg": "curva ABC de custos: onde se concentra o gasto, por conta",
+    "engenharia-de-cardapio.jpg": "engenharia de cardápio: cada prato por quanto vende e quanto sobra (campeão, oportunidade, revisar)",
+}
 
 
 def telas_do_sistema() -> str:
@@ -558,8 +574,9 @@ def telas_do_sistema() -> str:
     nomes = sorted(p.name for p in pasta.glob("*.jpg")) if pasta.exists() else []
     if not nomes:
         return ""
-    return ("## Telas reais do sistema (1440x900, tema escuro, inteiras com o menu)\n"
-            + "\n".join(f"- /a0/usr/plugins/conteudo/story/telas/{n}" for n in nomes)
+    return ("## Telas reais do sistema (1440x900, tema escuro, inteiras com o menu; uma empresa de exemplo, valores de "
+            "exemplo). A fala só afirma o que a tela mostra:\n"
+            + "\n".join(f"- /a0/usr/plugins/conteudo/story/telas/{n}" + (f": {TELAS[n]}" if n in TELAS else "") for n in nomes)
             + "\nPara mostrar o sistema use o molde lanca-app com \"aparelho\": \"computador\" (a câmera dá zoom no "
               "\"destaque\" de cada tela, em % da tela); demonstracao é moldura de celular. Campo \"real\" pede "
               "\"_origem\" com \"sistema\" (tela) ou \"dono\".\n\n")
@@ -617,6 +634,7 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
         r = chamar("designer", _tarefa_revisao(spec, out["critica"]), {**material, "imagens": vistas}, login=login)
         novo = _spec(r, pedido)
         if not novo:
+            out["falta"] = out["falta"] + [f"o designer não respondeu à revisão ({r['erro'] or 'resposta ilegível'})"]
             break
         anteriores = out.get("revisoes", []) + [out["critica"]["motivos"]]
         out = _volta(briefing, material, novo, r, login)
@@ -641,9 +659,10 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
         while True:
             while tentativas and spec.get("motor") == "molde" and any(f.startswith("ficha:") for f in falta):
                 tentativas -= 1
-                novo = _spec(chamar("designer", _tarefa_correcao(spec, falta), material, login=login),
-                             spec.get("_formato_pedido", ""))
+                r2 = chamar("designer", _tarefa_correcao(spec, falta), material, login=login)
+                novo = _spec(r2, spec.get("_formato_pedido", ""))
                 if not novo:
+                    falta.append(f"o designer não respondeu à correção ({r2['erro'] or 'resposta ilegível'})")
                     tentativas = 0
                     break
                 spec, falta = novo, _conferir_spec(novo)
@@ -652,9 +671,10 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
             if not (recusa and tentativas):
                 break
             tentativas -= 1
-            novo = _spec(chamar("designer", _tarefa_correcao(spec, recusa), material, login=login),
-                         spec.get("_formato_pedido", ""))
+            r2 = chamar("designer", _tarefa_correcao(spec, recusa), material, login=login)
+            novo = _spec(r2, spec.get("_formato_pedido", ""))
             if not novo:
+                falta.append(f"o designer não respondeu à correção ({r2['erro'] or 'resposta ilegível'})")
                 break
             spec, falta = novo, _conferir_spec(novo)
     formato = str(spec.get("formato") or "").lower()
