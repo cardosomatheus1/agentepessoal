@@ -124,8 +124,9 @@ def _do_concorrente(item: dict, c: dict) -> bool:
     """A search by name also brings restaurants that only mention it (21/10: "Tocco Pizza" in the Saipos search)."""
     if c.get("meta_page_id"):
         return str(item.get("page_id") or "") == str(c["meta_page_id"])
-    pagina, nome = _normal(item.get("page_name")), _normal(c["nome"])
-    return bool(nome) and (pagina == nome or pagina.startswith(nome) or nome.startswith(pagina) and len(pagina) >= 4)
+    # exact name only: a prefix let "Consumer Reports" pass for "Consumer" and its page id would be kept for good
+    nome = _normal(c["nome"])
+    return bool(nome) and _normal(item.get("page_name")) == nome
 
 
 def _anuncio(item: dict, agora: float) -> dict:
@@ -166,8 +167,9 @@ def ler_anuncios(lista: list, agora: float) -> dict:
     out["custo"] = round(len(itens) * PRECO_ANUNCIO, 4)
     for c in alvo:
         meus = [i for i in itens if isinstance(i, dict) and _do_concorrente(i, c)]
-        if meus and not c.get("meta_page_id") and meus[0].get("page_id"):
-            out["paginas"][c["id"]] = str(meus[0]["page_id"])[:30]
+        paginas = {str(i.get("page_id")) for i in meus if i.get("page_id")}
+        if not c.get("meta_page_id") and len(paginas) == 1:  # two pages with the same name: keep searching by name
+            out["paginas"][c["id"]] = paginas.pop()[:30]
         vistos, anuncios = set(), []
         for i in meus:
             a = _anuncio(i, agora)

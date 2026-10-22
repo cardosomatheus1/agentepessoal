@@ -551,6 +551,10 @@ class Suite:
                "só o anúncio da página do concorrente")
             eq(r["por_concorrente"][saipos["id"]][0]["dias_no_ar"], 140, "há quanto tempo está no ar")
             eq(len(pedidos[0]["urls"]), 1, "anúncios só do grupo gestão")
+            # nome parecido não conta (e não grava a página de outra empresa)
+            outro = {"id": "consumer", "nome": "Consumer", "grupo": "gestao"}
+            eq(e._do_concorrente({"page_name": "Consumer Reports", "page_id": "5"}, outro), False, "prefixo não é o concorrente")
+            eq(e._do_concorrente({"page_name": "CONSUMER", "page_id": "5"}, outro), True, "o mesmo nome, sim")
             eq(r["paginas"], {saipos["id"]: "123456"}, "achou a página pelo nome")
             c.guardar_pagina_meta(saipos["id"], "123456")
             saipos = c._achar(c.carregar(), saipos["id"])
