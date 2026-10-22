@@ -1259,7 +1259,8 @@ class Suite:
         # 22/10, Matheus: "uma vez por semana, ver se ta bom e ai de fato mudar a abordagem; se ta bom em relação aos
         # outros temas, mantém, ou manda uma abordagem p cada e ver oq mais converte e ae depois foca nele"
         p = self.p
-        self.em(self.hora(10))  # a Thursday
+        quinta = (3 - dt.datetime.now(p._tz()).weekday()) % 7  # anchor on a Thursday, whatever day the suite runs
+        self.em(self.hora(10, dias=quinta))
         dec = p.revisar_temas(LOGIN)
         eq(dec["foco"], "", "sem números: fase de teste")
         ok(len(set(dec["pesos"].values())) == 1 and len(dec["pesos"]) == len(p.TEMAS), f"todos por igual: {dec['pesos']}")
@@ -1280,7 +1281,7 @@ class Suite:
                                    "texto": textos[tema], "tema": tema, "variante": "A", "criada": envio, "executada_em": envio})
                 p.salvar(LOGIN, d)
         eq(p.revisar_temas(LOGIN)["foco"], "", "no meio da semana a decisão não muda, mesmo com números novos")
-        self.em(self.hora(10, dias=4))  # Monday: a new week
+        self.em(self.hora(10, dias=quinta + 4))  # Monday: a new week
         dec = p.revisar_temas(LOGIN)
         eq(dec["foco"], "ifood", f"foco no que mais converte: {dec['texto']}")
         eq(dec["pesos"]["ifood"], p.PESO_FOCO, "o foco leva a maior parte")
@@ -1297,9 +1298,12 @@ class Suite:
         ok(len(set(escolhas)) == len(p.TEMAS), f"todos os outros temas aparecem: {escolhas}")
         eq(p.tema_sugerido(d, {"motivo": "congelados"}), "estoque", "o gancho do lead vale quando o tema ainda tem vaga")
         eq(len(p.carregar(LOGIN)["config"]["temas_historico"]), 2, "o histórico guarda cada revisão")
-        self._aquecido("docesdaju")
-        ok("[FOCO, 60% da semana]" in p.resumo_contexto(LOGIN), "a rodada vê o foco")
-        self.em(self.hora(10, dias=11))  # the Monday after: iFood keeps the focus, the report lists the earlier ones
+        for nome in ("docesdaju", "boloscaseiros", "salgadosdaana"):
+            self._aquecido(nome)
+        ctx = p.resumo_contexto(LOGIN)
+        ok("[FOCO, 60% da semana]" in ctx, "a rodada vê o foco")
+        ok(len(set(re.findall(r"; TEMA (\w+):", ctx))) > 1, f"numa rodada com vários leads os temas se dividem: {ctx}")
+        self.em(self.hora(10, dias=quinta + 11))  # the Monday after: iFood keeps the focus, the report lists the earlier ones
         rel = p.relatorio_temas(LOGIN)
         ok("Foco da semana: pedidos do iFood" in rel and "Foco nas semanas anteriores:" in rel and "Mudou" not in rel, rel)
 
