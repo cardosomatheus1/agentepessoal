@@ -23,6 +23,19 @@ def test_troca_so_depois_dos_testes():
     assert "render.py lanca-app" in c and "--previa" in c and "docker exec" in c, "prévia de verdade dentro do container"
 
 
+def test_previa_narrada_tem_a_credencial_da_voz():
+    # OpenCode 22/10: without the /voz credentials the narrated preview always failed and nothing was ever deployed
+    c = m.comando_moldes("abc123", "tmp/x.tgz", "agora")
+    partes = c.split(" && ")
+    i_cfg = next(i for i, p in enumerate(partes) if "aws-voz.config" in p and p.startswith("printf"))
+    i_exec = next(i for i, p in enumerate(partes) if p.startswith("docker exec -e MOLDES_CACHE"))
+    assert i_cfg < i_exec and "credencial_voz.py" in partes[i_cfg]
+    assert "AWS_PROFILE=voz" in partes[i_exec] and "AWS_CONFIG_FILE=/a0/usr/moldes.novo/aws-voz.config" in partes[i_exec]
+    raiz = Path(__file__).resolve().parents[3] / m.MOLDES
+    assert (raiz / "motor" / "credencial_voz.py").exists()
+    assert (raiz / "lanca-app" / "exemplos" / "raiz-sistema-computador.json").exists(), "a ficha da prévia existe"
+
+
 def test_npm_ci_so_quando_o_lock_mudou():
     c = m.comando_moldes("abc123", "tmp/x.tgz", "agora")
     assert "cmp -s" in c and "npm ci" in c.split("else", 1)[1], "reaproveita node_modules quando o lock é o mesmo"

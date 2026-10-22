@@ -148,8 +148,9 @@ MOLDES_TESTES = ("motor/test_validar.py", "motor/test_audio.py", "motor/test_voz
 
 def comando_moldes(head: str, chave: str, quando: str) -> str:
     """The VM side of --moldes: unpack next to the live copy, reuse node_modules when package-lock.json did not change
-    (else npm ci), run the motor tests and one preview of a real ficha inside the agent container (patchright and its
-    Chromium, as the agent will), and only then swap; the previous copy stays as moldes.anterior."""
+    (else npm ci), run the motor tests and one preview of a real narrated ficha inside the agent container (patchright
+    and its Chromium, and the voice through the host's short-lived /voz credentials, as the agent will), and only then
+    swap; the previous copy stays as moldes.anterior."""
     novo, ct = f"{MOLDES_VM}.novo", "/a0/usr/moldes.novo"
     testes = " && ".join(f"/opt/venv-a0/bin/python {ct}/{t}" for t in MOLDES_TESTES)
     return (f"rm -rf {novo} /tmp/implantar-moldes && mkdir -p /tmp/implantar-moldes && "
@@ -158,7 +159,10 @@ def comando_moldes(head: str, chave: str, quando: str) -> str:
             f"if cmp -s {MOLDES_VM}/motor/package-lock.json {novo}/motor/package-lock.json && test -d {MOLDES_VM}/motor/node_modules; "
             f"then cp -a {MOLDES_VM}/motor/node_modules {novo}/motor/; "
             f"else docker exec -w {ct}/motor agent-zero npm ci --omit=dev --no-audit --no-fund >/dev/null; fi && "
-            f"docker exec -e MOLDES_CACHE=/a0/usr/conteudo/cache-moldes agent-zero sh -c '{testes} && "
+            f"printf '[profile voz]\\nregion = us-east-1\\ncredential_process = python3 {ct}/motor/credencial_voz.py\\n' "
+            f"> {novo}/aws-voz.config && "
+            f"docker exec -e MOLDES_CACHE=/a0/usr/conteudo/cache-moldes -e AWS_CONFIG_FILE={ct}/aws-voz.config "
+            f"-e AWS_PROFILE=voz -e AWS_REGION=us-east-1 -e AWS_SDK_LOAD_CONFIG=1 agent-zero sh -c '{testes} && "
             f"/opt/venv-a0/bin/python {ct}/motor/render.py lanca-app {ct}/lanca-app/exemplos/raiz-sistema-computador.json "
             f"--previa --saida /tmp/moldes-previa' && echo TESTES_OK && "
             f"echo '{head} {quando}' > {novo}/.versao && "
