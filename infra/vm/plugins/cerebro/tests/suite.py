@@ -303,6 +303,7 @@ class Suite:
                f"decisão e pendência nova citando só o relato são descartadas (só palavras dele): {r['descartados']}")
             fechada = next(x for x in self.f.carregar("matheus")["fios"] if x["id"] == "cc22dd")
             ok(fechada["prova"].startswith("relato do trabalho:"), "a prova diz que veio do relato")
+            eq(fechada["estado"], "a_conferir", "o relato não fecha: fica para ele conferir (22/10, só ele conclui)")
             eq(self.a.achar(self.a.abertos(), frente["id"])["onde_parou"], "vídeo agendado para 21/10 11:45", "onde parou")
             pedido = cap.montar_pedido(dele, relato[0], [], [], [], relato=relato[0])
             ok("Relato do trabalho feito" in pedido and "SÓ para: assuntos" in pedido, "o pedido explica o relato")

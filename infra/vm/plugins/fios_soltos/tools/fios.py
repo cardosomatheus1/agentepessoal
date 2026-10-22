@@ -62,8 +62,15 @@ class Fios(Tool):
             return Response(message=f.coletar(login, int(horas or 72), ignorar=self.agent.context.id), break_loop=False)
         pedido_dele = str(kwargs.get("pedido_dele") or "").strip()
         if acao in ("salvar", "atualizar", "criar"):
-            criados, atualizados, _ = f.mesclar(login, _lista(fios), [])
-            conferir = f.para_conferir(login, _lista(resolvidos)) if _lista(resolvidos) else 0
+            itens, fechar = [], list(_lista(resolvidos))
+            for item in _lista(fios):  # closing goes through "a conferir" (only he closes), never a field written here
+                if isinstance(item, dict) and str(item.get("estado") or "").lower() in ("resolvido", "ignorado", "a_conferir"):
+                    item = {k: v for k, v in item.items() if k != "estado"}
+                    if item.get("id"):
+                        fechar.append(item["id"])
+                itens.append(item)
+            criados, atualizados, _ = f.mesclar(login, itens, [])
+            conferir = f.para_conferir(login, fechar) if fechar else 0
             return Response(message=f"Registro salvo: {criados} novo(s), {atualizados} atualizado(s), {conferir} para ele "
                                     "conferir e fechar (só ele fecha).", break_loop=False)
         if acao in ("resolver", "fechar"):

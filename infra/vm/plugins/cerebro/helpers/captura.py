@@ -136,8 +136,12 @@ def aplicar(propostas: dict, dele: list[str], origem: str, decisoes_mod, fios_mo
         fid = str(p.get("id") or "").strip()
         if fid in abertas and ok(p, "pendência feita", relato):
             quem = "ele disse" if citacao_confere(p.get("citacao", ""), dele) else "relato do trabalho"
-            fios_mod.mesclar(login, [{"id": fid, "estado": "resolvido", "prova": f"{quem}: “{_curto(p['citacao'], 200)}”",
-                                      "fechado_em": agora}])
+            prova = f"{quem}: “{_curto(p['citacao'], 200)}”"
+            if quem == "ele disse" or not hasattr(fios_mod, "para_conferir"):
+                fios_mod.mesclar(login, [{"id": fid, "estado": "resolvido", "prova": prova, "fechado_em": agora}])
+            else:  # 22/10 (Claude Duet): what the work report says was done waits for him to close ("a conferir")
+                fios_mod.mesclar(login, [{"id": fid, "prova": prova}])
+                fios_mod.para_conferir(login, [fid], _curto(p["citacao"], 200))
             feito.append(("pendencia-feita", f"pendencia:{fid}", abertas[fid].get("titulo", "")))
     novos = []
     for p in propostas.get("decisoes") or []:

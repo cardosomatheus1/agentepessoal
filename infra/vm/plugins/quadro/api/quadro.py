@@ -51,6 +51,8 @@ class Quadro(ApiHandler):
             fio = f.obter(login, fid)
             if not fio:
                 return {"ok": False, "erro": "essa tarefa não existe mais", "quadro": q.montar(login)}
+            if acao == "fazer" and fio.get("estado") not in ("aberto", "adiado"):
+                return {"ok": False, "erro": "essa tarefa já não está em aberto", "quadro": q.montar(login)}
             if acao == "concluir":
                 f.concluir(login, fid, f"{login}: concluiu no quadro de Tarefas")
                 msg = "Concluída."
