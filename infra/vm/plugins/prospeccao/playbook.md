@@ -118,9 +118,13 @@ copie): "Sou o Matheus, da Raiz Connect, um sistema pra quem produz comida"; "Aq
 organizar pedido e estoque de quem vende comida". **Fixo por variante** (é o que o A × B mede): A = uma pergunta
 sem oferecer nada; B = uma oferta e o pedido de licença para mandar como funciona.
 **Tema (22/10, Matheus: "ele mesmo tinha que perceber, devido a poucos resultados, e alterar a abordagem"):** o
-`contexto` diz o TEMA de cada lead (o do gancho dele, ou o que ainda tem menos dados) e mostra os números de cada
-tema. Escreva sobre esse tema e mande `tema` na proposta. Tema que não rendeu (pouca resposta, ou gente dizendo que já
-tem sistema ou planilha) fica PAUSADO e a ferramenta recusa a mensagem que fale dele, inclusive de passagem. Em 22/10
+`contexto` diz o TEMA de cada lead e mostra os números de cada tema. Escreva sobre esse tema e mande `tema` na
+proposta. Os temas são revistos **uma vez por semana** (a primeira rodada da semana; nada muda no meio dela): sem
+números para comparar, todos se revezam por igual (fase de teste); com 15 mensagens em pelo menos dois, o que mais
+converte (leads, depois respostas) vira FOCO e leva 60% das primeiras mensagens, e os outros dividem o resto para
+continuar sendo medidos. Tema que não rendeu (pouca resposta, ou gente dizendo que já tem sistema ou planilha) fica
+PAUSADO na semana e a ferramenta recusa a mensagem que fale dele, inclusive de passagem. O gancho do lead escolhe o
+tema enquanto esse tema ainda cabe na sua parte da semana. Em 22/10
 o tema de preço (calculadora, "planilha, caderno ou de cabeça") foi o de 43 das 44 primeiras mensagens e as respostas
 foram "já usamos um sistema": não é com ele que se abre conversa agora.
 **Nexo (Matheus, AR Board 20/10): o detalhe que você viu tem de levar ao que você pergunta ou oferece, numa linha de

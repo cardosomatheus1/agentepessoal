@@ -1230,11 +1230,11 @@ class Suite:
             p.salvar(LOGIN, d)
         t = p.desempenho_temas(p.carregar(LOGIN))
         eq((t["preco"]["enviados"], t["preco"]["responderam"], t["preco"]["ja_tem"]), (16, 4, 3), "conta por tema")
-        ok("já têm sistema ou planilha" in t["preco"]["pausado"] and not t["ifood"]["pausado"], t["preco"]["pausado"])
+        ok("já têm sistema ou planilha" in t["preco"]["fraco"] and not t["ifood"]["fraco"], t["preco"]["fraco"])
         alvo = self._aquecido("pizzariadobairro")
         r = p.propor(LOGIN, [{"lead_id": alvo, "tipo": "dm_abertura", "variante": "A",
                               "texto": "Vi a pizza nova de vocês! Sou o Matheus, da Raiz Connect. Fiz uma calculadora grátis pra ver quanto sobra: te mando?"}])
-        ok(not r["propostas"] and "pausado pelos números" in r["recusadas"][0]["motivo"], f"preço recusado: {r['recusadas']}")
+        ok(not r["propostas"] and "pausado nesta semana pelos números" in r["recusadas"][0]["motivo"], f"preço recusado: {r['recusadas']}")
         r = p.propor(LOGIN, [{"lead_id": alvo, "tipo": "dm_abertura", "variante": "A", "tema": "ifood",
                               "texto": "Vi que vocês vendem no iFood! Sou o Matheus, da Raiz Connect, um sistema pra quem vende comida. "
                                        "Como funciona, aliás: a planilha de preço de vocês é a mesma do iFood?"}])
@@ -1249,9 +1249,59 @@ class Suite:
         self._aquecido("docesdaju")  # someone due a first message: the round gets the themes and this lead's theme
         ctx = p.resumo_contexto(LOGIN)
         ok("Temas da primeira mensagem" in ctx and "PAUSADO" in ctx and "TEMA " in ctx, "a rodada vê os números e o tema")
-        ok("Temas pausados pelos números" in p.painel(LOGIN), "ele vê no painel")
+        ok("Temas (revisão de" in p.painel(LOGIN) and "Pausado: preço" in p.painel(LOGIN), "ele vê no painel")
         self.em(self.hora(10, dias=31))
-        ok(not p.desempenho_temas(p.carregar(LOGIN))["preco"]["pausado"], "fora da janela de 30 dias o tema volta")
+        ok(not p.desempenho_temas(p.carregar(LOGIN))["preco"]["fraco"], "fora da janela de 30 dias os números não pesam mais")
+        dec = p.revisar_temas(LOGIN)
+        ok("preco" not in dec["pausados"] and "preco" in dec["pesos"], f"na revisão da semana seguinte o tema volta: {dec}")
+
+    def t_temas_revisados_uma_vez_por_semana(self):
+        # 22/10, Matheus: "uma vez por semana, ver se ta bom e ai de fato mudar a abordagem; se ta bom em relação aos
+        # outros temas, mantém, ou manda uma abordagem p cada e ver oq mais converte e ae depois foca nele"
+        p = self.p
+        self.em(self.hora(10))  # a Thursday
+        dec = p.revisar_temas(LOGIN)
+        eq(dec["foco"], "", "sem números: fase de teste")
+        ok(len(set(dec["pesos"].values())) == 1 and len(dec["pesos"]) == len(p.TEMAS), f"todos por igual: {dec['pesos']}")
+        ok("Fase de teste" in dec["texto"], dec["texto"])
+        envio = p.agora() - 3 * 86400
+        textos = {"ifood": "Vi que vocês vendem no iFood! Os pedidos do iFood vocês passam à mão pra cozinha?",
+                  "estoque": "Vi os congelados! Como vocês controlam a validade de cada lote?"}
+        for tema, leads in (("ifood", 4), ("estoque", 1)):  # 16 each: iFood made 4 leads, stock 1; both answered enough
+            for i in range(16):
+                lid = self._lead(f"{tema}{i}")
+                d = p.carregar(LOGIN)
+                lead = p._lead(d, lid)
+                lead["etapa"] = "lead" if i < leads else "respondeu" if i < 5 else "abordado"
+                if i < 5:
+                    lead["historico"].append({"em": envio + 3600, "tipo": "etapa:respondeu", "onde": "direct",
+                                              "texto": "Como funciona?"})
+                d["acoes"].append({"id": f"{tema}{i}", "lead_id": lid, "tipo": "dm_abertura", "estado": "executada",
+                                   "texto": textos[tema], "tema": tema, "variante": "A", "criada": envio, "executada_em": envio})
+                p.salvar(LOGIN, d)
+        eq(p.revisar_temas(LOGIN)["foco"], "", "no meio da semana a decisão não muda, mesmo com números novos")
+        self.em(self.hora(10, dias=4))  # Monday: a new week
+        dec = p.revisar_temas(LOGIN)
+        eq(dec["foco"], "ifood", f"foco no que mais converte: {dec['texto']}")
+        eq(dec["pesos"]["ifood"], p.PESO_FOCO, "o foco leva a maior parte")
+        ok(all(0 < dec["pesos"][k] < p.PESO_FOCO for k in p.TEMAS if k != "ifood"), f"os outros seguem sendo medidos: {dec['pesos']}")
+        eq((dec["status"]["estoque"], dec["status"]["preco"]), ("medido", "testando"), "status de cada tema")
+        ok("Mudou: o foco era nenhum (teste)" in dec["texto"] and "Foco da semana: pedidos do iFood" in dec["texto"], dec["texto"])
+        d = p.carregar(LOGIN)
+        escolhas = []
+        for i in range(10):  # the week's first messages follow the shares
+            t = p.tema_sugerido(d, {"motivo": "doceria"})
+            escolhas.append(t)
+            d["acoes"].append({"id": f"n{i}", "lead_id": "x", "tipo": "dm_abertura", "estado": "proposta", "tema": t, "texto": ""})
+        eq(escolhas.count("ifood"), 6, f"6 de 10 no foco: {escolhas}")
+        ok(len(set(escolhas)) == len(p.TEMAS), f"todos os outros temas aparecem: {escolhas}")
+        eq(p.tema_sugerido(d, {"motivo": "congelados"}), "estoque", "o gancho do lead vale quando o tema ainda tem vaga")
+        eq(len(p.carregar(LOGIN)["config"]["temas_historico"]), 2, "o histórico guarda cada revisão")
+        self._aquecido("docesdaju")
+        ok("[FOCO, 60% da semana]" in p.resumo_contexto(LOGIN), "a rodada vê o foco")
+        self.em(self.hora(10, dias=11))  # the Monday after: iFood keeps the focus, the report lists the earlier ones
+        rel = p.relatorio_temas(LOGIN)
+        ok("Foco da semana: pedidos do iFood" in rel and "Foco nas semanas anteriores:" in rel and "Mudou" not in rel, rel)
 
     def t_quem_interagiu_vai_primeiro(self):
         p = self.p

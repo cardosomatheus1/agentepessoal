@@ -656,9 +656,11 @@ class Prospeccao(Tool):
             ligado = str(texto or "").lower() not in ("false", "0", "nao", "não", "off", "desligar")
             p.definir_auto(login, ligado)
             return r("Aprovação automática " + ("LIGADA" if ligado else "DESLIGADA") + " (aquecer, primeira mensagem e lembrete).")
+        if acao == "temas":
+            return r(p.relatorio_temas(login))
         if acao == "metricas":
             return r(json.dumps(p.metricas(login, _numero(dias, 7)), ensure_ascii=False))
         return r("acao: playbook | contexto | registrar | rejeitar | propor | comentar | comentado | proxima | resultado | etapa | "
                  "caixa_lida | direct_script | ler_direct | falha | fontes | fontes_instagram | fontes_concorrentes | conferir_estoque | estoque_conferido | buscar_script | avaliar_api | "
                  "perfis_script | avaliar_perfis | limite_consulta | liberar_consultas | cartao | assumir | devolver | editar | "
-                 "apagada | importar_lista | variante | token_meta | hoje | metricas")
+                 "apagada | importar_lista | variante | token_meta | hoje | metricas | temas")

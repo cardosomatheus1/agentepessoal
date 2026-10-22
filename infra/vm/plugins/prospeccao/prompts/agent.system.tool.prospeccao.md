@@ -36,6 +36,7 @@ Prospecção de clientes da Raiz Connect, um a um, pela conta @raiz.connect. Tud
 - "variante": `texto` "A" ou "B" fixa a variante da 1ª mensagem (só com o OK do Matheus); vazio volta ao sorteio
 - "token_meta": lê o token da Meta da aba aberta e guarda no cofre (o valor nunca passa por você)
 - "hoje": o resumo do dia (ou "NADA HOJE")
+- "temas": a revisão semanal dos temas da primeira mensagem (foco, pausados, números)
 - "metricas": `dias` → números por variante, segmento, cidade, faixa de nota e fonte
 ~~~json
 {"tool_name": "prospeccao", "tool_args": {"acao": "registrar", "leads": [{"canal": "instagram", "handle": "marmitasdaana", "url": "https://www.instagram.com/marmitasdaana/", "nome": "Marmitas da Ana", "segmento": "marmitaria", "cidade": "Salvador", "seguidores": "3.2k", "motivo": "marmitas fit por encomenda, cardápio semanal com preços, post de ontem", "sinal": "reajustou preços na semana passada", "ultimo_post": "2026-10-09", "canais": ["encomenda", "whatsapp", "ifood"], "sinais": ["reajuste", "kits"], "cardapio": true, "link_pedido": true, "exclusoes": [], "post_recente": "kit de 10 marmitas de frango com batata-doce"}]}}

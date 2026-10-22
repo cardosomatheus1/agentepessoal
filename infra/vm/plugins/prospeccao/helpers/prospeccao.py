@@ -1613,7 +1613,7 @@ def _respostas_direct(lead: dict, desde: float) -> list:
 
 def desempenho_temas(d: dict, dias: int = TEMA_JANELA_DIAS) -> dict:
     """Per theme, over the window: first messages sent, people who answered in the Direct, leads, "we already have one",
-    and whether it is paused (with why, in his words)."""
+    and `fraco`: why the numbers say it does not pay off ('' when they do not say that)."""
     corte = agora() - dias * 86400
     leads = {l["id"]: l for l in d["leads"]}
     out = {k: {"nome": v["nome"], "enviados": 0, "responderam": 0, "leads": 0, "ja_tem": 0, "exemplos_ja_tem": []}
@@ -1642,34 +1642,117 @@ def desempenho_temas(d: dict, dias: int = TEMA_JANELA_DIAS) -> dict:
             motivo = f"{m['ja_tem']} de {m['responderam']} que responderam disseram que já têm sistema ou planilha"
         elif m["enviados"] >= TEMA_MINIMO and m["taxa"] < TEMA_RESPOSTA_MIN:
             motivo = f"só {m['taxa']}% responderam no Direct (meta: 15%)"
-        m["pausado"] = (f"{m['enviados']} primeiras mensagens em {dias} dias, {m['responderam']} responderam, "
-                        f"{m['leads']} viraram lead: {motivo}") if motivo else ""
+        m["fraco"] = (f"{m['enviados']} primeiras mensagens em {dias} dias, {m['responderam']} responderam, "
+                      f"{m['leads']} viraram lead: {motivo}") if motivo else ""
     return out
 
 
-def tema_sugerido(d: dict, lead: dict, temas: dict | None = None) -> str:
-    """The theme to write the first message about: the lead's hook if its theme is active, else the active theme with
-    the fewest sends (so each one gets measured); '' only if every theme is paused."""
-    temas = temas or desempenho_temas(d)
-    ativos = [k for k, m in temas.items() if not m["pausado"]]
-    if not ativos:
+# ---- the weekly review of the themes (22/10, Matheus: "uma vez por semana, ver se ta bom e ai de fato mudar a
+# abordagem; se ta bom em relação aos outros temas, mantém, ou manda uma abordagem p cada e ver oq mais converte e ae
+# depois foca nele"). The decision is taken once a week (the first call in a new week, Monday to Sunday, local time)
+# and holds until the next: testing phase = every active theme gets the same share; once two or more themes have enough
+# sends, the one that converts best (leads per message, then answers) gets FOCO of the messages and the others share
+# the rest, so they keep being measured; a weak one (few answers, or "we already have one") is paused for the week.
+# Kept in config["temas_semana"], with the history of the last decisions in config["temas_historico"].
+PESO_FOCO = 0.6
+
+
+def _semana(ts: float) -> tuple:
+    return tuple(dt.datetime.fromtimestamp(ts, _tz()).date().isocalendar()[:2])
+
+
+def semana_temas(d: dict) -> dict:
+    """This week's decision, taken now if the week has none (the caller saves d)."""
+    atual = d["config"].get("temas_semana") or {}
+    if atual and _semana(float(atual.get("decidido_em") or 0)) == _semana(agora()):
+        return atual
+    stats = desempenho_temas(d)
+    pausados = {k: m["fraco"] for k, m in stats.items() if m["fraco"]}
+    medidos = [k for k, m in stats.items() if m["enviados"] >= TEMA_MINIMO and k not in pausados]
+    foco = max(medidos, key=lambda k: (stats[k]["leads"] / stats[k]["enviados"], stats[k]["responderam"] / stats[k]["enviados"],
+                                       -list(TEMAS).index(k))) if len(medidos) >= 2 else ""
+    ativos = [k for k in TEMAS if k not in pausados]
+    if foco and len(ativos) > 1:
+        outros = [k for k in ativos if k != foco]
+        pesos = {foco: PESO_FOCO, **{k: round((1 - PESO_FOCO) / len(outros), 3) for k in outros}}
+    else:
+        pesos = {k: round(1 / len(ativos), 3) for k in ativos} if ativos else {}
+    status = {k: ("pausado" if k in pausados else "foco" if k == foco else "medido" if k in medidos else "testando")
+              for k in TEMAS}
+    def taxa(k):
+        m = stats[k]
+        return f"{m['enviados']} enviadas, {m['responderam']} responderam, {m['leads']} leads"
+    linhas = [f"Foco da semana: {TEMAS[foco]['nome']} ({taxa(foco)}), {int(PESO_FOCO * 100)}% das primeiras mensagens."
+              if foco else "Fase de teste: os temas ativos se revezam por igual até haver números para comparar "
+                           f"({TEMA_MINIMO} mensagens em pelo menos dois)."]
+    linhas += [f"Pausado: {TEMAS[k]['nome']} ({motivo})." for k, motivo in pausados.items()]
+    anterior = atual.get("foco", "") if atual else ""
+    if atual and foco != anterior:
+        linhas.append(f"Mudou: o foco era {TEMAS[anterior]['nome'] if anterior else 'nenhum (teste)'}.")
+    dec = {"decidido_em": agora(), "foco": foco, "pesos": pesos, "status": status, "pausados": pausados,
+           "texto": " ".join(linhas),
+           "numeros": {k: {c: stats[k][c] for c in ("enviados", "responderam", "leads", "ja_tem")} for k in TEMAS}}
+    d["config"]["temas_semana"] = dec
+    d["config"]["temas_historico"] = ((d["config"].get("temas_historico") or [])
+                                      + [{"em": dec["decidido_em"], "foco": foco, "pausados": sorted(pausados)}])[-12:]
+    return dec
+
+
+@_transacao
+def revisar_temas(login: str) -> dict:
+    """The week's decision, taken and saved if due (resumo_contexto and the Monday report call it)."""
+    d = carregar(login)
+    antes = (d["config"].get("temas_semana") or {}).get("decidido_em")
+    dec = semana_temas(d)
+    if dec.get("decidido_em") != antes:
+        salvar(login, d)
+    return dec
+
+
+def _na_semana(d: dict, desde: float) -> Counter:
+    """First messages of this week per theme: sent since the decision, plus the ones waiting to go."""
+    return Counter(a.get("tema") or tema_do_texto(a.get("texto")) for a in d["acoes"] if a["tipo"] == "dm_abertura" and (
+        (a["estado"] == "executada" and float(a.get("executada_em") or 0) >= desde)
+        or a["estado"] in ("proposta", "aprovada", "incerta")))
+
+
+def tema_sugerido(d: dict, lead: dict, dec: dict | None = None) -> str:
+    """The theme to write this lead's first message about: the one furthest below its share of the week (the lead's hook
+    when its theme is at most one over its share); '' only if every theme is paused."""
+    dec = dec or semana_temas(d)
+    pesos = dec.get("pesos") or {}
+    if not pesos:
         return ""
+    feitos = _na_semana(d, float(dec.get("decidido_em") or 0))
+    total = sum(feitos.get(k, 0) for k in pesos) + 1
+    falta = {k: pesos[k] * total - feitos.get(k, 0) for k in pesos}
     gancho = " ".join(str(lead.get(k) or "") for k in ("motivo", "sinal", "segmento", "post_recente")).lower()
     for tema, rx in GANCHO_TEMA:
-        if tema in ativos and re.search(rx, gancho):
+        if tema in pesos and falta[tema] > -1 and re.search(rx, gancho):  # a hook may run one over its share
             return tema
-    na_fila = Counter(a.get("tema") for a in d["acoes"]  # proposed in this round count too, so the round spreads them
-                      if a["tipo"] == "dm_abertura" and a["estado"] in ("proposta", "aprovada", "incerta"))
-    return min(ativos, key=lambda k: (temas[k]["enviados"] + na_fila.get(k, 0), list(TEMAS).index(k)))
+    return max(pesos, key=lambda k: (falta[k], pesos[k], -list(TEMAS).index(k)))
+
+
+def relatorio_temas(login: str) -> str:
+    """The week's theme review in words, for the Monday report (takes the decision if the week has none)."""
+    revisar_temas(login)
+    d = carregar(login)
+    hist = d["config"].get("temas_historico") or []
+    antes = [h for h in hist[:-1] if h.get("foco")]
+    return linha_temas(d) + (f"\nFoco nas semanas anteriores: " + ", ".join(
+        dt.datetime.fromtimestamp(float(h["em"]), _tz()).strftime("%d/%m") + " " + TEMAS[h["foco"]]["nome"]
+        for h in antes[-4:] if h["foco"] in TEMAS) if antes else "")
 
 
 def linha_temas(d: dict) -> str:
-    """For the round and for him: each theme's numbers and which are paused."""
-    temas = desempenho_temas(d)
-    linhas = []
-    for k, m in temas.items():
+    """For the round and for him: the week's decision and each theme's numbers (30 days)."""
+    dec, stats = semana_temas(d), desempenho_temas(d)
+    nomes = {"foco": "FOCO", "pausado": "PAUSADO", "medido": "medido", "testando": "testando"}
+    linhas = [dec["texto"]]
+    for k, m in stats.items():
         num = f"{m['enviados']} enviadas, {m['responderam']} responderam" + (f" ({m['taxa']}%)" if m["taxa"] is not None else "")
-        linhas.append(f"- {m['nome']}: {num}" + (f" — PAUSADO: {m['pausado']}" if m["pausado"] else ""))
+        linhas.append(f"- {m['nome']} [{nomes[dec['status'][k]]}" + (f", {int(dec['pesos'][k] * 100)}% da semana" if k in dec["pesos"] else "")
+                      + f"]: {num}")
     return "\n".join(linhas)
 
 
@@ -2000,15 +2083,15 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
             continue
         tema = ""
         if tipo == "dm_abertura":
-            temas = desempenho_temas(d)
+            dec = semana_temas(d)
             tema = str(item.get("tema") or "").strip().lower()
             tema = tema if tema in TEMAS else tema_do_texto(texto)
-            falados = [k for k in temas_do_texto(texto) if temas[k]["pausado"]]  # a paused theme slipped in
-            if tema in TEMAS and temas[tema]["pausado"] or falados:
-                pausado = tema if tema in TEMAS and temas[tema]["pausado"] else falados[0]
-                outro = tema_sugerido(d, lead, temas)
+            falados = [k for k in temas_do_texto(texto) if k in dec["pausados"]]  # a paused theme slipped in
+            if tema in dec["pausados"] or falados:
+                pausado = tema if tema in dec["pausados"] else falados[0]
+                outro = tema_sugerido(d, lead, dec)
                 out["recusadas"].append({"lead_id": lid, "tipo": tipo, "motivo": (
-                    f"o tema «{TEMAS[pausado]['nome']}» está pausado pelos números ({temas[pausado]['pausado']}): "
+                    f"o tema «{TEMAS[pausado]['nome']}» está pausado nesta semana pelos números ({dec['pausados'][pausado]}): "
                     + (f"escreva sobre «{TEMAS[outro]['nome']}» ({TEMAS[outro]['fala']})" if outro else
                        "todos os temas estão pausados: avise o Matheus e não mande primeira mensagem"))})
                 continue
@@ -3370,9 +3453,10 @@ def painel(login: str) -> str:
               f"Semana: {g['abordados']} abordados, {g['responderam']} responderam ({g['taxa_resposta']:.0f}%)"
               + (f"; comentários: {c['responderam']} de {c['comentados']} responderam" if c["comentados"] else ""),
               "Hoje: " + (", ".join(f"{n} {nomes.get(t, t)}" for t, n in feitas.most_common()) if feitas else "nada saiu ainda")]
-    pausados = [m for m in desempenho_temas(d).values() if m["pausado"]]
-    if pausados:
-        linhas.append("Temas pausados pelos números: " + "; ".join(f"{m['nome']} ({m['pausado']})" for m in pausados))
+    dec = d["config"].get("temas_semana")
+    if dec:
+        quando = dt.datetime.fromtimestamp(float(dec["decidido_em"]), _tz()).strftime("%d/%m")
+        linhas.append(f"Temas (revisão de {quando}): {dec['texto']}")
     if d["config"].get("crm_planilha"):
         linhas.append(f"Planilha CRM Raiz (todo dia às 20h30): https://docs.google.com/spreadsheets/d/{d['config']['crm_planilha']}")
     comigo = [l["handle"] for l in d["leads"] if l.get("humano")]
@@ -3502,10 +3586,11 @@ def resumo_contexto(login: str) -> str:
         renovar = aviso_acesso_meta(acesso_meta(login), agora())
         if renovar:
             linhas.append(renovar)
-    temas_rodada = desempenho_temas(d)
+    temas_rodada = revisar_temas(login)  # the week's decision (taken now, if the week has none)
+    d = carregar(login)
     if dev.get("dm_abertura"):
-        linhas.append("\n## Temas da primeira mensagem (30 dias; a ferramenta escolhe o de cada lead e recusa tema pausado)\n"
-                      + linha_temas(d))
+        linhas.append("\n## Temas da primeira mensagem (decididos uma vez por semana; a ferramenta escolhe o de cada lead "
+                      "e recusa tema pausado)\n" + linha_temas(d))
     for tipo, lista in dev.items():
         if lista:
             linhas.append(f"\n## Devem receber «{tipo}» agora ({len(lista)})")
