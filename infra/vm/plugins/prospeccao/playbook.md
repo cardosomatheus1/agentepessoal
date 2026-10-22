@@ -112,10 +112,10 @@ não comente.
 **Primeira mensagem** (2 a 4 frases curtas, até 250 caracteres). Comece pelo detalhe que você viu (é o que aparece
 na prévia das Solicitações), de preferência ligado a preço, kit, encomenda, iFood ou cardápio novo, citado pelo assunto
 (nunca "último post", "hoje" ou "ontem": a mensagem sai horas depois). **Fixo em todas, o sentido e não as palavras:**
-quem fala (o Matheus, da Raiz Connect) e o que ela é (um sistema de gestão pra quem produz e vende comida), numa frase
-de até 15 palavras escrita de um jeito diferente a cada mensagem; nunca "a gente ajuda quem…". Jeitos possíveis (não
-copie): "Sou o Matheus, da Raiz Connect, um sistema de gestão pra quem produz comida"; "Aqui é o Matheus, criei a Raiz
-Connect pra organizar a operação de quem vende comida". **Fixo por variante** (é o que o A × B mede): A = uma pergunta
+quem fala (o Matheus, da Raiz Connect) e o que ela é (um sistema que organiza pedido, estoque, compras e caixa de
+quem produz e vende comida; nunca "sistema de gestão", "ERP" ou "solução", que soam jargão), numa frase de até 15 palavras escrita de um jeito diferente a cada mensagem; nunca "a gente ajuda quem…". Jeitos possíveis (não
+copie): "Sou o Matheus, da Raiz Connect, um sistema pra quem produz comida"; "Aqui é o Matheus, criei a Raiz Connect pra
+organizar pedido e estoque de quem vende comida". **Fixo por variante** (é o que o A × B mede): A = uma pergunta
 sem oferecer nada; B = uma oferta e o pedido de licença para mandar como funciona.
 **Tema (22/10, Matheus: "ele mesmo tinha que perceber, devido a poucos resultados, e alterar a abordagem"):** o
 `contexto` diz o TEMA de cada lead (o do gancho dele, ou o que ainda tem menos dados) e mostra os números de cada
@@ -138,10 +138,10 @@ Na A, a pergunta também sai do gancho e do tema (do iFood: "os pedidos do iFood
 produção: "a lista de compras da semana sai de onde?"; de estoque: "vocês já perderam produto por validade?"). Sem
 gancho que leve a nada disso, prefira a A com uma pergunta ligada ao que viu e ao tema do `contexto`. Não cite a bio entre aspas: diga com as suas palavras (cara de IA).
 - **A (produção).** "Vi o kit de 10 marmitas fit com duas proteínas de vocês! Aqui é o Matheus, criei a Raiz Connect,
-  um sistema de gestão pra quem produz comida. Uma pergunta: a lista de compras da semana vocês montam de cabeça ou
+  um sistema pra quem produz comida. Uma pergunta: a lista de compras da semana vocês montam de cabeça ou
   sai de algum lugar?"
 - **B (estoque).** "Ana, vi que os congelados agora saem em kit de 6! Sou o Matheus, fundador da Raiz Connect, um
-  sistema de gestão pra quem produz comida: ele mostra o que está pra vencer antes de virar perda. Te mando como funciona?"
+  sistema pra quem produz comida: ele mostra o que está pra vencer antes de virar perda. Te mando como funciona?"
 - **B (iFood).** "Vi que o cardápio de vocês também está no iFood! Aqui é o Matheus, da Raiz Connect: o sistema puxa os
   pedidos do iFood sozinho, sem ninguém digitar de novo pra cozinha. Posso te mandar como funciona?"
 - **B (encomenda).** "Vi que vocês trabalham só com encomenda e produção programada! Sou o Matheus, criei a Raiz Connect:

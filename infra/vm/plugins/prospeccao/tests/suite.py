@@ -1204,6 +1204,9 @@ class Suite:
         pb = (RAIZ / "playbook.md").read_text(encoding="utf-8")
         exemplo = pb[pb.index("- **A (produção).**"):pb.index("- **B (estoque).**")]
         ok("preco" not in p.temas_do_texto(exemplo), "o exemplo A do playbook passa com o tema preço pausado")
+        ok(not re.search(r"sistema de gest[aã]o|\bERP\b", pb[pb.index("**Primeira mensagem**"):pb.index("**Lembrete**")]
+                         .replace('nunca "sistema de gestão", "ERP" ou "solução"', "")),
+           "a primeira mensagem não usa o que o revisor chama de jargão")
         d = p.carregar(LOGIN)
         envio = p.agora() - 5 * 86400
         for i in range(16):  # 16 first messages about price; 4 answered, 3 of them "we already have a system"
@@ -1231,11 +1234,11 @@ class Suite:
                               "texto": "Vi a pizza nova de vocês! Sou o Matheus, da Raiz Connect. Fiz uma calculadora grátis pra ver quanto sobra: te mando?"}])
         ok(not r["propostas"] and "pausado pelos números" in r["recusadas"][0]["motivo"], f"preço recusado: {r['recusadas']}")
         r = p.propor(LOGIN, [{"lead_id": alvo, "tipo": "dm_abertura", "variante": "A", "tema": "ifood",
-                              "texto": "Vi que vocês vendem no iFood! Sou o Matheus, da Raiz Connect, um sistema de gestão. "
+                              "texto": "Vi que vocês vendem no iFood! Sou o Matheus, da Raiz Connect, um sistema pra quem vende comida. "
                                        "Como funciona, aliás: a planilha de preço de vocês é a mesma do iFood?"}])
         ok(not r["propostas"], "tema pausado de passagem também é recusado")
         r = p.propor(LOGIN, [{"lead_id": alvo, "tipo": "dm_abertura", "variante": "A",
-                              "texto": "Vi que vocês vendem no iFood! Sou o Matheus, da Raiz Connect, um sistema de gestão pra "
+                              "texto": "Vi que vocês vendem no iFood! Sou o Matheus, da Raiz Connect, um sistema pra "
                                        "quem produz comida. Os pedidos do iFood vocês passam à mão pra cozinha?"}])
         ok(r["propostas"] and r["propostas"][0]["tema"] == "ifood", f"outro tema passa e fica gravado: {r}")
         d = p.carregar(LOGIN)
