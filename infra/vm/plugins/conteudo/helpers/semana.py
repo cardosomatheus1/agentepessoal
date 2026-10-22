@@ -110,22 +110,22 @@ def _ocupados(canal: str) -> set:
 
 
 def dias_do_feed(agora: float) -> list[tuple[str, str]]:
-    """[(formato, day)] for the plan's 4 slots: for each, the first free day of its weekday from tomorrow on."""
+    """[(formato, day)] for the plan's slots of the coming week (tomorrow + 6 days) that are still free: a slot already
+    filled (a post moved there by hand) is not proposed again, and nothing spills into the week after."""
     ocupados, hoje, saida = _ocupados("feed"), _hoje(agora), []
-    for formato, semana_dia in PLANO_FEED:
-        for k in range(1, JANELA_DIAS + 1):
-            dia = hoje + dt.timedelta(days=k)
-            if dia.weekday() == semana_dia and dia.isoformat() not in ocupados and dia.isoformat() not in {d for _, d in saida}:
+    for k in range(1, 8):
+        dia = hoje + dt.timedelta(days=k)
+        for formato, semana_dia in PLANO_FEED:
+            if dia.weekday() == semana_dia and dia.isoformat() not in ocupados:
                 saida.append((formato, dia.isoformat()))
-                break
-    return sorted(saida, key=lambda x: x[1])
+    return saida
 
 
-def dias_livres(agora: float, n: int = STORIES, canal: str = "story") -> list[str]:
-    """The first n days from tomorrow with no live item of that slot."""
+def dias_livres(agora: float, n: int = STORIES, canal: str = "story", janela: int = 7) -> list[str]:
+    """The first n days from tomorrow, within `janela` days, with no live item of that slot."""
     ocupados = _ocupados(canal)
     hoje, livres = _hoje(agora), []
-    for k in range(1, JANELA_DIAS + 1):
+    for k in range(1, janela + 1):
         dia = (hoje + dt.timedelta(days=k)).isoformat()
         if dia not in ocupados:
             livres.append(dia)
@@ -234,17 +234,19 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
         return {"ok": False, "erro": "propostas e stories: listas JSON"}
     propostas = [p for p in propostas or [] if isinstance(p, dict)]
     stories = [x for x in stories or [] if isinstance(x, dict)]
-    if len(propostas) != PROPOSTAS:
-        return {"ok": False, "erro": f"mande exatamente {PROPOSTAS} propostas do feed (vieram {len(propostas)})"}
-    pedidos = sorted(str(p.get("formato") or "").upper() for p in propostas)
-    if pedidos != sorted(f for f, _ in PLANO_FEED):
-        return {"ok": False, "erro": "o feed da semana é 2 CARROSSEL (ter e sex) e 2 REELS (qua e dom)"}
-    if len(stories) != STORIES:
-        return {"ok": False, "erro": f"mande exatamente {STORIES} stories, um por dia (vieram {len(stories)})"}
     vagas = dias_do_feed(agora)
     dias_story = dias_livres(agora, STORIES, "story")
-    if len(vagas) < PROPOSTAS or len(dias_story) < STORIES:
-        return {"ok": False, "erro": "não há dias livres suficientes nas próximas 3 semanas"}
+    pedidos = sorted(str(p.get("formato") or "").upper() for p in propostas)
+    if pedidos != sorted(f for f, _ in vagas):
+        livres = ", ".join(f"{_rotulo_dia(d)} {NOME_TIPO[f]}" for f, d in vagas) or "nenhuma"
+        return {"ok": False, "erro": f"a semana tem {len(vagas)} vaga(s) no feed ({livres}): mande exatamente essas "
+                                     f"(vieram {len(propostas)}: {', '.join(pedidos) or 'nenhuma'})"}
+    if len(stories) != len(dias_story):
+        livres = ", ".join(_rotulo_dia(d) for d in dias_story) or "nenhum"
+        return {"ok": False, "erro": f"a semana tem {len(dias_story)} dia(s) sem story ({livres}): mande um story para "
+                                     f"cada (vieram {len(stories)})"}
+    if not vagas and not dias_story:
+        return {"ok": False, "erro": "a semana que vem já está toda agendada"}
     try:
         esp, nota = c().especialistas(), ""
     except Exception as exc:  # installed but broken: the proposals say so, and nothing is approved by itself
@@ -275,7 +277,7 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
                       "ideia": briefing["ideia"], "formato_pedido": formato, "tipo": tipo, "arquivos": arquivos,
                       "capa": capa, "legenda": legenda, "spec": d["spec"], "critica": d["critica"],
                       "problema": problema, "estado": "proposta"})
-    for n, (campos, dia) in enumerate(zip(stories, dias_story), start=PROPOSTAS + 1):
+    for n, (campos, dia) in enumerate(zip(stories, dias_story), start=len(vagas) + 1):
         d = _desenhar_story(esp, campos, _pasta() / sid / f"story-{n}.jpg")
         titulo = f"{campos.get('layout', '?')}: {_texto(campos.get('manchete') or 'oferta Lucro na Mão', 100)}"
         itens.append({"n": n, "id": f"{sid}-{n}", "data": dia, "hora": HORA_STORY, "titulo": titulo, "ideia": "",
@@ -321,7 +323,7 @@ def mensagem(semana: dict) -> tuple[str, list]:
     ps = semana["propostas"]
     datas = sorted(p["data"] for p in ps)
     linhas = [f"*Semana de posts da @raiz.connect* ({_rotulo_dia(datas[0])} a {_rotulo_dia(datas[-1])}): "
-              f"{PROPOSTAS} no feed e {len(ps) - PROPOSTAS} stories"]
+              f"{sum(p['formato_pedido'] != 'STORY' for p in ps)} no feed e {sum(p['formato_pedido'] == 'STORY' for p in ps)} stories"]
     for p in ps:
         v = p["critica"]["veredito"]
         if p["problema"]:

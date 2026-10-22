@@ -1,0 +1,86 @@
+[
+ {
+  "id": "st-2026-10-23",
+  "data": "2026-10-23",
+  "hora": "09:00",
+  "tipo": "STORY",
+  "arquivos": [
+   "conteudo/stories/2026-10-23-bastidor.jpg"
+  ],
+  "legenda": "bastidor: Curva ABC de custos, responde no direct o maior custo",
+  "origem": {
+   "titulo": "bastidor: Curva ABC de custos, responde no direct o maior custo",
+   "plano": "Instagram 22/10: story todo dia"
+  }
+ },
+ {
+  "id": "st-2026-10-24",
+  "data": "2026-10-24",
+  "hora": "09:00",
+  "tipo": "STORY",
+  "arquivos": [
+   "conteudo/stories/2026-10-24-post.jpg"
+  ],
+  "legenda": "chama o quiz do bolo de 2 kg no feed",
+  "origem": {
+   "titulo": "chama o quiz do bolo de 2 kg no feed",
+   "plano": "Instagram 22/10: story todo dia"
+  }
+ },
+ {
+  "id": "st-2026-10-25",
+  "data": "2026-10-25",
+  "hora": "09:00",
+  "tipo": "STORY",
+  "arquivos": [
+   "conteudo/stories/2026-10-25-oferta.jpg"
+  ],
+  "legenda": "oferta Lucro na Mão em 30 Dias, link na bio",
+  "origem": {
+   "titulo": "oferta Lucro na Mão em 30 Dias, link na bio",
+   "plano": "Instagram 22/10: story todo dia"
+  }
+ },
+ {
+  "id": "st-2026-10-26",
+  "data": "2026-10-26",
+  "hora": "09:00",
+  "tipo": "STORY",
+  "arquivos": [
+   "conteudo/stories/2026-10-26-video.jpg"
+  ],
+  "legenda": "chama o Reel expectativa x realidade",
+  "origem": {
+   "titulo": "chama o Reel expectativa x realidade",
+   "plano": "Instagram 22/10: story todo dia"
+  }
+ },
+ {
+  "id": "st-2026-10-27",
+  "data": "2026-10-27",
+  "hora": "09:00",
+  "tipo": "STORY",
+  "arquivos": [
+   "conteudo/stories/2026-10-27-dica.jpg"
+  ],
+  "legenda": "dica: conferir o insumo que mais subiu antes de mexer no preço",
+  "origem": {
+   "titulo": "dica: conferir o insumo que mais subiu antes de mexer no preço",
+   "plano": "Instagram 22/10: story todo dia"
+  }
+ },
+ {
+  "id": "st-2026-10-28",
+  "data": "2026-10-28",
+  "hora": "09:00",
+  "tipo": "STORY",
+  "arquivos": [
+   "conteudo/stories/2026-10-28-post.jpg"
+  ],
+  "legenda": "chama o carrossel do frete para a loja",
+  "origem": {
+   "titulo": "chama o carrossel do frete para a loja",
+   "plano": "Instagram 22/10: story todo dia"
+  }
+ }
+]

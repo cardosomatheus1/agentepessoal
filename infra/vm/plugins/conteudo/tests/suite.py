@@ -544,7 +544,8 @@ class Suite:
         ok(c.carregar()["itens"] == [], "propor não agenda nada")
         ok(not s.propor(self._feed()[:3], agora, enviar=lambda *a: "", stories=self._stories())["ok"], "menos de 4 no feed é recusado")
         tres = [dict(p, formato="CARROSSEL") for p in self._feed()]
-        ok("2 CARROSSEL" in s.propor(tres, agora, enviar=lambda *a: "", stories=self._stories())["erro"], "a mistura é 2 e 2")
+        erro = s.propor(tres, agora, enviar=lambda *a: "", stories=self._stories())["erro"]
+        ok("4 vaga(s) no feed" in erro and "ter 27/10 Carrossel" in erro and "qua 28/10 Reel" in erro, f"a mistura segue as vagas: {erro}")
         ok(not s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories()[:5])["ok"], "7 stories")
 
     def t_semana_sem_critico_nao_aprova_sozinha(self):
@@ -629,9 +630,14 @@ class Suite:
         # redo: the old message's buttons stop working; the new version proposes only for the free days
         ok("propor_semana" in s.botao("matheus", "cs:matheus:s20261026-1:refazer")["conversa"], "refazer pede o que mudar")
         ok("já foi decidida" in s.botao("matheus", "cs:matheus:s20261026-1:todas")["mensagem"], "semana refeita não aprova")
-        r2 = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
-        datas = [p["data"] for p in r2["propostas"]]
-        ok(r2["semana"] == "s20261026-2" and "2026-10-28" not in datas[:4] and "2026-10-27" not in datas[4:], r2)
+        # 28 (Reel) and 30 (carrossel) já estão na agenda, e o story do 27: a semana nova só preenche as vagas livres
+        erro = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())["erro"]
+        ok("2 vaga(s) no feed" in erro, f"não empurra post para a semana seguinte: {erro}")
+        r2 = s.propor(self._feed()[:2], agora, enviar=lambda *a: "", stories=self._stories()[:6])
+        ok(r2["ok"] and r2["semana"] == "s20261026-2", r2)
+        feed = [(p["data"], p["tipo"]) for p in r2["propostas"] if p["tipo"] != "STORY"]
+        ok(feed == [("2026-10-27", "CARROSSEL"), ("2026-11-01", "REELS")], f"só as vagas livres: {feed}")
+        ok([p["data"] for p in r2["propostas"] if p["tipo"] == "STORY"][0] == "2026-10-28", "stories só nos dias sem story")
         ok(not s.aprovar("s20261026-1", None, agora=agora, subir=lambda *a: None)["ok"], "versão velha recusa")
 
     def t_portao_bloqueia_reprova(self):
