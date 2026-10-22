@@ -37,7 +37,10 @@ DIAS_SEMANA = ("seg", "ter", "qua", "qui", "sex", "sáb", "dom")
 NOME_TIPO = {"REELS": "Reel", "CARROSSEL": "Carrossel", "IMAGE": "Foto", "STORY": "Story"}
 VIDEO, IMAGEM = (".mp4",), (".jpg", ".jpeg", ".png")
 SEM_REVISAO = "sem revisão"
-REGRAS = ("Fala com o dono do negócio que produz e vende comida, nunca com o consumidor; sem jargão; número sempre "
+REGRAS = ("A Raiz Connect é sistema de gestão para food service, com pedidos do iFood e da 99Food entrando sozinhos: "
+          "fala também com pizzaria, hamburgueria, lanchonete e restaurante de delivery (Matheus, 22/10). Tela do sistema "
+          "sempre no tema escuro e inteira, com o menu; para mostrar o sistema, vídeo com zoom e movimento. "
+          "Fala com o dono do negócio que produz e vende comida, nunca com o consumidor; sem jargão; número sempre "
           "como \"valores de exemplo\"; legenda sem emoji e sem travessão; nunca \"aumente seu lucro\"; oferta: "
           "Lucro na Mão em 30 Dias.")
 

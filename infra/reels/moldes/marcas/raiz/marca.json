@@ -9,10 +9,10 @@
  "estilo": "vidro",
  "logo_escuro": "logo_escuro.png",
  "logo_claro": "logo_claro.png",
- "chamada": "Calculadora grátis na bio",
+ "chamada": "Lucro na Mão: link na bio",
  "voz": {
   "id": "carolina",
   "motor": "nova-sonic"
  },
- "ramo": "software de preço para quem vende comida"
+ "ramo": "sistema de gestão para food service (pizzaria, hamburgueria, restaurante), com iFood e 99Food"
 }

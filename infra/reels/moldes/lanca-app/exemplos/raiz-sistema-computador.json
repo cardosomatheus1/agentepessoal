@@ -1,0 +1,70 @@
+{
+ "_marca": "raiz",
+ "_formato": "reel",
+ "nome": "Raiz Connect",
+ "gancho": "Todo dono de pizzaria já disse isso.",
+ "dores": [
+  "Vendo muito e não sei quanto sobra.",
+  "Pedido do iFood num lugar, salão no outro.",
+  "A cozinha atrasa e eu só sei depois."
+ ],
+ "pergunta": "E se o restaurante inteiro coubesse numa tela?",
+ "tema": "Sistema de gestão para food service.",
+ "aparelho": "computador",
+ "telas": [
+  {
+   "imagem": "../lanca-app/exemplos/telas/raiz-pc-mesas.png",
+   "nome": "Mesas",
+   "legenda": "Cada mesa com o tempo e o valor da conta",
+   "destaque": {"x": 19, "y": 32.5, "largura": 79, "altura": 24}
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/raiz-pc-kds.png",
+   "nome": "Cozinha",
+   "legenda": "A cozinha vê o pedido e o tempo de cada um",
+   "destaque": {"x": 18.8, "y": 30, "largura": 40, "altura": 43}
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/raiz-pc-cmv.png",
+   "nome": "CMV",
+   "legenda": "Quanto do faturamento virou custo",
+   "destaque": {"x": 19, "y": 21.5, "largura": 79, "altura": 24.5}
+  },
+  {
+   "imagem": "../lanca-app/exemplos/telas/raiz-pc-dashboard.png",
+   "nome": "Visão executiva",
+   "legenda": "Quanto sobrou no mês, em uma linha",
+   "destaque": {"x": 19, "y": 16, "largura": 79, "altura": 36}
+  }
+ ],
+ "beneficios": [
+  {"icone": "relogio", "texto": "iFood e 99Food entram sozinhos"},
+  {"icone": "dinheiro", "texto": "Você vê quanto sobra"},
+  {"icone": "folha", "texto": "Adeus caderno e planilha"}
+ ],
+ "passos": [
+  "Toque no link da bio",
+  "A gente cadastra seus produtos",
+  "Em 30 dias você vê quanto sobra"
+ ],
+ "para_quem": [
+  {"perfil": "Pizzaria", "detalhe": "Salão, balcão e delivery", "foto": "fotos/cantina_pizza.jpg"},
+  {"perfil": "Hamburgueria", "detalhe": "Chapa cheia e pedido do app", "foto": "fotos/burger_smash.jpg"},
+  {"perfil": "Restaurante", "detalhe": "Mesa, comanda e cozinha", "foto": "fotos/cantina_lasanha.jpg"}
+ ],
+ "falas": [
+  "Vendo muito e não sei quanto sobra. O pedido do iFood num lugar, o salão no outro. E a cozinha atrasa e eu só fico sabendo depois.",
+  "E se o restaurante inteiro coubesse numa tela só?",
+  "Esse é o Raiz Connect, sistema de gestão para pizzaria, hamburgueria e restaurante.",
+  "No mapa de mesas, cada mesa aparece com o tempo e o valor da conta.",
+  "A cozinha vê cada pedido na tela, com o tempo de cada um.",
+  "O CMV mostra quanto do faturamento virou custo, e onde a margem escapou.",
+  "E a visão executiva diz, numa linha, quanto sobrou no mês.",
+  "Os pedidos do iFood e da 99Food entram sozinhos, e você aposenta o caderno e a planilha.",
+  "Para começar: toque no link da bio, a gente cadastra os seus produtos, e em 30 dias você vê quanto sobra.",
+  "Serve para pizzaria, hamburgueria e restaurante, no salão, no balcão e no delivery.",
+  "Raiz Connect. O link está aqui na bio."
+ ],
+ "nota": "valores de exemplo",
+ "_origem": {"telas": "sistema"}
+}

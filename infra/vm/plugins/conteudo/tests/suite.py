@@ -126,7 +126,13 @@ class Suite:
         ok("desconhecidos" in st.validar({"layout": "dica", "manchete": "x", "script": "alert(1)"}), "campo estranho fora")
         ok("emoji" in st.validar({"layout": "oferta", "preco": "R$ 197 😅"}), "o preço também passa pelas regras")
         ok(st.validar({"layout": "oferta"}) == "", "oferta sem preço (os detalhes ficam no link da bio)")
-        ok((RAIZ / "story" / "telas" / "curva-abc-custos.png").exists(), "há tela real para o bastidor")
+        ok((RAIZ / "story" / "telas" / "curva-abc-custos.jpg").exists(), "há tela real para o bastidor")
+        # 22/10, Matheus: "usaria tema escuro e n usaria esse formato de tela ... pq menu some": tela escura e inteira
+        from PIL import Image, ImageStat
+        for tela in sorted((RAIZ / "story" / "telas").iterdir()):
+            with Image.open(tela) as im:
+                ok(ImageStat.Stat(im.convert("L")).mean[0] < 70, f"{tela.name}: tela no tema escuro")
+                ok(abs(im.size[0] / im.size[1] - 1.6) < 0.01, f"{tela.name}: tela inteira (16:10, com o menu)")
         mau = {"layout": "dica", "manchete": "</script><script>fetch('file:///etc/passwd')</script>"}
         pagina = st.injetar((RAIZ / "story" / "story.html").read_text(encoding="utf-8"), mau)
         ok(pagina.count("</script>") == (RAIZ / "story" / "story.html").read_text(encoding="utf-8").count("</script>") + 1
@@ -138,7 +144,7 @@ class Suite:
         ok(iu.find_spec("playwright") or iu.find_spec("patchright"), "há playwright ou patchright para desenhar")
         saida = Path(tempfile.mkdtemp()) / "dica.jpg"
         st.renderizar({"layout": "bastidor", "manchete": "Pra onde vai o seu dinheiro?", "destaque": "seu dinheiro",
-                       "tela": str(RAIZ / "story" / "telas" / "curva-abc-custos.png"),
+                       "tela": str(RAIZ / "story" / "telas" / "curva-abc-custos.jpg"),
                        "pergunta": "Responde aqui no direct: <b>qual</b> é o maior custo?"}, str(saida))
         with Image.open(saida) as im:
             ok(im.size == (1080, 1920) and im.format == "JPEG", f"story 1080x1920 em JPEG: {im.size} {im.format}")

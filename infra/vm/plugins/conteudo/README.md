@@ -27,6 +27,6 @@ da gestão e 2 de custo e preço.
 - Arte do story: `helpers/story.py` desenha a partir de 5 layouts fixos do kit (`story/story.html`: dica, post-novo,
   video-novo, bastidor, oferta), com o navegador do container; o agente faz sozinho, ao contrário do carrossel e do
   Reel da Raiz, que são feitos peça a peça numa sessão de operador. Telas reais do sistema para o bastidor em
-  `story/telas/`. Regras em código: sem emoji, sem travessão, R$ só com "valores de exemplo", imagem só de arquivo local.
+  `story/telas/` (telas escuras e inteiras, com o menu, de uma empresa de exemplo na cópia de teste). Regras em código: sem emoji, sem travessão, R$ só com "valores de exemplo", imagem só de arquivo local.
 - `semana.propor(propostas=4, stories=7)`: o Designer desenha o feed, `story.py` os stories, o Crítico julga todos
   (tipo `story` no plugin especialistas) e vai uma mensagem com os 11.
