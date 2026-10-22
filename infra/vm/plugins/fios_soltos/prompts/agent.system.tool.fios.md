@@ -1,6 +1,6 @@
 ### fios
 Registro dos "fios soltos" da pessoa: o que ficou em aberto (pedido não concluído, promessa sua, tarefa travada, prazo, algo que depende dela) e as ligações entre assuntos.
-- `acao`: "listar" | "coletar" | "salvar" | "resolver" | "adiar"
+- `acao`: "listar" | "coletar" | "salvar" | "resolver" | "adiar" | "conferir" (o que você terminou e espera ele fechar)
 - "coletar": panorama das últimas `horas` (padrão 72) — conversas, tarefas agendadas, avisos, objetivos, aprovações, memória e o registro atual. Use para cruzar informações.
 - "salvar": `fios` = lista de objetos {id (para atualizar um existente), titulo, detalhe, fontes (conversas/e-mails), dono ("você" ou "agente"), prazo (AAAA-MM-DD), prioridade (alta|media|baixa), proximo_passo, ligacoes (com o que se conecta), area (raiz | nexos | orbyte | agente | pessoal | geral: a frente da vida dele a que o fio pertence)}; `resolvidos` = ids que já se resolveram
 - "resolver": `resolvidos` (ou `id`), e `nota` (o que você fez, 1 linha) — quando VOCÊ concluiu: o fio vai para "a conferir" e só ele fecha (quadro de Tarefas). Se foi ELE quem disse que está resolvido ("pode fechar", "já resolvi"), mande `pedido_dele` com a fala literal dele e o fio fecha

@@ -31,3 +31,9 @@ para todas as conversas do agente, então só o Matheus ensina. No máximo uma r
 `📚 Melhorei a skill …`).
 
 **Desligar sem implantar:** criar `/a0/usr/aprendizado/desligado`.
+
+**22/10 — limpeza de skills (dos vídeos do Claude Duet: skill acumulada precisa de higiene).** Cada skill carregada é
+contada (`extensions/python/tool_execute_after/_65_uso_skill.py` → `/a0/usr/aprendizado/uso.json`). Uma vez por dia
+(`extensions/python/job_loop/_66_arquivar_skills.py`), as skills que **este plugin escreveu** e que ninguém carregou nem
+reescreveu em 30 dias vão inteiras para `/a0/usr/aprendizado/arquivo/<nome>-<data>/` (saem da lista do agente) e você
+recebe uma linha no celular. Nada é arquivado antes de 30 dias de contagem; skill do repositório ou feita à mão nunca.

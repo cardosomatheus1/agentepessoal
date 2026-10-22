@@ -105,6 +105,10 @@ class Fios(Tool):
                 return Response(message="Diga o `id` e a data `ate` (AAAA-MM-DD).", break_loop=False)
             f.mesclar(login, [{"id": id, "estado": "adiado", "adiar_ate": ate}])
             return Response(message=f"Fio {id} adiado até {ate}.", break_loop=False)
+        if acao == "conferir":  # what the agent finished and waits for him to close (Tarefas board)
+            lista = f.a_conferir(login)
+            return Response(message="\n".join("- " + f.linha(x) + (f" — feito: {x['nota_agente']}" if x.get("nota_agente") else "")
+                                               for x in lista) or "Nada a conferir.", break_loop=False)
         lista = f.abertos(login, 30)
         if not lista:
             return Response(message="Nenhum fio solto em aberto.", break_loop=False)

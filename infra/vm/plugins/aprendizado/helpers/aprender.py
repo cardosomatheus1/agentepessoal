@@ -294,3 +294,68 @@ def revisar(conversa: str, carregadas: list[str], conversa_id: str, chamar, raiz
         _registrar(DADOS if dados is None else dados, {"em": agora, "conversa": conversa_id, **r})
         return r
     return aplicar(proposta, conversa_id, raiz, dados, agora)
+
+
+# ---- skills nobody uses (22/10, from the Duet videos: "accumulated skills need hygiene"; Hermes archives the unused) --
+# Only the skills this plugin wrote (origem: aprendizado) are archived, never the repository's or hand-made ones; an
+# archived skill goes whole to /a0/usr/aprendizado/arquivo/<nome>-<data>/ (outside the skills folder, so it stops being
+# offered) and can be put back by hand. Loads are counted by extensions/python/tool_execute_after/_65_uso_skill.py.
+PARADA_DIAS = 30
+
+
+def registrar_uso(nome: str, dados: Path = None, agora: float | None = None) -> None:
+    """A skill was loaded now ("" only starts the count)."""
+    dados = DADOS if dados is None else dados
+    nome = str(nome or "").strip().lower()
+    if nome and not NOME_OK.match(nome):
+        return
+    dados.mkdir(parents=True, exist_ok=True)
+    arq = dados / "uso.json"
+    try:
+        uso = json.loads(arq.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        uso = {}
+    agora = time.time() if agora is None else agora
+    uso.setdefault("_desde", agora)  # loads are known only from here on
+    if nome:
+        uso[nome] = agora
+    tmp = arq.with_suffix(".tmp")
+    tmp.write_text(json.dumps(uso), encoding="utf-8")
+    tmp.replace(arq)
+
+
+def paradas(raiz: Path = None, dados: Path = None, agora: float | None = None, dias: int = PARADA_DIAS) -> list:
+    """Our skills not loaded and not rewritten in the last `dias` days."""
+    raiz, dados = (SKILLS if raiz is None else raiz), (DADOS if dados is None else dados)
+    agora = time.time() if agora is None else agora
+    try:
+        uso = json.loads((dados / "uso.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        uso = {}
+    corte = agora - dias * 86400
+    if float(uso.get("_desde") or agora) > corte:
+        return []  # loads counted for less than `dias` days: nobody can say a skill was not used
+    saida = []
+    for nome, s in skills_existentes(raiz).items():
+        if not s["nossa"]:
+            continue
+        mudou = (raiz / nome / "SKILL.md").stat().st_mtime
+        if max(float(uso.get(nome) or 0), mudou) < corte:
+            saida.append(nome)
+    return saida
+
+
+def arquivar_paradas(raiz: Path = None, dados: Path = None, agora: float | None = None) -> list:
+    import shutil
+
+    raiz, dados = (SKILLS if raiz is None else raiz), (DADOS if dados is None else dados)
+    agora = time.time() if agora is None else agora
+    feitas = []
+    for nome in paradas(raiz, dados, agora):
+        destino = dados / "arquivo" / f"{nome}-{time.strftime('%Y%m%d', time.localtime(agora))}"
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(raiz / nome), str(destino))
+        _registrar(dados, {"em": agora, "conversa": "", "feito": "arquivada", "nome": nome,
+                           "motivo": f"sem uso há {PARADA_DIAS} dias"})
+        feitas.append(nome)
+    return feitas

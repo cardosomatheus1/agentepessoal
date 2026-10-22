@@ -4,6 +4,7 @@ repository root: python3 infra/operador/rodar_suites_locais.py aprendizado"""
 import asyncio
 import importlib.util
 import json
+import os
 import shutil
 import sys
 import tempfile
@@ -237,6 +238,29 @@ class Suite:
             eq(len(iniciadas), 2, "interruptor desligado: nenhuma revisão")
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
+
+    def t_skill_parada_vai_para_o_arquivo(self):
+        # 22/10 (Duet videos: skills pile up): ours unused for 30 days are archived; the repository's never
+        a = _modulo("aprender_arquivo_teste", RAIZ / "helpers" / "aprender.py")
+        tmp = Path(tempfile.mkdtemp(prefix="aprender-arquivo-"))
+        raiz, dados = tmp / "skills", tmp / "dados"
+        agora = 1_800_000_000.0
+        for nome, origem in (("planilha-vendas", "aprendizado"), ("formularios-web", "aprendizado"), ("prospeccao-instagram", "")):
+            (raiz / nome).mkdir(parents=True)
+            (raiz / nome / "SKILL.md").write_text(f"---\nname: {nome}\ndescription: x\n"
+                                                  + (f"origem: {origem}\n" if origem else "") + "---\nregras", encoding="utf-8")
+            os.utime(raiz / nome / "SKILL.md", (agora - 60 * 86400, agora - 60 * 86400))
+        eq(a.paradas(raiz, dados, agora), [], "sem contagem de uso ainda: nada é parado")
+        a.registrar_uso("", dados, agora - 40 * 86400)
+        a.registrar_uso("formularios-web", dados, agora - 5 * 86400)
+        a.registrar_uso("../etc", dados, agora)
+        eq(a.paradas(raiz, dados, agora), ["planilha-vendas"], "só a nossa sem uso; a usada e a do repositório ficam")
+        eq(a.arquivar_paradas(raiz, dados, agora), ["planilha-vendas"], "arquivada")
+        ok(not (raiz / "planilha-vendas").exists() and list((dados / "arquivo").glob("planilha-vendas-*/SKILL.md")),
+           "sai das skills e fica no arquivo, inteira")
+        ok((raiz / "prospeccao-instagram" / "SKILL.md").exists(), "a do repositório nunca é tocada")
+        ok("arquivada" in (dados / "diario.jsonl").read_text(encoding="utf-8"), "registrado no diário")
+        shutil.rmtree(tmp, ignore_errors=True)
 
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
