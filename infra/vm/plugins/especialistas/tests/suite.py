@@ -123,11 +123,15 @@ class Suite:
         img = self.tmp / "slide1.png"
         _png(img)
         enviados = []
-        m._enviar = lambda body, login: enviados.append((body, login)) or _resposta("oi")
+        m._enviar = lambda body, login, tempo=0: enviados.append((body, login, tempo)) or _resposta("oi")
         r = m.chamar("critico", "Julgue.", {"legenda": "Lucro na mão",
                                             "imagens": [str(img), "/nao/existe/slide2.png"]}, login="teste_ana")
         eq(len(enviados), 1, "uma chamada só")
-        body, login = enviados[0]
+        body, login, tempo = enviados[0]
+        ok(body["reasoning"]["effort"] == "low" and tempo == m.TEMPO, "o Crítico segue no esforço de sempre")
+        m.chamar("designer", "Desenhe.", "x")
+        ok(enviados[1][0]["reasoning"]["effort"] == "high" and enviados[1][2] == 360,
+           "o Designer pensa mais e espera mais (22/10: errava contagem e promessa no esforço baixo)")
         eq(login, "teste_ana", "o dono vai no cabeçalho")
         eq(body["model"], "openai.gpt-6-luna", "modelo")
         eq(body["instructions"], m.PAPEIS["critico"], "o SOUL vai como instruções")
@@ -142,7 +146,7 @@ class Suite:
     def t_rede_fora_reprova(self):
         m = self._e(com_raiz="Raiz")
 
-        def cai(body, login):
+        def cai(body, login, tempo=0):
             raise OSError("sem rede")
         m._enviar = cai
         r = m.chamar("critico", "x", "y")
@@ -265,7 +269,7 @@ class Suite:
         eq(d["critica"]["veredito"], "reprova", "nada para aprovar: reprova mesmo com o crítico aprovando")
         ok("o designer não devolveu uma ficha legível" in d["falta"], d["falta"])
         q = self._e()
-        q._enviar = lambda body, login: (_ for _ in ()).throw(OSError("fora"))
+        q._enviar = lambda body, login, tempo=0: (_ for _ in ()).throw(OSError("fora"))
         d = q.desenhar("Um carrossel")
         eq(d["critica"]["veredito"], "reprova", "fora do ar")
         ok(any("não respondeu" in f for f in d["falta"]), d["falta"])

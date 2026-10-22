@@ -27,6 +27,10 @@ from pathlib import Path
 URL = "http://host.docker.internal:8787/openai/v1/responses"
 MODELO = "openai.gpt-6-luna"
 TEMPO = 120
+# 22/10: on "low" the Designer miscounted lines and promised in the title what the text did not deliver (4 real runs,
+# all reproved); it thinks harder and waits longer. The Crítico keeps its setting.
+ESFORCO = {"designer": "high"}
+TEMPO_PAPEL = {"designer": 360}
 RAIZ = Path(__file__).resolve().parents[1]
 # next to this plugin (repository, live install); a staging copy alone in /tmp uses the installed ones
 PLUGINS = RAIZ.parent if (RAIZ.parent / "cerebro").exists() else Path("/a0/usr/plugins")
@@ -119,6 +123,9 @@ O que você faz:
 - Usa material real: tela real do produto, foto real ou gerada marcada "imagem ilustrativa"; nunca comida desenhada
   em código.
 - Preenche a ficha inteira, com textos que cabem (respeita os limites de letras).
+- Antes de responder, confere a própria ficha (o Crítico reprovou por isto em 22/10): o título promete exatamente o
+  que os itens ou as falas entregam (se diz "3 sinais", são 3 sinais claros); cada fala mostra, na mesma cena, a tela
+  que prova o que ela diz; a quantidade de itens e falas está dentro do mínimo e do máximo do molde.
 
 O que você não faz:
 - Não foge do kit na Raiz: no motor "molde" a marca raiz já aplica o fixo do kit (logo, Manrope, Instrument Serif,
@@ -169,10 +176,10 @@ def _imagem(caminho: str) -> str | None:
             return None
 
 
-def _enviar(body: dict, login: str) -> dict:
+def _enviar(body: dict, login: str, tempo: int = TEMPO) -> dict:
     req = urllib.request.Request(URL, data=json.dumps(body).encode(), headers={"Content-Type": "application/json",
                                                                              "X-A0-Dono": login or "matheus"})
-    with urllib.request.urlopen(req, timeout=TEMPO) as r:
+    with urllib.request.urlopen(req, timeout=tempo) as r:
         return json.loads(r.read())
 
 
@@ -193,10 +200,10 @@ def chamar(papel: str, tarefa: str, material, login: str = "matheus") -> dict:
             sem.append(c)
     if sem:
         content[0]["text"] += "\n\nArquivos citados que você NÃO está vendo: " + ", ".join(Path(s).name for s in sem)
-    body = {"model": MODELO, "reasoning": {"effort": "low"}, "instructions": PAPEIS[papel],
+    body = {"model": MODELO, "reasoning": {"effort": ESFORCO.get(papel, "low")}, "instructions": PAPEIS[papel],
             "input": [{"role": "user", "content": content}]}
     try:
-        data = _enviar(body, login)
+        data = _enviar(body, login, TEMPO_PAPEL.get(papel, TEMPO))
     except Exception as exc:
         return {"texto": "", "erro": f"{type(exc).__name__}: {str(exc)[:200]}", "imagens": enviadas, "sem_imagem": sem}
     saida = "".join(c.get("text", "") for item in data.get("output", []) if item.get("type") == "message"
@@ -509,7 +516,7 @@ def _conferir_spec(spec: dict) -> list[str]:
 
 
 CORRECOES = 3
-REVISOES = 1
+REVISOES = 2
 
 
 FORMATO_DO_BRIEFING = {"CARROSSEL": "carrossel", "REELS": "reel", "STORY": "story"}
@@ -586,7 +593,8 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
         spec = out["spec"]
         if out["critica"]["veredito"] != "reprova" or spec.get("motor") != "molde":
             break
-        r = chamar("designer", _tarefa_revisao(spec, out["critica"]), material, login=login)
+        vistas = (out.get("previa") or [a for a in out["arquivos"] if Path(a).suffix.lower() in EXT_IMAGEM])[:MAX_IMAGENS]
+        r = chamar("designer", _tarefa_revisao(spec, out["critica"]), {**material, "imagens": vistas}, login=login)
         novo = _spec(r, pedido)
         if not novo:
             break
