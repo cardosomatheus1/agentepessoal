@@ -30,14 +30,15 @@ TEMPO = 120
 RAIZ = Path(__file__).resolve().parents[1]
 # next to this plugin (repository, live install); a staging copy alone in /tmp uses the installed ones
 PLUGINS = RAIZ.parent if (RAIZ.parent / "cerebro").exists() else Path("/a0/usr/plugins")
-TIPOS = ("post", "carrossel", "oferta", "landing", "mensagem")
+TIPOS = ("post", "carrossel", "story", "oferta", "landing", "mensagem")  # story: 22/10, um por dia
 MAX_IMAGENS = 8
 LADO_MAX = 1600
 MAX_MATERIAL = 12_000
 MAX_CRITERIOS = 3_000
 EXT_IMAGEM = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
 # which AR Board agent's criteria judge each kind of piece
-CRITERIOS_POR_TIPO = {"post": ("conteudo", "moldes"), "carrossel": ("conteudo", "moldes"), "oferta": ("conteudo",),
+CRITERIOS_POR_TIPO = {"post": ("conteudo", "moldes"), "carrossel": ("conteudo", "moldes"), "story": ("conteudo", "moldes"),
+                      "oferta": ("conteudo",),
                       "landing": ("conteudo",), "mensagem": ("prospeccao",)}
 MOTORES = ("carrossel_raiz", "video_kit_raiz", "molde")
 
@@ -310,7 +311,7 @@ def regras_fixas(tipo: str, material) -> list[str]:
         motivos.append("tem emoji (regra fixa: sem emoji em nada público)")
     if TRACO.search(texto):
         motivos.append("tem travessão (regra fixa do AR Board: sem — nem –)")
-    if tipo in ("post", "carrossel") and REAIS.search(texto) and not EXEMPLO.search(texto):
+    if tipo in ("post", "carrossel", "story") and REAIS.search(texto) and not EXEMPLO.search(texto):
         motivos.append('número em R$ sem "valores de exemplo"')
     return motivos
 

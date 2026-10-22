@@ -1,7 +1,8 @@
 """The week of @raiz.connect posts, proposed every Monday instead of an agenda assembled by hand (20/10, approved by
 Matheus). The routine reads what did well (conteudo desempenho), the competitors (concorrentes) and the niche's
-viral videos (video), then hands 7 ideas to propor(): each one is drawn by the Designer and judged by the Crítico
-(plugins/especialistas), and Matheus gets ONE Telegram message with the 7 and three buttons (approve all, choose,
+viral videos (video), then hands 4 feed ideas and 7 stories to propor() (22/10: 2 carousels, 2 videos and a story a
+day): each feed idea is drawn by the Designer, each story here from the kit's layouts (story.py), all judged by the
+Crítico (plugins/especialistas), and Matheus gets ONE Telegram message with the 11 and three buttons (approve all, choose,
 redo). aprovar() writes the approved ones into the same agenda.json the daily job loop publishes from, through
 conteudo.agendar(), so publishing is unchanged. Rules that are code:
 - without the especialistas plugin a proposal says the review is missing; nothing is ever approved by itself;
@@ -22,13 +23,18 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-PROPOSTAS = 7
+# Matheus, 22/10: "deve ser 4 por semana, 2 carrosseis e 2 videos e story sim todo dia" -> carousel on Tuesday and
+# Friday, video on Wednesday and Sunday (weekday numbers, Monday = 0), and one story a day at 9h.
+PLANO_FEED = (("CARROSSEL", 1), ("REELS", 2), ("CARROSSEL", 4), ("REELS", 6))
+PROPOSTAS = len(PLANO_FEED)
+STORIES = 7
 HORA = "11:45"  # the hour every post of the plan went out so far
-JANELA_DIAS = 21  # how far ahead to look for 7 free days
+HORA_STORY = "09:00"
+JANELA_DIAS = 21  # how far ahead to look for free days
 PROXY = "http://host.docker.internal:8787"  # the host holds the AWS identity; the container has none
 PONTE = Path("/a0/usr/plugins/whatsapp/helpers/ponte.py")
 DIAS_SEMANA = ("seg", "ter", "qua", "qui", "sex", "sáb", "dom")
-NOME_TIPO = {"REELS": "Reel", "CARROSSEL": "Carrossel", "IMAGE": "Foto"}
+NOME_TIPO = {"REELS": "Reel", "CARROSSEL": "Carrossel", "IMAGE": "Foto", "STORY": "Story"}
 VIDEO, IMAGEM = (".mp4",), (".jpg", ".jpeg", ".png")
 SEM_REVISAO = "sem revisão"
 REGRAS = ("Fala com o dono do negócio que produz e vende comida, nunca com o consumidor; sem jargão; número sempre "
@@ -98,9 +104,26 @@ def _hoje(agora: float) -> dt.date:
     return dt.datetime.fromtimestamp(agora, c()._tz()).date()
 
 
-def dias_livres(agora: float, n: int = PROPOSTAS) -> list[str]:
-    """The first n days from tomorrow with no live post in the agenda (a day blocked by the Crítico counts as taken)."""
-    ocupados = {i["data"] for i in c().carregar()["itens"] if i["estado"] not in ("cancelada", "falhou")}
+def _ocupados(canal: str) -> set:
+    """Days with a live item of that slot (feed or story); a day blocked by the Crítico counts as taken."""
+    return {i["data"] for i in c().carregar()["itens"] if i["estado"] not in ("cancelada", "falhou") and c().canal(i) == canal}
+
+
+def dias_do_feed(agora: float) -> list[tuple[str, str]]:
+    """[(formato, day)] for the plan's 4 slots: for each, the first free day of its weekday from tomorrow on."""
+    ocupados, hoje, saida = _ocupados("feed"), _hoje(agora), []
+    for formato, semana_dia in PLANO_FEED:
+        for k in range(1, JANELA_DIAS + 1):
+            dia = hoje + dt.timedelta(days=k)
+            if dia.weekday() == semana_dia and dia.isoformat() not in ocupados and dia.isoformat() not in {d for _, d in saida}:
+                saida.append((formato, dia.isoformat()))
+                break
+    return sorted(saida, key=lambda x: x[1])
+
+
+def dias_livres(agora: float, n: int = STORIES, canal: str = "story") -> list[str]:
+    """The first n days from tomorrow with no live item of that slot."""
+    ocupados = _ocupados(canal)
     hoje, livres = _hoje(agora), []
     for k in range(1, JANELA_DIAS + 1):
         dia = (hoje + dt.timedelta(days=k)).isoformat()
@@ -109,6 +132,41 @@ def dias_livres(agora: float, n: int = PROPOSTAS) -> list[str]:
         if len(livres) == n:
             break
     return livres
+
+
+_S: dict = {}
+
+
+def story():
+    """story.py next to this file (the tests may pin their own in _S["fixo"])."""
+    if "fixo" in _S:
+        return _S["fixo"]
+    caminho = Path(__file__).resolve().parent / "story.py"
+    marca = caminho.stat().st_mtime_ns
+    if _S.get("marca") != marca:
+        spec = importlib.util.spec_from_file_location("conteudo_story", caminho)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        _S.update(marca=marca, m=m)
+    return _S["m"]
+
+
+def _desenhar_story(esp, campos: dict, saida: Path) -> dict:
+    """One story: drawn here from the kit's layouts (helpers/story.py) and judged by the Crítico."""
+    try:
+        story().renderizar(campos, str(saida))
+    except Exception as exc:
+        return {"arquivos": [], "problema": f"o story não foi desenhado ({type(exc).__name__}: {str(exc)[:140]})",
+                "critica": {"veredito": SEM_REVISAO, "motivos": ["não há arte para julgar"], "sugestoes": []}}
+    if esp is None:
+        critica = {"veredito": SEM_REVISAO, "motivos": ["o Crítico (plugin especialistas) não está instalado"], "sugestoes": []}
+    else:
+        try:
+            critica = _critica(esp.criticar("story", {"formato": "STORY", "legenda": _texto(campos.get("manchete"), 200),
+                                                      "texto": _texto(campos.get("texto"), 300), "imagens": [str(saida)]}))
+        except Exception as exc:
+            critica = {"veredito": SEM_REVISAO, "motivos": [f"o Crítico falhou ({type(exc).__name__})"], "sugestoes": []}
+    return {"arquivos": [str(saida)], "problema": "", "critica": critica}
 
 
 def tipo_dos_arquivos(arquivos: list) -> tuple[str, list, str]:
@@ -162,22 +220,31 @@ def _desenhar(esp, briefing: dict, p: dict) -> dict:
             "falta": [str(x) for x in d.get("falta") or []], "critica": _critica(critica)}
 
 
-def propor(propostas: list, agora: float | None = None, enviar=None, login: str = "matheus") -> dict:
-    """The week: 7 ideas from the routine [{"titulo", "formato" (REELS|CARROSSEL|IMAGE), "ideia", "legenda", "hora"?}]
-    → each drawn and judged, saved as a new version, and the one message with buttons sent to Matheus. Nothing goes
-    into the agenda here."""
+def propor(propostas: list, agora: float | None = None, enviar=None, login: str = "matheus", stories=None) -> dict:
+    """The week: 4 feed ideas from the routine [{"titulo", "formato" (2 CARROSSEL and 2 REELS), "ideia", "legenda"}]
+    and 7 stories [{"layout", "manchete", ...: helpers/story.py}] → each drawn and judged, saved as a new version,
+    and the one message with buttons sent to Matheus. Nothing goes into the agenda here."""
     agora = time.time() if agora is None else agora
-    if isinstance(propostas, str):
-        try:
+    try:
+        if isinstance(propostas, str):
             propostas = json.loads(propostas)
-        except ValueError:
-            return {"ok": False, "erro": "propostas: lista JSON de 7 objetos"}
+        if isinstance(stories, str):
+            stories = json.loads(stories)
+    except ValueError:
+        return {"ok": False, "erro": "propostas e stories: listas JSON"}
     propostas = [p for p in propostas or [] if isinstance(p, dict)]
-    dias = dias_livres(agora)
+    stories = [x for x in stories or [] if isinstance(x, dict)]
     if len(propostas) != PROPOSTAS:
-        return {"ok": False, "erro": f"mande exatamente {PROPOSTAS} propostas (vieram {len(propostas)})"}
-    if len(dias) < PROPOSTAS:
-        return {"ok": False, "erro": f"só há {len(dias)} dias livres nas próximas 3 semanas"}
+        return {"ok": False, "erro": f"mande exatamente {PROPOSTAS} propostas do feed (vieram {len(propostas)})"}
+    pedidos = sorted(str(p.get("formato") or "").upper() for p in propostas)
+    if pedidos != sorted(f for f, _ in PLANO_FEED):
+        return {"ok": False, "erro": "o feed da semana é 2 CARROSSEL (ter e sex) e 2 REELS (qua e dom)"}
+    if len(stories) != STORIES:
+        return {"ok": False, "erro": f"mande exatamente {STORIES} stories, um por dia (vieram {len(stories)})"}
+    vagas = dias_do_feed(agora)
+    dias_story = dias_livres(agora, STORIES, "story")
+    if len(vagas) < PROPOSTAS or len(dias_story) < STORIES:
+        return {"ok": False, "erro": "não há dias livres suficientes nas próximas 3 semanas"}
     try:
         esp, nota = c().especialistas(), ""
     except Exception as exc:  # installed but broken: the proposals say so, and nothing is approved by itself
@@ -186,11 +253,10 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
     with _exclusivo():
         versao = 1 + max([int(p.stem.split("-")[1]) for p in _pasta().glob(f"{base}-*.json")] or [0])
     sid = f"{base}-{versao}"
+    fila = {f: [p for p in propostas if str(p.get("formato") or "").upper() == f] for f in ("CARROSSEL", "REELS")}
     itens = []
-    for n, (p, dia) in enumerate(zip(propostas, dias), start=1):
-        formato = str(p.get("formato") or "").upper()
-        formato = formato if formato in c().TIPOS else "CARROSSEL"
-        hora = str(p.get("hora") or HORA)
+    for n, (formato, dia) in enumerate(vagas, start=1):
+        p = fila[formato].pop(0)
         briefing = {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato,
                     "titulo": _texto(p.get("titulo"), 120), "ideia": _texto(p.get("ideia"), 1200),
                     "legenda": str(p.get("legenda") or "").strip(), "data": dia, "regras": REGRAS}
@@ -205,10 +271,17 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
                 f": {_texto('; '.join(d['falta']), 160)}" if d["falta"] else "")
         else:
             problema = c().validar_legenda(legenda)
-        itens.append({"n": n, "id": f"{sid}-{n}", "data": dia, "hora": hora, "titulo": briefing["titulo"],
+        itens.append({"n": n, "id": f"{sid}-{n}", "data": dia, "hora": str(p.get("hora") or HORA), "titulo": briefing["titulo"],
                       "ideia": briefing["ideia"], "formato_pedido": formato, "tipo": tipo, "arquivos": arquivos,
                       "capa": capa, "legenda": legenda, "spec": d["spec"], "critica": d["critica"],
                       "problema": problema, "estado": "proposta"})
+    for n, (campos, dia) in enumerate(zip(stories, dias_story), start=PROPOSTAS + 1):
+        d = _desenhar_story(esp, campos, _pasta() / sid / f"story-{n}.jpg")
+        titulo = f"{campos.get('layout', '?')}: {_texto(campos.get('manchete') or 'oferta Lucro na Mão', 100)}"
+        itens.append({"n": n, "id": f"{sid}-{n}", "data": dia, "hora": HORA_STORY, "titulo": titulo, "ideia": "",
+                      "formato_pedido": "STORY", "tipo": "STORY" if d["arquivos"] else "", "arquivos": d["arquivos"],
+                      "capa": "", "legenda": _texto(campos.get("manchete"), 200), "spec": {"story": campos},
+                      "critica": d["critica"], "problema": d["problema"], "estado": "proposta"})
     semana = {"id": sid, "criada_em": agora, "estado": "proposta", "login": login, "propostas": itens}
     with _exclusivo():
         for antiga in _pasta().glob("s*.json"):  # an older week still open is replaced: its buttons stop working
@@ -244,9 +317,11 @@ def _aprovaveis(semana: dict) -> list[dict]:
 
 
 def mensagem(semana: dict) -> tuple[str, list]:
-    """The one Telegram message: the 7 proposals, the Crítico's word on each, and the buttons."""
+    """The one Telegram message: the proposals, the Crítico's word on each, and the buttons."""
     ps = semana["propostas"]
-    linhas = [f"*Semana de posts da @raiz.connect* ({_rotulo_dia(ps[0]['data'])} a {_rotulo_dia(ps[-1]['data'])})"]
+    datas = sorted(p["data"] for p in ps)
+    linhas = [f"*Semana de posts da @raiz.connect* ({_rotulo_dia(datas[0])} a {_rotulo_dia(datas[-1])}): "
+              f"{PROPOSTAS} no feed e {len(ps) - PROPOSTAS} stories"]
     for p in ps:
         v = p["critica"]["veredito"]
         if p["problema"]:
@@ -257,8 +332,11 @@ def mensagem(semana: dict) -> tuple[str, list]:
             critico = "*Crítico reprovou*: " + c().uma_linha(p["critica"]["motivos"], 140)
         else:
             critico = "sem revisão do Crítico (" + c().uma_linha(p["critica"]["motivos"], 100) + ")"
-        linhas.append(f"{p['n']}. *{_rotulo_dia(p['data'])}* · {NOME_TIPO.get(p['tipo'], '?')} · {p['titulo']}\n"
-                      f"   {_texto(p['legenda'], 110)}\n   {critico}")
+        if p["formato_pedido"] == "STORY":
+            linhas.append(f"{p['n']}. *{_rotulo_dia(p['data'])}* · Story {p['hora']} · {p['titulo']}\n   {critico}")
+        else:
+            linhas.append(f"{p['n']}. *{_rotulo_dia(p['data'])}* · {NOME_TIPO.get(p['tipo'], '?')} · {p['titulo']}\n"
+                          f"   {_texto(p['legenda'], 110)}\n   {critico}")
     k = len(_aprovaveis(semana))
     linhas.append("Para ver a arte de uma, me peça (ex.: \"mostra a 3\"). Para aprovar só algumas, toque em Escolher "
                   "ou responda com os números (ex.: \"aprovar 1, 3 e 5\")."
@@ -465,7 +543,7 @@ def botao(login: str, botao_id: str, subir=None) -> dict:
     if acao == "refazer":
         refazer(alvo)
         return {"conversa": (f"🔁 Quero refazer a semana de posts {alvo}:\n{lista}\n\nPergunte em uma linha o que eu "
-                             "quero diferente. Quando eu responder, escreva 7 propostas novas com isso e chame "
+                             "quero diferente. Quando eu responder, escreva de novo as 4 propostas do feed e os 7 stories com isso e chame "
                              "`conteudo` acao \"propor_semana\" (ela desenha, passa pelo Crítico e me manda de novo).")}
     return {}
 

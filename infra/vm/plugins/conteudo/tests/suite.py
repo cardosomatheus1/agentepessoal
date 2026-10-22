@@ -112,6 +112,61 @@ class Suite:
         ok("hashtags" in c.validar_legenda(" ".join(f"#t{i}" for i in range(31))), "limite de hashtags")
         ok(c.validar_legenda("Preço: R$ 9,50 (100%) e ação.") == "", "acentos, R$ e % não são emoji")
 
+    def t_story_do_kit_regras_e_desenho(self):
+        spec = importlib.util.spec_from_file_location("story_teste", RAIZ / "helpers" / "story.py")
+        st = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(st)
+        ok(st.validar({"layout": "dica", "manchete": "Confere o insumo que mais subiu."}) == "", "dica simples passa")
+        ok("layout" in st.validar({"layout": "carrossel", "manchete": "x"}), "layout desconhecido")
+        ok("emoji" in st.validar({"layout": "dica", "manchete": "Confere 😅"}), "sem emoji")
+        ok("travessão" in st.validar({"layout": "dica", "manchete": "Confere — agora"}), "sem travessão")
+        ok("valores de exemplo" in st.validar({"layout": "dica", "manchete": "Bolo a R$ 80"}), "R$ só com valores de exemplo")
+        ok("tela real" in st.validar({"layout": "bastidor", "manchete": "Bastidor"}), "bastidor pede tela real")
+        ok("não encontrado" in st.validar({"layout": "post-novo", "manchete": "x", "imagem": "/nao/existe.jpg"}), "imagem existe")
+        ok("desconhecidos" in st.validar({"layout": "dica", "manchete": "x", "script": "alert(1)"}), "campo estranho fora")
+        ok((RAIZ / "story" / "telas" / "curva-abc-custos.png").exists(), "há tela real para o bastidor")
+        if not st._chrome():
+            return  # without a browser the drawing is checked on the VM
+        try:
+            from PIL import Image
+            import playwright  # noqa: F401
+        except ImportError:
+            return
+        saida = Path(tempfile.mkdtemp()) / "dica.jpg"
+        st.renderizar({"layout": "bastidor", "manchete": "Pra onde vai o seu dinheiro?", "destaque": "seu dinheiro",
+                       "tela": str(RAIZ / "story" / "telas" / "curva-abc-custos.png"),
+                       "pergunta": "Responde aqui no direct: <b>qual</b> é o maior custo?"}, str(saida))
+        with Image.open(saida) as im:
+            ok(im.size == (1080, 1920) and im.format == "JPEG", f"story 1080x1920 em JPEG: {im.size} {im.format}")
+
+    def t_story_um_por_dia_ao_lado_do_post(self):
+        # 22/10, Matheus: "story sim todo dia": o story tem a vaga dele, ao lado do post do feed
+        c = _modulo()
+        story = {"id": "qui-story", "data": "2026-10-14", "hora": "09:00", "tipo": "STORY",
+                 "arquivos": ["conteudo/stories/bastidor.jpg"], "legenda": "bastidor: a tela do estoque"}
+        agora = _ts(c, "2026-10-13", "10:00")
+        r = c.agendar([ITEM, story], agora)
+        ok(r["ok"], f"post e story no mesmo dia: {r}")
+        r = c.agendar([dict(story, id="outro-story")], agora)
+        ok(not r["ok"] and "story" in r["erro"] and "um por dia" in r["erro"], "dois stories no mesmo dia, não")
+        ok(not c.agendar([dict(story, id="s2", data="2026-10-15", arquivos=["conteudo/a.jpg", "conteudo/b.jpg"])], agora)["ok"],
+           "story é um arquivo só")
+        ok(c.agendar([dict(story, id="s3", data="2026-10-16", legenda="")], agora)["ok"], "story não precisa de legenda")
+        eq = lambda a, b, m: ok(a == b, f"{m}: veio {a!r}")
+        eq(c.devido(_ts(c, "2026-10-14", "09:05"))["id"], "qui-story", "às 9h sai o story")
+        api = ApiFalsa()
+        r = c.rodar(api, lambda t: None, _ts(c, "2026-10-14", "09:05"))
+        eq(r["estado"], "publicada", "story publicado")
+        criar = [x for x in api.chamadas if x[0] == "POST" and x[1] == "IG1/media"][0][2]
+        eq((criar.get("media_type"), criar.get("image_url"), "caption" in criar),
+           ("STORIES", "https://s3/conteudo/stories/bastidor.jpg?assinado", False), "STORIES com a imagem e sem legenda")
+        eq(c.devido(_ts(c, "2026-10-14", "11:46"))["id"], "seg-pov", "o story não tira a vaga do post do dia")
+        c.agendar([{"id": "s-video", "data": "2026-10-17", "hora": "09:00", "tipo": "STORY", "arquivos": ["conteudo/s/v.mp4"]}], agora)
+        api2 = ApiFalsa()
+        c.rodar(api2, lambda t: None, _ts(c, "2026-10-17", "09:01"))
+        criar = [x for x in api2.chamadas if x[0] == "POST" and x[1] == "IG1/media"][0][2]
+        ok(criar.get("video_url", "").startswith("https://s3/conteudo/s/v.mp4"), "story em vídeo vai como video_url")
+
     def t_agendar_um_por_dia_e_tudo_ou_nada(self):
         c = _modulo()
         agora = _ts(c, "2026-10-13", "10:00")
@@ -421,88 +476,116 @@ class Suite:
             def criticar(self, tipo, material):
                 return {"veredito": "aprova", "motivos": []}
         c.especialistas = (lambda: Esp()) if esp == "falso" else (lambda: None)
+
+        class StoryFalso:  # helpers/story.py draws with a browser; here a file is enough
+            @staticmethod
+            def renderizar(campos, saida):
+                if campos.get("layout") == "quebra":
+                    raise ValueError("layout deve ser um de: dica, ...")
+                Path(saida).parent.mkdir(parents=True, exist_ok=True)
+                Path(saida).write_bytes(b"\xff\xd8\xff story")
+                return saida
+        s._S["fixo"] = StoryFalso
         return c, s, chamadas
 
     @staticmethod
-    def _sete():
-        formatos = ["CARROSSEL", "REELS", "IMAGE", "CARROSSEL", "REELS", "CARROSSEL", "IMAGE"]
+    def _feed():
+        formatos = ["CARROSSEL", "REELS", "CARROSSEL", "REELS"]
         return [{"titulo": f"Post {n}", "formato": f, "ideia": f"gancho {n}",
                  "legenda": f"Quanto custa de verdade a sua marmita? Post {n}, com valores de exemplo."}
                 for n, f in enumerate(formatos, start=1)]
 
-    def t_semana_propoe_7_com_critica(self):
+    @staticmethod
+    def _stories():
+        layouts = ["post-novo", "video-novo", "bastidor", "post-novo", "oferta", "video-novo", "dica"]
+        return [{"layout": l, "manchete": f"Story {n}"} for n, l in enumerate(layouts, start=1)]
+
+    def t_semana_propoe_4_no_feed_e_7_stories(self):
+        # 22/10, Matheus: "4 por semana, 2 carrosseis e 2 videos e story sim todo dia"
         c, s, chamadas = self._semana()
         enviados = []
         agora = _ts(c, "2026-10-26", "07:50")  # a Monday
-        r = s.propor(self._sete(), agora, enviar=lambda login, texto, botoes: enviados.append((login, texto, botoes)) or "")
+        r = s.propor(self._feed(), agora, enviar=lambda login, texto, botoes: enviados.append((login, texto, botoes)) or "",
+                     stories=self._stories())
         ok(r["ok"] and r["semana"] == "s20261026-1" and r["enviada"], r)
-        ok(len(chamadas) == 7 and all(b["marca"] == "raiz" and "emoji" in b["regras"] for b in chamadas),
-           "cada proposta vai ao Designer com as regras da Raiz")
-        semana = s.carregar("s20261026-1")
-        ps = semana["propostas"]
-        ok([p["data"] for p in ps] == [f"2026-10-{d}" for d in range(27, 32)] + ["2026-11-01", "2026-11-02"],
-           "7 dias a partir de amanhã")
-        ok(all(p["critica"]["veredito"] in ("aprova", "reprova") for p in ps) and ps[2]["critica"]["veredito"] == "reprova",
-           "a crítica vem junto de cada proposta")
-        ok([p["tipo"] for p in ps] == ["CARROSSEL", "REELS", "IMAGE", "CARROSSEL", "REELS", "CARROSSEL", "IMAGE"], ps[1])
+        ok(len(chamadas) == 4 and all(b["marca"] == "raiz" and "emoji" in b["regras"] for b in chamadas),
+           "só o feed vai ao Designer, com as regras da Raiz")
+        ps = s.carregar("s20261026-1")["propostas"]
+        feed = [(p["data"], p["tipo"], p["hora"]) for p in ps[:4]]
+        ok(feed == [("2026-10-27", "CARROSSEL", "11:45"), ("2026-10-28", "REELS", "11:45"),
+                    ("2026-10-30", "CARROSSEL", "11:45"), ("2026-11-01", "REELS", "11:45")], f"ter/sex carrossel, qua/dom vídeo: {feed}")
+        st = ps[4:]
+        ok([p["data"] for p in st] == [f"2026-10-{d}" for d in range(27, 32)] + ["2026-11-01", "2026-11-02"]
+           and all(p["tipo"] == "STORY" and p["hora"] == "09:00" and p["arquivos"] for p in st), "um story por dia às 9h")
+        ok(ps[2]["critica"]["veredito"] == "reprova" and all(p["critica"]["veredito"] == "aprova" for p in st),
+           "a crítica vem junto de cada um, stories incluídos")
         ok(ps[1]["capa"].endswith("r2-capa.jpg"), "a imagem junto do vídeo vira a capa do Reel")
         ok(len(enviados) == 1, "uma mensagem só")
         login, texto, botoes = enviados[0]
-        ok(login == "matheus" and texto.count("\n1. ") + texto.count("\n7. ") == 2 and "Crítico reprovou" in texto
-           and "gancho fraco" in texto, texto)
+        ok("4 no feed e 7 stories" in texto and "\n11. " in texto and "Story 09:00" in texto and "Crítico reprovou" in texto, texto)
         ok([b["id"] for b in botoes] == ["cs:matheus:s20261026-1:todas", "cs:matheus:s20261026-1:algumas",
-                                         "cs:matheus:s20261026-1:refazer"] and botoes[0]["titulo"] == "✅ Aprovar 6 de 7", botoes)
+                                         "cs:matheus:s20261026-1:refazer"] and botoes[0]["titulo"] == "✅ Aprovar 10 de 11", botoes)
         ok(all(len(b["id"].encode()) <= 64 for b in botoes), "cabe no callback do Telegram")
         ok(c.carregar()["itens"] == [], "propor não agenda nada")
-        ok(not s.propor(self._sete()[:5], agora, enviar=lambda *a: "")["ok"], "menos de 7 é recusado")
+        ok(not s.propor(self._feed()[:3], agora, enviar=lambda *a: "", stories=self._stories())["ok"], "menos de 4 no feed é recusado")
+        tres = [dict(p, formato="CARROSSEL") for p in self._feed()]
+        ok("2 CARROSSEL" in s.propor(tres, agora, enviar=lambda *a: "", stories=self._stories())["erro"], "a mistura é 2 e 2")
+        ok(not s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories()[:5])["ok"], "7 stories")
 
     def t_semana_sem_critico_nao_aprova_sozinha(self):
         c, s, _ = self._semana(esp=None)
         enviados = []
-        sete = [dict(p, arquivos=["conteudo/semanas/x/a.jpg"]) for p in self._sete()]
-        r = s.propor(sete, _ts(c, "2026-10-26", "07:50"), enviar=lambda l, t, b: enviados.append((t, b)) or "")
+        feed = [dict(p, arquivos=["conteudo/semanas/x/a.jpg"]) for p in self._feed()]
+        r = s.propor(feed, _ts(c, "2026-10-26", "07:50"), enviar=lambda l, t, b: enviados.append((t, b)) or "",
+                     stories=self._stories())
         ok(r["ok"] and all(p["critico"] == "sem revisão" for p in r["propostas"]), r)
         texto, botoes = enviados[0]
-        ok(texto.count("sem revisão do Crítico") == 7 and "não está instalado" in texto, texto)
+        ok(texto.count("sem revisão do Crítico") == 11 and "não está instalado" in texto, texto)
         ok(c.carregar()["itens"] == [] and s.carregar(r["semana"])["estado"] == "proposta", "nada aprovado sozinho")
-        # a Designer that breaks on one: that proposal cannot be scheduled and says why
+        # a Designer that breaks on one, and a story that cannot be drawn: they cannot be scheduled and say why
         c, s, _ = self._semana(quebrar=(4,))
-        r = s.propor(self._sete(), _ts(c, "2026-10-26", "07:50"), enviar=lambda *a: "")
-        p4 = s.carregar(r["semana"])["propostas"][3]
-        ok(p4["problema"].startswith("o Designer não entregou") and "render fora" in p4["problema"], p4)
+        st = self._stories()
+        st[0] = {"layout": "quebra", "manchete": "x"}
+        r = s.propor(self._feed(), _ts(c, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=st)
+        ps = s.carregar(r["semana"])["propostas"]
+        ok(ps[3]["problema"].startswith("o Designer não entregou") and "render fora" in ps[3]["problema"], ps[3])
+        ok(ps[4]["problema"].startswith("o story não foi desenhado") and not ps[4]["tipo"], ps[4])
 
     def t_semana_aprovar_todas_escreve_a_agenda(self):
         c, s, _ = self._semana()
         agora = _ts(c, "2026-10-26", "07:50")
-        s.propor(self._sete(), agora, enviar=lambda *a: "")
+        s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
         subidos = []
         r = s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda local, chave: subidos.append((local, chave)))
         ok("Agendados" in r["mensagem"] and "Não agendei" not in r["mensagem"], r)
         itens = {i["id"]: i for i in c.carregar()["itens"]}
-        ok(len(itens) == 6 and "s20261026-1-3" not in itens, f"a reprovada fica de fora do 'todas': {sorted(itens)}")
+        ok(len(itens) == 10 and "s20261026-1-3" not in itens, f"a reprovada fica de fora do 'todas': {sorted(itens)}")
         for i in itens.values():
-            ok(c._validar_item(i) == "" and i["estado"] == "pendente" and i["hora"] == "11:45", f"formato da agenda: {i}")
+            ok(c._validar_item(i) == "" and i["estado"] == "pendente", f"formato da agenda: {i}")
             ok(all(a.startswith("conteudo/semanas/s20261026-1/") for a in i["arquivos"]), i["arquivos"])
             ok("liberado" not in i and i["origem"]["semana"] == "s20261026-1", i)
+        ok(sum(1 for i in itens.values() if i["tipo"] == "STORY" and i["hora"] == "09:00") == 7, "os 7 stories na agenda")
         reel = itens["s20261026-1-2"]
         ok(reel["tipo"] == "REELS" and reel["capa"].endswith("r2-capa.jpg"), reel)
         ok(len(subidos) == sum(len(i["arquivos"]) + (1 if i.get("capa") else 0) for i in itens.values()), "cada arquivo subiu")
         ok((c.PASTA / "cache" / "s20261026-1-1" / "c1-1.jpg").exists(), "cópia local para o Crítico da publicação")
-        # the daily publish works unchanged on what the week wrote (the gate's Crítico approves)
+        # the daily publish: the story at 9h, the carousel at 11:45, the same day (the gate's Crítico approves)
+        aprova = type("C", (), {"criticar": lambda self, t, m: {"veredito": "aprova"}})()
         api = ApiFalsa()
-        pub = c.rodar(api, lambda t: None, _ts(c, "2026-10-27", "11:50"), dormir=lambda x: None,
-                      critico=type("C", (), {"criticar": lambda self, t, m: {"veredito": "aprova"}})())
-        ok(pub["estado"] == "publicada" and pub["portao"] == "o Crítico aprovou", pub)
-        ok(any(x[2].get("media_type") == "CAROUSEL" for x in api.chamadas), "o carrossel do dia saiu pela Meta")
+        pub = c.rodar(api, lambda t: None, _ts(c, "2026-10-27", "09:05"), dormir=lambda x: None, critico=aprova)
+        ok(pub["estado"] == "publicada" and any(x[2].get("media_type") == "STORIES" for x in api.chamadas), pub)
+        api = ApiFalsa()
+        pub = c.rodar(api, lambda t: None, _ts(c, "2026-10-27", "11:50"), dormir=lambda x: None, critico=aprova)
+        ok(pub["estado"] == "publicada" and any(x[2].get("media_type") == "CAROUSEL" for x in api.chamadas), "o carrossel do dia")
         de_novo = s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda *a: None)["mensagem"]
         ok(de_novo.startswith("Nada para agendar") and "Ainda esperando você: 3" in de_novo, f"aprovar de novo não duplica: {de_novo}")
-        ok(len(c.carregar()["itens"]) == 6, "nada duplicado")
+        ok(len(c.carregar()["itens"]) == 10, "nada duplicado")
         ok(s.botao("outra", "cs:matheus:s20261026-1:todas") == {}, "botão de outra pessoa não vale")
 
     def t_semana_aprovacao_parcial(self):
         c, s, _ = self._semana()
         agora = _ts(c, "2026-10-26", "07:50")
-        s.propor(self._sete(), agora, enviar=lambda *a: "")
+        s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
         r = s.botao("matheus", "cs:matheus:s20261026-1:algumas")
         ok("aprovar_semana" in r["conversa"] and "s20261026-1" in r["conversa"] and "Não aprove nenhum outro" in r["conversa"], r)
         r = s.aprovar("s20261026-1", "2 e 3", quem="matheus (pela conversa)", agora=agora, subir=lambda *a: None)
@@ -513,26 +596,27 @@ class Suite:
         ok(lib["por"] == "matheus (pela conversa)" and "gancho fraco" in lib["critica"], f"a decisão dele fica registrada: {lib}")
         ok("liberado" not in itens["s20261026-1-2"], "só a reprovada leva a liberação")
         semana = s.carregar("s20261026-1")
-        ok(semana["estado"] == "parcial" and [p["estado"] for p in semana["propostas"]].count("proposta") == 5, semana["estado"])
-        ok("Ainda esperando você: 1, 4, 5, 6, 7" in r["texto"], r["texto"])
+        ok(semana["estado"] == "parcial" and [p["estado"] for p in semana["propostas"]].count("proposta") == 9, semana["estado"])
+        ok("Ainda esperando você: 1, 4, 5, 6, 7, 8, 9, 10, 11" in r["texto"], r["texto"])
         diario = [json.loads(l) for l in (c.PASTA / "diario.jsonl").read_text(encoding="utf-8").splitlines()]
         ok(any(e.get("item") == "s20261026-1-3" and e.get("para") == "pendente" and e["quem"].startswith("matheus") for e in diario),
            "o diário diz quem aprovou")
         # the gate does not block what he already decided, even if the Crítico still reproves
         reprova = type("C", (), {"criticar": lambda self, t, m: {"veredito": "reprova", "motivos": ["gancho fraco"]}})()
-        pub = c.rodar(ApiFalsa(), lambda t: None, _ts(c, "2026-10-29", "11:50"), dormir=lambda x: None, critico=reprova)
+        pub = c.rodar(ApiFalsa(), lambda t: None, _ts(c, "2026-10-30", "11:50"), dormir=lambda x: None, critico=reprova)
         ok(pub["estado"] == "publicada" and pub["portao"].startswith("liberado por matheus"), pub)
         # one that fails to upload is not scheduled, the others go
         def sobe(local, chave):
-            if "c4-" in chave:
+            if "/r4" in chave:
                 raise RuntimeError("proxy fora do ar")
         r = s.aprovar("s20261026-1", [4, 5], agora=agora, subir=sobe)
         ok(r["agendados"] == [5] and r["recusados"][0]["n"] == 4 and "não subiu" in r["recusados"][0]["motivo"], r)
         # redo: the old message's buttons stop working; the new version proposes only for the free days
         ok("propor_semana" in s.botao("matheus", "cs:matheus:s20261026-1:refazer")["conversa"], "refazer pede o que mudar")
         ok("já foi decidida" in s.botao("matheus", "cs:matheus:s20261026-1:todas")["mensagem"], "semana refeita não aprova")
-        r2 = s.propor(self._sete(), agora, enviar=lambda *a: "")
-        ok(r2["semana"] == "s20261026-2" and "2026-10-28" not in [p["data"] for p in r2["propostas"]], r2)
+        r2 = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
+        datas = [p["data"] for p in r2["propostas"]]
+        ok(r2["semana"] == "s20261026-2" and "2026-10-28" not in datas[:4] and "2026-10-27" not in datas[4:], r2)
         ok(not s.aprovar("s20261026-1", None, agora=agora, subir=lambda *a: None)["ok"], "versão velha recusa")
 
     def t_portao_bloqueia_reprova(self):

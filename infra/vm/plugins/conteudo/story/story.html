@@ -1,0 +1,93 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- Stories da Raiz (1080x1920) na identidade do kit (infra/reels/base/raiz-carrossel.css): night/creme, lima só para o
+     que sobra, Manrope + Instrument Serif itálico. O Instagram cobre ~250 px no topo (barra do perfil) e ~340 px embaixo
+     (caixa de resposta): nada importante nessas faixas. Os campos chegam em window.CAMPOS (helpers/story.py). -->
+<style>
+@font-face{font-family:M;src:url(kit/manrope-latin-variable.woff2) format('woff2');font-weight:200 800}
+@font-face{font-family:S;src:url(kit/instrument-serif-italic-latin.woff2) format('woff2');font-style:italic}
+:root{--night:#101d18;--card:#1b3026;--fio:#3b5043;--txt:#f5f7ed;--mut:#b5c2b6;--lima:#c8f17a;--lima-b:#9bbb60;
+ --btn:#245d38;--forest:#27613c;--tint:#e9f1df;--bg:#f5f2e9;--borda:#d9d5c7;--ink:#182b23;--mutc:#58665e;--m:96px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1080px;height:1920px;overflow:hidden;font-family:M,sans-serif;background:var(--night);color:var(--txt);-webkit-font-smoothing:antialiased}
+.st{position:absolute;inset:0;overflow:hidden;background:var(--night)}
+.st.claro{background:var(--bg);color:var(--ink)}
+.st:before{content:'';position:absolute;width:1700px;height:1700px;left:-560px;top:-620px;border-radius:50%;
+ background:radial-gradient(circle,rgba(39,97,60,.6),rgba(16,29,24,0) 62%)}
+.st.claro:before{background:radial-gradient(circle,rgba(233,241,223,.95),rgba(245,242,233,0) 62%)}
+.topo{position:absolute;left:var(--m);right:var(--m);top:270px;display:flex;justify-content:space-between;align-items:center;z-index:3}
+.topo img{height:84px}
+.etq{font-weight:800;font-size:28px;letter-spacing:.16em;text-transform:uppercase;color:var(--lima)}
+.claro .etq{color:var(--forest)}
+.area{position:absolute;left:var(--m);right:var(--m);top:420px;bottom:400px;display:flex;flex-direction:column;z-index:2}
+h1{font-weight:800;letter-spacing:-.045em;font-size:112px;line-height:1;text-wrap:balance}
+h1.menor{font-size:92px}
+.it{font-family:S;font-style:italic;font-weight:400;letter-spacing:-.01em;color:var(--lima);padding-right:0}
+.claro .it{color:var(--forest)}
+p{font-weight:500;font-size:44px;line-height:1.36;color:var(--mut);margin-top:44px}
+.claro p{color:var(--mutc)}
+p b{color:var(--txt);font-weight:700}.claro p b{color:var(--ink)}
+.esp{flex:1}
+.botao{display:flex;align-items:center;justify-content:space-between;background:var(--btn);color:#fff;border-radius:20px;
+ padding:38px 48px;font-weight:800;font-size:44px;letter-spacing:-.02em}
+.botao small{display:block;font-weight:600;font-size:28px;letter-spacing:0;color:#cfe3d3;margin-top:8px}
+.botao .seta{font-size:64px;font-weight:600}
+.lima-fundo{background:var(--lima);color:var(--night)}.lima-fundo small{color:#2b4433}
+.capa{flex:none;margin-top:56px;align-self:center;border-radius:28px;overflow:hidden;border:10px solid #0b1410;
+ box-shadow:0 40px 90px rgba(0,0,0,.5);transform:rotate(-2deg);position:relative}
+.capa img{display:block;height:640px;width:auto;max-width:760px}
+.capa.video:after{content:'';position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;
+ background:rgba(16,29,24,.75) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5v14l11-7z' fill='%23c8f17a'/%3E%3C/svg%3E") center/70px no-repeat}
+.tela{flex:none;margin-top:52px;border-radius:24px;overflow:hidden;border:2px solid var(--fio);box-shadow:0 40px 90px rgba(0,0,0,.45);
+ background:#fff;max-height:640px}
+.tela img{display:block;width:100%}
+.nota{font-weight:600;font-size:26px;color:var(--mut);margin-top:18px;letter-spacing:.02em}
+.claro .nota{color:var(--mutc)}
+.pergunta{margin-top:40px;border:2px dashed var(--lima-b);border-radius:20px;padding:30px 36px;font-weight:700;font-size:40px;line-height:1.3}
+.lista{list-style:none;display:flex;flex-direction:column;gap:30px;margin-top:52px}
+.lista li{font-size:44px;font-weight:700;line-height:1.2;display:flex;gap:20px}
+.lista li:before{content:'✓';color:var(--lima-b)}
+.lista li small{display:block;font-size:30px;font-weight:500;color:var(--mut);margin-top:8px}
+.preco{margin-top:56px;display:flex;align-items:baseline;gap:20px}
+.preco b{font-size:120px;font-weight:800;letter-spacing:-.05em;color:var(--lima)}
+.preco span{font-size:40px;font-weight:600;color:var(--mut)}
+.selo{display:inline-block;margin-top:28px;background:var(--card);border:2px solid var(--fio);border-radius:999px;padding:16px 30px;
+ font-weight:700;font-size:30px;color:var(--txt)}
+</style></head><body>
+<div id="st" class="st"></div>
+<script>
+const C = window.CAMPOS || {};
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// the highlighted word(s) of the headline go in Instrument Serif italic
+function manchete(m, d) {
+  m = esc(m); d = esc(d);
+  return d && m.includes(d) ? m.replace(d, `<span class="it">${d}</span>`) : m;
+}
+const L = C.layout || 'dica';
+const claro = L === 'dica' && C.claro;
+const st = document.getElementById('st');
+if (claro) st.classList.add('claro');
+const logo = `kit/${claro ? 'rc-logo-light-v26.png' : 'rc-logo-dark-v26.png'}`;
+const etiqueta = {dica: 'Dica da semana', 'post-novo': 'Post novo no feed', 'video-novo': 'Vídeo novo no feed',
+                  bastidor: 'Bastidor do sistema', oferta: 'Lucro na Mão em 30 Dias'}[L] || '';
+let corpo = '';
+const h = `<h1 class="${(C.manchete || '').length > 70 ? 'menor' : ''}">${manchete(C.manchete, C.destaque)}</h1>`;
+if (L === 'dica') {
+  corpo = h + (C.texto ? `<p>${esc(C.texto)}</p>` : '') + `<div class="esp"></div>` +
+    `<div class="botao"><div>${esc(C.chamada || 'Salva pra usar depois')}<small>@raiz.connect</small></div><span class="seta">↗</span></div>`;
+} else if (L === 'post-novo' || L === 'video-novo') {
+  corpo = h + (C.imagem ? `<div class="capa ${L === 'video-novo' ? 'video' : ''}"><img src="${esc(C.imagem)}"></div>` : '') +
+    `<div class="esp"></div><div class="botao lima-fundo"><div>${esc(C.chamada || (L === 'video-novo' ? 'Assiste no perfil' : 'Arrasta no perfil'))}` +
+    `<small>toca em @raiz.connect</small></div><span class="seta">→</span></div>`;
+} else if (L === 'bastidor') {
+  corpo = h + (C.tela ? `<div class="tela"><img src="${esc(C.tela)}"></div><div class="nota">${esc(C.nota || 'tela real do Raiz Connect · valores de exemplo')}</div>` : '') +
+    `<div class="esp"></div><div class="pergunta">${esc(C.pergunta || 'Responde aqui no direct:')}</div>`;
+} else if (L === 'oferta') {
+  corpo = `<h1 class="menor">${manchete(C.manchete || 'Em 30 dias você sabe quanto sobra em cada produto.', C.destaque || 'quanto sobra')}</h1>` +
+    `<ul class="lista">${(C.itens || ['A gente cadastra seus 10 principais produtos', 'Raio-X do negócio no primeiro mês', 'Se não achar onde o dinheiro escapa, você não paga a próxima mensalidade'])
+      .map(i => `<li><span>${esc(i)}</span></li>`).join('')}</ul>` +
+    `<div class="preco"><b>R$ 197</b><span>por mês, sem fidelidade</span></div>` +
+    `<div class="esp"></div><div class="botao lima-fundo"><div>${esc(C.chamada || 'Link na bio')}<small>@raiz.connect</small></div><span class="seta">↗</span></div>`;
+}
+st.innerHTML = `<div class="topo"><img src="${logo}"><span class="etq">${esc(C.etiqueta || etiqueta)}</span></div><div class="area">${corpo}</div>`;
+</script>
+</body></html>

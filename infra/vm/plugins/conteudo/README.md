@@ -15,3 +15,18 @@ cofre). Autorizado pelo Matheus em 13/10: "1 por dia, nas legendas não use emot
 - A rotina relê o helper quando o arquivo muda e grava em `/a0/usr/conteudo/rotina.json` o pid e o sha256 do helper
   carregado de fato.
 - Estados: `TRANSICOES` em `helpers/conteudo.py`; diário em `/a0/usr/conteudo/diario.jsonl`.
+
+## Plano de 22/10: 4 no feed + story todo dia
+
+Matheus, 22/10: "estamos batendo mt em reels, acho que deve ser 4 por semana, 2 carrosseis e 2 videos e story sim todo
+dia". Carrossel na terça e na sexta, Reel na quarta e no domingo, às 11:45; 1 story por dia às 9h; 2 dos 4 posts falam
+da gestão e 2 de custo e preço.
+- Tipo `STORY` (um .jpg ou um .mp4, 1080x1920): vai à Meta com `media_type=STORIES` e `image_url`/`video_url`, sem
+  legenda (a API não leva legenda, enquete, link nem música). O story tem a vaga dele: um post e um story por dia
+  (`canal()`); `devido()` olha cada vaga.
+- Arte do story: `helpers/story.py` desenha a partir de 5 layouts fixos do kit (`story/story.html`: dica, post-novo,
+  video-novo, bastidor, oferta), com o navegador do container; o agente faz sozinho, ao contrário do carrossel e do
+  Reel da Raiz, que são feitos peça a peça numa sessão de operador. Telas reais do sistema para o bastidor em
+  `story/telas/`. Regras em código: sem emoji, sem travessão, R$ só com "valores de exemplo", imagem só de arquivo local.
+- `semana.propor(propostas=4, stories=7)`: o Designer desenha o feed, `story.py` os stories, o Crítico julga todos
+  (tipo `story` no plugin especialistas) e vai uma mensagem com os 11.

@@ -25,7 +25,9 @@ PREFIXO = "conteudo/"
 GRAPH = "https://graph.facebook.com/v25.0"
 PROXY = "http://host.docker.internal:8787"  # host proxy: the only holder of AWS credentials
 FUSO = "America/Sao_Paulo"
-TIPOS = ("REELS", "CARROSSEL", "IMAGE")  # IMAGE: one feed photo (17/10: Matheus wanted the iFood art as a photo, not a still Reel)
+TIPOS = ("REELS", "CARROSSEL", "IMAGE", "STORY")  # IMAGE: one feed photo (17/10: Matheus wanted the iFood art as a photo, not a still Reel)
+# STORY (22/10, Matheus: "story sim todo dia"): one .jpg or one .mp4, 1080x1920; the Graph API takes no caption,
+# poll, link or music on a story. A story has its own slot: one feed post and one story a day.
 JPG = (".jpg", ".jpeg")  # the Graph API takes JPEG only for images
 MAX_LEGENDA, MAX_HASHTAGS, MAX_CARROSSEL = 2200, 30, 10
 CAPA_MS = 1500  # Reel cover frame when no cover image is given (ms)
@@ -123,6 +125,11 @@ def validar_legenda(texto: str) -> str:
     return ""
 
 
+def canal(it: dict) -> str:
+    """"story" or "feed": each has its own one-a-day slot."""
+    return "story" if it.get("tipo") == "STORY" else "feed"
+
+
 def _validar_item(it: dict) -> str:
     try:
         dt.date.fromisoformat(str(it.get("data")))
@@ -138,6 +145,8 @@ def _validar_item(it: dict) -> str:
         return f"arquivos: chaves do S3 começando por {PREFIXO}"
     if it["tipo"] == "REELS" and (len(arqs) != 1 or not arqs[0].lower().endswith(".mp4")):
         return "Reel: um único .mp4"
+    if it["tipo"] == "STORY" and (len(arqs) != 1 or not arqs[0].lower().endswith(JPG + (".mp4",))):
+        return "story: uma única .jpg ou .mp4"
     if it["tipo"] == "IMAGE" and (len(arqs) != 1 or not arqs[0].lower().endswith(JPG)):
         return "foto (IMAGE): uma única imagem .jpg"
     capa = it.get("capa")
@@ -150,6 +159,9 @@ def _validar_item(it: dict) -> str:
     for campo in ("origem", "liberado"):
         if campo in it and not isinstance(it[campo], dict):
             return f"{campo}: objeto"
+    if it["tipo"] == "STORY":  # no caption goes out on a story; "legenda" is only what it is about (for the Crítico)
+        texto = str(it.get("legenda") or "").strip()
+        return "" if not texto else ("a descrição do story tem emoji" if EMOJI.search(texto) else "")
     return validar_legenda(it.get("legenda", ""))
 
 
@@ -159,21 +171,21 @@ def agendar(itens: list, agora: float | None = None) -> dict:
     hoje = dt.datetime.fromtimestamp(agora, _tz()).date().isoformat()
     with _exclusivo():
         d = carregar()
-        ocupadas = {i["data"] for i in d["itens"] if i["estado"] not in ("cancelada", "falhou")}
+        ocupadas = {(i["data"], canal(i)) for i in d["itens"] if i["estado"] not in ("cancelada", "falhou")}
         ids = {i["id"] for i in d["itens"]}
         novos = []
         for it in itens:
             erro = _validar_item(it)
             if not erro and it["data"] < hoje:
                 erro = "data no passado"
-            if not erro and (it["data"] in ocupadas or it["data"] in {n["data"] for n in novos}):
-                erro = f"já existe post para {it['data']} (um por dia)"
+            if not erro and ((it["data"], canal(it)) in ocupadas or (it["data"], canal(it)) in {(n["data"], canal(n)) for n in novos}):
+                erro = f"já existe {'story' if canal(it) == 'story' else 'post'} para {it['data']} (um por dia)"
             if not erro and (not it.get("id") or it["id"] in ids or it["id"] in {n["id"] for n in novos}):
                 erro = "id vazio ou repetido"
             if erro:
                 return {"ok": False, "erro": f"{it.get('id', '?')}: {erro}"}
             novos.append({"id": it["id"], "data": it["data"], "hora": it["hora"], "tipo": it["tipo"],
-                          "arquivos": list(it["arquivos"]), "legenda": it["legenda"].strip(), "estado": "pendente",
+                          "arquivos": list(it["arquivos"]), "legenda": str(it.get("legenda") or "").strip(), "estado": "pendente",
                           "criado_em": agora,
                           **{k: it[k] for k in ("capa", "capa_ms", "origem", "liberado") if it.get(k)}})
         d["itens"].extend(novos)
@@ -333,15 +345,16 @@ def trocar_formato(item_id: str, tipo: str, arquivos: list, capa: str = "", agor
 
 
 def devido(agora: float | None = None) -> dict | None:
-    """Today's post when its hour has come, unless something was already published or attempted today."""
+    """Today's post (or story) when its hour has come, unless one of the same slot was already published or
+    attempted today."""
     agora = time.time() if agora is None else agora
     momento = dt.datetime.fromtimestamp(agora, _tz())
     hoje, hora = momento.date().isoformat(), momento.strftime("%H:%M")
     d = carregar()
     do_dia = [i for i in d["itens"] if i["data"] == hoje]
-    if any(i["estado"] in ("publicando", "publicada", "incerta") for i in do_dia):
-        return None
-    return next((i for i in do_dia if i["estado"] == "pendente" and i["hora"] <= hora), None)
+    feitos = {canal(i) for i in do_dia if i["estado"] in ("publicando", "publicada", "incerta")}
+    return next((i for i in sorted(do_dia, key=lambda i: i["hora"])
+                 if i["estado"] == "pendente" and i["hora"] <= hora and canal(i) not in feitos), None)
 
 
 # ------------------------------------------------------------------ publishing
@@ -436,6 +449,10 @@ def preparar(item: dict, api, dormir=time.sleep) -> str:
         # for a feed photo (media_type is only CAROUSEL, REELS or STORIES).
         cid = _ok(api.post(f"{ig}/media", {"image_url": api.url(item["arquivos"][0]), "caption": item["legenda"]}),
                   "criar a foto")["id"]
+    elif item["tipo"] == "STORY":
+        arq = item["arquivos"][0]
+        midia = {"video_url": api.url(arq)} if arq.lower().endswith(".mp4") else {"image_url": api.url(arq)}
+        cid = _ok(api.post(f"{ig}/media", {"media_type": "STORIES", **midia}), "criar o story")["id"]
     elif item["tipo"] == "CARROSSEL":
         filhos = [_ok(api.post(f"{ig}/media", {"image_url": api.url(k), "is_carousel_item": "true"}), f"imagem {n + 1}")["id"]
                   for n, k in enumerate(item["arquivos"])]
@@ -482,7 +499,7 @@ def material_do_post(item: dict) -> tuple[str, dict]:
     pasta = PASTA / "cache" / item["id"]
     imagens = [str(pasta / k.rsplit("/", 1)[-1]) for k in list(item.get("arquivos") or []) + ([item["capa"]] if item.get("capa") else [])
                if k.lower().endswith(JPG) and (pasta / k.rsplit("/", 1)[-1]).exists()]
-    tipo = "carrossel" if item.get("tipo") == "CARROSSEL" else "post"
+    tipo = {"CARROSSEL": "carrossel", "STORY": "story"}.get(item.get("tipo"), "post")
     material = {"formato": item.get("tipo"), "legenda": item.get("legenda", ""), "data": item.get("data"),
                 "titulo": (item.get("origem") or {}).get("titulo", ""), "imagens": imagens}
     if item.get("tipo") == "REELS":

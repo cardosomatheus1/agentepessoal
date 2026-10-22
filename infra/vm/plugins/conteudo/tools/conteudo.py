@@ -54,7 +54,7 @@ class Conteudo(Tool):
         elif acao == "arquivos":
             r = await rodar(None, c.baixar_post, str(kwargs.get("data") or ""))
         elif acao == "propor_semana":  # the Designer and the Crítico take a while per post: off the loop
-            r = await rodar(None, _semana().propor, kwargs.get("propostas"))
+            r = await rodar(None, lambda: _semana().propor(kwargs.get("propostas"), stories=kwargs.get("stories")))
         elif acao == "aprovar_semana":
             r = await rodar(None, lambda: _semana().aprovar(str(kwargs.get("semana") or ""), kwargs.get("numeros"),
                                                              quem="matheus (pela conversa)"))
