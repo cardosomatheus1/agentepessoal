@@ -35,6 +35,7 @@ PARAM_URL = f"/{NAME}/agent-url"
 PARAM_PHONE = f"/{NAME}/phone-url"
 VM_ROLE = f"{NAME}-vm"
 META_ROLE = f"{NAME}-segredo-meta"
+VOZ_ROLE = f"{NAME}-voz"
 CONTROL_ROLE = f"{NAME}-control"
 FUNCTION = f"{NAME}-control"
 WAKE_ROLE = f"{NAME}-acordar-vm"
@@ -187,11 +188,11 @@ def ensure_vm_role() -> str:
             ],
         },
     )
-    # credenciais_meta.py hands the agent short-lived credentials of META_ROLE
+    # credenciais_meta.py hands the agent short-lived credentials of META_ROLE (and of VOZ_ROLE, for the narration)
     iam.put_role_policy(RoleName=VM_ROLE, PolicyName=f"{VM_ROLE}-segredo-meta", PolicyDocument=json.dumps({
         "Version": "2012-10-17",
         "Statement": [{"Effect": "Allow", "Action": "sts:AssumeRole",
-                       "Resource": f"arn:aws:iam::{account}:role/{META_ROLE}"}],
+                       "Resource": [f"arn:aws:iam::{account}:role/{META_ROLE}", f"arn:aws:iam::{account}:role/{VOZ_ROLE}"]}],
     }))
     try:
         iam.get_instance_profile(InstanceProfileName=VM_ROLE)
@@ -204,6 +205,25 @@ def ensure_vm_role() -> str:
         log("waiting for instance profile to propagate")
         time.sleep(15)
     return profile["Arn"]
+
+
+def ensure_voice_role() -> None:
+    """Only the narration of the video templates (infra/reels/moldes, rendered by the agent since 22/10): Nova 2
+    Sonic in Bedrock and Polly. Assumed by the VM for the agent (credenciais_meta.py, path /voz)."""
+    trust = {"Version": "2012-10-17", "Statement": [{
+        "Effect": "Allow", "Principal": {"AWS": f"arn:aws:iam::{account}:role/{VM_ROLE}"}, "Action": "sts:AssumeRole"}]}
+    policy = {"Version": "2012-10-17", "Statement": [
+        {"Effect": "Allow", "Action": ["bedrock:InvokeModelWithBidirectionalStream", "bedrock:InvokeModel"],
+         "Resource": f"arn:aws:bedrock:{REGION}::foundation-model/amazon.nova-2-sonic-v1:0"},
+        {"Effect": "Allow", "Action": "polly:SynthesizeSpeech", "Resource": "*"},
+    ]}
+    try:
+        iam.get_role(RoleName=VOZ_ROLE)
+        iam.update_assume_role_policy(RoleName=VOZ_ROLE, PolicyDocument=json.dumps(trust))
+    except iam.exceptions.NoSuchEntityException:
+        iam.create_role(RoleName=VOZ_ROLE, AssumeRolePolicyDocument=json.dumps(trust), MaxSessionDuration=3600, Tags=TAGS)
+        log(f"created role {VOZ_ROLE}")
+    iam.put_role_policy(RoleName=VOZ_ROLE, PolicyName="voz", PolicyDocument=json.dumps(policy))
 
 
 def ensure_meta_secret_role() -> None:
@@ -640,6 +660,7 @@ def main() -> None:
     ensure_bucket()
     profile = ensure_vm_role()
     ensure_meta_secret_role()
+    ensure_voice_role()
     upload_bundle()
     subnet, vpc = default_subnet_and_vpc()
     sg = ensure_security_group(vpc)

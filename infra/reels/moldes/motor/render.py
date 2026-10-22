@@ -3,7 +3,8 @@
 
     render.py <molde> <ficha.json> [--formato reel|story|carrossel] [--saida DIR] [--previa] [--area] [--sem-conferir]
 
---previa: only the check (at the middle and the end of every scene, or every slide) and a contact sheet prev.jpg;
+--previa: only the check (at the middle and the end of every scene, or every slide), a contact sheet prev.jpg and, when
+the template is narrated, the narration alone in narracao.m4a (approved by ear before the video, decision #39);
 without it: the finished video (video.mp4, 1080x1920, 30 fps, audio at -14 LUFS) or the slides (slide1.jpg…).
 Exit codes: 0 ok, 2 ficha or template error, 3 the check found problems (text cut, small letters, outside the area
 Instagram covers). The report goes to <saida>/relatorio.json.
@@ -20,6 +21,20 @@ FPS = 30
 CACHE_VOZ = Path(os.environ.get("MOLDES_CACHE", Path.home() / ".cache" / "moldes")) / "voz"
 # Matheus, 14/10: "sempre usar Carolina, voz feminina em português do Brasil do Amazon Nova 2 Sonic, como padrão".
 VOZ_PADRAO = {"id": "carolina", "motor": "nova-sonic"}
+# On the agent VM (22/10) there is no playwright, only patchright (same API), and Agent Zero's own Chromium
+CHROMES = ("/a0/tmp/playwright/chromium-1228/chrome-linux/chrome",)
+
+
+def sync_playwright():
+    try:
+        from playwright.sync_api import sync_playwright as sp
+    except ImportError:
+        from patchright.sync_api import sync_playwright as sp
+    return sp()
+
+
+def chrome():
+    return os.environ.get("CHROME") or next((c for c in CHROMES if Path(c).exists()), None)
 
 
 def carregar(molde, ficha_path, formato=None):
@@ -134,7 +149,7 @@ def init_script(ficha, marca, marca_dir, formato, tempos):
 
 
 def abrir(pw, pasta, script, formato):
-    b = pw.chromium.launch(executable_path=os.environ.get("CHROME") or None, args=["--allow-file-access-from-files", "--disable-web-security"])
+    b = pw.chromium.launch(executable_path=chrome(), args=["--allow-file-access-from-files", "--disable-web-security"])
     pg = b.new_page(viewport={"width": 1080, "height": 1350 if formato == "carrossel" else 1920})
     pg.add_init_script(script)
     falhas = []
@@ -152,7 +167,6 @@ class ErroMolde(Exception):
 
 
 def _trabalho(args):
-    from playwright.sync_api import sync_playwright
     pasta, script, formato, quadros, saida = args
     with sync_playwright() as pw:
         b, pg = abrir(pw, Path(pasta), script, formato)
@@ -200,6 +214,14 @@ def misturar_musica(voz, mus, dur, saida, volume=0.14):
             "-map", "[o]", "-t", f"{dur:.3f}", str(saida)]
 
 
+def juntar_falas(audios, destino):
+    """The narration as one file: each line padded to its scene's length, in order."""
+    ins = sum([["-i", str(f)] for f, _ in audios], [])
+    af = ";".join(f"[{i}:a]apad=whole_dur={d:.3f}[a{i}]" for i, (_, d) in enumerate(audios)) + ";" + "".join(f"[a{i}]" for i in range(len(audios))) + f"concat=n={len(audios)}:v=0:a=1[o]"
+    subprocess.run(["ffmpeg", "-v", "error", "-y"] + ins + ["-filter_complex", af, "-map", "[o]", str(destino)], check=True)
+    return str(destino)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("molde"); ap.add_argument("ficha")
@@ -216,7 +238,6 @@ def main():
         print("FICHA RECUSADA:\n  " + "\n  ".join(erros)); sys.exit(2)
     tempos, audios = voz(ficha, esquema, marca) if formato != "carrossel" else (None, None)
     script = init_script(ficha, marca, marca_dir, formato, tempos)
-    from playwright.sync_api import sync_playwright
     with sync_playwright() as pw:
         try:
             b, pg = abrir(pw, pasta, script, formato)
@@ -264,6 +285,8 @@ def main():
         if pr["msg"] not in vistos: vistos.add(pr["msg"]); unicos.append(pr)
     rel["problemas"] = unicos
     folha(imgs, saida / "prev.jpg")
+    if a.previa and audios:  # Matheus, decision #39: the narration is approved by ear before the video is made
+        rel["narracao"] = juntar_falas(audios, saida / "narracao.m4a")
     if not a.previa and formato != "carrossel":
         dur = info["DUR"]; n = int(dur * FPS) + 1
         with tempfile.TemporaryDirectory() as tmp:
@@ -272,10 +295,7 @@ def main():
             with Pool(k) as pl: pl.map(_trabalho, jobs)
             audio = None
             if audios:
-                ins = sum([["-i", str(f)] for f, _ in audios], [])
-                af = ";".join(f"[{i}:a]apad=whole_dur={d:.3f}[a{i}]" for i, (_, d) in enumerate(audios)) + ";" + "".join(f"[a{i}]" for i in range(len(audios))) + f"concat=n={len(audios)}:v=0:a=1[o]"
-                audio = f"{tmp}/voz.m4a"
-                subprocess.run(["ffmpeg", "-v", "error", "-y"] + ins + ["-filter_complex", af, "-map", "[o]", audio], check=True)
+                audio = juntar_falas(audios, f"{tmp}/voz.m4a")
                 m = musica(ficha, esquema, marca) if esquema.get("musica_sob_voz") else None
                 if m:
                     subprocess.run(misturar_musica(audio, m, dur, f"{tmp}/voz_mus.m4a"), check=True)

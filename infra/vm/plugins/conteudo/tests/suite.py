@@ -467,7 +467,7 @@ class Suite:
 
     # ------------------------------------------------------------------ the week (helpers/semana.py) and the gate
 
-    def _semana(self, esp="falso", reprovar=(3,), quebrar=()):
+    def _semana(self, esp="falso", reprovar=(3,), quebrar=(), video_pendente=False):
         """semana.py over a fresh conteudo, with a fake Designer/Crítico (or none) and local art files on disk."""
         c = _modulo()
         spec = importlib.util.spec_from_file_location("semana_teste", RAIZ / "helpers" / "semana.py")
@@ -483,6 +483,14 @@ class Suite:
                 chamadas.append(briefing)
                 if n in quebrar:
                     raise RuntimeError("motor de render fora")
+                if briefing["formato"] == "REELS" and video_pendente:  # the moldes: preview and narration only
+                    for nome in (f"p{n}-1.jpg", f"narracao{n}.m4a"):
+                        (arte / nome).write_bytes(b"\xff\xd8\xff previa")
+                    return {"spec": {"motor": "molde", "molde": "lanca-app", "formato": "reel",
+                                     "ficha": {"_marca": "raiz", "falas": ["Oi"]}},
+                            "arquivos": [], "falta": [], "render": "ok", "video_pendente": True,
+                            "previa": [str(arte / f"p{n}-1.jpg")], "narracao": str(arte / f"narracao{n}.m4a"),
+                            "critica": {"veredito": "aprova", "motivos": [], "sugestoes": []}}
                 if briefing["formato"] == "REELS":
                     nomes = [f"r{n}.mp4", f"r{n}-capa.jpg"]
                 elif briefing["formato"] == "IMAGE":
@@ -605,6 +613,51 @@ class Suite:
         ok(de_novo.startswith("Nada para agendar") and "Ainda esperando você: 3" in de_novo, f"aprovar de novo não duplica: {de_novo}")
         ok(len(c.carregar()["itens"]) == 10, "nada duplicado")
         ok(s.botao("outra", "cs:matheus:s20261026-1:todas") == {}, "botão de outra pessoa não vale")
+
+    def t_semana_video_so_depois_da_aprovacao(self):
+        # 22/10, Matheus: "Leve" (the agent makes the Reels too); decision #39: the narration is approved before the video
+        c, s, _ = self._semana(video_pendente=True)
+        agora = _ts(c, "2026-10-26", "07:50")
+        enviados, lancados = [], []
+        s._enviar_ponte = lambda login, texto, botoes: enviados.append(texto) or ""
+        s.iniciar_video = lambda sid, n: lancados.append((sid, n))
+        s._subir_pelo_proxy = lambda local, chave: None
+        s.propor(self._feed(), agora, enviar=lambda l, t, b: enviados.append(t) or "", stories=self._stories())
+        ps = s.carregar("s20261026-1")["propostas"]
+        reel = ps[1]
+        ok(reel["tipo"] == "REELS" and reel["arquivos"] == [] and reel["video"]["estado"] == "aguardando_aprovacao"
+           and not reel["problema"], reel)
+        ok("Ouça a narração" in enviados[0] and "mostra a 2" in enviados[0], "a mensagem pede para ouvir antes")
+        ok(next(p for p in s.ver("s20261026-1")["propostas"] if p["n"] == 2)["narracao"].endswith("narracao2.m4a"),
+           "\"mostra a 2\" tem o áudio")
+        ok(not s.concluir_video("s20261026-1", 2, video="/x.mp4")["ok"], "sem aprovação não há vídeo para concluir")
+        r = s.aprovar("s20261026-1", None, agora=agora, subir=lambda *a: None)
+        ok(r["gerando_video"] == [2, 4] and lancados == [("s20261026-1", 2), ("s20261026-1", 4)], r)
+        ok("Gerando o vídeo de 2, 4" in r["texto"], r["texto"])
+        ok(sorted(i["id"] for i in c.carregar()["itens"] if i["tipo"] == "REELS") == [], "nenhum Reel na agenda ainda")
+        # the background render: the approved ficha goes to the moldes, and the video goes into the agenda by itself
+        spec = importlib.util.spec_from_file_location("video_fila_teste", RAIZ / "helpers" / "video_fila.py")
+        vf = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(vf)
+        pedidos = []
+
+        class Motor:
+            def renderizar_molde(self, molde, formato, ficha, previa=False, saida=None, timeout=0, processos=0):
+                pedidos.append((molde, formato, ficha, previa, processos))
+                Path(saida).mkdir(parents=True, exist_ok=True)
+                (Path(saida) / "video.mp4").write_bytes(b"video")
+                return [str(Path(saida) / "video.mp4")], ""
+        s.c().AUTOR["quem"] = "teste"
+        r = vf.gerar("s20261026-1", 2, semana=s, esp=Motor())
+        ok(r["ok"] and pedidos == [("lanca-app", "reel", {"_marca": "raiz", "falas": ["Oi"]}, False, 2)], (r, pedidos))
+        item = next(i for i in c.carregar()["itens"] if i["id"] == "s20261026-1-2")
+        ok(item["tipo"] == "REELS" and item["arquivos"][0].endswith("video.mp4") and c._validar_item(item) == "", item)
+        ok("ficou pronto" in enviados[-1] and "qua 28/10" in enviados[-1], enviados[-1])
+        # a failed render is kept and told, never scheduled
+        r = vf.gerar("s20261026-1", 4, semana=s, esp=type("M", (), {"renderizar_molde": lambda self, *a, **k: ([], "o render falhou (código 1)")})())
+        p4 = s.carregar("s20261026-1")["propostas"][3]
+        ok(not r["ok"] and p4["estado"] == "erro" and "render falhou" in p4["erro"] and "não entrou na agenda" in enviados[-1], p4)
+        ok(not vf.gerar("s20261026-1", 2, semana=s, esp=Motor())["ok"], "um vídeo já agendado não é refeito")
 
     def t_semana_aprovacao_parcial(self):
         c, s, _ = self._semana()

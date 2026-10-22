@@ -68,6 +68,12 @@ def pasta_reels() -> Path | None:
     return _primeiro(os.environ.get("ESPECIALISTAS_REELS"), acima / "reels" if acima else None, "/a0/usr/reels")
 
 
+def pasta_moldes() -> Path | None:
+    """The moldes (templates + motor): infra/reels/moldes here, /a0/usr/moldes on the VM (implantar.py --moldes)."""
+    reels = pasta_reels()
+    return _primeiro(os.environ.get("ESPECIALISTAS_MOLDES"), reels / "moldes" if reels else None, "/a0/usr/moldes")
+
+
 def pasta_calibracao() -> Path | None:
     acima = _acima(3)
     return _primeiro(os.environ.get("ESPECIALISTAS_CALIBRACAO"), acima / "calibracao" if acima else None,
@@ -114,7 +120,8 @@ O que você faz:
 - Preenche a ficha inteira, com textos que cabem (respeita os limites de letras).
 
 O que você não faz:
-- Não usa os moldes do repositório para a Raiz (desde 14/10 a Raiz segue o kit); molde é para outras marcas.
+- Não foge do kit na Raiz: no motor "molde" a marca raiz já aplica o fixo do kit (logo, Manrope, Instrument Serif,
+  night e lima); a liberdade é o conceito (o molde), nunca a identidade.
 - Não inventa dado do negócio (preço, custo, depoimento, número de cliente): sem origem, deixa de fora e avisa.
 - Não publica, não agenda e não fala com o Matheus; entrega a ficha ao agente.
 - Não aprova a própria peça: o Crítico julga depois de você.
@@ -359,20 +366,24 @@ def criticar(tipo: str, material, *, login: str = "matheus") -> dict:
 # --- the Designer ----------------------------------------------------------------------------------------------------
 
 KIT = """Motores de render que existem (escolha um em "motor"):
-- "carrossel_raiz": carrossel da Raiz no kit (1080x1350, base raiz-carrossel.css/js: topo com logo, rodapé com
+- "carrossel_raiz" (só em sessão de operador, o agente não renderiza): carrossel da Raiz no kit (1080x1350, base raiz-carrossel.css/js: topo com logo, rodapé com
   progresso; fundo night com creme alternado). Campos: "pasta" ("c_<nome-curto>"), "conceito", "slides" (2 a 10:
   {"manchete" (até 12 palavras), "destaque" (a palavra em Instrument Serif), "texto", "visual" (o que aparece e de
   onde vem: tela real do produto, foto real ou gerada "imagem ilustrativa")}), "legenda" (sem emoji).
-- "video_kit_raiz": Reel da Raiz no kit de motion (voz Carolina). Campos: "conceito", "duracao_s", "cenas" (lista de
+- "video_kit_raiz" (só em sessão de operador): Reel da Raiz no kit de motion (voz Carolina). Campos: "conceito", "duracao_s", "cenas" (lista de
   {"fala", "tela", "visual"}), "legenda".
-- "molde": só para outras marcas (nunca a Raiz). Campos: "molde" (id do catálogo), "formato", "ficha" (os campos do
-  esquema do molde, com "_marca" e "_origem" para dado real).
+- "molde": o que o agente renderiza sozinho, para a Raiz e para outras marcas (22/10). Para a Raiz, "_marca": "raiz"
+  na ficha aplica o fixo do kit; o conceito muda de peça para peça (duas seguidas não usam o mesmo molde). Campos:
+  "molde" (id do catálogo), "formato" (carrossel|reel|story, um dos formatos do molde), "ficha" (os campos do esquema
+  do molde, com "_marca" e "_origem" para dado real; Reel narrado leva "falas", lidas pela voz Carolina).
+  Tela do sistema: só as telas reais, escuras e inteiras de /a0/usr/plugins/conteudo/story/telas/ (no molde
+  lanca-app/demonstracao, a câmera dá zoom no "destaque" da tela).
 Sempre: "marca" ("raiz" ou a pasta da outra marca), "formato" (carrossel|reel|story), "conceito"."""
 
 
 def catalogo_moldes() -> dict:
-    reels = pasta_reels()
-    arq = reels / "moldes" / "catalogo.json" if reels else None
+    moldes = pasta_moldes()
+    arq = moldes / "catalogo.json" if moldes else None
     try:
         return {m["id"]: m for m in json.loads(arq.read_text(encoding="utf-8"))["moldes"]} if arq else {}
     except (OSError, ValueError, KeyError, TypeError):
@@ -381,25 +392,39 @@ def catalogo_moldes() -> dict:
 
 def _validar_ficha(molde: str, ficha: dict) -> list[str]:
     """The moldes motor's own validator (moldes/motor/validar.py) against the molde's esquema.json."""
-    reels = pasta_reels()
-    pasta = reels / "moldes" / molde if reels else None
+    moldes = pasta_moldes()
+    pasta = moldes / molde if moldes else None
     if not pasta or not (pasta / "esquema.json").exists():
         return [f"molde {molde} não existe no motor"]
     try:
-        validar = _carregar("especialistas_validar_molde", reels / "moldes" / "motor" / "validar.py").validar
+        validar = _carregar("especialistas_validar_molde", moldes / "motor" / "validar.py").validar
         return list(validar(json.loads((pasta / "esquema.json").read_text(encoding="utf-8")), ficha))
     except Exception as exc:
         return [f"não consegui validar a ficha ({type(exc).__name__})"]
 
 
 def _pode_renderizar() -> str:
-    """Empty when the moldes motor can run here (render.py plus Playwright); otherwise what is missing."""
-    reels = pasta_reels()
-    if reels is None or not (reels / "moldes" / "motor" / "render.py").exists():
-        return "o motor de render (infra/reels) não está nesta máquina"
-    if importlib.util.find_spec("playwright") is None:
+    """Empty when the moldes motor can run here (render.py plus Playwright or patchright); otherwise what is missing."""
+    moldes = pasta_moldes()
+    if moldes is None or not (moldes / "motor" / "render.py").exists():
+        return "o motor de render (moldes) não está nesta máquina"
+    if importlib.util.find_spec("playwright") is None and importlib.util.find_spec("patchright") is None:
         return "falta o Playwright/Chromium para renderizar"
     return ""
+
+
+VOZ_CREDENCIAIS = "http://host.docker.internal:8788/voz"  # credenciais_meta.py on the host: only Nova Sonic and Polly
+
+
+def ambiente_render(pasta: Path) -> dict:
+    """The environment render.py runs with: the narration's short-lived credentials come from the host
+    (credential_process, profile "voz" in a config file of its own) and the voice cache stays under /a0/usr."""
+    config = pasta / "aws-voz.config"
+    config.write_text("[profile voz]\nregion = us-east-1\ncredential_process = python3 -c \"import urllib.request; "
+                      f"print(urllib.request.urlopen('{VOZ_CREDENCIAIS}', timeout=20).read().decode())\"\n",
+                      encoding="utf-8")
+    return {**os.environ, "AWS_CONFIG_FILE": str(config), "AWS_PROFILE": "voz", "AWS_REGION": "us-east-1",
+            "AWS_SDK_LOAD_CONFIG": "1", "MOLDES_CACHE": os.environ.get("MOLDES_CACHE", "/a0/usr/conteudo/cache-moldes")}
 
 
 def _pasta_saida() -> Path:
@@ -412,23 +437,30 @@ def _pasta_saida() -> Path:
         return Path(tempfile.mkdtemp(prefix="especialistas_"))
 
 
-def renderizar_molde(molde: str, formato: str, ficha: dict) -> tuple[list[str], str]:
-    """Runs moldes/motor/render.py; returns (files, problem). Exit 2 = ficha refused, 3 = the check found problems."""
-    reels = pasta_reels()
-    saida = _pasta_saida()
+def renderizar_molde(molde: str, formato: str, ficha: dict, previa: bool = False, saida: Path | None = None,
+                     timeout: int = 900, processos: int = 0) -> tuple[list[str], str]:
+    """Runs moldes/motor/render.py; returns (files, problem). Exit 2 = ficha refused, 3 = the check found problems.
+    previa: the check, the contact sheet and the narration only (narracao.m4a), never the video (decision #39)."""
+    moldes = pasta_moldes()
+    saida = saida or _pasta_saida()
+    saida.mkdir(parents=True, exist_ok=True)
     arq_ficha = saida / "ficha.json"
     arq_ficha.write_text(json.dumps(ficha, ensure_ascii=False, indent=1), encoding="utf-8")
-    cmd = [sys.executable, str(reels / "moldes" / "motor" / "render.py"), molde, str(arq_ficha),
-           "--formato", formato, "--saida", str(saida)]
+    cmd = [sys.executable, str(moldes / "motor" / "render.py"), molde, str(arq_ficha),
+           "--formato", formato, "--saida", str(saida)] + (["--previa"] if previa else []) + (
+              ["--processos", str(processos)] if processos else [])
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=900, cwd=str(reels / "moldes"))
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=str(moldes),
+                           env=ambiente_render(saida))
     except Exception as exc:
         return [], f"o render não rodou ({type(exc).__name__})"
-    arquivos = sorted(str(p) for p in saida.rglob("*") if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".mp4"))
+    arquivos = sorted((str(p) for p in saida.rglob("*") if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".mp4", ".m4a")
+                       and (previa or p.name != "prev.jpg")),  # the contact sheet is not a slide
+                      key=lambda a: [int(x) if x.isdigit() else x for x in re.split(r"(\d+)", a)])  # slide2 before slide10
     if r.returncode == 2:
         return [], "o molde recusou a ficha: " + (r.stderr or r.stdout).strip()[-300:]
     if r.returncode == 3:
-        return arquivos, "a conferência do render achou problemas (veja relatorio.json)"
+        return arquivos, "a conferência do render achou problemas: " + (r.stdout or "").strip()[-300:]
     if r.returncode != 0:
         return [], f"o render falhou (código {r.returncode}): " + (r.stderr or "").strip()[-300:]
     return arquivos, ""
@@ -440,8 +472,6 @@ def _conferir_spec(spec: dict) -> list[str]:
     motor, marca = spec.get("motor"), str(spec.get("marca") or "raiz").strip().lower()
     if motor not in MOTORES:
         return [f"motor desconhecido: {motor!r} (use {', '.join(MOTORES)})"]
-    if motor == "molde" and marca == "raiz":
-        problemas.append("molde do repositório não vale para a Raiz (desde 14/10 a Raiz segue o kit)")
     if motor == "carrossel_raiz":
         slides = spec.get("slides")
         if not isinstance(slides, list) or not 2 <= len(slides) <= 10:
@@ -453,10 +483,12 @@ def _conferir_spec(spec: dict) -> list[str]:
                     problemas.append(f"slide {i} sem manchete")
                 elif len(manchete.split()) > 12:
                     problemas.append(f"slide {i}: manchete com {len(manchete.split())} palavras (máx. 12)")
-    if motor == "molde" and marca != "raiz":
+    if motor == "molde":
         if not isinstance(spec.get("ficha"), dict):
             problemas.append("molde sem ficha")
         else:
+            if marca == "raiz" and str(spec["ficha"].get("_marca") or "raiz") != "raiz":
+                problemas.append("peça da Raiz com outra marca na ficha (_marca): o kit só vale com a marca raiz")
             problemas += [f"ficha: {e}" for e in _validar_ficha(str(spec.get("molde") or ""), spec["ficha"])]
     return problemas
 
@@ -480,6 +512,7 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
     r = chamar("designer", tarefa, {"briefing": briefing} if isinstance(briefing, str) else briefing, login=login)
     spec = (_json(r["texto"]) if not r["erro"] else None) or {}
     falta, arquivos, render = [], [], ""
+    previa, narracao, folha = [], "", ""
     if r["erro"]:
         falta.append(f"o designer não respondeu ({r['erro']})")
     elif not spec:
@@ -502,15 +535,28 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
             render = f"moldes/motor/render.py {spec.get('molde')} <ficha.json> --formato {formato}"
             if sem:
                 falta.append(sem)
-            else:
+            elif formato == "carrossel":
                 arquivos, problema = renderizar_molde(str(spec["molde"]), formato, spec["ficha"])
                 if problema:
                     falta.append(problema)
+            else:  # a video: only the preview and the narration now; the video after Matheus approves (decision #39)
+                feitos, problema = renderizar_molde(str(spec["molde"]), formato, spec["ficha"], previa=True)
+                previa = [a for a in feitos if Path(a).suffix.lower() in EXT_IMAGEM and Path(a).name != "prev.jpg"]
+                narracao = next((a for a in feitos if a.endswith(".m4a")), "")
+                folha = next((a for a in feitos if Path(a).name == "prev.jpg"), "")
+                if problema:
+                    falta.append(problema)
+                elif not previa:
+                    falta.append("a prévia do vídeo não saiu")
     formato = str(spec.get("formato") or "").lower()
+    imagens = previa[:10] if previa else [a for a in arquivos if Path(a).suffix.lower() in EXT_IMAGEM]
     material = {"briefing": briefing, "ficha": spec or r["texto"] or "(vazia)", "problemas": falta,
-                "imagens": [a for a in arquivos if Path(a).suffix.lower() in EXT_IMAGEM]}
+                "imagens": imagens}
     critica = criticar("carrossel" if formato == "carrossel" or spec.get("motor") == "carrossel_raiz" else "post",
                        material, login=login)
     if not spec and critica["veredito"] == "aprova":  # nothing to approve: fail closed
         critica = {**critica, "veredito": "reprova", "motivos": ["sem ficha do designer"] + critica["motivos"]}
-    return {"spec": spec, "arquivos": arquivos, "critica": critica, "falta": falta, "render": render}
+    out = {"spec": spec, "arquivos": arquivos, "critica": critica, "falta": falta, "render": render}
+    if previa:
+        out.update(previa=previa, folha=folha, narracao=narracao, video_pendente=not falta)
+    return out

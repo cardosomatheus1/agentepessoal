@@ -5,6 +5,7 @@
     python3 infra/operador/implantar.py --host caixa_convidados.py --unidade agentepessoal-caixas.service
     python3 infra/operador/implantar.py --host caixa_delegados.py --unidade agentepessoal-delegados.service
         (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it)
+    python3 infra/operador/implantar.py --moldes [--forcar]   (video/carousel templates, infra/reels/moldes, for the agent)
     python3 infra/operador/implantar.py --calibracao   (AR Board criteria, calibracao/*/criterios.md, for the Crítico)
     python3 infra/operador/implantar.py --controle [--forcar]   (the control page / webhooks Lambda, infra/control)
     python3 infra/operador/implantar.py --segundo-cerebro [--rollback | --preparar | --adotar-manual]   (page + gateway plugin; no --forcar)
@@ -140,6 +141,50 @@ def calibracao(args: list) -> None:
     print(f"implantado: {len(caminhos)} arquivo(s) de critérios @ {head[:8]}")
 
 
+MOLDES = "infra/reels/moldes"
+MOLDES_VM = "/opt/a0/usr/moldes"  # /a0/usr/moldes in the container: rendered by plugins/conteudo (22/10)
+MOLDES_TESTES = ("motor/test_validar.py", "motor/test_audio.py", "motor/test_voz.py")
+
+
+def comando_moldes(head: str, chave: str, quando: str) -> str:
+    """The VM side of --moldes: unpack next to the live copy, reuse node_modules when package-lock.json did not change
+    (else npm ci), run the motor tests and one preview of a real ficha inside the agent container (patchright and its
+    Chromium, as the agent will), and only then swap; the previous copy stays as moldes.anterior."""
+    novo, ct = f"{MOLDES_VM}.novo", "/a0/usr/moldes.novo"
+    testes = " && ".join(f"/opt/venv-a0/bin/python {ct}/{t}" for t in MOLDES_TESTES)
+    return (f"rm -rf {novo} /tmp/implantar-moldes && mkdir -p /tmp/implantar-moldes && "
+            f"aws s3 cp --quiet s3://{BUCKET}/{chave} - | tar xz -C /tmp/implantar-moldes && "
+            f"mv /tmp/implantar-moldes/{MOLDES} {novo} && "
+            f"if cmp -s {MOLDES_VM}/motor/package-lock.json {novo}/motor/package-lock.json && test -d {MOLDES_VM}/motor/node_modules; "
+            f"then cp -a {MOLDES_VM}/motor/node_modules {novo}/motor/; "
+            f"else docker exec -w {ct}/motor agent-zero npm ci --omit=dev --no-audit --no-fund >/dev/null; fi && "
+            f"docker exec -e MOLDES_CACHE=/a0/usr/conteudo/cache-moldes agent-zero sh -c '{testes} && "
+            f"/opt/venv-a0/bin/python {ct}/motor/render.py lanca-app {ct}/lanca-app/exemplos/raiz-sistema-computador.json "
+            f"--previa --saida /tmp/moldes-previa' && echo TESTES_OK && "
+            f"echo '{head} {quando}' > {novo}/.versao && "
+            f"rm -rf {MOLDES_VM}.anterior && (test -d {MOLDES_VM} && mv {MOLDES_VM} {MOLDES_VM}.anterior || true) && "
+            f"mv {novo} {MOLDES_VM} && cat {MOLDES_VM}/.versao")
+
+
+def moldes(args: list) -> None:
+    """The templates the agent renders its Reels and carousels with (22/10, Matheus: "Leve"): committed and pushed,
+    refused when the VM runs a newer version from another session, tested on the VM before the swap."""
+    head = _conferir_git([MOLDES])
+    no_ar = vm(f"cat {MOLDES_VM}/.versao 2>/dev/null | head -1").split(" ")[0]
+    if no_ar and "--forcar" not in args and subprocess.run(["git", "merge-base", "--is-ancestor", no_ar, head], cwd=RAIZ).returncode:
+        raise SystemExit(f"a VM roda moldes de {no_ar[:8]}, que não está no seu histórico: faça git pull (ou --forcar).")
+    pacote = subprocess.run(["git", "archive", "--format=tar.gz", "HEAD", MOLDES], cwd=RAIZ, check=True, capture_output=True).stdout
+    chave = f"tmp/implantar-moldes-{head[:8]}.tgz"
+    boto3.client("s3", region_name="us-east-1").put_object(Bucket=BUCKET, Key=chave, Body=pacote)
+    saida = vm(comando_moldes(head, chave, time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())), timeout=1800)
+    print(saida[-1500:])
+    if "TESTES_OK" not in saida:
+        raise SystemExit("os testes dos moldes falharam na VM: nada foi trocado.")
+    if head not in saida:
+        raise SystemExit("a troca falhou depois dos testes: veja a saída acima.")
+    print(f"implantado: moldes @ {head[:8]}")
+
+
 CONTROLE = ("index.py", "whatsapp.py", "telegram.py")  # what deploy.py zips into the control function
 FUNCAO = "agentepessoal-control"
 
@@ -247,6 +292,8 @@ def main() -> None:
         return controle(args)
     if "--calibracao" in args:
         return calibracao(args)
+    if "--moldes" in args:
+        return moldes(args)
     if not args or args[0].startswith("-"):
         raise SystemExit(__doc__)
     plugin, forcar = args[0], "--forcar" in args

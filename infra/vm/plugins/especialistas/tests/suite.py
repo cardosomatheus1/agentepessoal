@@ -99,7 +99,8 @@ class Suite:
         c = m.PAPEIS["critico"]
         for termo in ("veredito", "motivos", "sugestoes", "genérico", "Cérebro da Raiz", "AR Board", "decisão é cara"):
             ok(termo in c, f"crítico cita {termo!r}")
-        ok("moldes do repositório para a Raiz" in m.PAPEIS["designer"], "designer sabe que molde não vale para a Raiz")
+        # 22/10: the agent renders the Raiz with the moldes; the identity stays the kit's (marca raiz)
+        ok("Não foge do kit na Raiz" in m.PAPEIS["designer"], "designer sabe que a Raiz usa molde só com o kit")
 
     # --- strict parsing, fail closed
 
@@ -278,9 +279,10 @@ class Suite:
         self._designer(m, json.dumps({"marca": "raiz", "motor": "carrossel_raiz", "slides": [{"manchete": longa},
                                                                                            {"manchete": "ok"}]}))
         ok(any("13 palavras" in f for f in m.desenhar("x")["falta"]), "manchete longa")
-        self._designer(m, json.dumps({"marca": "raiz", "motor": "molde", "molde": "frases", "ficha": {}}))
+        self._designer(m, json.dumps({"marca": "raiz", "motor": "molde", "molde": "frases",
+                                      "ficha": {"_marca": "doces-da-lu"}}))
         d = m.desenhar("x")
-        ok(any("não vale para a Raiz" in f for f in d["falta"]) and d["arquivos"] == [], d["falta"])
+        ok(any("outra marca na ficha" in f for f in d["falta"]) and d["arquivos"] == [], d["falta"])
         self._designer(m, json.dumps({"motor": "photoshop"}))
         ok(any("motor desconhecido" in f for f in m.desenhar("x")["falta"]), "motor inventado")
 
@@ -324,6 +326,31 @@ class Suite:
         self._designer(sem, json.dumps({"marca": "doces-da-lu", "motor": "molde", "molde": "frases", "ficha": {}}))
         ok(any("não existe no motor" in f for f in sem.desenhar("x")["falta"]), "sem motor")
 
+    def t_video_da_raiz_sai_so_previa_e_narracao(self):
+        # decision #39: a narrated video goes to Matheus as audio first; the video is made only after he approves
+        reels = self._reels()
+        esq = reels / "moldes" / "frases" / "esquema.json"
+        esq.write_text(json.dumps({"formatos": ["carrossel", "reel"], "campos": {"pergunta": {"tipo": "texto", "max": 20}}}))
+        m = self._e(reels=reels)
+        m._pode_renderizar = lambda: ""
+        quadros = [self.tmp / f"p{i:02d}.jpg" for i in (1, 2)]
+        for q in quadros:
+            _png(q)
+        chamadas_render = []
+
+        def render(molde, formato, ficha, previa=False):
+            chamadas_render.append((formato, previa))
+            return [str(quadros[0]), str(quadros[1]), str(self.tmp / "prev.jpg"), str(self.tmp / "narracao.m4a")], ""
+        m.renderizar_molde = render
+        chamadas = self._designer(m, json.dumps({"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "reel",
+                                                 "ficha": {"_marca": "raiz", "pergunta": "Quanto sobra?"}}))
+        d = m.desenhar("Reel da Raiz")
+        eq(chamadas_render, [("reel", True)], "vídeo: só a prévia")
+        eq(d["arquivos"], [], "nenhum vídeo ainda")
+        eq(d["previa"], [str(q) for q in quadros], "prévia sem a folha de contato")
+        ok(d["narracao"].endswith("narracao.m4a") and d["video_pendente"], d)
+        eq(chamadas[1][2]["imagens"], [str(q) for q in quadros], "o Crítico julga a prévia")
+
     def t_renderizar_molde_chama_o_motor(self):
         import os
         reels = self._reels()
@@ -332,10 +359,14 @@ class Suite:
         os.environ["ESPECIALISTAS_SAIDA"] = str(saida)
         cmds = []
 
+        envs = []
+
         def run(cmd, **kw):
             cmds.append(cmd)
+            envs.append(kw.get("env") or {})
             destino = Path(cmd[cmd.index("--saida") + 1])
-            (destino / "slide1.jpg").write_bytes(b"x")
+            for nome in ("slide1.jpg", "slide10.jpg", "slide2.jpg", "prev.jpg"):
+                (destino / nome).write_bytes(b"x")
             return types.SimpleNamespace(returncode=0, stdout="", stderr="")
         m.subprocess = types.SimpleNamespace(run=run)
         try:
@@ -343,7 +374,9 @@ class Suite:
         finally:
             os.environ.pop("ESPECIALISTAS_SAIDA", None)
         eq(problema, "", "sem problema")
-        ok(len(arquivos) == 1 and arquivos[0].endswith("slide1.jpg"), arquivos)
+        eq([Path(a).name for a in arquivos], ["slide1.jpg", "slide2.jpg", "slide10.jpg"], "slides na ordem, sem a folha")
+        ok(envs[0]["AWS_PROFILE"] == "voz" and "/voz" in Path(envs[0]["AWS_CONFIG_FILE"]).read_text(),
+           "a voz usa só a credencial curta do host")
         ok(cmds[0][1].endswith("moldes/motor/render.py") and cmds[0][2] == "frases", cmds[0])
         ficha = Path(cmds[0][3])
         eq(json.loads(ficha.read_text()), {"pergunta": "Oi"}, "a ficha vai em arquivo")

@@ -2,11 +2,11 @@
  "nome": "Raiz Connect",
  "perfil": "@raiz.connect",
  "cores": [
-  "#47b346",
-  "#f7b98f"
+  "#c8f17a",
+  "#27613c"
  ],
- "fonte": "inter",
- "estilo": "vidro",
+ "fonte": "manrope",
+ "estilo": "kit",
  "logo_escuro": "logo_escuro.png",
  "logo_claro": "logo_claro.png",
  "chamada": "Lucro na Mão: link na bio",

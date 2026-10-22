@@ -45,6 +45,8 @@ function tokens(M, estilo) {
     T.cartao = T.fundo2;
   } else if (estilo === 'papel') {
     T = { fundo: '#f2e8d5', fundo2: '#e7d8bd', texto: '#2a2018', texto2: '#6b5a48', cartao: '#fffaf0', borda: 'rgba(60,40,20,.16)', sombra: '0 14px 30px rgba(60,40,20,.22)' };
+  } else if (estilo === 'kit') {  // the Raiz kit (brand-system, 14/10): night, creme text, lima only for what is left over
+    T = { fundo: '#101d18', fundo2: '#1b3026', texto: '#f5f7ed', texto2: '#b5c2b6', cartao: 'rgba(245,247,237,.06)', borda: '#3b5043', sombra: '0 30px 80px rgba(0,0,0,.45)' };
   } else if (estilo === 'noite') {
     T = { fundo: '#06060a', fundo2: mix('#06060a', c1, .22), texto: '#ffffff', texto2: 'rgba(255,255,255,.72)', cartao: 'rgba(255,255,255,.05)', borda: 'rgba(255,255,255,.18)', sombra: 'none' };
   } else {
@@ -109,6 +111,17 @@ const Motor = {
 
   molde(def) { Motor.def = def; if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', Motor._iniciar); else Motor._iniciar(); },
   erro(msg) { Motor.erros.push(msg); },
+  // Raiz kit (14/10): the highlighted word of a headline in Instrument Serif. Each template highlights its own way
+  // (a class, the last word...), so the word is found by what it shows: text in the highlight color inside a title.
+  _serifNoDestaque() {
+    const alvo = getComputedStyle(document.body).getPropertyValue('--destaque').trim();
+    const sonda = document.createElement('i'); sonda.style.color = alvo; document.body.appendChild(sonda);
+    const cor = getComputedStyle(sonda).color; sonda.remove();
+    for (const el of $$('.tit *')) {
+      if (el.children.length || !el.textContent.trim()) continue;
+      if (getComputedStyle(el).color === cor) el.classList.add('kit-it');
+    }
+  },
   midia(caminho) { if (!caminho) return ''; if (/^(https?:|file:|data:|\/)/.test(caminho)) return caminho; return (window.MIDIA || '../midia/') + caminho; },
   logoSrc(caminho) { if (!caminho) return ''; if (/^(https?:|file:|data:|\/)/.test(caminho)) return caminho; return (window.MARCA_BASE || '') + caminho; },
 
@@ -124,7 +137,7 @@ const Motor = {
       Motor.T = tokens(M, Motor.ESTILO);
       const r = document.documentElement.style;
       for (const [k, v] of Object.entries(Motor.T)) r.setProperty('--' + k, v);
-      r.setProperty('--ft', { bricolage: 'B', anton: 'A', inter: 'D' }[M.fonte] || 'D');
+      r.setProperty('--ft', { bricolage: 'B', anton: 'A', inter: 'D', manrope: 'M' }[M.fonte] || 'D');
       Motor._conferirCores();
       const palco = $('#palco');
       palco.insertAdjacentHTML('afterbegin', '<div id="fundo"></div>');
@@ -150,6 +163,7 @@ const Motor = {
       await Promise.all([...document.fonts].map(f => f.load().catch(() => {})));
       await Promise.all($$('img').map(i => i.complete ? (i.decode ? i.decode().catch(() => {}) : 0) : new Promise(ok => { i.onload = i.onerror = ok; })));
       $$('.rv').forEach(Motor.palavras);
+      if (Motor.ESTILO === 'kit') Motor._serifNoDestaque();
       Motor._caberTudo();
       if (Motor.FORMATO !== 'carrossel') await window.render(0);
       // a photo of the ficha that did not load (wrong path) refuses the template instead of rendering a hole

@@ -9,6 +9,8 @@
 @font-face{font-family:B;src:url(fontes/brico.woff2)}
 @font-face{font-family:A;src:url(fontes/anton.woff2)}
 @font-face{font-family:H;src:url(fontes/caveat.woff2)}
+@font-face{font-family:M;src:url(fontes/manrope-latin-variable.woff2) format('woff2');font-weight:200 800}
+@font-face{font-family:S;src:url(fontes/instrument-serif-italic-latin.woff2) format('woff2');font-style:italic}
 
 :root{
   --W:1080px;--H:1920px;
@@ -36,6 +38,10 @@ body.f-carrossel{--H:1350px}
 .t2{color:var(--texto2)}
 .mao{font-family:H,cursive;font-weight:400;letter-spacing:0}
 .dest{color:var(--destaque)}
+/* Raiz kit: Manrope everywhere, the highlighted word in Instrument Serif italic (one per scene) */
+body.e-kit{--fb:M;--ft:M}
+body.e-kit .tit{font-weight:800;letter-spacing:-.045em}
+body.e-kit .dest,body.e-kit .kit-it{font-family:S,serif;font-style:italic;font-weight:400;letter-spacing:-.01em}
 .chip{display:inline-block;padding:.32em .8em;border-radius:999px;background:var(--destaque);color:var(--sobre-destaque);font-weight:900}
 .grad{background-image:linear-gradient(100deg,var(--destaque),var(--c2));background-clip:text;-webkit-background-clip:text;color:transparent;padding-bottom:.16em}
 /* word reveal */

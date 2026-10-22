@@ -25,8 +25,10 @@ da gestão e 2 de custo e preço.
   legenda (a API não leva legenda, enquete, link nem música). O story tem a vaga dele: um post e um story por dia
   (`canal()`); `devido()` olha cada vaga.
 - Arte do story: `helpers/story.py` desenha a partir de 5 layouts fixos do kit (`story/story.html`: dica, post-novo,
-  video-novo, bastidor, oferta), com o navegador do container; o agente faz sozinho, ao contrário do carrossel e do
-  Reel da Raiz, que são feitos peça a peça numa sessão de operador. Telas reais do sistema para o bastidor em
+  video-novo, bastidor, oferta), com o navegador do container; o agente faz sozinho; desde 22/10 também o carrossel e o
+  Reel, pelos moldes (`/a0/usr/moldes`, implantados com `implantar.py --moldes`; a marca raiz aplica o kit). Telas reais do sistema para o bastidor em
   `story/telas/` (telas escuras e inteiras, com o menu, de uma empresa de exemplo na cópia de teste). Regras em código: sem emoji, sem travessão, R$ só com "valores de exemplo", imagem só de arquivo local.
 - `semana.propor(propostas=4, stories=7)`: o Designer desenha o feed, `story.py` os stories, o Crítico julga todos
-  (tipo `story` no plugin especialistas) e vai uma mensagem com os 11.
+  (tipo `story` no plugin especialistas) e vai uma mensagem com os 11. Reel: só prévia e narração na proposta
+  (decisão #39); aprovado, `helpers/video_fila.py` gera o vídeo em segundo plano (um por vez, voz pela credencial curta
+  `/voz` do host) e `semana.concluir_video` agenda e avisa.

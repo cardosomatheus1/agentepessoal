@@ -9,7 +9,11 @@ conteudo.agendar(), so publishing is unchanged. Rules that are code:
 - "Aprovar todas" leaves out what the Crítico reproved: those go only when he picks them by number, and that
   override is kept on the post (liberado), so the publish gate does not block what he already decided;
 - a week that was redone (new version) refuses the old message's buttons.
-State: /a0/usr/conteudo/semanas/<id>.json, written only here, under its own lock; journal: conteudo's diario.jsonl."""
+State: /a0/usr/conteudo/semanas/<id>.json, written only here, under its own lock; journal: conteudo's diario.jsonl.
+
+Videos (22/10, Matheus: "Leve"): the Designer renders a Reel from the moldes as a preview and the narration only; the
+week message tells Matheus to listen first (decision #39), and the video itself is made after he approves, in the
+background (helpers/video_fila.py, one at a time), and goes into the agenda by itself when ready (concluir_video)."""
 
 import datetime as dt
 import fcntl
@@ -220,7 +224,8 @@ def _desenhar(esp, briefing: dict, p: dict) -> dict:
         except Exception as exc:
             critica = {"veredito": SEM_REVISAO, "motivos": [f"o Crítico falhou ({type(exc).__name__})"]}
     return {"spec": d.get("spec") if isinstance(d.get("spec"), dict) else {}, "arquivos": list(d.get("arquivos") or []),
-            "falta": [str(x) for x in d.get("falta") or []], "critica": _critica(critica)}
+            "falta": [str(x) for x in d.get("falta") or []], "critica": _critica(critica),
+            **{k: d[k] for k in ("video_pendente", "previa", "folha", "narracao") if d.get(k)}}
 
 
 def propor(propostas: list, agora: float | None = None, enviar=None, login: str = "matheus", stories=None) -> dict:
@@ -269,7 +274,8 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
         if nota:
             d["critica"]["motivos"] = [nota] + d["critica"]["motivos"]
         legenda = briefing["legenda"] or str(d["spec"].get("legenda") or "").strip()
-        tipo, arquivos, capa = tipo_dos_arquivos(d["arquivos"])
+        pendente = formato == "REELS" and d.get("video_pendente")
+        tipo, arquivos, capa = ("REELS", [], "") if pendente else tipo_dos_arquivos(d["arquivos"])
         problema = ""
         if not tipo:
             problema = "o Designer não entregou arquivo publicável (.mp4, ou de 1 a 10 imagens)" + (
@@ -279,7 +285,11 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
         itens.append({"n": n, "id": f"{sid}-{n}", "data": dia, "hora": str(p.get("hora") or HORA), "titulo": briefing["titulo"],
                       "ideia": briefing["ideia"], "formato_pedido": formato, "tipo": tipo, "arquivos": arquivos,
                       "capa": capa, "legenda": legenda, "spec": d["spec"], "critica": d["critica"],
-                      "problema": problema, "estado": "proposta"})
+                      "problema": problema, "estado": "proposta",
+                      **({"video": {"estado": "aguardando_aprovacao", "molde": d["spec"].get("molde"),
+                                    "formato": str(d["spec"].get("formato") or "reel"), "ficha": d["spec"].get("ficha")},
+                          "previa": d.get("previa", []), "folha": d.get("folha", ""), "narracao": d.get("narracao", "")}
+                         if pendente else {})})
     for n, (campos, dia) in enumerate(zip(stories, dias_story), start=len(vagas) + 1):
         d = _desenhar_story(esp, campos, _pasta() / sid / f"story-{n}.jpg")
         titulo = f"{campos.get('layout', '?')}: {_texto(campos.get('manchete') or 'oferta Lucro na Mão', 100)}"
@@ -341,7 +351,9 @@ def mensagem(semana: dict) -> tuple[str, list]:
             linhas.append(f"{p['n']}. *{_rotulo_dia(p['data'])}* · Story {p['hora']} · {p['titulo']}\n   {critico}")
         else:
             linhas.append(f"{p['n']}. *{_rotulo_dia(p['data'])}* · {NOME_TIPO.get(p['tipo'], '?')} · {p['titulo']}\n"
-                          f"   {_texto(p['legenda'], 110)}\n   {critico}")
+                          f"   {_texto(p['legenda'], 110)}\n   {critico}"
+                          + (f"\n   🎧 Ouça a narração antes (me peça \"mostra a {p['n']}\"): o vídeo só é feito depois que "
+                             "você aprovar" if p.get("video") else ""))
     k = len(_aprovaveis(semana))
     linhas.append("Para ver a arte de uma, me peça (ex.: \"mostra a 3\"). Para aprovar só algumas, toque em Escolher "
                   "ou responda com os números (ex.: \"aprovar 1, 3 e 5\")."
@@ -437,7 +449,7 @@ def aprovar(sid: str, numeros=None, quem: str = "matheus", agora: float | None =
             if fora:
                 return {"ok": False, "erro": f"número fora da lista: {fora}"}
             alvo = [p for p in semana["propostas"] if p["n"] in escolhidos]
-        agendados, recusados = [], []
+        agendados, recusados, gerando = [], [], []
         conteudo, antes = c(), c().AUTOR["quem"]
         conteudo.AUTOR["quem"] = f"{quem}: aprovou a semana {sid}"
         try:
@@ -446,21 +458,14 @@ def aprovar(sid: str, numeros=None, quem: str = "matheus", agora: float | None =
                     recusados.append({"n": p["n"], "motivo": f"já está {p['estado']}"})
                     continue
                 motivo = p["problema"] or ("o dia já passou" if p["data"] < hoje else "")
+                if not motivo and (p.get("video") or {}).get("estado") == "aguardando_aprovacao":
+                    p["video"]["estado"] = "na_fila"  # decision #39: the video is made only now, after his approval
+                    p.update(estado="gerando_video", aprovada_em=agora, aprovada_por=quem,
+                             **({"liberado": True} if p["critica"]["veredito"] == "reprova" else {}))
+                    gerando.append(p["n"])
+                    continue
                 if not motivo:
-                    try:
-                        arquivos, capa = _para_s3(p, sid, subir or _subir_pelo_proxy)
-                    except Exception as exc:
-                        motivo = f"o arquivo não subiu para o S3 ({str(exc)[:120]})"
-                if not motivo:
-                    item = {"id": p["id"], "data": p["data"], "hora": p["hora"], "tipo": p["tipo"], "arquivos": arquivos,
-                            "legenda": p["legenda"], "origem": {"semana": sid, "n": p["n"], "titulo": p["titulo"]}}
-                    if capa:
-                        item["capa"] = capa
-                    if p["critica"]["veredito"] == "reprova":  # he picked it by number after seeing the reprova
-                        item["liberado"] = {"por": quem, "em": agora, "motivo": "aprovou na semana apesar do Crítico",
-                                            "critica": p["critica"]["motivos"]}
-                    r = conteudo.agendar([item], agora)
-                    motivo = "" if r["ok"] else r["erro"]
+                    motivo = _agendar_item(conteudo, p, sid, quem, agora, subir)
                 if motivo:
                     p.update(estado="erro", erro=motivo)
                     recusados.append({"n": p["n"], "motivo": motivo})
@@ -473,20 +478,89 @@ def aprovar(sid: str, numeros=None, quem: str = "matheus", agora: float | None =
         abertas = [p for p in semana["propostas"] if p["estado"] == "proposta"]
         semana["estado"] = "parcial" if abertas else "aprovada"
         _gravar(semana)
-    conteudo._diario({"semana": sid, "aprovada_por": quem, "agendados": agendados, "recusados": recusados})
-    return {"ok": bool(agendados) or not recusados, "semana": sid, "agendados": agendados, "recusados": recusados,
-            "texto": texto_aprovacao(semana, agendados, recusados)}
+    for n in gerando:
+        iniciar_video(sid, n)
+    conteudo._diario({"semana": sid, "aprovada_por": quem, "agendados": agendados, "recusados": recusados,
+                      **({"gerando_video": gerando} if gerando else {})})
+    return {"ok": bool(agendados or gerando) or not recusados, "semana": sid, "agendados": agendados,
+            "recusados": recusados, "gerando_video": gerando,
+            "texto": texto_aprovacao(semana, agendados, recusados, gerando)}
 
 
-def texto_aprovacao(semana: dict, agendados: list, recusados: list) -> str:
+def _agendar_item(conteudo, p: dict, sid: str, quem: str, agora: float, subir=None) -> str:
+    """One approved proposal uploaded and put in the agenda; '' when it went, else why not."""
+    try:
+        arquivos, capa = _para_s3(p, sid, subir or _subir_pelo_proxy)
+    except Exception as exc:
+        return f"o arquivo não subiu para o S3 ({str(exc)[:120]})"
+    item = {"id": p["id"], "data": p["data"], "hora": p["hora"], "tipo": p["tipo"], "arquivos": arquivos,
+            "legenda": p["legenda"], "origem": {"semana": sid, "n": p["n"], "titulo": p["titulo"]}}
+    if capa:
+        item["capa"] = capa
+    if p["critica"]["veredito"] == "reprova":  # he picked it by number after seeing the reprova
+        item["liberado"] = {"por": quem, "em": agora, "motivo": "aprovou na semana apesar do Crítico",
+                            "critica": p["critica"]["motivos"]}
+    r = conteudo.agendar([item], agora)
+    return "" if r["ok"] else r["erro"]
+
+
+def iniciar_video(sid: str, n: int, popen=None) -> None:
+    """The approved Reel rendered in the background by helpers/video_fila.py (it waits for the one before)."""
+    import subprocess
+    pasta = _pasta() / sid
+    pasta.mkdir(parents=True, exist_ok=True)
+    with open(pasta / f"video-{n}.log", "a") as log:
+        (popen or subprocess.Popen)([sys.executable, str(Path(__file__).resolve().parent / "video_fila.py"), sid, str(n)],
+                                    stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+
+
+def concluir_video(sid: str, n: int, video: str = "", erro: str = "", agora: float | None = None, subir=None,
+                   enviar=None) -> dict:
+    """The background render finished: the video goes into the agenda (it was approved already) and Matheus is told
+    in one line; a failure is kept on the proposal and told too."""
+    agora = time.time() if agora is None else agora
+    with _exclusivo():
+        semana = carregar(sid)
+        p = next((x for x in (semana or {}).get("propostas", []) if x["n"] == int(n)), None)
+        if not p or p.get("estado") != "gerando_video":
+            return {"ok": False, "erro": f"a {n} da semana {sid} não está esperando vídeo"}
+        motivo = erro or ("" if video and Path(video).is_file() else "o vídeo não foi gerado")
+        if not motivo and p["data"] < _hoje(agora).isoformat():
+            motivo = "o dia do post já passou"
+        if not motivo:
+            p["arquivos"] = [video]
+            conteudo, antes = c(), c().AUTOR["quem"]
+            conteudo.AUTOR["quem"] = f"{p.get('aprovada_por', 'matheus')}: aprovou a semana {sid} (vídeo pronto)"
+            try:
+                motivo = _agendar_item(conteudo, p, sid, p.get("aprovada_por", "matheus"), agora, subir)
+            finally:
+                conteudo.AUTOR["quem"] = antes
+        if motivo:
+            p.update(estado="erro", erro=motivo)
+            p["video"]["estado"] = "erro"
+        else:
+            p.update(estado="agendada")
+            p["video"]["estado"] = "pronto"
+        _gravar(semana)
+    c()._diario({"semana": sid, "video": n, "agendado": not motivo, **({"erro": motivo} if motivo else {})})
+    texto = (f"🎬 O vídeo da {n} ({p['titulo']}) ficou pronto e está agendado para {_rotulo_dia(p['data'])} às {p['hora']}."
+             if not motivo else f"⚠️ O vídeo da {n} ({p['titulo']}) não entrou na agenda: {_texto(motivo, 200)}")
+    (enviar or _enviar_ponte)(semana.get("login", "matheus"), texto, [])
+    return {"ok": not motivo, "semana": sid, "n": int(n), **({"erro": motivo} if motivo else {})}
+
+
+def texto_aprovacao(semana: dict, agendados: list, recusados: list, gerando: list = ()) -> str:
     por_n = {p["n"]: p for p in semana["propostas"]}
     linhas = []
+    if gerando:
+        linhas.append("🎬 Gerando o vídeo de " + ", ".join(str(n) for n in gerando) + " (cerca de 1 hora cada, um por "
+                      "vez). Cada um entra na agenda sozinho quando ficar pronto, e eu te aviso.")
     if agendados:
         linhas.append("✅ Agendados: " + ", ".join(f"{n} ({_rotulo_dia(por_n[n]['data'])})" for n in agendados)
                       + ". Saem às " + por_n[agendados[0]]["hora"] + " de cada dia.")
     for r in recusados:
         linhas.append(f"Não agendei a {r['n']}: {_texto(r['motivo'], 160)}")
-    if not linhas:
+    if not linhas and not gerando:
         linhas.append("Nada para agendar: as que sobraram foram reprovadas pelo Crítico ou não têm arquivo.")
     abertas = [str(p["n"]) for p in semana["propostas"] if p["estado"] == "proposta"]
     if abertas:
@@ -515,7 +589,8 @@ def ver(sid: str = "") -> dict:
         return {"ok": False, "erro": "nenhuma semana proposta ainda"}
     return {"ok": True, "semana": semana["id"], "estado": semana["estado"],
             "propostas": [{k: p.get(k) for k in ("n", "data", "hora", "tipo", "titulo", "legenda", "arquivos", "capa",
-                                                 "critica", "problema", "estado", "erro")} for p in semana["propostas"]]}
+                                                 "critica", "problema", "estado", "erro", "narracao", "folha")
+                           if k not in ("narracao", "folha") or p.get(k)} for p in semana["propostas"]]}
 
 
 def botao(login: str, botao_id: str, subir=None) -> dict:
