@@ -143,6 +143,11 @@ class RevisarAcao(Extension):
                                             "", "", None, "progresso")
             except Exception as exc:
                 print(f"aprovacoes: 99Food notice failed: {exc}", flush=True)
+        retomada = agent.context.get_data("_aprovacoes_retomada")
+        if decisao == "perguntar" and rv.retomada_vale(retomada, analise, time.time()):
+            decisao = "permitir"  # he approved this after its task ended; the chat restarted to do it (once)
+            agent.context.set_data("_aprovacoes_retomada", None)
+            analise["resumo"] = f"{analise['resumo']} — aprovado por ele enquanto esperava"[:300]
         if analise["categoria"] != "nenhuma" and agent.context.id in rv.somente_leitura():
             decisao = "nunca"  # read-only chats (daily brief, proactive research) never change anything
         print(f"aprovacoes: {tool_name} -> {analise['categoria']}/{decisao}: {analise['resumo']}", flush=True)
@@ -160,21 +165,23 @@ class RevisarAcao(Extension):
                                   f"«{analise['categoria']}», que o usuário marcou como NUNCA. Ela não foi executada. "
                                   "Não tente de novo nem por outro caminho; siga sem ela ou explique ao usuário o que falta.")
 
-        assin = rv.assinatura(tool_name, args)
+        assin, marca = rv.assinatura(tool_name, args), marca_tarefa(ctx)
         espera_s = 60 * float(cfg.get("espera_minutos") or 360)
         existente = rv.PENDENTES.get(ctx.id)
-        if existente and existente.get("adiada") and time.time() - float(existente.get("criado") or 0) > espera_s:
-            rv.PENDENTES.pop(ctx.id, None)  # he never answered: that one is gone, this one starts over
+        if existente and existente.get("adiada") and (time.time() - float(existente.get("criado") or 0) > espera_s
+                                                      or existente.get("marca") != marca):
+            rv.PENDENTES.pop(ctx.id, None)  # never answered, or from a task that is over: it never carries over
             existente = None
         if existente and existente.get("adiada"):
-            if not rv.mesma_acao(existente, analise, assin):
+            if not rv.mesma_acao(existente, assin):
                 self._devolver(agent, f"[Aprovações] Já há uma ação esperando o ok do usuário: «{existente['resumo']}». "
                                       "Esta outra NÃO foi executada. Termine o que não depende de aprovação, repita aquela "
                                       "ação para esperar a resposta dele e só depois peça esta.")
             pendente = existente  # the agent came back to it: wait for the answer now (or go, if he already said yes)
             if not pendente.get("decisao"):  # he typed "aprovar" in the chat while the task went on
                 ultima = getattr(getattr(agent, "last_user_message", None), "content", None)
-                digitada = rv.resposta_digitada(str(ultima.get("user_message") or "") if isinstance(ultima, dict) else "")
+                ultima = ultima if isinstance(ultima, dict) else {}  # mid-task it arrives as an intervention
+                digitada = rv.resposta_digitada(str(ultima.get("user_message") or ultima.get("user_intervention") or ""))
                 if digitada:
                     pendente["decisao"] = digitada
         else:
@@ -191,7 +198,7 @@ class RevisarAcao(Extension):
                                       "usuário o que está travando.")
 
             pendente = rv.abrir(ctx.id, analise, tool_name)
-            pendente["assinatura"] = assin
+            pendente.update(assinatura=assin, marca=marca)
             msg = getattr(agent, "last_user_message", None)
             c = getattr(msg, "content", None)
             fala = str(c.get("user_message") or "") if isinstance(c, dict) else ""

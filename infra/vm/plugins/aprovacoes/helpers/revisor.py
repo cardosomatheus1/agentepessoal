@@ -257,7 +257,7 @@ def livre_99food(analise: dict, tool: str, args: dict, intencao: str, cfg: dict,
 # What goes to other people (a message, an e-mail, a post, a form sent for review) never carries a card number, a CPF,
 # a password or an access token, whatever the rule of the category says and even where messages go without asking
 # (the Instagram). Deterministic: patterns and check digits, plus the person's own vault values; no model decides.
-SAIDA = ("mensagem_terceiros", "publicar", "enviar_analise")
+SAIDA = ("mensagem_terceiros", "publicar")  # an official form sent for review may need his own CPF
 CARTAO_AGRUPADO = re.compile(r"(?<!\d)(?:\d{4}[ .-]){3}\d{4}(?!\d)|(?<!\d)\d{4}[ .-]\d{6}[ .-]\d{5}(?!\d)")
 CARTAO_CRU = re.compile(r"(?<!\d)\d{13,19}(?!\d)")
 CPF_FORMATADO = re.compile(r"(?<!\d)\d{3}\.\d{3}\.\d{3}-\d{2}(?!\d)")
@@ -340,37 +340,53 @@ def assinatura(tool: str, args: dict) -> str:
     return hashlib.sha256(f"{(tool or '').lower()}|{_texto(args)}".encode()).hexdigest()[:16]
 
 
-def mesma_acao(pendente: dict, analise: dict, assin: str) -> bool:
-    import difflib
-
-    if pendente.get("assinatura") and pendente["assinatura"] == assin:
-        return True
-    return pendente.get("categoria") == analise.get("categoria") and difflib.SequenceMatcher(
-        None, str(pendente.get("resumo") or "").lower(), str(analise.get("resumo") or "").lower()).ratio() > 0.6
+def mesma_acao(pendente: dict, assin: str) -> bool:
+    """Only the very same action (tool and arguments) counts: a similar one (another recipient, another folder) asks."""
+    return bool(pendente.get("assinatura")) and pendente["assinatura"] == assin
 
 
 def recado_adiada(pendente: dict) -> str:
     if pendente.get("decisao") == "recusar":
         return (f"[Aprovações] Ele RECUSOU a ação que esperava o ok dele: «{pendente['resumo']}». Ela não foi feita. "
                 "Não tente de novo nem por outro caminho; diga a ele em uma linha como ficou.")
-    return (f"[Aprovações] Ele APROVOU a ação que esperava o ok dele: «{pendente['resumo']}». Faça agora: repita "
-            "exatamente essa ação (ela passa sem perguntar de novo) e diga a ele em uma linha que foi feito.")
+    return (f"[Aprovações] Ele APROVOU a ação que esperava o ok dele: «{pendente['resumo']}». Faça agora essa ação, só "
+            "ela (passa uma vez sem perguntar de novo, nos próximos 15 min), e diga a ele em uma linha que foi feito.")
+
+
+RETOMADA_S = 15 * 60
+
+
+def retomada_vale(retomada: dict | None, analise: dict, agora: float) -> bool:
+    """The one action he approved after its task ended, done in the chat it restarted: same category, nearly the same
+    summary, within RETOMADA_S, once."""
+    import difflib
+
+    if not retomada or agora > float(retomada.get("ate") or 0) or retomada.get("categoria") != analise.get("categoria"):
+        return False
+    return difflib.SequenceMatcher(None, str(retomada.get("resumo") or "").lower(),
+                                   str(analise.get("resumo") or "").lower()).ratio() >= 0.8
 
 
 def retomar_adiada(ctx_id: str) -> bool:
-    """After his answer (phone button or chat card): a waiting action whose task already ended comes back to the chat
-    as a message, so it is done (or dropped) without him asking again. A refused one leaves the waiting list."""
+    """After his answer (phone button or chat card) to an action that waited while its task went on: when that task
+    already ended, the answer comes back to the chat as a message (approved: that one action may go once; refused:
+    dropped). While the task still runs it comes back to the action by itself (False)."""
     pendente = PENDENTES.get(ctx_id)
     if not pendente or not pendente.get("adiada") or not pendente.get("decisao"):
         return False
-    if pendente["decisao"] == "recusar":
-        PENDENTES.pop(ctx_id, None)
     try:
         from agent import AgentContext, UserMessage
 
         ctx = AgentContext.get(ctx_id)
-        if ctx is None or ctx.is_running():
-            return False  # still working: it comes back to the action by itself
+        if ctx is None:
+            PENDENTES.pop(ctx_id, None)
+            return False
+        if ctx.is_running():
+            return False
+        PENDENTES.pop(ctx_id, None)
+        if pendente["decisao"] != "recusar":
+            ctx.set_data("_aprovacoes_retomada", {"categoria": pendente.get("categoria"), "resumo": pendente.get("resumo"),
+                                                  "ate": time.time() + RETOMADA_S})
         ctx.communicate(UserMessage(message=recado_adiada(pendente), attachments=[], id=""))
         return True
     except Exception as exc:

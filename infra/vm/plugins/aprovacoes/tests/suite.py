@@ -422,9 +422,34 @@ class Suite:
             ok(not rv.retomar_adiada(ctx.id) and not comunicadas, "tarefa ainda rodando: ela mesma volta à ação")
             eq(await acao("mensagem_terceiros", "Enviar e-mail para o Beto", {"action": "click", "selector": "#beto"}), "executou",
                "já aprovada: passa na hora")
+            # a similar action that is not the same one (other recipient) never rides on an approval
+            eq(await acao("mensagem_terceiros", "Responder a Dani no WhatsApp sobre o orçamento", {"action": "click", "selector": "#dani"}), "devolveu", "pede")
+            p = rv.PENDENTES[ctx.id]
+            rv.decidir(ctx.id, "aprovar", p["id"])
+            eq(await acao("mensagem_terceiros", "Responder a Dany no WhatsApp sobre o orçamento", {"action": "click", "selector": "#dany"}), "devolveu",
+               "parecida mas outra: não passa")
+            ok("Já há uma ação esperando" in devolvidas[-1], devolvidas[-1])
+            # it never carries over to another task: the next one starts over
+            ctx.task = types.SimpleNamespace(_future=object())
+            eq(await acao("mensagem_terceiros", "Responder a Dani no WhatsApp sobre o orçamento", {"action": "click", "selector": "#dani"}), "devolveu",
+               "outra tarefa: pede de novo")
+            ok(rv.PENDENTES[ctx.id]["id"] != p["id"] and not rv.PENDENTES[ctx.id].get("decisao"), "o ok antigo não vale")
+            rv.PENDENTES.pop(ctx.id, None)
+            # approved after the task ended: the chat restarts and that one action goes once
+            ctx.rodando = False
+            eq(await acao("publicar", "Publicar o cardápio no site", {"action": "click", "selector": "#cardapio"}), "devolveu", "pede")
+            p = rv.PENDENTES[ctx.id]
+            rv.decidir(ctx.id, "aprovar", p["id"])
+            ok(rv.retomar_adiada(ctx.id) and "APROVOU" in comunicadas[-1] and ctx.id not in rv.PENDENTES, comunicadas)
+            ctx.task = types.SimpleNamespace(_future=object())  # the chat restarted: a new task
+            eq(await acao("publicar", "Publicar o cardápio no site", {"action": "click", "selector": "#outro-ref"}), "executou",
+               "a aprovada passa uma vez na tarefa retomada")
+            eq(await acao("publicar", "Publicar o cardápio no site", {"action": "click", "selector": "#outro-ref"}), "devolveu",
+               "só uma vez")
+            rv.PENDENTES.pop(ctx.id, None)
             # the task ended before coming back: his answer starts the chat again
             ctx.rodando = False
-            eq(await acao("publicar", "Publicar o cardápio novo no site", {"action": "click", "selector": "#carla"}), "devolveu", "pede")
+            eq(await acao("apagar", "Apagar a planilha velha do Drive", {"action": "click", "selector": "#carla"}), "devolveu", "pede")
             p = rv.PENDENTES[ctx.id]
             rv.decidir(ctx.id, "recusar", p["id"])
             ok(rv.retomar_adiada(ctx.id) and "RECUSOU" in comunicadas[-1] and ctx.id not in rv.PENDENTES,

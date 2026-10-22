@@ -19,4 +19,12 @@ class FimDaTarefa(Extension):
         rv = sys.modules.get("aprovacoes_revisor")
         pendente = rv.PENDENTES.get(ctx.id) if rv else None
         if pendente and pendente.get("adiada") and pendente.get("decisao"):
-            asyncio.get_running_loop().call_later(3, rv.retomar_adiada, ctx.id)  # once this task has really stopped
+            asyncio.get_running_loop().create_task(_retomar(rv, ctx.id))
+
+
+async def _retomar(rv, ctx_id: str) -> None:
+    """Once this task has really stopped (a few seconds, up to a minute): the answer starts the chat again."""
+    for _ in range(20):
+        await asyncio.sleep(3)
+        if rv.retomar_adiada(ctx_id) or ctx_id not in rv.PENDENTES:
+            return
