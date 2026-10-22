@@ -125,6 +125,10 @@ class Suite:
         ok("não encontrado" in st.validar({"layout": "post-novo", "manchete": "x", "imagem": "/nao/existe.jpg"}), "imagem existe")
         ok("desconhecidos" in st.validar({"layout": "dica", "manchete": "x", "script": "alert(1)"}), "campo estranho fora")
         ok((RAIZ / "story" / "telas" / "curva-abc-custos.png").exists(), "há tela real para o bastidor")
+        mau = {"layout": "dica", "manchete": "</script><script>fetch('file:///etc/passwd')</script>"}
+        pagina = st.injetar((RAIZ / "story" / "story.html").read_text(encoding="utf-8"), mau)
+        ok(pagina.count("</script>") == (RAIZ / "story" / "story.html").read_text(encoding="utf-8").count("</script>") + 1
+           and "\\u003c/script\\u003e" in pagina, "texto com </script> não fecha a tag")
         if not st._chrome():
             return  # without a browser the drawing is checked on the VM
         import importlib.util as iu

@@ -61,6 +61,13 @@ def validar(campos: dict) -> str:
     return ""
 
 
+def injetar(pagina: str, dados: dict) -> str:
+    """The fields as a JS object before the page's script. "<", ">" and "&" go as \\u escapes, so a text with
+    "</script>" can never close the tag and run in the browser (which reads local files)."""
+    js = json.dumps(dados, ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    return pagina.replace("<script>\nconst C", f"<script>window.CAMPOS = {js};</script>\n<script>\nconst C", 1)
+
+
 def _chrome() -> str:
     return os.environ.get("CHROME") or next((c for c in CHROME if Path(c).exists()), "")
 
@@ -97,8 +104,7 @@ def _desenhar(campos: dict, saida: str) -> str:
                 destino = trabalho / "s" / f"{k}{Path(str(dados[k])).suffix.lower()}"
                 shutil.copy(str(dados[k]), destino)
                 dados[k] = destino.name
-        pagina = (trabalho / "s" / "story.html").read_text(encoding="utf-8").replace(
-            "<script>\nconst C", f"<script>window.CAMPOS = {json.dumps(dados, ensure_ascii=False)};</script>\n<script>\nconst C", 1)
+        pagina = injetar((trabalho / "s" / "story.html").read_text(encoding="utf-8"), dados)
         (trabalho / "s" / "story.html").write_text(pagina, encoding="utf-8")
         png = trabalho / "story.png"
         with sync_playwright() as pw:
