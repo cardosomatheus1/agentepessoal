@@ -253,6 +253,131 @@ def livre_99food(analise: dict, tool: str, args: dict, intencao: str, cfg: dict,
     return bool(URL_99.match(url or "") or NOVENTA_E_NOVE.search(texto)) and not FORA_99.search(texto)
 
 
+# ------------------------------------------------------------------ leak guard (22/10, from Claude Duet's classifier)
+# What goes to other people (a message, an e-mail, a post, a form sent for review) never carries a card number, a CPF,
+# a password or an access token, whatever the rule of the category says and even where messages go without asking
+# (the Instagram). Deterministic: patterns and check digits, plus the person's own vault values; no model decides.
+SAIDA = ("mensagem_terceiros", "publicar", "enviar_analise")
+CARTAO_AGRUPADO = re.compile(r"(?<!\d)(?:\d{4}[ .-]){3}\d{4}(?!\d)|(?<!\d)\d{4}[ .-]\d{6}[ .-]\d{5}(?!\d)")
+CARTAO_CRU = re.compile(r"(?<!\d)\d{13,19}(?!\d)")
+CPF_FORMATADO = re.compile(r"(?<!\d)\d{3}\.\d{3}\.\d{3}-\d{2}(?!\d)")
+CPF_CRU = re.compile(r"cpf\D{0,20}(\d{11})(?!\d)", re.I)
+TOKEN = re.compile(r"\b(EAA[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{20,}|AKIA[A-Z0-9]{16}|gh[pousr]_[A-Za-z0-9]{30,}|"
+                   r"xox[abp]-[A-Za-z0-9-]{20,}|AIza[A-Za-z0-9_-]{30,}|apify_api_[A-Za-z0-9]{20,}|"
+                   r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})")
+SEGREDO_COFRE = re.compile(r"§§secret\(")
+COFRE = "/a0/usr/segredos"
+
+
+def _luhn(numero: str) -> bool:
+    d = [int(c) for c in numero if c.isdigit()]
+    soma = sum(d[-1::-2]) + sum(sum(divmod(2 * x, 10)) for x in d[-2::-2])
+    return len(d) >= 13 and soma % 10 == 0
+
+
+def _cpf_valido(numero: str) -> bool:
+    d = [int(c) for c in numero if c.isdigit()]
+    if len(d) != 11 or len(set(d)) == 1:
+        return False
+    for n in (9, 10):
+        resto = sum(d[i] * (n + 1 - i) for i in range(n)) * 10 % 11
+        if resto % 10 != d[n]:
+            return False
+    return True
+
+
+DIGITAR = {"type", "fill", "type_text", "insert_text", "input"}
+CONVERSA = re.compile(r"mensag|direct|\bdm\b|whatsapp|e-?mail|coment|respost|conversa|chat|post|legenda|publica|"
+                      r"message|reply|comment|caption", re.I)
+LOGIN = re.compile(r"login|log ?in|sign ?in|entrar|senha|password|autentic|c[oó]digo de (acesso|verifica)", re.I)
+
+
+def digitando_para_alguem(tool: str, args: dict, intencao: str) -> bool:
+    """Typing in the browser is not reviewed (every keystroke would ask), but text typed into a message, a comment or
+    a caption still goes through the leak guard: that is where it would leave. A login form is not that."""
+    return (tool or "").lower() == "browser" and str(args.get("action") or "").lower() in DIGITAR \
+        and bool(CONVERSA.search(intencao or "")) and not LOGIN.search(intencao or "")
+
+
+def valores_do_cofre(login: str, pasta: str = COFRE) -> list:
+    """The values in the person's vault (helpers of plugins/cofre keep them in <login>.json); only to recognise them."""
+    try:
+        with open(f"{pasta}/{re.sub(r'[^a-z0-9_.-]', '', (login or '').lower())}.json", encoding="utf-8") as f:
+            dados = json.load(f)
+    except Exception:
+        return []
+    if not isinstance(dados, dict):
+        return []
+    # only what is secret by name: a login e-mail or a phone number in the vault may be sent on purpose
+    return [str(v) for k, v in dados.items() if isinstance(v, (str, int)) and len(str(v)) >= 6
+            and re.search(r"SENHA|PASS|TOKEN|SECRET|KEY|CHAVE|PIN|2FA|TOTP|COOKIE|CVV", str(k), re.I)]
+
+
+def vazamento(args, cofre: list | None = None) -> list:
+    """Why this outgoing text must not go: [] when it is clean."""
+    texto = _texto(args)
+    motivos = []
+    if any(_luhn(m) for m in CARTAO_AGRUPADO.findall(texto)) or any(
+            _luhn(m) and re.search(r"cart[aã]o|card|cr[eé]dito|d[eé]bito", texto, re.I) for m in CARTAO_CRU.findall(texto)):
+        motivos.append("número de cartão")
+    if any(_cpf_valido(m) for m in CPF_FORMATADO.findall(texto)) or any(_cpf_valido(m) for m in CPF_CRU.findall(texto)):
+        motivos.append("CPF")
+    if TOKEN.search(texto):
+        motivos.append("token ou chave de acesso")
+    if SEGREDO_COFRE.search(texto) or any(v in texto for v in cofre or []):
+        motivos.append("senha ou valor do cofre")
+    return motivos
+
+
+# ------------------------------------------------------------------ approval that waits while the task goes on
+# (22/10, from Claude Duet: "if you can't approve right away, it finishes the rest of the task and brings the approval
+# back later"). The first time an action needs his ok, the agent is told to do the rest of the task meanwhile; when it
+# repeats the same action it waits for the answer as before (or goes at once, if he already said yes). An answer that
+# arrives after the task ended starts the chat again with it.
+def assinatura(tool: str, args: dict) -> str:
+    import hashlib
+
+    return hashlib.sha256(f"{(tool or '').lower()}|{_texto(args)}".encode()).hexdigest()[:16]
+
+
+def mesma_acao(pendente: dict, analise: dict, assin: str) -> bool:
+    import difflib
+
+    if pendente.get("assinatura") and pendente["assinatura"] == assin:
+        return True
+    return pendente.get("categoria") == analise.get("categoria") and difflib.SequenceMatcher(
+        None, str(pendente.get("resumo") or "").lower(), str(analise.get("resumo") or "").lower()).ratio() > 0.6
+
+
+def recado_adiada(pendente: dict) -> str:
+    if pendente.get("decisao") == "recusar":
+        return (f"[Aprovações] Ele RECUSOU a ação que esperava o ok dele: «{pendente['resumo']}». Ela não foi feita. "
+                "Não tente de novo nem por outro caminho; diga a ele em uma linha como ficou.")
+    return (f"[Aprovações] Ele APROVOU a ação que esperava o ok dele: «{pendente['resumo']}». Faça agora: repita "
+            "exatamente essa ação (ela passa sem perguntar de novo) e diga a ele em uma linha que foi feito.")
+
+
+def retomar_adiada(ctx_id: str) -> bool:
+    """After his answer (phone button or chat card): a waiting action whose task already ended comes back to the chat
+    as a message, so it is done (or dropped) without him asking again. A refused one leaves the waiting list."""
+    pendente = PENDENTES.get(ctx_id)
+    if not pendente or not pendente.get("adiada") or not pendente.get("decisao"):
+        return False
+    if pendente["decisao"] == "recusar":
+        PENDENTES.pop(ctx_id, None)
+    try:
+        from agent import AgentContext, UserMessage
+
+        ctx = AgentContext.get(ctx_id)
+        if ctx is None or ctx.is_running():
+            return False  # still working: it comes back to the action by itself
+        ctx.communicate(UserMessage(message=recado_adiada(pendente), attachments=[], id=""))
+        return True
+    except Exception as exc:
+        print(f"aprovacoes: retomar {ctx_id}: {exc}", flush=True)
+        return False
+
+
 def veredito(regras: dict, analise: dict) -> str:
     categoria = analise["categoria"]
     if categoria == "nenhuma":

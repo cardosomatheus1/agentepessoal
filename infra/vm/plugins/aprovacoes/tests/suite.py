@@ -242,7 +242,7 @@ class Suite:
             ext.whatsapp = lambda: types.SimpleNamespace(dono=lambda ctx: "teste_aprov",
                                                          enviar=lambda *a: enviados.append(a[4]) or "")
             regras = {}
-            ext._config = lambda agent: {"regras": regras, "espera_minutos": 1}
+            ext._config = lambda agent: {"regras": regras, "espera_minutos": 1, "adiar_aprovacao": False}
 
             class Ctx:
                 id, name = "ctx-portao", "teste"
@@ -295,6 +295,154 @@ class Suite:
             await fim.FimDaTarefa(agente).execute()
             ok(not ctx.data.get("_aprovacoes_tarefa"), "fim da tarefa apaga a liberação")
             eq(await acao("mensagem_terceiros", "Enviar e-mail para o Beto", "aprovar"), "pediu:aprovar", "depois do fim: pede")
+        finally:
+            for n, m in antes.items():
+                if m is None:
+                    sys.modules.pop(n, None)
+                else:
+                    sys.modules[n] = m
+
+    def t_trava_contra_vazamento(self):
+        # 22/10 (Claude Duet's leak classifier): card, CPF, token or a vault secret never go out, whatever the rule
+        rv = self.rv
+        eq = lambda a, b, m: ok(a == b, f"{m}: veio {a!r}")  # noqa: E731
+        eq(rv.vazamento({"text": "Oi Ana, segue o pedido 4111 1111 1111 1111"}), ["número de cartão"], "cartão agrupado (Luhn)")
+        eq(rv.vazamento({"text": "cartão de crédito 4111111111111111"}), ["número de cartão"], "cartão cru com a palavra cartão")
+        eq(rv.vazamento({"text": "meu WhatsApp é 71987654321 e o pedido 1234567890123"}), [], "telefone e número de pedido passam")
+        eq(rv.vazamento({"text": "Pedido 1234 5678 9012 3456"}), [], "4 grupos que não passam no Luhn: não é cartão")
+        eq(rv.vazamento({"text": "o CPF dele é 529.982.247-25"}), ["CPF"], "CPF formatado e válido")
+        eq(rv.vazamento({"text": "cpf 52998224725"}), ["CPF"], "CPF cru perto da palavra cpf")
+        eq(rv.vazamento({"text": "código 52998224725"}), [], "11 dígitos sem a palavra cpf passam")
+        eq(rv.vazamento({"text": "123.456.789-00"}), [], "CPF com dígito errado não é CPF")
+        eq(rv.vazamento({"body": "token EAAB" + "x" * 30}), ["token ou chave de acesso"], "token da Meta")
+        eq(rv.vazamento({"text": "a senha é §§secret(FACEBOOK_SENHA)"}), ["senha ou valor do cofre"], "segredo do cofre pelo nome")
+        eq(rv.vazamento({"text": "entra com Batata#2026"}, ["Batata#2026"]), ["senha ou valor do cofre"], "valor do cofre")
+        eq(rv.vazamento({"text": "Oi! Tudo bem? Posso te mostrar a Raiz?"}), [], "mensagem comum passa")
+        import json as _json
+        import tempfile
+        pasta = tempfile.mkdtemp()
+        with open(f"{pasta}/teste.json", "w") as f:
+            _json.dump({"FACEBOOK_SENHA": "Batata#2026", "FACEBOOK_EMAIL": "eu@raiz.com", "PIN_BANCO": "123"}, f)
+        eq(rv.valores_do_cofre("teste", pasta), ["Batata#2026"], "só o que é segredo pelo nome (e-mail pode ir)")
+        eq(rv.valores_do_cofre("ninguem", pasta), [], "sem cofre, nada")
+
+    async def t_aprovacao_espera_enquanto_a_tarefa_segue(self):
+        """22/10 (Claude Duet): the first ask hands the task back to the agent (do the rest meanwhile); repeating the same
+        action waits for the answer or goes at once if he already said yes; a different one is held; the leak guard is
+        above the Instagram's free path; an answer after the task ended starts the chat again."""
+        import asyncio
+        import sys
+        import types
+
+        class Intervencao(Exception):
+            pass
+
+        stubs = {"helpers": types.ModuleType("helpers"), "helpers.extension": types.ModuleType("helpers.extension"),
+                 "helpers.errors": types.ModuleType("helpers.errors"), "agent": types.ModuleType("agent")}
+
+        class Extension:
+            def __init__(self, agent=None, **kwargs):
+                self.agent = agent
+        stubs["helpers.extension"].Extension = Extension
+        stubs["helpers.errors"].InterventionException = Intervencao
+        devolvidas, comunicadas = [], []
+        stubs["agent"].UserMessage = lambda message="", attachments=None, id="": types.SimpleNamespace(message=message)
+        antes = {n: sys.modules.get(n) for n in [*stubs, "aprovacoes_revisor"]}
+        sys.modules.update(stubs)
+        try:
+            ext = self._modulo("_05_revisar_adiar", RAIZ / "extensions/python/tool_execute_before/_05_revisar_acao.py")
+            rv = ext.revisor()
+            proxima, enviados = {}, []
+            rv.classificar = lambda tool, args, intencao, sempre: dict(proxima)
+            rv.registrar_atividade = lambda *a, **k: None
+            rv.somente_leitura = lambda: set()
+            rv.valores_do_cofre = lambda login: []
+            ext.whatsapp = lambda: types.SimpleNamespace(dono=lambda ctx: "teste_aprov", enviar=lambda *a: enviados.append(a) or "")
+            ext._config = lambda agent: {"regras": {}, "espera_minutos": 1, "instagram_sem_perguntar": True}
+            ext.RevisarAcao._devolver = staticmethod(lambda agent, texto: devolvidas.append(texto) or (_ for _ in ()).throw(Intervencao(texto)))
+
+            class Ctx:
+                id, name = "ctx-adiar", "teste"
+
+                def __init__(self):
+                    self.data, self.task = {"dono": "teste_aprov"}, types.SimpleNamespace(_future=object())
+                    self.log = types.SimpleNamespace(log=lambda **k: None)
+                    self.rodando = False
+
+                def get_data(self, k):
+                    return self.data.get(k)
+
+                def set_data(self, k, v):
+                    self.data[k] = v
+
+                def is_running(self):
+                    return self.rodando
+
+                def communicate(self, msg):
+                    comunicadas.append(msg.message)
+
+            ctx = Ctx()
+            stubs["agent"].AgentContext = types.SimpleNamespace(get=lambda cid: ctx if cid == ctx.id else None)
+            agente = types.SimpleNamespace(context=ctx, intervention=None, hist_add_user_message=lambda *a, **k: None,
+                                           loop_data=types.SimpleNamespace(current_tool=types.SimpleNamespace(message="enviar")))
+
+            async def acao(categoria, resumo, args, responder=""):
+                proxima.update(categoria=categoria, resumo=resumo, sempre_permitida=False)
+                tarefa = asyncio.create_task(ext.RevisarAcao(agente).execute(tool_args=args, tool_name="browser"))
+                for _ in range(100):
+                    await asyncio.sleep(0.02)
+                    p = rv.PENDENTES.get(ctx.id)
+                    if responder and p and not p.get("decisao") and not tarefa.done():
+                        rv.decidir(ctx.id, responder, p["id"])
+                        break
+                    if tarefa.done():
+                        break
+                try:
+                    await asyncio.wait_for(tarefa, 5)
+                except Intervencao:
+                    return "devolveu"
+                return "executou"
+
+            eq = lambda a, b, m: ok(a == b, f"{m}: veio {a!r}")  # noqa: E731
+            email = {"action": "click", "selector": "#enviar-email-ana"}
+            eq(await acao("mensagem_terceiros", "Enviar e-mail para a Ana", email), "devolveu", "1ª vez: pede e devolve a tarefa")
+            ok("resto da tarefa" in devolvidas[-1] and len(enviados) == 1, f"avisou e mandou seguir: {devolvidas[-1]}")
+            ok(rv.PENDENTES[ctx.id]["adiada"], "fica esperando")
+            eq(await acao("publicar", "Publicar post", {"action": "click", "selector": "#publicar"}), "devolveu",
+               "outra ação enquanto uma espera: segura")
+            ok("Já há uma ação esperando" in devolvidas[-1] and len(enviados) == 1, "não pede outra no celular")
+            eq(await acao("mensagem_terceiros", "Enviar o e-mail à Ana", email, "aprovar"), "executou",
+               "repetiu a mesma: espera a resposta e segue")
+            ok(ctx.id not in rv.PENDENTES and len(enviados) == 1, "sem novo aviso e sem nada pendurado")
+            # he answers while the agent works on the rest: the repeated action goes at once
+            eq(await acao("mensagem_terceiros", "Enviar e-mail para o Beto", {"action": "click", "selector": "#beto"}), "devolveu", "pede")
+            p = rv.PENDENTES[ctx.id]
+            rv.decidir(ctx.id, "aprovar", p["id"])
+            ctx.rodando = True
+            ok(not rv.retomar_adiada(ctx.id) and not comunicadas, "tarefa ainda rodando: ela mesma volta à ação")
+            eq(await acao("mensagem_terceiros", "Enviar e-mail para o Beto", {"action": "click", "selector": "#beto"}), "executou",
+               "já aprovada: passa na hora")
+            # the task ended before coming back: his answer starts the chat again
+            ctx.rodando = False
+            eq(await acao("publicar", "Publicar o cardápio novo no site", {"action": "click", "selector": "#carla"}), "devolveu", "pede")
+            p = rv.PENDENTES[ctx.id]
+            rv.decidir(ctx.id, "recusar", p["id"])
+            ok(rv.retomar_adiada(ctx.id) and "RECUSOU" in comunicadas[-1] and ctx.id not in rv.PENDENTES,
+               f"recusa depois do fim: avisa o agente e larga: {comunicadas}")
+            # leak guard above the Instagram's free path: the send click, with the text in the agent's intent
+            n = len(enviados)
+            agente.loop_data.current_tool.message = "enviar no Instagram para @zen: «o cartão é 4111 1111 1111 1111»"
+            eq(await acao("mensagem_terceiros", "Enviar no Instagram para @zen", {"action": "click", "selector": "#enviar"}),
+               "devolveu", "vazamento barra")
+            ok("Trava contra vazamento" in devolvidas[-1] and len(enviados) == n and ctx.id not in rv.PENDENTES,
+               "nem pede, nem avisa como livre")
+            # typing the text of a message (not reviewed otherwise) is checked too; typing a login is not
+            agente.loop_data.current_tool.message = "escrever a mensagem no direct"
+            eq(await acao("nenhuma", "", {"action": "type", "text": "meu CPF 529.982.247-25"}), "devolveu", "texto digitado da mensagem")
+            agente.loop_data.current_tool.message = "entrar na conta com a senha"
+            eq(await acao("nenhuma", "", {"action": "type", "text": "§§secret(FACEBOOK_SENHA)"}), "executou", "login segue")
+            agente.loop_data.current_tool.message = "digitar o e-mail e a senha na tela de login"
+            eq(await acao("nenhuma", "", {"action": "type", "text": "§§secret(GMAIL_SENHA)"}), "executou", "login com e-mail segue")
         finally:
             for n, m in antes.items():
                 if m is None:

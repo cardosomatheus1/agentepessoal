@@ -76,6 +76,11 @@ class RevisarAcao(Extension):
         tool = getattr(agent.loop_data, "current_tool", None)
         intencao = str(getattr(tool, "message", "") or "")[-2500:]
         rv = revisor()
+        if rv.digitando_para_alguem(tool_name, args, intencao):  # 22/10: the text of a message, typed before the send
+            motivos = rv.vazamento(args, rv.valores_do_cofre(agent.context.get_data("dono") or "matheus"))
+            if motivos:
+                self._barrar_vazamento(agent, tool_name, {"categoria": "mensagem_terceiros", "resumo": f"digitar: {intencao[-200:]}"},
+                                       motivos)
         if not rv.precisa_revisao(tool_name, args, intencao):
             return
 
@@ -87,6 +92,11 @@ class RevisarAcao(Extension):
             analise = {"categoria": "contas_reais", "sempre_permitida": False,
                        "resumo": f"{tool_name} (o revisor falhou: {str(exc)[:80]})"}
             decisao = "perguntar"
+        if analise["categoria"] in rv.SAIDA:  # 22/10 leak guard: above every rule, the Instagram's included
+            motivos = rv.vazamento({"args": args, "intencao": intencao},
+                                   rv.valores_do_cofre(agent.context.get_data("dono") or "matheus"))
+            if motivos:
+                self._barrar_vazamento(agent, tool_name, analise, motivos)
         liberadas = agent.context.get_data("_aprovacoes_liberadas") or {}
         if decisao == "perguntar" and rv.liberacao_vale(analise, tool_name, liberadas,
                                                         agent.context.get_data("_navegador_url") or "", time.time()):
@@ -150,35 +160,60 @@ class RevisarAcao(Extension):
                                   f"«{analise['categoria']}», que o usuário marcou como NUNCA. Ela não foi executada. "
                                   "Não tente de novo nem por outro caminho; siga sem ela ou explique ao usuário o que falta.")
 
-        # Loop guard: the same kind of approval asked over and over (e.g. "send the verification
-        # code" retried, each one texting the user) is refused on the 3rd time within 10 minutes.
-        # What "Nesta tarefa" let through does not count (helpers/revisor.repeticoes).
-        parecidos, historico = rv.repeticoes(ctx.get_data("_aprovacoes_hist"), analise, time.time())
-        ctx.set_data("_aprovacoes_hist", historico)
-        if parecidos >= 2:  # 3rd similar request of the same kind (different steps of one task pass)
-            self._registrar(agent, f"🔁 Recusado por repetição ({analise['categoria']}, 3ª vez em 10 min): {analise['resumo']}")
-            rv.registrar_atividade(ctx, tool_name, analise, "recusado por repetição")
-            self._devolver(agent, f"[Proteção contra loop] Você pediu aprovação para «{analise['categoria']}» pela 3ª vez "
-                                  "em 10 minutos. A ação NÃO foi executada. Pare agora, não tente de novo e explique ao "
-                                  "usuário o que está travando.")
+        assin = rv.assinatura(tool_name, args)
+        espera_s = 60 * float(cfg.get("espera_minutos") or 360)
+        existente = rv.PENDENTES.get(ctx.id)
+        if existente and existente.get("adiada") and time.time() - float(existente.get("criado") or 0) > espera_s:
+            rv.PENDENTES.pop(ctx.id, None)  # he never answered: that one is gone, this one starts over
+            existente = None
+        if existente and existente.get("adiada"):
+            if not rv.mesma_acao(existente, analise, assin):
+                self._devolver(agent, f"[Aprovações] Já há uma ação esperando o ok do usuário: «{existente['resumo']}». "
+                                      "Esta outra NÃO foi executada. Termine o que não depende de aprovação, repita aquela "
+                                      "ação para esperar a resposta dele e só depois peça esta.")
+            pendente = existente  # the agent came back to it: wait for the answer now (or go, if he already said yes)
+            if not pendente.get("decisao"):  # he typed "aprovar" in the chat while the task went on
+                ultima = getattr(getattr(agent, "last_user_message", None), "content", None)
+                digitada = rv.resposta_digitada(str(ultima.get("user_message") or "") if isinstance(ultima, dict) else "")
+                if digitada:
+                    pendente["decisao"] = digitada
+        else:
+            # Loop guard: the same kind of approval asked over and over (e.g. "send the verification
+            # code" retried, each one texting the user) is refused on the 3rd time within 10 minutes.
+            # What "Nesta tarefa" let through does not count (helpers/revisor.repeticoes).
+            parecidos, historico = rv.repeticoes(ctx.get_data("_aprovacoes_hist"), analise, time.time())
+            ctx.set_data("_aprovacoes_hist", historico)
+            if parecidos >= 2:  # 3rd similar request of the same kind (different steps of one task pass)
+                self._registrar(agent, f"🔁 Recusado por repetição ({analise['categoria']}, 3ª vez em 10 min): {analise['resumo']}")
+                rv.registrar_atividade(ctx, tool_name, analise, "recusado por repetição")
+                self._devolver(agent, f"[Proteção contra loop] Você pediu aprovação para «{analise['categoria']}» pela 3ª vez "
+                                      "em 10 minutos. A ação NÃO foi executada. Pare agora, não tente de novo e explique ao "
+                                      "usuário o que está travando.")
 
-        pendente = rv.abrir(ctx.id, analise, tool_name)
-        msg = getattr(agent, "last_user_message", None)
-        c = getattr(msg, "content", None)
-        fala = str(c.get("user_message") or "") if isinstance(c, dict) else ""
-        onde = rv.rotulo(ctx.name, fala)
-        texto = (f"🔐 *Preciso do seu ok* ({onde})\n\n{pendente['resumo']}\n\n"
-                 f"_Tipo: {CATEGORIA_LEGIVEL.get(analise['categoria'], analise['categoria'])}_")
-        self._registrar(agent, texto.replace("*", "**", 2) + "\n\nResponda **aprovar**, **nesta tarefa**, **sempre** ou **recusar** "
-                               "(ou use os botões).")
-        try:  # a failed notice never lets the action through: it still waits for the chat card
-            wa = whatsapp()
-            if wa:
-                await asyncio.to_thread(wa.enviar, wa.dono(ctx), texto, "", "", rv.botoes_celular(ctx.id, pendente["id"]))
-        except Exception as exc:
-            print(f"aprovacoes: WhatsApp notice failed: {exc}", flush=True)
+            pendente = rv.abrir(ctx.id, analise, tool_name)
+            pendente["assinatura"] = assin
+            msg = getattr(agent, "last_user_message", None)
+            c = getattr(msg, "content", None)
+            fala = str(c.get("user_message") or "") if isinstance(c, dict) else ""
+            onde = rv.rotulo(ctx.name, fala)
+            texto = (f"🔐 *Preciso do seu ok* ({onde})\n\n{pendente['resumo']}\n\n"
+                     f"_Tipo: {CATEGORIA_LEGIVEL.get(analise['categoria'], analise['categoria'])}_")
+            self._registrar(agent, texto.replace("*", "**", 2) + "\n\nResponda **aprovar**, **nesta tarefa**, **sempre** ou **recusar** "
+                                   "(ou use os botões).")
+            try:  # a failed notice never lets the action through: it still waits for the chat card
+                wa = whatsapp()
+                if wa:
+                    await asyncio.to_thread(wa.enviar, wa.dono(ctx), texto, "", "", rv.botoes_celular(ctx.id, pendente["id"]))
+            except Exception as exc:
+                print(f"aprovacoes: WhatsApp notice failed: {exc}", flush=True)
+            if cfg.get("adiar_aprovacao", True):  # 22/10: the rest of the task goes on while he has not answered
+                pendente["adiada"] = True
+                self._devolver(agent, f"[Aprovações] A ação «{pendente['resumo']}» espera o ok do usuário (ele já foi "
+                                      "avisado) e NÃO foi executada ainda. Faça agora o resto da tarefa que não depende "
+                                      "dela. Quando terminar o resto, ou se não houver nada mais a adiantar, repita "
+                                      "exatamente esta ação: ela espera a resposta dele e segue se ele aprovar.")
 
-        limite = time.time() + 60 * float(cfg.get("espera_minutos") or 360)
+        limite = time.time() + espera_s
         escolha = ""
         try:
             while time.time() < limite:
@@ -219,6 +254,15 @@ class RevisarAcao(Extension):
         self._registrar(agent, f"❌ Não executado (usuário {motivo}): {pendente['resumo']}")
         self._devolver(agent, f"[Usuário] {motivo.capitalize()} a ação «{pendente['resumo']}». Ela NÃO foi executada. "
                               "Não tente de novo nem por outro caminho; siga sem ela ou pergunte o que fazer.")
+
+    def _barrar_vazamento(self, agent, tool_name: str, analise: dict, motivos: list) -> None:
+        rv = revisor()
+        print(f"aprovacoes: {tool_name} -> vazamento ({', '.join(motivos)}): {analise['resumo']}", flush=True)
+        rv.registrar_atividade(agent.context, tool_name, analise, "barrado: " + ", ".join(motivos))
+        self._registrar(agent, f"🛡️ Barrado: a mensagem levaria {', '.join(motivos)} — {analise['resumo']}")
+        self._devolver(agent, f"[Trava contra vazamento] A ação «{analise['resumo']}» levaria {', '.join(motivos)} "
+                              "para fora. Ela NÃO foi executada. Tire esse dado do texto e faça de novo; se ele for mesmo "
+                              "necessário, diga ao usuário que esse dado ele mesmo manda.")
 
     @staticmethod
     def _registrar(agent, texto: str) -> None:

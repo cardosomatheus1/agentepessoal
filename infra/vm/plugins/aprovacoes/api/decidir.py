@@ -34,5 +34,8 @@ def revisor():
 
 class Decidir(ApiHandler):
     async def process(self, input: dict, request: Request) -> dict | Response:
-        ok = revisor().decidir(str(input.get("context") or ""), str(input.get("decisao") or ""), str(input.get("id") or ""))
+        rv, ctx_id = revisor(), str(input.get("context") or "")
+        ok = rv.decidir(ctx_id, str(input.get("decisao") or ""), str(input.get("id") or ""))
+        if ok:
+            rv.retomar_adiada(ctx_id)  # an action that waited while its task went on, and the task already ended
         return {"ok": ok}

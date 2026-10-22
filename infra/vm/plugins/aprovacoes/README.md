@@ -35,3 +35,12 @@ Como decide:
 - Recusa ou bloqueio: a ferramenta não roda e o agente recebe "não foi executado; não tente de novo nem
   por outro caminho".
 - Cada decisão vai para o log do contêiner: `aprovacoes: <ferramenta> -> <categoria>/<decisão>: <resumo>`.
+
+**22/10 (do Claude Duet):**
+- **Segue trabalhando enquanto espera o seu ok** (`adiar_aprovacao: true`): na primeira vez, o agente avisa você e
+  volta para o resto da tarefa; quando repete a mesma ação, ela espera a sua resposta (ou passa na hora, se você já
+  aprovou). Só uma ação espera por vez em cada conversa. Se a tarefa já terminou quando você responde, a resposta
+  volta à conversa como mensagem (aprovou: ele faz; recusou: ele larga).
+- **Trava contra vazamento**: o que sai para outras pessoas (mensagem, e-mail, post, envio para análise; e o texto
+  digitado numa mensagem) nunca leva número de cartão, CPF, token/chave de acesso ou senha do cofre, nem no Instagram
+  liberado. Determinístico (dígitos verificadores e padrões), acima de qualquer regra.

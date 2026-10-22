@@ -17,3 +17,5 @@ instagram_sem_perguntar: true
 sempre_permitir: ""
 # Minutes to wait for your answer before giving up on the action
 espera_minutos: 360
+# 22/10: while an action waits for your ok, the agent does the rest of the task (true) or stops and waits (false)
+adiar_aprovacao: true

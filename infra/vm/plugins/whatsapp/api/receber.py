@@ -845,6 +845,8 @@ class Receber(ApiHandler):
             else:
                 await asyncio.to_thread(ponte().enviar, usuario, {"aprovar": "✅ Aprovado.", "sempre": "✅ Aprovado (e vou permitir sempre).",
                                          "recusar": "❌ Recusado. Não vou fazer."}[decisao])
+                if hasattr(rv, "retomar_adiada"):  # the task that asked already ended: the answer starts it again
+                    rv.retomar_adiada(ctx_id)
             return {"ok": True}
 
         if botao.startswith("fio:"):  # a button under a loose end of plugins/fios_soltos
