@@ -366,13 +366,8 @@ def criticar(tipo: str, material, *, login: str = "matheus") -> dict:
 
 # --- the Designer ----------------------------------------------------------------------------------------------------
 
-KIT = """Motores de render que existem (escolha um em "motor"):
-- "carrossel_raiz" (só em sessão de operador, o agente não renderiza): carrossel da Raiz no kit (1080x1350, base raiz-carrossel.css/js: topo com logo, rodapé com
-  progresso; fundo night com creme alternado). Campos: "pasta" ("c_<nome-curto>"), "conceito", "slides" (2 a 10:
-  {"manchete" (até 12 palavras), "destaque" (a palavra em Instrument Serif), "texto", "visual" (o que aparece e de
-  onde vem: tela real do produto, foto real ou gerada "imagem ilustrativa")}), "legenda" (sem emoji).
-- "video_kit_raiz" (só em sessão de operador): Reel da Raiz no kit de motion (voz Carolina). Campos: "conceito", "duracao_s", "cenas" (lista de
-  {"fala", "tela", "visual"}), "legenda".
+KIT = """Motor de render: sempre "motor": "molde" (é o único que roda aqui; o carrossel e o vídeo "do kit" feitos à mão
+são só da sessão de operador, nunca escolha).
 - "molde": o que o agente renderiza sozinho, para a Raiz e para outras marcas (22/10). Para a Raiz, "_marca": "raiz"
   na ficha aplica o fixo do kit; o conceito muda de peça para peça (duas seguidas não usam o mesmo molde). Campos:
   "molde" (id do catálogo), "formato" (carrossel|reel|story, um dos formatos do molde), "ficha" (os campos do esquema
@@ -625,8 +620,15 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
                 elif not previa:
                     falta.append("a prévia do vídeo não saiu")
     formato = str(spec.get("formato") or "").lower()
-    imagens = previa[:10] if previa else [a for a in arquivos if Path(a).suffix.lower() in EXT_IMAGEM]
+    imagens = _quadros_para_o_critico(previa, folha) if previa else [a for a in arquivos if Path(a).suffix.lower() in EXT_IMAGEM]
     julgar = {"briefing": briefing, "ficha": spec or r["texto"] or "(vazia)", "problemas": falta, "imagens": imagens}
+    if previa:  # 22/10: he read the zoomed frames as a cropped screen and asked for frames he was not sent
+        julgar["como_ver_a_previa"] = (
+            "É a prévia de um vídeo narrado: a primeira imagem é a folha com um quadro de cada cena, as outras são cenas "
+            "inteiras, sempre a do fim entre elas. Em cada tela do sistema, a tela entra inteira (tema escuro, com o menu) "
+            "e depois a câmera aproxima o destaque, como o Matheus pediu (decisão #85: vídeo com zoom e movimento); o "
+            "quadro do zoom não é recorte. A narração são as \"falas\" da ficha, uma por cena, na ordem das cenas; o "
+            "áudio vai ao Matheus antes do vídeo (decisão #39).")
     tipo = ("carrossel" if formato == "carrossel" or spec.get("motor") == "carrossel_raiz"
             else "reel" if formato == "reel" else "post")
     critica = criticar(tipo, julgar, login=login)
@@ -636,6 +638,18 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
     if previa:
         out.update(previa=previa, folha=folha, narracao=narracao, video_pendente=not falta)
     return out
+
+
+def _quadros_para_o_critico(previa: list, folha: str) -> list:
+    """What fits in the Crítico's MAX_IMAGENS: the contact sheet (every scene), then frames spread over the video
+    with the last one always in."""
+    vagas = MAX_IMAGENS - (1 if folha else 0)
+    if len(previa) <= vagas:
+        escolhidos = list(previa)
+    else:
+        passo = (len(previa) - 1) / (vagas - 1)
+        escolhidos = [previa[round(i * passo)] for i in range(vagas)]
+    return ([folha] if folha else []) + escolhidos
 
 
 def _tarefa_revisao(spec: dict, critica: dict) -> str:

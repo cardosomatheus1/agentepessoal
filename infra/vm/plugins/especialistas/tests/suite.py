@@ -406,7 +406,13 @@ class Suite:
         eq(d["arquivos"], [], "nenhum vídeo ainda")
         eq(d["previa"], [str(q) for q in quadros], "prévia sem a folha de contato")
         ok(d["narracao"].endswith("narracao.m4a") and d["video_pendente"], d)
-        eq(chamadas[1][2]["imagens"], [str(q) for q in quadros], "o Crítico julga a prévia")
+        eq(chamadas[1][2]["imagens"], [str(self.tmp / "prev.jpg")] + [str(q) for q in quadros], "o Crítico julga a prévia")
+        ok("zoom" in chamadas[1][2]["como_ver_a_previa"], "ele sabe que o zoom não é recorte")
+        onze = [f"p{i:02d}.jpg" for i in range(1, 12)]
+        vistos = m._quadros_para_o_critico(onze, "prev.jpg")
+        ok(len(vistos) == m.MAX_IMAGENS and vistos[0] == "prev.jpg" and vistos[-1] == "p11.jpg" and vistos[1] == "p01.jpg",
+           f"cabe no limite, com a folha e a última cena: {vistos}")
+        ok("carrossel_raiz" not in m.KIT and '"motor": "molde"' in m.KIT, "o Designer só vê o motor que roda aqui")
 
     def t_renderizar_molde_chama_o_motor(self):
         import os
