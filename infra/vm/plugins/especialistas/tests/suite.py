@@ -217,6 +217,7 @@ class Suite:
         eq(m.criticar("carrossel", {"slides": ["Custo do prato: R$ 12,40", "valores de exemplo"]})["veredito"],
            "aprova", "com valores de exemplo passa")
         eq(m.criticar("oferta", "Programa por R$ 197/mês")["veredito"], "aprova", "oferta com preço real passa")
+        eq(m.criticar("reel", {"falas": ["O prato custa R$ 12,40"]})["veredito"], "reprova", "reel também (22/10)")
 
     def t_tipo_ou_material_ruim_reprova_sem_chamar(self):
         m = self._e()

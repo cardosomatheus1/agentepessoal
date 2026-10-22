@@ -319,7 +319,7 @@ def regras_fixas(tipo: str, material) -> list[str]:
         motivos.append("tem emoji (regra fixa: sem emoji em nada público)")
     if TRACO.search(texto):
         motivos.append("tem travessão (regra fixa do AR Board: sem — nem –)")
-    if tipo in ("post", "carrossel", "story") and REAIS.search(texto) and not EXEMPLO.search(texto):
+    if tipo in ("post", "carrossel", "story", "reel") and REAIS.search(texto) and not EXEMPLO.search(texto):
         motivos.append('número em R$ sem "valores de exemplo"')
     return motivos
 
