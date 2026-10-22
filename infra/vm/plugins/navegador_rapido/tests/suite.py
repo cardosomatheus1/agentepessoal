@@ -835,6 +835,67 @@ class Suite:
 
             eq(await d.salvar(Quebrado(), pasta, reg), None, "falha no download não derruba o navegador")
 
+    async def t_senha_so_em_campo_de_senha(self):
+        c = _correcoes()
+        # 21/10 15:29:54, O63yoYaG (portal da 99, caso marcado pelo operador): a senha do cofre foi para o telefone
+        args = {"action": "type", "browser_id": 57, "ref": 21, "text": "§§secret(NOVENTAENOVE)"}
+        telefone = {"tag": "input", "tipo": "text",
+                    "texto": "Insira o número de telefone do gerente do estabelecimento"}
+        recusa = c.segredo_no_campo(args, telefone)
+        ok(recusa.startswith("NÃO digitei §§secret(NOVENTAENOVE)") and "telefone do gerente" in recusa,
+           f"recusa o telefone: {recusa}")
+        eq(c.segredo_no_campo(args, {"tag": "input", "tipo": "password", "texto": ""}), "", "campo de senha passa")
+        eq(c.segredo_no_campo(args, {"tag": "input", "tipo": "text", "texto": "Insira sua senha"}), "",
+           "rótulo de senha passa (site que mostra a senha)")
+        eq(c.segredo_no_campo(args, None), "", "campo que não deu para ler: a ferramenta segue")
+        # 21/10 09:08, H91mXoKi: o e-mail do cofre vai no campo de e-mail
+        eq(c.segredo_no_campo({"action": "type", "browser_id": 40, "text": "§§secret(NEXOS_REVISOR_EMAIL)"},
+                              {"tag": "input", "tipo": "email", "texto": "email"}), "", "segredo que é e-mail passa")
+        eq(c.segredos_a_digitar({"action": "click", "ref": 2}), [], "clique não digita")
+        eq(c.segredos_a_digitar({"action": "type", "ref": 7, "text": "Raiz Connect Loja Teste"}), [], "sem segredo")
+        ok(c.segredo_no_campo({"action": "keyboard", "text": "§§secret(FACEBOOK_SENHA)"},
+                              {"tag": "div", "tipo": "", "texto": ""}), "teclado no campo focado também confere")
+        js = next((p for p in (Path("/a0/plugins/_browser/assets/browser-page-content.js"),
+                               Path(os.environ.get("A0SRC", "/nao-existe")) / "plugins/_browser/assets/browser-page-content.js")
+                   if p.exists()), None)
+        if js is None:
+            return
+        fonte = c.script_rapido(js.read_text(encoding="utf-8"))
+        ok(fonte.count(c.CAMPO_MARCA + "(") == 1, "a API da página ganha a0Campo uma vez")
+        eq(c.com_campo(fonte), fonte, "aplicar de novo não duplica")
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            return
+        exe = os.environ.get("CHROMIUM", "/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+        if not Path(exe).exists():
+            exe = "/a0/tmp/playwright/chromium-1228/chrome-linux/chrome"
+        if not Path(exe).exists():
+            return
+        async with async_playwright() as p:
+            b = await p.chromium.launch(executable_path=exe, headless=True)
+            pg = await b.new_page()
+            # o formulário da loja de teste da 99: nome, AppShopID, telefone do gerente; e um login com senha
+            await pg.set_content("""<input id=n placeholder="Nome do estabelecimento">
+              <input id=t placeholder="Insira o número de telefone do gerente do estabelecimento">
+              <label for=s>Senha</label><input id=s type=password autocomplete="current-password">""")
+            await pg.add_script_tag(content=fonte)
+            api = "globalThis.__spaceBrowserPageContent__"
+            await pg.evaluate(f"async () => {{ await {api}.capture(); }}")
+            por_ref = [await pg.evaluate(c.CAMPO_POR_REF_JS, r) for r in ("1", "2", "3")]
+            await pg.focus("#t")
+            focado = await pg.evaluate(c.CAMPO_FOCADO_JS)
+            por_seletor = await pg.evaluate(c.CAMPO_POR_SELETOR_JS, "input[type=password]")
+            invalido = await pg.evaluate(c.CAMPO_POR_SELETOR_JS, "text=Senha")
+            await b.close()
+        ok(c.segredo_no_campo(args, por_ref[1]), f"ref do telefone é recusada: {por_ref}")
+        eq(c.segredo_no_campo(args, por_ref[2]), "", "ref da senha passa")
+        eq(por_ref[2]["tipo"], "password", "tipo lido")
+        ok("Senha" in por_ref[2]["texto"], f"rótulo lido: {por_ref[2]}")
+        ok(c.segredo_no_campo({"action": "keyboard", "text": "§§secret(NOVENTAENOVE)"}, focado), f"focado: {focado}")
+        eq(c.segredo_no_campo(args, por_seletor), "", "seletor do campo de senha passa")
+        eq(invalido, None, "seletor do Playwright (text=) não quebra: fica sem leitura")
+
     async def t_aba_fechada(self):
         c = _correcoes()
         # 22/10 00:50, O63yoYaG (portal da 99): navigate numa aba que já tinha sido fechada ("Browser 73 is not open.")

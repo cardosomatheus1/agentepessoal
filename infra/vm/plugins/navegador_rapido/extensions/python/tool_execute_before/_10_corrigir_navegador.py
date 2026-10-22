@@ -26,10 +26,13 @@ class CorrigirNavegador(Extension):
                 ctx = str(self.agent.context.id)
                 erros = ""
                 if isinstance(args, dict) and not module._sem(args.get("browser_id")):
-                    from plugins._browser.helpers.selector import get_tool_runtime
+                    try:  # its own try: a browser without a0_abas (A0 CLI's) must not skip the fixes below
+                        from plugins._browser.helpers.selector import get_tool_runtime
 
-                    sessao = await get_tool_runtime(self.agent)
-                    erros = module.aba_fechada(args, await sessao.call("a0_abas"))
+                        sessao = await get_tool_runtime(self.agent)
+                        erros = module.aba_fechada(args, await sessao.call("a0_abas"))
+                    except Exception as exc:
+                        print(f"navegador_rapido: abas abertas não lidas: {exc}", flush=True)
                 module.argumentos_de_dialogo(args, ctx, runtime._BrowserRuntimeCore)
                 erros += module.argumentos_de_erros(args, ctx, runtime._BrowserRuntimeCore)
                 if isinstance(args, dict) and args.get("selector") and str(args.get("action", "")).lower() in module.COM_SELETOR:

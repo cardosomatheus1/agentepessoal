@@ -222,6 +222,124 @@ def com_rotulos(source: str) -> str:
     return source.replace(VALOR_FIM, VALOR_FIM + ROTULOS_FUNCAO, 1)
 
 
+# 21/10, 99 portal (caso marcado pelo operador): the agent typed §§secret(NOVENTAENOVE) into the field "Insira o número de
+# telefone do gerente" (ref 21) and only noticed afterwards. A vault secret now goes only into a password field (type
+# password, or a name/label of password), unless the secret itself is an identifier (e-mail, user, CPF...).
+DESCREVER_JS = """const a0Descrever = (el) => {
+    if (!el || !el.tagName) {
+      return null;
+    }
+    const at = (n) => String(el.getAttribute?.(n) || "");
+    const rotulos = [];
+    try {
+      for (const l of el.labels || []) {
+        rotulos.push(l.innerText || l.textContent || "");
+      }
+      for (const id of at("aria-labelledby").split(/\\s+/).filter(Boolean)) {
+        rotulos.push(el.ownerDocument.getElementById(id)?.textContent || "");
+      }
+    } catch {}
+    return { tag: String(el.tagName).toLowerCase(), tipo: String(("type" in el ? el.type : at("type")) || "").toLowerCase(),
+             texto: [at("name"), at("id"), at("autocomplete"), at("placeholder"), at("aria-label"), at("title"), ...rotulos]
+               .filter(Boolean).join(" | ").replace(/\\s+/g, " ").slice(0, 400) };
+  };"""
+CAMPO_MARCA = "a0Campo"
+CAMPO_FUNCAO = """    a0Campo(referenceId) {
+      try {
+        const vivo = (entry) => {
+          if (entry && entry.element && entry.element.isConnected) {
+            return entry.element;
+          }
+          const h = globalThis.__spaceBrowserDomHelper__;
+          const cadeia = entry && Array.isArray(entry.frameChain) ? entry.frameChain : [];
+          return h && h.a0Elemento && entry && entry.nodeId && cadeia.length === 1 && cadeia[0] === h.frameId
+            ? h.a0Elemento(entry.nodeId) : null;
+        };  // a0VivoV1
+        %s
+        return a0Descrever(vivo(state.entries.get(normalizeReferenceId(referenceId))));
+      } catch {
+        return null;
+      }
+    },
+""" % DESCREVER_JS
+# by ref: the page function (a page opened before this deploy only has a0ValorDe, which knows type=password)
+CAMPO_POR_REF_JS = """(ref) => {
+  const p = globalThis.__spaceBrowserPageContent__;
+  if (p && p.a0Campo) {
+    return p.a0Campo(ref);
+  }
+  const v = p && p.a0ValorDe ? p.a0ValorDe(ref) : null;
+  return v ? { tag: "", tipo: v.senha ? "password" : "", texto: "" } : null;
+}"""
+CAMPO_FOCADO_JS = """() => {
+  %s
+  let el = document.activeElement;
+  try {
+    while (el && el.tagName === "IFRAME" && el.contentDocument) {
+      el = el.contentDocument.activeElement;
+    }
+  } catch {}
+  return el && el !== el.ownerDocument.body ? a0Descrever(el) : null;
+}""" % DESCREVER_JS
+CAMPO_POR_SELETOR_JS = """(sel) => {
+  %s
+  let els = [];
+  try {
+    els = [...document.querySelectorAll(sel)];
+  } catch {
+    return null;
+  }
+  const visivel = els.find((e) => e.getClientRects().length && getComputedStyle(e).visibility !== "hidden");
+  return a0Descrever(visivel || els[0] || null);
+}""" % DESCREVER_JS
+SEGREDO = re.compile(r"§§secret\(([^)]+)\)")
+SEGREDO_IDENTIFICADOR = re.compile(r"E_?MAIL|USUARIO|USER|LOGIN|CPF|CNPJ|TELEFONE|PHONE|CELULAR|WHATSAPP", re.I)
+CAMPO_DE_SENHA = re.compile(r"senha|passw|\bpwd\b|\bpin\b|token|chave|api.?key|secret|segredo", re.I)
+DIGITAR = {"type", "type_submit", "typesubmit", "keyboard"}
+MARK_CAMPO = "_navegador_rapido_campo"
+
+
+def com_campo(source: str) -> str:
+    """Adds a0Campo(ref) to the page API; unchanged if upstream changed."""
+    if CAMPO_MARCA in source or source.count(VALOR_FIM) != 1:
+        return source
+    return source.replace(VALOR_FIM, VALOR_FIM + CAMPO_FUNCAO, 1)
+
+
+def segredos_a_digitar(args) -> list[str]:
+    """Names of the vault secrets a browser call would type ([] for any other call)."""
+    if not isinstance(args, dict) or str(args.get("action", "")).strip().lower() not in DIGITAR:
+        return []
+    return [n for n in SEGREDO.findall(str(args.get("text") or "")) if not SEGREDO_IDENTIFICADOR.search(n)]
+
+
+def segredo_no_campo(args, campo) -> str:
+    """The refusal for typing a vault password into a field that is not for passwords ('' = may type). campo: what
+    core.a0_campo read ({"tag", "tipo", "texto"}), None when the field could not be read (then it is not blocked)."""
+    nomes = segredos_a_digitar(args)
+    if not nomes or not isinstance(campo, dict):
+        return ""
+    if campo.get("tipo") == "password" or CAMPO_DE_SENHA.search(str(campo.get("texto") or "")):
+        return ""
+    descricao = str(campo.get("texto") or "").strip() or f"<{campo.get('tag') or 'campo'}> sem rótulo"
+    return (f"NÃO digitei §§secret({nomes[0]}): o campo onde ele iria não é de senha ({descricao[:160]}). Senha do cofre só "
+            "vai em campo de senha. Se este campo pede outro dado (telefone, e-mail, nome), use o dado certo, nunca um "
+            "segredo; se você queria o campo de senha, leia a página (`content`) e use a ref dele.")
+
+
+def _campo(core) -> None:
+    async def a0_campo(self, browser_id, ref=None, seletor=""):
+        page = self._page(self._resolve_browser_id(browser_id))
+        if not _sem(ref):
+            return await page.evaluate(CAMPO_POR_REF_JS, str(ref), isolated_context=True)
+        if str(seletor or "").strip():
+            return await page.evaluate(CAMPO_POR_SELETOR_JS, str(seletor), isolated_context=True)
+        return await page.evaluate(CAMPO_FOCADO_JS, isolated_context=True)
+
+    core.a0_campo = a0_campo
+    setattr(core, MARK_CAMPO, True)
+
+
 def conferir_digitado(pedido: str, lido) -> str:
     """The note for a typed field: what is in it now, and a warning when it is not what was typed."""
     if not isinstance(lido, dict) or lido.get("senha"):
@@ -244,7 +362,7 @@ def conferir_digitado(pedido: str, lido) -> str:
 def script_rapido(source: str) -> str | None:
     """Page-content script with the ancestor check memoized and visual field labels, or None if it changed upstream."""
     rapido = _memoize_during(source, "capture")
-    return com_rotulos(com_valor_lido(com_rotulo_visual(rapido))) if rapido is not None else None
+    return com_campo(com_rotulos(com_valor_lido(com_rotulo_visual(rapido)))) if rapido is not None else None
 
 
 ELEMENTO_FIM = "    captureDocument(payload) {\n      return captureDocument(payload);\n    },\n"
@@ -633,9 +751,10 @@ def _atualizar_script_vivo(core) -> None:
             atual = cell.cell_contents
         except ValueError:
             continue
-        if isinstance(atual, str) and "navegadorRapidoHidden" in atual and VIVO_MARCA not in atual:
+        if isinstance(atual, str) and "navegadorRapidoHidden" in atual and (VIVO_MARCA not in atual
+                                                                            or CAMPO_MARCA not in atual):
             novo = do_arquivo("CONTENT_HELPER_PATH", script_rapido, None)
-            cell.cell_contents = novo or com_rotulos(com_valor_lido(com_rotulo_visual(atual)))
+            cell.cell_contents = novo or com_campo(com_rotulos(com_valor_lido(com_rotulo_visual(atual))))
     for cell in _celulas(getattr(core, "_ensure_dom_helper", None)):
         try:
             atual = cell.cell_contents
@@ -951,8 +1070,8 @@ def aba_fechada(args, abertas) -> str:
     if acao == "navigate" and str(args.get("url") or "").strip():
         args["action"] = "open"
         args.pop("browser_id")
-        return (f"\n↻ A aba {bid} já tinha sido fechada: abri o endereço numa aba nova. Use o id novo deste resultado "
-                "daqui em diante.")
+        return (f"\n↻ A aba {bid} já tinha sido fechada: pedi o endereço numa aba nova (`open`). Se deu certo, use o id "
+                "novo deste resultado daqui em diante.")
     return (f"\n↻ A aba {bid} já foi fechada (abas abertas nesta conversa: {', '.join(map(str, abertas)) or 'nenhuma'}). "
             "Abra a página de novo com `open` e a URL, leia (`content`) e refaça a ação com as referências novas.")
 
@@ -1201,6 +1320,8 @@ def aplicar() -> None:
         _reinicio_se_cair(runtime)
     if not getattr(core, MARK_ABAS, False):
         _abas(core)
+    if not getattr(core, MARK_CAMPO, False):
+        _campo(core)
     if getattr(core, MARK, False):
         _atualizar_script_vivo(core)
         return
