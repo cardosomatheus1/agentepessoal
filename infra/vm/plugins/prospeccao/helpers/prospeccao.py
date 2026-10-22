@@ -1592,11 +1592,18 @@ def tema_do_texto(texto: str) -> str:
     return (temas_do_texto(texto) or [""])[0]
 
 
+# notes the rounds wrote for a like, a follow or a reply to our comment (recorded as "respondeu" too): not an answer in
+# the Direct, so they never count for a theme
+INTERACAO = re.compile(r"^\W*(curtiu|come[cç]ou a seguir|seguiu|reagiu|respondeu (ao|aos|a um|em) (nosso |um )?coment|"
+                       r"respondeu e curtiu|interag|\w+ sent an attachment|this account can)", re.I)
+
+
 def _respostas_direct(lead: dict, desde: float) -> list:
-    """What the person wrote in the Direct after `desde` (robots and reactions are not answers)."""
+    """What the person wrote in the Direct after `desde` (robots, likes, follows and comment replies are not answers)."""
     tipos = {f"etapa:{e}" for e in RESPOSTAS_ETAPAS}
     return [h for h in lead.get("historico") or [] if h.get("tipo") in tipos and h.get("onde", "direct") == "direct"
-            and float(h.get("em") or 0) > desde and not h.get("mesma_fala") and not ROBO.search(str(h.get("texto") or ""))]
+            and float(h.get("em") or 0) > desde and not h.get("mesma_fala") and not ROBO.search(str(h.get("texto") or ""))
+            and not INTERACAO.search(str(h.get("texto") or ""))]
 
 
 def desempenho_temas(d: dict, dias: int = TEMA_JANELA_DIAS) -> dict:

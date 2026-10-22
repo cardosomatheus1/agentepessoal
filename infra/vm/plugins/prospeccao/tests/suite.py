@@ -1222,9 +1222,10 @@ class Suite:
             if fala:
                 lead["etapa"] = "respondeu"
                 lead["historico"].append({"em": envio + 3600, "tipo": "etapa:respondeu", "texto": fala, "onde": "direct"})
-            if i == 4:  # a robot is not an answer
-                lead["historico"].append({"em": envio + 60, "tipo": "etapa:respondeu", "onde": "direct",
-                                          "texto": "Olá! Mensagem automática: já já te respondemos"})
+            if i == 4:  # a robot, a like or a follow is not an answer
+                for nota in ("Olá! Mensagem automática: já já te respondemos", "Curtiu o comentário da @raiz.connect",
+                             "Começou a seguir a @raiz.connect (notificação de ontem)"):
+                    lead["historico"].append({"em": envio + 60, "tipo": "etapa:respondeu", "onde": "direct", "texto": nota})
             p.salvar(LOGIN, d)
         t = p.desempenho_temas(p.carregar(LOGIN))
         eq((t["preco"]["enviados"], t["preco"]["responderam"], t["preco"]["ja_tem"]), (16, 4, 3), "conta por tema")
