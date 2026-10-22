@@ -134,13 +134,15 @@ def _anuncio(item: dict, agora: float) -> dict:
     sn = item.get("snapshot") if isinstance(item.get("snapshot"), dict) else {}
     corpo = sn.get("body")
     corpo = corpo.get("text") if isinstance(corpo, dict) else corpo
-    if re.fullmatch(r"\s*(\{\{[^}]*\}\}\s*)+", str(corpo or "")):  # catalog ad: the text is a template ({{product.brand}})
+    modelo_catalogo = lambda t: re.fullmatch(r"\s*(\{\{[^}]*\}\}\s*)+", str(t or ""))  # {{product.brand}}
+    if modelo_catalogo(corpo):  # catalog ad: text and title are templates
         corpo = ""
+    titulo = "" if modelo_catalogo(sn.get("title")) else sn.get("title")
     inicio = item.get("start_date")
     dias = int((agora - float(inicio)) // 86400) if isinstance(inicio, (int, float)) and inicio > 0 else None
     return {"id": str(item.get("ad_archive_id") or "")[:40], "inicio": str(item.get("start_date_formatted") or "")[:10],
             "dias_no_ar": dias, "formato": limpo(sn.get("display_format"), 20).lower(),
-            "texto": limpo(corpo, TEXTO_MAX), "titulo": limpo(sn.get("title"), 120), "cta": limpo(sn.get("cta_text"), 40),
+            "texto": limpo(corpo, TEXTO_MAX), "titulo": limpo(titulo, 120), "cta": limpo(sn.get("cta_text"), 40),
             "link": _link(item.get("ad_library_url")) or _link(f"https://www.facebook.com/ads/library/?id={item.get('ad_archive_id')}")}
 
 
