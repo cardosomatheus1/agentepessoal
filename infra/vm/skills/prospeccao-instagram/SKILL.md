@@ -187,8 +187,9 @@ saído. Só olhe a tela (a conversa ou o botão «Seguindo») e chame `resultado
 os perfis (o que já foi proposto não se perde se a rodada cair). O `lead_id` pode ser o id ou o @. O `contexto` lista
 quem "deve receber" cada tipo agora e os "Textos de hoje"; os textos seguem o playbook › Modelos.
 
-- **dm_abertura:** abra o perfil, leia a bio e os posts recentes e escreva na variante que o `contexto` indica para
-  aquele lead. Deixe `variante` em branco: a ferramenta sorteia, para a comparação A × B valer.
+- **dm_abertura:** abra o perfil, leia a bio e os posts recentes e escreva na variante e no TEMA que o `contexto` indica
+  para aquele lead (mande `tema` na proposta). Deixe `variante` em branco: a ferramenta sorteia, para a comparação A × B
+  valer. Tema pausado pelos números é recusado: escreva sobre o que a recusa indicar.
 - **dm_lembrete** (só aparece para quem segue a Raiz ou interagiu) e **seguimento** (o `contexto` diz o motivo: link
   sem resposta ou só com agradecimento, "agora não" há 30 dias, ou "vou passar pro dono"): pelo playbook. Em `base`, o
   que há de novo no perfil, se houver.

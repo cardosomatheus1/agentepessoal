@@ -1539,6 +1539,127 @@ def _seguimento_devido(d: dict, lead: dict) -> bool:
     return bool(motivo_seguimento(d, lead))
 
 
+# ------------------------------------------------------------------ themes of the first message (22/10)
+# Matheus, 22/10: "o agente ta insistindo em planilha de precificação, pessoal fala que ja tem ... ele msm tinha q
+# perceber isso, devido a poucos resultados e alterar a abordagem, o tema". 43 of the first 44 messages talked about
+# price, the calculator or "planilha, caderno ou de cabeça", and the people who answered said they already had a system.
+# Now the code measures each theme (first messages sent, human answers in the Direct, "we already have one") and pauses
+# the one that does not pay off; the round gets the theme to write about for each lead (the lead's hook first, then the
+# theme with the least data, so every theme gets tried). Stateless: a paused theme comes back when its sends leave the
+# window (TEMA_JANELA_DIAS). The variant (A question / B offer) is measured apart and stays as it is.
+TEMAS = {
+    "preco": {"nome": "preço e custo (calculadora)",
+              "rx": r"calculadora|planilha|caderno|de cabe[cç]a|precific|(chegam?|chega) (ao|no) pre[cç]o|"
+                    r"(definem|calculam|fecham) o pre[cç]o|quanto sobra",
+              "fala": "quanto sobra em cada produto e se o preço cobre custo, embalagem e taxa (a calculadora grátis)"},
+    "ifood": {"nome": "pedidos do iFood entrando sozinhos",
+              "rx": r"ifood|delivery|aplicativo de entrega|taxa do app",
+              "fala": "a integração oficial com o iFood: os pedidos entram sozinhos no sistema e o cardápio sincroniza"},
+    "producao": {"nome": "encomenda e produção (o que comprar)",
+                 "rx": r"encomenda|produ[cç][aã]o|lista de compras|o que comprar|baixa (os )?insumos",
+                 "fala": "a produção que baixa os insumos e mostra o que comprar para a semana"},
+    "estoque": {"nome": "estoque e validade",
+                "rx": r"estoque|validade|vencer|vencimento|lote|desperd[ií]c",
+                "fala": "estoque por lote e validade: o que está para vencer e o que falta antes de faltar"},
+    "gestao": {"nome": "a operação num lugar só",
+               "rx": r"num lugar s[oó]|tudo junto|comanda|pdv|caixa do dia|fluxo de caixa|financeiro|nota fiscal|organiz",
+               "fala": "pedido, cozinha, estoque, caixa e nota fiscal num lugar só, em vez de caderno, planilha e WhatsApp"},
+}
+JA_TEM = re.compile(r"j[aá] (temos|tenho|usamos|uso|utilizamos|trabalhamos com|fa[cç]o|fazemos)|"
+                    r"(usamos|utilizamos|temos|uso) (um |uma )?(sistema|planilha|app|aplicativo|programa)|"
+                    r"tenho (minha |uma )?planilha|n[aã]o (preciso|precisamos)", re.I)
+TEMA_JANELA_DIAS = 30
+TEMA_MINIMO = 15        # first messages on a theme before its numbers say anything
+TEMA_RESPOSTA_MIN = 10  # % of human answers in the Direct below which a theme is paused (the goal is 15%)
+TEMA_JA_TEM = 2         # "we already have one" answers that pause a theme (with at least TEMA_MINIMO sent)
+GANCHO_TEMA = (("ifood", r"ifood|delivery"), ("producao", r"encomenda|produ[cç][aã]o|programad"),
+               ("estoque", r"validade|congelad|estoque"), ("preco", r"reajust|pre[cç]o|kit|combo|promo"))
+
+
+def _sem_identidade(texto: str) -> str:
+    """The message without the identity line ("…que calcula custo e preço…"), which alone is no theme."""
+    return re.sub(r"(calcula|sistema de) custos? e pre[cç]os?", "", str(texto or ""), flags=re.I)
+
+
+def temas_do_texto(texto: str) -> list:
+    t = _sem_identidade(texto)
+    return [k for k, v in TEMAS.items() if re.search(v["rx"], t, re.I)]
+
+
+def tema_do_texto(texto: str) -> str:
+    """The theme a first message talks about ('' when none): the first match in TEMAS's order."""
+    return (temas_do_texto(texto) or [""])[0]
+
+
+def _respostas_direct(lead: dict, desde: float) -> list:
+    """What the person wrote in the Direct after `desde` (robots and reactions are not answers)."""
+    tipos = {f"etapa:{e}" for e in RESPOSTAS_ETAPAS}
+    return [h for h in lead.get("historico") or [] if h.get("tipo") in tipos and h.get("onde", "direct") == "direct"
+            and float(h.get("em") or 0) > desde and not h.get("mesma_fala") and not ROBO.search(str(h.get("texto") or ""))]
+
+
+def desempenho_temas(d: dict, dias: int = TEMA_JANELA_DIAS) -> dict:
+    """Per theme, over the window: first messages sent, people who answered in the Direct, leads, "we already have one",
+    and whether it is paused (with why, in his words)."""
+    corte = agora() - dias * 86400
+    leads = {l["id"]: l for l in d["leads"]}
+    out = {k: {"nome": v["nome"], "enviados": 0, "responderam": 0, "leads": 0, "ja_tem": 0, "exemplos_ja_tem": []}
+           for k, v in TEMAS.items()}
+    for a in d["acoes"]:
+        if a["tipo"] != "dm_abertura" or a["estado"] != "executada" or float(a.get("executada_em") or 0) < corte:
+            continue
+        tema = a.get("tema") or tema_do_texto(a.get("texto"))
+        if tema not in out:
+            continue
+        m, lead = out[tema], leads.get(a["lead_id"]) or {}
+        m["enviados"] += 1
+        falas = _respostas_direct(lead, float(a.get("executada_em") or 0))
+        if falas:
+            m["responderam"] += 1
+        if lead.get("etapa") in ("lead", "demo", "teste", "cliente"):
+            m["leads"] += 1
+        ja = next((h for h in falas if JA_TEM.search(str(h.get("texto") or ""))), None)
+        if ja:
+            m["ja_tem"] += 1
+            m["exemplos_ja_tem"] = (m["exemplos_ja_tem"] + [str(ja.get("texto") or "")[:120]])[-3:]
+    for m in out.values():
+        m["taxa"] = round(100 * m["responderam"] / m["enviados"]) if m["enviados"] else None
+        motivo = ""
+        if m["enviados"] >= TEMA_MINIMO and m["ja_tem"] >= TEMA_JA_TEM:
+            motivo = f"{m['ja_tem']} de {m['responderam']} que responderam disseram que já têm sistema ou planilha"
+        elif m["enviados"] >= TEMA_MINIMO and m["taxa"] < TEMA_RESPOSTA_MIN:
+            motivo = f"só {m['taxa']}% responderam no Direct (meta: 15%)"
+        m["pausado"] = (f"{m['enviados']} primeiras mensagens em {dias} dias, {m['responderam']} responderam, "
+                        f"{m['leads']} viraram lead: {motivo}") if motivo else ""
+    return out
+
+
+def tema_sugerido(d: dict, lead: dict, temas: dict | None = None) -> str:
+    """The theme to write the first message about: the lead's hook if its theme is active, else the active theme with
+    the fewest sends (so each one gets measured); '' only if every theme is paused."""
+    temas = temas or desempenho_temas(d)
+    ativos = [k for k, m in temas.items() if not m["pausado"]]
+    if not ativos:
+        return ""
+    gancho = " ".join(str(lead.get(k) or "") for k in ("motivo", "sinal", "segmento", "post_recente")).lower()
+    for tema, rx in GANCHO_TEMA:
+        if tema in ativos and re.search(rx, gancho):
+            return tema
+    na_fila = Counter(a.get("tema") for a in d["acoes"]  # proposed in this round count too, so the round spreads them
+                      if a["tipo"] == "dm_abertura" and a["estado"] in ("proposta", "aprovada", "incerta"))
+    return min(ativos, key=lambda k: (temas[k]["enviados"] + na_fila.get(k, 0), list(TEMAS).index(k)))
+
+
+def linha_temas(d: dict) -> str:
+    """For the round and for him: each theme's numbers and which are paused."""
+    temas = desempenho_temas(d)
+    linhas = []
+    for k, m in temas.items():
+        num = f"{m['enviados']} enviadas, {m['responderam']} responderam" + (f" ({m['taxa']}%)" if m["taxa"] is not None else "")
+        linhas.append(f"- {m['nome']}: {num}" + (f" — PAUSADO: {m['pausado']}" if m["pausado"] else ""))
+    return "\n".join(linhas)
+
+
 def variante_sugerida(d: dict, lead: dict) -> str:
     """The first message's variant for this lead: the fixed one, else A or B by the lead's id (half and half, and the
     agent never picks — it would put B on the "best" profiles and bias the comparison)."""
@@ -1864,6 +1985,20 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
         if motivo:
             out["recusadas"].append({"lead_id": lid, "tipo": tipo, "motivo": motivo})
             continue
+        tema = ""
+        if tipo == "dm_abertura":
+            temas = desempenho_temas(d)
+            tema = str(item.get("tema") or "").strip().lower()
+            tema = tema if tema in TEMAS else tema_do_texto(texto)
+            falados = [k for k in temas_do_texto(texto) if temas[k]["pausado"]]  # a paused theme slipped in
+            if tema in TEMAS and temas[tema]["pausado"] or falados:
+                pausado = tema if tema in TEMAS and temas[tema]["pausado"] else falados[0]
+                outro = tema_sugerido(d, lead, temas)
+                out["recusadas"].append({"lead_id": lid, "tipo": tipo, "motivo": (
+                    f"o tema «{TEMAS[pausado]['nome']}» está pausado pelos números ({temas[pausado]['pausado']}): "
+                    + (f"escreva sobre «{TEMAS[outro]['nome']}» ({TEMAS[outro]['fala']})" if outro else
+                       "todos os temas estão pausados: avise o Matheus e não mande primeira mensagem"))})
+                continue
         variante = str(item.get("variante") or "").upper()[:1]
         fixa = d["config"].get("variante_fixa")
         if tipo == "dm_abertura" and fixa in ("A", "B") and variante in ("A", "B") and variante != fixa:
@@ -1876,6 +2011,7 @@ def _propor_gravar(login: str, itens: list) -> tuple[dict, dict]:
         if tipo in TIPOS_COM_LINK:
             texto = marcar_links(texto, d, lid)
         acao = {"id": _id(), "lead_id": lid, "tipo": tipo, "texto": texto[:900], "variante": variante,
+                **({"tema": tema} if tema else {}),
                 "alvo": str(item.get("alvo") or lead["url"])[:200], "base": str(item.get("base") or "")[:300],
                 "estado": "proposta", "criada": agora()}
         if ordem:
@@ -3221,6 +3357,9 @@ def painel(login: str) -> str:
               f"Semana: {g['abordados']} abordados, {g['responderam']} responderam ({g['taxa_resposta']:.0f}%)"
               + (f"; comentários: {c['responderam']} de {c['comentados']} responderam" if c["comentados"] else ""),
               "Hoje: " + (", ".join(f"{n} {nomes.get(t, t)}" for t, n in feitas.most_common()) if feitas else "nada saiu ainda")]
+    pausados = [m for m in desempenho_temas(d).values() if m["pausado"]]
+    if pausados:
+        linhas.append("Temas pausados pelos números: " + "; ".join(f"{m['nome']} ({m['pausado']})" for m in pausados))
     if d["config"].get("crm_planilha"):
         linhas.append(f"Planilha CRM Raiz (todo dia às 20h30): https://docs.google.com/spreadsheets/d/{d['config']['crm_planilha']}")
     comigo = [l["handle"] for l in d["leads"] if l.get("humano")]
@@ -3350,11 +3489,17 @@ def resumo_contexto(login: str) -> str:
         renovar = aviso_acesso_meta(acesso_meta(login), agora())
         if renovar:
             linhas.append(renovar)
+    temas_rodada = desempenho_temas(d)
+    if dev.get("dm_abertura"):
+        linhas.append("\n## Temas da primeira mensagem (30 dias; a ferramenta escolhe o de cada lead e recusa tema pausado)\n"
+                      + linha_temas(d))
     for tipo, lista in dev.items():
         if lista:
             linhas.append(f"\n## Devem receber «{tipo}» agora ({len(lista)})")
             linhas += [f"- [{l['id']}] @{l['handle']} — {l['nome']} ({l['segmento']}, {l['cidade']}; nota {l.get('nota', '—')}); motivo: {l['motivo'][:120]}"
                        + (f"; ESCREVA A VARIANTE {variante_sugerida(d, l)}" if tipo == "dm_abertura" else "")
+                       + ((lambda t: f"; TEMA {t}: {TEMAS[t]['fala']}" if t else "; TODOS OS TEMAS PAUSADOS: não escreva")
+                          (tema_sugerido(d, l, temas_rodada)) if tipo == "dm_abertura" else "")
                        + (f"; seguimento: {MOTIVOS_SEGUIMENTO.get(motivo_seguimento(d, l), '')}" if tipo == "seguimento" else "")
                        + (f"; já recebeu: {l['historico'][-1]['texto'][:160]}" if l["historico"] else "") for l in lista[:25]]
     hoje_txt = [a for a in d["acoes"] if a["tipo"] in ("dm_abertura", "dm_lembrete", "seguimento", "parceiro")

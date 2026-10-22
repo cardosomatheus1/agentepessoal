@@ -1184,6 +1184,58 @@ class Suite:
         ok("primeira mensagem" in p.validar_texto("dm_abertura", DM_A.replace("Se quiser", p.LINK_CALCULADORA + " Se quiser"), d, "x"),
            "nem a calculadora na primeira mensagem")
 
+    def t_tema_que_nao_rende_e_pausado(self):
+        # 22/10, Matheus: "o agente ta insistindo em planilha de precificação, pessoal fala que ja tem ... ele msm tinha
+        # q perceber isso, devido a poucos resultados e alterar a abordagem, o tema"
+        p = self.p
+        self.em(self.hora(10))
+        eq(p.tema_do_texto("Sou o Matheus, da Raiz Connect, que calcula custo e preço de quem produz comida. Vi o iFood!"),
+           "ifood", "a apresentação sozinha não é tema")
+        eq(p.tema_do_texto("Como vocês chegam no preço: planilha, caderno ou de cabeça?"), "preco", "pergunta de preço")
+        d = p.carregar(LOGIN)
+        envio = p.agora() - 5 * 86400
+        for i in range(16):  # 16 first messages about price; 4 answered, 3 of them "we already have a system"
+            lid = self._lead(f"marmita{i}")
+            d = p.carregar(LOGIN)
+            lead = p._lead(d, lid)
+            lead["etapa"] = "abordado"
+            d["acoes"].append({"id": f"a{i}", "lead_id": lid, "tipo": "dm_abertura", "estado": "executada",
+                               "texto": "Vi o kit! Sou o Matheus. Como vocês definem o preço do kit: planilha ou de cabeça?",
+                               "variante": "A", "criada": envio, "executada_em": envio})
+            fala = {0: "Já trabalhamos com um sistema que faz esse levantamento", 1: "Olá! Utilizamos um sistema para precificar",
+                    2: "já tenho minha planilha, obrigada", 3: "Como funciona?"}.get(i)
+            if fala:
+                lead["etapa"] = "respondeu"
+                lead["historico"].append({"em": envio + 3600, "tipo": "etapa:respondeu", "texto": fala, "onde": "direct"})
+            if i == 4:  # a robot is not an answer
+                lead["historico"].append({"em": envio + 60, "tipo": "etapa:respondeu", "onde": "direct",
+                                          "texto": "Olá! Mensagem automática: já já te respondemos"})
+            p.salvar(LOGIN, d)
+        t = p.desempenho_temas(p.carregar(LOGIN))
+        eq((t["preco"]["enviados"], t["preco"]["responderam"], t["preco"]["ja_tem"]), (16, 4, 3), "conta por tema")
+        ok("já têm sistema ou planilha" in t["preco"]["pausado"] and not t["ifood"]["pausado"], t["preco"]["pausado"])
+        alvo = self._aquecido("pizzariadobairro")
+        r = p.propor(LOGIN, [{"lead_id": alvo, "tipo": "dm_abertura", "variante": "A",
+                              "texto": "Vi a pizza nova de vocês! Sou o Matheus, da Raiz Connect. Fiz uma calculadora grátis pra ver quanto sobra: te mando?"}])
+        ok(not r["propostas"] and "pausado pelos números" in r["recusadas"][0]["motivo"], f"preço recusado: {r['recusadas']}")
+        r = p.propor(LOGIN, [{"lead_id": alvo, "tipo": "dm_abertura", "variante": "A", "tema": "ifood",
+                              "texto": "Vi que vocês vendem no iFood! Sou o Matheus, da Raiz Connect, um sistema de gestão. "
+                                       "Como funciona, aliás: a planilha de preço de vocês é a mesma do iFood?"}])
+        ok(not r["propostas"], "tema pausado de passagem também é recusado")
+        r = p.propor(LOGIN, [{"lead_id": alvo, "tipo": "dm_abertura", "variante": "A",
+                              "texto": "Vi que vocês vendem no iFood! Sou o Matheus, da Raiz Connect, um sistema de gestão pra "
+                                       "quem produz comida. Os pedidos do iFood vocês passam à mão pra cozinha?"}])
+        ok(r["propostas"] and r["propostas"][0]["tema"] == "ifood", f"outro tema passa e fica gravado: {r}")
+        d = p.carregar(LOGIN)
+        eq(p.tema_sugerido(d, {"motivo": "vende marmitas pelo iFood"}), "ifood", "o gancho do lead manda")
+        eq(p.tema_sugerido(d, {"motivo": "kit de marmitas"}), "producao", "sem gancho ativo: o tema com menos dados")
+        self._aquecido("docesdaju")  # someone due a first message: the round gets the themes and this lead's theme
+        ctx = p.resumo_contexto(LOGIN)
+        ok("Temas da primeira mensagem" in ctx and "PAUSADO" in ctx and "TEMA " in ctx, "a rodada vê os números e o tema")
+        ok("Temas pausados pelos números" in p.painel(LOGIN), "ele vê no painel")
+        self.em(self.hora(10, dias=31))
+        ok(not p.desempenho_temas(p.carregar(LOGIN))["preco"]["pausado"], "fora da janela de 30 dias o tema volta")
+
     def t_quem_interagiu_vai_primeiro(self):
         p = self.p
         self.em(self.hora(10))
