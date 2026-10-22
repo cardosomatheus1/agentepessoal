@@ -83,6 +83,7 @@ class Suite:
             (base / "calibracao" / agente / "criterios.md").write_text(texto, encoding="utf-8")
         m.pasta_calibracao = lambda: (base / "calibracao") if criterios else None
         m.pasta_reels = lambda: reels
+        m.pasta_moldes = lambda: (reels / "moldes") if reels else None  # never the VM's real /a0/usr/moldes
         return m
 
     # --- the roles
