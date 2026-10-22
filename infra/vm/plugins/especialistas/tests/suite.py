@@ -471,6 +471,32 @@ class Suite:
         d = m.desenhar("Carrossel da Raiz")
         ok(any("não respondeu à revisão (TimeoutError)" in f for f in d["falta"]), d["falta"])
 
+    def t_revisar_peca_ja_na_agenda(self):
+        # 22/10, Matheus: "Se o crítico rejeita, automáticamente deveria ser refeito": the advance check redoes a piece
+        # of the agenda with the Crítico's reasons, the art it saw and the same render and judgment as desenhar()
+        m = self._e(reels=self._reels())
+        m._pode_renderizar = lambda: ""
+        m.renderizar_molde = lambda molde, formato, ficha: ([], "")
+        antiga = {"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel", "_formato_pedido": "carrossel",
+                  "ficha": {"_marca": "raiz", "pergunta": "Margem baixa?"}}
+        chamadas = []
+
+        def chamar(papel, tarefa, material, login="matheus"):
+            chamadas.append((papel, tarefa, material))
+            if papel == "designer":
+                return {"texto": json.dumps(dict(antiga, ficha={"_marca": "raiz", "pergunta": "Custo alto?"})), "erro": "",
+                        "imagens": [], "sem_imagem": []}
+            return {"texto": APROVA, "erro": "", "imagens": [], "sem_imagem": []}
+        m.chamar = chamar
+        d = m.revisar({"formato": "CARROSSEL", "titulo": "Margem"}, antiga, {"motivos": ["slide 2 cortado"]}, ["/x/1.jpg"])
+        eq([p for p, _, _ in chamadas], ["designer", "critico"], "uma volta do Designer e o Crítico de novo")
+        ok("slide 2 cortado" in chamadas[0][1] and chamadas[0][2]["imagens"] == ["/x/1.jpg"], "motivos e arte que ele viu")
+        eq((d["critica"]["veredito"], d["spec"]["ficha"]["pergunta"], d["spec"]["_formato_pedido"]),
+           ("aprova", "Custo alto?", "carrossel"), "a ficha nova, na mesma vaga")
+        m.chamar = lambda *a, **k: {"texto": "", "erro": "TimeoutError", "imagens": [], "sem_imagem": []}
+        d = m.revisar("x", antiga, {"motivos": ["fraco"]})
+        ok(d["critica"]["veredito"] == "reprova" and "TimeoutError" in d["falta"][0], "Designer fora: continua reprovada")
+
     def t_video_da_raiz_sai_so_previa_e_narracao(self):
         # decision #39: a narrated video goes to Matheus as audio first; the video is made only after he approves
         reels = self._reels()

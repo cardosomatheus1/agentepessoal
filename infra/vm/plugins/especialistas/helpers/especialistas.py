@@ -665,6 +665,21 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
     return out
 
 
+def revisar(briefing, spec: dict, critica: dict, imagens=None, *, login: str = "matheus") -> dict:
+    """One more Designer round on a piece already in the agenda, with the Crítico's reasons (22/10, Matheus: "Se o
+    crítico rejeita, automáticamente deveria ser refeito ... durante a etapa de criação"): the advance check, a day
+    before the post, calls this when it reproves. Same answer as desenhar()."""
+    material = {"briefing": briefing} if isinstance(briefing, str) else dict(briefing or {})
+    r = chamar("designer", _tarefa_revisao(spec, critica), {**material, "imagens": list(imagens or [])[:MAX_IMAGENS]},
+               login=login)
+    novo = _spec(r, spec.get("_formato_pedido", ""))
+    if not novo:
+        return {"spec": spec, "arquivos": [], "render": "",
+                "falta": [f"o designer não respondeu à revisão ({r['erro'] or 'resposta ilegível'})"],
+                "critica": {"veredito": "reprova", "motivos": list(critica.get("motivos") or []), "sugestoes": []}}
+    return _volta(briefing, material, novo, r, login)
+
+
 def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
     """One round: check the ficha (with up to CORRECOES fixes against the template's schema), render it, judge it."""
     falta, arquivos, render = [], [], ""

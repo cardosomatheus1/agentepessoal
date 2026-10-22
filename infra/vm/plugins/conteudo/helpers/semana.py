@@ -176,6 +176,104 @@ def _desenhar_story(esp, campos: dict, saida: Path) -> dict:
     return {"arquivos": [str(saida)], "problema": "", "critica": critica}
 
 
+REFAZER_STORY = 2  # 22/10, Matheus: "Se o crítico rejeita, automáticamente deveria ser refeito"
+STORY_REGRAS = (
+    "Layouts: \"dica\" (manchete, destaque, texto, chamada); \"post-novo\" e \"video-novo\" (chamam para o post do feed "
+    "do dia: manchete, destaque, chamada); \"bastidor\" (tela = caminho de uma tela real em "
+    "/a0/usr/plugins/conteudo/story/telas/, pergunta \"Responde aqui no direct: ...\"); \"oferta\" (Lucro na Mão em 30 "
+    "Dias: manchete, destaque, itens, chamada; preco e preco_nota só se já estavam). Esquema da semana: seg dica; ter e "
+    "sex post-novo; qua e dom video-novo; qui bastidor; sáb oferta. Manchete até 90 letras, sem emoji, sem travessão, "
+    "R$ só com \"valores de exemplo\"; garantia sempre com \"a gente não cobra a próxima mensalidade\".")
+
+
+def _tarefa_story(campos: dict, critica: dict) -> str:
+    return ("O Crítico reprovou o story abaixo. Refaça os campos resolvendo cada motivo, mantendo o layout do dia (troque "
+            "só se o motivo for o layout) e devolva só o JSON dos campos.\n\n## Motivos do Crítico\n"
+            + "\n".join(f"- {m}" for m in critica.get("motivos") or [])
+            + f"\n\n## Campos atuais\n{json.dumps(campos, ensure_ascii=False)[:3000]}\n\n{STORY_REGRAS}")
+
+
+def _refazer_story(esp, campos: dict, critica: dict, saida: Path) -> tuple[dict, dict] | None:
+    """The Designer rewrites the story's fields with the Crítico's reasons; drawn and judged again. None when he
+    gave nothing usable (no answer, not JSON, or fields the story's own rules refuse)."""
+    r = esp.chamar("designer", _tarefa_story(campos, critica), {"story": campos, "imagens": []})
+    achado = re.search(r"\{.*\}", (r or {}).get("texto") or "", re.S) if not (r or {}).get("erro") else None
+    try:
+        novo = json.loads(achado.group(0)) if achado else None
+    except ValueError:
+        novo = None
+    if not isinstance(novo, dict):
+        return None
+    novo = {k: v for k, v in novo.items() if k in story().CAMPOS}
+    if story().validar(novo):
+        return None
+    saida.parent.mkdir(parents=True, exist_ok=True)
+    return novo, _desenhar_story(esp, novo, saida)
+
+
+def refazer_item(item: dict, critica: dict, subir=None) -> dict:
+    """The agent redoes a post of the agenda that the advance check reproved (conteudo.conferir_antes): a story from
+    its fields, a feed carousel from the Designer's ficha; the new files go to S3 and replace the old ones on the same
+    post (conteudo.refeito). {"ok": False, "erro"} when it cannot: made outside the weekly routine (no ficha), a Reel
+    (a new narration needs Matheus's ok first, decision #39), or the new version is still reproved."""
+    origem = item.get("origem") or {}
+    if not origem.get("semana"):
+        return {"ok": False, "erro": "foi feito fora da rotina da semana e o agente não tem a ficha para refazer"}
+    if item["tipo"] == "REELS":
+        return {"ok": False, "erro": "Reel: refazer muda a narração, que precisa do seu ok antes (decisão #39)"}
+    sid, n = origem["semana"], origem.get("n")
+    semana = carregar(sid) or {}
+    p = next((x for x in semana.get("propostas", []) if x["n"] == n), None)
+    if not p:
+        return {"ok": False, "erro": f"a proposta {n} da semana {sid} não existe mais"}
+    esp = c().especialistas()
+    if esp is None:
+        return {"ok": False, "erro": "o plugin de especialistas não está instalado"}
+    k = 1 + int(p.get("refeita") or 0)
+    if item["tipo"] == "STORY" and (p.get("spec") or {}).get("story"):
+        feito = _refazer_story(esp, p["spec"]["story"], critica, _pasta() / sid / f"story-{n}-a{k}.jpg")
+        if not feito:
+            return {"ok": False, "erro": "o Designer não devolveu campos válidos para o story"}
+        campos, d = feito
+        spec_novo, arquivos, nova = {"story": campos}, d["arquivos"], d["critica"]
+    elif (p.get("spec") or {}).get("motor") == "molde" and item["tipo"] == "CARROSSEL":
+        briefing = {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": p.get("formato_pedido") or item["tipo"],
+                    "titulo": p.get("titulo", ""), "ideia": p.get("ideia", ""), "legenda": item.get("legenda", ""),
+                    "data": item["data"], "regras": REGRAS}
+        vistas = [str(c().PASTA / "cache" / item["id"] / a.rsplit("/", 1)[-1]) for a in item["arquivos"]]
+        d = esp.revisar(briefing, p["spec"], critica, vistas)
+        tipo, arquivos, _ = tipo_dos_arquivos(d.get("arquivos"))
+        if tipo != item["tipo"]:
+            return {"ok": False, "erro": "o Designer não entregou um carrossel novo"
+                                         + (f" ({_texto('; '.join(d.get('falta') or []), 160)})" if d.get("falta") else "")}
+        spec_novo, nova = d.get("spec") or p["spec"], _critica(d.get("critica"))
+    else:
+        return {"ok": False, "erro": "não há ficha do Designer para refazer este post"}
+    if nova["veredito"] != "aprova":
+        return {"ok": False, "erro": "a versão refeita também foi reprovada: " + c().uma_linha(nova["motivos"], 160)}
+    cache = c().PASTA / "cache" / item["id"]
+    cache.mkdir(parents=True, exist_ok=True)
+    chaves = []
+    try:
+        for a in arquivos:
+            local = _jpg(Path(a))
+            chave = _chave(sid, item["id"], f"a{k}-{local.name}")
+            (subir or _subir_pelo_proxy)(str(local), chave)
+            shutil.copyfile(local, cache / chave.rsplit("/", 1)[-1])
+            chaves.append(chave)
+    except Exception as exc:
+        return {"ok": False, "erro": f"o arquivo refeito não subiu para o S3 ({str(exc)[:120]})"}
+    r = c().refeito(item["id"], chaves, "refeito pelo Designer: " + c().uma_linha(critica.get("motivos") or [], 200))
+    if not r["ok"]:
+        return r
+    with _exclusivo():
+        s = carregar(sid)
+        alvo = next(x for x in s["propostas"] if x["n"] == n)
+        alvo.update(spec=spec_novo, refeita=k, arquivos=chaves, critica=nova)
+        _gravar(s)
+    return {"ok": True, "arquivos": chaves}
+
+
 def tipo_dos_arquivos(arquivos: list) -> tuple[str, list, str]:
     """(tipo, files, cover) from what the Designer delivered: one .mp4 is a Reel (a picture next to it is its cover),
     one picture is a feed photo, 2 to 10 pictures a carousel. ("", [], "") when it is none of these."""
@@ -292,6 +390,13 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
                          if pendente else {})})
     for n, (campos, dia) in enumerate(zip(stories, dias_story), start=len(vagas) + 1):
         d = _desenhar_story(esp, campos, _pasta() / sid / f"story-{n}.jpg")
+        for k in range(REFAZER_STORY if esp is not None else 0):  # reproved: redone here, before Matheus sees it
+            if d["critica"]["veredito"] != "reprova":
+                break
+            feito = _refazer_story(esp, campos, d["critica"], _pasta() / sid / f"story-{n}-r{k + 1}.jpg")
+            if not feito:
+                break
+            campos, d = feito
         titulo = f"{campos.get('layout', '?')}: {_texto(campos.get('manchete') or 'oferta Lucro na Mão', 100)}"
         itens.append({"n": n, "id": f"{sid}-{n}", "data": dia, "hora": HORA_STORY, "titulo": titulo, "ideia": "",
                       "formato_pedido": "STORY", "tipo": "STORY" if d["arquivos"] else "", "arquivos": d["arquivos"],

@@ -6,7 +6,9 @@ through _mudar() (TRANSICOES) and lands in the journal. Rules that are code, not
 - captions without emoji, at most 2200 characters and 30 hashtags;
 - a post whose publish call was made but not confirmed becomes "incerta" and is never retried by itself;
 - 20/10: when the especialistas plugin exists, the Crítico judges each post right before it goes out; "reprova" or any
-  error blocks it ("bloqueada", fail closed) until Matheus releases it (liberar(), his override is recorded)."""
+  error blocks it ("bloqueada", fail closed) until Matheus releases it (liberar(), his override is recorded);
+- 22/10: each post is judged up to CONFERIR_HORAS before (conferir_antes), a reproved one is redone by the agent and
+  judged again, and at the hour an approval of the same files and caption (impressao) is the gate."""
 
 import datetime as dt
 import fcntl
@@ -655,13 +657,141 @@ def liberar(item_id: str, motivo: str, quem: str = "matheus") -> dict:
     return {"ok": True, "id": item_id, "data": alvo["data"], "hora": alvo["hora"]}
 
 
+# ---- the advance check (22/10, Matheus: "Se o crítico rejeita, automáticamente deveria ser refeito, e não logo antes
+# de postar, durante a etapa de criação"). The garantia was blocked twice at its hour that day. Now every pending post
+# is judged CONFERIR_HORAS before it goes out, on the exact files and caption (impressao); a reproved one is redone by
+# the agent (semana.refazer_item, up to REFAZER_MAX times) and judged again; only what cannot be redone reaches Matheus,
+# a day early. At the hour, an approval of the same impressao is the gate: nothing is judged again at the last minute.
+CONFERIR_HORAS = 36
+REFAZER_MAX = 2
+
+
+def _quando(item: dict) -> float:
+    return dt.datetime.fromisoformat(f"{item['data']}T{item['hora']}:00").replace(tzinfo=_tz()).timestamp()
+
+
+def _chaves(item: dict) -> list:
+    return list(item.get("arquivos") or []) + ([item["capa"]] if item.get("capa") else [])
+
+
+def _cache_do_item(item: dict, url=None, baixar=None) -> None:
+    """The post's files in cache/<id>/, where the Crítico reads them (material_do_post)."""
+    import urllib.request
+    pasta = PASTA / "cache" / item["id"]
+    pasta.mkdir(parents=True, exist_ok=True)
+    for chave in _chaves(item):
+        destino = pasta / chave.rsplit("/", 1)[-1]
+        if not destino.exists() or destino.stat().st_size == 0:
+            link = (url or Api("", "").url)(chave)
+            (baixar or (lambda l, c: urllib.request.urlretrieve(l, c)))(link, str(destino))
+
+
+def impressao(item: dict) -> str:
+    """sha256 of what goes out: format, caption, file names and their bytes in the cache; "" when a file is missing."""
+    import hashlib
+    h = hashlib.sha256(json.dumps([item.get("tipo"), item.get("legenda"), _chaves(item)], ensure_ascii=False).encode())
+    for chave in _chaves(item):
+        caminho = PASTA / "cache" / item["id"] / chave.rsplit("/", 1)[-1]
+        if not caminho.exists() or caminho.stat().st_size == 0:
+            return ""
+        h.update(caminho.read_bytes())
+    return h.hexdigest()
+
+
+def _anotar(item_id: str, evento: dict, **campos) -> bool:
+    """Fields of a still pending post (no state change), journaled."""
+    with _exclusivo():
+        d = carregar()
+        alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
+        if not alvo or alvo["estado"] != "pendente":
+            return False
+        alvo.update(campos)
+        _gravar(d)
+    _diario({"item": item_id, **evento})
+    return True
+
+
+def refeito(item_id: str, arquivos: list, motivo: str) -> dict:
+    """The agent's redo of a pending post the advance check reproved: same id, day, hour, format and caption, new
+    files (already in S3 and in the cache). The old check goes away, so the next pass judges the new files."""
+    with _exclusivo():
+        d = carregar()
+        alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
+        if not alvo or alvo["estado"] != "pendente":
+            return {"ok": False, "erro": f"{item_id}: só post pendente é refeito"}
+        erro = _validar_item(dict(alvo, arquivos=list(arquivos or [])))
+        if erro:
+            return {"ok": False, "erro": f"{item_id}: {erro}"}
+        antes = alvo["arquivos"]
+        alvo["arquivos"] = list(arquivos)
+        alvo.pop("conferido", None)
+        _gravar(d)
+    _diario({"item": item_id, "refeito": True, "de": antes, "para": list(arquivos), "motivo": str(motivo)[:300]})
+    return {"ok": True, "id": item_id, "arquivos": list(arquivos)}
+
+
+def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, avisar=lambda texto: None,
+                   url=None, baixar=None) -> dict | None:
+    """One pass of the advance check: the next pending post (within CONFERIR_HORAS, not released by Matheus) whose
+    exact material was not judged yet goes through the same gate as at the hour. One post per pass: the Crítico and
+    the Designer take minutes. refazer(item, critica) -> {"ok"} is the agent's redo (semana.refazer_item)."""
+    agora = time.time() if agora is None else agora
+    fila = sorted((i for i in carregar()["itens"] if i["estado"] == "pendente" and not i.get("liberado")
+                   and agora < _quando(i) <= agora + CONFERIR_HORAS * 3600), key=_quando)
+    for item in fila:
+        try:
+            _cache_do_item(item, url, baixar)
+        except Exception as exc:  # no file to judge now: the gate at the hour still runs
+            print(f"conteudo: conferir {item['id']}: arquivo não baixou ({exc})", flush=True)
+            continue
+        marca = impressao(item)
+        if not marca or (item.get("conferido") or {}).get("impressao") == marca:
+            continue
+        gate = portao(item, critico)
+        if gate["publicar"]:
+            _anotar(item["id"], {"conferido": "aprova"},
+                    conferido={"impressao": marca, "em": agora, "veredito": "aprova", "motivo": gate["motivo"]})
+            return {"id": item["id"], "veredito": "aprova"}
+        critica = gate.get("critica") or {"veredito": "reprova", "motivos": [gate["motivo"]]}
+        feitas = int(item.get("refeitas") or 0)
+        if refazer is None:
+            erro = "não há quem refaça"
+        elif feitas >= REFAZER_MAX:
+            erro = f"já refiz {feitas} vezes"
+        else:
+            try:
+                r = refazer(item, critica)
+            except Exception as exc:
+                r = {"ok": False, "erro": f"{type(exc).__name__}: {str(exc)[:120]}"}
+            _anotar(item["id"], {"refazer": bool(r.get("ok")), "tentativa": feitas + 1,
+                                 **({} if r.get("ok") else {"erro": str(r.get("erro"))[:200]})}, refeitas=feitas + 1)
+            if r.get("ok"):
+                return {"id": item["id"], "veredito": "reprova", "refeito": True}
+            erro = str(r.get("erro") or "sem motivo")
+        _anotar(item["id"], {"conferido": "reprova", "motivo": gate["motivo"][:300]},
+                conferido={"impressao": marca, "em": agora, "veredito": "reprova", "motivo": gate["motivo"]})
+        botao = f"cs:{LOGIN}:{item['id']}:liberar"
+        _chamar_aviso(avisar, f"pendente: o Crítico reprovou {item['id']} ({item['tipo']}, sai {item['data']} às "
+                              f"{item['hora']}) e não consegui refazer sozinho ({uma_linha(erro, 160)}): {gate['motivo']}. "
+                              f"Se nada mudar até lá, ele fica bloqueado; para publicar mesmo assim, toque no botão ou "
+                              f"diga \"libera o post {item['id']}\".",
+                      [{"id": botao, "titulo": "🔓 Publicar mesmo assim"}] if len(botao.encode()) <= 64 else None)
+        return {"id": item["id"], "veredito": "reprova", "refeito": False, "erro": erro}
+    return None
+
+
 def rodar(api, avisar=lambda texto: None, agora: float | None = None, dormir=time.sleep, critico=_PADRAO) -> dict | None:
     """One pass of the job loop: publishes today's post if due and the Crítico's gate lets it. The reservation
     (pendente → publicando) is saved before talking to Meta, so two passes can never publish the same item."""
     previsto = devido(agora)
     if not previsto:
         return None
-    gate = portao(previsto, critico)  # outside the lock: it may call a model
+    conf = previsto.get("conferido") or {}
+    if (not previsto.get("liberado") and conf.get("veredito") == "aprova" and conf.get("impressao")
+            and conf["impressao"] == impressao(previsto)):  # the same files and caption the Crítico approved before
+        gate = {"publicar": True, "motivo": "o Crítico aprovou na conferência antecipada"}
+    else:
+        gate = portao(previsto, critico)  # outside the lock: it may call a model
     if not gate["publicar"]:
         with _exclusivo():
             d = carregar()

@@ -15,6 +15,8 @@ from helpers.extension import Extension
 _CAMINHO = Path(__file__).resolve().parents[3] / "helpers" / "conteudo.py"
 _ATUAL: dict = {}
 _RODANDO = {"sim": False}
+_CONFERINDO = {"sim": False, "ultima": 0.0}
+CONFERIR_CADA = 600  # seconds between passes of the advance check (one post judged, and redone if reproved, per pass)
 
 
 def _helper():
@@ -72,15 +74,40 @@ def _passo() -> None:
         _RODANDO["sim"] = False
 
 
+def _semana():
+    caminho = _CAMINHO.parent / "semana.py"
+    spec = importlib.util.spec_from_file_location("conteudo_semana_conferir", caminho)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def _conferir() -> None:
+    """22/10, Matheus: "Se o crítico rejeita, automáticamente deveria ser refeito, e não logo antes de postar": the
+    advance check (conteudo.conferir_antes) with the agent's redo (semana.refazer_item), in its own thread."""
+    try:
+        r = _helper().conferir_antes(refazer=_semana().refazer_item, avisar=_avisar)
+        if r:
+            print(f"conteudo: conferência antecipada {r}", flush=True)
+    except Exception as exc:
+        print(f"conteudo: conferência antecipada: {type(exc).__name__}: {exc}", flush=True)
+    finally:
+        _CONFERINDO.update(sim=False, ultima=time.time())
+
+
 class PublicarConteudo(Extension):
     async def execute(self, **kwargs):
-        if _RODANDO["sim"]:
-            return
         try:
             if not (_helper().PASTA / "agenda.json").exists():
                 return
         except Exception as exc:
             print(f"conteudo: helper não carregou: {type(exc).__name__}: {exc}", flush=True)
             return
+        laco = asyncio.get_running_loop()
+        if not _CONFERINDO["sim"] and time.time() - _CONFERINDO["ultima"] >= CONFERIR_CADA:
+            _CONFERINDO["sim"] = True
+            laco.run_in_executor(None, _conferir)
+        if _RODANDO["sim"]:
+            return
         _RODANDO["sim"] = True
-        asyncio.get_running_loop().run_in_executor(None, _passo)
+        laco.run_in_executor(None, _passo)

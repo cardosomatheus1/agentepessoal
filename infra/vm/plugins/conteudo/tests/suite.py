@@ -512,6 +512,9 @@ class Suite:
         c.especialistas = (lambda: Esp()) if esp == "falso" else (lambda: None)
 
         class StoryFalso:  # helpers/story.py draws with a browser; here a file is enough
+            CAMPOS = ("layout", "manchete", "destaque", "texto", "chamada", "tela", "pergunta", "itens")
+            validar = staticmethod(lambda campos: "" if campos.get("layout") else "layout")
+
             @staticmethod
             def renderizar(campos, saida):
                 if campos.get("layout") == "quebra":
@@ -616,6 +619,162 @@ class Suite:
         ok(de_novo.startswith("Nada para agendar") and "Ainda esperando você: 3" in de_novo, f"aprovar de novo não duplica: {de_novo}")
         ok(len(c.carregar()["itens"]) == 10, "nada duplicado")
         ok(s.botao("outra", "cs:matheus:s20261026-1:todas") == {}, "botão de outra pessoa não vale")
+
+    # ---- 22/10, Matheus: "Se o crítico rejeita, automáticamente deveria ser refeito, e não logo antes de postar,
+    # durante a etapa de criação"
+
+    def t_semana_story_reprovado_e_refeito_na_criacao(self):
+        c, s, _ = self._semana()
+        pedidos, julgados = [], []
+
+        class Esp:
+            def desenhar(self, briefing):
+                return {"spec": {"motor": "carrossel_raiz"}, "arquivos": [], "falta": ["sem arte"], "render": "",
+                        "critica": {"veredito": "aprova", "motivos": [], "sugestoes": []}}
+
+            def criticar(self, tipo, material):
+                julgados.append(material["legenda"])
+                if tipo == "story" and material["legenda"] == "Story 5":
+                    return {"veredito": "reprova", "motivos": ["diz você não paga"]}
+                return {"veredito": "aprova", "motivos": []}
+
+            def chamar(self, papel, tarefa, material):
+                pedidos.append((papel, tarefa, material))
+                return {"texto": json.dumps({"layout": "oferta", "manchete": "Story 5 refeito", "senha": "x"}), "erro": ""}
+        c.especialistas = lambda: Esp()
+        r = s.propor(self._feed(), _ts(c, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())
+        p5 = next(p for p in s.carregar(r["semana"])["propostas"] if p["legenda"].startswith("Story 5"))
+        ok(len(pedidos) == 1 and pedidos[0][0] == "designer" and "diz você não paga" in pedidos[0][1], "o Designer refaz com o motivo")
+        ok(p5["critica"]["veredito"] == "aprova" and p5["spec"]["story"] == {"layout": "oferta", "manchete": "Story 5 refeito"},
+           f"a versão refeita é a que vai ao Matheus, só com campos do story: {p5}")
+        ok(p5["arquivos"][0].endswith("story-9-r1.jpg") and Path(p5["arquivos"][0]).exists(), p5["arquivos"])
+        # the Designer gives nothing usable: stays reproved after the tries, never approved by itself
+        c2, s2, _ = self._semana()
+        Esp.chamar = lambda self, papel, tarefa, material: {"texto": "não sei", "erro": ""}
+        Esp.criticar = lambda self, tipo, material: {"veredito": "reprova" if tipo == "story" else "aprova", "motivos": ["fraco"]}
+        c2.especialistas = lambda: Esp()
+        r = s2.propor(self._feed(), _ts(c2, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())
+        ok(all(p["critico"] == "reprova" for p in r["propostas"] if p["tipo"] == "STORY"), r["propostas"])
+
+    def _arquivo_falso(self):
+        return {"url": lambda chave: "https://s3/" + chave,
+                "baixar": lambda link, caminho: Path(caminho).write_bytes(b"\xff\xd8 " + link.encode())}
+
+    def t_conferencia_antecipada_aprova_e_vale_na_hora(self):
+        c = _modulo()
+        story = {"id": "st", "data": "2026-10-15", "hora": "09:00", "tipo": "STORY", "arquivos": ["conteudo/st/a.jpg"],
+                 "legenda": "qua: dica"}
+        longe = dict(ITEM, id="longe", data="2026-10-18", tipo="CARROSSEL", arquivos=["conteudo/l/1.jpg", "conteudo/l/2.jpg"])
+        ok(c.agendar([CARR, story, longe], _ts(c, "2026-10-13", "10:00"))["ok"], "agenda")
+        julgados = []
+
+        class Critico:
+            veredito = "aprova"
+
+            def criticar(self, tipo, material):
+                julgados.append((tipo, list(material["imagens"])))
+                return {"veredito": self.veredito, "motivos": [] if self.veredito == "aprova" else ["fraco"]}
+        crit, arq = Critico(), self._arquivo_falso()
+        agora = _ts(c, "2026-10-14", "10:00")
+        r1 = c.conferir_antes(agora, crit, **arq)
+        r2 = c.conferir_antes(agora, crit, **arq)
+        ok((r1["id"], r2["id"]) == ("st", "ter-frases") and c.conferir_antes(agora, crit, **arq) is None,
+           f"um por vez, o mais próximo primeiro, e só o que ainda não foi julgado: {r1} {r2}")
+        ok(len(julgados) == 2 and len(julgados[1][1]) == 9, "o Crítico vê as 9 imagens baixadas para o cache")
+        itens = {i["id"]: i for i in c.carregar()["itens"]}
+        ok("conferido" not in itens["longe"], "fora das 36 h ainda não é julgado")
+        ok(itens["ter-frases"]["conferido"]["veredito"] == "aprova" and itens["ter-frases"]["conferido"]["impressao"]
+           == c.impressao(itens["ter-frases"]), itens["ter-frases"].get("conferido"))
+        # at the hour the earlier approval of the same files is the gate: no last-minute surprise
+        class Quebra:
+            def criticar(self, tipo, material):
+                raise AssertionError("não devia julgar de novo")
+        pub = c.rodar(ApiFalsa(), lambda t: None, _ts(c, "2026-10-15", "09:05"), dormir=lambda x: None, critico=Quebra())
+        ok(pub["estado"] == "publicada" and pub["portao"] == "o Crítico aprovou na conferência antecipada", pub)
+        # a file changed after the check: the approval no longer fits, the gate judges again
+        (c.PASTA / "cache" / "ter-frases" / "3.jpg").write_bytes(b"\xff\xd8 outra arte")
+        crit.veredito = "reprova"
+        pub = c.rodar(ApiFalsa(), lambda t: None, _ts(c, "2026-10-15", "11:50"), dormir=lambda x: None, critico=crit)
+        ok(pub["estado"] == "bloqueada", f"arte trocada depois da aprovação é julgada de novo: {pub}")
+        ok(any('"conferido": "aprova"' in l for l in (c.PASTA / "diario.jsonl").read_text(encoding="utf-8").splitlines()),
+           "fica no diário")
+
+    def t_conferencia_reprova_refaz_ou_avisa_cedo(self):
+        c = _modulo()
+        ok(c.agendar([CARR], _ts(c, "2026-10-13", "10:00"))["ok"], "agenda")
+        vereditos = ["reprova", "aprova"]
+
+        class Critico:
+            def criticar(self, tipo, material):
+                v = vereditos.pop(0) if vereditos else "reprova"
+                return {"veredito": v, "motivos": [] if v == "aprova" else ["slide 3 cortado"]}
+        refeitos, avisos = [], []
+
+        def refazer(item, critica):
+            refeitos.append(critica["motivos"])
+            n = len(refeitos)
+            novos = [f"conteudo/r{n}/{k}.jpg" for k in (1, 2)]
+            return c.refeito(item["id"], novos, "refeito pelo Designer")
+        arq, agora = self._arquivo_falso(), _ts(c, "2026-10-14", "10:00")
+        r = c.conferir_antes(agora, Critico(), refazer, lambda t, b=None: avisos.append((t, b)), **arq)
+        it = c.carregar()["itens"][0]
+        ok(r["refeito"] and refeitos == [["slide 3 cortado"]] and it["arquivos"] == ["conteudo/r1/1.jpg", "conteudo/r1/2.jpg"]
+           and it["refeitas"] == 1 and "conferido" not in it and not avisos, f"reprovado: refeito sozinho, sem avisar: {r} {it}")
+        r = c.conferir_antes(agora, Critico(), refazer, avisos.append, **arq)
+        ok(r["veredito"] == "aprova" and c.carregar()["itens"][0]["conferido"]["veredito"] == "aprova", "a versão nova é julgada")
+        # cannot be redone (made outside the weekly routine): Matheus hears it a day early, once, with the button
+        c2 = _modulo()
+        c2.agendar([CARR], _ts(c2, "2026-10-13", "10:00"))
+        nao = lambda item, critica: {"ok": False, "erro": "foi feito fora da rotina da semana"}
+        r = c2.conferir_antes(agora, Critico(), nao, lambda t, b=None: avisos.append((t, b)), **arq)
+        ok(not r["refeito"] and len(avisos) == 1, r)
+        texto, botoes = avisos[0]
+        ok(texto.startswith("pendente:") and "sai 2026-10-15 às 11:45" in texto and "fora da rotina" in texto
+           and "slide 3 cortado" in texto and botoes[0]["id"] == "cs:matheus:ter-frases:liberar", texto)
+        ok(c2.conferir_antes(agora, Critico(), nao, avisos.append, **arq) is None and len(avisos) == 1, "avisa uma vez só")
+        ok(c2.carregar()["itens"][0]["estado"] == "pendente", "continua pendente: o portão da hora ainda decide")
+        # always reproved: at most REFAZER_MAX redos, then the notice
+        c3 = _modulo()
+        c3.agendar([CARR], _ts(c3, "2026-10-13", "10:00"))
+        vereditos[:] = []
+        sempre = lambda item, critica: c3.refeito(item["id"], [f"conteudo/x{item.get('refeitas', 0)}/{k}.jpg" for k in (1, 2)], "x")
+        avisos.clear()
+        rs = [c3.conferir_antes(agora, Critico(), sempre, lambda t, b=None: avisos.append(t), **arq) for _ in range(4)]
+        ok([x and x.get("refeito") for x in rs[:3]] == [True, True, False] and rs[3] is None and len(avisos) == 1
+           and "já refiz 2 vezes" in avisos[0], f"{rs} {avisos}")
+        # released by Matheus: not judged ahead
+        c4 = _modulo()
+        c4.agendar([dict(CARR, liberado={"por": "matheus"})], _ts(c4, "2026-10-13", "10:00"))
+        ok(c4.conferir_antes(agora, Critico(), nao, avisos.append, **arq) is None, "liberado não passa pela conferência")
+
+    def t_semana_refaz_item_da_agenda(self):
+        c, s, _ = self._semana()
+        agora = _ts(c, "2026-10-26", "07:50")
+        s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
+        s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda *a: None)
+        itens = {i["id"]: i for i in c.carregar()["itens"]}
+        st = next(i for i in itens.values() if i["tipo"] == "STORY")
+
+        class Esp:
+            def chamar(self, papel, tarefa, material):
+                return {"texto": json.dumps({"layout": "dica", "manchete": "Confere a nota"}), "erro": ""}
+
+            def criticar(self, tipo, material):
+                return {"veredito": "aprova", "motivos": []}
+        c.especialistas = lambda: Esp()
+        subidos = []
+        r = s.refazer_item(st, {"motivos": ["layout errado"]}, subir=lambda local, chave: subidos.append(chave))
+        novo = next(i for i in c.carregar()["itens"] if i["id"] == st["id"])
+        ok(r["ok"] and novo["arquivos"] == subidos and subidos[0].startswith("conteudo/semanas/s20261026-1/")
+           and (c.PASTA / "cache" / st["id"] / subidos[0].rsplit("/", 1)[-1]).exists(), f"story refeito na agenda: {r} {novo}")
+        p = next(x for x in s.carregar("s20261026-1")["propostas"] if x["id"] == st["id"])
+        ok(p["refeita"] == 1 and p["spec"]["story"]["manchete"] == "Confere a nota", "a semana guarda a versão nova")
+        reel = next(i for i in itens.values() if i["tipo"] == "REELS")
+        ok("decisão #39" in s.refazer_item(reel, {"motivos": ["x"]})["erro"], "Reel não é refeito sem o ok dele no áudio")
+        ok("fora da rotina" in s.refazer_item(dict(CARR), {"motivos": ["x"]})["erro"], "post feito à mão: não sabe refazer")
+        Esp.criticar = lambda self, tipo, material: {"veredito": "reprova", "motivos": ["ainda fraco"]}
+        r = s.refazer_item(novo, {"motivos": ["x"]}, subir=lambda *a: None)
+        ok(not r["ok"] and "também foi reprovada: ainda fraco" in r["erro"], r)
 
     def t_semana_video_so_depois_da_aprovacao(self):
         # 22/10, Matheus: "Leve" (the agent makes the Reels too); decision #39: the narration is approved before the video
@@ -971,6 +1130,8 @@ class Suite:
     def t_extensao_usa_o_helper(self):
         ext = (RAIZ / "extensions" / "python" / "job_loop" / "_46_publicar_conteudo.py").read_text(encoding="utf-8")
         ok("conteudo.rodar(" in ext and "run_in_executor" in ext, "a rotina publica fora do laço principal")
+        ok("conferir_antes(refazer=_semana().refazer_item" in ext and "CONFERIR_CADA" in ext,
+           "a conferência antecipada roda na rotina, com o refazer do agente")
         ok('tipo="urgente"' in ext, "falha chega na hora (é um pendente:)")
 
     async def rodar(self, so: str = "") -> dict:
