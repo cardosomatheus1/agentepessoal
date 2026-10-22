@@ -113,6 +113,10 @@ const Motor = {
   erro(msg) { Motor.erros.push(msg); },
   // Raiz kit (14/10): the highlighted word of a headline in Instrument Serif. Each template highlights its own way
   // (a class, the last word...), so the word is found by what it shows: text in the highlight color inside a title.
+  // Raiz kit, decision #85 (22/10): a screen of the system is shown whole, with the menu, never cropped to fill a box
+  _telasInteiras() {
+    for (const i of $$('img')) if (/\/telas\//.test(i.getAttribute('src') || '')) { i.style.objectFit = 'contain'; i.style.background = 'var(--fundo)'; }
+  },
   _serifNoDestaque() {
     const alvo = getComputedStyle(document.body).getPropertyValue('--destaque').trim();
     const sonda = document.createElement('i'); sonda.style.color = alvo; document.body.appendChild(sonda);
@@ -163,7 +167,7 @@ const Motor = {
       await Promise.all([...document.fonts].map(f => f.load().catch(() => {})));
       await Promise.all($$('img').map(i => i.complete ? (i.decode ? i.decode().catch(() => {}) : 0) : new Promise(ok => { i.onload = i.onerror = ok; })));
       $$('.rv').forEach(Motor.palavras);
-      if (Motor.ESTILO === 'kit') Motor._serifNoDestaque();
+      if (Motor.ESTILO === 'kit') { Motor._serifNoDestaque(); }
       Motor._caberTudo();
       if (Motor.FORMATO !== 'carrossel') await window.render(0);
       // a photo of the ficha that did not load (wrong path) refuses the template instead of rendering a hole
