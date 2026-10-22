@@ -1192,6 +1192,12 @@ class Suite:
         eq(p.tema_do_texto("Sou o Matheus, da Raiz Connect, que calcula custo e preço de quem produz comida. Vi o iFood!"),
            "ifood", "a apresentação sozinha não é tema")
         eq(p.tema_do_texto("Como vocês chegam no preço: planilha, caderno ou de cabeça?"), "preco", "pergunta de preço")
+        eq(p.tema_do_texto("O preço do kit vocês fecham na planilha?"), "preco", "preço na planilha")
+        for k, v in p.TEMAS.items():  # what the tool tells the round to say about a theme never counts as another theme
+            ok("preco" not in p.temas_do_texto(v["fala"]) or k == "preco", f"a fala do tema {k} não é de preço")
+        pb = (RAIZ / "playbook.md").read_text(encoding="utf-8")
+        exemplo = pb[pb.index("- **A (produção).**"):pb.index("- **B (estoque).**")]
+        ok("preco" not in p.temas_do_texto(exemplo), "o exemplo A do playbook passa com o tema preço pausado")
         d = p.carregar(LOGIN)
         envio = p.agora() - 5 * 86400
         for i in range(16):  # 16 first messages about price; 4 answered, 3 of them "we already have a system"
