@@ -894,11 +894,14 @@ class Suite:
             focado = await pg.evaluate(c.CAMPO_FOCADO_JS)
             por_seletor = await pg.evaluate(c.CAMPO_POR_SELETOR_JS, "input[type=password]")
             invalido = await pg.evaluate(c.CAMPO_POR_SELETOR_JS, "text=Senha")
-            # login dentro de um componente (shadow root fechado): o campo de senha lá dentro não pode ser barrado
-            await pg.set_content('<div id=h></div>')
-            await pg.evaluate("() => { const r = document.getElementById('h').attachShadow({mode: 'closed'}); "
-                              "r.innerHTML = '<input id=x type=password>'; r.getElementById('x').focus(); }")
-            sombra = await pg.evaluate(c.CAMPO_FOCADO_JS)
+            # login dentro de um componente (shadow root fechado, criado antes do script do Agent Zero, numa página
+            # nova): o foco aparece no hospedeiro, que não diz nada do campo de senha lá dentro, e não pode barrar
+            pg2 = await b.new_page()
+            await pg2.set_content('<div id=h></div><iframe srcdoc="<input type=password autofocus>"></iframe>')
+            await pg2.evaluate("() => { const r = document.getElementById('h').attachShadow({mode: 'closed'}); "
+                               "r.innerHTML = '<input id=x type=password>'; r.getElementById('x').focus(); }")
+            sombra = await pg2.evaluate(c.CAMPO_FOCADO_JS)
+            hospedeiro = await pg2.evaluate("() => document.activeElement.id")
             await b.close()
         ok(c.segredo_no_campo(args, por_ref[1]), f"ref do telefone é recusada: {por_ref}")
         eq(c.segredo_no_campo(args, por_ref[2]), "", "ref da senha passa")
@@ -907,8 +910,10 @@ class Suite:
         ok(c.segredo_no_campo({"action": "keyboard", "text": "§§secret(NOVENTAENOVE)"}, focado), f"focado: {focado}")
         eq(c.segredo_no_campo(args, por_seletor), "", "seletor do campo de senha passa")
         eq(invalido, None, "seletor do Playwright (text=) não quebra: fica sem leitura")
+        eq(hospedeiro, "h", "o foco aparece no hospedeiro do componente")
+        eq(sombra, None, "hospedeiro não é campo: sem leitura")
         eq(c.segredo_no_campo({"action": "keyboard", "text": "§§secret(FACEBOOK_SENHA)"}, sombra), "",
-           f"senha dentro de shadow root fechado não é barrada: {sombra}")
+           "senha dentro de shadow root fechado não é barrada")
 
     async def t_aba_fechada(self):
         c = _correcoes()

@@ -226,7 +226,9 @@ def com_rotulos(source: str) -> str:
 # telefone do gerente" (ref 21) and only noticed afterwards. A vault secret now goes only into a password field (type
 # password, or a name/label of password), unless the secret itself is an identifier (e-mail, user, CPF...).
 DESCREVER_JS = """const a0Descrever = (el) => {
-    if (!el || !el.tagName) {
+    // only a field one types into; a component's host (closed shadow root), a frame from another site or a wrapper says
+    // nothing about the real field inside, so it is not read (and not blocked)
+    if (!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(String(el.tagName || "").toUpperCase()) && !el.isContentEditable) {
       return null;
     }
     const at = (n) => String(el.getAttribute?.(n) || "");
@@ -279,10 +281,6 @@ CAMPO_FOCADO_JS = """() => {
       el = el.tagName === "IFRAME" ? el.contentDocument.activeElement : el.shadowRoot.activeElement;
     }
   } catch {}
-  // a frame from another site or a closed shadow root: the real field is not visible from here, so it is not read
-  if (!el || el === el.ownerDocument.body || el.tagName === "IFRAME" || el.shadowRoot) {
-    return null;
-  }
   return a0Descrever(el);
 }""" % DESCREVER_JS
 CAMPO_POR_SELETOR_JS = """(sel) => {
