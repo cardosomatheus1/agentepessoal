@@ -385,6 +385,27 @@ class Suite:
         eq(renders, ["Curta?", "Maior agora"], "renderizou de novo com a ficha corrigida")
         ok("duração 41.9 s" in chamadas[1][1] and d["falta"] == [] and d["arquivos"] == ["s1.jpg"], (chamadas[1][1][:200], d))
 
+    def t_formato_da_vaga_vale(self):
+        # 4º teste real (22/10): a carousel slot came back as a Reel
+        reels = self._reels()
+        esq = reels / "moldes" / "frases" / "esquema.json"
+        esq.write_text(json.dumps({"formatos": ["carrossel", "reel"], "campos": {"pergunta": {"tipo": "texto", "max": 20}}}))
+        m = self._e(reels=reels)
+        m._pode_renderizar = lambda: ""
+        m.renderizar_molde = lambda molde, formato, ficha, previa=False: (["s1.jpg"], "")
+        fichas = [{"marca": "raiz", "motor": "molde", "molde": "frases", "formato": f, "ficha": {"_marca": "raiz", "pergunta": "Oi"}}
+                  for f in ("reel", "carrossel")]
+        chamadas = []
+
+        def chamar(papel, tarefa, material, login="matheus"):
+            chamadas.append((papel, tarefa))
+            return {"texto": json.dumps(fichas.pop(0)) if papel == "designer" else APROVA, "erro": "", "imagens": [],
+                    "sem_imagem": []}
+        m.chamar = chamar
+        d = m.desenhar({"formato": "CARROSSEL", "titulo": "x", "ideia": "y"})
+        ok("a vaga da semana é 'carrossel'" in chamadas[1][1], chamadas[1][1][:200])
+        eq((d["spec"]["formato"], d["falta"]), ("carrossel", []), "corrigido para carrossel")
+
     def t_designer_refaz_com_os_motivos_do_critico(self):
         # 22/10: the agent makes the posts by itself, so a reproved piece is redone once before it reaches Matheus
         reels = self._reels()

@@ -500,6 +500,10 @@ def _conferir_spec(spec: dict) -> list[str]:
                 problemas.append("peça da Raiz com outra marca na ficha (_marca): o kit só vale com a marca raiz")
             if marca == "raiz":
                 problemas += _jargao(json.dumps(spec["ficha"], ensure_ascii=False))
+            pedido = spec.get("_formato_pedido")
+            if pedido and str(spec.get("formato") or "").lower() != pedido:
+                problemas.append(f"ficha: formato {spec.get('formato')!r}, mas a vaga da semana é {pedido!r}: use um molde "
+                                 f"que faça {pedido}")
             problemas += [f"ficha: {e}" for e in _validar_ficha(str(spec.get("molde") or ""), spec["ficha"])]
     return problemas
 
@@ -508,12 +512,20 @@ CORRECOES = 3
 REVISOES = 1
 
 
-def _spec(r: dict) -> dict:
-    """The Designer's JSON; a ficha with a "molde" is the moldes motor even when "motor" was left out (22/10)."""
+FORMATO_DO_BRIEFING = {"CARROSSEL": "carrossel", "REELS": "reel", "STORY": "story"}
+
+
+def _spec(r: dict, pedido: str = "") -> dict:
+    """The Designer's JSON; a ficha with a "molde" is the moldes motor even when "motor" was left out (22/10). The
+    format the week asked for travels with the spec: a Reel delivered for a carousel slot is a ficha error."""
     spec = (_json(r["texto"]) if not r["erro"] else None) or {}
-    if isinstance(spec, dict) and spec.get("molde") and not spec.get("motor"):
+    if not isinstance(spec, dict):
+        return {}
+    if spec.get("molde") and not spec.get("motor"):
         spec["motor"] = "molde"
-    return spec if isinstance(spec, dict) else {}
+    if spec and pedido:
+        spec["_formato_pedido"] = pedido
+    return spec
 
 
 def telas_do_sistema() -> str:
@@ -566,15 +578,16 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
               + telas_do_sistema()
               + "Responda só com o JSON da ficha, com \"motor\".")
     material = {"briefing": briefing} if isinstance(briefing, str) else briefing
+    pedido = FORMATO_DO_BRIEFING.get(str(material.get("formato") or "").upper(), "")
     r = chamar("designer", tarefa, material, login=login)
-    out = _volta(briefing, material, _spec(r), r, login)
+    out = _volta(briefing, material, _spec(r, pedido), r, login)
     # 22/10: the Designer redoes the piece once with the Crítico's reasons before it goes to Matheus
     for _ in range(REVISOES):
         spec = out["spec"]
         if out["critica"]["veredito"] != "reprova" or spec.get("motor") != "molde":
             break
         r = chamar("designer", _tarefa_revisao(spec, out["critica"]), material, login=login)
-        novo = _spec(r)
+        novo = _spec(r, pedido)
         if not novo:
             break
         anteriores = out.get("revisoes", []) + [out["critica"]["motivos"]]
@@ -600,7 +613,8 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
         while True:
             while tentativas and spec.get("motor") == "molde" and any(f.startswith("ficha:") for f in falta):
                 tentativas -= 1
-                novo = _spec(chamar("designer", _tarefa_correcao(spec, falta), material, login=login))
+                novo = _spec(chamar("designer", _tarefa_correcao(spec, falta), material, login=login),
+                             spec.get("_formato_pedido", ""))
                 if not novo:
                     tentativas = 0
                     break
@@ -610,7 +624,8 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
             if not (recusa and tentativas):
                 break
             tentativas -= 1
-            novo = _spec(chamar("designer", _tarefa_correcao(spec, recusa), material, login=login))
+            novo = _spec(chamar("designer", _tarefa_correcao(spec, recusa), material, login=login),
+                         spec.get("_formato_pedido", ""))
             if not novo:
                 break
             spec, falta = novo, _conferir_spec(novo)
