@@ -512,7 +512,8 @@ class Suite:
         c.especialistas = (lambda: Esp()) if esp == "falso" else (lambda: None)
 
         class StoryFalso:  # helpers/story.py draws with a browser; here a file is enough
-            CAMPOS = ("layout", "manchete", "destaque", "texto", "chamada", "tela", "pergunta", "itens")
+            CAMPOS = ("layout", "manchete", "destaque", "texto", "chamada", "tela", "pergunta", "itens", "imagem")
+            PASTA = RAIZ / "story"
             validar = staticmethod(lambda campos: "" if campos.get("layout") else "layout")
 
             @staticmethod
@@ -655,6 +656,10 @@ class Suite:
         c2.especialistas = lambda: Esp()
         r = s2.propor(self._feed(), _ts(c2, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())
         ok(all(p["critico"] == "reprova" for p in r["propostas"] if p["tipo"] == "STORY"), r["propostas"])
+        # a redone story never points at a file outside the system's screens
+        for fora in ({"layout": "bastidor", "manchete": "x", "tela": "/etc/passwd"}, {"layout": "dica", "imagem": "/root/a.jpg"}):
+            Esp.chamar = lambda self, papel, tarefa, material, f=fora: {"texto": json.dumps(f), "erro": ""}
+            ok(s2._refazer_story(Esp(), {"layout": "dica"}, {"motivos": ["x"]}, Path(tempfile.mkdtemp()) / "s.jpg") is None, fora)
 
     def _arquivo_falso(self):
         return {"url": lambda chave: "https://s3/" + chave,
@@ -742,6 +747,15 @@ class Suite:
         rs = [c3.conferir_antes(agora, Critico(), sempre, lambda t, b=None: avisos.append(t), **arq) for _ in range(4)]
         ok([x and x.get("refeito") for x in rs[:3]] == [True, True, False] and rs[3] is None and len(avisos) == 1
            and "já refiz 2 vezes" in avisos[0], f"{rs} {avisos}")
+        # the Crítico down is not a reproval: nothing redone, nothing said, judged again next pass
+        c5 = _modulo()
+        c5.agendar([CARR], _ts(c5, "2026-10-13", "10:00"))
+        class Fora:
+            def criticar(self, tipo, material):
+                raise TimeoutError("proxy")
+        refeitos.clear(); avisos.clear()
+        r = c5.conferir_antes(agora, Fora(), refazer, avisos.append, **arq)
+        ok(r["veredito"] == "erro" and not refeitos and not avisos and "conferido" not in c5.carregar()["itens"][0], r)
         # released by Matheus: not judged ahead
         c4 = _modulo()
         c4.agendar([dict(CARR, liberado={"por": "matheus"})], _ts(c4, "2026-10-13", "10:00"))

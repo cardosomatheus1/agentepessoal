@@ -752,7 +752,9 @@ def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, av
             _anotar(item["id"], {"conferido": "aprova"},
                     conferido={"impressao": marca, "em": agora, "veredito": "aprova", "motivo": gate["motivo"]})
             return {"id": item["id"], "veredito": "aprova"}
-        critica = gate.get("critica") or {"veredito": "reprova", "motivos": [gate["motivo"]]}
+        if not gate.get("critica"):  # the Crítico failed (timeout, no verdict): not a reproval, try again next pass
+            return {"id": item["id"], "veredito": "erro", "motivo": gate["motivo"]}
+        critica = gate["critica"]
         feitas = int(item.get("refeitas") or 0)
         if refazer is None:
             erro = "não há quem refaça"

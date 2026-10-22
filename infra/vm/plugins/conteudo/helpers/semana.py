@@ -205,6 +205,10 @@ def _refazer_story(esp, campos: dict, critica: dict, saida: Path) -> tuple[dict,
     if not isinstance(novo, dict):
         return None
     novo = {k: v for k, v in novo.items() if k in story().CAMPOS}
+    telas = story().PASTA / "telas"  # only the system's own screens or the picture he already had: no other file
+    if novo.get("imagem") not in (None, campos.get("imagem")) or (
+            novo.get("tela") and Path(str(novo["tela"])).resolve().parent != telas.resolve()):
+        return None
     if story().validar(novo):
         return None
     saida.parent.mkdir(parents=True, exist_ok=True)
