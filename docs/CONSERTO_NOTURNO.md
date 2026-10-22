@@ -13,7 +13,10 @@ funcionou depois de uma falha). Esta sessão cuida do outro lado: o **defeito da
 1. Branch `ccr-bcbe3101-9u4klv` do `cardosomatheus1/agentepessoal`: `git pull`. Leia o `CLAUDE.md` e
    `docs/HANDOFF_CONTA_NOVA.md`. As regras deles valem aqui inteiras. O ambiente pode começar sem as ferramentas da
    AWS (1ª conferência, 21/10): `python3 -c "import boto3" 2>/dev/null || pip install -q boto3` e
-   `command -v aws >/dev/null || pip install -q awscli`.
+   `command -v aws >/dev/null || pip install -q awscli`. Para a suíte inteira (22/10): `pip install -q playwright` e
+   `pip install -q --ignore-installed blinker flask`. A VM pode estar hibernando (de madrugada ela dorme sem uso):
+   `aws ec2 describe-instances --instance-ids i-0498b4f39560b01a9 …`; parada, `aws ec2 start-instances` e espere o SSM
+   ficar Online. Ela volta a dormir com 30 min sem uso: num passo longo, `vmcmd.py 'touch /var/lib/agentepessoal/last-activity'`.
 2. `python3 infra/operador/falhas_do_dia.py 24` (e `--json` se quiser os grupos inteiros).
 3. Escolha **até 3 grupos** para consertar, nesta ordem de prioridade: mais vezes, mais conversas, efeito maior para o
    Matheus. Só entra grupo que é **defeito nosso** e aconteceu **3 vezes ou mais**:
@@ -58,10 +61,7 @@ em `/root/.config/opencode/opencode.json` (cópia anterior: `opencode.json.befor
 
 Valem como grupo a consertar mesmo com menos de 3 vezes (efeito grande para o Matheus). Depois de consertado, apague a linha.
 
-- 21/10, portal da 99 (developer-food.99app.com): no formulário da loja de teste, o agente pôs a **senha do cofre no
-  campo "telefone do gerente"**. Ele percebeu, limpou e cancelou, e nada foi enviado. Ache no log a chamada que
-  preencheu o campo (cofre ou `type` com a senha) e faça a ferramenta recusar escrever um segredo do cofre num campo
-  que não é de senha (`type=password`, ou nome/rótulo de senha). O teste usa a chamada real.
+(nenhum no momento; o da 99, senha do cofre no telefone do gerente, foi consertado em 22/10)
 
 ## Limites (não se quebram)
 
