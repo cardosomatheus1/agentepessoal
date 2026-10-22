@@ -493,6 +493,49 @@ def _conferir_spec(spec: dict) -> list[str]:
     return problemas
 
 
+CORRECOES = 2
+
+
+def _spec(r: dict) -> dict:
+    """The Designer's JSON; a ficha with a "molde" is the moldes motor even when "motor" was left out (22/10)."""
+    spec = (_json(r["texto"]) if not r["erro"] else None) or {}
+    if isinstance(spec, dict) and spec.get("molde") and not spec.get("motor"):
+        spec["motor"] = "molde"
+    return spec if isinstance(spec, dict) else {}
+
+
+def telas_do_sistema() -> str:
+    """The real screens of the system the Designer may use (dark, whole, with the menu: decision #85), by path."""
+    pasta = PLUGINS / "conteudo" / "story" / "telas"
+    nomes = sorted(p.name for p in pasta.glob("*.jpg")) if pasta.exists() else []
+    if not nomes:
+        return ""
+    return ("## Telas reais do sistema (1440x900, tema escuro, inteiras com o menu)\n"
+            + "\n".join(f"- /a0/usr/plugins/conteudo/story/telas/{n}" for n in nomes)
+            + "\nPara mostrar o sistema use o molde lanca-app com \"aparelho\": \"computador\" (a câmera dá zoom no "
+              "\"destaque\" de cada tela, em % da tela); demonstracao é moldura de celular. Campo \"real\" pede "
+              "\"_origem\" com \"sistema\" (tela) ou \"dono\".\n\n")
+
+
+def _tarefa_correcao(spec: dict, falta: list) -> str:
+    """The second try: the template's schema, an example ficha (the Raiz's when there is one) and what failed."""
+    pasta = pasta_moldes() / str(spec.get("molde") or "") if pasta_moldes() else None
+    esquema = exemplo = ""
+    if pasta and (pasta / "esquema.json").exists():
+        esquema = (pasta / "esquema.json").read_text(encoding="utf-8")[:6000]
+        exemplos = sorted((pasta / "exemplos").glob("*.json"))
+        raiz = [e for e in exemplos if '"_marca": "raiz"' in e.read_text(encoding="utf-8")]
+        if raiz or exemplos:
+            exemplo = (raiz or exemplos)[0].read_text(encoding="utf-8")[:4000]
+    return (f"A ficha abaixo não passou nas regras do molde {spec.get('molde')}. Corrija TODOS os erros, respeitando "
+            f"os limites de letras do esquema, e devolva a ficha inteira (mesmo formato, com \"motor\": \"molde\"). "
+            f"Se este molde não serve para a ideia, troque por outro do catálogo.\n\n## Erros\n"
+            + "\n".join(f"- {f}" for f in falta)
+            + f"\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n## Esquema do molde\n{esquema}\n\n"
+            + (f"## Exemplo de ficha que passa\n{exemplo}\n\n" if exemplo else "") + telas_do_sistema()
+            + "Responda só com o JSON.")
+
+
 def desenhar(briefing, *, login: str = "matheus") -> dict:
     """A briefing (text or dict) turned into {"spec", "arquivos", "critica", "falta", "render"}: the spec for the
     engine, the rendered files when the engine runs here, the Crítico's verdict (always) and what is still missing."""
@@ -507,10 +550,12 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
                            f"{json.dumps(m.get('ficha', {}), ensure_ascii=False)}" for i, m in catalogo.items())
     tarefa = (f"Transforme o briefing numa ficha para o motor de render.\n\n{KIT}\n\n"
               f"## Cérebro da Raiz\n{ctx or '(indisponível: ' + nota + ')'}\n\n"
-              + (f"## Catálogo de moldes (só outras marcas)\n{linhas_cat}\n\n" if linhas_cat else "")
-              + "Responda só com o JSON da ficha.")
-    r = chamar("designer", tarefa, {"briefing": briefing} if isinstance(briefing, str) else briefing, login=login)
-    spec = (_json(r["texto"]) if not r["erro"] else None) or {}
+              + (f"## Catálogo de moldes\n{linhas_cat}\n\n" if linhas_cat else "")
+              + telas_do_sistema()
+              + "Responda só com o JSON da ficha, com \"motor\".")
+    material = {"briefing": briefing} if isinstance(briefing, str) else briefing
+    r = chamar("designer", tarefa, material, login=login)
+    spec = _spec(r)
     falta, arquivos, render = [], [], ""
     previa, narracao, folha = [], "", ""
     if r["erro"]:
@@ -519,6 +564,16 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
         falta.append("o designer não devolveu uma ficha legível")
     else:
         falta += _conferir_spec(spec)
+        # 22/10, first real run: fichas over the template's limits, "_origem" missing, telas without a file. The
+        # Designer gets the template's exact schema, an example and the errors, at most CORRECOES times.
+        for _ in range(CORRECOES):
+            if spec.get("motor") != "molde" or not any(f.startswith("ficha:") for f in falta):
+                break
+            r2 = chamar("designer", _tarefa_correcao(spec, falta), material, login=login)
+            novo = _spec(r2)
+            if not novo:
+                break
+            spec, falta = novo, _conferir_spec(novo)
         motor = spec.get("motor")
         if motor == "carrossel_raiz":
             render = (f"no repositório (sessão de operador): criar infra/reels/{spec.get('pasta') or 'c_<nome>'}/index.html "

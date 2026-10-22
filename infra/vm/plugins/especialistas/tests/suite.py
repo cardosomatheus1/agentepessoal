@@ -326,6 +326,36 @@ class Suite:
         self._designer(sem, json.dumps({"marca": "doces-da-lu", "motor": "molde", "molde": "frases", "ficha": {}}))
         ok(any("não existe no motor" in f for f in sem.desenhar("x")["falta"]), "sem motor")
 
+    def t_designer_corrige_a_ficha_com_o_esquema(self):
+        # 22/10, first real run: no "motor", texts over the limits; one correction round with the schema fixes it
+        reels = self._reels()
+        m = self._e(reels=reels)
+        m._pode_renderizar = lambda: ""
+        m.renderizar_molde = lambda molde, formato, ficha: ([], "")
+        respostas = [json.dumps({"marca": "raiz", "molde": "frases", "formato": "carrossel",
+                                 "ficha": {"_marca": "raiz", "pergunta": "x" * 30}}),
+                     json.dumps({"marca": "raiz", "molde": "frases", "formato": "carrossel",
+                                 "ficha": {"_marca": "raiz", "pergunta": "Quanto sobra?"}})]
+        chamadas = []
+
+        def chamar(papel, tarefa, material, login="matheus"):
+            chamadas.append((papel, tarefa))
+            texto = respostas.pop(0) if papel == "designer" else APROVA
+            return {"texto": texto, "erro": "", "imagens": [], "sem_imagem": []}
+        m.chamar = chamar
+        d = m.desenhar("Carrossel da Raiz")
+        eq(d["spec"]["motor"], "molde", "sem motor, mas com molde: é o motor de moldes")
+        eq(d["falta"], [], "a correção passou")
+        eq(d["spec"]["ficha"]["pergunta"], "Quanto sobra?", "ficha corrigida")
+        segunda = chamadas[1][1]
+        ok(chamadas[1][0] == "designer" and "pergunta: longo" in segunda and "Esquema do molde" in segunda
+           and '"max": 20' in segunda, segunda[:300])
+        # it gives up after CORRECOES tries and says what is still wrong
+        respostas[:] = [json.dumps({"molde": "frases", "ficha": {"pergunta": "x" * 30}})] * (m.CORRECOES + 1)
+        chamadas.clear()
+        d = m.desenhar("Carrossel da Raiz")
+        ok(sum(p == "designer" for p, _ in chamadas) == m.CORRECOES + 1 and "ficha: pergunta: longo" in d["falta"], d["falta"])
+
     def t_video_da_raiz_sai_so_previa_e_narracao(self):
         # decision #39: a narrated video goes to Matheus as audio first; the video is made only after he approves
         reels = self._reels()
