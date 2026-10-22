@@ -1224,7 +1224,8 @@ class Suite:
                 lead["historico"].append({"em": envio + 3600, "tipo": "etapa:respondeu", "texto": fala, "onde": "direct"})
             if i == 4:  # a robot, a like or a follow is not an answer
                 for nota in ("Olá! Mensagem automática: já já te respondemos", "Curtiu o comentário da @raiz.connect",
-                             "Começou a seguir a @raiz.connect (notificação de ontem)"):
+                             "Começou a seguir a @raiz.connect (notificação de ontem)", "",
+                             "Olá! Seja muito bem-vindo(a) à Marmifit! FALE COM A GENTE POR AQUI"):
                     lead["historico"].append({"em": envio + 60, "tipo": "etapa:respondeu", "onde": "direct", "texto": nota})
             p.salvar(LOGIN, d)
         t = p.desempenho_temas(p.carregar(LOGIN))
