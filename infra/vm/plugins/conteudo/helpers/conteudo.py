@@ -583,7 +583,10 @@ def material_do_video(item: dict, imagens: list | None = None, baixar=None) -> d
     capa = [i for i in (imagens or []) if i not in quadros][:1]
     ordem = (["capa"] if capa else []) + [f"segundo {t:.1f}" for t in tempos]
     return {"imagens": capa + quadros, "duracao_s": round(duracao, 1),
-            "quadros": "ordem das imagens: " + "; ".join(f"{n} = {o}" for n, o in enumerate(ordem, 1)),
+            "quadros": "ordem das imagens: " + "; ".join(f"{n} = {o}" for n, o in enumerate(ordem, 1))
+                        # 22/10: the same Reel passed and then failed for a voice 0.4 s ahead of a scene change
+                        + ". Os quadros são de instantes fixos: perto de uma troca de cena a fala pode adiantar ou "
+                          "atrasar até 1 s; desencontro é a tela errada durante a fala, não num instante de transição.",
             "narracao": narracao}
 
 

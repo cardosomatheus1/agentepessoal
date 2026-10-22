@@ -87,6 +87,7 @@ class Suite:
         m = c.material_do_video(reel, [], baixar=lambda chave, destino: baixados.append(chave) or shutil.copy(origem, destino))
         ok(baixados == ["conteudo/semana1/pov.mp4"], "baixa o vídeo do S3 uma vez")
         ok(len(m["imagens"]) == 6 and all(Path(i).exists() for i in m["imagens"]), f"6 quadros: {m['imagens']}")
+        ok("instante de transição" in m["quadros"], "o Crítico sabe que a troca de cena tem folga (22/10)")
         ok(m["quadros"].startswith("ordem das imagens: 1 = segundo 0.2") and "6 = segundo 3.4" in m["quadros"],
            f"a ordem e o segundo de cada quadro (o último perto do fim, onde fica a chamada): {m['quadros']}")
         ok(m["narracao"].startswith("[0.6s] Pediu pelo iFood?") and ouvidos[0].endswith("narracao.mp3"),
