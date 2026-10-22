@@ -1552,7 +1552,9 @@ TEMAS = {
               # "planilha", "caderno" or "de cabeça" alone are not this theme (the operation theme says them too): only
               # next to price, as in "o preço sai da planilha, do caderno ou de cabeça?"
               "rx": r"calculadora|precific|(chegam?|chega) (ao|no) pre[cç]o|(definem|calculam|fecham) o pre[cç]o|quanto sobra|"
-                    r"(planilha|caderno|de cabe[cç]a)[^.?!]{0,40}pre[cç]o|pre[cç]o[^.?!]{0,40}(planilha|caderno|de cabe[cç]a)",
+                    r"margem|lucro (de|em|por|no|na)|custo (de cada|por|do|da|dos|das|real)|"
+                    r"(planilha|caderno|de cabe[cç]a)[^.?!]{0,40}(pre[cç]o|custo|lucro|sobra)|"
+                    r"(pre[cç]o|custo|lucro)[^.?!]{0,40}(planilha|caderno|de cabe[cç]a)",
               "fala": "quanto sobra em cada produto e se o preço cobre custo, embalagem e taxa (a calculadora grátis)"},
     "ifood": {"nome": "pedidos do iFood entrando sozinhos",
               "rx": r"ifood|delivery|aplicativo de entrega|taxa do app",
@@ -1580,7 +1582,7 @@ GANCHO_TEMA = (("ifood", r"ifood|delivery"), ("producao", r"encomenda|produ[cç]
 
 def _sem_identidade(texto: str) -> str:
     """The message without the identity line ("…que calcula custo e preço…"), which alone is no theme."""
-    return re.sub(r"(calcula|sistema de) custos? e pre[cç]os?", "", str(texto or ""), flags=re.I)
+    return re.sub(r"(calcula|sistema de) custos?( e pre[cç]os?)?", "", str(texto or ""), flags=re.I)
 
 
 def temas_do_texto(texto: str) -> list:

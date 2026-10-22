@@ -1193,6 +1193,11 @@ class Suite:
            "ifood", "a apresentação sozinha não é tema")
         eq(p.tema_do_texto("Como vocês chegam no preço: planilha, caderno ou de cabeça?"), "preco", "pergunta de preço")
         eq(p.tema_do_texto("O preço do kit vocês fecham na planilha?"), "preco", "preço na planilha")
+        for frase in ("Vocês controlam o custo na planilha?", "Sabem a margem de cada marmita?", "Qual o lucro em cada bolo?",
+                      "O custo de cada produto sai de onde?"):
+            eq(p.tema_do_texto(frase), "preco", f"custo, margem e lucro também são o tema preço: {frase}")
+        eq(p.tema_do_texto("Sou o Matheus, da Raiz Connect, um sistema de custo pra quem produz comida. Vi o iFood!"), "ifood",
+           "a apresentação 'sistema de custo' sozinha não é tema")
         for k, v in p.TEMAS.items():  # what the tool tells the round to say about a theme never counts as another theme
             ok("preco" not in p.temas_do_texto(v["fala"]) or k == "preco", f"a fala do tema {k} não é de preço")
         pb = (RAIZ / "playbook.md").read_text(encoding="utf-8")
