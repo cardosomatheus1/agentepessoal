@@ -124,6 +124,8 @@ class Suite:
         ok("tela real" in st.validar({"layout": "bastidor", "manchete": "Bastidor"}), "bastidor pede tela real")
         ok("não encontrado" in st.validar({"layout": "post-novo", "manchete": "x", "imagem": "/nao/existe.jpg"}), "imagem existe")
         ok("desconhecidos" in st.validar({"layout": "dica", "manchete": "x", "script": "alert(1)"}), "campo estranho fora")
+        ok("emoji" in st.validar({"layout": "oferta", "preco": "R$ 197 😅"}), "o preço também passa pelas regras")
+        ok(st.validar({"layout": "oferta"}) == "", "oferta sem preço (os detalhes ficam no link da bio)")
         ok((RAIZ / "story" / "telas" / "curva-abc-custos.png").exists(), "há tela real para o bastidor")
         mau = {"layout": "dica", "manchete": "</script><script>fetch('file:///etc/passwd')</script>"}
         pagina = st.injetar((RAIZ / "story" / "story.html").read_text(encoding="utf-8"), mau)
