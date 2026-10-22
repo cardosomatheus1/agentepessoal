@@ -53,12 +53,14 @@ let h=`<div class="slide" data-rot="Frases de cliente"><div class="fundo-chat"><
   <h1>6 frases que quem produz comida já <span class="it">ouviu.</span></h1>
   <p style="margin-top:32px">E o que a gente pensa, mas não fala. <b>Conte quantas você já ouviu.</b></p>
   <div class="mini">${F.slice(0,3).map(f=>`<div>${f[0]}</div>`).join('')}</div>
+  <div style="margin-top:28px;font-size:24px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">Conversas encenadas com frases típicas</div>
  </div></div>`;
 F.forEach((f,i)=>{h+=`<div class="slide" data-rot="Frase ${i+1} de 6"><div class="fundo-chat"></div>
  <div class="area">
   ${cab(f[3],f[4],f[5],f[2])}
   <div class="bolha"><div class="t">${f[0]}</div><div class="h">${f[5]}</div></div>
   <div class="pensa"><div class="etq">O QUE A GENTE PENSA</div><div class="t">${f[1]}</div></div>
+  <div style="margin-top:28px;font-size:24px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">Conversa encenada · frase típica · bateria de paciência é brincadeira</div>
  </div></div>`});
 h+=`<div class="slide" data-rot="O que fica"><div class="fundo-chat"></div>
  <div class="area centro">

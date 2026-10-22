@@ -494,6 +494,7 @@ class Suite:
         ok(d["narracao"].endswith("narracao.m4a") and d["video_pendente"], d)
         eq(chamadas[1][2]["imagens"], [str(self.tmp / "prev.jpg")] + [str(q) for q in quadros], "o Crítico julga a prévia")
         ok("zoom" in chamadas[1][2]["como_ver_a_previa"], "ele sabe que o zoom não é recorte")
+        ok(m.MAX_IMAGENS >= 10, "um carrossel de até 10 slides chega inteiro ao Crítico (22/10: o 9º ficava de fora)")
         onze = [f"p{i:02d}.jpg" for i in range(1, 12)]
         vistos = m._quadros_para_o_critico(onze, "prev.jpg")
         ok(len(vistos) == m.MAX_IMAGENS and vistos[0] == "prev.jpg" and vistos[-1] == "p11.jpg" and vistos[1] == "p01.jpg",

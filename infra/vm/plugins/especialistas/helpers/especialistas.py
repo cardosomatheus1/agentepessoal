@@ -36,7 +36,7 @@ RAIZ = Path(__file__).resolve().parents[1]
 # next to this plugin (repository, live install); a staging copy alone in /tmp uses the installed ones
 PLUGINS = RAIZ.parent if (RAIZ.parent / "cerebro").exists() else Path("/a0/usr/plugins")
 TIPOS = ("post", "carrossel", "story", "reel", "oferta", "landing", "mensagem")  # story e reel: 22/10
-MAX_IMAGENS = 8
+MAX_IMAGENS = 10  # a carousel has up to 10 slides; at 8 the Crítico never saw the last ones (22/10)
 LADO_MAX = 1600
 MAX_MATERIAL = 12_000
 MAX_CRITERIOS = 3_000
