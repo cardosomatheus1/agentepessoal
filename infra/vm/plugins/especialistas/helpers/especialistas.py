@@ -472,14 +472,21 @@ def renderizar_molde(molde: str, formato: str, ficha: dict, previa: bool = False
 
 
 # Jargon the Crítico reproved three times in a row on 22/10: a term goes with its plain explanation (the brief's rule)
+PERTO = 120
 JARGAO = {"CMV": re.compile(r"custo d[aoe]s? (mercadoria|ingrediente|insumo|produto|que (você )?vend)|o quanto (do que|da venda)"
                             r"|quanto do faturamento|custo da comida", re.I)}
 
 
 def _jargao(texto: str) -> list[str]:
-    return [f"ficha: {termo} aparece sem explicação em palavras simples (ex.: \"{termo}, o custo dos ingredientes do "
-            f"que você vendeu\")" for termo, explica in JARGAO.items()
-            if re.search(rf"\b{termo}\b", texto) and not explica.search(texto)]
+    """The explanation must come with the first time the term appears (22/10: explained only on the last slide, the
+    Crítico still reproved), within PERTO letters of it."""
+    erros = []
+    for termo, explica in JARGAO.items():
+        primeira = re.search(rf"\b{termo}\b", texto)
+        if primeira and not explica.search(texto[max(0, primeira.start() - PERTO):primeira.end() + PERTO]):
+            erros.append(f"ficha: {termo} aparece sem explicação em palavras simples logo na primeira vez (ex.: "
+                         f"\"{termo}, o custo dos ingredientes do que você vendeu\")")
+    return erros
 
 
 def _conferir_spec(spec: dict) -> list[str]:
@@ -535,6 +542,16 @@ def _spec(r: dict, pedido: str = "") -> dict:
     return spec
 
 
+def _chamada_da_marca() -> str:
+    """The Raiz's final scene shows the brand's call to action; the last line of a narrated video says the same."""
+    try:
+        chamada = json.loads((pasta_moldes() / "marcas" / "raiz" / "marca.json").read_text(encoding="utf-8")).get("chamada")
+    except Exception:
+        return ""
+    return (f"A cena final da Raiz mostra a chamada \"{chamada}\": a última fala de um vídeo narrado diz isso (sem mandar "
+            "para outro lugar).\n\n") if chamada else ""
+
+
 def telas_do_sistema() -> str:
     """The real screens of the system the Designer may use (dark, whole, with the menu: decision #85), by path."""
     pasta = PLUGINS / "conteudo" / "story" / "telas"
@@ -577,15 +594,18 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
                             "avisos": []}}
     ctx, nota = contexto_raiz(limite=4000)
     catalogo = catalogo_moldes()
+    pedido = FORMATO_DO_BRIEFING.get(str(briefing.get("formato") or "").upper(), "") if isinstance(briefing, dict) else ""
+    if pedido:  # 22/10: shown the whole catalog it kept answering a carousel slot with a video template
+        catalogo = {i: m for i, m in catalogo.items() if pedido in m.get("formatos", [])}
     linhas_cat = "\n".join(f"- {i} ({', '.join(m.get('formatos', []))}): {m.get('situacao', '')} Ficha: "
                            f"{json.dumps(m.get('ficha', {}), ensure_ascii=False)}" for i, m in catalogo.items())
     tarefa = (f"Transforme o briefing numa ficha para o motor de render.\n\n{KIT}\n\n"
               f"## Cérebro da Raiz\n{ctx or '(indisponível: ' + nota + ')'}\n\n"
               + (f"## Catálogo de moldes\n{linhas_cat}\n\n" if linhas_cat else "")
-              + telas_do_sistema()
+              + telas_do_sistema() + _chamada_da_marca()
+              + (f"A vaga é de {pedido}: use só um molde da lista acima, com \"formato\": \"{pedido}\".\n" if pedido else "")
               + "Responda só com o JSON da ficha, com \"motor\".")
     material = {"briefing": briefing} if isinstance(briefing, str) else briefing
-    pedido = FORMATO_DO_BRIEFING.get(str(material.get("formato") or "").upper(), "")
     r = chamar("designer", tarefa, material, login=login)
     out = _volta(briefing, material, _spec(r, pedido), r, login)
     # 22/10: the Designer redoes the piece once with the Crítico's reasons before it goes to Matheus
@@ -645,8 +665,9 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
             "É a prévia de um vídeo narrado: a primeira imagem é a folha com um quadro de cada cena, as outras são cenas "
             "inteiras, sempre a do fim entre elas. Em cada tela do sistema, a tela entra inteira (tema escuro, com o menu) "
             "e depois a câmera aproxima o destaque, como o Matheus pediu (decisão #85: vídeo com zoom e movimento); o "
-            "quadro do zoom não é recorte. A narração são as \"falas\" da ficha, uma por cena, na ordem das cenas; o "
-            "áudio vai ao Matheus antes do vídeo (decisão #39).")
+            "quadro do zoom não é recorte. A narração são as \"falas\" da ficha, uma por cena, na ordem das cenas. Esta "
+            "revisão é a etapa ANTES do Matheus: depois dela ele ouve o áudio e só então o vídeo é feito (decisão #39); "
+            "não reprove por falta da aprovação dele.")
     tipo = ("carrossel" if formato == "carrossel" or spec.get("motor") == "carrossel_raiz"
             else "reel" if formato == "reel" else "post")
     critica = criticar(tipo, julgar, login=login)

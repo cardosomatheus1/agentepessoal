@@ -275,7 +275,9 @@ def main():
             amostras = []
             for i in range(N):
                 ini, fim = S[i], S[i + 1]
-                amostras += [(i, round(ini + (fim - ini) * 0.6, 3), True), (i, round(max(ini, fim - 0.08), 3), False)]
+                # the picture of each scene is its last moment, with everything on screen (22/10: at 60% the Crítico
+                # saw a step still sliding in and read it as cut text)
+                amostras += [(i, round(ini + (fim - ini) * 0.6, 3), False), (i, round(max(ini, fim - 0.08), 3), True)]
             antes = set()
             for i, t, foto in amostras:
                 pg.evaluate(f"render({t})")
@@ -283,7 +285,7 @@ def main():
                     for x in pg.evaluate("Motor.conferir()"): rel["problemas"].append({"cena": i + 1, "t": t, "msg": x})
                     # reading time (AR Board 13/10, 'como pedir': "rápido demais, nem deu pra ler"): without narration,
                     # a scene must last 0.8 s + 0.25 s per word that appeared in it (about 240 words a minute)
-                    if not foto and not tempos and i < N - 1:
+                    if foto and not tempos and i < N - 1:  # the end of the scene
                         agora = set(pg.evaluate("Motor.textosVisiveis()"))
                         palavras = palavras_novas(agora, antes)
                         minimo = 0.8 + 0.25 * palavras

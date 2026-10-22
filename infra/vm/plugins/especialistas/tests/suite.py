@@ -366,6 +366,7 @@ class Suite:
         m = self._e()
         ok(m._jargao("Seu CMV está alto") and "CMV" in m._jargao("Seu CMV está alto")[0], "CMV sozinho")
         eq(m._jargao("CMV, o custo dos ingredientes do que você vendeu"), [], "CMV explicado")
+        ok(m._jargao("Seu CMV está alto. " + "x" * 200 + " CMV é o custo dos ingredientes"), "explicado só lá no fim não vale")
         # the template refuses only when rendering (a video too short): the Designer fixes it like a ficha error
         reels = self._reels()
         m = self._e(reels=reels)
@@ -406,7 +407,11 @@ class Suite:
             return {"texto": json.dumps(fichas.pop(0)) if papel == "designer" else APROVA, "erro": "", "imagens": [],
                     "sem_imagem": []}
         m.chamar = chamar
+        (reels / "moldes" / "catalogo.json").write_text(json.dumps({"moldes": [
+            {"id": "frases", "formatos": ["carrossel", "reel"], "situacao": "Frases", "ficha": {}},
+            {"id": "so-video", "formatos": ["reel"], "situacao": "Só vídeo", "ficha": {}}]}))
         d = m.desenhar({"formato": "CARROSSEL", "titulo": "x", "ideia": "y"})
+        ok("so-video" not in chamadas[0][1] and "- frases" in chamadas[0][1], "só os moldes que fazem carrossel")
         ok("a vaga da semana é 'carrossel'" in chamadas[1][1], chamadas[1][1][:200])
         eq((d["spec"]["formato"], d["falta"]), ("carrossel", []), "corrigido para carrossel")
 
