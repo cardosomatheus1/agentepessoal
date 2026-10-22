@@ -6,6 +6,10 @@ corretamente"). Este arquivo é **insumo**: as Story Cards, os ids, o encaixe no
 espelho no Linear são feitos pelo orquestrador do NEXOS pelas regras do repositório dele (STORY_CARD_STANDARD,
 `build_state.py`, `/sync-linear`). Nada aqui autoriza pular gate, piloto ou ação governada.
 
+**Atualizado em 22/10/2026** (Matheus: "Atualize"): motor no commit `474feda` (render no runtime sem Playwright, tela
+do sistema inteira, estilo kit, fontes novas), o Crítico como ele julga hoje e o ciclo Designer ↔ Crítico que o agente
+usa na criação (seções 4, 4.1 e 6). Até 22/10 nenhuma Story do Criador existia no NEXOS nem no Linear.
+
 ## 1. O que é (uma frase)
 
 Uma página do NEXOS onde o dono do restaurante faz sozinho um vídeo vertical de divulgação: põe a logo e 2 cores,
@@ -43,12 +47,15 @@ escreve uma frase do que quer, escolhe 1 de 3 Moldes sugeridos, recebe o vídeo 
 ## 4. O motor (o que já existe e está provado)
 
 Código (Python + JS, sem dependência paga): repositório `cardosomatheus1/agentepessoal`, branch `ccr-bcbe3101-9u4klv`,
-commit `c3e618c37da2d526a09181d9c5f07e7fb1bfb0b2`, pasta `infra/reels/moldes/`.
-https://github.com/cardosomatheus1/agentepessoal/tree/c3e618c37da2d526a09181d9c5f07e7fb1bfb0b2/infra/reels/moldes
+commit `474feda0d819caf9a9abec5e71c531cbf7a43b04`, pasta `infra/reels/moldes/`.
+https://github.com/cardosomatheus1/agentepessoal/tree/474feda0d819caf9a9abec5e71c531cbf7a43b04/infra/reels/moldes
 
 Pacotes prontos (mesma conta AWS do NEXOS):
-- `s3://agentepessoal-backup-964862484412/nexos/criador-videos/moldes-codigo-c3e618c.tgz` (34 MB; `infra/reels/moldes`
-  versionado + `docs/MOLDES_VIDEO.md` + `calibracao/moldes` + `GLOSSARY.md`; sha256 começa com `8e18e79d6c347081`).
+- `s3://agentepessoal-backup-964862484412/nexos/criador-videos/moldes-codigo-474feda.tgz` (35 MB; `infra/reels/moldes`
+  versionado + `docs/MOLDES_VIDEO.md` + `calibracao/moldes` + `GLOSSARY.md` + o Crítico e o Designer do agente
+  (`infra/vm/plugins/especialistas/helpers/especialistas.py`) e o ciclo de conferência
+  (`infra/vm/plugins/conteudo/helpers/conteudo.py`, `semana.py`); sha256 começa com `c78cfc67e1db552f`). O pacote
+  antigo `moldes-codigo-c3e618c.tgz` fica só de histórico: não use.
 - `s3://agentepessoal-backup-964862484412/nexos/criador-videos/moldes-midia.tgz` (487 MB; `midia/filmagem` e
   `midia/fotos`: banco de filmagens/fotos de reserva geradas por nós; sha256 começa com `4cadd7e6b55af569`).
 - Este arquivo: `s3://agentepessoal-backup-964862484412/nexos/criador-videos/CRIADOR_VIDEOS_HANDOFF.md`.
@@ -75,8 +82,47 @@ Como funciona:
   Board) mora hoje no agente: `infra/vm/plugins/especialistas/helpers/especialistas.py`; no NEXOS vira um
   SemanticDecision com os critérios da seção 6 como calibração.
 - **Testes existentes**: `motor/test_validar.py`, `test_voz.py`, `test_audio.py`, `test_gerar_foto.py`.
+- **Mudanças de 21 a 22/10 que importam para o NEXOS** (`git diff c3e618c 474feda -- infra/reels/moldes`):
+  - `render.py` roda também com **patchright** (o runtime do servidor não tem Playwright) e avalia o Molde no mundo
+    da página; antes todo render no servidor parava em 60 s. Teste: `motor/test_patchright.py`.
+  - Tela de sistema/app é mostrada **sempre inteira**, nunca recortada para encher a caixa (decisão do Matheus #85;
+    `_telasInteiras` em `motor.js`). Para o NEXOS vale para foto de cardápio ou print que o cliente subir.
+  - Estilo **kit** (fontes Manrope e Instrument Serif, OFL, em `motor/fontes`), logo sem textos de produto.
+  - Prévia por cena usa o quadro do **fim** da cena (onde o texto já entrou), não o do começo.
+  - `motor/credencial_voz.py`: a voz usa credencial curta própria; o render não depende da credencial do agente.
 - **Voz**: Amazon Nova 2 Sonic, voz Carolina (`motor/voz_sonic.mjs`). O texto antigo cita Polly; vale Sonic.
 - **Licenças**: músicas só CC0 (`motor/musica/licencas.json`), fontes só OFL (`motor/fontes`), filmagens geradas por nós.
+
+### 4.1 Crítico e ciclo de criação, como funcionam no agente desde 22/10
+
+**Crítico** (`criticar(tipo, material)` em `especialistas.py`): modelo separado, que vê as imagens renderizadas (até 10
+por chamada, um carrossel inteiro) e o texto, e responde só JSON `{veredito: aprova|reprova, motivos, sugestoes}`;
+resposta ilegível = reprova (falha fechada). Regras de julgamento ajustadas pelo Matheus em 22/10 ("o crítico q ta
+pegando demais"):
+- **Reprova só por:** regra do Matheus quebrada (decisão, AR Board, Cérebro da marca), informação falsa ou sem origem,
+  texto cortado ou ilegível que ele viu na imagem, promessa que o produto não cumpre, ideia mole ou genérica.
+- **Vai em sugestões, não reprova:** melhoria, gosto, "pode ser entendido como…"; peça curta que não traz a oferta
+  inteira (story/quiz mostram uma parte; o resto está no link).
+- Antes de reprovar por algo da imagem, olha de novo e cita o slide e o texto exato; o que não confirmou não é motivo.
+- Fala e troca de cena podem desencontrar até 1 s sem reprovar.
+- **Crítico fora do ar não é reprovação:** tenta de novo; nunca libera sem veredito.
+- Lê o Cérebro da marca inteiro (a oferta era cortada em ~1000 letras) e os critérios do AR Board.
+
+**Designer ↔ Crítico** (`revisar(...)`, `REVISOES = 2`): o Designer escolhe o Molde do formato pedido, escreve a Ficha,
+renderiza, vê as próprias imagens, manda ao Crítico e corrige pelos motivos até 2 vezes antes de entregar. A recusa do
+Molde na hora do render (ex.: vídeo curto demais para as falas) entra na correção como mais um motivo.
+
+**Reprovado é refeito na criação, não na hora de publicar** (Matheus, 22/10: "Se o crítico rejeita, automaticamente
+deveria ser refeito, e não logo antes de postar, durante a etapa de criação"): `conferir_antes` julga cada peça assim
+que é criada (até 36 h antes), refaz sozinho até 2 vezes (`REFAZER_MAX`, `REFAZER_STORY`) e, se ainda reprovar, avisa
+com antecedência. A aprovação vale para aqueles arquivos e aquele texto (hash `impressao`): mudou um arquivo, julga de
+novo.
+
+**Como isso encaixa no NEXOS (V4):** o mesmo desenho, com o cliente no lugar do Matheus: o cliente nunca vê vídeo
+reprovado; a Q15 dele continua valendo (reprovou → refaz 1 vez → reprovou de novo → oferece outro Molde), e as
+correções internas Designer ↔ Crítico acontecem antes dessa refação, sem o cliente esperar a mais do que o limite de
+tempo da página. O Crítico vira um SemanticDecision (proposta/evidência, nunca autoridade), com as regras acima e a
+seção 6 como calibração; "Crítico fora do ar" = estado de espera visível, nunca vídeo liberado sem veredito.
 
 Custo por vídeo (medido no agente): Ficha por modelo barato (centavos) + voz ~US$ 0,02/min + foto de fundo só se
 faltar (gpt-image-2 ~US$ 0,06 ou Stability ~US$ 0,04) + render grátis (servidor próprio) = **abaixo de US$ 0,15**.
@@ -134,7 +180,11 @@ com começo, meio e fim. 9. Logo é do negócio do post. 10. História com concl
 produto. 12. Não alongar o que é só informação. 13. Molde que fala com o dono só com dor que o anunciante resolve.
 Da rodada de lançamento (14/10): voz Carolina em todos; no manifesto, tirar a contagem "1 2 3 4".
 Rodadas e vereditos no AR Board: https://claude.ai/artifact/7LFmwYACCRBHspUv9QGwcx (rodada `moldes-2026-10-21-onda3`,
-30 Moldes novos, ainda sem julgamento; vale Q13).
+30 Moldes novos, ainda sem julgamento em 22/10; vale Q13: entram, mas sem crivo dele, então na sugestão ficam atrás
+dos já aprovados até ele julgar).
+Regras que o Matheus deu em 22/10 para os posts da Raiz e que valem para qualquer Molde: tela do sistema/app inteira
+(#85); a fala final e a legenda levam à oferta com um passo concreto; termo técnico (ex.: CMV) é explicado na primeira
+vez que aparece; logo sem texto de produto.
 
 ## 7. Fronteiras (não fazer)
 
