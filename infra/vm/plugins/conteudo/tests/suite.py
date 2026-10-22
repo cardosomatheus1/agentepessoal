@@ -164,6 +164,19 @@ class Suite:
         c.rodar(api2, lambda t: None, _ts(c, "2026-10-17", "09:01"))
         criar = [x for x in api2.chamadas if x[0] == "POST" and x[1] == "IG1/media"][0][2]
         ok(criar.get("video_url", "").startswith("https://s3/conteudo/s/v.mp4"), "story em vídeo vai como video_url")
+        # replanejar e adiar respeitam as duas vagas: post e story no mesmo dia não é choque
+        c.AUTOR["quem"] = "operador: teste"
+        try:
+            c.agendar([dict(CARR, id="feed-18", data="2026-10-18")], agora)
+            r = c.replanejar([{"id": "feed-18", "data": "2026-10-16"}], agora)  # o dia 16 já tem story (s3)
+            ok(r["ok"], f"post vai para dia que só tem story: {r}")
+            r = c.replanejar([{"id": "s3", "data": "2026-10-14"}], agora)
+            ok(not r["ok"] and "dois stories" in r["erro"], f"dois stories no mesmo dia, não: {r}")
+            ok("2026-10-17" in c.adiar_a_partir("2026-10-16", 1, agora)["erro"], "story não cai em dia com story publicado")
+            r = c.adiar_a_partir("2026-10-16", 2, agora)
+            ok(r["ok"] and set(r["movidos"].values()) == {"2026-10-18"}, f"post e story vão juntos para o mesmo dia: {r}")
+        finally:
+            c.AUTOR["quem"] = "agente"
 
     def t_agendar_um_por_dia_e_tudo_ou_nada(self):
         c = _modulo()

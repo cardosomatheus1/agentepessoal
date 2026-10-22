@@ -250,9 +250,10 @@ def adiar_a_partir(data: str, dias: int = 1, agora: float | None = None) -> dict
     with _exclusivo():
         d = carregar()
         mover = [i for i in d["itens"] if i["estado"] == "pendente" and i["data"] >= inicio.isoformat()]
-        fixos = {i["data"] for i in d["itens"] if i not in mover and i["estado"] not in ("cancelada", "falhou")}
+        # one feed post and one story a day: a moved item only collides with a fixed one of the same slot
+        fixos = {(i["data"], canal(i)) for i in d["itens"] if i not in mover and i["estado"] not in ("cancelada", "falhou")}
         novas = {i["id"]: (dt.date.fromisoformat(i["data"]) + dt.timedelta(days=int(dias))).isoformat() for i in mover}
-        choque = sorted(set(novas.values()) & fixos)
+        choque = sorted({data for data, can in {(novas[i["id"]], canal(i)) for i in mover} & fixos})
         if choque:
             return {"ok": False, "erro": f"cairia em dia já ocupado: {', '.join(choque)}"}
         for i in mover:
@@ -294,9 +295,11 @@ def replanejar(mudancas: list, agora: float | None = None) -> dict:
             final = novo.get(i["id"], i)
             if final["estado"] in ("cancelada", "falhou"):
                 continue
-            if final["data"] in dias:
-                return {"ok": False, "erro": f"dois posts em {final['data']}: {dias[final['data']]} e {i['id']}"}
-            dias[final["data"]] = i["id"]
+            vaga = (final["data"], canal(final))  # one feed post and one story a day
+            if vaga in dias:
+                return {"ok": False, "erro": f"dois {'stories' if vaga[1] == 'story' else 'posts'} em {final['data']}: "
+                                             f"{dias[vaga]} e {i['id']}"}
+            dias[vaga] = i["id"]
         for i in d["itens"]:
             if i["id"] not in novo:
                 continue
