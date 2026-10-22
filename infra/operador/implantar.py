@@ -143,7 +143,7 @@ def calibracao(args: list) -> None:
 
 MOLDES = "infra/reels/moldes"
 MOLDES_VM = "/opt/a0/usr/moldes"  # /a0/usr/moldes in the container: rendered by plugins/conteudo (22/10)
-MOLDES_TESTES = ("motor/test_validar.py", "motor/test_audio.py", "motor/test_voz.py")
+MOLDES_TESTES = ("motor/test_validar.py", "motor/test_audio.py", "motor/test_voz.py", "motor/test_patchright.py")
 
 
 def comando_moldes(head: str, chave: str, quando: str) -> str:

@@ -29,8 +29,22 @@ def sync_playwright():
     try:
         from playwright.sync_api import sync_playwright as sp
     except ImportError:
-        from patchright.sync_api import sync_playwright as sp
+        from patchright.sync_api import Page, sync_playwright as sp
+        _mundo_da_pagina(Page)
     return sp()
+
+
+def _mundo_da_pagina(Page):
+    """patchright evaluates in an isolated world by default (22/10: the motor never saw window.MOTOR_PRONTO and every
+    render on the VM stopped at 60 s); the templates live in the page's own world, so evaluate there."""
+    if getattr(Page.evaluate, "_mundo_da_pagina", False):
+        return
+    original = Page.evaluate
+
+    def evaluate(self, expression, arg=None, *, isolated_context=False):
+        return original(self, expression, arg, isolated_context=isolated_context)
+    evaluate._mundo_da_pagina = True
+    Page.evaluate = evaluate
 
 
 def chrome():
