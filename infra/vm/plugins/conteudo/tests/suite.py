@@ -127,11 +127,9 @@ class Suite:
         ok((RAIZ / "story" / "telas" / "curva-abc-custos.png").exists(), "há tela real para o bastidor")
         if not st._chrome():
             return  # without a browser the drawing is checked on the VM
-        try:
-            from PIL import Image
-            import playwright  # noqa: F401
-        except ImportError:
-            return
+        import importlib.util as iu
+        from PIL import Image
+        ok(iu.find_spec("playwright") or iu.find_spec("patchright"), "há playwright ou patchright para desenhar")
         saida = Path(tempfile.mkdtemp()) / "dica.jpg"
         st.renderizar({"layout": "bastidor", "manchete": "Pra onde vai o seu dinheiro?", "destaque": "seu dinheiro",
                        "tela": str(RAIZ / "story" / "telas" / "curva-abc-custos.png"),

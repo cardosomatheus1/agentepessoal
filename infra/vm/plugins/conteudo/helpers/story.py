@@ -83,7 +83,10 @@ def renderizar(campos: dict, saida: str) -> str:
 
 def _desenhar(campos: dict, saida: str) -> str:
     from PIL import Image
-    from playwright.sync_api import sync_playwright
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:  # Agent Zero's own browser runs on patchright, the same API (22/10: no playwright there)
+        from patchright.sync_api import sync_playwright
 
     trabalho = Path(tempfile.mkdtemp(prefix="story_"))
     try:
