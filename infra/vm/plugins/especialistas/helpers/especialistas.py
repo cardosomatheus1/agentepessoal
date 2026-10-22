@@ -30,7 +30,7 @@ TEMPO = 120
 RAIZ = Path(__file__).resolve().parents[1]
 # next to this plugin (repository, live install); a staging copy alone in /tmp uses the installed ones
 PLUGINS = RAIZ.parent if (RAIZ.parent / "cerebro").exists() else Path("/a0/usr/plugins")
-TIPOS = ("post", "carrossel", "story", "oferta", "landing", "mensagem")  # story: 22/10, um por dia
+TIPOS = ("post", "carrossel", "story", "reel", "oferta", "landing", "mensagem")  # story e reel: 22/10
 MAX_IMAGENS = 8
 LADO_MAX = 1600
 MAX_MATERIAL = 12_000
@@ -38,6 +38,7 @@ MAX_CRITERIOS = 3_000
 EXT_IMAGEM = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
 # which AR Board agent's criteria judge each kind of piece
 CRITERIOS_POR_TIPO = {"post": ("conteudo", "moldes"), "carrossel": ("conteudo", "moldes"), "story": ("conteudo", "moldes"),
+                      "reel": ("conteudo", "moldes"),
                       "oferta": ("conteudo",),
                       "landing": ("conteudo",), "mensagem": ("prospeccao",)}
 MOTORES = ("carrossel_raiz", "video_kit_raiz", "molde")
@@ -377,7 +378,9 @@ KIT = """Motores de render que existem (escolha um em "motor"):
   "molde" (id do catálogo), "formato" (carrossel|reel|story, um dos formatos do molde), "ficha" (os campos do esquema
   do molde, com "_marca" e "_origem" para dado real; Reel narrado leva "falas", lidas pela voz Carolina).
   Tela do sistema: só as telas reais, escuras e inteiras de /a0/usr/plugins/conteudo/story/telas/ (no molde
-  lanca-app/demonstracao, a câmera dá zoom no "destaque" da tela).
+  lanca-app/demonstracao, a câmera dá zoom no "destaque" da tela); toda peça com tela diz "valores de exemplo" (campo
+  nota do molde, ou no texto do slide/legenda), e cada fala mostra a tela que prova o que ela diz.
+  Termo técnico (CMV, ficha técnica, DRE) vem explicado em palavras simples na primeira vez.
 Sempre: "marca" ("raiz" ou a pasta da outra marca), "formato" (carrossel|reel|story), "conceito"."""
 
 
@@ -493,7 +496,8 @@ def _conferir_spec(spec: dict) -> list[str]:
     return problemas
 
 
-CORRECOES = 2
+CORRECOES = 3
+REVISOES = 1
 
 
 def _spec(r: dict) -> dict:
@@ -528,7 +532,7 @@ def _tarefa_correcao(spec: dict, falta: list) -> str:
         if raiz or exemplos:
             exemplo = (raiz or exemplos)[0].read_text(encoding="utf-8")[:4000]
     return (f"A ficha abaixo não passou nas regras do molde {spec.get('molde')}. Corrija TODOS os erros, respeitando "
-            f"os limites de letras do esquema, e devolva a ficha inteira (mesmo formato, com \"motor\": \"molde\"). "
+            f"os limites de letras do esquema (deixe cada texto uns 10% abaixo do máximo: contar letras é fácil de errar), e devolva a ficha inteira (mesmo formato, com \"motor\": \"molde\"). "
             f"Se este molde não serve para a ideia, troque por outro do catálogo.\n\n## Erros\n"
             + "\n".join(f"- {f}" for f in falta)
             + f"\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n## Esquema do molde\n{esquema}\n\n"
@@ -555,7 +559,24 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
               + "Responda só com o JSON da ficha, com \"motor\".")
     material = {"briefing": briefing} if isinstance(briefing, str) else briefing
     r = chamar("designer", tarefa, material, login=login)
-    spec = _spec(r)
+    out = _volta(briefing, material, _spec(r), r, login)
+    # 22/10: the Designer redoes the piece once with the Crítico's reasons before it goes to Matheus
+    for _ in range(REVISOES):
+        spec = out["spec"]
+        if out["critica"]["veredito"] != "reprova" or spec.get("motor") != "molde":
+            break
+        r = chamar("designer", _tarefa_revisao(spec, out["critica"]), material, login=login)
+        novo = _spec(r)
+        if not novo:
+            break
+        anteriores = out.get("revisoes", []) + [out["critica"]["motivos"]]
+        out = _volta(briefing, material, novo, r, login)
+        out["revisoes"] = anteriores
+    return out
+
+
+def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
+    """One round: check the ficha (with up to CORRECOES fixes against the template's schema), render it, judge it."""
     falta, arquivos, render = [], [], ""
     previa, narracao, folha = [], "", ""
     if r["erro"]:
@@ -605,13 +626,24 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
                     falta.append("a prévia do vídeo não saiu")
     formato = str(spec.get("formato") or "").lower()
     imagens = previa[:10] if previa else [a for a in arquivos if Path(a).suffix.lower() in EXT_IMAGEM]
-    material = {"briefing": briefing, "ficha": spec or r["texto"] or "(vazia)", "problemas": falta,
-                "imagens": imagens}
-    critica = criticar("carrossel" if formato == "carrossel" or spec.get("motor") == "carrossel_raiz" else "post",
-                       material, login=login)
+    julgar = {"briefing": briefing, "ficha": spec or r["texto"] or "(vazia)", "problemas": falta, "imagens": imagens}
+    tipo = ("carrossel" if formato == "carrossel" or spec.get("motor") == "carrossel_raiz"
+            else "reel" if formato == "reel" else "post")
+    critica = criticar(tipo, julgar, login=login)
     if not spec and critica["veredito"] == "aprova":  # nothing to approve: fail closed
         critica = {**critica, "veredito": "reprova", "motivos": ["sem ficha do designer"] + critica["motivos"]}
     out = {"spec": spec, "arquivos": arquivos, "critica": critica, "falta": falta, "render": render}
     if previa:
         out.update(previa=previa, folha=folha, narracao=narracao, video_pendente=not falta)
     return out
+
+
+def _tarefa_revisao(spec: dict, critica: dict) -> str:
+    """The Crítico reproved: the same piece redone with his reasons (concept or template may change)."""
+    return ("O Crítico reprovou a peça abaixo. Refaça a ficha resolvendo cada motivo (pode trocar o conceito ou o molde "
+            "se o problema for esse) e devolva a ficha inteira em JSON, com \"motor\".\n\n## Motivos do Crítico\n"
+            + "\n".join(f"- {m}" for m in critica.get("motivos") or [])
+            + ("\n\n## Sugestões dele\n" + "\n".join(f"- {m}" for m in critica.get("sugestoes") or [])
+               if critica.get("sugestoes") else "")
+            + f"\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n{KIT}\n\n" + telas_do_sistema()
+            + "Responda só com o JSON.")

@@ -357,6 +357,31 @@ class Suite:
         d = m.desenhar("Carrossel da Raiz")
         ok(sum(p == "designer" for p, _ in chamadas) == m.CORRECOES + 1 and "ficha: pergunta: longo" in d["falta"], d["falta"])
 
+    def t_designer_refaz_com_os_motivos_do_critico(self):
+        # 22/10: the agent makes the posts by itself, so a reproved piece is redone once before it reaches Matheus
+        reels = self._reels()
+        m = self._e(reels=reels)
+        m._pode_renderizar = lambda: ""
+        m.renderizar_molde = lambda molde, formato, ficha: ([], "")
+        fichas = [{"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel",
+                   "ficha": {"_marca": "raiz", "pergunta": "CMV alto?"}},
+                  {"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel",
+                   "ficha": {"_marca": "raiz", "pergunta": "Custo alto?"}}]
+        vereditos = [json.dumps({"veredito": "reprova", "motivos": ["CMV sem explicação"], "sugestoes": ["explique"]}), APROVA]
+        chamadas = []
+
+        def chamar(papel, tarefa, material, login="matheus"):
+            chamadas.append((papel, tarefa))
+            texto = json.dumps(fichas.pop(0)) if papel == "designer" else vereditos.pop(0)
+            return {"texto": texto, "erro": "", "imagens": [], "sem_imagem": []}
+        m.chamar = chamar
+        d = m.desenhar("Carrossel da Raiz")
+        eq([p for p, _ in chamadas], ["designer", "critico", "designer", "critico"], "uma revisão")
+        ok("CMV sem explicação" in chamadas[2][1] and "explique" in chamadas[2][1], "o Designer recebe os motivos")
+        eq(d["critica"]["veredito"], "aprova", "a versão revisada é a que vale")
+        eq(d["spec"]["ficha"]["pergunta"], "Custo alto?", "ficha nova")
+        eq(d["revisoes"], [["CMV sem explicação"]], "fica registrado o que foi corrigido")
+
     def t_video_da_raiz_sai_so_previa_e_narracao(self):
         # decision #39: a narrated video goes to Matheus as audio first; the video is made only after he approves
         reels = self._reels()
