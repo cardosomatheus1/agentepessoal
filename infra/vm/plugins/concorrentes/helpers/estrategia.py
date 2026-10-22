@@ -134,6 +134,8 @@ def _anuncio(item: dict, agora: float) -> dict:
     sn = item.get("snapshot") if isinstance(item.get("snapshot"), dict) else {}
     corpo = sn.get("body")
     corpo = corpo.get("text") if isinstance(corpo, dict) else corpo
+    if re.fullmatch(r"\s*(\{\{[^}]*\}\}\s*)+", str(corpo or "")):  # catalog ad: the text is a template ({{product.brand}})
+        corpo = ""
     inicio = item.get("start_date")
     dias = int((agora - float(inicio)) // 86400) if isinstance(inicio, (int, float)) and inicio > 0 else None
     return {"id": str(item.get("ad_archive_id") or "")[:40], "inicio": str(item.get("start_date_formatted") or "")[:10],
@@ -174,6 +176,8 @@ def ler_anuncios(lista: list, agora: float) -> dict:
         vistos, anuncios = set(), []
         for i in meus:
             a = _anuncio(i, agora)
+            if not (a["texto"] or a["titulo"]):
+                continue
             chave = a["texto"][:120] or a["id"]
             if chave in vistos:  # the same ad in several versions/placements
                 continue
@@ -217,7 +221,7 @@ Regras:
  "publico": "para quem ele fala",
  "cta": "o que ele pede para a pessoa fazer",
  "campanhas": ["campanha ou lançamento novo, com onde apareceu", ...],
- "anuncios": "quantos anúncios ativos, o que o mais antigo diz (anúncio que roda há muito tempo costuma ser o que vende)",
+ "anuncios": "quantos anúncios ativos, o que o mais antigo diz (anúncio que roda há muito tempo costuma ser o que vende); sem anúncio nos dados: 'nenhum anúncio ativo achado com o nome exato' (não quer dizer que não anuncie)",
  "mudou": ["o que mudou em relação à semana passada", ...],
  "disputa_com_a_raiz": "onde ele disputa diretamente o cliente da Raiz (ou vazio)",
  "evidencias": ["link do post, anúncio ou página que sustenta o que você disse", ...]}}

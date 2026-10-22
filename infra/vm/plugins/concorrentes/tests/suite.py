@@ -540,6 +540,8 @@ class Suite:
                      "start_date_formatted": "2026-05-16", "ad_library_url": "https://www.facebook.com/ads/library/?id=1",
                      "snapshot": {"body": {"text": "A melhor ferramenta para controlar o CMV"}, "cta_text": "Learn more",
                                   "display_format": "VIDEO"}},
+                    {"page_name": "Saipos", "page_id": "123456", "ad_archive_id": "3",
+                     "snapshot": {"body": {"text": "{{product.brand}}"}, "display_format": "DCO"}},
                     {"page_name": "Tocco Pizza Chicken", "page_id": "999", "ad_archive_id": "2",
                      "snapshot": {"body": {"text": "Peça pela Saipos"}}}]
         e.apify = apify
