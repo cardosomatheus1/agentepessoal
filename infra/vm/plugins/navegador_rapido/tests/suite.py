@@ -835,6 +835,42 @@ class Suite:
 
             eq(await d.salvar(Quebrado(), pasta, reg), None, "falha no download não derruba o navegador")
 
+    async def t_aba_fechada(self):
+        c = _correcoes()
+        # 22/10 00:50, O63yoYaG (portal da 99): navigate numa aba que já tinha sido fechada ("Browser 73 is not open.")
+        url = "https://developer-food.99app.com/pt-BR/app/application/details?app_id=5764607753832630362"
+        args = {"action": "navigate", "browser_id": 73, "url": url}
+        nota = c.aba_fechada(args, [])
+        eq(args, {"action": "open", "url": url}, "navigate em aba fechada abre a página numa aba nova")
+        ok("73" in nota and "nova" in nota, f"e diz que a aba tinha fechado: {nota}")
+        args = {"action": "navigate", "browser_id": "browser-57", "url": "https://developer-food.99app.com/pt-BR/openapi"}
+        c.aba_fechada(args, [58])
+        eq(args["action"], "open", "id no formato browser-N também")
+        # 21/10 21:31, A0UP1Tsp: content numa aba fechada ("Browser 77 is not open."): a página sumiu, nada de trocar
+        # de aba às escuras; a dica diz quais estão abertas e o que fazer
+        args = {"action": "content", "browser_id": 77}
+        nota = c.aba_fechada(args, [78, 80])
+        eq(args, {"action": "content", "browser_id": 77}, "content fica como está")
+        ok("77" in nota and "78, 80" in nota and "open" in nota, f"dica com as abas abertas: {nota}")
+        ok("nenhuma" in c.aba_fechada({"action": "click", "browser_id": 83, "ref": 4}, []), "sem aba aberta")
+        args = {"action": "navigate", "browser_id": 74, "url": url}
+        eq(c.aba_fechada(args, [74]), "", "aba aberta: nada muda")
+        eq(args["action"], "navigate", "aba aberta segue navigate")
+        eq(c.aba_fechada({"action": "navigate", "url": url}, []), "", "sem browser_id: a ferramenta decide")
+        eq(c.aba_fechada({"action": "open", "browser_id": 9, "url": url}, []), "", "open não usa browser_id")
+
+        class Core:
+            iniciado = False
+
+            async def ensure_started(self):
+                Core.iniciado = True
+
+            def _context_browser_ids(self):
+                return [78, 80] if Core.iniciado else []
+
+        c._abas(Core)
+        eq(await Core().a0_abas(), [78, 80], "o servidor diz as abas abertas da conversa")
+
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:

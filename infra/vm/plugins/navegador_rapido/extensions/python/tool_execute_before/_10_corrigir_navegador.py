@@ -24,8 +24,14 @@ class CorrigirNavegador(Extension):
                 from plugins._browser.helpers import runtime
 
                 ctx = str(self.agent.context.id)
+                erros = ""
+                if isinstance(args, dict) and not module._sem(args.get("browser_id")):
+                    from plugins._browser.helpers.selector import get_tool_runtime
+
+                    sessao = await get_tool_runtime(self.agent)
+                    erros = module.aba_fechada(args, await sessao.call("a0_abas"))
                 module.argumentos_de_dialogo(args, ctx, runtime._BrowserRuntimeCore)
-                erros = module.argumentos_de_erros(args, ctx, runtime._BrowserRuntimeCore)
+                erros += module.argumentos_de_erros(args, ctx, runtime._BrowserRuntimeCore)
                 if isinstance(args, dict) and args.get("selector") and str(args.get("action", "")).lower() in module.COM_SELETOR:
                     from plugins._browser.helpers.selector import get_tool_runtime
 

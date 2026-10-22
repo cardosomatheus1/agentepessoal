@@ -927,6 +927,45 @@ def argumentos_de_rolagem(args) -> bool:
     return True
 
 
+# 6 failures in 3 chats (21-22/10) "Browser 73 is not open.": the agent kept the id of a tab already closed (by itself
+# or by the `limpeza` plugin) and the tool only said that. A navigate there is an open of the same address; any other
+# action keeps the error (its page is gone: no switching tabs in the dark) with what is open and what to do.
+SEM_ABA = {"open", "list", "list_all", "close_all"}
+MARK_ABAS = "_navegador_rapido_abas"
+
+
+def aba_fechada(args, abertas) -> str:
+    """args: the browser call; abertas: the ids open in this chat (core.a0_abas). Returns a note for the result."""
+    if not isinstance(args, dict) or _sem(args.get("browser_id")):
+        return ""
+    acao = str(args.get("action", "")).strip().lower()
+    valor = str(args["browser_id"]).strip()
+    valor = valor.split("-", 1)[1] if valor.startswith("browser-") else valor
+    try:
+        bid = int(valor)
+    except ValueError:
+        return ""
+    abertas = [int(a) for a in abertas or []]
+    if acao in SEM_ABA or bid in abertas:
+        return ""
+    if acao == "navigate" and str(args.get("url") or "").strip():
+        args["action"] = "open"
+        args.pop("browser_id")
+        return (f"\n↻ A aba {bid} já tinha sido fechada: abri o endereço numa aba nova. Use o id novo deste resultado "
+                "daqui em diante.")
+    return (f"\n↻ A aba {bid} já foi fechada (abas abertas nesta conversa: {', '.join(map(str, abertas)) or 'nenhuma'}). "
+            "Abra a página de novo com `open` e a URL, leia (`content`) e refaça a ação com as referências novas.")
+
+
+def _abas(core) -> None:
+    async def a0_abas(self):  # started first: tabs saved before a restart only come back then
+        await self.ensure_started()
+        return list(self._context_browser_ids())
+
+    core.a0_abas = a0_abas
+    setattr(core, MARK_ABAS, True)
+
+
 # 17 failures "cannot select helper-backed reference": a list drawn by the site (not a <select>). The tool now opens
 # it with the mouse and clicks the option by its text, like a person.
 OPCAO_JS = """(valor) => {
@@ -1160,6 +1199,8 @@ def aplicar() -> None:
         _print_rotulado(core)
     if not getattr(runtime.BrowserRuntime, MARK_CAIU, False):
         _reinicio_se_cair(runtime)
+    if not getattr(core, MARK_ABAS, False):
+        _abas(core)
     if getattr(core, MARK, False):
         _atualizar_script_vivo(core)
         return
