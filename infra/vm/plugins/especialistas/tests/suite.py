@@ -128,7 +128,10 @@ class Suite:
                                             "imagens": [str(img), "/nao/existe/slide2.png"]}, login="teste_ana")
         eq(len(enviados), 1, "uma chamada só")
         body, login, tempo = enviados[0]
-        ok(body["reasoning"]["effort"] == "low" and tempo == m.TEMPO, "o Crítico segue no esforço de sempre")
+        ok(body["reasoning"]["effort"] == "medium" and tempo == m.TEMPO, "o Crítico lê com mais cuidado (22/10: lia slide errado)")
+        c = m.PAPEIS["critico"]
+        ok("Reprova só por um destes" in c and "sugestões, com aprovação" in c and "cita o slide e o texto exato" in c,
+           "reprova por regra, não por suposição")
         m.chamar("designer", "Desenhe.", "x")
         ok(enviados[1][0]["reasoning"]["effort"] == "medium" and enviados[1][2] < 240,
            "o Designer pensa mais, dentro dos 240 s do proxy (22/10: no alto as correções morriam caladas)")

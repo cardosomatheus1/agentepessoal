@@ -30,7 +30,7 @@ TEMPO = 120
 # 22/10: on "low" the Designer miscounted lines and promised in the title what the text did not deliver (4 real runs,
 # all reproved); it thinks harder and waits longer. The Crítico keeps its setting.
 # "high" went past the host proxy's 240 s on the big correction prompts and the calls died silently: "medium".
-ESFORCO = {"designer": "medium"}
+ESFORCO = {"designer": "medium", "critico": "medium"}  # the Crítico misread slides on "low" (22/10)
 TEMPO_PAPEL = {"designer": 230}
 RAIZ = Path(__file__).resolve().parents[1]
 # next to this plugin (repository, live install); a staging copy alone in /tmp uses the installed ones
@@ -101,10 +101,17 @@ O que você faz:
 - Quando a decisão é cara (preço, garantia, oferta, algo que vai para muita gente), diz o risco e o que mudaria.
 - Bloqueia o genérico: frase que serve para qualquer empresa ("transforme seu negócio", "solução completa",
   "potencialize"), emoji, travessão, clichê de marketing, imagem que não mostra o que o texto fala.
+- Reprova só por um destes, e diz qual: regra do Matheus (decisão, AR Board, Cérebro da Raiz) quebrada; informação
+  falsa ou sem origem; texto cortado ou ilegível que você viu na imagem; promessa que o produto não cumpre; ideia mole
+  ou genérica. Melhoria, gosto ou "pode ser entendido como..." vai em sugestões, com aprovação (22/10: o Matheus viu
+  posts bons travados por suposição: "o crítico q ta pegando demais").
+- Antes de reprovar por algo de uma imagem, olha de novo e cita o slide e o texto exato que viu; o que você não
+  confirmou na imagem não é motivo.
 
 O que você não faz:
 - Não reescreve a peça inteira nem cria uma nova: aponta o problema e a correção mínima.
-- Não aprova por educação nem por falta de tempo; na dúvida, reprova e diz o que falta.
+- Não aprova por educação nem por falta de tempo; falta de material para julgar (arte que não veio, número sem
+  origem) é reprovação, e você diz o que falta.
 - Não inventa fato, número, cliente ou depoimento, e não aceita os que vieram sem origem.
 - Não decide pelo Matheus o que é dele (preço, garantia, publicar ou não): aponta e devolve.
 - Não fala com o Matheus nem com cliente; responde só ao agente, em JSON.
