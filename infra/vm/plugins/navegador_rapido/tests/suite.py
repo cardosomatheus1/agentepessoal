@@ -853,6 +853,13 @@ class Suite:
                               {"tag": "input", "tipo": "email", "texto": "email"}), "", "segredo que é e-mail passa")
         eq(c.segredos_a_digitar({"action": "click", "ref": 2}), [], "clique não digita")
         eq(c.segredos_a_digitar({"action": "type", "ref": 7, "text": "Raiz Connect Loja Teste"}), [], "sem segredo")
+        eq(c.segredo_no_campo(args, {"tag": "input", "tipo": "text", "texto": "txtPass"}), "", "id txtPass passa")
+        ok(c.segredo_no_campo(args, {"tag": "input", "tipo": "text", "texto": "Número do passaporte"}), "passaporte não")
+        eq(c.segredos_a_digitar({"action": "type", "ref": 2, "text": "§§secret(SENHA_USUARIO_99)"}),
+           ["SENHA_USUARIO_99"], "segredo com SENHA no nome é senha, mesmo com USUARIO")
+        ref_escrita = {"action": "type", "ref": "input 21", "text": "§§secret(NOVENTAENOVE)"}
+        c.argumentos_de_ref(ref_escrita)
+        eq(str(ref_escrita["ref"]), "21", "ref escrita como texto vira o número antes de ler o campo")
         ok(c.segredo_no_campo({"action": "keyboard", "text": "§§secret(FACEBOOK_SENHA)"},
                               {"tag": "div", "tipo": "", "texto": ""}), "teclado no campo focado também confere")
         js = next((p for p in (Path("/a0/plugins/_browser/assets/browser-page-content.js"),
@@ -887,6 +894,11 @@ class Suite:
             focado = await pg.evaluate(c.CAMPO_FOCADO_JS)
             por_seletor = await pg.evaluate(c.CAMPO_POR_SELETOR_JS, "input[type=password]")
             invalido = await pg.evaluate(c.CAMPO_POR_SELETOR_JS, "text=Senha")
+            # login dentro de um componente (shadow root fechado): o campo de senha lá dentro não pode ser barrado
+            await pg.set_content('<div id=h></div>')
+            await pg.evaluate("() => { const r = document.getElementById('h').attachShadow({mode: 'closed'}); "
+                              "r.innerHTML = '<input id=x type=password>'; r.getElementById('x').focus(); }")
+            sombra = await pg.evaluate(c.CAMPO_FOCADO_JS)
             await b.close()
         ok(c.segredo_no_campo(args, por_ref[1]), f"ref do telefone é recusada: {por_ref}")
         eq(c.segredo_no_campo(args, por_ref[2]), "", "ref da senha passa")
@@ -895,6 +907,8 @@ class Suite:
         ok(c.segredo_no_campo({"action": "keyboard", "text": "§§secret(NOVENTAENOVE)"}, focado), f"focado: {focado}")
         eq(c.segredo_no_campo(args, por_seletor), "", "seletor do campo de senha passa")
         eq(invalido, None, "seletor do Playwright (text=) não quebra: fica sem leitura")
+        eq(c.segredo_no_campo({"action": "keyboard", "text": "§§secret(FACEBOOK_SENHA)"}, sombra), "",
+           f"senha dentro de shadow root fechado não é barrada: {sombra}")
 
     async def t_aba_fechada(self):
         c = _correcoes()

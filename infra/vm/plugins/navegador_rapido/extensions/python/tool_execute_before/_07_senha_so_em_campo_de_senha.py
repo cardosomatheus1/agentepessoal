@@ -17,6 +17,7 @@ class SenhaSoEmCampoDeSenha(Extension):
         spec.loader.exec_module(module)
         if not module.segredos_a_digitar(tool_args):
             return
+        module.argumentos_de_ref(tool_args)  # a ref written as "input 21" is read as 21 (the _10 does it again, harmless)
         try:
             module.aplicar()
             from plugins._browser.helpers.selector import get_tool_runtime

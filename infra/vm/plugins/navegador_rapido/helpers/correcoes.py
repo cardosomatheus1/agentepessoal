@@ -275,11 +275,15 @@ CAMPO_FOCADO_JS = """() => {
   %s
   let el = document.activeElement;
   try {
-    while (el && el.tagName === "IFRAME" && el.contentDocument) {
-      el = el.contentDocument.activeElement;
+    while (el && ((el.tagName === "IFRAME" && el.contentDocument) || el.shadowRoot?.activeElement)) {
+      el = el.tagName === "IFRAME" ? el.contentDocument.activeElement : el.shadowRoot.activeElement;
     }
   } catch {}
-  return el && el !== el.ownerDocument.body ? a0Descrever(el) : null;
+  // a frame from another site or a closed shadow root: the real field is not visible from here, so it is not read
+  if (!el || el === el.ownerDocument.body || el.tagName === "IFRAME" || el.shadowRoot) {
+    return null;
+  }
+  return a0Descrever(el);
 }""" % DESCREVER_JS
 CAMPO_POR_SELETOR_JS = """(sel) => {
   %s
@@ -294,7 +298,7 @@ CAMPO_POR_SELETOR_JS = """(sel) => {
 }""" % DESCREVER_JS
 SEGREDO = re.compile(r"§§secret\(([^)]+)\)")
 SEGREDO_IDENTIFICADOR = re.compile(r"E_?MAIL|USUARIO|USER|LOGIN|CPF|CNPJ|TELEFONE|PHONE|CELULAR|WHATSAPP", re.I)
-CAMPO_DE_SENHA = re.compile(r"senha|passw|\bpwd\b|\bpin\b|token|chave|api.?key|secret|segredo", re.I)
+CAMPO_DE_SENHA = re.compile(r"senha|pass(?!a|port)|\bpwd\b|\bpin\b|token|chave|api.?key|secret|segredo", re.I)
 DIGITAR = {"type", "type_submit", "typesubmit", "keyboard"}
 MARK_CAMPO = "_navegador_rapido_campo"
 
@@ -310,7 +314,8 @@ def segredos_a_digitar(args) -> list[str]:
     """Names of the vault secrets a browser call would type ([] for any other call)."""
     if not isinstance(args, dict) or str(args.get("action", "")).strip().lower() not in DIGITAR:
         return []
-    return [n for n in SEGREDO.findall(str(args.get("text") or "")) if not SEGREDO_IDENTIFICADOR.search(n)]
+    return [n for n in SEGREDO.findall(str(args.get("text") or ""))
+            if CAMPO_DE_SENHA.search(n) or not SEGREDO_IDENTIFICADOR.search(n)]  # SENHA_USUARIO_99 is a password
 
 
 def segredo_no_campo(args, campo) -> str:
