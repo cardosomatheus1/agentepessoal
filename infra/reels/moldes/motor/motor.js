@@ -167,7 +167,7 @@ const Motor = {
       await Promise.all([...document.fonts].map(f => f.load().catch(() => {})));
       await Promise.all($$('img').map(i => i.complete ? (i.decode ? i.decode().catch(() => {}) : 0) : new Promise(ok => { i.onload = i.onerror = ok; })));
       $$('.rv').forEach(Motor.palavras);
-      if (Motor.ESTILO === 'kit') { Motor._serifNoDestaque(); }
+      if (Motor.ESTILO === 'kit') { Motor._serifNoDestaque(); Motor._telasInteiras(); }
       Motor._caberTudo();
       if (Motor.FORMATO !== 'carrossel') await window.render(0);
       // a photo of the ficha that did not load (wrong path) refuses the template instead of rendering a hole
