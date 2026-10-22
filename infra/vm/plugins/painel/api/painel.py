@@ -26,6 +26,26 @@ def _usuario() -> str:
     return (u or "matheus").lower()  # single-user installs: the owner
 
 
+def vivos():
+    caminho = Path(__file__).resolve().parents[1] / "helpers" / "vivos.py"
+    antigo = sys.modules.get("painel_vivos")
+    if antigo is None or getattr(antigo, "_mtime", None) != caminho.stat().st_mtime:
+        spec = importlib.util.spec_from_file_location("painel_vivos", caminho)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        m._mtime = caminho.stat().st_mtime
+        sys.modules["painel_vivos"] = m
+    return sys.modules["painel_vivos"]
+
+
 class Painel(ApiHandler):
     async def process(self, input: dict, request: Request) -> dict | Response:
-        return {"painel": painel().ler(_usuario())}
+        usuario = _usuario()
+        try:
+            lista = vivos().listar(usuario)
+        except Exception:
+            lista = []
+        for d in lista:  # the times, ready to show
+            d["lido_as"] = painel().hora(d.get("atualizado"))
+            d.pop("receita", None)
+        return {"painel": painel().ler(usuario), "vivos": lista}

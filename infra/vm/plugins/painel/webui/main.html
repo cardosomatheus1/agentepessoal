@@ -4,10 +4,11 @@
 </head>
 <body>
   <!-- Read only: this page shows what the job saved (helpers/painel.py); it has nothing that changes anything. -->
-  <div x-data="{ p: null, msg: 'Carregando…', t: null,
+  <div x-data="{ p: null, vivos: [], msg: 'Carregando…', t: null,
         async olhar() {
           try { const r = await globalThis.sendJsonData('/plugins/painel/painel', {});
-                this.p = r.painel; this.msg = r.painel ? '' : 'O painel ainda não foi montado (o primeiro sai em até 1 minuto).'; }
+                this.p = r.painel; this.vivos = r.vivos || [];
+                this.msg = (r.painel || this.vivos.length) ? '' : 'O painel ainda não foi montado (o primeiro sai em até 1 minuto).'; }
           catch (e) { this.msg = 'Não consegui abrir o painel agora.'; }
         },
         f(nome) { return (this.p && this.p.fontes && this.p.fontes[nome]) || null; },
@@ -16,6 +17,41 @@
        x-init="olhar(); t = setInterval(() => { if (document.visibilityState === 'visible') olhar(); }, 30000)"
        x-destroy="clearInterval(t)" class="painel">
     <p class="painel-msg" x-show="msg" x-text="msg"></p>
+
+    <!-- live panels made on request (helpers/vivos.py): numbers with their source, and what to do about them -->
+    <template x-for="v in vivos" :key="v.id">
+      <section class="painel-bloco">
+        <header>
+          <h3 x-text="v.titulo"></h3>
+          <span class="painel-hora" x-text="v.dados ? 'lido ' + v.lido_as : 'ainda sem leitura (sai às ' + v.hora + ')'"></span>
+          <span class="painel-velho" x-show="v.velho" title="não se atualizou nas últimas 26 h">desatualizado</span>
+        </header>
+        <template x-if="v.dados">
+          <div>
+            <div class="painel-vivo-numeros">
+              <template x-for="n in v.dados.numeros" :key="n.rotulo">
+                <div class="painel-etapa" :title="'fonte: ' + n.fonte">
+                  <b x-text="n.valor"></b><span x-text="n.rotulo"></span>
+                  <small x-show="n.variacao" x-text="n.variacao"></small>
+                </div>
+              </template>
+            </div>
+            <ul class="painel-conclusoes" x-show="v.dados.conclusoes.length">
+              <template x-for="c in v.dados.conclusoes" :key="c"><li x-text="c"></li></template>
+            </ul>
+            <template x-if="v.dados.tabela">
+              <table class="painel-tabela">
+                <thead><tr><template x-for="c in v.dados.tabela.colunas" :key="c"><th x-text="c"></th></template></tr></thead>
+                <tbody><template x-for="(l, i) in v.dados.tabela.linhas" :key="i">
+                  <tr><template x-for="(c, j) in l" :key="j"><td x-text="c"></td></template></tr>
+                </template></tbody>
+              </table>
+            </template>
+            <p class="painel-nota" x-text="'Fontes: ' + [...new Set(v.dados.numeros.map(n => n.fonte))].join(' · ')"></p>
+          </div>
+        </template>
+      </section>
+    </template>
 
     <template x-if="p">
       <div class="painel-blocos">
@@ -118,6 +154,9 @@
     .painel-agenda li { display: flex; gap: 10px; padding: 3px 0; }
     .painel-dia { min-width: 74px; opacity: 0.75; }
     .painel-vazio { color: #fbbf24; }
+    .painel-vivo-numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+    .painel-etapa small { font-size: 0.72rem; opacity: 0.7; }
+    .painel-conclusoes { margin: 8px 0 0; padding-left: 18px; font-size: 0.85rem; }
     @media (max-width: 520px) { .painel-funil { grid-template-columns: repeat(2, 1fr); } }
   </style>
 </body>

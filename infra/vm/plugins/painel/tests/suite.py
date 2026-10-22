@@ -207,10 +207,46 @@ class Suite:
             eq(arq.read_bytes(), antes, "o que vem no pedido não muda nada")
             pagina = (RAIZ / "webui" / "main.html").read_text(encoding="utf-8")
             ok("<button" not in pagina and "<input" not in pagina and "<select" not in pagina, "a página não tem botão nem campo")
+            ok("vivos" in r, "a API devolve também os painéis vivos (só leitura)")
             ok(set(__import__("re").findall(r"sendJsonData\('([^']+)'", pagina)) == {"/plugins/painel/painel"},
                "a página só chama a leitura do painel")
         finally:
             shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def t_painel_vivo_sob_pedido(self):
+        # 22/10 (Claude Duet): a panel he asks for refreshes itself before the brief; every number says its source
+        tmp = Path(tempfile.mkdtemp(prefix="painel-vivo-"))
+        antes = os.environ.get("PAINEL_PASTA")
+        os.environ["PAINEL_PASTA"] = str(tmp)
+        try:
+            v = _carregar("painel_vivos_teste", RAIZ / "helpers" / "vivos.py")
+        finally:
+            os.environ.pop("PAINEL_PASTA") if antes is None else os.environ.__setitem__("PAINEL_PASTA", antes)
+        ok(not v.criar("matheus", "Vendas", "curta")["ok"], "receita curta demais")
+        ok(not v.criar("matheus", "Vendas da Raiz", "Ler a planilha Assinaturas no Drive", "7h")["ok"], "hora errada")
+        r = v.criar("matheus", "Vendas <b>da</b> Raiz", "Ler a planilha Assinaturas no Drive: MRR e cancelamentos", "06:30", AGORA)
+        ok(r["ok"] and r["painel"]["titulo"] == "Vendas da Raiz", f"sem HTML: {r}")
+        pid = r["painel"]["id"]
+        ok("ainda sem" not in str(v.listar("matheus", AGORA)) and v.listar("matheus", AGORA)[0]["velho"] is False, "sem leitura não é velho")
+        eq(v.salvar("matheus", pid, [{"rotulo": "MRR", "valor": "R$ 1.970"}])["erro"][:16], "número sem fonte", "todo número tem fonte")
+        ok(not v.salvar("matheus", pid, [])["ok"], "sem números, nada salvo")
+        r = v.salvar("matheus", pid, [{"rotulo": "MRR", "valor": "R$ 1.970", "fonte": "planilha Assinaturas", "variacao": "+12%"},
+                                      "lixo", {"valor": "sem rótulo"}],
+                     ["Cancelamentos dobraram: ligar para os 2 clientes"] * 7,
+                     {"colunas": ["Plano", "Clientes"], "linhas": [["Mensal", "10", "extra"]]}, AGORA)
+        d = r["painel"]["dados"]
+        eq(len(d["numeros"]), 1, "só números válidos")
+        eq(len(d["conclusoes"]), 5, "até 5 conclusões")
+        eq(d["tabela"]["linhas"], [["Mensal", "10"]], "linha cortada nas colunas")
+        ok(not v.listar("matheus", AGORA + 3600)[0]["velho"] and v.listar("matheus", AGORA + 27 * 3600)[0]["velho"],
+           "mais de 26 h sem atualizar: desatualizado")
+        t = v.prompt_rotina(v.obter("matheus", pid))
+        ok(pid in t and "painel_vivo" in t and "só leitura" in t and "fonte" in t, t)
+        ok(v.apagar("matheus", pid) and v.listar("matheus") == [] and not v.apagar("matheus", pid), "apagar")
+        ok(v.obter("matheus", "../../etc/passwd") is None, "id não sai da pasta")
+        tool = (RAIZ / "tools" / "painel_vivo.py").read_text(encoding="utf-8")
+        ok("pedido_dele" in tool, "apagar só com a fala dele")
+        shutil.rmtree(tmp, ignore_errors=True)
 
     async def rodar(self, so=""):
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
