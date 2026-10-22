@@ -454,6 +454,14 @@ class Suite:
             eq(await acao("apagar", "Apagar o rascunho do cardápio", {"action": "click", "selector": "#outro-ref"}), "devolveu",
                "retomada com outra ação (outros argumentos): pede de novo, não passa")
             ok(rv.PENDENTES[ctx.id]["id"] != p["id"], "pedido novo")
+            # brought back once and the chat did not redo it: it ends, it is not brought back again
+            rv.PENDENTES.pop(ctx.id, None)
+            eq(await acao("publicar", "Publicar a promoção da semana", {"action": "click", "selector": "#promo"}), "devolveu", "pede")
+            p = rv.PENDENTES[ctx.id]
+            rv.decidir(ctx.id, "aprovar", p["id"])
+            n = len(comunicadas)
+            ok(rv.retomar_adiada(ctx.id) and len(comunicadas) == n + 1, "retoma uma vez")
+            ok(not rv.retomar_adiada(ctx.id) and ctx.id not in rv.PENDENTES and len(comunicadas) == n + 1, "não retoma de novo")
             rv.PENDENTES.pop(ctx.id, None)
             # the task ended before coming back: his answer starts the chat again
             ctx.rodando = False

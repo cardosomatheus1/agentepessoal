@@ -372,10 +372,13 @@ def retomar_adiada(ctx_id: str) -> bool:
             return False
         if ctx.is_running():
             return False
+        if pendente.get("retomado"):  # brought back once already and not redone: it ends here, never again
+            PENDENTES.pop(ctx_id, None)
+            return False
         if pendente["decisao"] == "recusar":
             PENDENTES.pop(ctx_id, None)
         else:  # kept: the restarted chat may do exactly that action (same tool and arguments), once, within RETOMADA_S
-            pendente.update(marca="retomada", retomada_ate=time.time() + RETOMADA_S)
+            pendente.update(marca="retomada", retomada_ate=time.time() + RETOMADA_S, retomado=True)
         ctx.communicate(UserMessage(message=recado_adiada(pendente), attachments=[], id=""))
         return True
     except Exception as exc:
