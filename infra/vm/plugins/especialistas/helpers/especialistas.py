@@ -464,6 +464,17 @@ def renderizar_molde(molde: str, formato: str, ficha: dict, previa: bool = False
     return arquivos, ""
 
 
+# Jargon the Crítico reproved three times in a row on 22/10: a term goes with its plain explanation (the brief's rule)
+JARGAO = {"CMV": re.compile(r"custo d[aoe]s? (mercadoria|ingrediente|insumo|produto|que (você )?vend)|o quanto (do que|da venda)"
+                            r"|quanto do faturamento|custo da comida", re.I)}
+
+
+def _jargao(texto: str) -> list[str]:
+    return [f"ficha: {termo} aparece sem explicação em palavras simples (ex.: \"{termo}, o custo dos ingredientes do "
+            f"que você vendeu\")" for termo, explica in JARGAO.items()
+            if re.search(rf"\b{termo}\b", texto) and not explica.search(texto)]
+
+
 def _conferir_spec(spec: dict) -> list[str]:
     """Deterministic checks on the Designer's spec; each problem goes to "falta"."""
     problemas = []
@@ -487,6 +498,8 @@ def _conferir_spec(spec: dict) -> list[str]:
         else:
             if marca == "raiz" and str(spec["ficha"].get("_marca") or "raiz") != "raiz":
                 problemas.append("peça da Raiz com outra marca na ficha (_marca): o kit só vale com a marca raiz")
+            if marca == "raiz":
+                problemas += _jargao(json.dumps(spec["ficha"], ensure_ascii=False))
             problemas += [f"ficha: {e}" for e in _validar_ficha(str(spec.get("molde") or ""), spec["ficha"])]
     return problemas
 
@@ -580,45 +593,27 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
         falta.append("o designer não devolveu uma ficha legível")
     else:
         falta += _conferir_spec(spec)
-        # 22/10, first real run: fichas over the template's limits, "_origem" missing, telas without a file. The
-        # Designer gets the template's exact schema, an example and the errors, at most CORRECOES times.
-        for _ in range(CORRECOES):
-            if spec.get("motor") != "molde" or not any(f.startswith("ficha:") for f in falta):
+        # 22/10, real runs: fichas over the template's limits, "_origem" missing, telas without a file, a video
+        # shorter than the template allows (refused only when rendering). The Designer gets the template's exact
+        # schema, an example and the errors; CORRECOES tries in all, for the ficha and the render together.
+        tentativas = CORRECOES
+        while True:
+            while tentativas and spec.get("motor") == "molde" and any(f.startswith("ficha:") for f in falta):
+                tentativas -= 1
+                novo = _spec(chamar("designer", _tarefa_correcao(spec, falta), material, login=login))
+                if not novo:
+                    tentativas = 0
+                    break
+                spec, falta = novo, _conferir_spec(novo)
+            arquivos, render, previa, narracao, folha, falta = _renderizar(spec, falta)
+            recusa = [f for f in falta if f.startswith("o molde recusou a ficha")]
+            if not (recusa and tentativas):
                 break
-            r2 = chamar("designer", _tarefa_correcao(spec, falta), material, login=login)
-            novo = _spec(r2)
+            tentativas -= 1
+            novo = _spec(chamar("designer", _tarefa_correcao(spec, recusa), material, login=login))
             if not novo:
                 break
             spec, falta = novo, _conferir_spec(novo)
-        motor = spec.get("motor")
-        if motor == "carrossel_raiz":
-            render = (f"no repositório (sessão de operador): criar infra/reels/{spec.get('pasta') or 'c_<nome>'}/index.html "
-                      "sobre base/raiz-carrossel.css/js com o conceito desta ficha, depois "
-                      f"python3 base/carrossel.py {spec.get('pasta') or 'c_<nome>'} e base/validar_carrossel.py")
-            falta.append("render do carrossel da Raiz: cada peça tem HTML próprio (conceito livre do kit); "
-                         "o plugin entrega a ficha, não os slides")
-        elif motor == "video_kit_raiz":
-            render = "no repositório erp-saas: projeto marketing/<nome>/ do kit de motion (skill motion-graphics)"
-            falta.append("render do vídeo da Raiz: o kit de motion mora no repositório erp-saas, fora do alcance do agente")
-        elif motor == "molde" and not falta:
-            sem = _pode_renderizar()
-            formato = str(spec.get("formato") or "carrossel")
-            render = f"moldes/motor/render.py {spec.get('molde')} <ficha.json> --formato {formato}"
-            if sem:
-                falta.append(sem)
-            elif formato == "carrossel":
-                arquivos, problema = renderizar_molde(str(spec["molde"]), formato, spec["ficha"])
-                if problema:
-                    falta.append(problema)
-            else:  # a video: only the preview and the narration now; the video after Matheus approves (decision #39)
-                feitos, problema = renderizar_molde(str(spec["molde"]), formato, spec["ficha"], previa=True)
-                previa = [a for a in feitos if Path(a).suffix.lower() in EXT_IMAGEM and Path(a).name != "prev.jpg"]
-                narracao = next((a for a in feitos if a.endswith(".m4a")), "")
-                folha = next((a for a in feitos if Path(a).name == "prev.jpg"), "")
-                if problema:
-                    falta.append(problema)
-                elif not previa:
-                    falta.append("a prévia do vídeo não saiu")
     formato = str(spec.get("formato") or "").lower()
     imagens = _quadros_para_o_critico(previa, folha) if previa else [a for a in arquivos if Path(a).suffix.lower() in EXT_IMAGEM]
     julgar = {"briefing": briefing, "ficha": spec or r["texto"] or "(vazia)", "problemas": falta, "imagens": imagens}
@@ -650,6 +645,42 @@ def _quadros_para_o_critico(previa: list, folha: str) -> list:
         passo = (len(previa) - 1) / (vagas - 1)
         escolhidos = [previa[round(i * passo)] for i in range(vagas)]
     return ([folha] if folha else []) + escolhidos
+
+
+def _renderizar(spec: dict, falta: list) -> tuple:
+    """(arquivos, render, previa, narracao, folha, falta) for the spec's motor; nothing renders while falta has items."""
+    falta, arquivos, render = list(falta), [], ""
+    previa, narracao, folha = [], "", ""
+    motor = spec.get("motor")
+    if motor == "carrossel_raiz":
+        render = (f"no repositório (sessão de operador): criar infra/reels/{spec.get('pasta') or 'c_<nome>'}/index.html "
+                  "sobre base/raiz-carrossel.css/js com o conceito desta ficha, depois "
+                  f"python3 base/carrossel.py {spec.get('pasta') or 'c_<nome>'} e base/validar_carrossel.py")
+        falta.append("render do carrossel da Raiz: cada peça tem HTML próprio (conceito livre do kit); "
+                     "o plugin entrega a ficha, não os slides")
+    elif motor == "video_kit_raiz":
+        render = "no repositório erp-saas: projeto marketing/<nome>/ do kit de motion (skill motion-graphics)"
+        falta.append("render do vídeo da Raiz: o kit de motion mora no repositório erp-saas, fora do alcance do agente")
+    elif motor == "molde" and not falta:
+        sem = _pode_renderizar()
+        formato = str(spec.get("formato") or "carrossel")
+        render = f"moldes/motor/render.py {spec.get('molde')} <ficha.json> --formato {formato}"
+        if sem:
+            falta.append(sem)
+        elif formato == "carrossel":
+            arquivos, problema = renderizar_molde(str(spec["molde"]), formato, spec["ficha"])
+            if problema:
+                falta.append(problema)
+        else:  # a video: only the preview and the narration now; the video after Matheus approves (decision #39)
+            feitos, problema = renderizar_molde(str(spec["molde"]), formato, spec["ficha"], previa=True)
+            previa = [a for a in feitos if Path(a).suffix.lower() in EXT_IMAGEM and Path(a).name != "prev.jpg"]
+            narracao = next((a for a in feitos if a.endswith(".m4a")), "")
+            folha = next((a for a in feitos if Path(a).name == "prev.jpg"), "")
+            if problema:
+                falta.append(problema)
+            elif not previa:
+                falta.append("a prévia do vídeo não saiu")
+    return arquivos, render, previa, narracao, folha, falta
 
 
 def _tarefa_revisao(spec: dict, critica: dict) -> str:

@@ -358,6 +358,33 @@ class Suite:
         d = m.desenhar("Carrossel da Raiz")
         ok(sum(p == "designer" for p, _ in chamadas) == m.CORRECOES + 1 and "ficha: pergunta: longo" in d["falta"], d["falta"])
 
+    def t_jargao_e_recusa_do_molde_entram_na_correcao(self):
+        m = self._e()
+        ok(m._jargao("Seu CMV está alto") and "CMV" in m._jargao("Seu CMV está alto")[0], "CMV sozinho")
+        eq(m._jargao("CMV, o custo dos ingredientes do que você vendeu"), [], "CMV explicado")
+        # the template refuses only when rendering (a video too short): the Designer fixes it like a ficha error
+        reels = self._reels()
+        m = self._e(reels=reels)
+        m._pode_renderizar = lambda: ""
+        renders = []
+
+        def render(molde, formato, ficha):
+            renders.append(ficha["pergunta"])
+            return ([], "o molde recusou a ficha: MOLDE RECUSOU: duração 41.9 s") if len(renders) == 1 else (["s1.jpg"], "")
+        m.renderizar_molde = render
+        fichas = [{"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel",
+                   "ficha": {"_marca": "raiz", "pergunta": p}} for p in ("Curta?", "Maior agora")]
+        chamadas = []
+
+        def chamar(papel, tarefa, material, login="matheus"):
+            chamadas.append((papel, tarefa))
+            return {"texto": json.dumps(fichas.pop(0)) if papel == "designer" else APROVA, "erro": "", "imagens": [],
+                    "sem_imagem": []}
+        m.chamar = chamar
+        d = m.desenhar("Carrossel da Raiz")
+        eq(renders, ["Curta?", "Maior agora"], "renderizou de novo com a ficha corrigida")
+        ok("duração 41.9 s" in chamadas[1][1] and d["falta"] == [] and d["arquivos"] == ["s1.jpg"], (chamadas[1][1][:200], d))
+
     def t_designer_refaz_com_os_motivos_do_critico(self):
         # 22/10: the agent makes the posts by itself, so a reproved piece is redone once before it reaches Matheus
         reels = self._reels()
@@ -365,7 +392,7 @@ class Suite:
         m._pode_renderizar = lambda: ""
         m.renderizar_molde = lambda molde, formato, ficha: ([], "")
         fichas = [{"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel",
-                   "ficha": {"_marca": "raiz", "pergunta": "CMV alto?"}},
+                   "ficha": {"_marca": "raiz", "pergunta": "Margem baixa?"}},
                   {"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel",
                    "ficha": {"_marca": "raiz", "pergunta": "Custo alto?"}}]
         vereditos = [json.dumps({"veredito": "reprova", "motivos": ["CMV sem explicação"], "sugestoes": ["explique"]}), APROVA]
