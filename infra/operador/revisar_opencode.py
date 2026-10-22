@@ -20,6 +20,7 @@ OPENCODE = "/root/.opencode/bin/opencode2"
 MODELO = "amazon-bedrock/global.anthropic.claude-opus-5-5"
 DIFF_MAX = 120_000
 BUCKET = "s3://agentepessoal-backup-964862484412/operador"
+ATIVIDADE = "/var/lib/agentepessoal/last-activity"  # infra/vm/watchdog.sh: the VM does not hibernate while it is recent
 
 PEDIDO = """Você é o revisor independente de uma correção no agente pessoal do Matheus (plugins do Agent Zero).
 NÃO altere nenhum arquivo e não rode nada que mude o sistema: só leia. O diff está em {diff}.
@@ -58,7 +59,9 @@ def veredito(saida: str) -> str:
 def comando_vm(chave_s3: str, pasta: str, motivo: str) -> str:
     pedido = PEDIDO.format(diff=f"{pasta}/diff.patch", motivo=motivo or "(não informado)")
     p64 = base64.b64encode(pedido.encode("utf-8")).decode()
-    return (f"aws s3 cp {BUCKET}/{chave_s3} /tmp/{chave_s3} >/dev/null && "
+    # 22/10: the VM hibernated in the middle of a review (a call straight to Bedrock is not "use" for watchdog.sh); its
+    # activity mark gives 30 min, more than the review's 15
+    return (f"touch {ATIVIDADE}; aws s3 cp {BUCKET}/{chave_s3} /tmp/{chave_s3} >/dev/null && "
             f"docker exec agent-zero mkdir -p {pasta} && docker cp /tmp/{chave_s3} agent-zero:{pasta}/diff.patch && "
             f"echo {p64} | base64 -d > /tmp/{chave_s3}.pedido && docker cp /tmp/{chave_s3}.pedido agent-zero:{pasta}/pedido.md && "
             f"docker exec -w /a0/usr agent-zero sh -c 'timeout 900 {OPENCODE} run --model {MODELO} "

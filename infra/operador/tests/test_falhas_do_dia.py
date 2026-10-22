@@ -78,6 +78,7 @@ def main() -> int:
     ok("rm -rf" not in c and "opencode2 run --model amazon-bedrock/global.anthropic.claude-opus-5-5" in c
        and f"echo {F}$rc" in c,
        "o motivo vai em base64 e o modelo é o Opus 5.5")
+    ok(c.startswith("touch /var/lib/agentepessoal/last-activity;"), "marca atividade: a VM não hiberna no meio da revisão")
 
     for m in falhas:
         print("FALHA", m)
