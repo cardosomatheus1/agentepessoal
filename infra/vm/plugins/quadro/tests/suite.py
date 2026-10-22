@@ -29,7 +29,8 @@ def eq(a, b, msg):
 
 def _modulo():
     tmp = Path(tempfile.mkdtemp(prefix="quadro-teste-"))
-    os.environ["QUADRO_PLUGINS"] = str(RAIZ.parent)
+    # next to this plugin in the repository; in the VM's staging copy (alone in its folder), the installed plugins
+    os.environ["QUADRO_PLUGINS"] = str(RAIZ.parent if (RAIZ.parent / "fios_soltos").exists() else Path("/a0/usr/plugins"))
     os.environ["QUADRO_TAREFAS"] = str(tmp / "tasks.json")
     os.environ["QUADRO_OBJETIVOS"] = str(tmp / "goals")
     spec = importlib.util.spec_from_file_location("quadro_teste", RAIZ / "helpers" / "quadro.py")
