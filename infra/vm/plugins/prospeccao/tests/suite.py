@@ -1194,7 +1194,8 @@ class Suite:
         eq(p.tema_do_texto("Como vocês chegam no preço: planilha, caderno ou de cabeça?"), "preco", "pergunta de preço")
         eq(p.tema_do_texto("O preço do kit vocês fecham na planilha?"), "preco", "preço na planilha")
         for frase in ("Vocês controlam o custo na planilha?", "Sabem a margem de cada marmita?", "Qual o lucro em cada bolo?",
-                      "O custo de cada produto sai de onde?"):
+                      "O custo de cada produto sai de onde?", "O preço do kit cobre a embalagem?", "Quanto custa fazer o pote?",
+                      "Quanto vocês lucram no combo?"):
             eq(p.tema_do_texto(frase), "preco", f"custo, margem e lucro também são o tema preço: {frase}")
         eq(p.tema_do_texto("Sou o Matheus, da Raiz Connect, um sistema de custo pra quem produz comida. Vi o iFood!"), "ifood",
            "a apresentação 'sistema de custo' sozinha não é tema")
