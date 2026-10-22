@@ -384,7 +384,8 @@ são só da sessão de operador, nunca escolha).
   lanca-app/demonstracao, a câmera dá zoom no "destaque" da tela); toda peça com tela diz "valores de exemplo" (campo
   nota do molde, ou no texto do slide/legenda), e cada fala mostra a tela que prova o que ela diz.
   Termo técnico (CMV, ficha técnica, DRE) vem explicado em palavras simples na primeira vez.
-Sempre: "marca" ("raiz" ou a pasta da outra marca), "formato" (carrossel|reel|story), "conceito"."""
+Sempre: "marca" ("raiz" ou a pasta da outra marca), "formato" (carrossel|reel|story), "conceito", "legenda" (sem
+emoji, terminando no passo concreto da chamada)."""
 
 
 def catalogo_moldes() -> dict:
@@ -568,7 +569,7 @@ TELAS = {
 }
 
 
-def telas_do_sistema() -> str:
+def telas_do_sistema(formato: str = "") -> str:
     """The real screens of the system the Designer may use (dark, whole, with the menu: decision #85), by path."""
     pasta = PLUGINS / "conteudo" / "story" / "telas"
     nomes = sorted(p.name for p in pasta.glob("*.jpg")) if pasta.exists() else []
@@ -577,9 +578,14 @@ def telas_do_sistema() -> str:
     return ("## Telas reais do sistema (1440x900, tema escuro, inteiras com o menu; uma empresa de exemplo, valores de "
             "exemplo). A fala só afirma o que a tela mostra:\n"
             + "\n".join(f"- /a0/usr/plugins/conteudo/story/telas/{n}" + (f": {TELAS[n]}" if n in TELAS else "") for n in nomes)
-            + "\nPara mostrar o sistema use o molde lanca-app com \"aparelho\": \"computador\" (a câmera dá zoom no "
-              "\"destaque\" de cada tela, em % da tela); demonstracao é moldura de celular. Campo \"real\" pede "
-              "\"_origem\" com \"sistema\" (tela) ou \"dono\".\n\n")
+            + "\n" + (
+                # 22/10: told "use lanca-app to show the system", a carousel slot kept coming back as a video
+                "Num carrossel, a tela entra no campo de foto de um molde de carrossel (ex.: passo-a-passo, mito, "
+                "faca-nao-faca, pergunta-cliente), com o caminho acima; nunca use molde de vídeo."
+                if formato == "carrossel" else
+                "Para mostrar o sistema num vídeo use o molde lanca-app com \"aparelho\": \"computador\" (a câmera dá "
+                "zoom no \"destaque\" de cada tela, em % da tela); demonstracao é moldura de celular.")
+            + " Campo \"real\" pede \"_origem\" com \"sistema\" (tela) ou \"dono\".\n\n")
 
 
 def _tarefa_correcao(spec: dict, falta: list) -> str:
@@ -597,7 +603,7 @@ def _tarefa_correcao(spec: dict, falta: list) -> str:
             f"Se este molde não serve para a ideia, troque por outro do catálogo.\n\n## Erros\n"
             + "\n".join(f"- {f}" for f in falta)
             + f"\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n## Esquema do molde\n{esquema}\n\n"
-            + (f"## Exemplo de ficha que passa\n{exemplo}\n\n" if exemplo else "") + telas_do_sistema()
+            + (f"## Exemplo de ficha que passa\n{exemplo}\n\n" if exemplo else "") + telas_do_sistema(spec.get("_formato_pedido", ""))
             + "Responda só com o JSON.")
 
 
@@ -619,7 +625,7 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
     tarefa = (f"Transforme o briefing numa ficha para o motor de render.\n\n{KIT}\n\n"
               f"## Cérebro da Raiz\n{ctx or '(indisponível: ' + nota + ')'}\n\n"
               + (f"## Catálogo de moldes\n{linhas_cat}\n\n" if linhas_cat else "")
-              + telas_do_sistema() + _chamada_da_marca()
+              + telas_do_sistema(pedido) + _chamada_da_marca()
               + (f"A vaga é de {pedido}: use só um molde da lista acima, com \"formato\": \"{pedido}\".\n" if pedido else "")
               + "Responda só com o JSON da ficha, com \"motor\".")
     material = {"briefing": briefing} if isinstance(briefing, str) else briefing
@@ -754,5 +760,5 @@ def _tarefa_revisao(spec: dict, critica: dict) -> str:
             + "\n".join(f"- {m}" for m in critica.get("motivos") or [])
             + ("\n\n## Sugestões dele\n" + "\n".join(f"- {m}" for m in critica.get("sugestoes") or [])
                if critica.get("sugestoes") else "")
-            + f"\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n{KIT}\n\n" + telas_do_sistema()
+            + f"\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n{KIT}\n\n" + telas_do_sistema(spec.get("_formato_pedido", ""))
             + "Responda só com o JSON.")

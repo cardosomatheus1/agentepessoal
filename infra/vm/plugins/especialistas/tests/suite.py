@@ -413,6 +413,12 @@ class Suite:
             {"id": "so-video", "formatos": ["reel"], "situacao": "Só vídeo", "ficha": {}}]}))
         d = m.desenhar({"formato": "CARROSSEL", "titulo": "x", "ideia": "y"})
         ok("so-video" not in chamadas[0][1] and "- frases" in chamadas[0][1], "só os moldes que fazem carrossel")
+        m.PLUGINS = Path(tempfile.mkdtemp(dir=self.tmp))
+        (m.PLUGINS / "conteudo" / "story" / "telas").mkdir(parents=True)
+        (m.PLUGINS / "conteudo" / "story" / "telas" / "cmv-real.jpg").write_bytes(b"x")
+        ok("lanca-app" not in m.telas_do_sistema("carrossel") and "campo de foto" in m.telas_do_sistema("carrossel"),
+           "no carrossel a tela vai num molde de carrossel")
+        ok("lanca-app" in m.telas_do_sistema("reel"), "no vídeo, o tour com zoom")
         ok("a vaga da semana é 'carrossel'" in chamadas[1][1], chamadas[1][1][:200])
         eq((d["spec"]["formato"], d["falta"]), ("carrossel", []), "corrigido para carrossel")
 
