@@ -67,8 +67,9 @@ def _lista(v, limite: int = CAMPO_MAX) -> list:
 
 
 def _link(v) -> str:
+    """A single https address and nothing else (no spaces, line breaks, quotes or «» after it)."""
     v = str(v or "").strip()
-    return v[:300] if re.match(r"^https://(www\.)?(instagram|facebook)\.com/|^https://[\w.-]+\.[a-z]{2,}/", v) else ""
+    return v if len(v) <= 300 and re.fullmatch(r"https://[\w.-]+\.[a-z]{2,}(/[^\s<>\"'`«»]*)?", v) else ""
 
 
 # ------------------------------------------------------------------ ads (Meta Ad Library through Apify)
