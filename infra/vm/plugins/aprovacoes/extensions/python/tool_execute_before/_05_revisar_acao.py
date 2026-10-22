@@ -143,11 +143,6 @@ class RevisarAcao(Extension):
                                             "", "", None, "progresso")
             except Exception as exc:
                 print(f"aprovacoes: 99Food notice failed: {exc}", flush=True)
-        retomada = agent.context.get_data("_aprovacoes_retomada")
-        if decisao == "perguntar" and rv.retomada_vale(retomada, analise, time.time()):
-            decisao = "permitir"  # he approved this after its task ended; the chat restarted to do it (once)
-            agent.context.set_data("_aprovacoes_retomada", None)
-            analise["resumo"] = f"{analise['resumo']} — aprovado por ele enquanto esperava"[:300]
         if analise["categoria"] != "nenhuma" and agent.context.id in rv.somente_leitura():
             decisao = "nunca"  # read-only chats (daily brief, proactive research) never change anything
         print(f"aprovacoes: {tool_name} -> {analise['categoria']}/{decisao}: {analise['resumo']}", flush=True)
@@ -168,6 +163,13 @@ class RevisarAcao(Extension):
         assin, marca = rv.assinatura(tool_name, args), marca_tarefa(ctx)
         espera_s = 60 * float(cfg.get("espera_minutos") or 360)
         existente = rv.PENDENTES.get(ctx.id)
+        if existente and existente.get("adiada") and existente.get("marca") == "retomada":
+            # approved after its task ended: the restarted chat may do that very action, nothing else, for a while
+            if time.time() <= float(existente.get("retomada_ate") or 0) and rv.mesma_acao(existente, assin):
+                existente["marca"] = marca
+            else:
+                rv.PENDENTES.pop(ctx.id, None)
+                existente = None
         if existente and existente.get("adiada") and (time.time() - float(existente.get("criado") or 0) > espera_s
                                                       or existente.get("marca") != marca):
             rv.PENDENTES.pop(ctx.id, None)  # never answered, or from a task that is over: it never carries over

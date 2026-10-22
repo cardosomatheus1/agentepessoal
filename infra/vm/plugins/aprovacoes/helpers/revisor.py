@@ -350,27 +350,16 @@ def recado_adiada(pendente: dict) -> str:
         return (f"[Aprovações] Ele RECUSOU a ação que esperava o ok dele: «{pendente['resumo']}». Ela não foi feita. "
                 "Não tente de novo nem por outro caminho; diga a ele em uma linha como ficou.")
     return (f"[Aprovações] Ele APROVOU a ação que esperava o ok dele: «{pendente['resumo']}». Faça agora essa ação, só "
-            "ela (passa uma vez sem perguntar de novo, nos próximos 15 min), e diga a ele em uma linha que foi feito.")
+            "ela, e diga a ele em uma linha que foi feito. Se ela não sair idêntica à que ele viu, vai pedir o ok de novo.")
 
 
-RETOMADA_S = 15 * 60
-
-
-def retomada_vale(retomada: dict | None, analise: dict, agora: float) -> bool:
-    """The one action he approved after its task ended, done in the chat it restarted: same category, nearly the same
-    summary, within RETOMADA_S, once."""
-    import difflib
-
-    if not retomada or agora > float(retomada.get("ate") or 0) or retomada.get("categoria") != analise.get("categoria"):
-        return False
-    return difflib.SequenceMatcher(None, str(retomada.get("resumo") or "").lower(),
-                                   str(analise.get("resumo") or "").lower()).ratio() >= 0.8
+RETOMADA_S = 15 * 60  # an action he approved after its task ended waits this long for the chat to redo it
 
 
 def retomar_adiada(ctx_id: str) -> bool:
     """After his answer (phone button or chat card) to an action that waited while its task went on: when that task
-    already ended, the answer comes back to the chat as a message (approved: that one action may go once; refused:
-    dropped). While the task still runs it comes back to the action by itself (False)."""
+    already ended, the answer comes back to the chat as a message (approved: the very same action may go, in the chat
+    it restarts; refused: dropped). While the task still runs it comes back to the action by itself (False)."""
     pendente = PENDENTES.get(ctx_id)
     if not pendente or not pendente.get("adiada") or not pendente.get("decisao"):
         return False
@@ -383,10 +372,10 @@ def retomar_adiada(ctx_id: str) -> bool:
             return False
         if ctx.is_running():
             return False
-        PENDENTES.pop(ctx_id, None)
-        if pendente["decisao"] != "recusar":
-            ctx.set_data("_aprovacoes_retomada", {"categoria": pendente.get("categoria"), "resumo": pendente.get("resumo"),
-                                                  "ate": time.time() + RETOMADA_S})
+        if pendente["decisao"] == "recusar":
+            PENDENTES.pop(ctx_id, None)
+        else:  # kept: the restarted chat may do exactly that action (same tool and arguments), once, within RETOMADA_S
+            pendente.update(marca="retomada", retomada_ate=time.time() + RETOMADA_S)
         ctx.communicate(UserMessage(message=recado_adiada(pendente), attachments=[], id=""))
         return True
     except Exception as exc:

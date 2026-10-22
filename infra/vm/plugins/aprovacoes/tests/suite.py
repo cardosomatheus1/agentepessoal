@@ -440,12 +440,20 @@ class Suite:
             eq(await acao("publicar", "Publicar o cardápio no site", {"action": "click", "selector": "#cardapio"}), "devolveu", "pede")
             p = rv.PENDENTES[ctx.id]
             rv.decidir(ctx.id, "aprovar", p["id"])
-            ok(rv.retomar_adiada(ctx.id) and "APROVOU" in comunicadas[-1] and ctx.id not in rv.PENDENTES, comunicadas)
+            ok(rv.retomar_adiada(ctx.id) and "APROVOU" in comunicadas[-1], comunicadas)
+            ok(rv.PENDENTES[ctx.id]["marca"] == "retomada", "fica guardada para a conversa retomada")
             ctx.task = types.SimpleNamespace(_future=object())  # the chat restarted: a new task
-            eq(await acao("publicar", "Publicar o cardápio no site", {"action": "click", "selector": "#outro-ref"}), "executou",
-               "a aprovada passa uma vez na tarefa retomada")
-            eq(await acao("publicar", "Publicar o cardápio no site", {"action": "click", "selector": "#outro-ref"}), "devolveu",
-               "só uma vez")
+            eq(await acao("publicar", "Publicar o cardápio no site", {"action": "click", "selector": "#cardapio"}), "executou",
+               "a mesmíssima ação passa na tarefa retomada")
+            ok(ctx.id not in rv.PENDENTES, "e acaba ali")
+            eq(await acao("apagar", "Apagar o rascunho do cardápio", {"action": "click", "selector": "#rascunho"}), "devolveu", "pede")
+            p = rv.PENDENTES[ctx.id]
+            rv.decidir(ctx.id, "aprovar", p["id"])
+            ok(rv.retomar_adiada(ctx.id), "retoma")
+            ctx.task = types.SimpleNamespace(_future=object())
+            eq(await acao("apagar", "Apagar o rascunho do cardápio", {"action": "click", "selector": "#outro-ref"}), "devolveu",
+               "retomada com outra ação (outros argumentos): pede de novo, não passa")
+            ok(rv.PENDENTES[ctx.id]["id"] != p["id"], "pedido novo")
             rv.PENDENTES.pop(ctx.id, None)
             # the task ended before coming back: his answer starts the chat again
             ctx.rodando = False
