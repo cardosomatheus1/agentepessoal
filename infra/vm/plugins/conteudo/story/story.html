@@ -15,7 +15,7 @@ body{width:1080px;height:1920px;overflow:hidden;font-family:M,sans-serif;backgro
  background:radial-gradient(circle,rgba(39,97,60,.6),rgba(16,29,24,0) 62%)}
 .st.claro:before{background:radial-gradient(circle,rgba(233,241,223,.95),rgba(245,242,233,0) 62%)}
 .topo{position:absolute;left:var(--m);right:var(--m);top:270px;display:flex;justify-content:space-between;align-items:center;z-index:3}
-.topo img{height:84px}
+.topo img{height:76px}
 .etq{font-weight:800;font-size:28px;letter-spacing:.16em;text-transform:uppercase;color:var(--lima)}
 .claro .etq{color:var(--forest)}
 .area{position:absolute;left:var(--m);right:var(--m);top:420px;bottom:400px;display:flex;flex-direction:column;z-index:2}
@@ -73,7 +73,7 @@ let corpo = '';
 const h = `<h1 class="${(C.manchete || '').length > 70 ? 'menor' : ''}">${manchete(C.manchete, C.destaque)}</h1>`;
 if (L === 'dica') {
   corpo = h + (C.texto ? `<p>${esc(C.texto)}</p>` : '') + `<div class="esp"></div>` +
-    `<div class="botao"><div>${esc(C.chamada || 'Salva pra usar depois')}<small>@raiz.connect</small></div><span class="seta">↗</span></div>`;
+    `<div class="botao"><div>${esc(C.chamada || 'Tira print pra usar depois')}<small>@raiz.connect</small></div><span class="seta">↗</span></div>`;
 } else if (L === 'post-novo' || L === 'video-novo') {
   corpo = h + (C.imagem ? `<div class="capa ${L === 'video-novo' ? 'video' : ''}"><img src="${esc(C.imagem)}"></div>` : '') +
     `<div class="esp"></div><div class="botao lima-fundo"><div>${esc(C.chamada || (L === 'video-novo' ? 'Assiste no perfil' : 'Arrasta no perfil'))}` +
@@ -83,9 +83,9 @@ if (L === 'dica') {
     `<div class="esp"></div><div class="pergunta">${esc(C.pergunta || 'Responde aqui no direct:')}</div>`;
 } else if (L === 'oferta') {
   corpo = `<h1 class="menor">${manchete(C.manchete || 'Em 30 dias você sabe quanto sobra em cada produto.', C.destaque || 'quanto sobra')}</h1>` +
-    `<ul class="lista">${(C.itens || ['A gente cadastra seus 10 principais produtos', 'Raio-X do negócio no primeiro mês', 'Se não achar onde o dinheiro escapa, você não paga a próxima mensalidade'])
+    `<ul class="lista">${(C.itens || ['A gente cadastra seus 10 principais produtos', 'Raio-X do negócio no primeiro mês', 'Se em 30 dias o Raio-X não achar pelo menos um lugar onde o seu dinheiro escapa, você não paga a próxima mensalidade'])
       .map(i => `<li><span>${esc(i)}</span></li>`).join('')}</ul>` +
-    `<div class="preco"><b>R$ 197</b><span>por mês, sem fidelidade</span></div>` +
+    (C.preco ? `<div class="preco"><b>${esc(C.preco)}</b><span>${esc(C.preco_nota || '')}</span></div>` : '') +
     `<div class="esp"></div><div class="botao lima-fundo"><div>${esc(C.chamada || 'Link na bio')}<small>@raiz.connect</small></div><span class="seta">↗</span></div>`;
 }
 st.innerHTML = `<div class="topo"><img src="${logo}"><span class="etq">${esc(C.etiqueta || etiqueta)}</span></div><div class="area">${corpo}</div>`;

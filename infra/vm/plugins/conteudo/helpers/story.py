@@ -17,7 +17,7 @@ from pathlib import Path
 
 LAYOUTS = ("dica", "post-novo", "video-novo", "bastidor", "oferta")
 CAMPOS = ("layout", "manchete", "destaque", "texto", "chamada", "etiqueta", "imagem", "tela", "nota", "pergunta",
-          "itens", "claro")
+          "itens", "claro", "preco", "preco_nota")
 MANCHETE_MAX = 90
 TEXTO_MAX = 220
 LARGURA, ALTURA = 1080, 1920
@@ -36,7 +36,8 @@ def validar(campos: dict) -> str:
     extra = set(campos) - set(CAMPOS)
     if extra:
         return f"campos desconhecidos: {', '.join(sorted(extra))}"
-    textos = [str(campos.get(k) or "") for k in ("manchete", "destaque", "texto", "chamada", "etiqueta", "nota", "pergunta")]
+    textos = [str(campos.get(k) or "") for k in ("manchete", "destaque", "texto", "chamada", "etiqueta", "nota", "pergunta",
+                                                 "preco", "preco_nota")]
     textos += [str(i) for i in campos.get("itens") or []]
     if campos["layout"] != "oferta" and not str(campos.get("manchete") or "").strip():
         return "manchete vazia"

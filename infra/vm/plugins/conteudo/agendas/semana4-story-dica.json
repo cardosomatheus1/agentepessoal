@@ -1,0 +1,16 @@
+[
+ {
+  "id": "st3-2026-10-26",
+  "data": "2026-10-26",
+  "hora": "09:00",
+  "tipo": "STORY",
+  "arquivos": [
+   "conteudo/stories/v2/2026-10-26-dica-v3.jpg"
+  ],
+  "legenda": "seg: dica, atualizar o custo de cada insumo pela última nota antes de mexer no preço",
+  "origem": {
+   "titulo": "seg: dica, atualizar o custo de cada insumo pela última nota antes de mexer no preço",
+   "plano": "Instagram 22/10: story todo dia"
+  }
+ }
+]
