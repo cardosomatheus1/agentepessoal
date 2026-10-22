@@ -6,6 +6,7 @@ import shutil
 import sys
 import tempfile
 import threading
+import time
 import traceback
 import types
 from pathlib import Path
@@ -45,6 +46,25 @@ class Suite:
             shutil.rmtree(self._tmp, ignore_errors=True)
         self._tmp = Path(tempfile.mkdtemp(prefix="fios-teste-"))
         self.f.PASTA = self._tmp
+
+    def t_so_ele_conclui(self):
+        # 22/10 (Claude Duet): what the agent finished waits for him ("a conferir"); only he closes it
+        self._pasta_nova()
+        f = self.f
+        f.mesclar(LOGIN, [{"titulo": "Montar o painel"}, {"titulo": "Responder a Ana"}])
+        ids = {x["titulo"]: x["id"] for x in f.carregar(LOGIN)["fios"]}
+        eq(f.para_conferir(LOGIN, [ids["Montar o painel"]], "feito"), 1, "vai para a conferir")
+        eq(f.para_conferir(LOGIN, [ids["Montar o painel"]]), 0, "de novo não conta")
+        eq([x["titulo"] for x in f.abertos(LOGIN)], ["Responder a Ana"], "a conferir sai dos abertos (não volta a avisar)")
+        eq([x["titulo"] for x in f.a_conferir(LOGIN)], ["Montar o painel"], "lista a conferir")
+        velho = f.carregar(LOGIN)
+        for x in velho["fios"]:
+            x["atualizado"] = time.time() - 30 * 86400
+        f.salvar(LOGIN, velho)
+        eq(len(f.a_conferir(LOGIN)), 1, "a conferir não some com o tempo (só ele fecha)")
+        eq(f.concluir(LOGIN, ids["Montar o painel"], "matheus: quadro")["estado"], "resolvido", "ele fecha")
+        eq(f.concluir(LOGIN, ids["Montar o painel"], "x"), None, "fechar de novo não faz nada")
+        eq(f.reabrir(LOGIN, ids["Montar o painel"])["estado"], "aberto", "reabrir")
 
     def t_salvar_ignorar_adiar(self):
         f = self.f

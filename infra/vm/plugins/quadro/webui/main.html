@@ -1,0 +1,101 @@
+<html>
+<head>
+  <title>Tarefas</title>
+</head>
+<body>
+  <!-- The Tarefas board (helpers/quadro.py). Only the person closes a task; "Faz pra mim" opens a chat for it. -->
+  <div x-data="{ q: null, msg: 'Carregando…', aviso: '', t: null, ocupado: '',
+        async chamar(acao, id) {
+          this.ocupado = id || '';
+          try { const r = await globalThis.sendJsonData('/plugins/quadro/quadro', { acao, id });
+                this.q = r.quadro; this.msg = ''; this.aviso = r.mensagem || r.erro || ''; }
+          catch (e) { this.msg = 'Não consegui abrir as tarefas agora.'; }
+          this.ocupado = '';
+        },
+        conta(k) { return (this.q && this.q[k]) ? this.q[k].length : 0; } }"
+       x-init="chamar('ler'); t = setInterval(() => { if (document.visibilityState === 'visible' && !ocupado) chamar('ler'); }, 60000)"
+       x-destroy="clearInterval(t)" class="quadro">
+    <p class="quadro-msg" x-show="msg" x-text="msg"></p>
+    <p class="quadro-aviso" x-show="aviso" x-text="aviso"></p>
+
+    <template x-if="q">
+      <div class="quadro-colunas">
+        <template x-for="[k, nome, dica] in [['ativas','Ativas','o que está em aberto'],['conferir','A conferir','o agente diz que fez: só você fecha'],['proximas','Próximas','adiadas para depois'],['resolvidas','Resolvidas','últimos 14 dias']]" :key="k">
+          <section class="quadro-coluna">
+            <header><h3 x-text="nome"></h3><span class="quadro-n" x-text="conta(k)"></span></header>
+            <p class="quadro-dica" x-text="dica"></p>
+            <template x-for="c in q[k]" :key="c.id">
+              <article class="quadro-cartao" :class="'p-' + (c.prioridade || 'media')">
+                <b x-text="c.titulo"></b>
+                <p class="quadro-linha" x-show="c.nota" x-text="'Feito: ' + c.nota"></p>
+                <p class="quadro-linha" x-show="c.proximo_passo && k !== 'resolvidas'" x-text="'Próximo passo: ' + c.proximo_passo"></p>
+                <p class="quadro-meta">
+                  <span x-show="c.dono" x-text="c.dono === 'agente' ? 'o agente faz' : (c.dono === 'você' ? 'você faz' : c.dono)"></span>
+                  <span x-show="c.prazo" x-text="'prazo ' + c.prazo"></span>
+                  <span x-show="c.adiar_ate && k === 'proximas'" x-text="'volta ' + c.adiar_ate"></span>
+                  <span x-show="c.area" x-text="c.area"></span>
+                  <span x-show="c.conversa">tem conversa própria</span>
+                </p>
+                <div class="quadro-botoes">
+                  <button x-show="k === 'ativas' || k === 'proximas'" :disabled="ocupado === c.id" @click="chamar('fazer', c.id)">▶ Faz pra mim</button>
+                  <button x-show="k !== 'resolvidas'" :disabled="ocupado === c.id" @click="chamar('concluir', c.id)">✅ Concluir</button>
+                  <button x-show="k === 'resolvidas' || k === 'conferir'" :disabled="ocupado === c.id" @click="chamar('reabrir', c.id)">↩ Reabrir</button>
+                </div>
+              </article>
+            </template>
+            <p class="quadro-vazio" x-show="!conta(k)">Nada aqui.</p>
+          </section>
+        </template>
+
+        <section class="quadro-coluna quadro-larga">
+          <header><h3>Agendadas</h3><span class="quadro-n" x-text="conta('agendadas')"></span></header>
+          <p class="quadro-dica">rotinas que rodam sozinhas</p>
+          <table class="quadro-tabela">
+            <tbody>
+              <template x-for="a in q.agendadas" :key="a.nome">
+                <tr><td x-text="a.nome"></td><td x-text="a.quando"></td>
+                    <td x-text="a.rodando ? 'rodando agora' : (a.ultima ? 'última ' + a.ultima : 'ainda não rodou')"></td></tr>
+              </template>
+            </tbody>
+          </table>
+          <template x-if="q.objetivos.length">
+            <div><h4>Objetivos em andamento</h4>
+              <ul><template x-for="o in q.objetivos" :key="o.titulo"><li x-text="o.titulo + (o.nota ? ' — ' + o.nota : '')"></li></template></ul>
+            </div>
+          </template>
+          <p class="quadro-dica" x-text="'lido ' + q.lido_as"></p>
+        </section>
+      </div>
+    </template>
+  </div>
+  <style>
+    .quadro { display: flex; flex-direction: column; gap: 10px; min-width: min(900px, 92vw); max-width: 1200px; }
+    .quadro-colunas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .quadro-larga { grid-column: 1 / -1; }
+    .quadro-coluna { border: 1px solid var(--color-border, #2b2b2b); border-radius: 12px; padding: 10px 12px; min-width: 0;
+                     display: flex; flex-direction: column; gap: 8px; }
+    .quadro-coluna header { display: flex; align-items: baseline; gap: 8px; }
+    .quadro-coluna h3 { margin: 0; font-size: 1rem; }
+    .quadro-n { font-size: 0.8rem; opacity: 0.7; font-variant-numeric: tabular-nums; }
+    .quadro-dica, .quadro-vazio, .quadro-msg { font-size: 0.78rem; opacity: 0.65; margin: 0; }
+    .quadro-aviso { font-size: 0.85rem; margin: 0; color: #86efac; }
+    .quadro-cartao { border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;
+                     background: color-mix(in srgb, var(--color-text, #fff) 5%, transparent); border-left: 3px solid #64748b; }
+    .quadro-cartao.p-alta { border-left-color: #f87171; }
+    .quadro-cartao.p-baixa { border-left-color: #94a3b8; }
+    .quadro-cartao b { font-size: 0.88rem; overflow-wrap: anywhere; }
+    .quadro-linha { font-size: 0.8rem; margin: 0; opacity: 0.85; overflow-wrap: anywhere; }
+    .quadro-meta { font-size: 0.72rem; margin: 0; opacity: 0.65; display: flex; flex-wrap: wrap; gap: 8px; }
+    .quadro-botoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+    .quadro-botoes button { font-size: 0.75rem; padding: 3px 8px; border-radius: 999px; cursor: pointer;
+                            border: 1px solid var(--color-border, #3b3b3b); background: transparent; color: inherit; }
+    .quadro-botoes button:disabled { opacity: 0.4; cursor: wait; }
+    .quadro-tabela { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .quadro-tabela td { padding: 4px 6px; border-bottom: 1px solid var(--color-border, #2b2b2b); }
+    .quadro h4 { margin: 8px 0 4px; font-size: 0.85rem; }
+    .quadro ul { margin: 0; padding-left: 18px; font-size: 0.8rem; }
+    @media (max-width: 900px) { .quadro-colunas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .quadro-colunas { grid-template-columns: 1fr; } }
+  </style>
+</body>
+</html>

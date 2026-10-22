@@ -1,0 +1,4 @@
+name: quadro
+title: Tarefas
+description: Quadro de tarefas (do Claude Duet) com Ativas, A conferir, Próximas, Agendadas e Resolvidas; só você conclui, e "Faz pra mim" abre uma conversa própria para a tarefa.
+version: 1.0.0

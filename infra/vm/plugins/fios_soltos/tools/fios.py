@@ -60,14 +60,20 @@ class Fios(Tool):
         acao = str(acao or "listar").lower()
         if acao == "coletar":
             return Response(message=f.coletar(login, int(horas or 72), ignorar=self.agent.context.id), break_loop=False)
+        pedido_dele = str(kwargs.get("pedido_dele") or "").strip()
         if acao in ("salvar", "atualizar", "criar"):
-            criados, atualizados, fechados = f.mesclar(login, _lista(fios), _lista(resolvidos))
-            return Response(message=f"Registro salvo: {criados} novo(s), {atualizados} atualizado(s), {fechados} resolvido(s).",
-                            break_loop=False)
+            criados, atualizados, _ = f.mesclar(login, _lista(fios), [])
+            conferir = f.para_conferir(login, _lista(resolvidos)) if _lista(resolvidos) else 0
+            return Response(message=f"Registro salvo: {criados} novo(s), {atualizados} atualizado(s), {conferir} para ele "
+                                    "conferir e fechar (só ele fecha).", break_loop=False)
         if acao in ("resolver", "fechar"):
             ids = _lista(resolvidos) or _lista(id)
-            _, _, fechados = f.mesclar(login, [], ids)
-            return Response(message=f"{fechados} fio(s) marcado(s) como resolvido(s).", break_loop=False)
+            if pedido_dele:  # his own words closing it ("pode fechar", "já resolvi")
+                fechados = sum(1 for i in ids if f.concluir(login, str(i), f"{login}: {pedido_dele[:100]}"))
+                return Response(message=f"{fechados} fio(s) fechado(s) a pedido dele.", break_loop=False)
+            n = f.para_conferir(login, ids, str(kwargs.get("nota") or ""))
+            return Response(message=f"{n} fio(s) marcado(s) como feito(s), para ele conferir e fechar no quadro de Tarefas "
+                                    "(só ele fecha).", break_loop=False)
         if acao == "avisar":
             ponte = _ponte()
             if ponte is None:

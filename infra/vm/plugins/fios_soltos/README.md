@@ -24,3 +24,7 @@ dele), com a data em vez de "há N h". As instruções ficam onde estavam.
 **20/10 (Área):** toda Pendência do Matheus na Pasta tem `area` (raiz | nexos | orbyte | agente | pessoal | geral). A
 rodada e a ferramenta pedem a área; se vier vazia ou desconhecida, `fios.mesclar` põe o palpite da mesma tabela de
 palavras da migração (`cerebro/helpers/migracao.py` `area_de`, carregada pelo caminho; sem o plugin cerebro, "geral").
+
+**22/10 (do Claude Duet): só você conclui.** Quando o agente termina um fio, ele vai para **a conferir** (com uma nota do
+que foi feito) em vez de fechar; você fecha no quadro de **Tarefas** (`plugins/quadro`) ou dizendo "pode fechar" (a
+ferramenta guarda a sua fala em `pedido_dele`). Um fio a conferir não volta a ser avisado e não some com o tempo.

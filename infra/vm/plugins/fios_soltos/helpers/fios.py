@@ -175,7 +175,8 @@ def salvar(login: str, dados: dict) -> None:
         agora = time.time()
         # resolved/ignored ones are kept 14 days, so a later round does not recreate them
         dados["fios"] = [f for f in dados.get("fios", [])
-                         if f.get("estado", "aberto") in ("aberto", "adiado") or agora - f.get("atualizado", agora) < 14 * 86400]
+                         if f.get("estado", "aberto") in ("aberto", "adiado", "a_conferir")
+                         or agora - f.get("atualizado", agora) < 14 * 86400]
         if na_pasta(login):
             p = pasta()
             p.gravar("pendencias", dados["fios"])
@@ -235,6 +236,49 @@ def mesclar(login: str, novos: list, resolvidos: list | None = None) -> tuple[in
             fechados += 1
     salvar(login, dados)
     return criados, atualizados, fechados
+
+
+# 22/10 (Claude Duet: "only you can mark a task as completed"): what the agent says it finished goes to "a_conferir";
+# only the person closes it (the Tarefas board, or his own words through the tool's `pedido_dele`).
+@_transacao
+def para_conferir(login: str, ids: list, nota: str = "") -> int:
+    dados = carregar(login)
+    agora, n = time.time(), 0
+    for fio in dados["fios"]:
+        if str(fio.get("id")) in {str(i) for i in ids or []} and fio.get("estado", "aberto") in ("aberto", "adiado"):
+            fio.update({"estado": "a_conferir", "atualizado": agora, **({"nota_agente": str(nota)[:300]} if nota else {})})
+            n += 1
+    salvar(login, dados)
+    return n
+
+
+@_transacao
+def concluir(login: str, fid: str, por: str) -> dict | None:
+    """Closed by the person (board button or his words): resolved, with who and when."""
+    dados = carregar(login)
+    fio = next((f for f in dados["fios"] if str(f.get("id")) == str(fid)), None)
+    if not fio or fio.get("estado") == "resolvido":
+        return None
+    fio.update({"estado": "resolvido", "atualizado": time.time(), "concluido_por": str(por)[:120]})
+    salvar(login, dados)
+    return fio
+
+
+@_transacao
+def reabrir(login: str, fid: str) -> dict | None:
+    dados = carregar(login)
+    fio = next((f for f in dados["fios"] if str(f.get("id")) == str(fid)), None)
+    if not fio or fio.get("estado") == "aberto":
+        return None
+    fio.update({"estado": "aberto", "atualizado": time.time()})
+    fio.pop("adiar_ate", None)
+    salvar(login, dados)
+    return fio
+
+
+def a_conferir(login: str) -> list:
+    return sorted((f for f in carregar(login)["fios"] if f.get("estado") == "a_conferir"),
+                  key=lambda f: -f.get("atualizado", 0))
 
 
 @_transacao

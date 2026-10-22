@@ -1,0 +1,8 @@
+<!-- Quadro de tarefas -->
+<div x-data>
+  <button class="dropdown-item" id="quadro-dropdown" title="Tarefas"
+          @click="ensureModalOpen('/plugins/quadro/webui/main.html'); $store.sidebar.menuClose()">
+    <x-icon name="view_kanban"></x-icon>
+    <span>Tarefas</span>
+  </button>
+</div>
