@@ -31,7 +31,7 @@ TEMPO = 120
 # all reproved); it thinks harder and waits longer. The Crítico keeps its setting.
 # "high" went past the host proxy's 240 s on the big correction prompts and the calls died silently: "medium".
 ESFORCO = {"designer": "medium", "critico": "medium"}  # the Crítico misread slides on "low" (22/10)
-TEMPO_PAPEL = {"designer": 230}
+TEMPO_PAPEL = {"designer": 230, "critico": 230}  # under the host proxy's 240 s
 RAIZ = Path(__file__).resolve().parents[1]
 # next to this plugin (repository, live install); a staging copy alone in /tmp uses the installed ones
 PLUGINS = RAIZ.parent if (RAIZ.parent / "cerebro").exists() else Path("/a0/usr/plugins")
