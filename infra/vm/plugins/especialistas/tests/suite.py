@@ -224,6 +224,15 @@ class Suite:
         eq(m.criticar("oferta", "Programa por R$ 197/mês")["veredito"], "aprova", "oferta com preço real passa")
         eq(m.criticar("reel", {"falas": ["O prato custa R$ 12,40"]})["veredito"], "reprova", "reel também (22/10)")
 
+    def t_critico_le_o_cerebro_inteiro(self):
+        # 22/10: the offer was cut at 6000 letters and he reproved numbers that were in it
+        m = self._e(com_raiz="x" * 15000 + " 5 implementações por semana")
+        tarefas = []
+        m.chamar = lambda papel, tarefa, material, login="matheus": tarefas.append(tarefa) or \
+            {"texto": APROVA, "erro": "", "imagens": [], "sem_imagem": []}
+        m.criticar("carrossel", {"slides": ["5 implementações por semana"]})
+        ok("5 implementações por semana" in tarefas[0], "o fim da oferta chega ao Crítico")
+
     def t_tipo_ou_material_ruim_reprova_sem_chamar(self):
         m = self._e()
         chamadas = []

@@ -265,7 +265,13 @@ def _carregar(nome: str, caminho: Path):
     return sys.modules[nome]
 
 
-def contexto_raiz(limite: int = 6000) -> tuple[str, str]:
+# 22/10: at 6000 letters each Raiz file got a fair share and the offer was cut after ~1000; the Crítico reproved the
+# offer post for numbers that are in the offer (5 implementações, 10 produtos, the value stack). The whole Cérebro da
+# Raiz is ~18k letters: read it all.
+CONTEXTO = 24000
+
+
+def contexto_raiz(limite: int = CONTEXTO) -> tuple[str, str]:
     """(text, note) from the Cérebro da Raiz (cerebro/helpers/raiz.py `contexto`); empty text plus a clear note when
     it is not installed or fails, so the caller can still judge by the fixed rules."""
     cerebro = PLUGINS / "cerebro" / "helpers"
@@ -615,7 +621,7 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
         return {"spec": spec, "arquivos": arquivos, "falta": falta, "render": render,
                 "critica": {"veredito": "reprova", "motivos": ["nada para julgar (briefing vazio)"], "sugestoes": [],
                             "avisos": []}}
-    ctx, nota = contexto_raiz(limite=4000)
+    ctx, nota = contexto_raiz()
     catalogo = catalogo_moldes()
     pedido = FORMATO_DO_BRIEFING.get(str(briefing.get("formato") or "").upper(), "") if isinstance(briefing, dict) else ""
     if pedido:  # 22/10: shown the whole catalog it kept answering a carousel slot with a video template
