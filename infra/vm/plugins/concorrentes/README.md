@@ -63,3 +63,25 @@ Lista (pesquisa de 14 e 15/10/2026, URLs em `pesquisa` de cada um), 27 concorren
 Se a VM já tiver `lista.json` (gravado pelo agente antes desta versão), o operador roda uma vez, depois de implantar,
 `atualizar_semente()` com `AUTOR["quem"] = "operador: <motivo>"`: entram os concorrentes e fontes que faltam, o grupo e o
 Instagram; nada do que o agente adicionou ou removeu é desfeito. Sem `lista.json`, a semente nova já vale.
+
+## Relatório semanal (22/10)
+
+Matheus, 22/10: "eu sou um sistema de gestão, eles são meus concorrentes na real". Os relatórios de 15 e 21/10 eram
+contagem (quem postou mais, formato médio) e ruído de notícia; não diziam a estratégia de ninguém. Agora
+(`helpers/estrategia.py`, `acao "semanal"`):
+- **Ordem:** `gestao` (concorrentes de verdade) → `direto` (apps de precificação) → `conteudo` (só ideias de post).
+- **Anúncios ativos** da Biblioteca de Anúncios da Meta para o grupo `gestao`, pelo Apify
+  (`curious_coder/facebook-ads-library-scraper`, US$ 0,75 por 1.000 anúncios, 25 por concorrente), só se o gasto real do
+  Apify no mês (API `users/me/limits`, prospecção incluída) + a rodada couber em US$ 5 (decisão #10). A 1ª rodada acha a
+  página do concorrente pelo nome (e descarta restaurante que só cita o nome); o id fica em `meta_page_id`
+  (`guardar_pagina_meta`, com diário) e as próximas leem só a página.
+- **Leitura de estratégia pela IA** (proxy, `openai.gpt-6-luna`), uma por concorrente de gestão e de precificação:
+  tema, ofertas, preços, promessa, público, chamada, campanhas, anúncios, o que mudou desde a leitura da semana passada
+  e onde disputa com a Raiz. Depois uma síntese: destaques, 3 ações para a Raiz e até 3 ideias dos criadores.
+- **Legenda inteira** (limpa, até 500 letras) passa a ficar no histórico do Instagram só para essa leitura; o texto que
+  o agente vê continua só com o gancho. Tudo de terceiros vai à IA entre «», a IA responde só JSON e o que volta é
+  limpo e cortado (links só https de sites).
+- **Página** HTML em `/a0/usr/concorrentes/relatorios/concorrentes-AAAA-MM-DD.html`, mandada ao celular como arquivo, e
+  resumo de 5 linhas. Cada rodada fica em `relatorios.jsonl`. `acao "ideias"` devolve as ações e ideias do último
+  relatório para a "Semana de posts" de segunda.
+- Sem IA (proxy fora), a página sai com o que foi lido e a falha marcada.

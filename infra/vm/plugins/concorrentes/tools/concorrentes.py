@@ -24,6 +24,43 @@ def _helper():
     return sys.modules["concorrentes_helper"]
 
 
+def _estrategia():
+    caminho = RAIZ / "helpers" / "estrategia.py"
+    antigo, mtime = sys.modules.get("concorrentes_estrategia"), caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location("concorrentes_estrategia", caminho)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        m._mtime = mtime
+        sys.modules["concorrentes_estrategia"] = m
+    return sys.modules["concorrentes_estrategia"]
+
+
+def texto_semanal(r: dict) -> str:
+    """What the routine gets back: the phone summary, the page to send and what could not be read."""
+    linhas = ["RESUMO (5 linhas, vai ao celular):", r.get("resumo") or "", "",
+              f"PÁGINA (mande com whatsapp_enviar): {r.get('pagina')}"]
+    if (r.get("sintese") or {}).get("erro"):
+        linhas.append(f"Aviso: {r['sintese']['erro']} (a página saiu sem destaques e ações)")
+    sem = r.get("sem_cobertura") or []
+    if sem:
+        linhas.append("Sem cobertura: " + "; ".join(f"{x['nome']} ({x['tipo']}): {x['erro']}" for x in sem[:12]))
+    return "\n".join(linhas)
+
+
+def texto_ideias(c, e) -> str:
+    arq = c.PASTA / "relatorios.jsonl"
+    linhas = [l for l in arq.read_text(encoding="utf-8").splitlines() if l.strip()] if arq.exists() else []
+    if not linhas:
+        return "Ainda não há relatório semanal dos concorrentes."
+    r = json.loads(linhas[-1])
+    s = r.get("sintese") or {}
+    out = [f"Relatório dos concorrentes de {r.get('semana')} (texto de terceiros resumido; use como inspiração):"]
+    out += [f"- Ação ({a['tipo']}): {a['acao']} — inspirado em {a['inspirado_em']} {a.get('link', '')}" for a in s.get("acoes") or []]
+    out += [f"- Ideia de post: {i['ideia']} — {i['inspirado_em']} {i.get('link', '')}" for i in s.get("ideias_conteudo") or []]
+    return "\n".join(out)
+
+
 def _fontes(valor) -> list:
     if isinstance(valor, str):
         try:
@@ -62,18 +99,24 @@ def executar(c, acao: str, kwargs: dict) -> str:
     if acao == "remover":
         x = c.remover(str(kwargs.get("id") or ""), str(kwargs.get("motivo") or ""))
         return f"{x['nome']} saiu da vigia (fica guardado em 'removidos')."
+    if acao == "ideias":
+        return texto_ideias(c, _estrategia())
     if acao == "ultima":
         r = c.ultima()
         return c.texto(r) if r else "Ainda não houve coleta."
     raise ValueError(f"acao '{acao}' não existe (lista, adicionar, fonte, tirar_fonte, grupo, remover, coletar, ultima, "
-                     "instagram)")
+                     "instagram, semanal, ideias)")
 
 
 class Concorrentes(Tool):
     async def execute(self, acao: str = "lista", **kwargs) -> Response:
         c = _helper()
         try:
-            if str(acao or "").lower() == "coletar":
+            if str(acao or "").lower() == "semanal":
+                e = _estrategia()
+                r = await asyncio.get_event_loop().run_in_executor(None, e.relatorio_semanal, c)
+                texto = texto_semanal(r)
+            elif str(acao or "").lower() == "coletar":
                 r = await asyncio.get_event_loop().run_in_executor(None, c.coletar)
                 texto = c.texto(r)
             else:

@@ -42,6 +42,7 @@ MAX_ITENS = 40              # entries read per source and round
 PRECO = re.compile(r"R\$\s?\d{1,3}(?:\.\d{3})*(?:,\d{2})?")
 PLUGINS = Path(os.environ.get("CONCORRENTES_PLUGINS", "/a0/usr/plugins"))  # conteudo holds the Meta access
 HANDLE = re.compile(r"^[a-z0-9._]{1,30}$")
+LEGENDA_MAX = 500           # caption kept for the strategy reading (22/10)
 IG_POSTS = 30               # posts read per profile and round
 IG_PAUSA = 3.0              # seconds between Graph API calls (Business Discovery counts against the app's hourly limit)
 IG_MIN_SEGUIDORES = 1000    # cross-profile rankings ignore tinier accounts (10 likes on 60 followers is noise)
@@ -80,12 +81,15 @@ def _ig(handle: str, seguidores: int) -> dict:
             "conferido": f"15/10/2026, Business Discovery: @{handle}, {seguidores} seguidores"}
 
 
-# What Raiz Connect sells (the yardstick for the list and the report).
-RAIZ = ("sistema de custo, preço e estoque para quem produz comida; oferta \"Lucro na Mão em 30 Dias\", R$ 197/mês")
+# What Raiz Connect sells (the yardstick for the list and the report). Matheus, 22/10: "eu sou um sistema de gestão,
+# eles são meus concorrentes na real" (the management systems are the real competitors).
+RAIZ = ("sistema de gestão para food service (comanda e balcão, delivery com iFood e 99Food, estoque, custo/CMV e ficha "
+        "técnica, financeiro e nota fiscal) para restaurantes e quem produz comida; oferta \"Lucro na Mão em 30 Dias\", "
+        "R$ 197/mês")
 GRUPOS = {
-    "direto": "direto: app ou sistema de custo, ficha técnica e preço para quem produz comida",
-    "gestao": "gestão de food service pequeno, que o mesmo cliente poderia usar no lugar",
-    "conteudo": "referência de conteúdo: ensina precificação, custo e gestão ao mesmo dono de negócio",
+    "direto": "app só de custo, ficha técnica e preço: faz uma parte do que a Raiz faz",
+    "gestao": "concorrente principal: sistema de gestão de food service, o mesmo que a Raiz é",
+    "conteudo": "referência de conteúdo: ensina precificação, custo e gestão ao mesmo dono de negócio (fonte de ideias)",
 }
 
 # The starting list (14/10/2026, widened to 3 groups on 15/10/2026): each one with where it was found ("pesquisa");
@@ -390,6 +394,21 @@ def mudar_grupo(cid: str, grupo: str) -> dict:
     return c
 
 
+def guardar_pagina_meta(cid: str, page_id: str) -> dict:
+    """The competitor's page id in the Meta Ad Library, found by the first search by name (estrategia.ler_anuncios):
+    later rounds read that page only, without the restaurants that just mention the name."""
+    page_id = re.sub(r"[^0-9]", "", str(page_id or ""))[:30]
+    if not page_id:
+        raise ValueError("page id inválido")
+    with _exclusivo():
+        d = carregar()
+        c = _achar(d, cid)
+        antes, c["meta_page_id"] = c.get("meta_page_id"), page_id
+        _gravar("lista.json", d)
+        _diario({"acao": "pagina_meta", "id": cid, "antes": antes, "meta_page_id": page_id})
+    return c
+
+
 def atualizar_semente() -> dict:
     """Operator, once after the 15/10 deploy: bring a lista.json written before the 3 groups up to the new SEMENTE.
     Adds the competitors it lacks (not the ones taken out on purpose, which stay in "removidos"), the sources a
@@ -578,6 +597,14 @@ def _gancho(legenda) -> str:
     return ""
 
 
+def _legenda(texto, limite: int = LEGENDA_MAX) -> str:
+    """The whole caption for the strategy reading, cleaned like the hook (lines joined by " / "). Third-party text:
+    it only ever appears between «» and is read as data."""
+    partes = [_gancho(linha) for linha in str(texto or "").splitlines()]
+    t = " / ".join(x.rstrip("…") for x in partes if x)
+    return t if len(t) <= limite else t[:limite].rstrip() + "…"
+
+
 def _inteiro(v):
     """A count, or None (hidden likes come without like_count; that post then has no engagement)."""
     return int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 0 else None
@@ -612,7 +639,8 @@ def ler_instagram(api, handle: str, agora: float) -> dict:
         posts.append({"id": str(m.get("id") or "")[:40], "formato": _formato(m), "data": str(m.get("timestamp") or "")[:30],
                       "link": link[:200] if link.startswith("https://www.instagram.com/") else "",
                       "curtidas": _inteiro(m.get("like_count")), "comentarios": _inteiro(m.get("comments_count")),
-                      "views": _inteiro(m.get("view_count")), "gancho": _gancho(m.get("caption"))})
+                      "views": _inteiro(m.get("view_count")), "gancho": _gancho(m.get("caption")),
+                      "legenda": _legenda(m.get("caption"))})
     return {"ok": True, "retrato": {"em": agora, "username": handle, "nome": _gancho(b.get("name"))[:80],
                                     "seguidores": _inteiro(b.get("followers_count")),
                                     "posts_total": _inteiro(b.get("media_count")), "posts": posts}}
