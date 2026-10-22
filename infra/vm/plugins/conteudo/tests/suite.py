@@ -127,6 +127,8 @@ class Suite:
         ok("desconhecidos" in st.validar({"layout": "dica", "manchete": "x", "script": "alert(1)"}), "campo estranho fora")
         ok("emoji" in st.validar({"layout": "oferta", "preco": "R$ 197 😅"}), "o preço também passa pelas regras")
         ok(st.validar({"layout": "oferta"}) == "", "oferta sem preço (os detalhes ficam no link da bio)")
+        ok("você não paga" not in (RAIZ / "story" / "story.html").read_text(encoding="utf-8"),
+           "garantia do story padrão com as palavras aprovadas: a gente não cobra (decisão #22)")
         ok((RAIZ / "story" / "telas" / "curva-abc-custos.jpg").exists(), "há tela real para o bastidor")
         # 22/10, Matheus: "usaria tema escuro e n usaria esse formato de tela ... pq menu some": tela escura e inteira
         from PIL import Image, ImageStat

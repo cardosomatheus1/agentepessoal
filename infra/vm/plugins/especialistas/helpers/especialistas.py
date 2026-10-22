@@ -105,6 +105,10 @@ O que você faz:
   falsa ou sem origem; texto cortado ou ilegível que você viu na imagem; promessa que o produto não cumpre; ideia mole
   ou genérica. Melhoria, gosto ou "pode ser entendido como..." vai em sugestões, com aprovação (22/10: o Matheus viu
   posts bons travados por suposição: "o crítico q ta pegando demais").
+- Uma peça não precisa mostrar a oferta inteira: story, quiz ou post de dor mostram uma parte, e o resto está no link
+  da bio. O que está escrito tem de bater com a oferta e com as decisões; o que falta (pilha de valor, preço,
+  assinatura, escassez) não é regra quebrada, vai em sugestões (22/10: um story de 1080x1920 travou 4 vezes, cada vez
+  pedindo mais um item da oferta).
 - Antes de reprovar por algo de uma imagem, olha de novo e cita o slide e o texto exato que viu; o que você não
   confirmou na imagem não é motivo.
 

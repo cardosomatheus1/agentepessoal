@@ -83,7 +83,7 @@ if (L === 'dica') {
     `<div class="esp"></div><div class="pergunta">${esc(C.pergunta || 'Responde aqui no direct:')}</div>`;
 } else if (L === 'oferta') {
   corpo = `<h1 class="menor">${manchete(C.manchete || 'Em 30 dias você sabe quanto sobra em cada produto.', C.destaque || 'quanto sobra')}</h1>` +
-    `<ul class="lista">${(C.itens || ['A gente cadastra seus 10 principais produtos', 'Raio-X do negócio no primeiro mês', 'Se em 30 dias o Raio-X não achar pelo menos um lugar onde o seu dinheiro escapa, você não paga a próxima mensalidade'])
+    `<ul class="lista">${(C.itens || ['A gente cadastra seus 10 principais produtos', 'Raio-X do negócio no primeiro mês', 'Se em 30 dias o Raio-X não achar pelo menos um lugar onde o seu dinheiro escapa, a gente não cobra a próxima mensalidade'])
       .map(i => `<li><span>${esc(i)}</span></li>`).join('')}</ul>` +
     (C.preco ? `<div class="preco"><b>${esc(C.preco)}</b><span>${esc(C.preco_nota || '')}</span></div>` : '') +
     `<div class="esp"></div><div class="botao lima-fundo"><div>${esc(C.chamada || 'Link na bio')}<small>@raiz.connect</small></div><span class="seta">↗</span></div>`;
