@@ -56,8 +56,11 @@ def quando(schedule: dict) -> str:
     dia, semana = str(s.get("day", "*")), str(s.get("weekday", "*"))
     if hora == "*":
         return "a cada hora" if minuto != "*" else "o tempo todo"
-    horas = ", ".join(f"{int(h):02d}:{int(minuto):02d}" if minuto.isdigit() and h.isdigit() else f"{h}:{minuto}"
-                      for h in hora.split(","))
+    if minuto.isdigit() and all(h.isdigit() for h in hora.split(",")):
+        horas = ", ".join(f"{int(h):02d}:{int(minuto):02d}" for h in hora.split(","))
+    else:  # ranges or several minutes ("10-12" at "8,38"): said in words
+        faixas = " e ".join(f"{h.split('-')[0]}h às {h.split('-')[1]}h" if "-" in h else f"{h}h" for h in hora.split(","))
+        horas = f"{faixas}, nos minutos {' e '.join(minuto.split(','))}"
     if semana != "*":
         nomes = []
         for parte in semana.split(","):

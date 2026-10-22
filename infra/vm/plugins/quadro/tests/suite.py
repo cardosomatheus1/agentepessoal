@@ -71,6 +71,8 @@ class Suite:
         eq(q.quando({"minute": "52", "hour": "8", "day": "*", "weekday": "1"}), "seg 08:52", "segunda")
         eq(q.quando({"minute": "0", "hour": "9", "day": "*", "weekday": "1-5"}), "seg a sex 09:00", "dias úteis")
         eq(q.quando({"minute": "7", "hour": "9", "day": "1", "weekday": "*"}), "dia 1 09:07", "mensal")
+        eq(q.quando({"minute": "8,38", "hour": "10-12,14-19", "day": "*", "weekday": "*"}),
+           "todo dia 10h às 12h e 14h às 19h, nos minutos 8 e 38", "faixas")
         eq(q.quando({"minute": "40", "hour": "8,13,18", "day": "*", "weekday": "*"}), "todo dia 08:40, 13:40, 18:40", "várias")
         (tmp / "tasks.json").write_text(json.dumps({"tasks": [
             {"name": "📰 Resumo do dia", "state": "idle", "schedule": {"minute": "45", "hour": "7"},
