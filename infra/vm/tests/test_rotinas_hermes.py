@@ -191,6 +191,9 @@ esq = rn.esquema()
 checa(esq["name"] == "reuniao" and {"acao", "evento_id", "titulo", "inicio"} <= set(esq["parameters"]["properties"]),
       "mesmo nome e parâmetros da ferramenta do A0")
 
+rr = (H / "rotina_rodar.py").read_text()
+checa("run_job(dict(job))" in rr and "trigger_job" not in rr.split('"""', 2)[2] and "rotina_rodar.py" in sh,
+      "rodar à mão sem ligar a rotina (o run do cron liga a pausada)")
 # --- 5. the gate script
 pt = (H / "scripts" / "portao.py").read_text()
 checa('"wakeAgent": False' in pt and "hermes-mcp:8765" in pt and "P.preparar" in pt, "portão: contrato wakeAgent do cron do Hermes")

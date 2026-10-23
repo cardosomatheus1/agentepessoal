@@ -33,6 +33,7 @@ done
 # um "script" do cron do Hermes: um embrulho por rotina em scripts/.
 rm -rf "$DADOS/agentepessoal/rotinas_fonte"; cp -r "$AQUI/rotinas" "$DADOS/agentepessoal/rotinas_fonte"
 install -m 755 "$AQUI/rotinas_aplicar.py" "$DADOS/agentepessoal/rotinas_aplicar.py"
+install -m 755 "$AQUI/rotina_rodar.py" "$DADOS/agentepessoal/rotina_rodar.py"
 mkdir -p "$DADOS/scripts"
 install -m 644 "$AQUI/scripts/portao.py" "$DADOS/scripts/portao.py"
 for u in $(python3 -c "import json;print(' '.join(k for k,v in json.load(open('/opt/a0/usr/plugins/rotinas/portao.json')).items() if isinstance(v,dict) and v.get('fontes')))" 2>/dev/null); do
