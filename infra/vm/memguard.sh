@@ -25,6 +25,8 @@ avisar() {  # Telegram through the host bridge (urgent: also in quiet hours); ne
 # and tunnel dead). When the container has been up 10+ min and the UI fails 5 checks in a row, restart only run_ui.
 UI=/var/lib/agentepessoal/memguard-ui
 desde=$(docker inspect -f '{{.State.StartedAt}}' agent-zero 2>/dev/null)
+# 23/10 (virada ao Hermes): o A0 fica parado 7 dias para a volta; parado, não se mexe nele (nem na interface)
+[ "$(docker inspect -f '{{.State.Running}}' agent-zero 2>/dev/null)" = true ] || desde=""
 if [ -n "$desde" ] && [ $(( $(date +%s) - $(date -d "$desde" +%s) )) -ge 600 ]; then
   if curl -s -o /dev/null -m 10 http://127.0.0.1:50080/login; then
     echo 0 > "$UI"
@@ -48,18 +50,20 @@ echo "$n" > "$ESTADO"
 logger -t agentepessoal "memguard: ${livre} MB free (check $n/3)"
 [ "$n" -lt 3 ] && exit 0
 echo 0 > "$ESTADO"
-# the container using the most memory is the one restarted (only the agent or the phone)
+# the container using the most memory is the one restarted: the agent (A0, or after the cutover the Hermes and its
+# browsers, the guests' too), or the phone; `docker stats` lists only running ones
 culpado=$(docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' 2>/dev/null | python3 -c '
 import re, sys
 unid = {"B": 1, "KiB": 2**10, "MiB": 2**20, "GiB": 2**30, "kB": 1e3, "MB": 1e6, "GB": 1e9}
-melhor, uso = "agent-zero", -1.0
+melhor, uso = "", -1.0
 for linha in sys.stdin:
     nome, _, resto = linha.strip().partition(" ")
     m = re.match(r"([\d.]+)\s*([A-Za-z]+)", resto)
-    if nome in ("agent-zero", "android") and m and float(m.group(1)) * unid.get(m.group(2), 1) > uso:
+    candidato = nome in ("agent-zero", "android") or re.fullmatch(r"hermes(-navegador)?(-[a-z0-9_-]+)?", nome)
+    if candidato and nome != "hermes-mcp" and m and float(m.group(1)) * unid.get(m.group(2), 1) > uso:
         melhor, uso = nome, float(m.group(1)) * unid.get(m.group(2), 1)
 print(melhor)')
-culpado=${culpado:-agent-zero}
+[ -n "$culpado" ] || { logger -t agentepessoal "memguard: ${livre} MB free and no agent container running"; exit 0; }
 agora=$(date +%s)
 recentes=$(awk -v c=$((agora - 3600)) '$1 > c' "$REINICIOS" 2>/dev/null | wc -l)
 if [ "$recentes" -ge "$MAX_REINICIOS_HORA" ]; then

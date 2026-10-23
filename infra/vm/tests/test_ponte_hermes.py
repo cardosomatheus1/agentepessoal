@@ -55,7 +55,7 @@ def main() -> int:
     # a message opens a run; approvals become buttons; the answer goes back
     chamadas, respostas = [], {}
 
-    def hermes(caminho, corpo=None, timeout=60):
+    def hermes(caminho, corpo=None, timeout=60, usuario=""):
         chamadas.append((caminho, corpo))
         return respostas[caminho].pop(0) if isinstance(respostas.get(caminho), list) else respostas.get(caminho, {})
 
@@ -128,6 +128,82 @@ def main() -> int:
     n = len(enviados)
     p.acompanhar_hermes("run_3", "matheus", "123", espera=5, pausa=0)
     ok(len(enviados) == n, "SEM NOVIDADE não vai ao celular")
+    # virada (fase 8): botões e comandos que o A0 tratava sem modelo, mensagem nova entra no pedido que roda, convidados
+    # no Hermes deles, /conversa só para quem está no Hermes, "ok" de cartão já enviado não vai de novo
+    p.HERMES_CONVIDADOS = tmp / "convidados"
+    (p.HERMES_CONVIDADOS / "ilia").mkdir(parents=True)
+    (p.HERMES_CONVIDADOS / "ilia" / "porta").write_text("8660\n")
+    ok(p.instancia("ilia") == ("http://127.0.0.1:8660", "hermes-ilia") and p.instancia("matheus") == (p.HERMES_URL, "hermes"),
+       "convidado no Hermes dele (porta própria); o resto no principal")
+    exec_botoes = []
+    p.botao_hermes = lambda usuario, dados: exec_botoes.append((usuario, dados.get("botao"), dados.get("texto"))) or {"ok": True, "texto": "PAINEL"}
+    n = len(chamadas)
+    p.entregar_hermes({"usuario": "matheus", "texto": "✅ Aprovar", "botao": "pa:matheus:a1:aprovar"}, "123")
+    ok(exec_botoes[-1] == ("matheus", "pa:matheus:a1:aprovar", "✅ Aprovar") and len(chamadas) == n,
+       "botão da prospecção roda as funções do A0 no Hermes, sem abrir pedido ao modelo")
+    p.entregar_hermes({"usuario": "matheus", "texto": "Aprovar", "botao": "aprov:ctx:1:aprovar"}, "123")
+    ok("agente antigo" in enviados[-1][1] and len(chamadas) == n, "botão de ok do A0: avisa que não está mais aberto")
+    for cmd in ("/pendentes", "/ajuda", "/atividade"):
+        p.entregar_hermes({"usuario": "matheus", "texto": cmd, "botao": ""}, "123")
+        ok(exec_botoes[-1][2] == cmd and len(chamadas) == n, f"{cmd} respondido sem o modelo")
+    p.DESTINO.write_text(json.dumps({"padrao": "hermes"}))
+    p.linha_livro = lambda u: "LIVRO"
+    p.linha_saude = lambda: "SAUDE"
+    p.texto_gasto = lambda u="matheus": "GASTO"
+    painel = p.texto_painel("matheus")
+    ok("PAINEL" in painel and "Fazendo agora" in painel and "GASTO" in painel, f"/painel pelo Hermes: {painel[:200]}")
+    respostas["/v1/runs"] = {"run_id": "run_7"}
+    p.entregar_hermes({"usuario": "matheus", "texto": "faz X", "botao": ""}, "123")
+    ok(p.ativos_hermes("matheus") == ["run_7"], "o pedido fica entre os que rodam")
+    respostas["/v1/runs/run_7/steer"] = {"accepted": True}
+    r = p.entregar_hermes({"usuario": "matheus", "texto": "e também Y", "botao": ""}, "123")
+    ok(r == "run_7" and chamadas[-1] == ("/v1/runs/run_7/steer", {"input": "e também Y"}),
+       "mensagem com um pedido rodando entra nele (como a correção do A0)")
+    p.entregar_hermes({"usuario": "matheus", "texto": "/parar", "botao": ""}, "123")
+    ok(chamadas[-1] == ("/v1/runs/run_7/stop", {}) and p.ativos_hermes("matheus") == [] and "Parei" in enviados[-1][1],
+       "/parar para o que roda")
+    p.entregar_hermes({"usuario": "matheus", "texto": "/nova", "botao": ""}, "123")
+    nova = p.sessao_hermes("matheus")
+    ok(nova.startswith("tg-matheus-") and json.loads(p.HERMES_SESSOES.read_text()).get(nova) == "matheus",
+       f"/nova começa outra sessão (mapeada para ele): {nova}")
+    respostas["/v1/runs"] = {"run_id": "run_8"}
+    p.entregar_hermes({"usuario": "matheus", "texto": "oi", "botao": ""}, "123")
+    ok(chamadas[-1][1]["session_id"] == nova, "depois de /nova, os pedidos vão à sessão nova")
+    respostas["/v1/runs/run_9"] = [{"status": "completed", "output": "ok"}]
+    n = len(enviados)
+    p.acompanhar_hermes("run_9", "matheus", "123", espera=5, pausa=0)
+    ok(len(enviados) == n, "o 'ok' depois de um cartão com botões não vai de novo (como no A0)")
+    # WhatsApp sem Telegram: a resposta vai pelo número
+    p._cfg, p._cfg_em = {"numeros": {"5571": "fernanda"}}, 9e18
+    pelo_zap = []
+    p.enviar_texto = lambda numero, texto: pelo_zap.append((numero, texto))
+    p.responder_hermes("fernanda", "", "oi")
+    ok(pelo_zap == [("5571", "oi")], "sem Telegram, a resposta do Hermes vai pelo WhatsApp")
+    # o Hermes fora do ar (subindo): a mensagem espera na fila, não some
+    spec2 = importlib.util.spec_from_file_location("ponte_hermes_teste2", RAIZ / "infra" / "vm" / "ponte_whatsapp.py")
+    p2 = importlib.util.module_from_spec(spec2)
+    spec2.loader.exec_module(p2)
+    p2.HERMES_URL, p2.HERMES_CHAVE = "http://127.0.0.1:9", p.HERMES_CHAVE
+    try:
+        p2._hermes("/v1/runs", {"input": "x"})
+        ok(False, "Hermes fora do ar devia segurar a mensagem")
+    except p2.AgenteFora:
+        pass
+    # /conversa: só a chave da ponte, só quem está no Hermes
+    p.DESTINO.write_text(json.dumps({"padrao": "a0"}))
+    respostas_http = []
+
+    class Req:
+        def __init__(self, corpo, chave_ok=True):
+            self.path, self.headers = "/conversa", {"X-Chave": "c" if chave_ok else "x", "Content-Length": str(len(corpo))}
+            self.rfile = __import__("io").BytesIO(corpo)
+    p.chave = lambda: "c"
+    for corpo, chave_ok, esperado in ((b'{"usuario":"matheus","texto":"oi"}', True, 409),
+                                      (b'{"usuario":"matheus","texto":"oi"}', False, 403)):
+        r = Req(corpo, chave_ok)
+        r._responder = lambda code, c: respostas_http.append(code)
+        p.Saida.do_POST(r)
+        ok(respostas_http[-1] == esperado, f"/conversa responde {esperado}: {respostas_http[-1]}")
     for f in falhas:
         print("FALHA", f)
     print("ponte_hermes:", "ok" if not falhas else f"{len(falhas)} falha(s)")

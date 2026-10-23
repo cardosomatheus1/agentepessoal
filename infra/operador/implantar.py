@@ -361,9 +361,19 @@ def main() -> None:
 
     # 3. staging copy + tests, then swap
     estagio = f"/tmp/implantar-{plugin}"
-    teste = (f"docker cp {estagio}/{caminho} agent-zero:/tmp/estagio-{plugin} && "
+    # 23/10 (virada ao Hermes): com o A0 parado (7 dias, para a volta) a suíte roda num container descartável da MESMA
+    # imagem do A0, sem rede, com a cópia de estágio, os plugins no ar só para leitura e /a0/usr vazio (como no CI; nada
+    # dos dados vivos é tocado). O Hermes roda o mesmo
+    # código dos plugins pela ponte_a0, que relê a ferramenta quando o arquivo muda: não precisa reiniciar.
+    a0_no_ar = "true" in vm("docker inspect -f '{{.State.Running}}' agent-zero 2>/dev/null || echo false")
+    alvo = "agent-zero" if a0_no_ar else f"estagio-{plugin}"
+    preparo = ("" if a0_no_ar else
+               f"docker rm -f {alvo} >/dev/null 2>&1; docker run -d --name {alvo} --network none --entrypoint sleep "
+               f"--mount type=tmpfs,destination=/a0/usr -v /opt/a0/usr/plugins:/a0/usr/plugins:ro "
+               f"$(docker inspect -f '{{{{.Config.Image}}}}' agent-zero) 3600 >/dev/null && ")
+    teste = (preparo + f"docker cp {estagio}/{caminho} {alvo}:/tmp/estagio-{plugin} && "
              # ESTAGIO=1: suites skip what only runs inside the agent (e.g. tests that write the live scheduler)
-             f"docker exec -e ESTAGIO=1 agent-zero sh -c 'cd /a0 && /opt/venv-a0/bin/python - <<\"PY\"\n"
+             f"docker exec -e ESTAGIO=1 {alvo} sh -c 'cd /a0 && /opt/venv-a0/bin/python - <<\"PY\"\n"
              "import asyncio, importlib.util\n"
              f"s = importlib.util.spec_from_file_location(\"estagio\", \"/tmp/estagio-{plugin}/tests/suite.py\")\n"
              "m = importlib.util.module_from_spec(s); s.loader.exec_module(m)\n"
@@ -373,7 +383,8 @@ def main() -> None:
              "PY'"
              if (RAIZ / caminho / "tests" / "suite.py").exists() else "echo 'TESTES 0 0'")
     saida = vm(f"rm -rf {estagio} && mkdir -p {estagio} && aws s3 cp s3://{BUCKET}/{chave} - | tar xz -C {estagio} && "
-               f"docker exec agent-zero rm -rf /tmp/estagio-{plugin}; {teste}")
+               f"docker exec {alvo} rm -rf /tmp/estagio-{plugin} 2>/dev/null; {teste}"
+               + ("" if a0_no_ar else f"; docker rm -f {alvo} >/dev/null 2>&1"))
     linha = next((l for l in saida.splitlines() if l.startswith("TESTES")), "")
     print(saida[-1500:])
     partes = linha.split()
@@ -385,8 +396,8 @@ def main() -> None:
                    f"/opt/a0/usr/skills/{skill}/" if skill else "")
     print(vm(f"cp -r {estagio}/{caminho}/. {destino}/{copia_skill} && "
              f"echo '{head} {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}' > {destino}/.versao && "
-             "docker exec agent-zero curl -s -X POST http://127.0.0.1:80/api/cache_reset && echo && "
-             f"cat {destino}/.versao"))
+             + ("docker exec agent-zero curl -s -X POST http://127.0.0.1:80/api/cache_reset && echo && " if a0_no_ar else "")
+             + f"cat {destino}/.versao"))
     print(f"implantado: {plugin} @ {head[:8]}" + (f" + skill {skill}" if skill else ""))
     if skill:  # 12/10: a chat that already loaded the skill keeps the old text ("already loaded in visible chat history")
         chats = vm(f"grep -l 'skill_name.*{skill}' /opt/a0/usr/chats/*/chat.json 2>/dev/null | cut -d/ -f6 | sort -u | head -20")

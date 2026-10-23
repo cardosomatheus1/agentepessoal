@@ -10,9 +10,13 @@ Fora daqui, de propósito (ver docs/MIGRACAO_HERMES.md):
 - do próprio A0, sem par no Hermes (N): limpeza (abas, conversas, /tmp, time travel), agenda_confiavel (rodadas do
   agendador do A0; o cron do Hermes tem as dele), aprendizado (skills do A0; o curador do Hermes cuida das dele),
   whatsapp _55/_56 (andamento e retomada de conversas do A0; no Hermes a ponte acompanha os eventos do run);
-- que entregam numa conversa do A0 ou usam o MCP dele: whatsapp _57_email_do_agente roda aqui por email_hermes.py
-  (as mesmas funções, entrega no Hermes); ainda por adaptar: prospeccao _46_crm_raiz (MCP Google), conversas_externas
-  _48 (resposta da loja vira mensagem na conversa), login_usuarios _20 (pausa as rotinas do convidado).
+- que entregam numa conversa do A0 ou usam o MCP dele, adaptados (virada, fase 8): whatsapp _57_email_do_agente
+  (email_hermes.py), prospeccao _46_crm_raiz (o mesmo arquivo, com o conector Google do Hermes: mcp_hermes.py),
+  conversas_externas _48 (externas_hermes.py: a resposta da loja vai à conversa pela ponte) e login_usuarios _20
+  (limite_hermes.py: as rotinas do convidado no cron do Hermes dele).
+
+No Hermes de um convidado (AGENTEPESSOAL_CONVIDADO) só roda o que é dele: o vigia das conversas externas e o limite do
+dia; as tarefas do Matheus (posts, painel, cérebro, e-mail, CRM) ficam no principal.
 """
 import asyncio
 import importlib.util
@@ -35,6 +39,7 @@ TAREFAS = (
     ("auxiliar", "_58_lembrete_contas.py"),
     ("cerebro", "_58_cerebro.py"),
     ("cerebro", "_63_cerebro_trabalho.py"),
+    ("prospeccao", "_46_crm_raiz.py"),
 )
 log = logging.getLogger("agentepessoal.relogio")
 _estado = {"thread": None, "voltas": 0, "ultima": 0.0, "erros": {}}
@@ -66,21 +71,46 @@ def _classe(plugin: str, arquivo: str):
     raise LookupError(f"{caminho}: nenhuma extensão")
 
 
+def convidado() -> str:
+    ponte = sys.modules.get("agentepessoal_ponte_a0")
+    return ponte.convidado_da_instancia() if ponte is not None else ""
+
+
 def _extras() -> list:
-    """Tarefas do relógio que são nossas no Hermes (a entrega muda; a lógica é a do A0): e-mail para o agente."""
-    m = sys.modules.get("agentepessoal_email")
-    return [("email_hermes", m.passo)] if m is not None else []
+    """Tarefas do relógio que são nossas no Hermes (a entrega muda; a lógica é a do A0): e-mail para o agente, o vigia
+    das conversas externas e, no Hermes de um convidado, o limite do dia dele."""
+    feitas = []
+    externas = sys.modules.get("agentepessoal_externas")
+    if convidado():
+        limite = sys.modules.get("agentepessoal_limite")
+        if limite is not None:
+            feitas.append(("limite_hermes", limite.passo))
+    else:
+        m = sys.modules.get("agentepessoal_email")
+        if m is not None:
+            feitas.append(("email_hermes", m.passo))
+    if externas is not None:
+        feitas.append(("externas_hermes", externas.passo_do_relogio))
+    return feitas
 
 
-async def volta(tarefas=TAREFAS, extras=None) -> dict:
+async def volta(tarefas=None, extras=None) -> dict:
     """Uma passada por todas as tarefas; uma que falha não impede as outras. Devolve {tarefa: "ok" | erro}."""
+    if tarefas is None:
+        tarefas = () if convidado() else TAREFAS
     feito = {}
     for nome, funcao in (extras if extras is not None else _extras()):
         try:
-            await asyncio.to_thread(funcao)
+            if inspect.iscoroutinefunction(funcao):
+                await funcao()
+            else:
+                await asyncio.to_thread(funcao)
             feito[nome] = "ok"
         except Exception as exc:
             feito[nome] = f"{type(exc).__name__}: {exc}"[:300]
+    mcp = sys.modules.get("agentepessoal_mcp")
+    if mcp is not None and tarefas:
+        mcp.instalar()  # o CRM chama o conector Google como no A0 (helpers.mcp_handler)
     for plugin, arquivo in tarefas:
         chave = f"{plugin}/{arquivo}"
         try:
@@ -134,7 +164,8 @@ def iniciar() -> bool:
     t = threading.Thread(target=_laco, name="agentepessoal-relogio", daemon=True)
     _estado["thread"] = t
     t.start()
-    log.warning("relógio: ligado (%d tarefas a cada %d s)", len(TAREFAS), INTERVALO)
+    log.warning("relógio: ligado (%s a cada %d s)", f"convidado {convidado()}" if convidado() else f"{len(TAREFAS)} tarefas",
+                INTERVALO)
     return True
 
 

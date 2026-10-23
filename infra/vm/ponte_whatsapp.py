@@ -928,6 +928,14 @@ def gasto(dono: str | None = None) -> tuple[float, float]:
 
 def texto_painel(usuario: str) -> str:
     """/painel: one screen of activity (from Agent Zero) plus today's spend (from the usage log here)."""
+    if destino(usuario) == "hermes":  # 23/10 (virada): o mesmo painel, pelo Hermes da pessoa
+        r = botao_hermes(usuario, {"texto": "/painel"})
+        rodando = ativos_hermes(usuario)
+        corpo = ("⚙️ *Fazendo agora*\n" + (f"{len(rodando)} pedido(s) rodando (/parar para parar)." if rodando
+                                             else "Nada rodando.") + "\n\n"
+                 + (r.get("texto") or f"(não consegui ler o agente agora: {str(r.get('erro') or '')[:120]})"))
+        partes = [corpo, linha_livro(usuario)] + ([linha_saude()] if usuario == DONO else []) + [texto_gasto(usuario)]
+        return "📊 *Painel*\n\n" + "\n\n".join(partes)
     try:
         req = urllib.request.Request(f"{A0}/api/plugins/whatsapp/painel", data=json.dumps({"usuario": usuario}).encode(),
                                      headers={"Content-Type": "application/json", "X-Chave": chave()})
@@ -1271,11 +1279,12 @@ def destino(usuario: str) -> str:
     return "hermes" if v == "hermes" else "a0"
 
 
-def sessao_hermes(usuario: str, prefixo: str = "tg") -> str:
-    """A sessão fixa da pessoa no Hermes (tg-<login>; gatilhos-<login> para os avisos de fora), registrada no mapa que o
-    plugin lê (dono das ferramentas e do cofre)."""
+def sessao_hermes(usuario: str, prefixo: str = "tg", nova: bool = False) -> str:
+    """A sessão da pessoa no Hermes (tg-<login>; gatilhos-<login> para os avisos de fora), registrada no mapa que o
+    plugin lê (dono das ferramentas e do cofre). /nova troca a sessão atual por outra (tg-<login>-<n>), como a
+    conversa nova do A0; a escolhida fica no mapa em "atual:<prefixo>-<login>"."""
     usuario = re.sub(r"[^a-z0-9_-]", "", str(usuario or "").lower())
-    sessao = f"{prefixo}-{usuario}"
+    base = f"{prefixo}-{usuario}"
     with _TRAVA_HERMES:
         try:
             mapa = json.loads(HERMES_SESSOES.read_text(encoding="utf-8"))
@@ -1283,8 +1292,16 @@ def sessao_hermes(usuario: str, prefixo: str = "tg") -> str:
             mapa = {}
         if not isinstance(mapa, dict):
             mapa = {}
+        sessao = str(mapa.get(f"atual:{base}") or base)
+        mudou = False
+        if nova:
+            sessao = f"{base}-{time.strftime('%Y%m%d%H%M%S')}"
+            mapa[f"atual:{base}"] = sessao
+            mudou = True
         if mapa.get(sessao) != usuario:
             mapa[sessao] = usuario
+            mudou = True
+        if mudou:
             HERMES_SESSOES.parent.mkdir(parents=True, exist_ok=True)
             fd, tmp = tempfile.mkstemp(dir=HERMES_SESSOES.parent, prefix=".sessoes.", suffix=".tmp")
             with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -1319,12 +1336,32 @@ def mascarar_cofres(texto: str) -> str:
     return texto
 
 
-def _hermes(caminho: str, corpo: dict | None = None, timeout: int = 60) -> dict:
-    req = urllib.request.Request(HERMES_URL + caminho, data=json.dumps(corpo).encode() if corpo is not None else None,
+HERMES_CONVIDADOS = Path("/opt/hermes/convidados")  # um Hermes por convidado (hermes/convidado.sh): <login>/porta
+
+
+def instancia(usuario: str) -> tuple[str, str]:
+    """(endereço, container) do Hermes desta pessoa: o do convidado (memória, conversas, rotinas e navegador só dele,
+    infra/vm/hermes/convidado.sh) ou o principal."""
+    login = re.sub(r"[^a-z0-9_-]", "", str(usuario or "").lower())
+    try:
+        porta = int((HERMES_CONVIDADOS / login / "porta").read_text().strip()) if login else 0
+    except (OSError, ValueError):
+        porta = 0
+    return (f"http://127.0.0.1:{porta}", f"hermes-{login}") if porta else (HERMES_URL, "hermes")
+
+
+def _hermes(caminho: str, corpo: dict | None = None, timeout: int = 60, usuario: str = "") -> dict:
+    base = instancia(usuario)[0] if usuario else HERMES_URL
+    req = urllib.request.Request(base + caminho, data=json.dumps(corpo).encode() if corpo is not None else None,
                                  headers={"Authorization": f"Bearer {HERMES_CHAVE.read_text().strip()}",
                                           "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read() or b"{}")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read() or b"{}")
+    except urllib.error.HTTPError:
+        raise
+    except (urllib.error.URLError, ConnectionError) as exc:  # o Hermes subindo (virada, reinício): a mensagem espera
+        raise AgenteFora(f"o Hermes não respondeu: {exc}") from exc
 
 
 def responder_hermes(usuario: str, chat: str, texto: str, botoes: list | None = None) -> None:
@@ -1333,7 +1370,16 @@ def responder_hermes(usuario: str, chat: str, texto: str, botoes: list | None = 
             f.write(json.dumps({"em": time.time(), "usuario": usuario, "texto": texto, "botoes": botoes or []},
                                ensure_ascii=False) + "\n")
         return
-    tg_texto(chat, texto, botoes)
+    if chat:
+        tg_texto(chat, texto, botoes)
+        return
+    numero = next((n for n, u in (cfg().get("numeros") or {}).items() if u == usuario), "")  # só WhatsApp
+    if not numero:
+        raise RuntimeError(f"{usuario} sem Telegram nem WhatsApp")
+    if botoes:
+        enviar_botoes(numero, texto, botoes)
+    else:
+        enviar_texto(numero, texto)
 
 
 def texto_gatilho(usuario: str, nome: str, conteudo: str) -> str:
@@ -1382,7 +1428,7 @@ def acompanhar_hermes(run_id: str, usuario: str, chat: str, espera: float = HERM
     fim, ultimo_andamento = inicio + espera, 0.0
     while time.time() < fim:
         try:
-            st = _hermes(f"/v1/runs/{run_id}")
+            st = _hermes(f"/v1/runs/{run_id}", usuario=usuario)
         except Exception as exc:
             log(f"hermes: run {run_id} não lido: {exc}")
             time.sleep(pausa * 5)
@@ -1393,16 +1439,17 @@ def acompanhar_hermes(run_id: str, usuario: str, chat: str, espera: float = HERM
             vistos.add(ap["request_id"])
             k = secrets.token_hex(4)
             with _TRAVA_HERMES:
-                _HERMES_OKS[k] = (run_id, ap["request_id"])
+                _HERMES_OKS[k] = (run_id, ap["request_id"], usuario)
             pedido = ap.get("description") or ap.get("command") or "uma ação"
             responder_hermes(usuario, chat, f"🔐 *Preciso do seu ok:* {pedido}",
                              [{"id": f"haprov:{k}:{d}", "titulo": APROVAR[d][1]} for d in ("aprovar", "tarefa", "recusar")])
         if estado in ("completed", "failed", "cancelled", "stopped"):
+            ativos_hermes(usuario, run_id, fim=True)
             texto = str(st.get("output") or "").strip() or (
-                "⚠️ Não consegui terminar o pedido." if estado != "completed" else "")
+                "⚠️ Não consegui terminar o pedido." if estado not in ("completed", "stopped", "cancelled") else "")
             if ultimo_andamento:
                 andamento_hermes(usuario, "✅ Terminei", fim=True)
-            if texto and not texto.upper().startswith("SEM NOVIDADE"):
+            if texto and not texto.upper().startswith("SEM NOVIDADE") and not ja_respondido(texto):
                 responder_hermes(usuario, chat, texto)
             return estado
         agora = time.time()
@@ -1422,16 +1469,85 @@ def resolver_ok_hermes(botao: str) -> str:
         alvo = _HERMES_OKS.pop(k, None)
     if not alvo or d not in APROVAR:
         return "esse pedido de ok já foi respondido ou expirou"
-    run_id, request_id = alvo
+    run_id, request_id, usuario = alvo
     try:
-        _hermes(f"/v1/runs/{run_id}/approval", {"choice": APROVAR[d][0], "request_id": request_id})
+        _hermes(f"/v1/runs/{run_id}/approval", {"choice": APROVAR[d][0], "request_id": request_id}, usuario=usuario)
     except Exception as exc:
         return f"o agente não recebeu a resposta ({str(exc)[:120]})"
     return ""
 
 
+# 23/10 (virada, fase 8): o que o A0 fazia no plugin whatsapp (api/receber.py) antes do modelo, agora para o Hermes:
+# - os botões das nossas mensagens (fio:, ini:, rd:, rp:, rpa:, ct:, pa:, pl:, rta:, cs:) rodam pelas MESMAS funções do
+#   receber.py do A0, dentro do Hermes da pessoa (plugin agentepessoal, botoes_hermes.py), sem modelo; o que elas
+#   entregariam "na conversa" volta aqui por POST /conversa e vira um pedido na sessão da pessoa;
+# - os comandos /parar, /nova, /atividade, /pendentes, /ajuda e /voz;
+# - mensagem nova com um pedido ainda rodando entra NESSE pedido (steer do Hermes), como a correção do A0.
+_HERMES_ATIVOS: dict[str, dict[str, float]] = {}  # login -> {run_id: início}
+BOTOES_HERMES = ("fio:", "ini:", "rd:", "rpa:", "rp:", "ct:", "pa:", "pl:", "rta:", "cs:")
+BOTOES_DO_A0 = ("aprov:", "pg:", "rt:")  # pedidos de ok, perguntas e retomadas de conversas do A0: não existem mais
+COMANDOS_HERMES = ("/pendentes", "/pendencias", "/pendências", "/ajuda", "/comandos", "/help", "/voz", "/atividade")
+
+
+def ativos_hermes(usuario: str, run_id: str = "", fim: bool = False) -> list:
+    with _TRAVA_HERMES:
+        meus = _HERMES_ATIVOS.setdefault(usuario, {})
+        if run_id and fim:
+            meus.pop(run_id, None)
+        elif run_id:
+            meus[run_id] = time.time()
+        return list(meus)
+
+
+def ja_respondido(texto: str) -> bool:
+    """O A0 calava a resposta quando a ferramenta já tinha mandado um cartão com botões ("termine com ok")."""
+    return re.sub(r"[\s.!]", "", texto.lower()) == "ok"
+
+
+def botao_hermes(usuario: str, dados: dict) -> dict:
+    """Um botão ou comando das nossas ferramentas, no Hermes da pessoa (as funções do receber.py do A0)."""
+    container = instancia(usuario)[1]
+    corpo = json.dumps({"usuario": usuario, "botao": str(dados.get("botao") or ""), "texto": str(dados.get("texto") or "")})
+    import subprocess
+
+    r = subprocess.run(["docker", "exec", "-i", "-u", str(HERMES_UID), "-e", "HOME=/opt/data", container,
+                        "/opt/hermes/.venv/bin/python3", "/opt/data/plugins/agentepessoal/botoes_hermes.py"],
+                       input=corpo, capture_output=True, text=True, timeout=900)
+    linha = (r.stdout.strip().splitlines() or [""])[-1]
+    try:
+        return json.loads(linha)
+    except ValueError:
+        return {"ok": False, "erro": (r.stderr or r.stdout or "sem resposta")[-300:]}
+
+
+def comando_hermes(usuario: str, chat: str, texto: str) -> bool:
+    """Os comandos que o A0 respondia sem modelo. True quando era um deles (já respondido)."""
+    cmd = texto.strip().lower().split("@")[0]
+    if cmd in ("/parar", "/pare", "parar tudo"):
+        parados = 0
+        for run_id in ativos_hermes(usuario):
+            try:
+                _hermes(f"/v1/runs/{run_id}/stop", {}, usuario=usuario)
+                parados += 1
+            except Exception as exc:
+                log(f"hermes: /parar {run_id}: {exc}")
+            ativos_hermes(usuario, run_id, fim=True)
+        responder_hermes(usuario, chat, "⏹️ Parei o que estava rodando." if parados else "Nada estava rodando.")
+        return True
+    if cmd in ("/nova", "/novo", "nova conversa"):
+        sessao_hermes(usuario, "tg", nova=True)
+        responder_hermes(usuario, chat, "🆕 Conversa nova começada. Pode mandar.")
+        return True
+    if cmd in COMANDOS_HERMES:
+        r = botao_hermes(usuario, {"texto": cmd})
+        if not r.get("ok"):
+            responder_hermes(usuario, chat, f"⚠️ Não consegui agora ({str(r.get('erro') or '')[:120]}).")
+        return True
+    return False
+
+
 def entregar_hermes(dados: dict, chat: str) -> str:
-    """Uma mensagem (ou um botão) da pessoa ao Hermes. Devolve o id do run (ou "" para um botão)."""
+    """Uma mensagem (ou um botão) da pessoa ao Hermes. Devolve o id do run (ou "" para um botão/comando)."""
     usuario = dados["usuario"]
     botao = str(dados.get("botao") or "")
     if botao.startswith("haprov:"):
@@ -1439,14 +1555,34 @@ def entregar_hermes(dados: dict, chat: str) -> str:
         if erro:
             responder_hermes(usuario, chat, f"⚠️ {erro}.")
         return ""
+    if botao.startswith(BOTOES_HERMES):
+        r = botao_hermes(usuario, dados)
+        if not r.get("ok"):
+            log(f"hermes: botão {botao[:40]} de {usuario}: {r}")
+            responder_hermes(usuario, chat, "⚠️ Não consegui registrar esse botão agora. Tente de novo em instantes.")
+        return ""
+    if botao.startswith(BOTOES_DO_A0):
+        responder_hermes(usuario, chat, "Esse pedido era do agente antigo e já não está aberto. Se ainda precisar, me diga.")
+        return ""
+    if not dados.get("gatilho") and not dados.get("audio") and comando_hermes(usuario, chat, str(dados.get("texto") or "")):
+        return ""
     sessao = sessao_hermes(usuario, "gatilhos" if dados.get("gatilho") else "tg")
     entrada = pedido_hermes(dados)
     if dados.get("gatilho"):  # um aviso de fora (ex.: o vigia do Google), com a instrução que a pessoa deu a ele
         entrada = texto_gatilho(usuario, str(dados["gatilho"]), mascarar_cofres(str(dados.get("texto") or "")))
-    r = _hermes("/v1/runs", {"input": entrada, "session_id": sessao})
+    elif not dados.get("conversa_nova"):  # com um pedido rodando, a mensagem entra nele (como a correção do A0)
+        for run_id in reversed(ativos_hermes(usuario)):
+            try:
+                if _hermes(f"/v1/runs/{run_id}/steer", {"input": entrada}, usuario=usuario).get("accepted"):
+                    return run_id
+            except Exception:
+                continue  # o run já parou (ou não aceita): vira um pedido novo
+    r = _hermes("/v1/runs", {"input": entrada, "session_id": sessao}, usuario=usuario)
     run_id = r.get("run_id") or r.get("id") or ""
     if not run_id:
         raise RuntimeError(f"o Hermes não abriu o pedido: {str(r)[:200]}")
+    if not dados.get("gatilho"):  # só os da conversa dele recebem a próxima mensagem (o gatilho tem sessão própria)
+        ativos_hermes(usuario, run_id)
     threading.Thread(target=acompanhar_hermes, args=(run_id, usuario, chat), daemon=True, name=f"hermes-{run_id[-6:]}").start()
     return run_id
 
@@ -1646,7 +1782,9 @@ def tratar(url: str, m: dict) -> None:
             sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
             return
         dados = preparar(item)
-        if dados:
+        if dados and destino(item["usuario"]) == "hermes":  # 23/10 (virada): pelo WhatsApp também
+            entregar_hermes(dados, tg_chat(item["usuario"]))
+        elif dados:
             entregar_esperando(dados)  # right after waking, Agent Zero may still be starting
         _lembrar(mid)
         sqs.delete_message(QueueUrl=url, ReceiptHandle=m["ReceiptHandle"])
@@ -1667,6 +1805,14 @@ class Saida(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+    @staticmethod
+    def _conversa(usuario: str, texto: str, chat: str) -> None:
+        try:
+            ativo()
+            entregar_hermes({"usuario": usuario, "texto": texto}, chat)
+        except Exception as exc:
+            log(f"hermes: /conversa de {usuario} não entregue: {exc}")
+
     def _responder(self, code: int, corpo: dict) -> None:
         dados = json.dumps(corpo, ensure_ascii=False).encode()
         self.send_response(code)
@@ -1676,8 +1822,17 @@ class Saida(http.server.BaseHTTPRequestHandler):
         self.wfile.write(dados)
 
     def do_POST(self):
-        if self.path not in ("/enviar", "/gatilho_url", "/configurar", "/conferir", "/andamento") or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
+        if self.path not in ("/enviar", "/gatilho_url", "/configurar", "/conferir", "/andamento", "/conversa") or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
             return self._responder(403, {"erro": "sem acesso"})
+        if self.path == "/conversa":  # 23/10 (virada): o que um botão ou aviso do plugin entrega "na conversa" da pessoa
+            pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+            usuario = re.sub(r"[^a-z0-9_-]", "", str(pedido.get("usuario", "")).lower())
+            texto = str(pedido.get("texto") or "").strip()
+            if not usuario or not texto or destino(usuario) != "hermes":
+                return self._responder(409, {"erro": "essa pessoa não está no Hermes (ou pedido vazio)"})
+            chat = tg_chat(usuario)
+            threading.Thread(target=self._conversa, args=(usuario, texto, chat), daemon=True).start()
+            return self._responder(200, {"ok": True})
         if self.path == "/conferir":  # the plugin asks whether a delivery really came from here (ticket spent now)
             pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
             return self._responder(200, {"ok": conferir_bilhete(str(pedido.get("bilhete") or ""),
@@ -1783,9 +1938,11 @@ class Saida(http.server.BaseHTTPRequestHandler):
 
 
 def ciclo_destravar() -> None:
-    """Every minute, ask the whatsapp plugin to nudge chats stuck on a model call."""
+    """Every minute, ask the whatsapp plugin to nudge chats stuck on a model call (only while the A0 is in use)."""
     while True:
         time.sleep(60)
+        if destino("matheus") == "hermes":  # virada (fase 8): o A0 está parado
+            continue
         try:
             req = urllib.request.Request(f"{A0}/api/plugins/whatsapp/destravar", data=b"{}",
                                          headers={"Content-Type": "application/json", "X-Chave": chave()})

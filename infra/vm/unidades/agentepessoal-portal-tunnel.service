@@ -1,0 +1,13 @@
+# Quick tunnel for the agent's portal (23/10, cutover to the Hermes, docs/MIGRACAO_HERMES.md): after the cutover the
+# agent link (SSM /agentepessoal/agent-url, the app and the control page) opens the portal on 127.0.0.1:8650 (Segundo
+# Cérebro, Painel, Tarefas, Cofre, Navegador; login required). report_url.py reads the URL from this unit's journal.
+[Unit]
+Description=Cloudflare quick tunnel for the agent portal
+After=network-online.target docker.service
+Wants=network-online.target
+[Service]
+ExecStart=/usr/bin/cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8650
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target

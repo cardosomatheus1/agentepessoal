@@ -46,7 +46,10 @@ for plugin, arquivo in rl.TAREFAS:
         checa(rl._classe(plugin, arquivo) is not None, f"{plugin}/{arquivo} carrega com a ponte")
     except Exception as exc:
         falhas.append(f"{plugin}/{arquivo} não carrega: {type(exc).__name__}: {exc}")
-    checa(not A0.search(caminho.read_text(encoding="utf-8")), f"{plugin}/{arquivo} não usa nada do A0 além de Extension")
+    texto = caminho.read_text(encoding="utf-8")
+    if arquivo == "_46_crm_raiz.py":  # o CRM chama o conector Google pela MCPConfig do A0: mcp_hermes.py dá a do Hermes
+        texto = texto.replace("from helpers.mcp_handler import MCPConfig", "")
+    checa(not A0.search(texto), f"{plugin}/{arquivo} não usa nada do A0 além de Extension")
 
 # one pass: a failing task never stops the others
 falsos = tmp / "plugins"
@@ -101,6 +104,64 @@ em.PLUGINS = PLUGINS
 real = em.a0()
 checa(all(hasattr(real, n) for n in ("_novos", "_pedido", "_na_hora", "_ponte", "MARCA", "INTERVALO", "DONO")),
       "o arquivo do A0 carrega com a ponte e tem as funções que o Hermes usa")
+
+# virada: o conector Google para o CRM (mcp_hermes.py) e o relógio de um convidado (só as tarefas dele)
+mh = carregar("agentepessoal_mcp", P / "mcp_hermes.py")
+mh.instalar()
+checa(sys.modules["helpers.mcp_handler"].MCPConfig is mh.MCPConfig, "helpers.mcp_handler do CRM é o do Hermes")
+cfg = tmp / "config.yaml"
+cfg.write_text("mcp_servers:\n  google:\n    url: http://hermes-mcp:8765/mcp\n")
+checa(mh.servidores(cfg) == {"google": "http://hermes-mcp:8765/mcp"}, "endereço do conector do config do Hermes")
+try:
+    asyncio.run(mh.MCPConfig(urls={}).call_tool("google.create_spreadsheet", {}))
+    checa(False, "conector que não existe: erro claro")
+except LookupError:
+    pass
+chamadas = []
+rl.TAREFAS = (("a", "_10_x.py"),)
+rl.PLUGINS = falsos
+sys.modules["agentepessoal_email"] = types.SimpleNamespace(passo=lambda: chamadas.append("email"))
+sys.modules["agentepessoal_limite"] = types.SimpleNamespace(passo=lambda: chamadas.append("limite"))
+
+
+async def _ext():
+    chamadas.append("externas")
+sys.modules["agentepessoal_externas"] = types.SimpleNamespace(passo_do_relogio=_ext)
+feito = asyncio.run(rl.volta())
+checa(chamadas == ["email", "externas"] and "a/_10_x.py" in feito, f"principal: e-mail, conversas externas e as tarefas ({chamadas})")
+chamadas.clear()
+os.environ["AGENTEPESSOAL_CONVIDADO"] = "ilia"
+feito = asyncio.run(rl.volta())
+checa(chamadas == ["limite", "externas"] and "a/_10_x.py" not in feito,
+      f"convidado: só o limite dele e as conversas dele, nada das tarefas do Matheus ({chamadas}, {feito})")
+os.environ.pop("AGENTEPESSOAL_CONVIDADO")
+# o limite do dia do convidado pausa e devolve as rotinas do cron dele (mesma regra do A0)
+lm = carregar("teste_limite_hermes", P / "limite_hermes.py")
+lm.PLUGINS = PLUGINS
+conv = lm._convidados()
+conv.CELULAR = tmp / "celular"
+(conv.CELULAR / "ilia").mkdir(parents=True)
+(conv.CELULAR / "ilia" / "limite_hoje.txt").write_text("2026-10-23")
+
+
+class Jobs:
+    def __init__(self):
+        self.j = [{"id": "j1", "state": "scheduled", "enabled": True}, {"id": "j2", "state": "paused", "enabled": False}]
+
+    def list_jobs(self, include_disabled=False):
+        return self.j
+
+    def pause_job(self, k, reason=None):
+        next(x for x in self.j if x["id"] == k).update(state="paused", enabled=False)
+
+    def resume_job(self, k):
+        next(x for x in self.j if x["id"] == k).update(state="scheduled", enabled=True)
+jb = Jobs()
+r = lm.passo("ilia", jb, "2026-10-23")
+checa(r == {"pausar": ["j1"], "voltar": []} and jb.j[0]["state"] == "paused", f"passou do limite: as rotinas dele param ({r})")
+r = lm.passo("ilia", jb, "2026-10-24")
+checa(r == {"pausar": [], "voltar": ["j1"]} and jb.j[0]["state"] == "scheduled" and jb.j[1]["state"] == "paused",
+      f"no dia seguinte só volta a que foi parada aqui ({r})")
 
 if falhas:
     raise SystemExit("test_relogio_hermes: " + "; ".join(falhas))

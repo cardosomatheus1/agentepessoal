@@ -38,6 +38,19 @@ fi
   --exclude "tmp/*" --exclude "*/__pycache__/*" --exclude "navegador/*" \
   --exclude "plugins/_desktop/profiles/*/.ssh/agent/*" --exclude "central/agente.db" --exclude "central/agente.db-*"
 rc=$?
+# 23/10 (migração ao Hermes): os dados do Hermes (memória, conversas, rotinas, skills, estado do plugin; os dos convidados
+# também) vão para hermes/ no mesmo bucket; ficam de fora os caches (modelo do áudio), os perfis copiados do navegador
+# (o snapshot diário do disco guarda) e a chave da API (gerada de novo numa VM nova).
+if [ -d /opt/hermes ]; then
+  [ -f /var/lib/agentepessoal/destino.json ] && /usr/local/bin/aws s3 cp --only-show-errors \
+    /var/lib/agentepessoal/destino.json "s3://${BUCKET}/hermes/destino.json"  # a chave A0/Hermes (setup.sh numa VM nova)
+  /usr/local/bin/aws s3 sync /opt/hermes "s3://${BUCKET}/hermes" $APAGAR --only-show-errors \
+    --exclude "*/cache/*" --exclude "navegador/*" --exclude "*/__pycache__/*" --exclude "api_key" --exclude "*/api_key" \
+    --exclude "portal/segundo_cerebro/releases/*" --exclude "mcp/*" --exclude "sombra/*" --exclude "a0usr/*" \
+    --exclude "*.sock" --exclude "*/logs/*" --exclude "destino.json"
+  rch=$?
+  if [ "$rch" -ne 0 ] && [ "$rch" -ne 2 ]; then rc=$rch; fi
+fi
 # 2 = some special files (sockets, dangling links) were skipped; every other file was copied
 if [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then
   logger -t agentepessoal "backup to s3://${BUCKET}/usr done (rc=$rc)"

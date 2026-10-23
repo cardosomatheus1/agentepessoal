@@ -5,14 +5,27 @@
 set -euxo pipefail
 source /etc/agentepessoal.env   # BACKUP_BUCKET, IMAGE, IDLE_MINUTES
 B=/opt/agentepessoal/bundle
+# 23/10 (virada ao Hermes, fase 8): depois da virada o agente é o Hermes e o A0 fica PARADO (para a volta). Rodar o
+# setup de novo (deploy.py --update) não pode religar o A0 (as rotinas rodariam nos dois); numa VM nova, a chave vem da
+# cópia no S3 (backup.sh) e o Hermes sobe no fim, já virado.
+mkdir -p /var/lib/agentepessoal
+if [ ! -f /var/lib/agentepessoal/destino.json ]; then
+  /usr/local/bin/aws s3 cp --only-show-errors "s3://${BACKUP_BUCKET}/hermes/destino.json" /var/lib/agentepessoal/destino.json || true
+fi
+VIRADA=0
+python3 -c 'import json,sys; sys.exit(0 if json.load(open("/var/lib/agentepessoal/destino.json")).get("padrao") == "hermes" else 1)' \
+  2>/dev/null && VIRADA=1
+A0_PARADO=0
+[ "$VIRADA" = 1 ] && docker container inspect agent-zero >/dev/null 2>&1 \
+  && [ "$(docker inspect -f '{{.State.Running}}' agent-zero)" != true ] && A0_PARADO=1
 REGION=us-east-1
 export DEBIAN_FRONTEND=noninteractive
 
 # --- base packages --------------------------------------------------------------
 if ! command -v docker >/dev/null || ! command -v adb >/dev/null; then
   apt-get update -y
-  apt-get install -y docker.io python3-venv unzip curl adb "linux-modules-extra-$(uname -r)" || \
-    apt-get install -y docker.io python3-venv unzip curl adb
+  apt-get install -y docker.io python3-venv unzip curl adb bindfs rsync "linux-modules-extra-$(uname -r)" || \
+    apt-get install -y docker.io python3-venv unzip curl adb bindfs rsync
 fi
 # 12/10 review: binder (the phone's driver) came only for the kernel running at install time, so a kernel update
 # (unattended upgrades are on) would boot without it and the phone would not start. This metapackage follows every
@@ -162,7 +175,9 @@ if ! docker container inspect ws-scrcpy >/dev/null 2>&1; then
 fi
 
 docker pull -q "$IMAGE"
-if [ "$(docker inspect -f '{{.Config.Image}}' --type container agent-zero 2>/dev/null)" != "$IMAGE" ]; then
+if [ "$A0_PARADO" = 1 ]; then
+  echo "virada: o A0 fica parado (não é recriado nem religado; os passos dentro dele ficam de fora)"
+elif [ "$(docker inspect -f '{{.Config.Image}}' --type container agent-zero 2>/dev/null)" != "$IMAGE" ]; then
   docker rm -f agent-zero 2>/dev/null || true
   docker run -d --name agent-zero --restart unless-stopped \
     -p 127.0.0.1:50080:80 --add-host=host.docker.internal:host-gateway \
@@ -170,6 +185,7 @@ if [ "$(docker inspect -f '{{.Config.Image}}' --type container agent-zero 2>/dev
 else
   docker restart agent-zero
 fi
+if [ "$A0_PARADO" = 0 ]; then
 docker network connect phone agent-zero 2>/dev/null || true
 # 12/10 review: no container may take the whole VM (10/10 the agent's browser reached 11.8 GB and the VM froze for
 # 30 min). Past its limit the kernel ends a process inside that container (a browser tab, or the agent, which
@@ -232,6 +248,7 @@ supervisorctl restart run_searxng' || true
 # Google connector (MCP, plugins/conectores): its own venv under usr/ so it survives container rebuilds
 docker exec agent-zero sh -c '[ -x /a0/usr/mcp/venv-google/bin/workspace-mcp ] || (mkdir -p /a0/usr/mcp/google &&
   uv venv -q -p 3.12 /a0/usr/mcp/venv-google && VIRTUAL_ENV=/a0/usr/mcp/venv-google uv pip install -q workspace-mcp==2.0.1)' || true
+fi  # A0_PARADO
 
 # --- systemd units ---------------------------------------------------------------
 # Before=docker.service (12/10 review): routines fired at boot before the proxy was up and ended in error.
@@ -494,15 +511,38 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-agent-tools \
+if [ "$A0_PARADO" = 1 ]; then  # virado: os serviços que só existem dentro do A0 ficam desligados
+  systemctl disable --now agentepessoal-google-mcp agentepessoal-agent-tools >/dev/null 2>&1 || true
+fi
+systemctl enable agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url \
   agentepessoal-watchdog.timer agentepessoal-memguard.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer agentepessoal-saude.timer agentepessoal-firewall \
-  agentepessoal-credenciais-meta agentepessoal-whatsapp agentepessoal-google-mcp
+  agentepessoal-credenciais-meta agentepessoal-whatsapp
 systemctl restart agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-credenciais-meta agentepessoal-whatsapp
-systemctl restart --no-block agentepessoal-google-mcp
-systemctl start agentepessoal-agent-tools agentepessoal-watchdog.timer agentepessoal-memguard.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer agentepessoal-saude.timer agentepessoal-firewall
+[ "$A0_PARADO" = 1 ] || { systemctl enable agentepessoal-google-mcp agentepessoal-agent-tools; systemctl restart --no-block agentepessoal-google-mcp; systemctl start agentepessoal-agent-tools; }
+systemctl start agentepessoal-watchdog.timer agentepessoal-memguard.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer agentepessoal-saude.timer agentepessoal-firewall
 
 # First boot only: install test apps on the phone.
 [ -f /var/lib/agentepessoal/apps-installed ] || { /opt/agentepessoal/install_apps.sh && touch /var/lib/agentepessoal/apps-installed; } || true
+
+# --- Hermes (migração, docs/MIGRACAO_HERMES.md) -----------------------------------------------------------------
+# Numa VM nova os dados do Hermes voltam do S3 (backup.sh: hermes/) uma vez; depois o Hermes sobe pelo subir.sh (ensaio)
+# ou, com a chave virada, pela virada.sh (que para o A0 e sobe o Hermes como o agente).
+install -m 644 "$B/unidades/agentepessoal-portal-tunnel.service" /etc/systemd/system/agentepessoal-portal-tunnel.service
+systemctl daemon-reload
+if [ -d "$B/hermes" ]; then
+  if [ ! -f /var/lib/agentepessoal/hermes-restaurado ]; then
+    mkdir -p /opt/hermes && chmod 700 /opt/hermes
+    /usr/local/bin/aws s3 sync "s3://${BACKUP_BUCKET}/hermes" /opt/hermes --only-show-errors --exclude "destino.json"; rc=$?
+    if [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then touch /var/lib/agentepessoal/hermes-restaurado; fi
+  fi
+  if [ "$VIRADA" = 1 ] && [ "$A0_PARADO" = 0 ]; then  # VM nova (o A0 acabou de subir): vira agora
+    HERMES_FONTE="$B/hermes" bash "$B/hermes/virada.sh" virar "setup.sh: a chave está no Hermes" || \
+      logger -t agentepessoal "setup: a virada do Hermes falhou (veja /var/log/agentepessoal-virada.log)"
+  else  # ensaio, ou já virado (o subir.sh lê a chave e sobe no modo certo)
+    bash "$B/hermes/subir.sh" > /var/log/agentepessoal-hermes.log 2>&1 || \
+      logger -t agentepessoal "setup: o Hermes não subiu (veja /var/log/agentepessoal-hermes.log)"
+  fi
+fi
 
 echo "agentepessoal setup done"
 if [ "$REBOOT" = 1 ]; then

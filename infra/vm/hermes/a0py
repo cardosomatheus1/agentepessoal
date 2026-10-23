@@ -1,0 +1,18 @@
+#!/bin/bash
+# O Python com os helpers do agente, para as ferramentas do operador (infra/operador/*.py rodam por aqui na VM):
+# dentro do A0 enquanto ele está no ar; depois da virada (A0 parado), dentro do Hermes, como o usuário dele (a vista
+# /a0/usr grava como root no disco, igual ao A0). Mesmo caminho /a0/usr dos dois lados.
+#   a0py -c "código" | a0py ARQUIVO [args...]   (ARQUIVO do host é copiado para o container; /a0/usr/... roda direto)
+set -euo pipefail
+if [ "$(docker inspect -f '{{.State.Running}}' agent-zero 2>/dev/null)" = true ]; then
+  C=agent-zero; PY=/opt/venv-a0/bin/python; U=(-w /a0)
+else
+  C=hermes; PY=/opt/hermes/.venv/bin/python3; U=(-u 10000 -e HOME=/opt/data -w /opt/data)
+fi
+if [ "${1:-}" != "-c" ] && [ -f "${1:-}" ] && [[ "$1" != /a0/* ]]; then
+  destino="/tmp/a0py-$$-$(basename "$1")"
+  docker cp "$1" "$C:$destino"
+  shift
+  set -- "$destino" "$@"
+fi
+exec docker exec -i "${U[@]}" "$C" "$PY" "$@"

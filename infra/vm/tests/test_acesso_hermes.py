@@ -200,6 +200,32 @@ checa(len(chamadas_au) == n and "fora da pasta" in r["context"], "convidado não
 r = au.contexto(user_message="[áudio: /a0/usr/whatsapp/ilia/../matheus/a.ogg]", session_id="s-ilia")
 checa(len(chamadas_au) == n, "nem subindo pasta")
 
+# --- virada: no Hermes PRÓPRIO do convidado voltam o navegador (perfil dele), a memória e as rotinas (limitadas)
+os.environ.pop("AGENTEPESSOAL_ENSAIO", None)
+checa(ac.checar(tool_name="browser_click", args={}, session_id="s-ilia"), "no Hermes do Matheus o convidado segue sem navegador")
+os.environ["AGENTEPESSOAL_CONVIDADO"] = "ilia"
+checa(ponte.login_da_sessao("qualquer-sessao") == "ilia", "no Hermes dele, toda sessão é dele (inclusive o cron)")
+for f in ("browser_navigate", "browser_click", "memory", "session_search", "conversa_externa"):
+    checa(not ac.checar(tool_name=f, args={}, session_id="tg-ilia"), f"convidado no Hermes dele usa {f}")
+for f in ("terminal", "execute_code", "read_file", "write_file", "delegar", "prospeccao", "skill_manage"):
+    checa(ac.checar(tool_name=f, args={}, session_id="tg-ilia"), f"convidado nunca usa {f}")
+c = ac._convidados()
+ac._jobs_do_cron = lambda: [{"id": str(i)} for i in range(2)]
+checa(not ac.checar(tool_name="cronjob_manage", args={"action": "create", "schedule": "0 9 * * *", "prompt": "x"},
+                    session_id="tg-ilia"), "rotina de convidado com minuto fixo: pode")
+for agenda in ("*/10 * * * *", "* 9 * * *", "30m", "every 15 minutes"):
+    checa(ac.checar(tool_name="cronjob_manage", args={"action": "create", "schedule": agenda, "prompt": "x"},
+                    session_id="tg-ilia"), f"rotina de convidado no máximo de hora em hora: {agenda} recusada")
+for agenda in ("every 2h", "every day at 9am", "in 30m", "every hour"):
+    checa(not ac.checar(tool_name="cronjob_manage", args={"action": "create", "schedule": agenda, "prompt": "x"},
+                        session_id="tg-ilia"), f"rotina de convidado: {agenda} pode")
+checa(ac.checar(tool_name="cronjob_manage", args={"action": "create", "schedule": "0 9 * * *", "script": "x.py"},
+                session_id="tg-ilia"), "rotina de convidado não roda código")
+ac._jobs_do_cron = lambda: [{"id": str(i)} for i in range(c.TAREFAS_MAX)]
+checa("máximo" in str(ac.checar(tool_name="cronjob_manage", args={"action": "create", "schedule": "0 9 * * *"},
+                                session_id="tg-ilia")), "no máximo 5 rotinas")
+os.environ.pop("AGENTEPESSOAL_CONVIDADO")
+
 if falhas:
     raise SystemExit("test_acesso_hermes: " + "; ".join(falhas))
 print("test_acesso_hermes: ok")

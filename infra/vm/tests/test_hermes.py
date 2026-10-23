@@ -45,9 +45,15 @@ pacotes = [t for t in df.split("uv pip install", 1)[1].split("&&", 1)[0].split()
 checa(len(pacotes) >= 5 and all("==" in t for t in pacotes), f"pacotes com versão fixa: {pacotes}")
 checa(re.search(r"FROM ghcr.io/astral-sh/uv:\d+\.\d+\.\d+ AS uv", df), "uv com versão fixa")
 checa(subprocess.run(["bash", "-n", str(H / "subir.sh")]).returncode == 0, "sintaxe do script")
+listas = re.findall(r'PASTAS_ESCONDIDAS="([^"]*)"', sh)
+checa(len(listas) == 2 and "for d in $PASTAS_ESCONDIDAS" in sh, "escondidos: uma lista na virada, outra no ensaio")
+virada_esc, ensaio_esc = (listas + ["", ""])[:2]
 for d in (".aws", "whatsapp", "segredos", "navegador", "mcp", "celular", "delegados", ".time_travel", ".tmp", "workdir", "caixa", "chats",
           "chats_arquivo"):
-    checa(re.search(rf"for d in (?:[^;]*\s)?{re.escape(d)}(?=[\s;])", sh), f"no ensaio {d} aparece vazio no Hermes")
+    checa(d in ensaio_esc.split(), f"no ensaio {d} aparece vazio no Hermes")
+checa({"navegador", "navegador_visual", "mcp", ".time_travel"} <= set(virada_esc.split())
+      and not {"segredos", "whatsapp", "caixa", "delegados", "chats"} & set(virada_esc.split()),
+      "na virada o Hermes vê o que o A0 via (cofre, ponte, caixas, conversas), menos perfis e tokens dos conectores")
 for f in ("/.env ", "/secrets.env ", "/settings.json ", "/usuarios.json*;"):
     checa(re.search(rf"for caminho in [^;]*{re.escape(f.rstrip(';'))}", sh), f"no ensaio {f.strip('/ ;')} aparece vazio no Hermes")
 ue = (H / "agentepessoal-hermes.service").read_text()
@@ -56,12 +62,23 @@ checa("--restart no" in sh and "agentepessoal-firewall.service" in ue and "ExecS
 checa('"${ESCONDIDOS[@]}"' in sh and "--network hermes" in sh, "o container usa a rede própria e os escondidos")
 checa(sh.index("HERMES_SEM_FIREWALL") < sh.index("docker run"), "não sobe sem a rede fechada")
 fw = (RAIZ / "infra" / "vm" / "firewall.sh").read_text()
-checa("docker network inspect hermes" in fw and '-s "$HERMES" -j DROP' in fw and "--dport 8787" in fw
-      and '-s "$HERMES" -d "$destino" -j DROP' in fw, "firewall: rede hermes só com o proxy e a internet")
+checa("grep -E '^hermes(-[a-z0-9_-]+)?$'" in fw and '-s "$SUB" -j DROP' in fw and 'aceitar_input "$SUB" 8787 1' in fw
+      and '-s "$SUB" -d "$destino" -j DROP' in fw, "firewall: redes do Hermes só com o proxy e a internet")
+checa('aceitar_input "$SUB" "$porta" "$VIRADA"' in fw and 'portas="8788 8789 8790 8791"; else portas="8789 8790"' in fw
+      and 'aceitar_input "$SUB" "$porta" 0' in fw,
+      "firewall: credenciais, ponte e caixas só na virada (e saem de novo na volta); convidados só ponte e caixa")
+checa('regra_user "$VIRADA" -s "$AND/32" -d "$SUB" -j DROP' in fw and '--dport 5555' in fw
+      and 'a=(INPUT -s "$AND/32" -j DROP)' in fw, "firewall: o celular só responde ao adb (não abre nada no Hermes nem no host)")
 checa(sh.index("HERMES_SEM_ENSAIO") < sh.index("docker run"), "não sobe sem a trava do ensaio nos plugins no ar")
-checa("-o allow_other,ro " in un, "até a virada o Hermes vê os dados do A0 só para leitura")
-checa("AGENTEPESSOAL_RELOGIO=1" not in sh, "até a virada o relógio (post na hora, nota do dia…) é do A0, não do Hermes")
-checa("-e AGENTEPESSOAL_ENSAIO=1" in sh, "até a virada o Hermes está em ensaio: nada vai ao celular nem à Meta")
+checa("-o allow_other,${HERMES_DADOS_MODO} " in un and "Environment=HERMES_DADOS_MODO=ro" in un
+      and 'if [ "$VIRADA" = 1 ]; then MODO_DADOS=rw; else MODO_DADOS=ro; fi' in sh,
+      "até a virada o Hermes vê os dados do A0 só para leitura (rw só com a chave no Hermes)")
+modo_env = re.search(r'if \[ "\$VIRADA" = 1 \]; then\n  MODO_ENV=\((.*?)\)\nelse\n  MODO_ENV=\((.*?)\)\nfi', sh)
+checa(modo_env and modo_env.group(1) == "-e AGENTEPESSOAL_RELOGIO=1" and modo_env.group(2) == "-e AGENTEPESSOAL_ENSAIO=1"
+      and '"${MODO_ENV[@]}"' in sh and sh.count("AGENTEPESSOAL_RELOGIO=1") == 1,
+      "relógio só na virada; até lá o ensaio (nada ao celular nem à Meta)")
+checa(sh.index("HERMES_A0_RODANDO") < sh.index("docker run") and "VIRADA=1" in sh,
+      "na virada o Hermes não sobe com o A0 rodando (mesmo perfil do navegador e mesmas rotinas)")
 checa("/a0/usr/skills" not in str((cfg.get("skills") or {}).get("external_dirs") or ""),
       "o Hermes não lê as skills vivas do A0 (mandam usar ferramentas de lá; e external_dirs é só leitura para o curador)")
 nav = (H / "navegador.sh").read_text()
@@ -69,14 +86,19 @@ checa(subprocess.run(["bash", "-n", str(H / "navegador.sh")]).returncode == 0, "
 checa(cfg["browser"]["backend"] == "off", "navegador pelas ferramentas próprias (cada clique passa pelas aprovações)")
 checa("--password-store=basic" in nav and "--use-mock-keychain" in nav and "chromium-1228" in nav,
       "o navegador do Hermes abre os cookies do perfil do A0 (mesmo binário e mesmas opções)")
-checa("--network hermes" in nav and not re.search(r"\s(-p|--publish)\s+\S*\d", nav), "o CDP só na rede hermes, nunca publicado no host")
-checa("PERFIL_A0=/opt/a0/usr/navegador/sessions/shared" in nav and "rsync -a" in nav and "perfil.novo" in nav,
-      "até a virada o Hermes usa uma CÓPIA do perfil (o A0 segue com o dele)")
+checa('--network "$REDE"' in nav and "REDE=hermes" in nav and not re.search(r"\s(-p|--publish)\s+\"?[\d.:]*\d+:\d", nav),
+      "o CDP só na rede do Hermes, nunca publicado no host")
+checa('PERFIL_A0="/opt/a0/usr/navegador/sessions/$PERFIL"' in nav and "PERFIL=shared" in nav and "rsync -a" in nav
+      and '"$COPIA.novo/"' in nav and 'NAV_OPC=(--proprio); else NAV_OPC=()' in sh,
+      "até a virada o Hermes usa uma CÓPIA do perfil (o A0 segue com o dele); o de verdade só na virada")
 checa("rm -f /perfil/Singleton*;" in nav, "a trava do perfil sai a cada subida (outro container = 'perfil em uso')")
 checa('-e BROWSER_CDP_URL="$CDP"' in sh and sh.index("HERMES_SEM_NAVEGADOR") < sh.index("docker run"),
       "o Hermes liga no navegador dele e não sobe sem ele")
-checa('NAV="${HERMES%.*.*}.0.250"' in fw and "--dport 9223" in fw and "--dport 9222" not in fw, "firewall: o Hermes só fala com o CDP do navegador dele")
-checa("docker start hermes-navegador hermes-mcp hermes" in ue, "na subida da VM o navegador e os conectores sobem juntos")
+checa('NAV="${SUB%.*.*}.0.250"' in fw and "--dport 9223" in fw and "--dport 9222" not in fw, "firewall: o Hermes só fala com o CDP do navegador dele")
+ini = (H / "iniciar.sh").read_text()
+checa("ExecStart=/opt/hermes/iniciar.sh" in ue and "nomes=(hermes-navegador hermes-mcp hermes portal)" in ini
+      and subprocess.run(["bash", "-n", str(H / "iniciar.sh")]).returncode == 0,
+      "na subida da VM o navegador e os conectores sobem juntos (e os Hermes dos convidados)")
 mcp = (H / "mcp.sh").read_text()
 checa(subprocess.run(["bash", "-n", str(H / "mcp.sh")]).returncode == 0, "sintaxe do mcp.sh")
 checa("gmail:readonly calendar:readonly drive:readonly docs:readonly sheets:readonly" in mcp,
@@ -85,7 +107,9 @@ checa(set(cfg["mcp_servers"]) == {"google", "github"} and all("hermes-mcp" in v[
       and "headers" not in str(cfg["mcp_servers"]), "conectores pelo container ao lado, sem token no Hermes")
 checa('"$BASE/google:/google"' in mcp and "/opt/hermes/a0usr" not in mcp and "--network hermes" in mcp
       and not re.search(r"\s(-p|--publish)\s+\S*\d", mcp), "tokens só no container dos conectores, nada publicado no host")
-checa('MCP="${HERMES%.*.*}.0.251"' in fw and "--dport 8765" in fw and "--dport 8766" in fw, "firewall: só as portas dos conectores")
+checa('MCP="${SUB%.*.*}.0.251"' in fw and "--dport 8765" in fw and "--dport 8766" in fw, "firewall: só as portas dos conectores")
+checa(re.search(r'if \[ "\$VIRADA" = 1 \]; then  # as permissões do A0[^\n]*\n  export HERMES_GOOGLE_PERMISSOES="gmail:readonly '
+                r'calendar:readonly drive:full docs:full sheets:full"', sh), "Google com as permissões do A0 só na virada")
 checa(sh.index("HERMES_SEM_MCP") < sh.index("docker run"), "o Hermes não sobe sem os conectores")
 df_mcp = (H / "mcp" / "Dockerfile").read_text()
 checa("FROM python:3.12.8-slim" in df_mcp and "workspace-mcp==2.0.1" in df_mcp and "-c /tmp/versoes.txt" in df_mcp,
@@ -114,8 +138,26 @@ checa("-p 127.0.0.1:8643:8642" in so and "--network hermes" in so and "systemd-r
       "sombra: só no loopback, rede fechada, para sozinha")
 checa("jobs.resume_job" in so and "ligada_no_a0" in so, "sombra: liga só as rotinas que estão ligadas no A0")
 po = (RAIZ / "infra" / "vm" / "portal" / "subir.sh").read_text()
-checa("-e PORTAL_SO_LEITURA=1" in po and "-v /opt/a0/usr:/a0/usr:ro" in po and "PORTAL_PORTA=8650" in po
-      and "HERMES_SEM_PORTAL" in sh, "o portal sobe junto, só leitura até a virada")
+checa("MODO=(-e PORTAL_SO_LEITURA=1)" in po and 'MONTAGEM="/opt/a0/usr:/a0/usr:ro"' in po and "PORTAL_PORTA=8650" in po
+      and "HERMES_SEM_PORTAL" in sh and 'PORTAL_VIRADA="$VIRADA"' in sh, "o portal sobe junto, só leitura até a virada")
+# virada (fase 8): um comando para virar, um para voltar; convidados com Hermes próprio
+vi = (H / "virada.sh").read_text()
+checa(subprocess.run(["bash", "-n", str(H / "virada.sh")]).returncode == 0, "sintaxe do virada.sh")
+v, vo = vi.split("\nvirar)", 1)[1].split("\n  ;;", 1)[0], vi.split("\nvoltar)", 1)[1].split("\n  ;;", 1)[0]
+checa(v.index("chave hermes") < v.index("docker stop") < v.index('bash "$FONTE/subir.sh"') < v.index("rotinas_hermes ligar")
+      and "docker update --restart no agent-zero" in v and "docker rm" not in vi,
+      "virar: chave, A0 parado (não removido, sem reinício automático), Hermes no modo virada, rotinas ligadas")
+checa(vo.index("rotinas_hermes pausar") < vo.index("chave a0") < vo.index("docker start agent-zero")
+      and "docker update --restart unless-stopped agent-zero" in vo,
+      "voltar: pausa as do Hermes antes de religar o A0 (nenhuma rotina roda duas vezes)")
+checa('if v.get("ligada_no_a0") and jobs.get_job(k)' in vi, "virar liga só as que estavam ligadas no A0")
+co = (H / "convidado.sh").read_text()
+checa(subprocess.run(["bash", "-n", str(H / "convidado.sh")]).returncode == 0, "sintaxe do convidado.sh")
+checa('-e AGENTEPESSOAL_CONVIDADO="$LOGIN"' in co and 'REDE=hermes-$LOGIN' in co and 'c.pop("mcp_servers", None)' in co
+      and '--perfil "pessoa_$LOGIN" --proprio' in co and "segredos" in co and "segundo_cerebro" in co
+      and not re.search(r"-p \S*0\.0\.0\.0", co) and '-p "127.0.0.1:$PORTA:8642"' in co,
+      "convidado: Hermes próprio (rede, navegador no perfil dele, sem conectores nem dados do Matheus, só no loopback)")
+checa("bash \"$AQUI/convidado.sh\" \"$login\" \"$IMAGEM\"" in sh, "na virada o subir.sh sobe o Hermes de cada convidado")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
     checa(termo in alma, f"a persona traz {termo!r}")

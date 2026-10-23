@@ -69,8 +69,7 @@ NATIVAS = {"web_search", "web_extract", "memory", "todo_list", "delegate_task", 
            "search_files", "terminal", "execute_code", "session_search", "cronjob_manage", "vision_analyze",
            "video_analyze", "skill_manage", "skill_view", "skills_list", "clarify", "text_to_speech", "image_generate"}
 NATIVAS |= {n for n in registradas if n.startswith(("browser_", "kanban_"))}
-SO_NO_A0 = {"pesquisar", "tarefa_limite", "me_mostre", "salvar_rotina", "criar_gatilho", "passos", "painel_vivo", "canal",
-            "reuniao", "conversa_externa"}
+SO_NO_A0 = {"pesquisar", "tarefa_limite", "salvar_rotina", "criar_gatilho", "passos", "painel_vivo", "canal", "reuniao"}
 nomes = {n for _, n in plugin.FERRAMENTAS}
 checa(not nomes & NATIVAS, f"ponte não repete ferramenta nativa do Hermes: {sorted(nomes & NATIVAS)}")
 checa(not nomes & SO_NO_A0, f"ponte não leva ferramenta que grava no agendador do A0 ou repete o Hermes: {sorted(nomes & SO_NO_A0)}")
@@ -110,12 +109,64 @@ def alcance(plug, nome):
                 for alvo in funcs.get(nm,[]): fila.append(alvo)
     return sorted(achados)
 
-LEITURA_DO_DONO = {("login_usuarios", "terminal_isolado"): {"dono_contexto"}}  # só lê o dono da conversa pai, em try
+LEITURA_DO_DONO = {("login_usuarios", "terminal_isolado"): {"dono_contexto"},  # só lê o dono da conversa pai, em try
+                   # virada: o navegador da conversa e a entrega na conversa são trocados por externas_hermes.instalar()
+                   # (conferido logo abaixo): contexto() do A0 nunca roda e _para_a_conversa entrega pela ponte
+                   ("conversas_externas", "conversa_externa"): {"contexto", "aprender_em_fundo"}}
 for plugin_nome, nome in plugin.FERRAMENTAS:
     achados = [a for a in alcance(plugin_nome, nome) if a.split(":")[2] not in LEITURA_DO_DONO.get((plugin_nome, nome), ())]
     checa(not achados, f"{plugin_nome}/{nome} usa o agendador/conversas do A0: {achados[:3]}")
 for plugin_nome, nome in plugin.FERRAMENTAS:
     checa(nome in registradas, f"{plugin_nome}/{nome} carrega só com a ponte (sem o Agent Zero)")
+# conversas externas no Hermes: o navegador é o desta instância (CDP), o vigia atende só os logins dela, e o que o A0
+# entregaria na conversa vai à ponte (/conversa)
+import os as _os
+_os.environ["BROWSER_CDP_URL"] = "http://cdp-teste:9223"
+plugin.externas.PLUGINS = ponte.PLUGINS
+plugin.externas.RAIZ = ponte.PLUGINS / "conversas_externas"
+plugin.externas.CONVIDADOS = ponte.PLUGINS / "login_usuarios" / "helpers" / "convidados.py"
+plugin.botoes.PLUGINS, plugin.botoes.RECEBER = ponte.PLUGINS, ponte.PLUGINS / "whatsapp" / "api" / "receber.py"
+for velho in ("conversas_externas_helper", "conversas_externas_navegador", "whatsapp_receber_vigia", "whatsapp_ponte"):
+    sys.modules.pop(velho, None)
+ex_mod, nav_mod = plugin.externas.instalar()
+rt = asyncio.run(nav_mod._runtime(ex_mod, "matheus", "Matheus"))
+checa(type(rt).__name__ == "NavegadorCDP" and rt.base == "http://cdp-teste:9223", "conversa_externa: navegador do Hermes por CDP")
+try:
+    asyncio.run(nav_mod._runtime(ex_mod, "ilia", "Ilia"))
+    checa(False, "o WhatsApp de um convidado não abre no navegador do Matheus")
+except nav_mod.SemWhatsApp:
+    pass
+checa(plugin.externas.meus_logins(["ilia", "matheus", "will"], "") == ["matheus"]
+      and plugin.externas.meus_logins(["ilia", "matheus"], "ilia") == ["ilia"], "vigia: cada instância só os logins dela")
+rec = sys.modules["whatsapp_receber_vigia"]
+checa(rec._entregar is plugin.botoes._entregar and getattr(rec, "_hermes", False), "o receber do A0 entrega no Hermes (ponte)")
+checa(all(hasattr(rec, f) for f in plugin.botoes.BOTOES.values()) and hasattr(rec, "AJUDA") and hasattr(rec, "_atividade"),
+      "as funções dos botões existem no receber.py do A0")
+# os botões: a função do A0 pelo prefixo; o que ela entregaria na conversa vai à ponte (/conversa)
+feitos_b = []
+
+
+class _Rec:
+    async def _botao_fio(self, u, b):
+        feitos_b.append(("fio", u, b))
+        return self._entregar(u, "✅ Faz pra mim (fio solto f1)", [], "", " (botão)")
+rb = _Rec()
+rb._entregar = plugin.botoes._entregar
+plugin.botoes.conversa = lambda u, t: feitos_b.append(("conversa", u, t)) or {"ok": True}
+_receber_orig = plugin.botoes.receber
+plugin.botoes.receber = lambda: rb
+r = asyncio.run(plugin.botoes.tratar("matheus", "fio:matheus:f1:fazer"))
+checa(r == {"ok": True} and feitos_b == [("fio", "matheus", "fio:matheus:f1:fazer"),
+                                         ("conversa", "matheus", "✅ Faz pra mim (fio solto f1)")],
+      f"botão do fio: função do A0, e o 'faz pra mim' vira pedido no Hermes: {feitos_b}")
+checa(asyncio.run(plugin.botoes.tratar("matheus", "xx:1"))["ok"] is False, "botão desconhecido: não faz nada")
+plugin.botoes.receber = _receber_orig
+# delegar só ao OpenClaw; celular com a tela num arquivo
+checa("motor" not in registradas["delegar"][0]["parameters"]["properties"] and "OpenClaw" in registradas["delegar"][0]["description"],
+      "delegar: o motor é sempre o OpenClaw (o Hermes tem delegate_task)")
+ponte.IMAGENS = tmp / "telas"
+nota = ponte.guardar_imagem(b"\xff\xd8jpg", "celular")
+checa("vision_analyze" in nota and len(list(ponte.IMAGENS.glob("celular-*.jpg"))) == 1, "a tela do celular vira arquivo")
 for nome, (schema, _) in registradas.items():
     try:
         json.dumps(schema)

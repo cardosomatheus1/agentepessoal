@@ -21,5 +21,5 @@ m = json.loads(base64.b64decode({base64.b64encode(json.dumps(m).encode()).decode
 print(json.dumps(c.trocar_formato(m['id'], m['tipo'], m['arquivos'], m.get('capa', '')), ensure_ascii=False))
 """
 b64 = base64.b64encode(script.encode()).decode()
-cmd = f"echo {b64} | base64 -d > /opt/a0/usr/tmp_trocar_formato.py && docker exec agent-zero python3 /a0/usr/tmp_trocar_formato.py; rm -f /opt/a0/usr/tmp_trocar_formato.py"
+cmd = f"echo {b64} | base64 -d > /opt/a0/usr/tmp_trocar_formato.py && /opt/agentepessoal/a0py /a0/usr/tmp_trocar_formato.py; rm -f /opt/a0/usr/tmp_trocar_formato.py"
 sys.exit(subprocess.call([sys.executable, str(RAIZ / "infra" / "operador" / "vmcmd.py"), cmd]))

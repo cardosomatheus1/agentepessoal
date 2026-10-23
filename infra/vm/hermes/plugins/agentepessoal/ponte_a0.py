@@ -73,7 +73,7 @@ class NavegadorCDP:
         with urllib.request.urlopen(f"{self.base}/json/list", timeout=10) as r:
             return [a for a in json.loads(r.read() or b"[]") if a.get("type") == "page"]
 
-    async def call(self, metodo: str, *args):
+    async def call(self, metodo: str, *args, **kw):
         import asyncio
         import re
 
@@ -100,7 +100,71 @@ class NavegadorCDP:
             if res.get("exceptionDetails"):
                 raise RuntimeError(str(res["exceptionDetails"].get("text") or "erro no script")[:300])
             return {"result": (res.get("result") or {}).get("value")}
+        if metodo == "navigate":  # (aba, url)
+            await self._cdp(args[0], "Page.navigate", {"url": str(args[1])})
+            return {"id": args[0]}
+        if metodo == "open":  # (url) -> {"id": nova aba}
+            import urllib.parse
+            import urllib.request
+
+            def abrir():
+                req = urllib.request.Request(f"{self.base}/json/new?{urllib.parse.quote(str(args[0]), safe=':/?&=%')}",
+                                             method="PUT")
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    return json.loads(r.read() or b"{}")
+            return {"id": (await asyncio.to_thread(abrir)).get("id")}
+        if metodo == "keyboard":  # (aba, key=..., text=...): o teclado do Playwright que as ferramentas do A0 usam
+            aba = args[0]
+            if kw.get("text"):
+                await self._cdp(aba, "Input.insertText", {"text": str(kw["text"])})
+            if kw.get("key"):
+                await self._tecla(aba, str(kw["key"]))
+            return {}
+        if metodo == "key_chord":  # (aba, ["Control", "a"])
+            await self._tecla(args[0], str(args[1][-1]), [str(t) for t in args[1][:-1]])
+            return {}
+        if metodo == "screenshot":  # (aba ou None, quality=..) -> {"image": base64, "state": {url, title}}
+            abas = await asyncio.to_thread(self._abas)
+            alvo = next((a for a in abas if a["id"] == args[0]), None) if args and args[0] else (abas[0] if abas else None)
+            if alvo is None:
+                raise LookupError("nenhuma aba aberta")
+            r = await self._cdp(alvo["id"], "Page.captureScreenshot",
+                                {"format": "jpeg", "quality": int(kw.get("quality") or 60)})
+            return {"image": r.get("data", ""), "state": {"url": alvo.get("url", ""), "title": alvo.get("title", "")}}
         raise ValueError(f"navegador: {metodo} não existe aqui")
+
+    async def _cdp(self, aba_id: str, metodo: str, params: dict) -> dict:
+        """Um comando CDP numa aba (só os fixos acima, pedidos pelo código das ferramentas)."""
+        import asyncio
+
+        import websockets
+
+        alvo = next((a for a in await asyncio.to_thread(self._abas) if a["id"] == aba_id), None)
+        if alvo is None:
+            raise LookupError("aba fechada")
+        async with websockets.connect(alvo["webSocketDebuggerUrl"], max_size=50_000_000, open_timeout=10) as ws:
+            await ws.send(json.dumps({"id": 1, "method": metodo, "params": params}))
+            while True:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), 120))
+                if msg.get("id") == 1:
+                    break
+        if msg.get("error"):
+            raise RuntimeError(str(msg["error"].get("message") or msg["error"])[:300])
+        return msg.get("result") or {}
+
+    TECLAS = {"Enter": (13, "\r"), "Backspace": (8, ""), "Tab": (9, "\t"), "Escape": (27, ""), "Delete": (46, "")}
+    MODIFICADORES = {"Alt": 1, "Control": 2, "Meta": 4, "Shift": 8}
+
+    async def _tecla(self, aba: str, tecla: str, mods: list | None = None) -> None:
+        bits = sum(self.MODIFICADORES.get(m, 0) for m in (mods or []))
+        codigo, texto = self.TECLAS.get(tecla, (ord(tecla.upper()[0]) if len(tecla) == 1 else 0, tecla if len(tecla) == 1 else ""))
+        if bits & 2:
+            texto = ""  # Ctrl+A etc.: comando, não texto
+        base = {"key": tecla, "windowsVirtualKeyCode": codigo, "modifiers": bits,
+                "code": f"Key{tecla.upper()}" if len(tecla) == 1 else tecla}
+        await self._cdp(aba, "Input.dispatchKeyEvent", {**base, "type": "keyDown" if texto else "rawKeyDown",
+                                                        **({"text": texto} if texto else {})})
+        await self._cdp(aba, "Input.dispatchKeyEvent", {**base, "type": "keyUp"})
 
 
 async def _navegador(context_id=None, create: bool = False):
@@ -120,8 +184,13 @@ def instalar_modulos() -> None:
     extension = types.ModuleType("helpers.extension")
     extension.call_extensions_async = _sem_extensoes
     extension.Extension = type("Extension", (), {})
-    sys.modules.update({"helpers": pacote, "helpers.tool": tool, "helpers.extension": extension})
-    pacote.tool, pacote.extension = tool, extension
+    # o celular importa chat_media/history no topo (no A0, para pôr a tela no histórico, em after_execution, que aqui
+    # não roda: a tela vira um arquivo, ver executar)
+    chat_media, history = types.ModuleType("helpers.chat_media"), types.ModuleType("helpers.history")
+    history.RawMessage = type("RawMessage", (), {"__init__": lambda self, **k: self.__dict__.update(k)})
+    sys.modules.update({"helpers": pacote, "helpers.tool": tool, "helpers.extension": extension,
+                        "helpers.chat_media": chat_media, "helpers.history": history})
+    pacote.tool, pacote.extension, pacote.chat_media, pacote.history = tool, extension, chat_media, history
     if "plugins._browser.helpers.runtime" not in sys.modules:  # o navegador do A0 -> o do Hermes, por CDP
         runtime = types.ModuleType("plugins._browser.helpers.runtime")
         runtime.get_runtime = _navegador
@@ -161,8 +230,15 @@ def login_mapeado(sessao: str) -> str:
     return str(login or "").strip().lower()
 
 
+def convidado_da_instancia() -> str:
+    """O login do convidado quando este Hermes é o dele (hermes-<login>, subir.sh): tudo aqui é dele."""
+    import os
+
+    return str(os.environ.get("AGENTEPESSOAL_CONVIDADO") or "").strip().lower()
+
+
 def login_da_sessao(sessao: str) -> str:
-    return login_mapeado(sessao) or DONO_PADRAO
+    return convidado_da_instancia() or login_mapeado(sessao) or DONO_PADRAO
 
 
 class Conversa:
@@ -220,15 +296,24 @@ class Agente:
         return None
 
 
+_CLASSES: dict[str, tuple[float, type]] = {}
+
+
 def carregar(plugin: str, nome: str):
-    """The Tool subclass in /a0/usr/plugins/<plugin>/tools/<nome>.py (the same file Agent Zero runs)."""
+    """The Tool subclass in /a0/usr/plugins/<plugin>/tools/<nome>.py (the same file Agent Zero runs), loaded again when
+    the file changes (implantar.py of a plugin takes effect on the next call, as in Agent Zero; no Hermes restart)."""
     instalar_modulos()
     arquivo = PLUGINS / plugin / "tools" / f"{nome}.py"
+    mtime = arquivo.stat().st_mtime
+    guardada = _CLASSES.get(f"{plugin}/{nome}")
+    if guardada and guardada[0] == mtime:
+        return guardada[1]
     spec = importlib.util.spec_from_file_location(f"hermes_a0_{plugin}_{nome}", arquivo)
     modulo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modulo)
     for valor in vars(modulo).values():
         if inspect.isclass(valor) and issubclass(valor, Tool) and valor is not Tool:
+            _CLASSES[f"{plugin}/{nome}"] = (mtime, valor)
             return valor
     raise LookupError(f"{arquivo}: nenhuma classe de ferramenta")
 
@@ -288,7 +373,25 @@ async def executar(classe, nome: str, args: dict, sessao: str | None) -> str:
         if somente_leitura(exc):
             return ERRO_SO_LEITURA
         raise
-    return resposta.message if isinstance(resposta, Response) else str(resposta)
+    texto = resposta.message if isinstance(resposta, Response) else str(resposta)
+    imagem = getattr(ferramenta, "_imagem", None)  # a tela do celular: no A0 ia para o histórico; aqui, um arquivo
+    if isinstance(imagem, (bytes, bytearray)) and imagem:
+        texto += "\n" + guardar_imagem(bytes(imagem), nome)
+    return texto
+
+
+IMAGENS = DADOS / "telas"
+
+
+def guardar_imagem(dados: bytes, nome: str) -> str:
+    import time
+
+    IMAGENS.mkdir(parents=True, exist_ok=True)
+    for velha in sorted(IMAGENS.glob("*.jpg"))[:-40]:  # só as últimas 40
+        velha.unlink(missing_ok=True)
+    arquivo = IMAGENS / f"{nome}-{time.strftime('%Y%m%d-%H%M%S')}-{int(time.time() * 1000) % 1000:03d}.jpg"
+    arquivo.write_bytes(dados)
+    return f"[imagem da tela salva em {arquivo}: veja com vision_analyze se precisar]"
 
 
 # Ensaio até a virada (docs/MIGRACAO_HERMES.md): os dados do A0 chegam aqui só para leitura (agentepessoal-hermes-dados).

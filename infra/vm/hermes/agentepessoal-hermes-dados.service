@@ -2,15 +2,18 @@
 # by the Hermes user (UID 10000, the image refuses root) and stores what the Hermes creates as root, like Agent Zero
 # does; nothing on disk changes owner or mode. Before docker, so the container never starts on an empty folder.
 # `ro` until the cutover (phase 8): the Hermes reads everything and writes nothing the Agent Zero acts on (a post freed
-# from the Hermes was published by the A0's job loop; OpenCode review, 23/10). Phase 7 runs on a copy.
+# from the Hermes was published by the A0's job loop; OpenCode review, 23/10). Phase 7 runs on a copy. At the cutover
+# subir.sh writes HERMES_DADOS_MODO=rw in /etc/agentepessoal/hermes-dados.env (the Hermes is the agent; the A0 stopped).
 [Unit]
 Description=Dados do agente vistos pelo Hermes (bindfs /opt/a0/usr -> /opt/hermes/a0usr)
 Before=docker.service
 RequiresMountsFor=/opt/a0/usr
 [Service]
 Type=forking
+Environment=HERMES_DADOS_MODO=ro
+EnvironmentFile=-/etc/agentepessoal/hermes-dados.env
 ExecStartPre=/bin/mkdir -p /opt/hermes/a0usr
-ExecStart=/usr/bin/bindfs -o allow_other,ro --force-user=10000 --force-group=10000 --create-for-user=0 --create-for-group=0 --multithreaded --enable-lock-forwarding /opt/a0/usr /opt/hermes/a0usr
+ExecStart=/usr/bin/bindfs -o allow_other,${HERMES_DADOS_MODO} --force-user=10000 --force-group=10000 --create-for-user=0 --create-for-group=0 --multithreaded --enable-lock-forwarding /opt/a0/usr /opt/hermes/a0usr
 ExecStop=/bin/fusermount -u /opt/hermes/a0usr
 Restart=on-failure
 RestartSec=5

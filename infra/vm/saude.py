@@ -32,6 +32,51 @@ CRITICOS = ("prospeccao/matheus.json", "segundo_cerebro/pasta/Decisoes/indice.md
             "central/agente.copia.db")
 USR = Path("/opt/a0/usr")
 ATRASO_MAX = 3 * 3600
+# 23/10 (virada ao Hermes, fase 8): com "padrao": "hermes" o agente é o Hermes: os contêineres, a interface (o portal e
+# a API do Hermes), as rotinas (o cron dele, com o relógio que dispara) e a cópia dele no S3 (backup.sh: hermes/).
+DESTINO = Path("/var/lib/agentepessoal/destino.json")
+HERMES = Path("/opt/hermes")
+JOBS = HERMES / "data" / "cron" / "jobs.json"
+TICK = HERMES / "data" / "cron" / "ticker_heartbeat"
+CONTEINERES_HERMES = ("hermes", "hermes-navegador", "hermes-mcp", "portal", "android", "ws-scrcpy")
+CRITICOS_HERMES = ("hermes/data/cron/jobs.json",)
+TICK_MAX = 15 * 60
+
+
+def modo_hermes() -> bool:
+    try:
+        return json.loads(DESTINO.read_text(encoding="utf-8")).get("padrao") == "hermes"
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def conteineres_hermes(base: Path = HERMES) -> tuple:
+    """Os de sempre e o Hermes (e o navegador) de cada convidado que tem porta (hermes/convidado.sh)."""
+    extras = []
+    for porta in sorted((base / "convidados").glob("*/porta")):
+        login = porta.parent.name
+        extras += [f"hermes-{login}", f"hermes-navegador-{login}"]
+    return CONTEINERES_HERMES + tuple(extras)
+
+
+def problemas_das_rotinas_hermes(jobs: list, agora: dt.datetime) -> list[str]:
+    """As rotinas ligadas do cron do Hermes: com erro na última rodada, ou diárias sem rodar há mais de 30 h."""
+    saida = []
+    for j in jobs:
+        if not j.get("enabled", True) or j.get("state") in ("paused", "completed"):
+            continue
+        nome = j.get("name") or j.get("id")
+        if str(j.get("last_status") or "").lower() in ("error", "failed"):
+            saida.append(f"rotina «{nome}» em erro ({str(j.get('last_error') or '')[:80]})")
+            continue
+        expr = str((j.get("schedule") or {}).get("expr") or "")
+        campos = expr.split()
+        diaria = len(campos) == 5 and campos[2:] == ["*", "*", "*"]
+        ultima, criada = _data(j.get("last_run_at")), _data(j.get("created_at"))
+        if diaria and criada and agora - criada > dt.timedelta(hours=30):
+            if ultima is None or agora - ultima > dt.timedelta(hours=30):
+                saida.append(f"rotina diária «{nome}» não roda há mais de 30 h")
+    return saida
 
 
 def _data(texto) -> dt.datetime | None:
@@ -137,7 +182,7 @@ def _bucket() -> str:
     return ""
 
 
-def conferir_backup() -> list[str]:
+def conferir_backup(hermes: bool = False) -> list[str]:
     """Restore the critical files from S3 into a temporary folder and check each one."""
     import tempfile
 
@@ -145,11 +190,14 @@ def conferir_backup() -> list[str]:
     if not bucket:
         return ["backup: não achei o nome do bucket em /etc/agentepessoal.env"]
     problemas = []
+    itens = [(f"usr/{n}", USR / n, n) for n in CRITICOS if not (hermes and n == "scheduler/tasks.json")]
+    if hermes:
+        itens += [(n, Path("/opt") / n, n) for n in CRITICOS_HERMES]
     with tempfile.TemporaryDirectory(prefix="saude-backup-") as tmp:
-        for nome in CRITICOS:
+        for chave, local, nome in itens:
             destino = Path(tmp) / nome.replace("/", "__")
-            _cmd("/usr/local/bin/aws", "s3", "cp", "--only-show-errors", f"s3://{bucket}/usr/{nome}", str(destino))
-            if p := problema_da_copia(nome, USR / nome, destino if destino.exists() else None, time.time()):
+            _cmd("/usr/local/bin/aws", "s3", "cp", "--only-show-errors", f"s3://{bucket}/{chave}", str(destino))
+            if p := problema_da_copia(nome, local, destino if destino.exists() else None, time.time()):
                 problemas.append(p)
     return problemas
 
@@ -159,10 +207,21 @@ def checar() -> list[str]:
     uso = shutil.disk_usage("/")
     if p := problema_do_disco(uso.used, uso.total):
         problemas.append(p)
-    for nome in CONTEINERES:
+    hermes = modo_hermes()
+    for nome in (conteineres_hermes() if hermes else CONTEINERES):
         if _cmd("docker", "inspect", "-f", "{{.State.Running}}", nome).strip() != "true":
             problemas.append(f"contêiner {nome} parado")
-    if _http("http://127.0.0.1:50080/login") != 200:
+    if hermes:
+        if _http("http://127.0.0.1:8642/health") != 200:
+            problemas.append("o Hermes (o agente) não responde")
+        if _http("http://127.0.0.1:8650/saude") != 200:
+            problemas.append("o portal (Segundo Cérebro, Painel, Tarefas, Cofre) não responde")
+        try:
+            if time.time() - TICK.stat().st_mtime > TICK_MAX:
+                problemas.append("o relógio das rotinas do Hermes está parado (nenhuma rotina dispara)")
+        except OSError:
+            problemas.append("o relógio das rotinas do Hermes nunca rodou")
+    elif _http("http://127.0.0.1:50080/login") != 200:
         problemas.append("a interface do agente não responde")
     proxy = _http("http://127.0.0.1:8787/health")
     if not proxy:
@@ -178,13 +237,18 @@ def checar() -> list[str]:
             problemas.append("a hibernação falhou e a VM foi desligada: religou do zero, sem as conversas abertas")
     except OSError:
         pass
-    problemas += conferir_backup()
+    problemas += conferir_backup(hermes)
     feitos = _cmd("journalctl", "-t", "agentepessoal", "--since", f"-{BACKUP_MAX_H}h", "-o", "cat")
     if "backup to s3" not in feitos or " done" not in feitos:
         problemas.append(f"backup de hora em hora sem sucesso nas últimas {BACKUP_MAX_H} h")
     try:
-        tarefas = json.loads(TAREFAS.read_text(encoding="utf-8")).get("tasks", [])
-        problemas += problemas_das_rotinas(tarefas, dt.datetime.now(dt.timezone.utc))
+        agora = dt.datetime.now(dt.timezone.utc)
+        if hermes:
+            dados = json.loads(JOBS.read_text(encoding="utf-8"))
+            problemas += problemas_das_rotinas_hermes(dados.get("jobs", []) if isinstance(dados, dict) else dados, agora)
+        else:
+            tarefas = json.loads(TAREFAS.read_text(encoding="utf-8")).get("tasks", [])
+            problemas += problemas_das_rotinas(tarefas, agora)
     except (OSError, ValueError) as exc:
         problemas.append(f"lista de rotinas ilegível ({str(exc)[:60]})")
     return problemas

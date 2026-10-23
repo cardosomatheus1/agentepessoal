@@ -52,7 +52,7 @@ def main() -> int:
     s._cmd = lambda *a: "true" if a[0] == "docker" else "backup to s3 ... done"
     s.shutil.disk_usage = lambda caminho: type("U", (), {"used": 10, "total": 100})()
     s.BINDER, s.HIBERNACAO_FALHOU = tmp / "sem_binder", tmp / "hibernacao_falhou"
-    s.conferir_backup = lambda: []  # restore check tested on its own below
+    s.conferir_backup = lambda hermes=False: []  # restore check tested on its own below
     s.HIBERNACAO_FALHOU.touch()
     achados = s.checar()
     if not any("binder" in a for a in achados) or not any("hibernação falhou" in a for a in achados) or len(achados) != 2:
@@ -98,6 +98,40 @@ def main() -> int:
     con.close()
     if s.problema_da_copia("central/agente.copia.db", tmp / "nao_existe.db", banco, agora_s):
         falhas.append("backup: banco íntegro no S3 não é problema")
+    # virada ao Hermes: os contêineres, a interface e as rotinas são os do Hermes
+    import datetime as _dt
+    import time as _time
+    s.DESTINO = tmp / "destino.json"
+    s.DESTINO.write_text('{"padrao": "hermes"}')
+    if not s.modo_hermes():
+        falhas.append("virada: modo Hermes pela chave")
+    (tmp / "hermes" / "convidados" / "ilia").mkdir(parents=True)
+    (tmp / "hermes" / "convidados" / "ilia" / "porta").write_text("8660")
+    nomes = s.conteineres_hermes(tmp / "hermes")
+    if "hermes" not in nomes or "hermes-ilia" not in nomes or "agent-zero" in nomes:
+        falhas.append(f"virada: contêineres do Hermes e dos convidados, não o A0: {nomes}")
+    agora = _dt.datetime(2026, 10, 25, 12, tzinfo=_dt.timezone.utc)
+    jobs = [{"name": "Resumo", "enabled": True, "state": "scheduled", "schedule": {"expr": "45 7 * * *"},
+             "created_at": "2026-10-20T00:00:00+00:00", "last_run_at": "2026-10-23T10:45:00+00:00"},
+            {"name": "Erro", "enabled": True, "state": "scheduled", "last_status": "error", "last_error": "boom"},
+            {"name": "Pausada", "enabled": False, "state": "paused", "last_status": "error"}]
+    achados = s.problemas_das_rotinas_hermes(jobs, agora)
+    if len(achados) != 2 or not any("Resumo" in a and "30 h" in a for a in achados) or not any("Erro" in a for a in achados):
+        falhas.append(f"virada: rotinas do Hermes em erro ou paradas (as pausadas não): {achados}")
+    s.TICK = tmp / "tick"
+    s.TICK.write_text("x")
+    s.JOBS = tmp / "jobs.json"
+    s.JOBS.write_text('{"jobs": []}')
+    s.conteineres_hermes = lambda: ("hermes",)
+    urls = []
+    s._http = lambda url: urls.append(url) or 200
+    s.checar()
+    if not any("8642" in u for u in urls) or any("50080" in u for u in urls):
+        falhas.append(f"virada: confere a API do Hermes e não a interface do A0: {urls}")
+    import os as _os
+    _os.utime(s.TICK, (_time.time() - 3600, _time.time() - 3600))
+    if not any("relógio das rotinas" in a for a in s.checar()):
+        falhas.append("virada: relógio do cron parado é problema")
     s.shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:
         print("FALHA", f)

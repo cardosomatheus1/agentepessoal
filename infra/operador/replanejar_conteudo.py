@@ -20,5 +20,5 @@ c.AUTOR['quem'] = {json.dumps('operador: ' + motivo)}
 print(json.dumps(c.replanejar(json.loads(base64.b64decode({base64.b64encode(json.dumps(mudancas).encode()).decode()!r}))), ensure_ascii=False))
 """
 b64 = base64.b64encode(script.encode()).decode()
-cmd = f"echo {b64} | base64 -d > /opt/a0/usr/tmp_replanejar.py && docker exec agent-zero python3 /a0/usr/tmp_replanejar.py; rm -f /opt/a0/usr/tmp_replanejar.py"
+cmd = f"echo {b64} | base64 -d > /opt/a0/usr/tmp_replanejar.py && /opt/agentepessoal/a0py /a0/usr/tmp_replanejar.py; rm -f /opt/a0/usr/tmp_replanejar.py"
 sys.exit(subprocess.call([sys.executable, str(RAIZ / "infra" / "operador" / "vmcmd.py"), cmd]))

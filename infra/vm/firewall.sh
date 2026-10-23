@@ -45,33 +45,61 @@ fi
 # 23/10 (migração): o Hermes principal (rede "hermes", infra/vm/hermes/subir.sh) tem a internet e, do host, só o proxy
 # do modelo (8787) e as respostas das conexões que o host abriu com ele (a porta 8642 publicada); nada do A0, da VPC,
 # do serviço de credenciais (8788), da ponte do celular (8789) nem dos metadados da nuvem (revisão OpenCode 23/10).
-HERMES=$(docker network inspect hermes -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null)
-if [ -n "$HERMES" ]; then
-  regra=(INPUT -s "$HERMES" -j DROP)
+# Virada (fase 8, "padrao": "hermes" em /var/lib/agentepessoal/destino.json): o Hermes passa a ser o agente, então ganha
+# o que o A0 tinha do host: credenciais Meta (8788), ponte do celular (8789), caixas dos convidados (8790) e dos
+# delegados (8791), e o celular Android (IP fixo .0.252 na rede dele, só a porta do adb; o celular não abre nada no
+# Hermes nem no host). Os convidados (redes "hermes-<login>", hermes/convidado.sh) só o modelo, a ponte e a caixa deles.
+# Voltar ao ensaio tira essas regras de novo.
+VIRADA=0
+python3 -c 'import json,sys; sys.exit(0 if json.load(open("/var/lib/agentepessoal/destino.json")).get("padrao") == "hermes" else 1)' \
+  2>/dev/null && VIRADA=1
+aceitar_input() {  # $1 rede, $2 porta, $3 1=pôr / 0=tirar (acima do DROP da rede)
+  local a=(INPUT -s "$1" -p tcp --dport "$2" -j ACCEPT)
+  iptables -C "${a[@]}" 2>/dev/null && iptables -D "${a[@]}"
+  if [ "$3" = 1 ]; then iptables -I "${a[@]}" || falhou=1; fi
+}
+regra_user() {  # $1 1=pôr / 0=tirar, resto: a regra do DOCKER-USER sem o -j
+  local por="$1"; shift
+  local a=(DOCKER-USER "$@")
+  iptables -C "${a[@]}" 2>/dev/null && iptables -D "${a[@]}"
+  if [ "$por" = 1 ]; then iptables -I "${a[@]}" || falhou=1; fi
+}
+for rede in $(docker network ls --format '{{.Name}}' 2>/dev/null | grep -E '^hermes(-[a-z0-9_-]+)?$'); do
+  SUB=$(docker network inspect "$rede" -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null)
+  [ -n "$SUB" ] || continue
+  regra=(INPUT -s "$SUB" -j DROP)
   iptables -C "${regra[@]}" 2>/dev/null || iptables -I "${regra[@]}" || falhou=1
-  for aceita in "-p tcp --dport 8787" "-m state --state ESTABLISHED,RELATED"; do  # acima do DROP
-    # shellcheck disable=SC2206
-    a=(INPUT -s "$HERMES" $aceita -j ACCEPT)
-    iptables -C "${a[@]}" 2>/dev/null && iptables -D "${a[@]}"
-    iptables -I "${a[@]}" || falhou=1
+  aceitar_input "$SUB" 8787 1
+  a=(INPUT -s "$SUB" -m state --state ESTABLISHED,RELATED -j ACCEPT)
+  iptables -C "${a[@]}" 2>/dev/null && iptables -D "${a[@]}"
+  iptables -I "${a[@]}" || falhou=1
+  if [ "$rede" = hermes ]; then portas="8788 8789 8790 8791"; else portas="8789 8790"; fi
+  for porta in 8788 8789 8790 8791; do
+    case " $portas " in *" $porta "*) aceitar_input "$SUB" "$porta" "$VIRADA" ;; *) aceitar_input "$SUB" "$porta" 0 ;; esac
   done
   for destino in 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 169.254.0.0/16 100.64.0.0/10; do
-    regra=(DOCKER-USER -s "$HERMES" -d "$destino" -j DROP)
+    regra=(DOCKER-USER -s "$SUB" -d "$destino" -j DROP)
     iptables -C "${regra[@]}" 2>/dev/null || iptables -I "${regra[@]}" || falhou=1
   done
-  # 23/10 (fase 4): dentro da rede, o Hermes só fala com o CDP do navegador dele (hermes/navegador.sh, IP .0.250, porta 9223) e o
-  # navegador só responde; o resto da rede privada segue fechado para os dois (acima dos DROPs)
-  NAV="${HERMES%.*.*}.0.250"
-  MCP="${HERMES%.*.*}.0.251"  # os conectores (hermes/mcp.sh): Google 8765, repasse do GitHub 8766
-  for aceita in "-s $HERMES -d $NAV/32 -p tcp --dport 9223" "-s $NAV/32 -d $HERMES -m state --state ESTABLISHED,RELATED" \
-                "-s $HERMES -d $MCP/32 -p tcp --dport 8765" "-s $HERMES -d $MCP/32 -p tcp --dport 8766" \
-                "-s $MCP/32 -d $HERMES -m state --state ESTABLISHED,RELATED"; do
-    # shellcheck disable=SC2206
-    a=(DOCKER-USER $aceita -j ACCEPT)
+  # 23/10 (fase 4): dentro da rede, o Hermes só fala com o CDP do navegador dele (navegador.sh, IP .0.250, porta 9223)
+  # e o navegador só responde; o resto da rede privada segue fechado (acima dos DROPs)
+  NAV="${SUB%.*.*}.0.250"
+  regra_user 1 -s "$SUB" -d "$NAV/32" -p tcp --dport 9223 -j ACCEPT
+  regra_user 1 -s "$NAV/32" -d "$SUB" -m state --state ESTABLISHED,RELATED -j ACCEPT
+  if [ "$rede" = hermes ]; then
+    MCP="${SUB%.*.*}.0.251"  # os conectores (hermes/mcp.sh): Google 8765, repasse do GitHub 8766
+    regra_user 1 -s "$SUB" -d "$MCP/32" -p tcp --dport 8765 -j ACCEPT
+    regra_user 1 -s "$SUB" -d "$MCP/32" -p tcp --dport 8766 -j ACCEPT
+    regra_user 1 -s "$MCP/32" -d "$SUB" -m state --state ESTABLISHED,RELATED -j ACCEPT
+    AND="${SUB%.*.*}.0.252"  # o celular Android (na virada, hermes/subir.sh o liga nesta rede)
+    regra_user "$VIRADA" -s "$AND/32" -d "$SUB" -j DROP
+    regra_user "$VIRADA" -s "$AND/32" -d "$SUB" -m state --state ESTABLISHED,RELATED -j ACCEPT
+    regra_user "$VIRADA" -s "$SUB" -d "$AND/32" -p tcp --dport 5555 -j ACCEPT
+    a=(INPUT -s "$AND/32" -j DROP)  # do celular, nada do host por esta rede (acima dos ACCEPTs da rede)
     iptables -C "${a[@]}" 2>/dev/null && iptables -D "${a[@]}"
-    iptables -I "${a[@]}" || falhou=1
-  done
-fi
+    [ "$VIRADA" = 1 ] && { iptables -I "${a[@]}" || falhou=1; }
+  fi
+done
 if [ "$falhou" -eq 0 ]; then
   logger -t agentepessoal "firewall: rede $REDE sem acesso às portas 8787-8790 do host; caixas (${CAIXAS:-ainda sem rede}) só com internet"
 else

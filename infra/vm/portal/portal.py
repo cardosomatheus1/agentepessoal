@@ -12,7 +12,8 @@ Reaproveita o que já existe, sem reescrever:
 
 Segurança: sessão em cookie assinado (HMAC, segredo só na VM), HttpOnly/SameSite=Lax; POST só com o cabeçalho
 X-Portal (um site de fora não manda sem pré-voo); 5 senhas erradas do mesmo IP bloqueiam 15 min (o Bloqueio do A0).
-PORTAL_SO_LEITURA=1 (até a virada): nada grava (cofre, tarefas); só mostra.
+PORTAL_SO_LEITURA=1 (até a virada): nada grava (cofre, tarefas); só mostra. Na virada, a página Navegador (o navegador do
+Hermes, para resolver um login/captcha ou mostrar uma tarefa ao me_mostre; só o dono).
 Executa: python3 portal.py  (PORTAL_PORTA, padrão 8650, só 127.0.0.1)."""
 import asyncio
 import base64
@@ -181,6 +182,9 @@ async def inicio(request: web.Request) -> web.Response:
     links = "".join(f'<a href="/{rota}">{titulo}</a>' for rota, (_, titulo) in PAGINAS.items())
     if login == "matheus":
         links = '<a href="/segundo-cerebro">Segundo Cérebro</a>' + links
+        if CDP:
+            links += '<a href="/navegador">Navegador do agente</a>'
+    
     nome = (usuarios().carregar().get(login) or {}).get("nome") or login.title()
     return web.Response(text=INICIO.format(nome=nome, links=links), content_type="text/html")
 
@@ -266,6 +270,121 @@ async def api_cofre(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "nomes": sorted(c.carregar(login)), "descricoes": c.descricoes(login)})
 
 
+# ------------------------------------------------------------------ Navegador (virada, fase 8)
+# O A0 mostrava o navegador dele na interface (o "Navegador" do app): a pessoa resolvia ali um login, um captcha, ou
+# fazia uma tarefa enquanto o me_mostre gravava. O Hermes não tem interface: esta página mostra a tela do navegador
+# dele (hermes-navegador, por CDP: PORTAL_CDP) e manda o clique, o texto e as teclas da pessoa. Só o dono (Matheus).
+CDP = os.environ.get("PORTAL_CDP", "")
+DONO_NAVEGADOR = "matheus"
+TECLAS_NAV = {"Enter": (13, "\r"), "Backspace": (8, ""), "Tab": (9, "\t"), "Escape": (27, "")}
+
+NAVEGADOR = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Navegador</title><style>body{font-family:system-ui;margin:0;padding:8px}#tela{width:100%;max-width:1280px;border:1px solid #ccc;
+cursor:crosshair}input,button,select{font-size:15px;padding:6px;margin:2px}#url{width:60%}#txt{width:50%}.l{display:flex;flex-wrap:wrap;
+align-items:center}</style></head><body><div class="l"><a href="/">Início</a>&nbsp;<select id="aba"></select>
+<input id="url" placeholder="endereço"><button onclick="ir()">Ir</button></div>
+<img id="tela" alt="tela do navegador"><div class="l"><input id="txt" placeholder="texto para digitar no campo clicado">
+<button onclick="cmd({acao:'digitar',texto:txt.value}).then(()=>txt.value='')">Digitar</button>
+<button onclick="cmd({acao:'tecla',tecla:'Enter'})">Enter</button><button onclick="cmd({acao:'tecla',tecla:'Backspace'})">⌫</button>
+<button onclick="cmd({acao:'tecla',tecla:'Tab'})">Tab</button><button onclick="cmd({acao:'rolar',dy:-500})">▲</button>
+<button onclick="cmd({acao:'rolar',dy:500})">▼</button><button onclick="cmd({acao:'voltar'})">◀ Voltar</button></div>
+<script>
+const tela=document.getElementById('tela'),aba=document.getElementById('aba'),url=document.getElementById('url'),txt=document.getElementById('txt');
+async function cmd(d){d.aba=aba.value;const r=await fetch('/api/navegador',{method:'POST',headers:{'Content-Type':'application/json','X-Portal':'1'},body:JSON.stringify(d)});
+ if(r.status===401){location.href='/entrar?volta=/navegador';return}const j=await r.json();if(j.erro)alert(j.erro);atualizar();return j}
+function ir(){cmd({acao:'ir',url:url.value})}
+async function abas(){const j=await cmd({acao:'abas'});if(!j||!j.abas)return;const atual=aba.value;aba.innerHTML='';
+ for(const a of j.abas){const o=document.createElement('option');o.value=a.id;o.textContent=(a.title||a.url).slice(0,60);aba.appendChild(o)}
+ if(atual&&j.abas.some(a=>a.id===atual))aba.value=atual;const s=j.abas.find(a=>a.id===aba.value);if(s&&document.activeElement!==url)url.value=s.url}
+function atualizar(){tela.src='/api/navegador/tela?aba='+encodeURIComponent(aba.value||'')+'&t='+Date.now()}
+tela.onclick=e=>{const b=tela.getBoundingClientRect();cmd({acao:'clique',x:Math.round((e.clientX-b.left)*tela.naturalWidth/b.width),
+ y:Math.round((e.clientY-b.top)*tela.naturalHeight/b.height)})};
+aba.onchange=()=>{abas();atualizar()};abas().then(atualizar);setInterval(atualizar,1500);setInterval(abas,6000);
+</script></body></html>"""
+
+
+async def _cdp_abas() -> list:
+    import aiohttp
+
+    async with aiohttp.ClientSession() as s:
+        async with s.get(f"{CDP}/json/list", timeout=aiohttp.ClientTimeout(total=10)) as r:
+            return [a for a in await r.json(content_type=None) if a.get("type") == "page"]
+
+
+async def _cdp(aba: str, metodo: str, params: dict | None = None) -> dict:
+    import aiohttp
+
+    alvo = next((a for a in await _cdp_abas() if a["id"] == aba), None) if aba else None
+    if alvo is None:
+        abas = await _cdp_abas()
+        if not abas:
+            raise web.HTTPNotFound(text="nenhuma aba aberta")
+        alvo = abas[0]
+    async with aiohttp.ClientSession() as s:
+        async with s.ws_connect(alvo["webSocketDebuggerUrl"], max_msg_size=50_000_000, timeout=10) as ws:
+            await ws.send_json({"id": 1, "method": metodo, "params": params or {}})
+            async for msg in ws:
+                d = json.loads(msg.data)
+                if d.get("id") == 1:
+                    if d.get("error"):
+                        raise web.HTTPBadGateway(text=str(d["error"])[:200])
+                    return d.get("result") or {}
+    return {}
+
+
+def _so_dono(request: web.Request) -> None:
+    if request["login"] != DONO_NAVEGADOR or not CDP:
+        raise web.HTTPForbidden(text="o navegador do agente é só do Matheus (e só depois da virada)")
+
+
+async def navegador(request: web.Request) -> web.Response:
+    _so_dono(request)
+    return web.Response(text=NAVEGADOR, content_type="text/html")
+
+
+async def navegador_tela(request: web.Request) -> web.Response:
+    _so_dono(request)
+    r = await _cdp(request.query.get("aba", ""), "Page.captureScreenshot", {"format": "jpeg", "quality": 60})
+    return web.Response(body=base64.b64decode(r.get("data") or ""), content_type="image/jpeg")
+
+
+async def navegador_api(request: web.Request) -> web.Response:
+    _so_dono(request)
+    d = await request.json()
+    acao, aba = str(d.get("acao") or ""), str(d.get("aba") or "")
+    if acao == "abas":
+        return web.json_response({"abas": [{"id": a["id"], "url": a.get("url", ""), "title": a.get("title", "")}
+                                           for a in await _cdp_abas()]})
+    if acao == "clique":
+        x, y = int(d.get("x") or 0), int(d.get("y") or 0)
+        for tipo in ("mousePressed", "mouseReleased"):
+            await _cdp(aba, "Input.dispatchMouseEvent", {"type": tipo, "x": x, "y": y, "button": "left", "clickCount": 1})
+    elif acao == "digitar":
+        await _cdp(aba, "Input.insertText", {"text": str(d.get("texto") or "")[:2000]})
+    elif acao == "tecla":
+        tecla = str(d.get("tecla") or "")
+        if tecla not in TECLAS_NAV:
+            return web.json_response({"erro": "tecla desconhecida"}, status=400)
+        codigo, texto = TECLAS_NAV[tecla]
+        base = {"key": tecla, "code": tecla, "windowsVirtualKeyCode": codigo}
+        await _cdp(aba, "Input.dispatchKeyEvent", {**base, "type": "keyDown" if texto else "rawKeyDown",
+                                                   **({"text": texto} if texto else {})})
+        await _cdp(aba, "Input.dispatchKeyEvent", {**base, "type": "keyUp"})
+    elif acao == "rolar":
+        await _cdp(aba, "Input.dispatchMouseEvent", {"type": "mouseWheel", "x": 200, "y": 200, "deltaX": 0,
+                                                     "deltaY": int(d.get("dy") or 0)})
+    elif acao == "ir":
+        endereco = str(d.get("url") or "").strip()
+        if not endereco.startswith(("http://", "https://")):
+            endereco = "https://" + endereco
+        await _cdp(aba, "Page.navigate", {"url": endereco})
+    elif acao == "voltar":
+        await _cdp(aba, "Runtime.evaluate", {"expression": "history.back()"})
+    else:
+        return web.json_response({"erro": "ação desconhecida"}, status=400)
+    return web.json_response({"ok": True})
+
+
 # ------------------------------------------------------------------ Segundo Cérebro (o mesmo portão do A0)
 HASH_SESSAO = "portal"  # a sessão do portal já foi conferida pela guarda; o portão confere o dono
 
@@ -317,6 +436,9 @@ def app() -> web.Application:
     a.router.add_post("/plugins/painel/painel", api_painel)
     a.router.add_post("/plugins/quadro/quadro", api_quadro)
     a.router.add_post("/plugins/cofre/cofre", api_cofre)
+    a.router.add_get("/navegador", navegador)
+    a.router.add_get("/api/navegador/tela", navegador_tela)
+    a.router.add_post("/api/navegador", navegador_api)
     for caminho in ("/segundo-cerebro", "/segundo-cerebro/", "/api/segundo-cerebro", "/icon.svg", "/manifest.webmanifest",
                     "/_next/{resto:.*}", "/segundo-cerebro/{resto:.*}", "/api/segundo-cerebro/{resto:.*}"):
         a.router.add_route("*", caminho, segundo_cerebro)

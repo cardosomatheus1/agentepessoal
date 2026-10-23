@@ -24,7 +24,8 @@ ATIVIDADE = "/var/lib/agentepessoal/last-activity"  # infra/vm/watchdog.sh: the 
 
 PEDIDO = """Você é o revisor independente de uma correção no agente pessoal do Matheus (plugins do Agent Zero).
 NÃO altere nenhum arquivo e não rode nada que mude o sistema: só leia. O diff está em {diff}.
-Contexto: o código que roda hoje está em /a0/usr/plugins (os plugins) e o do Agent Zero em /a0/plugins e /a0/helpers.
+Contexto: o código que roda hoje está em /a0/usr/plugins (os plugins, que o Hermes roda pela ponte) e o do Hermes em
+/opt/hermes/data/plugins/agentepessoal (quando existir); o do Agent Zero em /a0/plugins e /a0/helpers (se no ar).
 Motivo da correção: {motivo}
 
 Confira, nesta ordem:
@@ -61,11 +62,21 @@ def comando_vm(chave_s3: str, pasta: str, motivo: str) -> str:
     p64 = base64.b64encode(pedido.encode("utf-8")).decode()
     # 22/10: the VM hibernated in the middle of a review (a call straight to Bedrock is not "use" for watchdog.sh); its
     # activity mark gives 30 min, more than the review's 15
+    # 23/10 (virada ao Hermes): com o A0 parado, o mesmo OpenCode 2 + Ponytail roda no host (copiado do container dele
+    # por hermes/virada.sh para os mesmos caminhos de /root), com /a0/usr apontando para /opt/a0/usr (o revisor lê os
+    # mesmos caminhos) e o papel da VM no lugar das credenciais (o perfil bedrock-agentzero não tem chave).
+    rodar = (f"timeout 900 {OPENCODE} run --model {MODELO} \"$(cat {pasta}/pedido.md)\" > {pasta}/revisao.md 2>&1; "
+             f"rc=$?; tail -c 6000 {pasta}/revisao.md; echo; echo {FIM}$rc")
+    no_a0 = (f"docker exec agent-zero mkdir -p {pasta} && docker cp /tmp/{chave_s3} agent-zero:{pasta}/diff.patch && "
+             f"docker cp /tmp/{chave_s3}.pedido agent-zero:{pasta}/pedido.md && "
+             f"docker exec -w /a0/usr agent-zero sh -c '{rodar}'")
+    no_host = (f"{{ [ -e /a0/usr ] || {{ mkdir -p /a0 && ln -s /opt/a0/usr /a0/usr; }}; }} && mkdir -p {pasta} && "
+               f"cp /tmp/{chave_s3} {pasta}/diff.patch && cp /tmp/{chave_s3}.pedido {pasta}/pedido.md && "
+               f"cd /a0/usr && HOME=/root sh -c '{rodar}'")
     return (f"touch {ATIVIDADE}; aws s3 cp {BUCKET}/{chave_s3} /tmp/{chave_s3} >/dev/null && "
-            f"docker exec agent-zero mkdir -p {pasta} && docker cp /tmp/{chave_s3} agent-zero:{pasta}/diff.patch && "
-            f"echo {p64} | base64 -d > /tmp/{chave_s3}.pedido && docker cp /tmp/{chave_s3}.pedido agent-zero:{pasta}/pedido.md && "
-            f"docker exec -w /a0/usr agent-zero sh -c 'timeout 900 {OPENCODE} run --model {MODELO} "
-            f"\"$(cat {pasta}/pedido.md)\" > {pasta}/revisao.md 2>&1; rc=$?; tail -c 6000 {pasta}/revisao.md; echo; echo {FIM}$rc'")
+            f"echo {p64} | base64 -d > /tmp/{chave_s3}.pedido && "
+            f"if [ \"$(docker inspect -f '{{{{.State.Running}}}}' agent-zero 2>/dev/null)\" = true ]; then {no_a0}; "
+            f"else {no_host}; fi")
 
 
 def main(argv: list) -> int:

@@ -83,7 +83,44 @@ _dead_checks = {"n": 0, "phone": 0}
 DEAD_LIMIT = 3  # ~3 refreshes (3 min) of a dead public URL before recreating the tunnel
 
 
+# 23/10 (virada ao Hermes, fase 8): com "padrao": "hermes" o link do agente é o do portal (Segundo Cérebro, Painel,
+# Tarefas, Cofre, Navegador), por um túnel rápido do host como o do celular (agentepessoal-portal-tunnel.service).
+DESTINO = "/var/lib/agentepessoal/destino.json"
+PORTAL_UNIT = "agentepessoal-portal-tunnel"
+
+
+def modo_hermes() -> bool:
+    try:
+        with open(DESTINO, encoding="utf-8") as f:
+            return json.load(f).get("padrao") == "hermes"
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def url_do_journal(unidade: str) -> str | None:
+    out = subprocess.run(["journalctl", "-u", unidade, "-b", "--no-pager", "-o", "cat"],
+                         capture_output=True, text=True, timeout=30).stdout
+    found = re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com", out)
+    return found[-1] if found else None
+
+
+def portal_url() -> str | None:
+    url = url_do_journal(PORTAL_UNIT)
+    if url and not reachable(url, "/saude"):
+        _dead_checks["portal"] = _dead_checks.get("portal", 0) + 1
+        if _dead_checks["portal"] >= DEAD_LIMIT:
+            print(f"report_url: {url} unreachable, restarting {PORTAL_UNIT}", flush=True)
+            _dead_checks["portal"] = 0
+            subprocess.run(["systemctl", "restart", PORTAL_UNIT], timeout=60)
+            return None
+        return url
+    _dead_checks["portal"] = 0
+    return url
+
+
 def agent_url() -> str | None:
+    if modo_hermes():
+        return portal_url()
     if not ui_up():
         return None
     url = (tunnel("get") or {}).get("tunnel_url")

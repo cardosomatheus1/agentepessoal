@@ -21,5 +21,5 @@ c.AUTOR['quem'] = {json.dumps('operador: ' + motivo)}
 print(json.dumps(c.tentar_de_novo({json.dumps(item)}), ensure_ascii=False))
 """
 b64 = base64.b64encode(script.encode()).decode()
-cmd = f"echo {b64} | base64 -d > /opt/a0/usr/tmp_republicar.py && docker exec agent-zero python3 /a0/usr/tmp_republicar.py; rm -f /opt/a0/usr/tmp_republicar.py"
+cmd = f"echo {b64} | base64 -d > /opt/a0/usr/tmp_republicar.py && /opt/agentepessoal/a0py /a0/usr/tmp_republicar.py; rm -f /opt/a0/usr/tmp_republicar.py"
 sys.exit(subprocess.call([sys.executable, str(RAIZ / "infra" / "operador" / "vmcmd.py"), cmd]))

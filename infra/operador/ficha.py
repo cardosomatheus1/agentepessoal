@@ -44,8 +44,7 @@ def main() -> None:
     programa = base64.b64encode(PROGRAMA.encode()).decode()
     dados = base64.b64encode(json.dumps(p, ensure_ascii=False).encode()).decode()
     print(vm(f"echo {programa} | base64 -d > /tmp/ficha_operador.py && "
-             "docker cp /tmp/ficha_operador.py agent-zero:/tmp/ficha_operador.py && "
-             f"docker exec agent-zero /opt/venv-a0/bin/python /tmp/ficha_operador.py "
+             f"/opt/agentepessoal/a0py /tmp/ficha_operador.py "
              f"\"$(echo {dados} | base64 -d)\""))
 
 

@@ -15,7 +15,11 @@ uptime_s=$(cut -d. -f1 /proc/uptime)
 [ "$since_up" -lt "$uptime_s" ] && uptime_s=$since_up
 [ "$uptime_s" -lt $((IDLE_MINUTES * 60)) ] && exit 0
 
-if [ -n "$(find "$ACTIVITY_FILE" "$CHATS_DIR" -newermt "-${IDLE_MINUTES} minutes" -print -quit 2>/dev/null)" ]; then
+# 23/10 (virada ao Hermes): as conversas do Hermes (sessões, estado das rodadas) e a marca das conversas externas
+# (uma loja pode responder logo) também contam como uso
+HERMES_DIRS="/opt/hermes/data/sessions /opt/hermes/data/agentepessoal/acordado"
+# shellcheck disable=SC2086
+if [ -n "$(find "$ACTIVITY_FILE" "$CHATS_DIR" $HERMES_DIRS -newermt "-${IDLE_MINUTES} minutes" -print -quit 2>/dev/null)" ]; then
   exit 0
 fi
 

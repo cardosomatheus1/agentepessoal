@@ -18,7 +18,7 @@ def comando(texto: str, tipo: str = "progresso") -> str:
     py = (f"import base64, importlib.util; s = importlib.util.spec_from_file_location('ponte', '{PONTE}'); "
           f"m = importlib.util.module_from_spec(s); s.loader.exec_module(m); "
           f"print(m.enviar('matheus', base64.b64decode('{t}').decode('utf-8'), tipo='{tipo}', reenviar=True) or 'enviado')")
-    return f"docker exec agent-zero /opt/venv-a0/bin/python -c \"{py}\""
+    return f"/opt/agentepessoal/a0py -c \"{py}\""
 
 
 def main(argv: list) -> int:

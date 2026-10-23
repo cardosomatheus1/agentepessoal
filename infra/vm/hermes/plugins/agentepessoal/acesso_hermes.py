@@ -20,12 +20,17 @@ from pathlib import Path
 PLUGINS = Path("/a0/usr/plugins")
 
 # Hermes + nossas: o equivalente de convidados.FERRAMENTAS (conversa, pesquisa, imagens/vídeo, arquivos que ele mandou,
-# notas e cofre dele, o computador isolado dele). Rotinas e navegador dos convidados voltam com os perfis próprios deles.
+# notas e cofre dele, o computador isolado dele, conversas com lojas no WhatsApp dele).
 CONVIDADO_PODE = frozenset({
     "web_search", "web_extract", "vision_analyze", "video_analyze", "clarify", "todo_list", "text_to_speech",
     "lembrar", "ficha", "cofre_descrever", "analisar_imagens", "assistir_video", "videos_em_alta", "whatsapp_enviar",
-    "terminal_isolado", "ler",
+    "terminal_isolado", "ler", "conversa_externa",
 })
+# Virada (fase 8): no Hermes PRÓPRIO do convidado (hermes/convidado.sh: memória, conversas, cron e navegador só dele)
+# voltam o navegador (perfil dele), a memória e a busca nas conversas (as dele), os subagentes e as rotinas (até 5, no
+# máximo de hora em hora, como no A0: convidados.TAREFAS_MAX).
+CONVIDADO_NA_INSTANCIA = frozenset({"memory", "session_search", "delegate_task", "cronjob_manage"})
+INTERVALO = re.compile(r"^(?:every\s+)?(\d+)\s*(m|min|mins|minutes?|h|hr|hrs|hours?|d|days?)$")
 # Ferramentas que leem um caminho local: só as pastas do convidado (convidados.caminho_proibido).
 LEEM_CAMINHO = frozenset({"whatsapp_enviar", "analisar_imagens", "assistir_video", "ler", "vision_analyze", "video_analyze"})
 
@@ -73,6 +78,12 @@ def checar(tool_name="", args=None, session_id="", task_id="", **kw):
     login = ponte.login_da_sessao(str(session_id or task_id or ""))
     c = _convidados()
     if c.convidado(login):
+        propria = ponte.convidado_da_instancia() == login
+        if propria and (tool_name.startswith("browser_") or tool_name in CONVIDADO_NA_INSTANCIA):
+            if tool_name == "cronjob_manage":
+                motivo = rotina_de_convidado(c, args)
+                return _bloqueio(motivo) if motivo else None
+            return None
         if tool_name not in CONVIDADO_PODE:
             return _bloqueio(f"«{tool_name}» não está disponível nesta conversa (uso pessoal de convidado). "
                              "Faça com as ferramentas que você tem ou diga com educação que não dá.")
@@ -91,6 +102,39 @@ def checar(tool_name="", args=None, session_id="", task_id="", **kw):
             return _bloqueio("Ensaio do Hermes: o terminal e o código não falam com o navegador por fora. Use as "
                              "ferramentas browser_* (no ensaio, só leitura).")
     return None
+
+
+def _jobs_do_cron() -> list:
+    from cron import jobs  # o cron do próprio Hermes (no do convidado, todos são dele)
+
+    return jobs.list_jobs(include_disabled=True)
+
+
+def rotina_de_convidado(c, args: dict, jobs=None) -> str:
+    """Por que esta chamada do cronjob_manage é recusada a um convidado ("" = pode). As regras do A0
+    (convidados.regra_agenda): até TAREFAS_MAX rotinas, no máximo de hora em hora; e nada de código (script, monitor
+    por script, sem agente), que rodaria fora das ferramentas dele."""
+    acao = str(args.get("action") or "").strip().lower()
+    if acao not in ("create", "update", "list", "pause", "resume", "remove", "run"):
+        return f"A ação '{acao}' das rotinas não está disponível aqui."
+    if args.get("script") or args.get("no_agent") or (args.get("monitor") and not str(args["monitor"]).startswith("http")):
+        return "Rotinas de convidado não rodam código (script/monitor por script): só um pedido em texto."
+    if acao == "create":
+        lista = jobs if jobs is not None else _jobs_do_cron()
+        if len(lista) >= c.TAREFAS_MAX:
+            return (f"Esta pessoa já tem {len(lista)} rotinas (o máximo é {c.TAREFAS_MAX}). Pergunte qual apagar "
+                    "(action remove) antes de criar outra.")
+    agenda = str(args.get("schedule") or "").strip().lower()
+    if acao in ("create", "update") and agenda:
+        campos = agenda.split()
+        m = INTERVALO.match(agenda)
+        if len(campos) == 5 and not agenda.startswith(("every", "in ")):
+            if not re.fullmatch(r"\d{1,2}", campos[0]):
+                return ("Rotinas de convidado rodam no máximo de hora em hora: use um minuto fixo no cron (ex.: "
+                        "\"0 9 * * *\"), não \"*\" nem \"*/n\".")
+        elif m and m.group(2).startswith("m") and int(m.group(1)) < 60:
+            return "Rotinas de convidado rodam no máximo de hora em hora (every 1h ou mais)."
+    return ""
 
 
 def abre_conversa(sessao: str, args: dict) -> bool:
