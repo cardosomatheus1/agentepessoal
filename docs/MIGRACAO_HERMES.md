@@ -117,9 +117,10 @@ portar (era conserto do A0; conferir que o Hermes não tem o defeito) · **D** =
 | 8 | Corte (com aviso ao Matheus) | Matheus usa só o Hermes; A0 parado 7 dias |
 | 9 | Limpeza: remover o A0, atualizar CLAUDE.md, CI e documentos | nada mais aponta para o A0 |
 
-## Decisões que são do Matheus (perguntar uma vez)
-1. Convidados (ilia, will) e o login da Fernanda continuam?
-2. Android virtual (celular, tela ao vivo) continua ou sai?
-3. Conversas externas pelo WhatsApp Web (lojas, clínicas) continuam?
-4. O OpenClaw continua como ajudante?
-5. Modelo do dia a dia no Hermes: Haiku (como hoje) ou Sonnet?
+## Decisões do Matheus (23/10)
+1. Convidados (ilia, will) e o login da Fernanda: **continuam**.
+2. Android virtual (celular, tela ao vivo): **continua**.
+3. Conversas externas pelo WhatsApp Web: **continuam**.
+4. Modelo: **Haiku no dia a dia, Sonnet só nas difíceis** (rotinas e tarefas longas; o roteamento por canal/tarefa do
+   Hermes — `channel_overrides`, modelo por agendamento — faz isso).
+5. OpenClaw como ajudante: fica como está (não muda nada para ele; a caixa de delegados continua).
