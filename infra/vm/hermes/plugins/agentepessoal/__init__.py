@@ -29,6 +29,7 @@ relogio = _sub("agentepessoal_relogio", "relogio_hermes.py")
 rotinas = _sub("agentepessoal_rotinas", "rotinas_hermes.py")
 contexto = _sub("agentepessoal_contexto", "contexto_hermes.py")
 reuniao = _sub("agentepessoal_reuniao", "reuniao_hermes.py")
+audio = _sub("agentepessoal_audio", "audio_hermes.py")
 log = logging.getLogger("agentepessoal")
 
 # (plugin, ferramenta). "Hermes primeiro" (23/10): só entra o que é nosso de verdade (dados, Raiz, Segundo Cérebro).
@@ -69,6 +70,7 @@ def register(ctx):
     relogio.registrar(ctx)  # tarefas de fundo sem modelo (só com AGENTEPESSOAL_RELOGIO=1: até a virada, o A0 roda)
     rotinas.registrar(ctx)  # rodada do cron: bloco de tarefa agendada e o resultado ao celular (regras do A0)
     contexto.registrar(ctx)  # ficha e decisões em vigor de quem fala, no 1º turno
+    audio.registrar(ctx)  # áudio do celular transcrito antes do modelo (faster-whisper, como no A0)
     try:  # `reuniao` por cima do cron do Hermes (briefing e pós-reunião)
         reuniao.registrar(ctx)
         feitas_extra = ["reuniao"]

@@ -99,7 +99,7 @@ docker run -d --name hermes --restart no --network hermes \
   -e ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/hermes/bedrock \
   -e AWS_ACCESS_KEY_ID=proxy -e AWS_SECRET_ACCESS_KEY=proxy -e AWS_REGION=us-east-1 -e AWS_EC2_METADATA_DISABLED=true \
   -e API_SERVER_ENABLED=true -e API_SERVER_HOST=0.0.0.0 -e API_SERVER_KEY="$(cat /opt/hermes/api_key)" \
-  -e HERMES_TIMEZONE=America/Bahia \
+  -e HERMES_TIMEZONE=America/Bahia -e HF_HOME=/opt/data/cache/hf \
   -e AGENTEPESSOAL_ENSAIO=1 \
   -e BROWSER_CDP_URL="$CDP" \
   -p 127.0.0.1:8642:8642 \
@@ -120,6 +120,8 @@ if echo "$RESPOSTA" | grep -qi "PONTE OK"; then
     || { echo "HERMES_SEM_PORTAL: o portal não subiu"; exit 1; }; }
   docker exec hermes python3 /opt/data/agentepessoal/rotinas_aplicar.py | grep "^ROTINAS_OK" \
     || { echo "HERMES_SEM_ROTINAS: as rotinas não foram aplicadas"; exit 1; }
+  # o modelo do áudio (faster-whisper small) baixa uma vez para o cache, em segundo plano
+  docker exec -d hermes python3 -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8')"
   echo "HERMES_OK $(docker inspect -f '{{.Image}}' hermes)"; exit 0
 fi
 echo "HERMES_NAO_RESPONDEU: ${RESPOSTA:0:400}"; docker logs --tail 40 hermes; exit 1

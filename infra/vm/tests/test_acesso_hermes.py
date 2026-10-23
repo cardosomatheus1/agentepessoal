@@ -179,6 +179,22 @@ checa(r and r["action"] == "approve" and "revisor falhou" in r["message"], f"rev
 checa(ap.checar(tool_name="terminal", args={"command": "rm -rf /tmp/x"}, session_id="s-m") is None,
       "terminal fica com as aprovações do próprio Hermes (Hermes primeiro)")
 
+# --- audio_hermes: the voice note is transcribed before the model sees the turn (same faster-whisper as the A0)
+sys.modules["agentepessoal_acesso"] = ac
+au = carregar("teste_audio_hermes", P / "audio_hermes.py")
+chamadas_au = []
+au.transcrever = lambda caminho, idioma="pt": chamadas_au.append((caminho, idioma)) or ("me lembra amanhã", "pt")
+r = au.contexto(user_message="oi\n\n[áudio: /a0/usr/whatsapp/matheus/2026-10/23-1.ogg]", session_id="s-m")
+checa(r and "🎤 [áudio em pt] me lembra amanhã" in r["context"] and chamadas_au == [("/a0/usr/whatsapp/matheus/2026-10/23-1.ogg", "pt")],
+      f"áudio transcrito antes do modelo: {r}")
+au.contexto(user_message="[áudio: /a0/usr/whatsapp/matheus/2026-10/23-1.ogg]", session_id="s-m")
+checa(len(chamadas_au) == 1, "o mesmo áudio é transcrito uma vez")
+r = au.contexto(user_message="[áudio: /a0/usr/segredos/matheus.json]", session_id="s-m")
+checa("fora da pasta" in r["context"] and len(chamadas_au) == 1, "arquivo fora da pasta do celular não é lido")
+checa(au.contexto(user_message="sem áudio", session_id="s-m") is None, "mensagem sem áudio: nada")
+au.contexto(user_message="[áudio: /a0/usr/whatsapp/ilia/x.ogg]", session_id="s-ilia")
+checa(chamadas_au[-1] == ("/a0/usr/whatsapp/ilia/x.ogg", None), "convidado: o idioma dele (Ilia: detectado)")
+
 if falhas:
     raise SystemExit("test_acesso_hermes: " + "; ".join(falhas))
 print("test_acesso_hermes: ok")

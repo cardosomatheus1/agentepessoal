@@ -1341,7 +1341,7 @@ def pedido_hermes(dados: dict) -> str:
     if dados.get("anexos"):
         extras.append("Arquivos que a pessoa mandou: " + ", ".join(dados["anexos"]))
     if dados.get("audio"):
-        extras.append(f"(áudio em {dados['audio']}: transcreva antes de responder)")
+        extras.append(f"[áudio: {dados['audio']}]")  # o plugin do Hermes transcreve antes do modelo (audio_hermes.py)
     return "\n\n".join(t for t in [texto, *extras] if t) or "(mensagem vazia)"
 
 
