@@ -44,7 +44,7 @@ def register(ctx):
         try:
             classe = ponte.carregar(plugin, nome)
             ctx.register_tool(name=nome, toolset="agentepessoal", schema=ponte.esquema(plugin, nome, classe),
-                              handler=_manipulador(classe, nome))
+                              handler=_manipulador(classe, nome), is_async=True)
             feitas.append(nome)
         except Exception as exc:  # one broken tool never takes the others down
             puladas.append(f"{plugin}/{nome}: {type(exc).__name__}: {exc}"[:300])

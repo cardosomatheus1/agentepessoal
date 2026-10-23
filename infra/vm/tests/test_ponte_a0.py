@@ -42,7 +42,9 @@ registradas = {}
 
 
 class Ctx:
-    def register_tool(self, name, toolset, schema, handler):
+    def register_tool(self, name, toolset, schema, handler, is_async=False):
+        # the Hermes runs a handler as a coroutine only when told so (tools/registry.py: entry.is_async)
+        checa(is_async == asyncio.iscoroutinefunction(handler), f"{name}: is_async bate com o manipulador")
         registradas[name] = (schema, handler)
 
 
