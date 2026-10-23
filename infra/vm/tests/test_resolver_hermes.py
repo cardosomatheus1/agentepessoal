@@ -4,6 +4,7 @@ Telegram web-app button with a signed 30-min link the portal accepts; no public 
 Run from the repository root: python3 infra/vm/tests/test_resolver_hermes.py"""
 import asyncio
 import importlib.util
+import json
 import sys
 import tempfile
 import types
@@ -65,9 +66,13 @@ class Ponte:
         return self.erro
 
 
-def rodar(args, sessao, ponte=None, base="https://agente.exemplo.com", nav=None):
+REGISTRO = tmp / "browser_own_tabs.json"  # o do Hermes (patch abas_por_sessao): dono -> a aba dele
+REGISTRO.write_text(json.dumps({"tg-matheus": {"target_id": "A1", "used": 1}, "tg-teste_hermes": {"target_id": "A1", "used": 1}}))
+
+
+def rodar(args, sessao, ponte=None, base="https://agente.exemplo.com", nav=None, registro=REGISTRO):
     return asyncio.run(r.executar(args, sessao, navegador=nav or Navegador(), ponte=ponte or Ponte(), tela=tela_fake,
-                                  base_url=base))
+                                  base_url=base, registro=registro))
 
 
 # quem pode
@@ -76,7 +81,7 @@ checa(not r.pode("ilia", "") and not r.pode("matheus", "ilia") and not r.pode("i
 
 # a aba
 abas = [{"id": "A1", "currentUrl": "https://a.com"}, {"id": "B2", "currentUrl": "https://b.com/x"}]
-checa(r.escolher_aba(abas, "")["id"] == "A1" and r.escolher_aba(abas, "B2")["id"] == "B2"
+checa(r.escolher_aba(abas, "") is None and r.escolher_aba(abas, "", ["B2"])["id"] == "B2" and r.escolher_aba(abas, "B2")["id"] == "B2"
       and r.escolher_aba(abas, "b.com")["id"] == "B2" and r.escolher_aba(abas, "zzz") is None, "escolher a aba")
 
 # o link: assinatura que o portal confere (tela.conferir), com sessão e login
@@ -146,9 +151,25 @@ checa("Luffy" in alma and "golpe" in alma and "Luffy" in desc and "golpe" in des
       "a persona, a ferramenta e a skill dizem que a página do botão (Luffy, no Telegram) é dele e não é golpe")
 checa("webmail-seguro.com.br" in skill and "Locaweb" in skill and "raizconnect.com.br" in skill,
       "a skill de login sabe que webmail-seguro.com.br é o webmail da Locaweb (e-mail da raizconnect.com.br)")
-checa("ressemear: resolver-aqui-2" in skill, "a skill pede ressemeadura (a cópia no Hermes recebe o texto novo)")
+checa("ressemear: resolver-aqui-3" in skill, "a skill pede ressemeadura (a cópia no Hermes recebe o texto novo)")
 checa("Nunca mude o seu próprio código" in alma and "se reinicie" in alma and "operador" in alma,
       "regra dura: nunca mexer no próprio código/containers nem se reiniciar; quem muda é o operador")
+
+# Sem `aba`: a aba DESTA conversa (cada conversa/rotina tem a sua), nunca a primeira da lista (a de outra conversa).
+reg2 = tmp / "abas2.json"
+reg2.write_text(json.dumps({"tg-ilia": {"target_id": "A1", "used": 9}, "tgp1-matheus": {"target_id": "A1", "used": 9},
+                            "tg-matheus": {"target_id": "SUMIU", "used": 5}, "tg-matheus#s2": {"target_id": "B2", "used": 3},
+                            "cron:job7": {"target_id": "B2", "used": 1}}))
+checa(r.aba_da_conversa("tg-matheus", reg2) == ["SUMIU", "B2"] and r.aba_da_conversa("cron:job7:run3", reg2) == ["B2"]
+      and r.aba_da_conversa("tgp2-matheus", reg2) == [] and r.aba_da_conversa("x", tmp / "nao-existe.json") == [],
+      "as abas da conversa (a própria e a segunda dela; a rotina pela do job; nunca a de outra conversa)")
+nav = Navegador()
+rodar({"pedido": "Entre no 99Food"}, "tg-matheus", Ponte(), nav=nav, registro=reg2)
+checa(nav.fotos == ["B2"], f"sem aba: a desta conversa que ainda está aberta, não a primeira da lista: {nav.fotos}")
+nav, p = Navegador(), Ponte()
+texto = rodar({"pedido": "x"}, "tgp2-matheus", p, nav=nav, registro=reg2)
+checa(texto.startswith("NÃO FEITO") and "browser_navigate" in texto and not p.envios and not nav.fotos,
+      f"conversa sem aba própria: não manda a aba de outra conversa: {texto}")
 
 # O código do navegador da oficial com os patches (o que o Hermes tinha feito no ar, agora revisado e no git):
 img = H / "imagem"

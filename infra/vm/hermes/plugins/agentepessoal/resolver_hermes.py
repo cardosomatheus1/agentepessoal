@@ -29,7 +29,7 @@ ESQUEMA = {
         "no celular dele para ELE fazer o que só ele pode: login com código/2FA, captcha, \"segure o botão\", uma "
         "escolha da conta dele. Use quando travar nisso (nunca tente resolver captcha você mesmo). `pedido`: o que ele "
         "deve fazer, curto e na língua dele (ex.: \"Entre na sua conta do iFood; o código chega no seu e-mail\"). "
-        "`aba`: o id da aba ou um pedaço do endereço (vazio = a aba que está na frente). Depois de mandar, termine a "
+        "`aba`: o id da aba ou um pedaço do endereço (vazio = a aba desta conversa, onde o browser_navigate abriu). Depois de mandar, termine a "
         "sua resposta dizendo que está esperando; quando ele apertar \"✅ Terminei\", esta conversa recebe o aviso e você "
         "lê a página de novo (browser_snapshot) e segue. O botão abre a página Navegador do portal, no navegador do "
         "Telegram com o nome do bot (Luffy): é esta ferramenta, a sua, mostrando o seu navegador; nunca diga a ele que "
@@ -68,14 +68,48 @@ def pode(login: str, convidado_instancia: str) -> bool:
     return not convidado_instancia and (login == DONO or login.startswith("teste_"))
 
 
-def escolher_aba(abas: list, pedida: str) -> dict | None:
+def _registro_abas() -> Path:
+    """browser_own_tabs.json do Hermes (patch abas_por_sessao): dono (a conversa, ou cron:<job>) -> a aba dele."""
+    try:
+        from hermes_constants import get_hermes_home
+        return Path(get_hermes_home()) / "browser_own_tabs.json"
+    except Exception:
+        return Path(os.environ.get("HERMES_HOME", "/opt/data")) / "browser_own_tabs.json"
+
+
+def _dono(sessao: str) -> str:
+    """O dono da aba como o Hermes grava (browser_tool_session._tab_owner): toda execução de uma rotina usa a do job."""
+    partes = str(sessao or "default").split(":")
+    return f"cron:{partes[1]}" if len(partes) >= 3 and partes[0] == "cron" and partes[1] else str(sessao or "default")
+
+
+def aba_da_conversa(sessao: str, registro: Path | None = None) -> list:
+    """Os ids das abas desta conversa (a própria e, se ela estava ocupada, a segunda "<dono>#..."), a mais recente
+    primeiro."""
+    try:
+        dados = json.loads((registro or _registro_abas()).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    dono = _dono(sessao)
+    minhas = [v for k, v in (dados.items() if isinstance(dados, dict) else [])
+              if isinstance(v, dict) and v.get("target_id") and (k == dono or k.startswith(dono + "#"))]
+    return [v["target_id"] for v in sorted(minhas, key=lambda v: v.get("used") or 0, reverse=True)]
+
+
+def escolher_aba(abas: list, pedida: str, da_conversa: list | None = None) -> dict | None:
+    """A aba pedida (id ou pedaço do endereço) ou, sem pedido, a aba DESTA conversa (cada conversa e rotina tem a sua);
+    nunca "a primeira da lista", que pode ser a de outra conversa."""
     pedida = str(pedida or "").strip()
     if pedida:
         for a in abas:
             if a.get("id") == pedida or pedida in str(a.get("currentUrl") or ""):
                 return a
         return None
-    return abas[0] if abas else None
+    for alvo in da_conversa or []:
+        for a in abas:
+            if a.get("id") == alvo:
+                return a
+    return None
 
 
 def link(base: str, sessao: str, login: str, aba_id: str, segredo: str, tela=None) -> str:
@@ -89,7 +123,8 @@ def link(base: str, sessao: str, login: str, aba_id: str, segredo: str, tela=Non
     return f"{base}/navegador?t={urllib.parse.quote(token)}&aba={urllib.parse.quote(aba_id)}"
 
 
-async def executar(args: dict, sessao: str, navegador=None, ponte=None, tela=None, base_url: str | None = None) -> str:
+async def executar(args: dict, sessao: str, navegador=None, ponte=None, tela=None, base_url: str | None = None,
+                   registro: Path | None = None) -> str:
     pa = sys.modules["agentepessoal_ponte_a0"]
     login = pa.login_da_sessao(sessao)
     if not pode(login, pa.convidado_da_instancia()):
@@ -99,7 +134,10 @@ async def executar(args: dict, sessao: str, navegador=None, ponte=None, tela=Non
         return "NÃO FEITO: diga em `pedido` o que ele deve fazer na tela."
     rt = navegador or pa.NavegadorCDP(os.environ.get("BROWSER_CDP_URL", ""))
     abas = (await rt.call("list")).get("browsers") or []
-    aba = escolher_aba(abas, str(args.get("aba") or ""))
+    aba = escolher_aba(abas, str(args.get("aba") or ""), aba_da_conversa(sessao, registro))
+    if aba is None and not str(args.get("aba") or "").strip():
+        return ("NÃO FEITO: esta conversa ainda não tem aba no navegador. Abra a página com browser_navigate (ela abre na "
+                "aba desta conversa) e chame de novo, ou diga em `aba` o id ou um pedaço do endereço.")
     if aba is None:
         return f"NÃO FEITO: não achei essa aba. Abas abertas: {[(a['id'], a.get('currentUrl', '')[:60]) for a in abas][:8]}"
     t = tela or _tela()
