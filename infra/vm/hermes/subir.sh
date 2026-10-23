@@ -24,13 +24,18 @@ docker run -d --name hermes --restart unless-stopped \
   -v "$DADOS":/opt/data \
   -v /opt/a0/usr:/a0/usr \
   -e AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/bedrock \
+  -e ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/bedrock \
   -e AWS_ACCESS_KEY_ID=proxy -e AWS_SECRET_ACCESS_KEY=proxy -e AWS_REGION=us-east-1 -e AWS_EC2_METADATA_DISABLED=true \
   -e API_SERVER_ENABLED=true -e API_SERVER_HOST=0.0.0.0 -e API_SERVER_KEY="$(cat /opt/hermes/api_key)" \
   -e HERMES_TIMEZONE=America/Bahia \
   -p 127.0.0.1:8642:8642 \
   "$IMAGEM" gateway run >/dev/null
 for i in $(seq 1 60); do
-  if curl -fsS -m 3 http://127.0.0.1:8642/health >/dev/null 2>&1; then echo "HERMES_OK $(docker inspect -f '{{.Image}}' hermes)"; exit 0; fi
+  curl -fsS -m 3 http://127.0.0.1:8642/health >/dev/null 2>&1 && break
   sleep 2
 done
-echo "HERMES_NAO_SUBIU"; docker logs --tail 40 hermes; exit 1
+# De pé não basta: uma pergunta de verdade ao modelo, pelo mesmo caminho das conversas (Claude no Bedrock pelo proxy).
+RESPOSTA=$(curl -sS -m 120 http://127.0.0.1:8642/v1/chat/completions -H "Authorization: Bearer $(cat /opt/hermes/api_key)" \
+  -H 'Content-Type: application/json' -d '{"model":"hermes","messages":[{"role":"user","content":"Responda só: PONTE OK"}]}' || true)
+if echo "$RESPOSTA" | grep -q "PONTE OK"; then echo "HERMES_OK $(docker inspect -f '{{.Image}}' hermes)"; exit 0; fi
+echo "HERMES_NAO_RESPONDEU: ${RESPOSTA:0:400}"; docker logs --tail 40 hermes; exit 1
