@@ -183,21 +183,37 @@ async def resolver_aqui(c):
     chamadas.clear()
     await api("toque", fx=0.5, fy=0.25)
     cliques = [p for a, m, p in chamadas if m == "Input.dispatchMouseEvent"]
-    checa([p["type"] for p in cliques] == ["mouseMoved", "mousePressed", "mouseReleased"]
-          and all(p["x"] == 500 and p["y"] == 200 for p in cliques) and cliques[0]["buttons"] == 0,
-          f"toque = o ponteiro chega ao ponto e então clica, como o xpra do A0 (o Turnstile recusava clique sem movimento): {cliques}")
-    checa(esperas[-2:] == [0.05, 0.08], f"toque com o tempo de um dedo entre chegar, apertar e soltar: {esperas}")
+    tipos = [p["type"] for p in cliques]
+    checa(tipos == ["mouseMoved", "mouseMoved", "mousePressed", "mouseReleased"]
+          and (cliques[0]["x"], cliques[0]["y"]) != (500, 200) and all(p["x"] == 500 and p["y"] == 200 for p in cliques[1:])
+          and cliques[0]["buttons"] == 0 and "force" not in cliques[1],
+          f"toque = o ponteiro chega ao ponto vindo de perto e então clica, como o xpra do A0: {cliques}")
+    checa(cliques[2]["force"] == 0.5 and cliques[2]["buttons"] == 1 and "force" not in cliques[3],
+          f"aperta com a pressão de um mouse de verdade (0,5; com 0 o Turnstile recusava o toque): {cliques}")
+    checa(esperas[-3:] == [0.03, 0.05, 0.08], f"toque com o tempo de um dedo entre chegar, apertar e soltar: {esperas}")
+    chamadas.clear()
+    await api("toque", fx=0.5, fy=0.25)
+    cliques = [p for a, m, p in chamadas if m == "Input.dispatchMouseEvent"]
+    checa([p["type"] for p in cliques] == ["mouseMoved", "mousePressed", "mouseReleased"],
+          f"o ponteiro já está ali: não anda de novo: {cliques}")
+    chamadas.clear()
+    await api("toque", fx=0.1, fy=0.1)
+    cliques = [p for a, m, p in chamadas if m == "Input.dispatchMouseEvent"]
+    checa((cliques[0]["x"], cliques[0]["y"]) == ((500 + 100) / 2, (200 + 80) / 2), f"parte de onde o ponteiro estava: {cliques}")
     chamadas.clear()
     await api("segurar", fx=0.1, fy=0.1, ms=60000)
-    tipos = [p["type"] for a, m, p in chamadas if m == "Input.dispatchMouseEvent"]
-    checa(tipos == ["mouseMoved", "mousePressed", "mouseReleased"] and esperas[-1] == 15.0,
-          f"segurar aperta, espera (até 15 s) e solta: {tipos} {esperas}")
+    cliques = [p for a, m, p in chamadas if m == "Input.dispatchMouseEvent"]
+    tipos = [p["type"] for p in cliques]
+    checa(tipos == ["mouseMoved", "mousePressed", "mouseReleased"] and esperas[-1] == 15.0 and cliques[1]["force"] == 0.5,
+          f"segurar aperta (pressão 0,5), espera (até 15 s) e solta: {tipos} {esperas}")
     await api("segurar", fx=0.1, fy=0.1, ms=4200)
     checa(esperas[-1] == 4.2, f"segura o tempo que ele segurou: {esperas}")
     chamadas.clear()
     await api("arrastar", pontos=[[0.1, 0.1], [0.2, 0.2], [0.3, 0.3]])
-    tipos = [p["type"] for a, m, p in chamadas if m == "Input.dispatchMouseEvent"]
-    checa(tipos == ["mouseMoved", "mousePressed", "mouseMoved", "mouseMoved", "mouseReleased"], f"arrastar: {tipos}")
+    cliques = [p for a, m, p in chamadas if m == "Input.dispatchMouseEvent"]
+    tipos = [p["type"] for p in cliques]
+    checa(tipos == ["mouseMoved", "mousePressed", "mouseMoved", "mouseMoved", "mouseReleased"]
+          and all(p.get("force") == 0.5 for p in cliques[1:4]), f"arrastar (com pressão enquanto apertado): {cliques}")
     chamadas.clear()
     await api("rolar", dy=0.5)
     checa(any(m == "Input.dispatchMouseEvent" and p["type"] == "mouseWheel" and p["deltaY"] == 400 for a, m, p in chamadas),

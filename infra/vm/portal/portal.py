@@ -393,6 +393,9 @@ def _ponte_pronto(login: str, sessao: str) -> None:
         r.read()
 
 
+PONTEIRO: dict = {}  # aba -> onde o ponteiro do mouse está (o próximo toque parte dali, como um mouse de verdade)
+
+
 async def navegador_api(request: web.Request) -> web.Response:
     d = await request.json()
     quem = _autorizado(request, str(d.get("t") or ""))
@@ -456,22 +459,34 @@ async def navegador_api(request: web.Request) -> web.Response:
         return (max(0.0, min(1.0, float(fx or 0))) * largura, max(0.0, min(1.0, float(fy or 0))) * altura)
 
     async def mouse(tipo: str, x: float, y: float, botoes: int = 0):
+        # force 0.5 com o botão apertado = a pressão de um mouse de verdade (pointerdown.pressure 0.5, como o xpra do A0
+        # entregava); sem ele o CDP manda pressão 0, e o Cloudflare (Turnstile) recusa o toque ("Verification failed").
         await _cdp(aba, "Input.dispatchMouseEvent", {"type": tipo, "x": x, "y": y, "button": "left" if tipo != "mouseMoved" else
-                                                     ("left" if botoes else "none"), "buttons": botoes, "clickCount": 1})
+                                                     ("left" if botoes else "none"), "buttons": botoes, "clickCount": 1,
+                                                     **({"force": 0.5} if botoes else {})})
+        PONTEIRO[aba] = (x, y)
 
-    if acao == "toque":
-        # Como o toque chegava no A0 (xpra, um mouse de verdade no X): o ponteiro vai ao ponto, depois aperta e solta
-        # com o tempo de um dedo. Sem o movimento, o widget do Cloudflare (Turnstile) recebia um clique "do nada"
-        # dentro do quadro dele e dava "Verification failed" (Matheus, 23/10: "com Hermes não passa nenhum").
-        x, y = ponto(d.get("fx"), d.get("fy"))
+    async def chegar(x: float, y: float):
+        """O ponteiro chega ao ponto vindo de onde estava (ou de perto), como um mouse de verdade: o quadro recebe
+        movimento (movementX/Y) antes do clique, e não um clique "do nada"."""
+        ox, oy = PONTEIRO.get(aba) or (max(0.0, x - 24), max(0.0, y + 18))
+        if (ox, oy) != (x, y):
+            await mouse("mouseMoved", (ox + x) / 2, (oy + y) / 2)
+            await asyncio.sleep(0.03)
         await mouse("mouseMoved", x, y)
         await asyncio.sleep(0.05)
+
+    if acao == "toque":
+        # Como o toque chegava no A0 (xpra, um mouse de verdade no X): o ponteiro chega ao ponto, aperta (pressão 0,5)
+        # e solta com o tempo de um dedo (Matheus, 23/10: "com Hermes não passa nenhum" Cloudflare).
+        x, y = ponto(d.get("fx"), d.get("fy"))
+        await chegar(x, y)
         await mouse("mousePressed", x, y, 1)
         await asyncio.sleep(0.08)
         await mouse("mouseReleased", x, y)
     elif acao == "segurar":  # "segure o botão" (Cloudflare): o mesmo tempo que a pessoa segurou, até 15 s
         x, y = ponto(d.get("fx"), d.get("fy"))
-        await mouse("mouseMoved", x, y)
+        await chegar(x, y)
         await mouse("mousePressed", x, y, 1)
         await asyncio.sleep(max(0.5, min(15.0, float(d.get("ms") or 0) / 1000)))
         await mouse("mouseReleased", x, y)
@@ -479,7 +494,7 @@ async def navegador_api(request: web.Request) -> web.Response:
         pontos = [ponto(*p[:2]) for p in (d.get("pontos") or [])][:200]
         if len(pontos) < 2:
             return web.json_response({"erro": "arraste curto"}, status=400)
-        await mouse("mouseMoved", *pontos[0])
+        await chegar(*pontos[0])
         await mouse("mousePressed", *pontos[0], 1)
         for x, y in pontos[1:]:
             await mouse("mouseMoved", x, y, 1)
