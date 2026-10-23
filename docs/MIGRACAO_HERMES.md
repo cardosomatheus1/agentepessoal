@@ -128,3 +128,21 @@ portar (era conserto do A0; conferir que o Hermes não tem o defeito) · **D** =
 4. Modelo: **Haiku no dia a dia, Sonnet só nas difíceis** (rotinas e tarefas longas; o roteamento por canal/tarefa do
    Hermes — `channel_overrides`, modelo por agendamento — faz isso).
 5. OpenClaw como ajudante: fica como está (não muda nada para ele; a caixa de delegados continua).
+
+## Hermes primeiro (Matheus 23/10: "tomar cuidado p alguma regra nossa, skill, sei la, n atrapalhar algo q o hermes faz bem")
+Antes de levar qualquer regra, skill, ferramenta ou gancho nosso: o Hermes já faz isso? Se faz bem, fica o dele e o
+nosso não entra (ou entra só o que é nosso de verdade: dados, Raiz, Segundo Cérebro, cofre por pessoa). Os testes
+`test_ponte_a0.py` e `test_hermes.py` travam os casos abaixo.
+
+| Assunto | Fica com o Hermes | Fica nosso | Por quê |
+|---|---|---|---|
+| Busca na web | `web_search`, `web_extract` (testado 23/10) | — (`pesquisar` saiu da ponte) | duas buscas confundem a escolha |
+| Subagentes / tarefas em paralelo | `delegate_task` | `delegar` só para o OpenClaw (decisão 5) | o Hermes orquestra melhor |
+| Lista de passos da tarefa | `todo_list` | `passos` sai (grava no A0) | — |
+| Rotinas e lembretes com hora | `cronjob_manage` (o cron dele) | o que só nós temos (me mostre, autoavaliação) volta na fase 5 **por cima** do cron dele | `salvar_rotina`, `me_mostre`, `tarefa_limite`, `criar_gatilho` gravavam no agendador do A0 |
+| Skills | curador do Hermes (melhora e poda as sem uso) | o conteúdo das 27, **adaptado** às ferramentas dele | 19 das 27 citam ferramentas do A0; `external_dirs` é só leitura para o curador. Fase 3: cópia adaptada, semeada uma vez no espaço do Hermes; depois é dele |
+| Memória curta / perfil | memória do Hermes (MEMORY/USER) | Segundo Cérebro (decisões, ficha, Pasta) é a fonte | fase 2: o gancho de captura copia para a Pasta o que o Hermes guardar, para não haver duas verdades |
+| Compressão do contexto, aprovações de comando, navegador | os dele | só o cofre (§§secret) e as regras de sempre | — |
+| Ler arquivo | `read_file` (texto) | `ler` (PDF, Word, planilha) | o dele não lê esses formatos |
+| Imagem / vídeo | `vision_analyze`, `video_analyze` | `analisar_imagens`, `assistir_video` por enquanto | conferir na fase 3 se os dele funcionam pelo Bedrock; se sim, os nossos saem |
+| Persona | `SOUL.md` curto (só regras que valem sempre) | — | regra longa no prompt atrapalha o Haiku |

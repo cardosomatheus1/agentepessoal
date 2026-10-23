@@ -9,9 +9,10 @@ bedrock:
 # A chave de modelo nunca entra no Hermes: o boto3 fala com o nosso proxy (AWS_ENDPOINT_URL_BEDROCK_RUNTIME, ver
 # subir.sh), que põe o token do papel da VM, registra o uso e conta como atividade para a hibernação.
 timezone: "America/Bahia"
-skills:
-  external_dirs:
-    - /a0/usr/skills          # as 27 skills de hoje, no lugar onde já estão (fase 3)
+# Skills: as do A0 (/a0/usr/skills) NÃO entram como estão (23/10, "Hermes primeiro"): 19 das 27 mandam usar
+# ferramentas do A0 (search_engine, code_execution_tool, o navegador e o celular de lá) e desviariam o Hermes das dele;
+# e o Hermes trata external_dirs como só leitura (o curador não melhora nem poda). Fase 3: cópias adaptadas no espaço
+# do próprio Hermes, semeadas uma vez (o curador cuida delas depois).
 compression:
   enabled: true
 approvals:

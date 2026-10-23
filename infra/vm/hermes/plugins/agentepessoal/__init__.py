@@ -17,22 +17,25 @@ sys.modules[_spec_c.name] = cofre
 _spec_c.loader.exec_module(cofre)
 log = logging.getLogger("agentepessoal")
 
-# (plugin, ferramenta). Fora por enquanto, de propósito (fases seguintes do plano):
-#  conectores/conector e prompt_enxuto/ferramentas_extras: o Hermes tem MCP e lista de ferramentas próprios;
-#  whatsapp/perguntar e whatsapp/pedir_codigo: esperam a resposta pela ponte do celular (fase 6);
-#  celular_rapido/celular: põe a imagem da tela no histórico do A0 (precisa de adaptação).
+# (plugin, ferramenta). "Hermes primeiro" (23/10): só entra o que é nosso de verdade (dados, Raiz, Segundo Cérebro).
+# Fora, de propósito:
+#  - o que o Hermes já faz bem: pesquisa/pesquisar (= web_search); conectores/conector e prompt_enxuto/ferramentas_extras
+#    (MCP e lista de ferramentas próprios);
+#  - o que grava no agendador ou nas conversas do Agent Zero (chamado daqui, criaria tarefa que o A0 executa):
+#    agenda_confiavel/tarefa_limite, rotinas/me_mostre e salvar_rotina, whatsapp/criar_gatilho, objetivo_vivo/passos,
+#    painel/painel_vivo, canais/canal. Voltam na fase 5 por cima do cron do Hermes (ou ficam no cron dele);
+#  - o que espera resposta pela ponte do celular: whatsapp/perguntar e pedir_codigo (fase 6);
+#  - celular_rapido/celular: põe a imagem da tela no histórico do A0 (precisa de adaptação).
 FERRAMENTAS = (
-    ("agenda_confiavel", "tarefa_limite"), ("agent_delegates", "delegar"), ("agent_delegates", "text_delegate"),
+    ("agent_delegates", "delegar"), ("agent_delegates", "text_delegate"),
     ("analisar_imagens", "analisar_imagens"), ("auxiliar", "contas"), ("auxiliar", "rascunho"), ("auxiliar", "reuniao"),
-    ("canais", "canal"), ("central", "livro"), ("cerebro", "cerebro"), ("cofre", "cofre_descrever"),
+    ("central", "livro"), ("cerebro", "cerebro"), ("cofre", "cofre_descrever"),
     ("concorrentes", "concorrentes"), ("consultar_sol", "consultar_sol"), ("conteudo", "conteudo"),
     ("conversas_externas", "conversa_externa"), ("especialistas", "especialista"), ("fios_soltos", "fios"),
     ("iniciativa", "iniciativa"), ("ler_arquivo", "ler"), ("login_usuarios", "terminal_isolado"),
     ("memoria_pessoal", "decisao"), ("memoria_pessoal", "ficha"), ("memoria_pessoal", "lembrar"),
-    ("objetivo_vivo", "passos"), ("painel", "painel_vivo"), ("pesquisa", "pesquisar"), ("prospeccao", "prospeccao"),
-    ("radar", "monitor"), ("rotinas", "me_mostre"), ("rotinas", "salvar_rotina"), ("video", "assistir_video"),
-    ("video", "videos_em_alta"), ("whatsapp", "criar_gatilho"), ("whatsapp", "whatsapp_enviar"),
-    ("whatsapp", "whatsapp_guardar_token"),
+    ("prospeccao", "prospeccao"), ("radar", "monitor"), ("video", "assistir_video"),
+    ("video", "videos_em_alta"), ("whatsapp", "whatsapp_enviar"), ("whatsapp", "whatsapp_guardar_token"),
 )
 
 

@@ -20,7 +20,6 @@ def checa(cond, msg):
 cfg = yaml.safe_load((H / "config.yaml").read_text())
 checa(cfg["model"]["provider"] == "bedrock" and "haiku" in cfg["model"]["default"], "Haiku no dia a dia (decisão 23/10)")
 checa(cfg["timezone"] == "America/Bahia", "fuso dele")
-checa("/a0/usr/skills" in cfg["skills"]["external_dirs"], "as skills de hoje entram no lugar onde estão")
 checa("agentepessoal" in cfg["plugins"]["enabled"], "o plugin com as nossas ferramentas ligado")
 checa((H / "plugins" / "agentepessoal" / "plugin.yaml").exists(), "o plugin está na pasta que o subir.sh copia")
 sh = (H / "subir.sh").read_text()
@@ -45,6 +44,10 @@ pacotes = [t for t in df.split("uv pip install", 1)[1].split("&&", 1)[0].split()
 checa(len(pacotes) >= 5 and all("==" in t for t in pacotes), f"pacotes com versão fixa: {pacotes}")
 checa(re.search(r"FROM ghcr.io/astral-sh/uv:\d+\.\d+\.\d+ AS uv", df), "uv com versão fixa")
 checa(subprocess.run(["bash", "-n", str(H / "subir.sh")]).returncode == 0, "sintaxe do script")
+import yaml
+conf = yaml.safe_load((H / "config.yaml").read_text())
+checa("/a0/usr/skills" not in str((conf.get("skills") or {}).get("external_dirs") or ""),
+      "o Hermes não lê as skills vivas do A0 (mandam usar ferramentas de lá; e external_dirs é só leitura para o curador)")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
     checa(termo in alma, f"a persona traz {termo!r}")

@@ -61,6 +61,16 @@ plugin.register(Ctx())
 for g in (("middleware", "tool_execution"), ("middleware", "llm_request"), ("hook", "transform_tool_result"),
           ("hook", "pre_llm_call")):
     checa(g in ganchos, f"o cofre se liga ao Hermes: {g}")
+# "Hermes primeiro" (23/10): nada nosso com o nome ou o papel de uma ferramenta que o Hermes já faz bem, e nada que grave
+# no agendador/conversas do Agent Zero (lista tirada da v0.22.2 na VM)
+NATIVAS = {"web_search", "web_extract", "memory", "todo_list", "delegate_task", "read_file", "write_file", "patch",
+           "search_files", "terminal", "execute_code", "session_search", "cronjob_manage", "vision_analyze",
+           "video_analyze", "skill_manage", "skill_view", "skills_list", "clarify", "text_to_speech", "image_generate"}
+NATIVAS |= {n for n in registradas if n.startswith(("browser_", "kanban_"))}
+SO_NO_A0 = {"pesquisar", "tarefa_limite", "me_mostre", "salvar_rotina", "criar_gatilho", "passos", "painel_vivo", "canal"}
+nomes = {n for _, n in plugin.FERRAMENTAS}
+checa(not nomes & NATIVAS, f"ponte não repete ferramenta nativa do Hermes: {sorted(nomes & NATIVAS)}")
+checa(not nomes & SO_NO_A0, f"ponte não leva ferramenta que grava no agendador do A0 ou repete o Hermes: {sorted(nomes & SO_NO_A0)}")
 for plugin_nome, nome in plugin.FERRAMENTAS:
     checa(nome in registradas, f"{plugin_nome}/{nome} carrega só com a ponte (sem o Agent Zero)")
 for nome, (schema, _) in registradas.items():
