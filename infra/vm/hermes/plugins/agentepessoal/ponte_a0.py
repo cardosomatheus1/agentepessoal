@@ -76,13 +76,25 @@ _TRAVA = threading.Lock()
 _CONVERSAS: dict[str, "Conversa"] = {}
 
 
-def login_da_sessao(sessao: str) -> str:
+def login_mapeado(sessao: str) -> str:
+    """The login the bridge recorded for this session ("" when nobody did). A key ending in `*` covers every session
+    that starts with it (e.g. the Hermes cron sessions of one person's routine)."""
     try:
         mapa = json.loads(SESSOES.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         mapa = {}
-    login = str(mapa.get(sessao) or "").strip().lower()
-    return login or DONO_PADRAO
+    if not isinstance(mapa, dict):
+        return ""
+    login = mapa.get(sessao)
+    if not login:
+        prefixos = sorted((k for k in mapa if isinstance(k, str) and k.endswith("*") and sessao.startswith(k[:-1])),
+                          key=len, reverse=True)
+        login = mapa[prefixos[0]] if prefixos else ""
+    return str(login or "").strip().lower()
+
+
+def login_da_sessao(sessao: str) -> str:
+    return login_mapeado(sessao) or DONO_PADRAO
 
 
 class Conversa:

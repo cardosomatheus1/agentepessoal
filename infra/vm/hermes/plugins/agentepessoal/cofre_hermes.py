@@ -52,16 +52,36 @@ def _livro_cofre():
 
 
 def _login(kw: dict) -> str:
+    """Só a sessão que a ponte ligou a uma pessoa tem cofre: sessão sem dono (subtarefa, sessão nova) não recebe senha
+    de ninguém, em vez de cair no cofre do Matheus (revisão OpenCode, 23/10)."""
     ponte = sys.modules["agentepessoal_ponte_a0"]
-    return ponte.login_da_sessao(str(kw.get("session_id") or kw.get("task_id") or ""))
+    return ponte.login_mapeado(str(kw.get("session_id") or kw.get("task_id") or ""))
 
 
 def _dados(kw: dict) -> dict:
+    login = _login(kw)
+    if not login:
+        return {}
     try:
-        return cofre().carregar(_login(kw))
+        return cofre().carregar(login)
     except Exception as exc:  # cofre ilegível: nada é trocado (o placeholder segue) e o log diz por quê
         log.warning("cofre: não lido: %s: %s", type(exc).__name__, exc)
         return {}
+
+
+def _todos() -> dict:
+    """Os valores de todas as pessoas, só para mascarar (esconder a mais nunca vaza; a menos, sim)."""
+    c = cofre()
+    tudo: dict = {}
+    for arq in sorted(Path(c.PASTA).glob("*.json")):
+        if arq.name.endswith(".descricoes.json"):
+            continue
+        try:
+            for nome, valor in c.carregar(arq.stem).items():
+                tudo[nome if tudo.get(nome, valor) == valor else f"{nome}_{arq.stem}"] = valor
+        except Exception as exc:
+            log.warning("cofre: %s não lido para a máscara: %s", arq.name, type(exc).__name__)
+    return tudo
 
 
 def _so_nomes(valor, c):
@@ -74,13 +94,22 @@ def _so_nomes(valor, c):
     return valor
 
 
+def _formas(valor: str) -> set:
+    """O valor como está e como aparece dentro de um JSON (as ferramentas do Hermes devolvem JSON: uma senha com `"`,
+    `\\`, quebra de linha ou acento volta escapada e passaria pela troca exata; revisão OpenCode, 23/10)."""
+    return {valor, json.dumps(valor)[1:-1], json.dumps(valor, ensure_ascii=False)[1:-1]}
+
+
 def mascarar(valor, dados: dict):
     """Cada valor do cofre (≥ 4 caracteres) volta a ser §§secret(NOME), em texto, dict ou lista."""
     if not dados:
         return valor
-    c = cofre()
     if isinstance(valor, str):
-        return c.mascarar(valor, dados)
+        trocas = sorted(((f, n) for n, v in dados.items() if v and len(v) >= 4 for f in _formas(v)),
+                        key=lambda t: -len(t[0]))
+        for forma, nome in trocas:
+            valor = valor.replace(forma, f"§§secret({nome})")
+        return valor
     if isinstance(valor, dict):
         return {k: mascarar(v, dados) for k, v in valor.items()}
     if isinstance(valor, (list, tuple)):
@@ -100,12 +129,17 @@ def _registrar(login: str, ferramenta: str, usados: list, sessao: str) -> None:
 
 def executar(tool_name="", args=None, next_call=None, **kw):
     """Middleware `tool_execution`."""
-    dados = _dados(kw)
+    todos = _todos()
     if not isinstance(args, dict) or "§§secret(" not in json.dumps(args, ensure_ascii=False, default=str):
-        return mascarar(next_call(args), dados)
+        return mascarar(next_call(args), todos)
     c = cofre()
     if tool_name not in ACAO:
-        return mascarar(next_call(_so_nomes(args, c)), dados)
+        return mascarar(next_call(_so_nomes(args, c)), todos)
+    if not _login(kw):
+        return json.dumps({"error": "Esta conversa não está ligada a uma pessoa, então não há cofre para usar aqui. "
+                                    "Peça a senha pelo canal da pessoa (Telegram/WhatsApp) ou rode a tarefa na conversa dela."},
+                          ensure_ascii=False)
+    dados = _dados(kw)
     bruto = json.dumps(args, ensure_ascii=False, default=str)
     pedidos = sorted(set(c.PADRAO.findall(bruto)))
     faltando = [n for n in pedidos if n not in dados]
@@ -115,7 +149,7 @@ def executar(tool_name="", args=None, next_call=None, **kw):
             f"Use um desses ou peça para ele mandar no Telegram/WhatsApp `/senha {faltando[0]} valor`.")},
             ensure_ascii=False)
     _registrar(_login(kw), tool_name, pedidos, str(kw.get("session_id") or kw.get("task_id") or ""))
-    resultado = mascarar(next_call(c.trocar(args, dados)), dados)
+    resultado = mascarar(next_call(c.trocar(args, dados)), {**todos, **dados})
     if isinstance(resultado, str) and pedidos:
         resultado += AVISO_USO.format(nomes=", ".join(f"{n} ({len(dados[n])} caracteres)" for n in pedidos))
     return resultado
@@ -125,7 +159,7 @@ def resultado_mascarado(tool_name="", args=None, result=None, **kw):
     """Gancho `transform_tool_result`: devolve o texto só quando algo foi mascarado."""
     if not isinstance(result, str):
         return None
-    novo = mascarar(result, _dados(kw))
+    novo = mascarar(result, _todos())
     return novo if novo != result else None
 
 
@@ -133,7 +167,7 @@ def pedido_mascarado(request=None, **kw):
     """Middleware `llm_request`: tira do pedido ao modelo qualquer valor do cofre (mensagens e prompt)."""
     if not isinstance(request, dict):
         return None
-    dados = _dados(kw)
+    dados = _todos()
     if not dados:
         return None
     novo = {k: (mascarar(v, dados) if k in ("messages", "system", "input", "instructions") else v)
@@ -147,6 +181,8 @@ def contexto_nomes(session_id="", task_id="", is_first_turn=False, **kw):
     """Gancho `pre_llm_call`: os nomes do cofre, quando a conversa começa ou a lista muda."""
     try:
         login = _login({"session_id": session_id, "task_id": task_id})
+        if not login:
+            return None
         itens = cofre().lista(login)
     except Exception as exc:
         log.warning("cofre: lista não lida: %s: %s", type(exc).__name__, exc)

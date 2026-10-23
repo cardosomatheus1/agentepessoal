@@ -80,6 +80,12 @@ if ler:
 ponte.SESSOES.write_text(json.dumps({"tg-fernanda-1": "fernanda"}))
 checa(ponte.conversa("tg-fernanda-1").get_data("dono") == "fernanda", "o dono vem do mapa de sessões")
 checa(ponte.conversa("outra").get_data("dono") == ponte.DONO_PADRAO, "sessão sem dono é do Matheus")
+ponte.SESSOES.write_text(json.dumps({"tg-fernanda-1": "fernanda", "cron_ab*": "ilia", "cron_abc*": "will"}))
+checa(ponte.login_mapeado("cron_abc_20261023") == "will" and ponte.login_mapeado("cron_abx") == "ilia",
+      "chave com * cobre as sessões que começam com ela (a mais longa vale)")
+checa(ponte.login_mapeado("outra") == "", "login_mapeado não inventa dono (o cofre depende disso)")
+ponte.SESSOES.write_text("[1, 2]")
+checa(ponte.login_mapeado("x") == "" and ponte.login_da_sessao("x") == ponte.DONO_PADRAO, "mapa estragado não quebra")
 checa("helpers.tool" in sys.modules and not hasattr(sys.modules["helpers.tool"], "PrintStyle"), "só os módulos mínimos")
 if falhas:
     raise SystemExit("test_ponte_a0: " + "; ".join(falhas))

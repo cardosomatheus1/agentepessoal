@@ -30,8 +30,8 @@ def carregar(nome, caminho):
 
 tmp = Path(tempfile.mkdtemp())
 ponte = types.ModuleType("agentepessoal_ponte_a0")
-mapa = {"s-ilia": "teste_ilia"}
-ponte.login_da_sessao = lambda s: mapa.get(s, "teste_matheus")
+mapa = {"s-ilia": "teste_ilia", "s1": "teste_matheus", "s9": "teste_matheus"}
+ponte.login_mapeado = lambda s: mapa.get(s, "")
 sys.modules["agentepessoal_ponte_a0"] = ponte
 cf = carregar("teste_cofre_hermes", P / "cofre_hermes.py")
 cf.PLUGINS = RAIZ / "infra" / "vm" / "plugins"
@@ -64,14 +64,27 @@ r = rodar("whatsapp_enviar", {"texto": "a senha é §§secret(IG_SENHA)"})
 checa(visto["args"]["texto"] == "a senha é IG_SENHA", "ferramenta de texto recebe só o nome, nunca o valor")
 checa(len(livro) == 1, "texto para gente não conta como uso")
 
-r = rodar("terminal", {"command": "login §§secret(NAO_TEM)"})
-checa("NAO_TEM não está no cofre" in r and "IG_SENHA" in r and "args" in visto, "nome que falta: erro com os nomes que há")
 visto.clear()
-rodar("terminal", {"command": "login §§secret(NAO_TEM)"})
+r = rodar("terminal", {"command": "login §§secret(NAO_TEM)"})
+checa("NAO_TEM não está no cofre" in r and "IG_SENHA" in r, "nome que falta: erro com os nomes que há")
 checa("args" not in visto, "com nome faltando, a ferramenta não roda")
 
+visto.clear()
 rodar("terminal", {"command": "login §§secret(OUTRA)"})
 checa("args" not in visto, "o cofre de outra pessoa não vale nesta conversa")
+visto.clear()
+r = rodar("browser_type", {"text": "§§secret(IG_SENHA)"}, sessao="sub-tarefa-sem-dono")
+checa("args" not in visto and "não está ligada a uma pessoa" in r,
+      "sessão sem dono não recebe senha de ninguém (nem do Matheus)")
+checa(cf.contexto_nomes(session_id="sub-tarefa-sem-dono", is_first_turn=True) is None, "nem a lista de nomes")
+
+helper.salvar("teste_matheus", "ASPAS", 'ab"c\\dé\nfg')
+r = rodar("terminal", {"command": "x"}, devolve=json.dumps({"output": 'senha: ab"c\\dé\nfg'}))
+checa("ab" not in r.replace("§§secret(ASPAS)", ""), f"valor escapado no JSON volta mascarado: {r}")
+r = rodar("terminal", {"command": "x"}, devolve=json.dumps({"output": 'ab"c\\dé\nfg'}, ensure_ascii=False))
+checa("§§secret(ASPAS)" in r, "também com acento sem escape")
+r = rodar("read_file", {"path": "x"}, sessao="sub-tarefa-sem-dono", devolve="vi senhaForte123 e valorDaIlia9")
+checa("senhaForte123" not in r and "valorDaIlia9" not in r, "a máscara vale em qualquer sessão, com todos os cofres")
 r = rodar("terminal", {"command": "login §§secret(OUTRA)"}, sessao="s-ilia")
 checa(visto["args"]["command"] == "login valorDaIlia9", "cada conversa usa o cofre do seu dono")
 
