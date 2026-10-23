@@ -234,8 +234,9 @@ def somente_leitura(exc: BaseException) -> bool:
     import errno
     import sqlite3
 
-    if isinstance(exc, OSError) and exc.errno == errno.EROFS:
-        return True
+    if isinstance(exc, OSError) and (exc.errno == errno.EROFS or (
+            exc.errno == errno.EACCES and str(exc.filename or "").startswith("/a0/usr/"))):
+        return True  # EACCES: as pastas escondidas no ensaio (whatsapp, segredos: tmpfs vazio do root)
     texto = str(exc).lower()
     return isinstance(exc, sqlite3.OperationalError) and ("readonly" in texto or "read-only" in texto
                                                           or "unable to open database" in texto)

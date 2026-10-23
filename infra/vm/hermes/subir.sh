@@ -35,13 +35,22 @@ systemctl enable -q agentepessoal-hermes-dados.service
 systemctl restart agentepessoal-hermes-dados.service
 for i in $(seq 1 20); do mountpoint -q /opt/hermes/a0usr && break; sleep 1; done
 mountpoint -q /opt/hermes/a0usr || { echo "HERMES_SEM_DADOS: a vista /opt/hermes/a0usr não montou"; exit 1; }
+# O Hermes roda o código dos plugins que está na vista: sem a trava do ensaio lá, não sobe (o plugin novo vai ao A0
+# primeiro, por implantar.py; revisão OpenCode 23/10).
+for f in whatsapp/helpers/ponte.py conteudo/helpers/conteudo.py; do
+  grep -q AGENTEPESSOAL_ENSAIO "/opt/hermes/a0usr/plugins/$f" || { echo "HERMES_SEM_ENSAIO: $f no ar não tem a trava do ensaio; implante o plugin antes"; exit 1; }
+done
 # AGENTEPESSOAL_ENSAIO=1 até a virada (fase 8): nada vai ao celular nem se publica na Meta pelo Hermes; o que iria fica
 # em /opt/hermes/data/agentepessoal/ensaio_celular.jsonl (whatsapp/helpers/ponte.py, conteudo/helpers/conteudo.py).
+# E, no ensaio, a chave da ponte do celular (/a0/usr/whatsapp) e os valores do cofre (/a0/usr/segredos) aparecem vazios
+# no container: um terminal ou código do Hermes não tem com que mandar ao celular nem publicar por fora das ferramentas.
 docker run -d --name hermes --restart unless-stopped \
   --memory 3g --memory-swap 3g \
   --add-host host.docker.internal:host-gateway \
   -v "$DADOS":/opt/data \
   -v /opt/hermes/a0usr:/a0/usr \
+  --mount type=tmpfs,destination=/a0/usr/whatsapp,tmpfs-mode=0755 \
+  --mount type=tmpfs,destination=/a0/usr/segredos,tmpfs-mode=0755 \
   -e AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/bedrock \
   -e ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/bedrock \
   -e AWS_ACCESS_KEY_ID=proxy -e AWS_SECRET_ACCESS_KEY=proxy -e AWS_REGION=us-east-1 -e AWS_EC2_METADATA_DISABLED=true \

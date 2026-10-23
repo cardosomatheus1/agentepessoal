@@ -154,7 +154,10 @@ rascunho, revisar os temas: pelo Hermes dá "ensaio: só leitura" e continua com
 liberado pelo Hermes seria publicado pelo A0). O livro de ações (SQLite) não abre só para leitura: fica sem ele no
 ensaio. Na fase 7 (dia de sombra) o Hermes roda numa cópia dos dados, gravando nela.
 Além disso, `AGENTEPESSOAL_ENSAIO=1` (`subir.sh`): **nada vai ao celular de ninguém e nada se publica
-na Meta** por ele, mesmo que uma ferramenta tente (botões de fios, iniciativa, rascunho, prospecção…). O que iria fica
+na Meta** pelas ferramentas; e a chave da ponte do celular (`/a0/usr/whatsapp`) e os valores do cofre
+(`/a0/usr/segredos`) aparecem vazios no container, para que nem um terminal do Hermes tenha com que mandar por fora. O
+`subir.sh` só sobe o Hermes se os plugins no ar já têm a trava. Cofre vazio no ensaio = nenhuma senha usável por ele
+(a fase 4 testa o navegador pelo perfil já logado, sem senha) (botões de fios, iniciativa, rascunho, prospecção…). O que iria fica
 em `/opt/hermes/data/agentepessoal/ensaio_celular.jsonl` para o operador conferir, sem fila de reenvio nem marca de
 aviso em `/a0/usr` (o A0 mandaria depois, ou seguraria o dele). Na virada (fase 8) a variável sai e a ponte do celular
 passa a entregar as respostas dos botões ao Hermes (fase 6). Pendente da fase 4: o navegador do Hermes logado no

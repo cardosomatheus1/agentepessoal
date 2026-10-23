@@ -144,6 +144,9 @@ class _Quebra(ponte.Tool):
 
 checa(asyncio.run(ponte.executar(_Grava, "x", {}, "s")) == ponte.ERRO_SO_LEITURA, "ação que grava no ensaio: erro claro")
 checa(ponte.somente_leitura(sqlite3.OperationalError("unable to open database file")), "sqlite só leitura também")
+checa(ponte.somente_leitura(PermissionError(errno.EACCES, "Permission denied", "/a0/usr/whatsapp/.chave")),
+      "pasta escondida no ensaio também")
+checa(not ponte.somente_leitura(PermissionError(errno.EACCES, "Permission denied", "/etc/shadow")), "fora dos dados, não")
 try:
     asyncio.run(ponte.executar(_Quebra, "x", {}, "s"))
     checa(False, "outro erro não é engolido")

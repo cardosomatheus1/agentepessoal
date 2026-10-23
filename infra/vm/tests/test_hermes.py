@@ -44,6 +44,9 @@ pacotes = [t for t in df.split("uv pip install", 1)[1].split("&&", 1)[0].split()
 checa(len(pacotes) >= 5 and all("==" in t for t in pacotes), f"pacotes com versão fixa: {pacotes}")
 checa(re.search(r"FROM ghcr.io/astral-sh/uv:\d+\.\d+\.\d+ AS uv", df), "uv com versão fixa")
 checa(subprocess.run(["bash", "-n", str(H / "subir.sh")]).returncode == 0, "sintaxe do script")
+checa("destination=/a0/usr/whatsapp," in sh and "destination=/a0/usr/segredos," in sh,
+      "no ensaio a chave da ponte do celular e o cofre aparecem vazios no Hermes")
+checa(sh.index("HERMES_SEM_ENSAIO") < sh.index("docker run"), "não sobe sem a trava do ensaio nos plugins no ar")
 checa("-o allow_other,ro " in un, "até a virada o Hermes vê os dados do A0 só para leitura")
 checa("-e AGENTEPESSOAL_ENSAIO=1" in sh, "até a virada o Hermes está em ensaio: nada vai ao celular nem à Meta")
 checa("/a0/usr/skills" not in str((cfg.get("skills") or {}).get("external_dirs") or ""),

@@ -25,10 +25,11 @@ log = logging.getLogger("agentepessoal")
 #    agenda_confiavel/tarefa_limite, rotinas/me_mostre e salvar_rotina, whatsapp/criar_gatilho, objetivo_vivo/passos,
 #    painel/painel_vivo, canais/canal, auxiliar/reuniao (briefing e pós-reunião agendados). Voltam na fase 5 por cima do
 #    cron do Hermes (ou ficam no cron dele); conversas_externas/conversa_externa (abre conversa no A0) volta na fase 6;
+#  - agent_delegates/delegar e text_delegate (o Hermes tem delegate_task; o `listar/parar` daqui pararia tarefas que o
+#    A0 delegou na mesma caixa) e whatsapp/whatsapp_guardar_token (usa o navegador do A0): voltam na fase 6 (OpenClaw);
 #  - o que espera resposta pela ponte do celular: whatsapp/perguntar e pedir_codigo (fase 6);
 #  - celular_rapido/celular: põe a imagem da tela no histórico do A0 (precisa de adaptação).
 FERRAMENTAS = (
-    ("agent_delegates", "delegar"), ("agent_delegates", "text_delegate"),
     ("analisar_imagens", "analisar_imagens"), ("auxiliar", "contas"), ("auxiliar", "rascunho"),
     ("central", "livro"), ("cerebro", "cerebro"), ("cofre", "cofre_descrever"),
     ("concorrentes", "concorrentes"), ("consultar_sol", "consultar_sol"), ("conteudo", "conteudo"),
@@ -36,7 +37,7 @@ FERRAMENTAS = (
     ("iniciativa", "iniciativa"), ("ler_arquivo", "ler"), ("login_usuarios", "terminal_isolado"),
     ("memoria_pessoal", "decisao"), ("memoria_pessoal", "ficha"), ("memoria_pessoal", "lembrar"),
     ("prospeccao", "prospeccao"), ("radar", "monitor"), ("video", "assistir_video"),
-    ("video", "videos_em_alta"), ("whatsapp", "whatsapp_enviar"), ("whatsapp", "whatsapp_guardar_token"),
+    ("video", "videos_em_alta"), ("whatsapp", "whatsapp_enviar"),
 )
 
 

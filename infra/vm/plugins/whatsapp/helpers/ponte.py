@@ -28,7 +28,8 @@ CAIXA_TESTES = Path("/a0/usr/testes/celular.jsonl")  # phone messages of "teste_
 # em /a0/usr: o A0 mandaria depois) e sem marcar aviso (o A0 deixaria de mandar o dele achando que já foi).
 ENSAIO = "AGENTEPESSOAL_ENSAIO"
 CAIXA_ENSAIO = Path("/opt/data/agentepessoal/ensaio_celular.jsonl")
-ERRO_ENSAIO = "ensaio do Hermes: nada vai ao celular antes da virada (guardado para o operador conferir)"
+ERRO_ENSAIO = ("ensaio do Hermes: nada vai ao celular antes da virada (guardado para o operador conferir). Não tente de "
+               "outro jeito; diga ao operador o que ia mandar.")
 
 
 def em_ensaio() -> bool:
