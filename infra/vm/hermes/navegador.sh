@@ -31,12 +31,13 @@ AQUI="$(cd "$(dirname "$0")" && pwd)"
 install -m 644 "$AQUI/cdp_encaminhar.py" "$BASE/cdp_encaminhar.py"
 docker rm -f hermes-navegador >/dev/null 2>&1 || true
 # O Chromium sem tela só escuta no loopback do container: o repasse (cdp_encaminhar.py) expõe a porta 9223 na rede hermes.
+# A trava do perfil (Singleton*) sai a cada subida: o container novo tem outro nome de máquina e o Chromium recusaria.
 docker run -d --name hermes-navegador --restart no --network hermes --ip "$IP" \
   --memory 2g --memory-swap 2g --shm-size 512m \
   --user 10000:10000 \
   -v "$BASE/chromium-1228:/opt/chromium:ro" -v "$BASE/perfil:/perfil" -v "$BASE/cdp_encaminhar.py:/opt/cdp_encaminhar.py:ro" \
   --entrypoint /bin/sh \
-  "$IMAGEM" -c '/opt/chromium/chrome-linux/chrome --headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu \
+  "$IMAGEM" -c 'rm -f /perfil/Singleton*; /opt/chromium/chrome-linux/chrome --headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu \
   --password-store=basic --use-mock-keychain --no-first-run --no-default-browser-check \
   --disable-background-networking --disable-breakpad --disable-notifications \
   --user-data-dir=/perfil --remote-debugging-port=9222 about:blank & exec python3 /opt/cdp_encaminhar.py 9223' >/dev/null

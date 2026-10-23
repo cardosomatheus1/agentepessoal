@@ -71,6 +71,7 @@ checa("--password-store=basic" in nav and "--use-mock-keychain" in nav and "chro
 checa("--network hermes" in nav and not re.search(r"\s(-p|--publish)\s+\S*\d", nav), "o CDP só na rede hermes, nunca publicado no host")
 checa("PERFIL_A0=/opt/a0/usr/navegador/sessions/shared" in nav and "rsync -a" in nav and "perfil.novo" in nav,
       "até a virada o Hermes usa uma CÓPIA do perfil (o A0 segue com o dele)")
+checa("rm -f /perfil/Singleton*;" in nav, "a trava do perfil sai a cada subida (outro container = 'perfil em uso')")
 checa('-e BROWSER_CDP_URL="$CDP"' in sh and sh.index("HERMES_SEM_NAVEGADOR") < sh.index("docker run"),
       "o Hermes liga no navegador dele e não sobe sem ele")
 checa('NAV="${HERMES%.*.*}.0.250"' in fw and "--dport 9223" in fw and "--dport 9222" not in fw, "firewall: o Hermes só fala com o CDP do navegador dele")
