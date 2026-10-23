@@ -10,9 +10,9 @@ Fora daqui, de propósito (ver docs/MIGRACAO_HERMES.md):
 - do próprio A0, sem par no Hermes (N): limpeza (abas, conversas, /tmp, time travel), agenda_confiavel (rodadas do
   agendador do A0; o cron do Hermes tem as dele), aprendizado (skills do A0; o curador do Hermes cuida das dele),
   whatsapp _55/_56 (andamento e retomada de conversas do A0; no Hermes a ponte acompanha os eventos do run);
-- que entregam numa conversa do A0 ou usam o MCP dele, e voltam adaptados na fase 6: prospeccao _46_crm_raiz (MCP
-  Google), whatsapp _57_email_do_agente (e-mail vira pedido numa conversa), conversas_externas _48 (resposta da loja
-  vira mensagem na conversa), login_usuarios _20 (pausa as rotinas do convidado no agendador do A0).
+- que entregam numa conversa do A0 ou usam o MCP dele: whatsapp _57_email_do_agente roda aqui por email_hermes.py
+  (as mesmas funções, entrega no Hermes); ainda por adaptar: prospeccao _46_crm_raiz (MCP Google), conversas_externas
+  _48 (resposta da loja vira mensagem na conversa), login_usuarios _20 (pausa as rotinas do convidado).
 """
 import asyncio
 import importlib.util
@@ -66,9 +66,21 @@ def _classe(plugin: str, arquivo: str):
     raise LookupError(f"{caminho}: nenhuma extensão")
 
 
-async def volta(tarefas=TAREFAS) -> dict:
+def _extras() -> list:
+    """Tarefas do relógio que são nossas no Hermes (a entrega muda; a lógica é a do A0): e-mail para o agente."""
+    m = sys.modules.get("agentepessoal_email")
+    return [("email_hermes", m.passo)] if m is not None else []
+
+
+async def volta(tarefas=TAREFAS, extras=None) -> dict:
     """Uma passada por todas as tarefas; uma que falha não impede as outras. Devolve {tarefa: "ok" | erro}."""
     feito = {}
+    for nome, funcao in (extras if extras is not None else _extras()):
+        try:
+            await asyncio.to_thread(funcao)
+            feito[nome] = "ok"
+        except Exception as exc:
+            feito[nome] = f"{type(exc).__name__}: {exc}"[:300]
     for plugin, arquivo in tarefas:
         chave = f"{plugin}/{arquivo}"
         try:

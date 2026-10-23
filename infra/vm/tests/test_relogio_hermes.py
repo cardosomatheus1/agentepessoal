@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import tempfile
+import types
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[3]
@@ -76,6 +77,30 @@ checa(rl.iniciar() is True, "chamar de novo não abre outra thread")
 rl._parar.set()
 rl._estado["thread"].join(5)
 os.environ.pop("AGENTEPESSOAL_RELOGIO")
+
+# e-mail para o agente: as funções do A0 (_57), entrega num pedido do Hermes seguido até o fim
+em = carregar("teste_email_hermes", P / "email_hermes.py")
+fake = types.SimpleNamespace(MARCA=None, INTERVALO=0, DONO="matheus", _na_hora=lambda m, i: True,
+                             _novos=lambda: [{"uid": "7", "assunto": "Boleto da Coelba", "confirmado": True, "anexos": ["/a0/usr/workdir/emails/b.pdf"]},
+                                             {"uid": "8", "assunto": "estranho", "confirmado": False, "anexos": ["/x.exe"]}],
+                             _pedido=lambda item: f"pedido {item['uid']}", _ponte=lambda: None)
+pedidos_api, enviados_em, iniciados = [], [], []
+feitos = em.passo(fake, api=lambda c, corpo: pedidos_api.append((c, corpo)) or {"run_id": f"r{len(pedidos_api)}"},
+                  enviar=lambda dono, t: enviados_em.append((dono, t)), iniciar=lambda alvo, args: iniciados.append(args))
+checa(feitos == ["7", "8"] and pedidos_api[0][1]["session_id"] == "tg-matheus" and "b.pdf" in pedidos_api[0][1]["input"]
+      and "/x.exe" not in pedidos_api[1][1]["input"], f"e-mail vira pedido na sessão do celular; anexo só de remetente comprovado: {pedidos_api}")
+checa(len(enviados_em) == 1 and "Boleto da Coelba" in enviados_em[0][1], "aviso 'recebi seu e-mail' só para remetente comprovado")
+checa([a[0] for a in iniciados] == ["r1", "r2"], "cada pedido é seguido até o fim")
+em._api = lambda c, corpo=None: {"status": "completed", "output": "Lembrete criado para 30/10."}
+saidas = []
+checa(em.seguir("r1", "matheus", lambda d, t: saidas.append(t), espera=5, pausa=0) == "completed"
+      and saidas == ["Lembrete criado para 30/10."], "a resposta vai ao celular dele")
+fake._na_hora = lambda m, i: False
+checa(em.passo(fake, api=lambda *a: {}, enviar=lambda *a: None) == [], "fora do intervalo: nada")
+em.PLUGINS = PLUGINS
+real = em.a0()
+checa(all(hasattr(real, n) for n in ("_novos", "_pedido", "_na_hora", "_ponte", "MARCA", "INTERVALO", "DONO")),
+      "o arquivo do A0 carrega com a ponte e tem as funções que o Hermes usa")
 
 if falhas:
     raise SystemExit("test_relogio_hermes: " + "; ".join(falhas))

@@ -114,6 +114,12 @@ def main() -> int:
     n = len(andamentos)
     p.acompanhar_hermes("run_5", "teste_hermes", "0", espera=5, pausa=0)
     ok(len(andamentos) == n, "login de teste: sem andamento no Telegram")
+    # a trigger from outside (Google watcher) goes to its own session, as data, quiet when nothing matters
+    respostas["/v1/runs"] = {"run_id": "run_6"}
+    p.entregar_hermes({"usuario": "matheus", "gatilho": "vigia_google", "texto": "evento novo: Reunião X"}, "123")
+    corpo = chamadas[-1][1]
+    ok(corpo["session_id"] == "gatilhos-matheus" and "Gatilho «vigia_google»" in corpo["input"] and "SEM NOVIDADE" in corpo["input"]
+       and "evento novo" in corpo["input"], f"gatilho na sessão própria, como dado: {corpo}")
     respostas["/v1/runs/run_3"] = [{"status": "completed", "output": "SEM NOVIDADE"}]
     n = len(enviados)
     p.acompanhar_hermes("run_3", "matheus", "123", espera=5, pausa=0)

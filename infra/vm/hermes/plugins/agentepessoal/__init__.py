@@ -30,6 +30,7 @@ rotinas = _sub("agentepessoal_rotinas", "rotinas_hermes.py")
 contexto = _sub("agentepessoal_contexto", "contexto_hermes.py")
 reuniao = _sub("agentepessoal_reuniao", "reuniao_hermes.py")
 audio = _sub("agentepessoal_audio", "audio_hermes.py")
+email = _sub("agentepessoal_email", "email_hermes.py")  # tarefa do relógio (sem registro próprio)
 log = logging.getLogger("agentepessoal")
 
 # (plugin, ferramenta). "Hermes primeiro" (23/10): só entra o que é nosso de verdade (dados, Raiz, Segundo Cérebro).
