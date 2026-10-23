@@ -1,151 +1,207 @@
 // Constelação do Segundo Cérebro (23/10, Matheus: "Gostei desse modelo de front desse 2 cérebro, o nosso podia ser
-// assim"): três visões do mesmo grafo da Pasta (brain-graph.mjs), em coordenadas de unidade (o centro é 0,0 e o disco
-// cabe no raio 1). Puro: roda no navegador e no Node, sem sorteio (mesma Pasta, mesmo desenho).
-//   disco: cada tipo de registro é um setor de anéis de pontos em volta do centro; as fontes orbitam como hexágonos.
-//   forca: as ligações gravadas puxam, todos os pontos se afastam, cada um é atraído para a sua fonte.
-//   aneis: cada tipo é um anel inclinado no espaço; a tela gira a cena e projeta em perspectiva.
+// assim" e "precisa ser tão bonito quanto"). Três poses do mesmo grafo da Pasta (brain-graph.mjs), no espaço da cena
+// (centro 0,0,0; o disco cabe no raio ~1). Puro, sem sorteio: roda no navegador (Three.js desenha) e no Node (testes).
+//   disco: o núcleo é um girassol de decisões; os outros registros são traços em faixas de anéis por tipo; os arquivos
+//          (fontes, contexto, projetos, documentos, reuniões, notas) orbitam como hexágonos.
+//   forca: cada fonte é um hexágono-polo com os seus registros em anéis em volta; os polos se afastam entre si.
+//   aneis: cada tipo é uma órbita inclinada no espaço em volta do núcleo; a câmera gira.
+// Cada item tem uma pose {x, y, z, ang, sx, sy}: posição, giro do traço e tamanho (sx = sy é ponto; sx > sy é traço).
 import { TIPOS } from "./brain-graph.mjs";
 
 export const MODOS = Object.freeze({ disco: "Disco", forca: "Força", aneis: "Anéis" });
-export const ORDEM_TIPOS = Object.freeze(["decisao", "pendencia", "assunto", "nota", "reuniao", "documento", "contexto", "projeto", "fato", "referencia"]);
-export const RAIO_ORBITA = 0.94;
-const R_DENTRO = 0.2, R_FORA = 0.76, FOLGA = 0.07;
+// Paleta do vídeo de referência: verde-limão, verde-água, laranja, âmbar, azul-aço, lavanda.
+export const CORES = Object.freeze({
+  decisao: "#b8f26a", pendencia: "#52e3c2", assunto: "#f5a25d", referencia: "#7db9d8", fato: "#ffd36e",
+  contexto: "#c4a8ff", projeto: "#ffd36e", documento: "#9db3ff", reuniao: "#7fe39a", nota: "#8fd6ff", fonte: "#6fe7e0",
+});
+export const NUCLEO = "decisao"; // o girassol do centro: o que ele decidiu
+export const TIPOS_HEX = Object.freeze(["fonte", "contexto", "projeto", "documento", "reuniao", "nota"]);
+export const ORDEM_FAIXAS = Object.freeze(["pendencia", "assunto", "fato", "referencia"]);
+export const RAIO_ORBITA = 1.0;
+export const RAIO_LINHA = 0.82;
+const R_SOL = 0.3, R_FAIXA_DENTRO = 0.37, R_FAIXA_FORA = 0.72, FOLGA = 0.06, OURO = 2.39996323;
 
-const itens = (graph) => graph.nodes.filter((n) => n.tipo !== "fonte");
-const fontes = (graph) => graph.nodes.filter((n) => n.tipo === "fonte");
-const porTipo = (graph) => {
-  const grupos = new Map(ORDEM_TIPOS.map((t) => [t, []]));
-  for (const n of itens(graph)) (grupos.get(n.tipo) ?? grupos.set(n.tipo, []).get(n.tipo)).push(n);
-  for (const lista of grupos.values()) lista.sort((a, b) => a.id.localeCompare(b.id));
-  return [...grupos.entries()].filter(([, l]) => l.length);
-};
+export const ehHex = (n) => TIPOS_HEX.includes(n.tipo);
+export const corDoTipo = (tipo) => CORES[tipo] ?? TIPOS[tipo]?.cor ?? "#8e9a84";
 export const rotuloTipo = (tipo, n) => `${(TIPOS[tipo]?.rotulo ?? tipo).toLocaleUpperCase("pt-BR")} · ${n}`;
+const porNome = (a, b) => a.id.localeCompare(b.id);
+const ponto = (x, y, z = 0, tam = 1) => ({ x, y, z, ang: 0, sx: tam, sy: tam });
 
-// Disco: setores proporcionais ao número de itens (com um mínimo, para um tipo pequeno não sumir), e dentro de cada
-// setor os pontos em fileiras de arco, das de dentro para as de fora.
-export function layoutDisco(graph) {
-  const grupos = porTipo(graph);
-  const total = grupos.reduce((s, [, l]) => s + l.length, 0) || 1;
-  const livre = 2 * Math.PI - FOLGA * grupos.length;
-  const minimo = Math.min(0.18, livre / Math.max(1, grupos.length));
-  const brutos = grupos.map(([, l]) => Math.max(minimo, (livre * l.length) / total));
-  const escala = livre / brutos.reduce((s, x) => s + x, 0);
-  const posicoes = new Map();
-  const setores = [];
-  let angulo = -Math.PI / 2 + FOLGA / 2;
-  grupos.forEach(([tipo, lista], gi) => {
-    const largura = brutos[gi] * escala;
-    const meio = (R_DENTRO + R_FORA) / 2;
-    const fileiras = Math.max(1, Math.min(14, Math.round(Math.sqrt((lista.length * (R_FORA - R_DENTRO)) / (largura * meio)))));
-    const porFileira = Math.ceil(lista.length / fileiras);
-    lista.forEach((n, i) => {
-      const f = i % fileiras, c = Math.floor(i / fileiras);
-      const r = R_DENTRO + ((f + 0.5) * (R_FORA - R_DENTRO)) / fileiras;
-      const a = angulo + ((c + 0.5) * largura) / porFileira;
-      posicoes.set(n.id, { x: r * Math.cos(a), y: r * Math.sin(a) });
-    });
-    setores.push({ tipo, n: lista.length, inicio: angulo, fim: angulo + largura, rotulo: rotuloTipo(tipo, lista.length) });
-    angulo += largura + FOLGA;
+function separar(graph) {
+  const hex = graph.nodes.filter(ehHex).sort((a, b) => (a.tipo === "fonte" ? 0 : 1) - (b.tipo === "fonte" ? 0 : 1) || porNome(a, b));
+  const itens = graph.nodes.filter((n) => !ehHex(n));
+  const grupos = new Map();
+  for (const n of itens) (grupos.get(n.tipo) ?? grupos.set(n.tipo, []).get(n.tipo)).push(n);
+  for (const l of grupos.values()) l.sort(porNome);
+  return { hex, itens, grupos };
+}
+function graus(graph) {
+  const g = new Map(graph.nodes.map((n) => [n.id, 0]));
+  for (const e of graph.edges) { g.set(e.de, (g.get(e.de) ?? 0) + 1); g.set(e.para, (g.get(e.para) ?? 0) + 1); }
+  return g;
+}
+// Girassol (filotaxia): n pontos num disco de raio r, espaçados por igual.
+export function girassol(n, r) {
+  return Array.from({ length: n }, (_, i) => {
+    const rr = r * Math.sqrt((i + 0.5) / Math.max(1, n));
+    return { x: rr * Math.cos(i * OURO), y: rr * Math.sin(i * OURO) };
   });
-  const fs = fontes(graph).sort((a, b) => a.id.localeCompare(b.id));
-  const orbita = fs.map((n, i) => {
-    const a = -Math.PI / 2 + (i * 2 * Math.PI) / Math.max(1, fs.length);
-    const p = { x: RAIO_ORBITA * Math.cos(a), y: RAIO_ORBITA * Math.sin(a) };
-    posicoes.set(n.id, p);
-    return { id: n.id, rotulo: n.rotulo, ...p };
-  });
-  return { posicoes, setores, orbita };
 }
 
-// Força: começa do disco (determinístico), repulsão entre todos em grade, mola nas ligações, atração para a fonte
-// de origem e para o centro. Normaliza para caber no raio 1.
-export function layoutForca(graph, { passos = 120 } = {}) {
-  const { posicoes: inicio } = layoutDisco(graph);
-  const ids = graph.nodes.map((n) => n.id);
-  const idx = new Map(ids.map((id, i) => [id, i]));
-  const x = new Float64Array(ids.length), y = new Float64Array(ids.length);
-  ids.forEach((id, i) => { const p = inicio.get(id) ?? { x: 0, y: 0 }; x[i] = p.x; y[i] = p.y; });
-  const arestas = graph.edges.map((e) => [idx.get(e.de), idx.get(e.para)]).filter(([a, b]) => a !== undefined && b !== undefined && a !== b);
-  const fonteDe = graph.nodes.map((n) => (n.tipo === "fonte" ? -1 : idx.get(`fonte:${n.fonte}`) ?? -1));
-  const k = 0.9 / Math.sqrt(Math.max(1, ids.length));
-  const celula = k * 3;
-  for (let passo = 0; passo < passos; passo++) {
-    const t = 0.05 * (1 - passo / passos) + 0.004;
-    const dx = new Float64Array(ids.length), dy = new Float64Array(ids.length);
-    const grade = new Map();
-    for (let i = 0; i < ids.length; i++) {
-      const ch = `${Math.floor(x[i] / celula)},${Math.floor(y[i] / celula)}`;
-      (grade.get(ch) ?? grade.set(ch, []).get(ch)).push(i);
-    }
-    for (let i = 0; i < ids.length; i++) {
-      const cx = Math.floor(x[i] / celula), cy = Math.floor(y[i] / celula);
-      for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
-        for (const j of grade.get(`${cx + ox},${cy + oy}`) ?? []) {
-          if (j <= i) continue;
-          let vx = x[i] - x[j], vy = y[i] - y[j];
-          let d2 = vx * vx + vy * vy;
-          if (d2 < 1e-9) { vx = ((i * 7919) % 13) / 1e4 - 6e-4; vy = ((j * 104729) % 11) / 1e4 - 5e-4; d2 = vx * vx + vy * vy + 1e-9; }
-          const f = (k * k) / d2;
-          dx[i] += vx * f; dy[i] += vy * f; dx[j] -= vx * f; dy[j] -= vy * f;
-        }
+export function poseDisco(graph) {
+  const { hex, grupos } = separar(graph);
+  const grau = graus(graph);
+  const itens = new Map();
+  const rotulos = [];
+  const sol = grupos.get(NUCLEO) ?? [];
+  girassol(sol.length, R_SOL).forEach((p, i) => itens.set(sol[i].id, ponto(p.x, p.y, 0, 1)));
+  if (sol.length) rotulos.push({ texto: rotuloTipo(NUCLEO, sol.length), x: 0, y: R_SOL + 0.035, z: 0, cor: corDoTipo(NUCLEO), estilo: "texto" });
+  // Faixas: os outros tipos (e qualquer tipo novo) em setores, cada item um traço tangente ao anel.
+  const faixas = [...ORDEM_FAIXAS, ...[...grupos.keys()].filter((t) => t !== NUCLEO && !ORDEM_FAIXAS.includes(t)).sort()]
+    .filter((t) => grupos.get(t)?.length);
+  const total = faixas.reduce((s, t) => s + grupos.get(t).length, 0) || 1;
+  const livre = 2 * Math.PI - FOLGA * faixas.length;
+  const minimo = Math.min(0.35, livre / Math.max(1, faixas.length));
+  const brutos = faixas.map((t) => Math.max(minimo, (livre * grupos.get(t).length) / total));
+  const escala = livre / brutos.reduce((s, x) => s + x, 0);
+  const setores = [];
+  let a0 = Math.PI / 2 + FOLGA / 2;
+  faixas.forEach((tipo, k) => {
+    const lista = grupos.get(tipo);
+    const largura = brutos[k] * escala;
+    // Anéis tracejados (como no vídeo): cada fileira é um arco; cada traço ocupa ~78% do seu pedaço de arco, e as
+    // fileiras se alternam meio passo para os traços não formarem colunas.
+    const meio = (R_FAIXA_DENTRO + R_FAIXA_FORA) / 2;
+    const fileiras = Math.max(2, Math.min(12, Math.round(Math.sqrt(lista.length * 0.55)), Math.ceil(lista.length / 3)));
+    const porFileira = Math.ceil(lista.length / fileiras);
+    const faixa = Math.min(R_FAIXA_FORA - R_FAIXA_DENTRO, fileiras * 0.034);
+    const base = R_FAIXA_DENTRO + (R_FAIXA_FORA - R_FAIXA_DENTRO - faixa) / 2;
+    lista.forEach((n, i) => {
+      const f = Math.floor(i / porFileira), c = i % porFileira;
+      const naFileira = Math.min(porFileira, lista.length - f * porFileira);
+      const r = base + ((f + 0.5) * faixa) / fileiras;
+      const passo = largura / naFileira;
+      const ang = a0 + (c + 0.5 + (f % 2) * 0.35) * passo; // fileira ímpar desliza um pouco: sem colunas
+      const comprimento = Math.min(0.032, Math.max(0.01, r * passo * 0.7)) / 0.0105;
+      itens.set(n.id, { x: r * Math.cos(ang), y: r * Math.sin(ang), z: 0, ang: ang + Math.PI / 2, sx: comprimento, sy: 0.5 });
+    });
+    const meioAng = a0 + largura / 2;
+    setores.push({ tipo, n: lista.length, inicio: a0, fim: a0 + largura });
+    rotulos.push({ texto: rotuloTipo(tipo, lista.length), x: (R_FAIXA_FORA + 0.05) * Math.cos(meioAng), y: (R_FAIXA_FORA + 0.05) * Math.sin(meioAng), z: 0, cor: corDoTipo(tipo), estilo: "pilula" });
+    a0 += largura + FOLGA;
+  });
+  // Órbita de hexágonos: tamanho pelo número de ligações.
+  const hexes = new Map();
+  hex.forEach((n, i) => {
+    const a = Math.PI / 2 - (i * 2 * Math.PI) / Math.max(1, hex.length);
+    const tam = 1 + Math.min(1.2, Math.sqrt(grau.get(n.id) ?? 0) / 6);
+    hexes.set(n.id, { x: RAIO_ORBITA * Math.cos(a), y: RAIO_ORBITA * Math.sin(a), z: 0, tam });
+  });
+  return { itens, hexes, rotulos, setores, linhas: [{ r: RAIO_LINHA, cor: "#e3c56a" }, { r: RAIO_ORBITA, cor: "#3d5a4f" }] };
+}
+
+// Força: polos (fontes) espalhados por repulsão entre eles e uma mola fraca para o centro; os registros de cada fonte
+// em anéis em volta do polo (6, 12, 18… por anel); os outros hexágonos ficam no primeiro anel, maiores.
+export function poseForca(graph) {
+  const { hex, itens: soltos } = separar(graph);
+  const polos = hex.filter((n) => n.tipo === "fonte");
+  const filhos = new Map(polos.map((p) => [p.id, []]));
+  const semPolo = [];
+  for (const n of [...hex.filter((h) => h.tipo !== "fonte"), ...soltos].sort(porNome)) {
+    const lista = filhos.get(`fonte:${n.fonte}`);
+    (lista ?? semPolo).push(n);
+  }
+  const raioDe = (k) => 0.05 + 0.028 * Math.ceil((Math.sqrt(1 + (4 * k) / 3) - 1) / 2) * 1.6;
+  const pos = polos.map((p, i) => {
+    const a = (i * 2 * Math.PI) / Math.max(1, polos.length);
+    return { id: p.id, x: 0.55 * Math.cos(a), y: 0.55 * Math.sin(a), r: raioDe(filhos.get(p.id).length) };
+  });
+  for (let passo = 0; passo < 300; passo++) {
+    for (let i = 0; i < pos.length; i++) {
+      let fx = -pos[i].x * 0.02, fy = -pos[i].y * 0.02;
+      for (let j = 0; j < pos.length; j++) {
+        if (i === j) continue;
+        const dx = pos[i].x - pos[j].x, dy = pos[i].y - pos[j].y;
+        const d = Math.hypot(dx, dy) || 1e-6;
+        const min = pos[i].r + pos[j].r + 0.08;
+        if (d < min) { fx += (dx / d) * (min - d) * 0.5; fy += (dy / d) * (min - d) * 0.5; }
+        else { fx += (dx / d) * 0.0008 / d; fy += (dy / d) * 0.0008 / d; }
       }
-    }
-    for (const [a, b] of arestas) {
-      const vx = x[a] - x[b], vy = y[a] - y[b];
-      const d = Math.sqrt(vx * vx + vy * vy) || 1e-6;
-      const f = (d * d) / k / d * 0.5;
-      dx[a] -= vx * f; dy[a] -= vy * f; dx[b] += vx * f; dy[b] += vy * f;
-    }
-    for (let i = 0; i < ids.length; i++) {
-      const s = fonteDe[i];
-      if (s >= 0) { dx[i] += (x[s] - x[i]) * 0.6; dy[i] += (y[s] - y[i]) * 0.6; }
-      dx[i] -= x[i] * 0.08; dy[i] -= y[i] * 0.08;
-      const d = Math.sqrt(dx[i] * dx[i] + dy[i] * dy[i]) || 1;
-      const passoMax = Math.min(d, t);
-      x[i] += (dx[i] / d) * passoMax; y[i] += (dy[i] / d) * passoMax;
+      pos[i].x += fx; pos[i].y += fy;
     }
   }
-  let maior = 1e-9;
-  for (let i = 0; i < ids.length; i++) maior = Math.max(maior, Math.hypot(x[i], y[i]));
-  const posicoes = new Map(ids.map((id, i) => [id, { x: (x[i] / maior) * 0.95, y: (y[i] / maior) * 0.95 }]));
-  return { posicoes };
+  let maior = 1e-6;
+  for (const p of pos) maior = Math.max(maior, Math.hypot(p.x, p.y) + p.r);
+  const k = maior > 0.98 ? 0.98 / maior : 1;
+  const itens = new Map(), hexes = new Map(), rotulos = [];
+  for (const p of pos) {
+    const cx = p.x * k, cy = p.y * k;
+    hexes.set(p.id, { x: cx, y: cy, z: 0, tam: 1.5 });
+    const lista = filhos.get(p.id);
+    const aneisDoPolo = Math.ceil((Math.sqrt(1 + (4 * lista.length) / 3) - 1) / 2);
+    if (lista.length) rotulos.push({ texto: `${graph.nodes.find((n) => n.id === p.id)?.rotulo ?? p.id} · ${lista.length}`, x: cx, y: cy + (0.035 + 0.028 * aneisDoPolo) * k + 0.035, z: 0, cor: "#cfeee6", estilo: "texto" });
+    let i = 0, anel = 1;
+    while (i < lista.length) {
+      const nesse = 6 * anel;
+      const r = (0.035 + 0.028 * anel) * k;
+      for (let j = 0; j < nesse && i < lista.length; j++, i++) {
+        const a = (j / nesse) * 2 * Math.PI + anel * 0.4;
+        const n = lista[i];
+        const q = { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a), z: 0 };
+        if (ehHex(n)) hexes.set(n.id, { ...q, tam: 0.8 });
+        else itens.set(n.id, { ...q, ang: 0, sx: 1, sy: 1 });
+      }
+      anel++;
+    }
+  }
+  semPolo.forEach((n, i) => {
+    const p = girassol(semPolo.length, 0.15)[i];
+    if (ehHex(n)) hexes.set(n.id, { x: p.x, y: p.y, z: 0, tam: 0.8 });
+    else itens.set(n.id, ponto(p.x, p.y));
+  });
+  return { itens, hexes, rotulos, setores: [], linhas: [] };
 }
 
-// Anéis: cada tipo é um anel (com algumas voltas paralelas, se for grande) inclinado num ângulo próprio; as fontes
-// ficam numa órbita larga no plano do chão.
-export function layoutAneis(graph) {
-  const grupos = porTipo(graph).sort((a, b) => a[1].length - b[1].length); // os grandes por fora, onde há espaço
-  const pontos = new Map();
-  grupos.forEach(([, lista], gi) => {
-    const raio = 0.28 + 0.66 * ((gi + 1) / grupos.length);
-    const incl = -0.9 + (1.8 * gi) / Math.max(1, grupos.length - 1 || 1);
-    const giro = gi * 0.85;
-    const voltas = Math.max(1, Math.ceil(lista.length / 90));
+// Anéis: cada tipo uma órbita inclinada (os grandes por fora); os hexágonos numa órbita larga quase no plano.
+export function poseAneis(graph) {
+  const { hex, grupos } = separar(graph);
+  const ordem = [...grupos.entries()].sort((a, b) => a[1].length - b[1].length || a[0].localeCompare(b[0]));
+  const itens = new Map(), rotulos = [];
+  ordem.forEach(([tipo, lista], gi) => {
+    const raio = 0.3 + 0.62 * ((gi + 1) / ordem.length);
+    const incl = 0.5 * Math.sin(gi * 1.7) + 0.15;
+    const giro = gi * 0.9;
+    const voltas = Math.max(1, Math.ceil(lista.length / 80));
+    const pontoNoAnel = (a, r) => {
+      const px = r * Math.cos(a), pz = r * Math.sin(a);
+      const y1 = pz * Math.sin(incl), z1 = pz * Math.cos(incl);
+      return { x: px * Math.cos(giro) - z1 * Math.sin(giro), y: y1, z: px * Math.sin(giro) + z1 * Math.cos(giro) };
+    };
     lista.forEach((n, i) => {
       const v = i % voltas;
-      const a = (Math.floor(i / voltas) / Math.ceil(lista.length / voltas)) * 2 * Math.PI + v * 0.04;
-      const r = raio + v * 0.018;
-      const px = r * Math.cos(a), pz = r * Math.sin(a);
-      const y1 = -pz * Math.sin(incl), z1 = pz * Math.cos(incl);
-      pontos.set(n.id, { x: px * Math.cos(giro) - z1 * Math.sin(giro), y: y1, z: px * Math.sin(giro) + z1 * Math.cos(giro) });
+      const a = (Math.floor(i / voltas) / Math.ceil(lista.length / voltas)) * 2 * Math.PI;
+      itens.set(n.id, { ...pontoNoAnel(a, raio + v * 0.022), ang: 0, sx: 1, sy: 1 });
     });
+    rotulos.push({ texto: rotuloTipo(tipo, lista.length), ...pontoNoAnel(Math.PI * 0.25, raio + 0.04), cor: corDoTipo(tipo), estilo: "pilula" });
   });
-  const fs = fontes(graph).sort((a, b) => a.id.localeCompare(b.id));
-  fs.forEach((n, i) => {
-    const a = (i * 2 * Math.PI) / Math.max(1, fs.length);
-    pontos.set(n.id, { x: 1.05 * Math.cos(a), y: 0, z: 1.05 * Math.sin(a) });
+  const hexes = new Map();
+  hex.forEach((n, i) => {
+    const a = (i * 2 * Math.PI) / Math.max(1, hex.length);
+    hexes.set(n.id, { x: 1.08 * Math.cos(a), y: 0.06 * Math.sin(a * 3), z: 1.08 * Math.sin(a), tam: n.tipo === "fonte" ? 1.2 : 0.9 });
   });
-  return { pontos };
+  return { itens, hexes, rotulos, setores: [], linhas: [] };
 }
 
-// Gira em volta do eixo vertical (giro) e inclina para a câmera (inclinacao); perspectiva com a câmera a `dist`.
-export function projetar(p, giro, inclinacao = 0.35, dist = 3.2) {
-  const x1 = p.x * Math.cos(giro) + p.z * Math.sin(giro);
-  const z1 = -p.x * Math.sin(giro) + p.z * Math.cos(giro);
-  const y2 = p.y * Math.cos(inclinacao) - z1 * Math.sin(inclinacao);
-  const z2 = p.y * Math.sin(inclinacao) + z1 * Math.cos(inclinacao);
-  const escala = dist / (dist + z2);
-  return { x: x1 * escala, y: y2 * escala, escala, profundidade: z2 };
+export const POSES = Object.freeze({ disco: poseDisco, forca: poseForca, aneis: poseAneis });
+
+// Transição entre poses: suave na entrada e na saída.
+export const suavizar = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+export function misturar(a, b, t) {
+  const k = suavizar(t);
+  const m = (x, y) => x + (y - x) * k;
+  let da = (b.ang ?? 0) - (a.ang ?? 0);
+  da = Math.atan2(Math.sin(da), Math.cos(da));
+  return { x: m(a.x, b.x), y: m(a.y, b.y), z: m(a.z ?? 0, b.z ?? 0), ang: (a.ang ?? 0) + da * k, sx: m(a.sx ?? 1, b.sx ?? 1), sy: m(a.sy ?? 1, b.sy ?? 1) };
 }
 
 // O painel do lado: para onde o item aponta e quem aponta para ele, só pelas ligações gravadas (sem a proveniência,

@@ -2,19 +2,33 @@ import type { GrafoCerebro, NoCerebro, Relacao } from "./brain-graph.mjs";
 
 export type Modo = "disco" | "forca" | "aneis";
 export type Ponto = { x: number; y: number };
-export type Ponto3 = { x: number; y: number; z: number };
-export const MODOS: Readonly<Record<Modo, string>>;
-export const ORDEM_TIPOS: readonly string[];
-export const RAIO_ORBITA: number;
-export function rotuloTipo(tipo: string, n: number): string;
-export function layoutDisco(graph: GrafoCerebro): {
-  posicoes: Map<string, Ponto>;
-  setores: { tipo: string; n: number; inicio: number; fim: number; rotulo: string }[];
-  orbita: ({ id: string; rotulo: string } & Ponto)[];
+export type Pose = { x: number; y: number; z: number; ang: number; sx: number; sy: number };
+export type PoseHex = { x: number; y: number; z: number; tam: number };
+export type Rotulo = { texto: string; x: number; y: number; z: number; cor: string; estilo: "pilula" | "texto" };
+export type Cena = {
+  itens: Map<string, Pose>;
+  hexes: Map<string, PoseHex>;
+  rotulos: Rotulo[];
+  setores: { tipo: string; n: number; inicio: number; fim: number }[];
+  linhas: { r: number; cor: string }[];
 };
-export function layoutForca(graph: GrafoCerebro, opts?: { passos?: number }): { posicoes: Map<string, Ponto> };
-export function layoutAneis(graph: GrafoCerebro): { pontos: Map<string, Ponto3> };
-export function projetar(p: Ponto3, giro: number, inclinacao?: number, dist?: number): Ponto & { escala: number; profundidade: number };
+export const MODOS: Readonly<Record<Modo, string>>;
+export const CORES: Readonly<Record<string, string>>;
+export const NUCLEO: string;
+export const TIPOS_HEX: readonly string[];
+export const ORDEM_FAIXAS: readonly string[];
+export const RAIO_ORBITA: number;
+export const RAIO_LINHA: number;
+export function ehHex(n: NoCerebro): boolean;
+export function corDoTipo(tipo: string): string;
+export function rotuloTipo(tipo: string, n: number): string;
+export function girassol(n: number, r: number): Ponto[];
+export function poseDisco(graph: GrafoCerebro): Cena;
+export function poseForca(graph: GrafoCerebro): Cena;
+export function poseAneis(graph: GrafoCerebro): Cena;
+export const POSES: Readonly<Record<Modo, (graph: GrafoCerebro) => Cena>>;
+export function suavizar(t: number): number;
+export function misturar(a: Pose, b: Pose, t: number): Pose;
 export function ligacoesDoItem(graph: GrafoCerebro, id: string): {
   aponta: { relacao: Relacao; no: NoCerebro }[];
   referenciado: { relacao: Relacao; no: NoCerebro }[];
