@@ -112,7 +112,7 @@ portar (era conserto do A0; conferir que o Hermes não tem o defeito) · **D** =
 |---|---|---|
 | 0 | Inventário e plano (este documento) | ✅ 23/10 |
 | 1 | Hermes base ao lado do A0: container próprio, dados montados, modelo pelo proxy, sem canais | responde pelo API server com o Segundo Cérebro no contexto ✅ 23/10 (`implantar.py --hermes`; v0.22.2; respondeu a oferta e a garantia citando `Raiz/oferta.md` e a decisão 22). Falta: o proxy registrar o uso das chamadas do Hermes (caminho `invoke` do Bedrock não entra no `uso.jsonl`) |
-| 2 | Plugin `agentepessoal` para o Hermes: cofre, aprovações, ferramentas dos helpers, regras no prompt, relógio | suítes dos plugins passando no Hermes; cada ferramenta chamada uma vez. Feito 23/10: ponte com 35 ferramentas (leu os temas e os 22 fios reais sem mexer), vista bindfs com trava repassada, imagem própria com os pacotes dos helpers, cofre (`cofre_hermes.py`: valor só nas ferramentas que agem e só em sessão com dono no mapa; máscara com todos os cofres no resultado e no pedido ao modelo). Falta: conferir se as chamadas internas do Hermes (resumo da compressão, título) passam pela máscara; senha colada fica sem máscara no histórico salvo do Hermes (a ponte já apaga o `/senha`); **convidados sem `terminal`/`execute_code` do Hermes** (só o `terminal_isolado`, como no A0: o terminal comum lê `/a0/usr/segredos` de todos — fase 6); aprovações; relógio |
+| 2 | Plugin `agentepessoal` para o Hermes: cofre, aprovações, ferramentas dos helpers, regras no prompt, relógio | suítes dos plugins passando no Hermes; cada ferramenta chamada uma vez. Feito 23/10: ponte com 22 ferramentas ("Hermes primeiro" tirou as que repetem o Hermes ou gravam no A0; leu os 22 fios reais sem mexer), vista bindfs com trava repassada, imagem própria com os pacotes dos helpers, cofre (`cofre_hermes.py`: valor só nas ferramentas que agem e só em sessão com dono no mapa; máscara com todos os cofres no resultado e no pedido ao modelo). Falta: conferir se as chamadas internas do Hermes (resumo da compressão, título) passam pela máscara; senha colada fica sem máscara no histórico salvo do Hermes (a ponte já apaga o `/senha`); **convidados sem `terminal`/`execute_code` do Hermes** (só o `terminal_isolado`, como no A0: o terminal comum lê `/a0/usr/segredos` de todos — fase 6); aprovações; relógio |
 | 3 | Skills e MCP (Google, GitHub) | as 27 skills listadas e usadas; Gmail lido |
 | 4 | Navegador com os perfis logados (Instagram, Meta…) | Hermes abre o Instagram logado e lê um Direct sem enviar |
 | 5 | Rotinas como agendamentos do Hermes (desligados) + acordar a VM | cada rotina rodada uma vez à mão, resultado só para o operador |
@@ -167,3 +167,8 @@ em `/opt/hermes/data/agentepessoal/ensaio_celular.jsonl` para o operador conferi
 aviso em `/a0/usr` (o A0 mandaria depois, ou seguraria o dele). Na virada (fase 8) a variável sai e a ponte do celular
 passa a entregar as respostas dos botões ao Hermes (fase 6). Pendente da fase 4: o navegador do Hermes logado no
 Instagram também precisa respeitar o ensaio (Direct da prospecção).
+
+Conferido ao vivo em 23/10, de dentro do container: só o proxy do modelo (8787) e a internet abertos (8788, 8789, 8791,
+SSH, o A0 e os metadados fechados); `.env`, `settings.json`, `usuarios.json*`, a chave da ponte, o cofre, os perfis do
+navegador e `.aws` vazios; gravar em `/a0/usr` dá "Read-only file system"; um `whatsapp_enviar` pedido ao Hermes ficou
+só na caixa do ensaio (nada no celular nem na fila de reenvio do A0).
