@@ -23,15 +23,16 @@ log = logging.getLogger("agentepessoal")
 #    (MCP e lista de ferramentas próprios);
 #  - o que grava no agendador ou nas conversas do Agent Zero (chamado daqui, criaria tarefa que o A0 executa):
 #    agenda_confiavel/tarefa_limite, rotinas/me_mostre e salvar_rotina, whatsapp/criar_gatilho, objetivo_vivo/passos,
-#    painel/painel_vivo, canais/canal. Voltam na fase 5 por cima do cron do Hermes (ou ficam no cron dele);
+#    painel/painel_vivo, canais/canal, auxiliar/reuniao (briefing e pós-reunião agendados). Voltam na fase 5 por cima do
+#    cron do Hermes (ou ficam no cron dele); conversas_externas/conversa_externa (abre conversa no A0) volta na fase 6;
 #  - o que espera resposta pela ponte do celular: whatsapp/perguntar e pedir_codigo (fase 6);
 #  - celular_rapido/celular: põe a imagem da tela no histórico do A0 (precisa de adaptação).
 FERRAMENTAS = (
     ("agent_delegates", "delegar"), ("agent_delegates", "text_delegate"),
-    ("analisar_imagens", "analisar_imagens"), ("auxiliar", "contas"), ("auxiliar", "rascunho"), ("auxiliar", "reuniao"),
+    ("analisar_imagens", "analisar_imagens"), ("auxiliar", "contas"), ("auxiliar", "rascunho"),
     ("central", "livro"), ("cerebro", "cerebro"), ("cofre", "cofre_descrever"),
     ("concorrentes", "concorrentes"), ("consultar_sol", "consultar_sol"), ("conteudo", "conteudo"),
-    ("conversas_externas", "conversa_externa"), ("especialistas", "especialista"), ("fios_soltos", "fios"),
+    ("especialistas", "especialista"), ("fios_soltos", "fios"),
     ("iniciativa", "iniciativa"), ("ler_arquivo", "ler"), ("login_usuarios", "terminal_isolado"),
     ("memoria_pessoal", "decisao"), ("memoria_pessoal", "ficha"), ("memoria_pessoal", "lembrar"),
     ("prospeccao", "prospeccao"), ("radar", "monitor"), ("video", "assistir_video"),

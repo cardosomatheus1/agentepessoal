@@ -67,10 +67,51 @@ NATIVAS = {"web_search", "web_extract", "memory", "todo_list", "delegate_task", 
            "search_files", "terminal", "execute_code", "session_search", "cronjob_manage", "vision_analyze",
            "video_analyze", "skill_manage", "skill_view", "skills_list", "clarify", "text_to_speech", "image_generate"}
 NATIVAS |= {n for n in registradas if n.startswith(("browser_", "kanban_"))}
-SO_NO_A0 = {"pesquisar", "tarefa_limite", "me_mostre", "salvar_rotina", "criar_gatilho", "passos", "painel_vivo", "canal"}
+SO_NO_A0 = {"pesquisar", "tarefa_limite", "me_mostre", "salvar_rotina", "criar_gatilho", "passos", "painel_vivo", "canal",
+            "reuniao", "conversa_externa"}
 nomes = {n for _, n in plugin.FERRAMENTAS}
 checa(not nomes & NATIVAS, f"ponte não repete ferramenta nativa do Hermes: {sorted(nomes & NATIVAS)}")
 checa(not nomes & SO_NO_A0, f"ponte não leva ferramenta que grava no agendador do A0 ou repete o Hermes: {sorted(nomes & SO_NO_A0)}")
+# Pelo comportamento, não só pelo nome (revisão OpenCode 23/10): partindo dos métodos da ferramenta, seguindo as chamadas
+# dentro do plugin, nada usa o agendador ou as conversas do Agent Zero (pelo Hermes daria erro de import ou criaria coisa
+# que o A0 executa).
+import ast
+import re
+P_A0 = ponte.PLUGINS
+MARCAS=re.compile(r"TaskScheduler|PlannedTask|ScheduledTask|AdHocTask|AgentContext|save_tmp_chat|_para_a_conversa|helpers\.task_scheduler|helpers\.persist_chat")
+def alcance(plug, nome):
+    arqs=[P_A0/plug/"tools"/f"{nome}.py"]+sorted((P_A0/plug/"helpers").glob("*.py"))
+    funcs={}; inicio=[]
+    for a in arqs:
+        if not a.exists(): continue
+        t=a.read_text(); arv=ast.parse(t)
+        for n in ast.walk(arv):
+            if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)):
+                funcs.setdefault(n.name,[]).append((a.name,t,n))
+        if a.parent.name=="tools":
+            for n in ast.walk(arv):
+                if isinstance(n,ast.ClassDef):
+                    for m in n.body:
+                        if isinstance(m,(ast.FunctionDef,ast.AsyncFunctionDef)): inicio.append((a.name,t,m))
+    vistos=set(); fila=list(inicio); achados=set()
+    while fila:
+        arq,t,f=fila.pop()
+        if (arq,f.name,f.lineno) in vistos: continue
+        vistos.add((arq,f.name,f.lineno))
+        seg=ast.get_source_segment(t,f) or ""
+        for i,l in enumerate(seg.splitlines()):
+            m=MARCAS.search(l)
+            if m and not l.strip().startswith("#"): achados.add(f"{arq}:{f.lineno+i}:{f.name}:{m.group(0)}")
+        for c in ast.walk(f):
+            if isinstance(c,ast.Call):
+                nm=c.func.id if isinstance(c.func,ast.Name) else c.func.attr if isinstance(c.func,ast.Attribute) else None
+                for alvo in funcs.get(nm,[]): fila.append(alvo)
+    return sorted(achados)
+
+LEITURA_DO_DONO = {("login_usuarios", "terminal_isolado"): {"dono_contexto"}}  # só lê o dono da conversa pai, em try
+for plugin_nome, nome in plugin.FERRAMENTAS:
+    achados = [a for a in alcance(plugin_nome, nome) if a.split(":")[2] not in LEITURA_DO_DONO.get((plugin_nome, nome), ())]
+    checa(not achados, f"{plugin_nome}/{nome} usa o agendador/conversas do A0: {achados[:3]}")
 for plugin_nome, nome in plugin.FERRAMENTAS:
     checa(nome in registradas, f"{plugin_nome}/{nome} carrega só com a ponte (sem o Agent Zero)")
 for nome, (schema, _) in registradas.items():

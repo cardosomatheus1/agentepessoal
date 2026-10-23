@@ -139,7 +139,7 @@ nosso não entra (ou entra só o que é nosso de verdade: dados, Raiz, Segundo C
 | Busca na web | `web_search`, `web_extract` (testado 23/10) | — (`pesquisar` saiu da ponte) | duas buscas confundem a escolha |
 | Subagentes / tarefas em paralelo | `delegate_task` | `delegar` só para o OpenClaw (decisão 5) | o Hermes orquestra melhor |
 | Lista de passos da tarefa | `todo_list` | `passos` sai (grava no A0) | — |
-| Rotinas e lembretes com hora | `cronjob_manage` (o cron dele) | o que só nós temos (me mostre, autoavaliação) volta na fase 5 **por cima** do cron dele | `salvar_rotina`, `me_mostre`, `tarefa_limite`, `criar_gatilho` gravavam no agendador do A0 |
+| Rotinas e lembretes com hora | `cronjob_manage` (o cron dele) | o que só nós temos (me mostre, autoavaliação, briefing de reunião) volta na fase 5 **por cima** do cron dele | `salvar_rotina`, `me_mostre`, `tarefa_limite`, `criar_gatilho`, `reuniao` gravavam no agendador do A0; `conversa_externa` abre conversa no A0 (volta na fase 6). O teste segue as chamadas de cada ferramenta e recusa qualquer uma que use o agendador ou as conversas do A0 |
 | Skills | curador do Hermes (melhora e poda as sem uso) | o conteúdo das 27, **adaptado** às ferramentas dele | 19 das 27 citam ferramentas do A0; `external_dirs` é só leitura para o curador. Fase 3: cópia adaptada, semeada uma vez no espaço do Hermes; depois é dele |
 | Memória curta / perfil | memória do Hermes (MEMORY/USER) | Segundo Cérebro (decisões, ficha, Pasta) é a fonte | fase 2: o gancho de captura copia para a Pasta o que o Hermes guardar, para não haver duas verdades |
 | Compressão do contexto, aprovações de comando, navegador | os dele | só o cofre (§§secret) e as regras de sempre | — |

@@ -44,9 +44,7 @@ pacotes = [t for t in df.split("uv pip install", 1)[1].split("&&", 1)[0].split()
 checa(len(pacotes) >= 5 and all("==" in t for t in pacotes), f"pacotes com versão fixa: {pacotes}")
 checa(re.search(r"FROM ghcr.io/astral-sh/uv:\d+\.\d+\.\d+ AS uv", df), "uv com versão fixa")
 checa(subprocess.run(["bash", "-n", str(H / "subir.sh")]).returncode == 0, "sintaxe do script")
-import yaml
-conf = yaml.safe_load((H / "config.yaml").read_text())
-checa("/a0/usr/skills" not in str((conf.get("skills") or {}).get("external_dirs") or ""),
+checa("/a0/usr/skills" not in str((cfg.get("skills") or {}).get("external_dirs") or ""),
       "o Hermes não lê as skills vivas do A0 (mandam usar ferramentas de lá; e external_dirs é só leitura para o curador)")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
