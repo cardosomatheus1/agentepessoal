@@ -4,6 +4,7 @@
     python3 infra/operador/implantar.py --host ponte_whatsapp.py [--reiniciar agentepessoal-whatsapp.service] [--forcar]
     python3 infra/operador/implantar.py --host caixa_convidados.py --unidade agentepessoal-caixas.service
     python3 infra/operador/implantar.py --host caixa_delegados.py --unidade agentepessoal-delegados.service
+    python3 infra/operador/implantar.py --hermes          (o Hermes ao lado do A0: infra/vm/hermes, fase 1 da migração)
         (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it)
     python3 infra/operador/implantar.py --moldes [--forcar]   (video/carousel templates, infra/reels/moldes, for the agent)
     python3 infra/operador/implantar.py --calibracao   (AR Board criteria, calibracao/*/criterios.md, for the Crítico)
@@ -107,6 +108,31 @@ def host(args: list) -> None:
     if head not in saida:
         raise SystemExit("a troca falhou depois da conferência: veja a saída acima.")
     print(f"implantado no host: {arquivo} @ {head[:8]}")
+
+
+HERMES_ARQUIVOS = ("infra/vm/hermes/config.yaml", "infra/vm/hermes/SOUL.md", "infra/vm/hermes/subir.sh")
+
+
+def hermes(args: list) -> None:
+    """The Hermes next to Agent Zero (23/10, migration, docs/MIGRACAO_HERMES.md): committed and pushed, config checked
+    on the VM, container recreated by subir.sh (it waits for /health), version recorded. The A0 is not touched."""
+    head = _conferir_git(list(HERMES_ARQUIVOS))
+    pacote = subprocess.run(["git", "archive", "--format=tar.gz", "HEAD", *HERMES_ARQUIVOS], cwd=RAIZ, check=True,
+                            capture_output=True).stdout
+    chave = f"tmp/implantar-hermes-{head[:8]}.tgz"
+    boto3.client("s3", region_name="us-east-1").put_object(Bucket=BUCKET, Key=chave, Body=pacote)
+    estagio = "/tmp/implantar-hermes"
+    saida = vm(f"rm -rf {estagio} && mkdir -p {estagio} && aws s3 cp --quiet s3://{BUCKET}/{chave} - | tar xz -C {estagio} && "
+               f"bash -n {estagio}/infra/vm/hermes/subir.sh && "
+               f"python3 -c \"import yaml,sys; yaml.safe_load(open(sys.argv[1]))\" {estagio}/infra/vm/hermes/config.yaml && "
+               f"echo CONFERIDO && bash {estagio}/infra/vm/hermes/subir.sh && "
+               f"echo '{head} {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}' > /opt/hermes/.versao && cat /opt/hermes/.versao")
+    print(saida[-1500:])
+    if "CONFERIDO" not in saida:
+        raise SystemExit("config ou script não passou na conferência: nada foi trocado.")
+    if "HERMES_OK" not in saida or head not in saida:
+        raise SystemExit("o Hermes não subiu: veja a saída acima (o Agent Zero segue no ar, intocado).")
+    print(f"implantado: hermes @ {head[:8]}")
 
 
 CALIBRACAO_VM = "/opt/a0/usr/calibracao"  # /a0/usr/calibracao in the container: read by plugins/especialistas (Crítico)
@@ -290,6 +316,8 @@ def main() -> None:
     args = sys.argv[1:]
     if "--segundo-cerebro" in args:
         return segundo_cerebro(args)
+    if "--hermes" in args:
+        return hermes(args)
     if "--host" in args:
         return host(args)
     if "--controle" in args:

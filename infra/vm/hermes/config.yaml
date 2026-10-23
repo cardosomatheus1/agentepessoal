@@ -1,0 +1,18 @@
+# Hermes do Matheus (migração do Agent Zero, docs/MIGRACAO_HERMES.md). Implantado por subir.sh em /opt/hermes/data;
+# o que muda aqui muda no git (segredos ficam no .env da VM, fora do git).
+model:
+  provider: "bedrock"
+  default: "us.anthropic.claude-haiku-5-5"   # Matheus 23/10: Haiku no dia a dia, Sonnet só nas difíceis
+bedrock:
+  region: "us-east-1"
+  discovery: false
+# A chave de modelo nunca entra no Hermes: o boto3 fala com o nosso proxy (AWS_ENDPOINT_URL_BEDROCK_RUNTIME, ver
+# subir.sh), que põe o token do papel da VM, registra o uso e conta como atividade para a hibernação.
+timezone: "America/Bahia"
+skills:
+  external_dirs:
+    - /a0/usr/skills          # as 27 skills de hoje, no lugar onde já estão (fase 3)
+compression:
+  enabled: true
+approvals:
+  mode: "smart"
