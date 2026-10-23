@@ -159,6 +159,53 @@ def main() -> int:
     r = p.entregar_hermes({"usuario": "matheus", "texto": "e também Y", "botao": ""}, "123")
     ok(r == "run_7" and chamadas[-1] == ("/v1/runs/run_7/steer", {"input": "e também Y"}),
        "mensagem com um pedido rodando entra nele (como a correção do A0)")
+    # paralelismo (23/10, ao vivo: "sleep 40" + "17×23" seguidos → o 2º esperava o 1º e a resposta do 1º sumia):
+    # um pedido próprio roda ao lado, numa sessão paralela, com o aviso ⚡ (como as conversas paralelas do A0)
+    juiz = []
+    p.e_complemento = lambda andamento, nova: juiz.append((andamento, nova)) or False
+    respostas["/v1/runs"] = {"run_id": "run_p1"}
+    n_env = len(enviados)
+    r = p.entregar_hermes({"usuario": "matheus", "texto": "quanto é 17 vezes 23?", "botao": ""}, "123")
+    corpo = chamadas[-1][1]
+    ok(r == "run_p1" and chamadas[-1][0] == "/v1/runs" and corpo["session_id"] == "tgp1-matheus"
+       and "ocupada com: “faz X”" in corpo["input"] and corpo["input"].endswith("Pedido:\nquanto é 17 vezes 23?"),
+       f"pedido próprio com outro rodando: run novo na sessão paralela ({chamadas[-1]})")
+    ok(juiz == [("faz X", "quanto é 17 vezes 23?")], f"o juiz de complemento do A0 decide ({juiz})")
+    ok(any("em paralelo" in e[1] for e in enviados[n_env:]), "aviso ⚡ de que começou em paralelo")
+    ok(json.loads(p.HERMES_SESSOES.read_text()).get("tgp1-matheus") == "matheus", "a sessão paralela é dele (cofre, ferramentas)")
+    ok(sorted(p.ativos_hermes("matheus")) == ["run_7", "run_p1"], "os dois rodam ao mesmo tempo")
+    p.e_complemento = lambda andamento, nova: True
+    r = p.entregar_hermes({"usuario": "matheus", "texto": "as dívidas são do DAS não pago", "botao": ""}, "123")
+    ok(r == "run_7" and chamadas[-1][0] == "/v1/runs/run_7/steer", "complemento (pelo juiz) entra no da conversa principal, não no paralelo")
+    p.e_complemento = lambda andamento, nova: None  # juiz fora do ar: até 3 min depois da última = complemento
+    p.HERMES_ULTIMA["matheus"] = p.time.time()
+    r = p.entregar_hermes({"usuario": "matheus", "texto": "outra coisa", "botao": ""}, "123")
+    ok(r == "run_7", "sem juiz e logo depois da última mensagem: complemento")
+    p.HERMES_ULTIMA["matheus"] = p.time.time() - 600
+    respostas["/v1/runs"] = {"run_id": "run_p2"}
+    r = p.entregar_hermes({"usuario": "matheus", "texto": "outra coisa", "botao": ""}, "123")
+    ok(r == "run_p2" and chamadas[-1][1]["session_id"] == "tgp2-matheus", "sem juiz e bem depois: paralelo, na próxima sessão livre")
+    p.e_complemento = lambda andamento, nova: False
+    respostas["/v1/runs"] = {"run_id": "run_p3"}
+    p.entregar_hermes({"usuario": "matheus", "texto": "pedido 3", "botao": ""}, "123")
+    r = p.entregar_hermes({"usuario": "matheus", "texto": "pedido 4", "botao": ""}, "123")
+    ok(r == "run_7" and chamadas[-1][0] == "/v1/runs/run_7/steer", "3 paralelas ocupadas: o 4º entra no que roda (como o A0)")
+    # a mensagem única de andamento mostra os pedidos que rodam; quem termina sai dela; o último fecha com ✅
+    txt = p.texto_andamento_hermes("matheus")
+    ok("Trabalhando em 4 pedidos" in txt and "«faz X»" in txt and "«quanto é 17 vezes 23?»" in txt, f"andamento junto: {txt}")
+    ands = []
+    p.andamento = lambda usuario, texto, fim=False, agora=None: ands.append((texto, fim)) or "editada"
+    p._ANDAMENTO_ABERTO.add("matheus")
+    for rid in ("run_p1", "run_p2", "run_p3"):
+        respostas[f"/v1/runs/{rid}"] = [{"status": "completed", "output": f"fim {rid}"}]
+        p.acompanhar_hermes(rid, "matheus", "123", espera=5, pausa=0)
+    ok(ands[-1][1] is False and "Trabalhando no seu pedido" in ands[-1][0] and any(e[1] == "fim run_p1" for e in enviados),
+       f"um termina, a mensagem fica com os que faltam e a resposta dele vai ({ands[-1]})")
+    respostas["/v1/runs/run_7"] = [{"status": "completed", "output": "fim run_7"}]
+    p.acompanhar_hermes("run_7", "matheus", "123", espera=5, pausa=0)
+    ok(ands[-1] == ("✅ Terminei", True) and p.ativos_hermes("matheus") == [], f"o último fecha a mensagem ({ands[-1]})")
+    respostas["/v1/runs"] = {"run_id": "run_7"}
+    p.entregar_hermes({"usuario": "matheus", "texto": "faz X", "botao": ""}, "123")
     p.entregar_hermes({"usuario": "matheus", "texto": "/parar", "botao": ""}, "123")
     ok(chamadas[-1] == ("/v1/runs/run_7/stop", {}) and p.ativos_hermes("matheus") == [] and "Parei" in enviados[-1][1],
        "/parar para o que roda")

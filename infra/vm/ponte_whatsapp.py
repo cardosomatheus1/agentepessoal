@@ -14,6 +14,7 @@ phone number id, numbers) come from the SSM SecureString /agentepessoal/whatsapp
 import fcntl
 import hashlib
 import http.server
+import importlib.util
 import json
 import mimetypes
 import os
@@ -1431,6 +1432,7 @@ def pedido_hermes(dados: dict) -> str:
 
 HERMES_ANDAMENTO_APOS = 45  # um pedido que passa disso ganha a mensagem de andamento (editada no lugar, como no A0)
 HERMES_ANDAMENTO_CADA = 60
+_ANDAMENTO_ABERTO: set = set()  # logins com a mensagem de andamento aberta (algum pedido passou de 45 s)
 
 
 def andamento_hermes(usuario: str, texto: str, fim: bool = False) -> None:
@@ -1468,16 +1470,28 @@ def acompanhar_hermes(run_id: str, usuario: str, chat: str, espera: float = HERM
             ativos_hermes(usuario, run_id, fim=True)
             texto = str(st.get("output") or "").strip() or (
                 "⚠️ Não consegui terminar o pedido." if estado not in ("completed", "stopped", "cancelled") else "")
-            if ultimo_andamento:
-                andamento_hermes(usuario, "✅ Terminei", fim=True)
+            if ultimo_andamento or usuario in _ANDAMENTO_ABERTO:
+                # a mensagem única de andamento: com outros pedidos ainda rodando ela mostra os que faltam; o último
+                # a terminar a fecha com "✅ Terminei" (12/10 §6 / tarefa #34 do A0)
+                resto = texto_andamento_hermes(usuario)
+                if resto:
+                    andamento_hermes(usuario, resto)
+                else:
+                    _ANDAMENTO_ABERTO.discard(usuario)
+                    andamento_hermes(usuario, "✅ Terminei", fim=True)
             if texto and not texto.upper().startswith("SEM NOVIDADE") and not ja_respondido(texto):
                 responder_hermes(usuario, chat, texto)
             return estado
         agora = time.time()
+        if estado == "running":
+            passo = str(st.get("last_event") or "").replace("_", " ")[:60]
+            with _TRAVA_HERMES:
+                if run_id in _HERMES_RUNS:
+                    _HERMES_RUNS[run_id]["fazendo"] = passo if passo and passo != "run.started" else ""
         if estado == "running" and agora - inicio >= HERMES_ANDAMENTO_APOS and agora - ultimo_andamento >= HERMES_ANDAMENTO_CADA:
-            passo = str(st.get("last_event") or "").replace("_", " ")[:80]
-            andamento_hermes(usuario, f"⏳ Trabalhando no seu pedido ({int((agora - inicio) // 60)} min)"
-                                      + (f": {passo}" if passo and passo != "run.started" else ""))
+            texto_and = texto_andamento_hermes(usuario, agora) or f"⏳ Trabalhando no seu pedido ({int((agora - inicio) // 60)} min)"
+            _ANDAMENTO_ABERTO.add(usuario)
+            andamento_hermes(usuario, texto_and)
             ultimo_andamento = agora
         time.sleep(pausa)
     return "tempo esgotado"
@@ -1515,9 +1529,85 @@ def ativos_hermes(usuario: str, run_id: str = "", fim: bool = False) -> list:
         meus = _HERMES_ATIVOS.setdefault(usuario, {})
         if run_id and fim:
             meus.pop(run_id, None)
+            _HERMES_RUNS.pop(run_id, None)
         elif run_id:
             meus[run_id] = time.time()
         return list(meus)
+
+
+# Pedidos em paralelo (23/10, Matheus: "Quero saber tbm se o paralelismo ta funcionando"). No A0 (whatsapp/api/
+# receber.py, _entregar) um pedido novo que chega com a conversa ocupada roda numa conversa paralela (até 3, com aviso
+# "⚡"); só a correção ou o complemento do que está rodando entra nele. Na ponte do Hermes tudo entrava no run que
+# rodava (steer): o pedido novo esperava o anterior e a resposta do primeiro se perdia (ao vivo, 23/10: "sleep 40" +
+# "17×23" → só "391"). Agora é como no A0: correção/complemento = steer no run da conversa principal; pedido próprio =
+# run novo numa sessão paralela da pessoa (tgp<n>-<login>), cada um com a sua resposta.
+_HERMES_RUNS: dict[str, dict] = {}  # run_id -> {"sessao", "pedido", "desde", "fazendo", "paralela"}
+HERMES_MAX_PARALELAS = 3
+HERMES_ULTIMA: dict[str, float] = {}  # login -> quando chegou a última mensagem dele na conversa principal
+CORRECAO = re.compile(  # o mesmo do A0 (whatsapp/api/receber.py)
+    r"^\s*(n[aã]o\b|n\b|nn\b|era\b|cancel|para\b|pare\b|espera|esquece|errad|na verdade|corrig|ops\b|"
+    r"tamb[eé]m\b|tbm\b|tb\b|e tamb|al[eé]m disso|mais uma coisa|e (?:a|o|os|as) |e (?:se|depois)\b|ah\b|aliás)",
+    re.I)
+COMPLEMENTO_SEM_MODELO_S = 180  # o modelo não respondeu: mensagem até 3 min depois da última é complemento (A0)
+COMPLEMENTO = USR_HOST / "plugins" / "whatsapp" / "helpers" / "complemento.py"
+
+
+def e_complemento(em_andamento: str, nova: str) -> bool | None:
+    """O mesmo juiz do A0 (whatsapp/helpers/complemento.py, modelo pequeno pelo proxy); None se não respondeu."""
+    try:
+        spec = importlib.util.spec_from_file_location("ponte_complemento", COMPLEMENTO)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        m.URL = "http://127.0.0.1:8787/openai/v1/responses"  # a ponte roda no host
+        return m.e_complemento(em_andamento, "", nova)
+    except Exception as exc:
+        log(f"hermes: juiz de complemento indisponível: {exc}")
+        return None
+
+
+def complementa(usuario: str, em_andamento: str, texto: str, agora: float | None = None) -> bool:
+    if CORRECAO.match(texto or ""):
+        return True
+    veredito = e_complemento(em_andamento, texto)
+    if veredito is None:
+        veredito = (agora or time.time()) - HERMES_ULTIMA.get(usuario, 0.0) < COMPLEMENTO_SEM_MODELO_S
+    return bool(veredito)
+
+
+def sessao_paralela(usuario: str) -> str:
+    """Uma sessão paralela livre da pessoa (tgp1-<login>…), ou "" com HERMES_MAX_PARALELAS ocupadas."""
+    with _TRAVA_HERMES:
+        ocupadas = {i.get("sessao") for r, i in _HERMES_RUNS.items() if r in _HERMES_ATIVOS.get(usuario, {})}
+    for n in range(1, HERMES_MAX_PARALELAS + 1):
+        sessao = sessao_hermes(usuario, f"tgp{n}")
+        if sessao not in ocupadas:
+            return sessao
+    return ""
+
+
+def resumo_pedido(texto: str, n: int = 70) -> str:
+    t = " ".join(str(texto or "").split())
+    return t if len(t) <= n else t[:n - 1].rsplit(" ", 1)[0] + "…"
+
+
+def texto_andamento_hermes(usuario: str, agora: float | None = None) -> str:
+    """A mensagem única de andamento da pessoa (como o texto_andamento do A0): um pedido ou a lista dos que rodam."""
+    agora = agora or time.time()
+    with _TRAVA_HERMES:
+        pedidos = sorted((dict(i) for r, i in _HERMES_RUNS.items() if r in _HERMES_ATIVOS.get(usuario, {})),
+                         key=lambda i: i["desde"])
+    minutos = lambda i: max(1, round((agora - i["desde"]) / 60))  # noqa: E731
+    if not pedidos:
+        return ""
+    if len(pedidos) == 1:
+        i = pedidos[0]
+        return (f"⏳ Trabalhando no seu pedido ({minutos(i)} min" + (f" · {i['fazendo']}" if i.get("fazendo") else "")
+                + "). Te mando o resultado aqui; esta mensagem se atualiza sozinha (/parar cancela).")
+    linhas = [f"⏳ Trabalhando em {len(pedidos)} pedidos (esta mensagem se atualiza sozinha; /parar cancela):"]
+    for i in pedidos:
+        linhas.append(f"• «{resumo_pedido(i['pedido']) or 'pedido'}» — {minutos(i)} min"
+                      + (f" · {i['fazendo']}" if i.get("fazendo") else ""))
+    return "\n".join(linhas)
 
 
 def ja_respondido(texto: str) -> bool:
@@ -1591,18 +1681,49 @@ def entregar_hermes(dados: dict, chat: str) -> str:
     entrada = pedido_hermes(dados)
     if dados.get("gatilho"):  # um aviso de fora (ex.: o vigia do Google), com a instrução que a pessoa deu a ele
         entrada = texto_gatilho(usuario, str(dados["gatilho"]), mascarar_cofres(str(dados.get("texto") or "")))
-    elif not dados.get("conversa_nova"):  # com um pedido rodando, a mensagem entra nele (como a correção do A0)
-        for run_id in reversed(ativos_hermes(usuario)):
-            try:
-                if _hermes(f"/v1/runs/{run_id}/steer", {"input": entrada}, usuario=usuario).get("accepted"):
-                    return run_id
-            except Exception:
-                continue  # o run já parou (ou não aceita): vira um pedido novo
+    paralela = False
+    if not dados.get("gatilho") and not dados.get("conversa_nova"):
+        # com um pedido rodando na conversa principal: correção/complemento entra nele (steer, como a correção do
+        # A0); um pedido próprio roda ao lado, numa sessão paralela (como as conversas paralelas do A0)
+        with _TRAVA_HERMES:
+            principais = [r for r in _HERMES_ATIVOS.get(usuario, {})
+                          if (_HERMES_RUNS.get(r) or {}).get("sessao", sessao) == sessao]
+            ocupada_com = str((_HERMES_RUNS.get(principais[-1]) or {}).get("pedido") or "") if principais else ""
+        if principais:
+            if complementa(usuario, ocupada_com, str(dados.get("texto") or "")):
+                for run_id in reversed(principais):
+                    try:
+                        if _hermes(f"/v1/runs/{run_id}/steer", {"input": entrada}, usuario=usuario).get("accepted"):
+                            HERMES_ULTIMA[usuario] = time.time()
+                            return run_id
+                    except Exception:
+                        continue  # o run já parou (ou não aceita): vira um pedido novo
+            else:
+                outra = sessao_paralela(usuario)
+                if outra:
+                    sessao, paralela = outra, True
+                    entrada = (f"[Pedido feito pelo celular enquanto a conversa principal está ocupada com: "
+                               f"“{resumo_pedido(ocupada_com, 160) or 'outra tarefa'}”. Faça só este pedido, em paralelo, sem "
+                               "mexer no que a outra conversa está fazendo; no navegador use a sua própria aba e não "
+                               f"feche abas de outras conversas.]\nPedido:\n{entrada}")
+                    responder_hermes(usuario, chat, "⚡ Ainda estou na tarefa anterior; este pedido já começo em paralelo.")
+                else:  # as paralelas cheias: entra no que roda (como o A0 sem conversa paralela livre)
+                    for run_id in reversed(principais):
+                        try:
+                            if _hermes(f"/v1/runs/{run_id}/steer", {"input": entrada}, usuario=usuario).get("accepted"):
+                                return run_id
+                        except Exception:
+                            continue
+        if not paralela:
+            HERMES_ULTIMA[usuario] = time.time()
     r = _hermes("/v1/runs", {"input": entrada, "session_id": sessao}, usuario=usuario)
     run_id = r.get("run_id") or r.get("id") or ""
     if not run_id:
         raise RuntimeError(f"o Hermes não abriu o pedido: {str(r)[:200]}")
     if not dados.get("gatilho"):  # só os da conversa dele recebem a próxima mensagem (o gatilho tem sessão própria)
+        with _TRAVA_HERMES:
+            _HERMES_RUNS[run_id] = {"sessao": sessao, "pedido": str(dados.get("texto") or "") or "(anexo)",
+                                    "desde": time.time(), "fazendo": "", "paralela": paralela}
         ativos_hermes(usuario, run_id)
     threading.Thread(target=acompanhar_hermes, args=(run_id, usuario, chat), daemon=True, name=f"hermes-{run_id[-6:]}").start()
     return run_id
