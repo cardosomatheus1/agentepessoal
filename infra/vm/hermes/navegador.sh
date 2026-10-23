@@ -27,20 +27,22 @@ fi
 chown -R 10000:10000 "$BASE/perfil"
 SUB=$(docker network inspect hermes -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
 IP="${SUB%.*.*}.0.250"   # 172.22.0.0/16 -> 172.22.0.250 (o CDP só aceita Host com IP, então endereço fixo)
+AQUI="$(cd "$(dirname "$0")" && pwd)"
+install -m 644 "$AQUI/cdp_encaminhar.py" "$BASE/cdp_encaminhar.py"
 docker rm -f hermes-navegador >/dev/null 2>&1 || true
+# O Chromium sem tela só escuta no loopback do container: o repasse (cdp_encaminhar.py) expõe a porta 9223 na rede hermes.
 docker run -d --name hermes-navegador --restart no --network hermes --ip "$IP" \
   --memory 2g --memory-swap 2g --shm-size 512m \
   --user 10000:10000 \
-  -v "$BASE/chromium-1228:/opt/chromium:ro" -v "$BASE/perfil:/perfil" \
-  --entrypoint /opt/chromium/chrome-linux/chrome \
-  "$IMAGEM" \
-  --headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu \
+  -v "$BASE/chromium-1228:/opt/chromium:ro" -v "$BASE/perfil:/perfil" -v "$BASE/cdp_encaminhar.py:/opt/cdp_encaminhar.py:ro" \
+  --entrypoint /bin/sh \
+  "$IMAGEM" -c '/opt/chromium/chrome-linux/chrome --headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu \
   --password-store=basic --use-mock-keychain --no-first-run --no-default-browser-check \
   --disable-background-networking --disable-breakpad --disable-notifications \
-  --user-data-dir=/perfil --remote-debugging-address=0.0.0.0 --remote-debugging-port=9222 about:blank >/dev/null
+  --user-data-dir=/perfil --remote-debugging-port=9222 about:blank & exec python3 /opt/cdp_encaminhar.py 9223' >/dev/null
 for i in $(seq 1 30); do
-  docker exec hermes-navegador python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:9222/json/version',timeout=2)" \
+  docker exec hermes-navegador python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:9223/json/version',timeout=2)" \
     >/dev/null 2>&1 && break
   sleep 1
 done
-echo "NAVEGADOR_CDP=http://$IP:9222"
+echo "NAVEGADOR_CDP=http://$IP:9223"

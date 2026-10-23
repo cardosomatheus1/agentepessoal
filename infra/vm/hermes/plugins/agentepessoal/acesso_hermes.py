@@ -30,7 +30,7 @@ LEEM_CAMINHO = frozenset({"whatsapp_enviar", "analisar_imagens", "assistir_video
 
 NAVEGADOR_SO_LE = frozenset({"browser_navigate", "browser_snapshot", "browser_scroll", "browser_back",
                              "browser_get_images", "browser_vision"})
-CDP = re.compile(r"(?i)\bcdp\b|devtools|remote-debugging|:9222\b|navegador-hermes|playwright|puppeteer|"
+CDP = re.compile(r"(?i)\bcdp\b|devtools|remote-debugging|:922[23]\b|navegador-hermes|hermes-navegador|playwright|puppeteer|"
                  r"chrome-remote-interface|websocket|\bws://|agent-browser")
 CODIGO = frozenset({"terminal", "execute_code", "process_manage"})
 

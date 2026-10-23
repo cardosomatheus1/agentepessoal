@@ -73,7 +73,7 @@ checa("PERFIL_A0=/opt/a0/usr/navegador/sessions/shared" in nav and "rsync -a" in
       "até a virada o Hermes usa uma CÓPIA do perfil (o A0 segue com o dele)")
 checa('-e BROWSER_CDP_URL="$CDP"' in sh and sh.index("HERMES_SEM_NAVEGADOR") < sh.index("docker run"),
       "o Hermes liga no navegador dele e não sobe sem ele")
-checa('NAV="${HERMES%.*.*}.0.250"' in fw and "--dport 9222" in fw, "firewall: o Hermes só fala com o CDP do navegador dele")
+checa('NAV="${HERMES%.*.*}.0.250"' in fw and "--dport 9223" in fw and "--dport 9222" not in fw, "firewall: o Hermes só fala com o CDP do navegador dele")
 checa("docker start hermes-navegador hermes" in ue, "na subida da VM o navegador sobe junto")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
