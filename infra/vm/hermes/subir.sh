@@ -48,6 +48,8 @@ iptables -C INPUT -s "$(docker network inspect hermes -f '{{range .IPAM.Config}}
 # O navegador logado do Hermes (fase 4): Chromium próprio com uma cópia do perfil do A0, CDP só na rede hermes.
 CDP=$(bash "$AQUI/navegador.sh" "$IMAGEM" | sed -n 's/^NAVEGADOR_CDP=//p')
 [ -n "$CDP" ] || { echo "HERMES_SEM_NAVEGADOR: o navegador do Hermes não subiu"; exit 1; }
+# Os conectores (fase 3): Google e GitHub num container ao lado, com os tokens só lá.
+bash "$AQUI/mcp.sh" | grep -q "^MCP_OK" || { echo "HERMES_SEM_MCP: os conectores do Hermes não subiram"; exit 1; }
 # No ensaio, o que dá poder de agir fora das ferramentas aparece vazio no container: chave da ponte do celular, cofre,
 # chaves e login do A0, credenciais AWS, perfis logados do navegador, tokens dos conectores, celular e caixas.
 ESCONDIDOS=()

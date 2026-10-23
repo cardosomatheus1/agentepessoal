@@ -62,7 +62,10 @@ if [ -n "$HERMES" ]; then
   # 23/10 (fase 4): dentro da rede, o Hermes só fala com o CDP do navegador dele (hermes/navegador.sh, IP .0.250, porta 9223) e o
   # navegador só responde; o resto da rede privada segue fechado para os dois (acima dos DROPs)
   NAV="${HERMES%.*.*}.0.250"
-  for aceita in "-s $HERMES -d $NAV/32 -p tcp --dport 9223" "-s $NAV/32 -d $HERMES -m state --state ESTABLISHED,RELATED"; do
+  MCP="${HERMES%.*.*}.0.251"  # os conectores (hermes/mcp.sh): Google 8765, repasse do GitHub 8766
+  for aceita in "-s $HERMES -d $NAV/32 -p tcp --dport 9223" "-s $NAV/32 -d $HERMES -m state --state ESTABLISHED,RELATED" \
+                "-s $HERMES -d $MCP/32 -p tcp --dport 8765" "-s $HERMES -d $MCP/32 -p tcp --dport 8766" \
+                "-s $MCP/32 -d $HERMES -m state --state ESTABLISHED,RELATED"; do
     # shellcheck disable=SC2206
     a=(DOCKER-USER $aceita -j ACCEPT)
     iptables -C "${a[@]}" 2>/dev/null && iptables -D "${a[@]}"

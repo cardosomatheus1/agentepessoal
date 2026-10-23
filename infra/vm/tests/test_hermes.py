@@ -75,7 +75,20 @@ checa("rm -f /perfil/Singleton*;" in nav, "a trava do perfil sai a cada subida (
 checa('-e BROWSER_CDP_URL="$CDP"' in sh and sh.index("HERMES_SEM_NAVEGADOR") < sh.index("docker run"),
       "o Hermes liga no navegador dele e não sobe sem ele")
 checa('NAV="${HERMES%.*.*}.0.250"' in fw and "--dport 9223" in fw and "--dport 9222" not in fw, "firewall: o Hermes só fala com o CDP do navegador dele")
-checa("docker start hermes-navegador hermes" in ue, "na subida da VM o navegador sobe junto")
+checa("docker start hermes-navegador hermes-mcp hermes" in ue, "na subida da VM o navegador e os conectores sobem juntos")
+mcp = (H / "mcp.sh").read_text()
+checa(subprocess.run(["bash", "-n", str(H / "mcp.sh")]).returncode == 0, "sintaxe do mcp.sh")
+checa("gmail:readonly calendar:readonly drive:readonly docs:readonly sheets:readonly" in mcp,
+      "no ensaio o Google do Hermes só lê (nada de escrever no Drive do Matheus)")
+checa(set(cfg["mcp_servers"]) == {"google", "github"} and all("hermes-mcp" in v["url"] for v in cfg["mcp_servers"].values())
+      and "headers" not in str(cfg["mcp_servers"]), "conectores pelo container ao lado, sem token no Hermes")
+checa('"$BASE/google:/google"' in mcp and "/opt/hermes/a0usr" not in mcp and "--network hermes" in mcp
+      and not re.search(r"\s(-p|--publish)\s+\S*\d", mcp), "tokens só no container dos conectores, nada publicado no host")
+checa('MCP="${HERMES%.*.*}.0.251"' in fw and "--dport 8765" in fw and "--dport 8766" in fw, "firewall: só as portas dos conectores")
+checa(sh.index("HERMES_SEM_MCP") < sh.index("docker run"), "o Hermes não sobe sem os conectores")
+df_mcp = (H / "mcp" / "Dockerfile").read_text()
+checa("FROM python:3.12.8-slim" in df_mcp and "workspace-mcp==2.0.1" in df_mcp and "-c /tmp/versoes.txt" in df_mcp,
+      "conector do Google com a versão e as dependências do A0")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
     checa(termo in alma, f"a persona traz {termo!r}")

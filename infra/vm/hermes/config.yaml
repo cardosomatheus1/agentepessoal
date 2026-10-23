@@ -20,6 +20,17 @@ compression:
 # logado por BROWSER_CDP_URL (navegador.sh).
 browser:
   backend: "off"
+# Conectores (fase 3): no container hermes-mcp (mcp.sh), que guarda os tokens; o Hermes só tem o endereço.
+# No ensaio o Google é só leitura (Gmail, Agenda, Drive, Docs, Planilhas); o GitHub do A0 já é só leitura.
+mcp_servers:
+  google:
+    url: "http://hermes-mcp:8765/mcp"
+    timeout: 120
+    connect_timeout: 30
+  github:
+    url: "http://hermes-mcp:8766/mcp/"
+    timeout: 120
+    connect_timeout: 30
 approvals:
   mode: "smart"
   timeout: 21600   # 6 h para o ok dele chegar pelo celular (como o espera_minutos 360 do A0)
