@@ -5,9 +5,12 @@
 # muda para o Matheus, e no ensaio o Hermes só lê (acesso_hermes.py bloqueia clicar/digitar/teclar). Na virada
 # (--proprio) ele abre o perfil de verdade (/opt/a0/usr/navegador/sessions/<perfil>, o A0 parado), como root, para os
 # arquivos continuarem do jeito que o A0 deixa (a volta ao A0 acha o perfil como estava, com os logins renovados).
-# O agente do navegador diz "Chrome", não "HeadlessChrome" (o WhatsApp Web recusa o sem tela: "WhatsApp works with
-# Google Chrome 100+"; virada, 23/10). Janela de 1280x900 numa tela 1920x1080 e AutomationControlled desligado, como o A0 (patchright, com tela)
-# abria; sem tela continua de propósito: com tela o print por CDP de página com Cloudflare trava (o do A0 também). Mesmo binário do A0 (chromium-1228, copiado do container dele uma vez, só leitura) e as mesmas opções de senha
+# Como o A0 rodava (23/10, Matheus: "no outro agente não tinha problema com Cloudflare, ia tudo; com Hermes não passa
+# nenhum"): o Chromium COM tela, num Xvfb dentro do container (tela 1920x1080, janela 1280x900), com as opções que o
+# patchright do A0 passava (sem --headless, AutomationControlled desligado). O toque do "Resolver aqui" chega como mouse
+# de verdade do X e o quadro vem da tela do X (cdp_encaminhar.py, /tela/*): o clique sintético do CDP num navegador sem
+# tela levava "Verification failed" do Cloudflare, e com tela o print por CDP de página com Cloudflare trava. Com tela o
+# agente de usuário já é o do Chrome (o WhatsApp Web recusava o "HeadlessChrome"). Mesmo binário do A0 (chromium-1228, copiado do container dele uma vez, só leitura) e as mesmas opções de senha
 # (--password-store=basic --use-mock-keychain), para os cookies do perfil abrirem. Idempotente; roda como root no host,
 # chamado pelo subir.sh (e pelo convidado.sh, um por convidado) depois da rede existir. Imprime o endereço CDP na última
 # linha (NAVEGADOR_CDP=...).
@@ -55,20 +58,27 @@ IP="${SUB%.*.*}.0.$FINAL"   # 172.22.0.0/16 -> 172.22.0.250 (o CDP só aceita Ho
 AQUI="$(cd "$(dirname "$0")" && pwd)"
 install -m 644 "$AQUI/cdp_encaminhar.py" "$BASE/cdp_encaminhar.py"
 docker rm -f "$NOME" >/dev/null 2>&1 || true
-# O Chromium sem tela só escuta no loopback do container: o repasse (cdp_encaminhar.py) expõe a porta 9223 na rede.
+# O Chromium só escuta no loopback do container: o repasse (cdp_encaminhar.py) expõe a porta 9223 na rede.
 # A trava do perfil (Singleton*) sai a cada subida: o container novo tem outro nome de máquina e o Chromium recusaria.
 docker run -d --name "$NOME" --restart no --network "$REDE" --ip "$IP" \
   --memory 2g --memory-swap 2g --shm-size 512m \
   --user "$USUARIO" \
   -v "$BASE/chromium-1228:/opt/chromium:ro" -v "$ORIGEM:/perfil" -v "$BASE/cdp_encaminhar.py:/opt/cdp_encaminhar.py:ro" \
   --entrypoint /bin/sh \
-  "$IMAGEM" -c 'rm -f /perfil/Singleton*; V=$(/opt/chromium/chrome-linux/chrome --version | grep -o "[0-9][0-9]*" | head -1); \
-  /opt/chromium/chrome-linux/chrome --headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu \
-  --window-size=1280,900 "--screen-info={1920x1080}" --disable-blink-features=AutomationControlled \
-  "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/$V.0.0.0 Safari/537.36" \
+  "$IMAGEM" -c 'rm -f /perfil/Singleton*; rm -f /tmp/.X99-lock; \
+  Xvfb :99 -screen 0 1920x1080x24 +extension GLX +extension RANDR +extension RENDER +extension Composite \
+    -nolisten tcp -noreset -ac >/dev/null 2>&1 & \
+  for i in 1 2 3 4 5 6 7 8 9 10; do [ -e /tmp/.X11-unix/X99 ] && break; sleep 0.5; done; \
+  DISPLAY=:99 /opt/chromium/chrome-linux/chrome --no-sandbox --disable-dev-shm-usage \
+  --window-position=0,0 --window-size=1280,900 --disable-blink-features=AutomationControlled \
+  --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling \
+  --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --disable-hang-monitor \
+  --disable-prompt-on-repost --force-color-profile=srgb --no-service-autorun --disable-search-engine-choice-screen \
+  --disable-infobars --disable-sync --hide-crash-restore-bubble \
   --password-store=basic --use-mock-keychain --no-first-run --no-default-browser-check \
-  --disable-background-networking --disable-breakpad --disable-notifications \
-  --user-data-dir=/perfil --remote-debugging-port=9222 about:blank & exec python3 /opt/cdp_encaminhar.py 9223' >/dev/null
+  --disable-breakpad --disable-notifications \
+  --user-data-dir=/perfil --remote-debugging-port=9222 about:blank & \
+  DISPLAY=:99 TELA_X=1 exec python3 /opt/cdp_encaminhar.py 9223' >/dev/null
 for i in $(seq 1 30); do
   docker exec "$NOME" python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:9223/json/version',timeout=2)" \
     >/dev/null 2>&1 && break

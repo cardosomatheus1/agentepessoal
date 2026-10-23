@@ -63,6 +63,21 @@ def _ponte():
     return sys.modules[nome]
 
 
+def quadro_x(aba_id: str, cdp: str | None = None) -> str:
+    """O print da aba pela tela do X do navegador (cdp_encaminhar.py /tela/quadro), como no A0: com tela, o print por
+    CDP de página com Cloudflare trava. "" se ela não responder (aí vale o CDP)."""
+    base = str(cdp if cdp is not None else os.environ.get("BROWSER_CDP_URL", "")).rstrip("/")
+    if not base.startswith("http"):
+        return ""
+    try:
+        req = urllib.request.Request(base + "/tela/quadro", data=json.dumps({"aba": aba_id, "qualidade": 60}).encode(),
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=40) as r:
+            return str(json.loads(r.read() or b"{}").get("imagem") or "")
+    except Exception:
+        return ""
+
+
 def pode(login: str, convidado_instancia: str) -> bool:
     """Só o dono do navegador (e os logins de teste do operador, que não têm celular); nunca um convidado."""
     return not convidado_instancia and (login == DONO or login.startswith("teste_"))
@@ -124,7 +139,7 @@ def link(base: str, sessao: str, login: str, aba_id: str, segredo: str, tela=Non
 
 
 async def executar(args: dict, sessao: str, navegador=None, ponte=None, tela=None, base_url: str | None = None,
-                   registro: Path | None = None) -> str:
+                   registro: Path | None = None, quadro=None) -> str:
     pa = sys.modules["agentepessoal_ponte_a0"]
     login = pa.login_da_sessao(sessao)
     if not pode(login, pa.convidado_da_instancia()):
@@ -145,7 +160,8 @@ async def executar(args: dict, sessao: str, navegador=None, ponte=None, tela=Non
     url = link(base, sessao, login, aba["id"], t.segredo(), t)
     if not url:
         return "NÃO FEITO: o link do portal não está pronto (endereço público ou segredo da ponte ausente). Diga ao operador."
-    foto = await rt.call("screenshot", aba["id"], quality=60)
+    imagem = await asyncio.to_thread(quadro or quadro_x, aba["id"])
+    foto = {"image": imagem} if imagem else await rt.call("screenshot", aba["id"], quality=60)
     arquivo = ""
     if foto.get("image"):
         import base64

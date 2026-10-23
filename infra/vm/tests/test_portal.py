@@ -229,6 +229,38 @@ async def resolver_aqui(c):
     chamadas.clear()
     await api("abrir", url="javascript:alert(1)")
     checa(chamadas and chamadas[0][2]["url"].startswith("https://"), f"endereço vira https: {chamadas}")
+    # A tela do X (cdp_encaminhar.py /tela/*, como o xpra do A0): com ela no ar, quadro e mouse vão por ela, nunca CDP
+    telas = []
+
+    async def tela_x(caminho, dados):
+        telas.append((caminho, dados))
+        return {"imagem": "WFla", "largura": 1280, "altura": 813} if caminho == "quadro" else {"ok": True}
+
+    antigo_tela, pt._tela = pt._tela, tela_x
+    chamadas.clear()
+    st, d = await api("quadro")
+    checa(d.get("imagem") == "WFla" and telas[-1] == ("quadro", {"aba": "A1", "qualidade": 60})
+          and not any(m == "Page.captureScreenshot" for a, m, p in chamadas), f"quadro pela tela do X: {d} {telas}")
+    await api("toque", fx=0.5, fy=0.25)
+    await api("segurar", fx=0.1, fy=0.2, ms=3000)
+    await api("arrastar", pontos=[[0.1, 0.1], [0.2, 0.2]])
+    await api("rolar", dy=0.5)
+    checa([t[1]["acao"] for t in telas[1:]] == ["toque", "segurar", "arrastar", "rolar"] and telas[1][1]["fx"] == 0.5
+          and telas[2][1]["ms"] == 3000 and telas[3][1]["pontos"] == [[0.1, 0.1], [0.2, 0.2]] and telas[4][1]["dy"] == 0.5
+          and not any(m == "Input.dispatchMouseEvent" for a, m, p in chamadas),
+          f"toque, segurar, arrastar e rolar como mouse de verdade do X (nenhum clique sintético do CDP): {telas} {chamadas}")
+    r = await c.post("/api/navegador", json={"t": bom, "acao": "toque", "fx": 0.5, "fy": 0.5}, headers={"X-Portal": "1"})
+    checa(telas[-1][1]["aba"] == "A1", f"sem aba: a da frente, também pela tela do X: {telas[-1]}")
+
+    async def tela_fora(caminho, dados):
+        return None
+
+    pt._tela = tela_fora
+    chamadas.clear()
+    await api("toque", fx=0.5, fy=0.25)
+    checa([p["type"] for a, m, p in chamadas if m == "Input.dispatchMouseEvent"][-2:] == ["mousePressed", "mouseReleased"],
+          f"sem a tela do X (navegador antigo): o caminho do CDP: {chamadas}")
+    pt._tela = antigo_tela
     chamadas.clear()
     await api("texto", texto="oi")
     await api("tecla", tecla="Enter")
@@ -249,6 +281,34 @@ async def resolver_aqui(c):
 
 
 asyncio.run(main())
+
+# cdp_encaminhar.py /tela/*: onde fica a página na tela do X e os comandos do xdotool de cada gesto (sem X)
+spec = importlib.util.spec_from_file_location("teste_encaminhar", RAIZ / "infra" / "vm" / "hermes" / "cdp_encaminhar.py")
+enc = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(enc)
+checa(enc.area_da_pagina([0, 0, 1280, 900, 1280, 813]) == (0, 87, 1280, 813)
+      and enc.area_da_pagina([22, 30, 1280, 900, 1272, 809]) == (26, 117, 1272, 809), "área da página na tela do X")
+g = enc.gestos({"acao": "toque", "fx": 0.5, "fy": 0.5}, (0, 87, 1001, 801))
+checa(g[0] == ["mousemove", "488", "496"] and g[2] == ["mousemove", "500", "487"] and ["mousedown", "1"] in g
+      and g[-1] == ["mouseup", "1"] and g[g.index(["mousedown", "1"]) + 1] == ["sleep", "0.08"],
+      f"toque: o ponteiro chega por perto, aperta e solta com o tempo de um dedo: {g}")
+g = enc.gestos({"acao": "segurar", "fx": 0, "fy": 0, "ms": 60000}, (0, 87, 1001, 801))
+checa(["sleep", "15.0"] in g and g[2] == ["mousemove", "0", "87"], f"segurar até 15 s no ponto: {g}")
+g = enc.gestos({"acao": "arrastar", "pontos": [[0, 0], [1, 1]]}, (0, 0, 101, 101))
+checa(g[0] == ["mousemove", "0", "0"] and ["mousemove", "100", "100"] in g and g[-1] == ["mouseup", "1"], f"arrastar: {g}")
+g = enc.gestos({"acao": "rolar", "dy": -0.5}, (0, 0, 100, 800))
+checa(g[1][-1] == "4" and g[1][2] == "4", f"rolar para cima: 4 cliques da roda: {g}")
+try:
+    enc.gestos({"acao": "apagar"}, (0, 0, 1, 1))
+    checa(False, "ação desconhecida não vira comando")
+except ValueError:
+    pass
+checa(not enc.TELA, "a tela do X só com TELA_X=1 (o repasse do adb segue só repasse)")
+nav_sh = (RAIZ / "infra" / "vm" / "hermes" / "navegador.sh").read_text()
+lanca = nav_sh.split("docker run", 1)[1]
+checa("Xvfb :99" in lanca and "--headless" not in lanca and "TELA_X=1" in lanca and "DISPLAY=:99" in lanca
+      and " xvfb xdotool " in (RAIZ / "infra" / "vm" / "hermes" / "imagem" / "Dockerfile").read_text(),
+      "o navegador roda com tela num Xvfb e o repasse atende a tela do X, como no A0")
 if falhas:
     raise SystemExit("test_portal: " + "; ".join(falhas))
 print("test_portal: ok")

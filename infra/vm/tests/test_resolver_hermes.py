@@ -72,7 +72,7 @@ REGISTRO.write_text(json.dumps({"tg-matheus": {"target_id": "A1", "used": 1}, "t
 
 def rodar(args, sessao, ponte=None, base="https://agente.exemplo.com", nav=None, registro=REGISTRO):
     return asyncio.run(r.executar(args, sessao, navegador=nav or Navegador(), ponte=ponte or Ponte(), tela=tela_fake,
-                                  base_url=base, registro=registro))
+                                  base_url=base, registro=registro, quadro=lambda aba: ""))
 
 
 # quem pode
@@ -170,6 +170,13 @@ nav, p = Navegador(), Ponte()
 texto = rodar({"pedido": "x"}, "tgp2-matheus", p, nav=nav, registro=reg2)
 checa(texto.startswith("NÃO FEITO") and "browser_navigate" in texto and not p.envios and not nav.fotos,
       f"conversa sem aba própria: não manda a aba de outra conversa: {texto}")
+
+# O print vem da tela do X (com tela, o print por CDP de página com Cloudflare trava); sem ela, o do CDP
+nav, p = Navegador(), Ponte()
+asyncio.run(r.executar({"pedido": "x"}, "tg-matheus", navegador=nav, ponte=p, tela=tela_fake, base_url="https://agente.exemplo.com",
+                       registro=REGISTRO, quadro=lambda aba: "WFla" if aba == "A1" else ""))
+checa(nav.fotos == [] and p.envios and Path(p.envios[0][2]).read_bytes() == b"XYZ", f"print pela tela do X: {nav.fotos} {p.envios[:1]}")
+checa(r.quadro_x("A1", "") == "" and r.quadro_x("A1", "http://127.0.0.1:9") == "", "sem a tela do X: vazio (vale o CDP)")
 
 # O código do navegador da oficial com os patches (o que o Hermes tinha feito no ar, agora revisado e no git):
 img = H / "imagem"

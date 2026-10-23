@@ -323,6 +323,21 @@ async def _cdp_abas() -> list:
             return [a for a in await r.json(content_type=None) if a.get("type") == "page"]
 
 
+async def _tela(caminho: str, dados: dict) -> dict | None:
+    """A tela do X do navegador (cdp_encaminhar.py, /tela/*): o quadro e o mouse de verdade, como no A0. None se ela não
+    responder (navegador antigo, sem tela): aí vale o caminho do CDP."""
+    import aiohttp
+
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.post(f"{CDP}/tela/{caminho}", json=dados, timeout=aiohttp.ClientTimeout(total=40)) as r:
+                if r.status != 200:
+                    return None
+                return await r.json(content_type=None)
+    except Exception:
+        return None
+
+
 async def _cdp_http(caminho: str, metodo: str = "GET") -> dict:
     import aiohttp
 
@@ -420,7 +435,14 @@ async def navegador_api(request: web.Request) -> web.Response:
     if acao == "ativar":
         await _cdp_http(f"/json/activate/{urllib.parse.quote(aba)}")
         return web.json_response({"ok": True})
+    if acao in ("quadro", "toque", "segurar", "arrastar", "rolar") and not aba:
+        abas = await _cdp_abas()
+        aba = abas[0]["id"] if abas else ""
     if acao == "quadro":
+        if aba:
+            r = await _tela("quadro", {"aba": aba, "qualidade": int(d.get("qualidade") or 60)})
+            if r and r.get("imagem"):
+                return web.json_response({"imagem": r["imagem"]})
         r = await _cdp(aba, "Page.captureScreenshot", {"format": "jpeg", "quality": int(d.get("qualidade") or 60)})
         return web.json_response({"imagem": r.get("data", "")})
     if acao == "abrir":
@@ -450,6 +472,10 @@ async def navegador_api(request: web.Request) -> web.Response:
         return web.json_response({"ok": True})
     if acao not in ("toque", "segurar", "arrastar", "rolar"):
         return web.json_response({"erro": "ação desconhecida"}, status=400)
+    if aba:  # mouse de verdade do X, como o xpra do A0 (o Cloudflare recusava o clique sintético do CDP)
+        r = await _tela("mouse", {"aba": aba, "acao": acao, **{k: d.get(k) for k in ("fx", "fy", "ms", "pontos", "dy")}})
+        if r and r.get("ok"):
+            return web.json_response({"ok": True})
     medida = await _cdp(aba, "Runtime.evaluate", {"expression": TAMANHO, "returnByValue": True})
     largura, altura = ((medida.get("result") or {}).get("value") or [0, 0])[:2]
     if not largura or not altura:
