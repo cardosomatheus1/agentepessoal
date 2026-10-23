@@ -5,7 +5,8 @@
 # muda para o Matheus, e no ensaio o Hermes só lê (acesso_hermes.py bloqueia clicar/digitar/teclar). Na virada
 # (--proprio) ele abre o perfil de verdade (/opt/a0/usr/navegador/sessions/<perfil>, o A0 parado), como root, para os
 # arquivos continuarem do jeito que o A0 deixa (a volta ao A0 acha o perfil como estava, com os logins renovados).
-# Mesmo binário do A0 (chromium-1228, copiado do container dele uma vez, só leitura) e as mesmas opções de senha
+# O agente do navegador diz "Chrome", não "HeadlessChrome" (o WhatsApp Web recusa o sem tela: "WhatsApp works with
+# Google Chrome 100+"; virada, 23/10). Mesmo binário do A0 (chromium-1228, copiado do container dele uma vez, só leitura) e as mesmas opções de senha
 # (--password-store=basic --use-mock-keychain), para os cookies do perfil abrirem. Idempotente; roda como root no host,
 # chamado pelo subir.sh (e pelo convidado.sh, um por convidado) depois da rede existir. Imprime o endereço CDP na última
 # linha (NAVEGADOR_CDP=...).
@@ -60,7 +61,9 @@ docker run -d --name "$NOME" --restart no --network "$REDE" --ip "$IP" \
   --user "$USUARIO" \
   -v "$BASE/chromium-1228:/opt/chromium:ro" -v "$ORIGEM:/perfil" -v "$BASE/cdp_encaminhar.py:/opt/cdp_encaminhar.py:ro" \
   --entrypoint /bin/sh \
-  "$IMAGEM" -c 'rm -f /perfil/Singleton*; /opt/chromium/chrome-linux/chrome --headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu \
+  "$IMAGEM" -c 'rm -f /perfil/Singleton*; V=$(/opt/chromium/chrome-linux/chrome --version | grep -o "[0-9][0-9]*" | head -1); \
+  /opt/chromium/chrome-linux/chrome --headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu \
+  "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/$V.0.0.0 Safari/537.36" \
   --password-store=basic --use-mock-keychain --no-first-run --no-default-browser-check \
   --disable-background-networking --disable-breakpad --disable-notifications \
   --user-data-dir=/perfil --remote-debugging-port=9222 about:blank & exec python3 /opt/cdp_encaminhar.py 9223' >/dev/null

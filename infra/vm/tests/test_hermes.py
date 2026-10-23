@@ -91,6 +91,8 @@ checa('--network "$REDE"' in nav and "REDE=hermes" in nav and not re.search(r"\s
 checa('PERFIL_A0="/opt/a0/usr/navegador/sessions/$PERFIL"' in nav and "PERFIL=shared" in nav and "rsync -a" in nav
       and '"$COPIA.novo/"' in nav and 'NAV_OPC=(--proprio); else NAV_OPC=()' in sh,
       "até a virada o Hermes usa uma CÓPIA do perfil (o A0 segue com o dele); o de verdade só na virada")
+checa('"--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/$V.0.0.0' in nav
+      and "HeadlessChrome" not in nav.split("docker run", 1)[1], "o navegador se apresenta como Chrome (o WhatsApp Web recusa o sem tela)")
 checa("rm -f /perfil/Singleton*;" in nav, "a trava do perfil sai a cada subida (outro container = 'perfil em uso')")
 checa('-e BROWSER_CDP_URL="$CDP"' in sh and sh.index("HERMES_SEM_NAVEGADOR") < sh.index("docker run"),
       "o Hermes liga no navegador dele e não sobe sem ele")
