@@ -38,7 +38,8 @@ FOCO_LOCAL = [
     "app/components/Sidebar.tsx", "app/SECOND_BRAIN.md", PLUGIN, LADO_VM, "infra/operador/segundo_cerebro.py",
 ]
 TESTES_NODE = ["tests/second-brain.test.mjs", "tests/second-brain-boundaries.test.mjs",
-               "tests/second-brain-real-format.test.mjs", "tests/connection-map.test.mjs"]
+               "tests/second-brain-real-format.test.mjs", "tests/connection-map.test.mjs",
+               "tests/brain-graph.test.mjs", "tests/constelacao.test.mjs"]
 IGNORAR = {"__pycache__", ".pytest_cache"}
 LIMITE_PACOTE = 200 * 1024 * 1024
 

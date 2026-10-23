@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { SegundoCerebro } from "@/lib/second-brain.mjs";
 import s from "./segundo-cerebro.module.css";
 import BrainMap from "./BrainMap";
+import Constelacao from "./Constelacao";
 import Consulta from "./Consulta";
 import { Assuntos, Contextos, Decisoes, Documentos, Ficha, Fontes, NotasDoDia, Pendencias, Projetos, Reunioes, ancora, fmt } from "./Secoes";
 
@@ -12,7 +13,8 @@ import { Assuntos, Contextos, Decisoes, Documentos, Ficha, Fontes, NotasDoDia, P
 const SECOES = [
   ["visao", "Visão geral"],
   ["consulta", "Consulta"],
-  ["mapa", "Mapa"],
+  ["constelacao", "Constelação"],
+  ["mapa", "Mapa detalhado"],
   ["assuntos", "Assuntos"],
   ["pendencias", "Pendências"],
   ["decisoes", "Decisões"],
@@ -216,8 +218,13 @@ function Painel({ dados, carregando, erro, recarregar }: { dados: SegundoCerebro
           <Consulta brain={dados} area={area} recarregar={recarregar} onOpen={abrir} />
         </section>
 
+        <section id="constelacao" className={s.secao}>
+          <h2 className={s.h2}>Constelação</h2>
+          <Constelacao brain={dados} area={area} onOpen={abrir} />
+        </section>
+
         <section id="mapa" className={s.secao}>
-          <h2 className={s.h2}>Mapa</h2>
+          <h2 className={s.h2}>Mapa detalhado</h2>
           <BrainMap brain={dados} area={area} onOpen={abrir} />
         </section>
 
