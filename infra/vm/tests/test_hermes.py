@@ -73,8 +73,8 @@ checa(sh.index("HERMES_SEM_ENSAIO") < sh.index("docker run"), "não sobe sem a t
 checa("-o allow_other,${HERMES_DADOS_MODO} " in un and "Environment=HERMES_DADOS_MODO=ro" in un
       and 'if [ "$VIRADA" = 1 ]; then MODO_DADOS=rw; else MODO_DADOS=ro; fi' in sh,
       "até a virada o Hermes vê os dados do A0 só para leitura (rw só com a chave no Hermes)")
-modo_env = re.search(r'if \[ "\$VIRADA" = 1 \]; then\n  MODO_ENV=\((.*?)\)\nelse\n  MODO_ENV=\((.*?)\)\nfi', sh)
-checa(modo_env and modo_env.group(1) == "-e AGENTEPESSOAL_RELOGIO=1" and modo_env.group(2) == "-e AGENTEPESSOAL_ENSAIO=1"
+modo_env = re.search(r'if \[ "\$VIRADA" = 1 \]; then\n(?:  SUBH=[^\n]*\n)?  MODO_ENV=\((.*?)\)[^\n]*\nelse\n  MODO_ENV=\((.*?)\)\nfi', sh)
+checa(modo_env and modo_env.group(1).startswith("-e AGENTEPESSOAL_RELOGIO=1 --add-host") and modo_env.group(2) == "-e AGENTEPESSOAL_ENSAIO=1"
       and '"${MODO_ENV[@]}"' in sh and sh.count("AGENTEPESSOAL_RELOGIO=1") == 1,
       "relógio só na virada; até lá o ensaio (nada ao celular nem à Meta)")
 checa(sh.index("HERMES_A0_RODANDO") < sh.index("docker run") and "VIRADA=1" in sh,
