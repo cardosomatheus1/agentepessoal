@@ -58,13 +58,15 @@ export default function Constelacao({ brain, area = "", onOpen }: { brain: Segun
       aoSobre: (id) => { if (vivo) setSobre(id); },
       aoEscolher: (id) => { if (vivo) { setEscolhido(id); setCopiado(false); } },
     })
-      .then((m) => {
-        if (!vivo) { m.destruir(); return; }
-        motor.current = m;
-        m.irPara(modoRef.current, true);
-        m.realcar(realceRef.current);
-      })
-      .catch(() => { if (vivo) setSemWebgl(true); });
+      .then(
+        (m) => {
+          if (!vivo) { m.destruir(); return; }
+          motor.current = m;
+          m.irPara(modoRef.current, true);
+          m.realcar(realceRef.current);
+        },
+        () => { if (vivo) setSemWebgl(true); }, // só quando a cena não nasce (sem WebGL)
+      );
     return () => { vivo = false; motor.current?.destruir(); motor.current = null; };
   }, [grafo]);
   useEffect(() => { modoRef.current = modo; motor.current?.irPara(modo); }, [modo]);

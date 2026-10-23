@@ -211,7 +211,7 @@ export async function criarCena({ el, camadaRotulos, grafo, poses, aoSobre, aoEs
     });
     hexes.forEach((n, i) => {
       const k = suavizar(t);
-      const de = imediato ? { x: 0, y: 0, z: 0, tam: 0.2 } : { x: hDe.getX(i) + (hPara.getX(i) - hDe.getX(i)) * k, y: hDe.getY(i) + (hPara.getY(i) - hDe.getY(i)) * k, z: hDe.getZ(i) + (hPara.getZ(i) - hDe.getZ(i)) * k, tam: hTam.getY(i) };
+      const de = imediato ? { x: 0, y: 0, z: 0, tam: 0.2 } : { x: hDe.getX(i) + (hPara.getX(i) - hDe.getX(i)) * k, y: hDe.getY(i) + (hPara.getY(i) - hDe.getY(i)) * k, z: hDe.getZ(i) + (hPara.getZ(i) - hDe.getZ(i)) * k, tam: hTam.getX(i) + (hTam.getY(i) - hTam.getX(i)) * k };
       const p: PoseHex = c.hexes.get(n.id)!;
       hDe.setXYZ(i, de.x, de.y, de.z); hPara.setXYZ(i, p.x, p.y, p.z); hTam.setXY(i, de.tam, p.tam);
     });
@@ -419,6 +419,7 @@ export async function criarCena({ el, camadaRotulos, grafo, poses, aoSobre, aoEs
     plano.dispose();
     composer.dispose();
     renderer.dispose();
+    renderer.forceContextLoss(); // libera o contexto WebGL já (trocar de área cria outro)
     canvas.remove();
     camadaRotulos.replaceChildren();
   }
