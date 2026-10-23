@@ -9,7 +9,13 @@ Uso, da raiz do repositório:
   python3 infra/operador/hermes_ao_vivo.py perguntar "<texto>" [--sessao <id>]   # uma pergunta pelo API server
   python3 infra/operador/hermes_ao_vivo.py run "<texto>" [--sessao <id>] [--aprovar once|session|always|deny]
                                                           # pelo /v1/runs (o caminho da ponte): eventos e aprovação
+  python3 infra/operador/hermes_ao_vivo.py destino <login> a0|hermes [--motivo "..."]
+                                                          # a chave da ponte (fase 6): só logins teste_* até a virada
+  python3 infra/operador/hermes_ao_vivo.py telegram "<texto>" [--botao <id>]
+                                                          # o caminho inteiro: SQS (como a função do Telegram) -> ponte
+                                                          # -> Hermes -> resposta do login teste_hermes (sem celular)
 """
+import time
 import base64
 import json
 import subprocess
@@ -132,11 +138,54 @@ while time.time() < fim:
 '''
 
 
+DESTINO = r'''
+import json, os, sys, time
+from pathlib import Path
+login, para, motivo = sys.argv[1], sys.argv[2], sys.argv[3]
+arq = Path("/var/lib/agentepessoal/destino.json")
+try:
+    d = json.loads(arq.read_text())
+except (OSError, ValueError):
+    d = {"padrao": "a0", "logins": {}}
+d.setdefault("logins", {})[login] = para
+d.setdefault("historico", []).append({"em": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "login": login,
+                                      "para": para, "por": f"operador: {motivo}"})
+tmp = arq.with_suffix(".tmp"); tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1)); os.replace(tmp, arq)
+print("DESTINO", json.dumps({k: v for k, v in d.items() if k != "historico"}, ensure_ascii=False))
+'''
+
+TELEGRAM = r'''
+import json, sys, time, boto3
+from pathlib import Path
+texto, botao = sys.argv[1], sys.argv[2]
+sqs = boto3.client("sqs", region_name="us-east-1")
+url = sqs.get_queue_url(QueueName="agentepessoal-whatsapp")["QueueUrl"]
+uid = int(time.time() * 1000) % 2_000_000_000
+upd = ({"update_id": uid, "callback_query": {"id": str(uid), "data": botao}} if botao else
+       {"update_id": uid, "message": {"message_id": uid, "text": texto, "chat": {"id": 0}}})
+arq = Path("/var/lib/agentepessoal/hermes_teste.jsonl")
+antes = len(arq.read_text().splitlines()) if arq.exists() else 0
+sqs.send_message(QueueUrl=url, MessageBody=json.dumps({"canal": "telegram", "usuario": "teste_hermes", "chat": "0",
+                                                       "update": upd, "recebida": time.time()}))
+fim = time.time() + 540
+while time.time() < fim:
+    linhas = arq.read_text().splitlines() if arq.exists() else []
+    if len(linhas) > antes:
+        for l in linhas[antes:]:
+            print("RESPOSTA", l[:3000])
+        break
+    time.sleep(3)
+else:
+    print("SEM_RESPOSTA em 9 min")
+'''
+
+
 def rodar(script: str, *args: str) -> None:
     b64 = base64.b64encode(script.encode()).decode()
     argv = " ".join("'" + a.replace("'", "'\\''") + "'" for a in args)
     cmd = (f"touch /var/lib/agentepessoal/last-activity; echo {b64} | base64 -d > /tmp/hermes_ao_vivo.py && "
-           f"timeout 1200 python3 /tmp/hermes_ao_vivo.py {argv}; rm -f /tmp/hermes_ao_vivo.py")
+           f"PY=python3; [ -x /opt/agentepessoal/venv/bin/python ] && PY=/opt/agentepessoal/venv/bin/python; "
+           f"timeout 1200 $PY /tmp/hermes_ao_vivo.py {argv}; rm -f /tmp/hermes_ao_vivo.py")
     out = subprocess.run([sys.executable, str(AQUI / "vmcmd.py"), cmd], capture_output=True, text=True).stdout
     print(out.strip())
 
@@ -158,6 +207,16 @@ def main(argv: list) -> int:
         rodar(PERGUNTAR, argv[1], sessao)
     elif acao == "run":
         rodar(RUN, argv[1], sessao, escolha)
+    elif acao == "destino":
+        login, para = argv[1].lower(), argv[2]
+        motivo = argv[argv.index("--motivo") + 1] if "--motivo" in argv else "teste da ponte com o Hermes"
+        if para not in ("a0", "hermes") or (para == "hermes" and not login.startswith("teste_")):
+            print("até a virada (fase 8) só logins teste_* vão ao Hermes; destino: a0 ou hermes")
+            return 2
+        rodar(DESTINO, login, para, motivo)
+    elif acao == "telegram":
+        botao = argv[argv.index("--botao") + 1] if "--botao" in argv else ""
+        rodar(TELEGRAM, argv[1], botao)
     else:
         print(__doc__)
         return 2

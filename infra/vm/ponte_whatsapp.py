@@ -1238,6 +1238,175 @@ def entregar(dados: dict) -> None:
         raise RuntimeError(resposta.get("erro") or "agente recusou")
 
 
+# ------------------------------------------------------------------ 23/10 (migração ao Hermes, fase 6): a chave A0/Hermes
+# Cada login vai ao A0 (padrão) ou ao Hermes, pelo arquivo DESTINO ({"padrao": "a0", "logins": {"teste_hermes": "hermes"}}).
+# Virar a chave é mudar esse arquivo (a virada, fase 8: "padrao": "hermes"); voltar é desfazer. Pelo Hermes:
+# - a mensagem vai ao API server dele (/v1/runs) na sessão fixa da pessoa (tg-<login>), que fica no mapa de sessões do
+#   plugin (o dono das ferramentas e do cofre); o que a pessoa colou e é valor de algum cofre vira §§secret(NOME) antes
+#   (nem o histórico salvo do Hermes guarda a senha);
+# - a resposta e os pedidos de ok (evento approval.request, com Aprovar / Nesta tarefa / Recusar; "Sempre permitir"
+#   digitado) voltam por aqui; o botão responde em /v1/runs/<id>/approval;
+# - logins teste_* não têm celular: o que iria fica em HERMES_TESTE (o operador confere).
+DESTINO = Path("/var/lib/agentepessoal/destino.json")
+HERMES_URL = os.environ.get("HERMES_URL", "http://127.0.0.1:8642")
+HERMES_CHAVE = Path("/opt/hermes/api_key")
+HERMES_SESSOES = Path("/opt/hermes/data/agentepessoal/sessoes.json")
+HERMES_TESTE = Path("/var/lib/agentepessoal/hermes_teste.jsonl")
+HERMES_UID = 10000  # o Hermes lê o mapa de sessões como ele mesmo
+HERMES_ESPERA = 6 * 3600  # o ok pelo celular tem horas para chegar (approvals.timeout do Hermes)
+APROVAR = {"aprovar": ("once", "✅ Aprovar"), "tarefa": ("session", "Nesta tarefa"), "recusar": ("deny", "❌ Recusar"),
+           "sempre": ("always", "Sempre permitir")}
+_HERMES_OKS: dict[str, tuple[str, str]] = {}  # chave curta do botão -> (run_id, request_id); callback_data tem 64 bytes
+_TRAVA_HERMES = threading.Lock()
+
+
+def destino(usuario: str) -> str:
+    try:
+        d = json.loads(DESTINO.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "a0"  # sem o arquivo (ou ilegível): tudo como sempre
+    if not isinstance(d, dict):
+        return "a0"
+    v = (d.get("logins") or {}).get(str(usuario or "").lower()) or d.get("padrao") or "a0"
+    return "hermes" if v == "hermes" else "a0"
+
+
+def sessao_hermes(usuario: str) -> str:
+    """A sessão fixa da pessoa no Hermes, registrada no mapa que o plugin lê (dono das ferramentas e do cofre)."""
+    usuario = re.sub(r"[^a-z0-9_-]", "", str(usuario or "").lower())
+    sessao = f"tg-{usuario}"
+    with _TRAVA_HERMES:
+        try:
+            mapa = json.loads(HERMES_SESSOES.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            mapa = {}
+        if not isinstance(mapa, dict):
+            mapa = {}
+        if mapa.get(sessao) != usuario:
+            mapa[sessao] = usuario
+            HERMES_SESSOES.parent.mkdir(parents=True, exist_ok=True)
+            fd, tmp = tempfile.mkstemp(dir=HERMES_SESSOES.parent, prefix=".sessoes.", suffix=".tmp")
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(mapa, f, ensure_ascii=False, indent=1)
+            os.chmod(tmp, 0o644)
+            try:
+                os.chown(tmp, HERMES_UID, HERMES_UID)
+            except OSError:
+                pass
+            os.replace(tmp, HERMES_SESSOES)
+    return sessao
+
+
+def mascarar_cofres(texto: str) -> str:
+    """Valor de qualquer cofre (4+ caracteres) que a pessoa colou vira §§secret(NOME): nem o modelo nem o histórico do
+    Hermes o guardam (o /senha continua sendo o jeito de guardar uma senha)."""
+    if not texto:
+        return texto
+    trocas = []
+    for arq in COFRE.glob("*.json"):
+        if arq.name.endswith(".descricoes.json"):
+            continue
+        try:
+            dados = json.loads(arq.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for nome, valor in (dados.items() if isinstance(dados, dict) else ()):
+            if isinstance(valor, (str, int)) and len(str(valor)) >= 4:
+                trocas.append((str(valor), nome))
+    for valor, nome in sorted(trocas, key=lambda t: -len(t[0])):
+        texto = texto.replace(valor, f"§§secret({nome})")
+    return texto
+
+
+def _hermes(caminho: str, corpo: dict | None = None, timeout: int = 60) -> dict:
+    req = urllib.request.Request(HERMES_URL + caminho, data=json.dumps(corpo).encode() if corpo is not None else None,
+                                 headers={"Authorization": f"Bearer {HERMES_CHAVE.read_text().strip()}",
+                                          "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read() or b"{}")
+
+
+def responder_hermes(usuario: str, chat: str, texto: str, botoes: list | None = None) -> None:
+    if str(usuario).startswith("teste_"):
+        with HERMES_TESTE.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"em": time.time(), "usuario": usuario, "texto": texto, "botoes": botoes or []},
+                               ensure_ascii=False) + "\n")
+        return
+    tg_texto(chat, texto, botoes)
+
+
+def pedido_hermes(dados: dict) -> str:
+    texto = mascarar_cofres(str(dados.get("texto") or ""))
+    extras = []
+    if dados.get("anexos"):
+        extras.append("Arquivos que a pessoa mandou: " + ", ".join(dados["anexos"]))
+    if dados.get("audio"):
+        extras.append(f"(áudio em {dados['audio']}: transcreva antes de responder)")
+    return "\n\n".join(t for t in [texto, *extras] if t) or "(mensagem vazia)"
+
+
+def acompanhar_hermes(run_id: str, usuario: str, chat: str, espera: float = HERMES_ESPERA, pausa: float = 2.0) -> str:
+    """Segue o run até o fim: cada pedido de ok vira botões; a resposta final vai à pessoa. Devolve o estado final."""
+    vistos, fim = set(), time.time() + espera
+    while time.time() < fim:
+        try:
+            st = _hermes(f"/v1/runs/{run_id}")
+        except Exception as exc:
+            log(f"hermes: run {run_id} não lido: {exc}")
+            time.sleep(pausa * 5)
+            continue
+        estado = st.get("status")
+        ap = st.get("approval") or {}
+        if estado == "waiting_for_approval" and ap.get("request_id") and ap["request_id"] not in vistos:
+            vistos.add(ap["request_id"])
+            k = secrets.token_hex(4)
+            with _TRAVA_HERMES:
+                _HERMES_OKS[k] = (run_id, ap["request_id"])
+            pedido = ap.get("description") or ap.get("command") or "uma ação"
+            responder_hermes(usuario, chat, f"🔐 *Preciso do seu ok:* {pedido}",
+                             [{"id": f"haprov:{k}:{d}", "titulo": APROVAR[d][1]} for d in ("aprovar", "tarefa", "recusar")])
+        if estado in ("completed", "failed", "cancelled", "stopped"):
+            texto = str(st.get("output") or "").strip() or (
+                "⚠️ Não consegui terminar o pedido." if estado != "completed" else "")
+            if texto and not texto.upper().startswith("SEM NOVIDADE"):
+                responder_hermes(usuario, chat, texto)
+            return estado
+        time.sleep(pausa)
+    return "tempo esgotado"
+
+
+def resolver_ok_hermes(botao: str) -> str:
+    """Um botão "haprov:<k>:<decisao>" responde o pedido de ok no run. '' quando foi aceito, senão o motivo."""
+    _, k, d = (botao.split(":") + ["", ""])[:3]
+    with _TRAVA_HERMES:
+        alvo = _HERMES_OKS.pop(k, None)
+    if not alvo or d not in APROVAR:
+        return "esse pedido de ok já foi respondido ou expirou"
+    run_id, request_id = alvo
+    try:
+        _hermes(f"/v1/runs/{run_id}/approval", {"choice": APROVAR[d][0], "request_id": request_id})
+    except Exception as exc:
+        return f"o agente não recebeu a resposta ({str(exc)[:120]})"
+    return ""
+
+
+def entregar_hermes(dados: dict, chat: str) -> str:
+    """Uma mensagem (ou um botão) da pessoa ao Hermes. Devolve o id do run (ou "" para um botão)."""
+    usuario = dados["usuario"]
+    botao = str(dados.get("botao") or "")
+    if botao.startswith("haprov:"):
+        erro = resolver_ok_hermes(botao)
+        if erro:
+            responder_hermes(usuario, chat, f"⚠️ {erro}.")
+        return ""
+    r = _hermes("/v1/runs", {"input": pedido_hermes(dados), "session_id": sessao_hermes(usuario)})
+    run_id = r.get("run_id") or r.get("id") or ""
+    if not run_id:
+        raise RuntimeError(f"o Hermes não abriu o pedido: {str(r)[:200]}")
+    threading.Thread(target=acompanhar_hermes, args=(run_id, usuario, chat), daemon=True, name=f"hermes-{run_id[-6:]}").start()
+    return run_id
+
+
 class AgenteFora(Exception):
     """Agent Zero did not answer (off, starting, restarting): the message goes back to the queue, never away."""
 
@@ -1359,6 +1528,9 @@ def tratar(url: str, m: dict) -> None:
                 tg_texto(item["chat"], texto_livro(item["usuario"]))
             elif (msg.get("text") or "").strip().lower().split("@")[0] in ("/painel", "/status"):
                 tg_texto(item["chat"], texto_painel(item["usuario"]))
+            elif destino(item["usuario"]) == "hermes":  # 23/10: a chave A0/Hermes (fase 6)
+                DIGITANDO[item["chat"]] = time.time() + 120
+                entregar_hermes(preparar_tg(item), item["chat"])
             else:
                 DIGITANDO[item["chat"]] = time.time() + 120
                 entregar_esperando(preparar_tg(item))  # right after waking, Agent Zero may still be starting
