@@ -6,7 +6,9 @@
 # ouvindo em 127.0.0.1:8642 do host.
 set -euo pipefail
 AQUI="$(cd "$(dirname "$0")" && pwd)"
-IMAGEM="nousresearch/hermes-agent:v0.22.2"
+BASE="nousresearch/hermes-agent:v0.22.2"
+# A nossa imagem = a oficial + os pacotes dos helpers (imagem/Dockerfile); o rótulo muda quando o Dockerfile muda.
+IMAGEM="agentepessoal/hermes:$(sha256sum "$AQUI/imagem/Dockerfile" | cut -c1-12)"
 DADOS=/opt/hermes/data
 mkdir -p "$DADOS"
 chmod 700 /opt/hermes
@@ -21,7 +23,9 @@ done
 if [ ! -s /opt/hermes/api_key ]; then
   umask 077; openssl rand -hex 32 > /opt/hermes/api_key
 fi
-docker pull -q "$IMAGEM" >/dev/null        # baixa antes de derrubar: o Hermes fica fora o mínimo
+# Constrói antes de derrubar: o Hermes fica fora o mínimo (com cache, repetir não refaz nada).
+grep -q "^FROM $BASE\$" "$AQUI/imagem/Dockerfile" || { echo "HERMES_IMAGEM: o Dockerfile não parte de $BASE"; exit 1; }
+docker image inspect "$IMAGEM" >/dev/null 2>&1 || docker build -q -t "$IMAGEM" "$AQUI/imagem" >/dev/null
 docker rm -f hermes >/dev/null 2>&1 || true  # antes de remontar a vista: nada a segurando
 # Vista dos dados vivos para o Hermes (dono 10000 na vista, nada muda no disco): ver agentepessoal-hermes-dados.service.
 command -v bindfs >/dev/null || DEBIAN_FRONTEND=noninteractive apt-get install -y -q bindfs >/dev/null

@@ -37,7 +37,13 @@ checa("--create-for-user=0" in un and "--force-user=10000" in un and "Before=doc
 checa("--enable-lock-forwarding" not in un or "--multithreaded" in un,
       "repasse de trava só com --multithreaded (o bindfs recusa subir sem ele: 23/10)")
 checa(sh.index("mountpoint -q /opt/hermes/a0usr ||") < sh.index("docker run"), "o container só sobe com a vista montada")
-checa(re.search(r'IMAGEM="nousresearch/hermes-agent:v\d+\.\d+\.\d+"', sh), "imagem com versão fixa")
+checa(re.search(r'BASE="nousresearch/hermes-agent:v\d+\.\d+\.\d+"', sh), "imagem com versão fixa")
+df = (H / "imagem" / "Dockerfile").read_text()
+base = re.search(r'BASE="([^"]+)"', sh).group(1)
+checa(f"FROM {base}\n" in df, "a nossa imagem parte da mesma versão do script")
+pacotes = [t for t in df.split("uv pip install", 1)[1].split("&&", 1)[0].split() if t[0] not in "-/\\"]
+checa(len(pacotes) >= 5 and all("==" in t for t in pacotes), f"pacotes com versão fixa: {pacotes}")
+checa(re.search(r"FROM ghcr.io/astral-sh/uv:\d+\.\d+\.\d+ AS uv", df), "uv com versão fixa")
 checa(subprocess.run(["bash", "-n", str(H / "subir.sh")]).returncode == 0, "sintaxe do script")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):

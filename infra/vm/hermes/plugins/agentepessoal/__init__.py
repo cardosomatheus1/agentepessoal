@@ -11,6 +11,10 @@ _spec = importlib.util.spec_from_file_location("agentepessoal_ponte_a0", _aqui /
 ponte = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = ponte  # dataclasses look their module up in sys.modules
 _spec.loader.exec_module(ponte)
+_spec_c = importlib.util.spec_from_file_location("agentepessoal_cofre", _aqui / "cofre_hermes.py")
+cofre = importlib.util.module_from_spec(_spec_c)
+sys.modules[_spec_c.name] = cofre
+_spec_c.loader.exec_module(cofre)
 log = logging.getLogger("agentepessoal")
 
 # (plugin, ferramenta). Fora por enquanto, de propósito (fases seguintes do plano):
@@ -39,6 +43,7 @@ def _manipulador(classe, nome):
 
 
 def register(ctx):
+    cofre.registrar(ctx)  # antes das ferramentas: sem ele, nenhuma recebe senha (o §§secret segue como texto)
     feitas, puladas = [], []
     for plugin, nome in FERRAMENTAS:
         try:

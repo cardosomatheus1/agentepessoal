@@ -47,8 +47,20 @@ class Ctx:
         checa(is_async == asyncio.iscoroutinefunction(handler), f"{name}: is_async bate com o manipulador")
         registradas[name] = (schema, handler)
 
+    def register_middleware(self, kind, callback):
+        ganchos.append(("middleware", kind))
+
+    def register_hook(self, nome, callback):
+        ganchos.append(("hook", nome))
+
+
+ganchos = []
+
 
 plugin.register(Ctx())
+for g in (("middleware", "tool_execution"), ("middleware", "llm_request"), ("hook", "transform_tool_result"),
+          ("hook", "pre_llm_call")):
+    checa(g in ganchos, f"o cofre se liga ao Hermes: {g}")
 for plugin_nome, nome in plugin.FERRAMENTAS:
     checa(nome in registradas, f"{plugin_nome}/{nome} carrega só com a ponte (sem o Agent Zero)")
 for nome, (schema, _) in registradas.items():
