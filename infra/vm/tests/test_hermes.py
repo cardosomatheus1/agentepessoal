@@ -101,6 +101,16 @@ for d in skills:
     checa(cab.get("name") == d.name and cab.get("description") and cab.get("adaptada_hermes"), f"skill {d.name}: cabeçalho")
     checa(not ANTIGAS.search(texto), f"skill {d.name} ainda cita ferramenta do A0: {ANTIGAS.findall(texto)[:3]}")
 checa('[ -e "$SK/$n" ] || { cp -r' in sh and "chown -R 10000:10000" in sh, "skill semeada só se ainda não existe (o curador cuida)")
+# fase 7: o dia de sombra numa cópia dos dados, no ensaio, com o relógio; para sozinho
+so = (H / "sombra.sh").read_text()
+checa(subprocess.run(["bash", "-n", str(H / "sombra.sh")]).returncode == 0, "sintaxe do sombra.sh")
+checa("-e AGENTEPESSOAL_ENSAIO=1 -e AGENTEPESSOAL_RELOGIO=1" in so and '-v "$S/a0usr":/a0/usr' in so
+      and "/opt/hermes/a0usr" not in so and "rsync -a" in so, "sombra: cópia dos dados, ensaio e relógio")
+for x in ("/segredos", "/whatsapp/.chave", "/mcp", "/.aws", "/settings.json", "'/usuarios.json*'", "/.env", "/navegador"):
+    checa(f"--exclude {x}" in so, f"sombra: {x} fica fora da cópia")
+checa("-p 127.0.0.1:8643:8642" in so and "--network hermes" in so and "systemd-run" in so and "--on-active" in so,
+      "sombra: só no loopback, rede fechada, para sozinha")
+checa("jobs.resume_job" in so and "ligada_no_a0" in so, "sombra: liga só as rotinas que estão ligadas no A0")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
     checa(termo in alma, f"a persona traz {termo!r}")
