@@ -10,7 +10,8 @@
 # patchright do A0 passava (sem --headless, AutomationControlled desligado). O toque do "Resolver aqui" chega como mouse
 # de verdade do X e o quadro vem da tela do X (cdp_encaminhar.py, /tela/*): o clique sintético do CDP num navegador sem
 # tela levava "Verification failed" do Cloudflare, e com tela o print por CDP de página com Cloudflare trava. Com tela o
-# agente de usuário já é o do Chrome (o WhatsApp Web recusava o "HeadlessChrome"). Mesmo binário do A0 (chromium-1228, copiado do container dele uma vez, só leitura) e as mesmas opções de senha
+# agente de usuário já é o do Chrome (o WhatsApp Web recusava o "HeadlessChrome"). Nunca desligar as notificações (a opção disable-notifications): sem a API
+# de notificações o Turnstile dá "Verification failed" (achado ao vivo, 23/10: o mesmo navegador sem ela passa). Mesmo binário do A0 (chromium-1228, copiado do container dele uma vez, só leitura) e as mesmas opções de senha
 # (--password-store=basic --use-mock-keychain), para os cookies do perfil abrirem. Idempotente; roda como root no host,
 # chamado pelo subir.sh (e pelo convidado.sh, um por convidado) depois da rede existir. Imprime o endereço CDP na última
 # linha (NAVEGADOR_CDP=...).
@@ -76,7 +77,7 @@ docker run -d --name "$NOME" --restart no --network "$REDE" --ip "$IP" \
   --disable-prompt-on-repost --force-color-profile=srgb --no-service-autorun --disable-search-engine-choice-screen \
   --disable-infobars --disable-sync --hide-crash-restore-bubble \
   --password-store=basic --use-mock-keychain --no-first-run --no-default-browser-check \
-  --disable-breakpad --disable-notifications \
+  --disable-breakpad \
   --user-data-dir=/perfil --remote-debugging-port=9222 about:blank & \
   DISPLAY=:99 TELA_X=1 exec python3 /opt/cdp_encaminhar.py 9223' >/dev/null
 for i in $(seq 1 30); do

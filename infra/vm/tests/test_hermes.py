@@ -95,6 +95,7 @@ lanca = nav.split("docker run", 1)[1]
 checa("--headless" not in lanca and "--user-agent" not in lanca and "Xvfb :99 -screen 0 1920x1080x24" in lanca
       and "--window-size=1280,900 --disable-blink-features=AutomationControlled" in lanca and "HeadlessChrome" not in lanca,
       "o navegador roda COM tela num Xvfb, como o A0 (Cloudflare, 23/10); com tela ele já se apresenta como Chrome (WhatsApp Web)")
+checa("--disable-notifications" not in nav, "sem --disable-notifications: sem a API de notificações o Turnstile recusa (23/10)")
 checa("rm -f /perfil/Singleton*;" in nav, "a trava do perfil sai a cada subida (outro container = 'perfil em uso')")
 checa('-e BROWSER_CDP_URL="$CDP"' in sh and sh.index("HERMES_SEM_NAVEGADOR") < sh.index("docker run"),
       "o Hermes liga no navegador dele e não sobe sem ele")
