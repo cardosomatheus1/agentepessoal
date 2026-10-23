@@ -47,6 +47,7 @@ jobs:
           python3 infra/vm/tests/test_relogio_hermes.py
           python3 infra/vm/tests/test_rotinas_hermes.py
           python3 infra/vm/tests/test_ponte_hermes.py
+          python3 infra/vm/tests/test_portal.py
           python3 infra/operador/tests/test_segundo_cerebro.py
           python3 infra/operador/tests/test_cache_relatorio.py
           python3 infra/operador/tests/test_calibracao.py
@@ -59,5 +60,5 @@ jobs:
           python3 infra/reels/moldes/motor/test_voz.py
       - name: Sintaxe
         run: |
-          for f in infra/vm/*.sh; do bash -n "$f"; done
+          for f in infra/vm/*.sh infra/vm/hermes/*.sh infra/vm/portal/*.sh; do bash -n "$f"; done
           python3 -m py_compile infra/vm/*.py infra/operador/*.py infra/control/*.py

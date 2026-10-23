@@ -116,6 +116,8 @@ done
 RESPOSTA=$(curl -sS -m 120 http://127.0.0.1:8642/v1/chat/completions -H "Authorization: Bearer $(cat /opt/hermes/api_key)" \
   -H 'Content-Type: application/json' -d '{"model":"hermes","messages":[{"role":"user","content":"Responda só: PONTE OK"}]}' || true)
 if echo "$RESPOSTA" | grep -qi "PONTE OK"; then
+  [ -f "$AQUI/../portal/subir.sh" ] && { bash "$AQUI/../portal/subir.sh" "$IMAGEM" | grep "^PORTAL_OK" \
+    || { echo "HERMES_SEM_PORTAL: o portal não subiu"; exit 1; }; }
   docker exec hermes python3 /opt/data/agentepessoal/rotinas_aplicar.py | grep "^ROTINAS_OK" \
     || { echo "HERMES_SEM_ROTINAS: as rotinas não foram aplicadas"; exit 1; }
   echo "HERMES_OK $(docker inspect -f '{{.Image}}' hermes)"; exit 0

@@ -113,6 +113,9 @@ for x in ("/segredos", "/whatsapp/.chave", "/mcp", "/.aws", "/settings.json", "'
 checa("-p 127.0.0.1:8643:8642" in so and "--network hermes" in so and "systemd-run" in so and "--on-active" in so,
       "sombra: só no loopback, rede fechada, para sozinha")
 checa("jobs.resume_job" in so and "ligada_no_a0" in so, "sombra: liga só as rotinas que estão ligadas no A0")
+po = (RAIZ / "infra" / "vm" / "portal" / "subir.sh").read_text()
+checa("-e PORTAL_SO_LEITURA=1" in po and "-v /opt/a0/usr:/a0/usr:ro" in po and "PORTAL_PORTA=8650" in po
+      and "HERMES_SEM_PORTAL" in sh, "o portal sobe junto, só leitura até a virada")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
     checa(termo in alma, f"a persona traz {termo!r}")
