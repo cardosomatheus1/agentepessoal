@@ -253,6 +253,27 @@ def livre_99food(analise: dict, tool: str, args: dict, intencao: str, cfg: dict,
     return bool(URL_99.match(url or "") or NOVENTA_E_NOVE.search(texto)) and not FORA_99.search(texto)
 
 
+URL_ERP = re.compile(r"https?://([\w-]+\.)*raizconnect\.com\.br(:\d+)?(/|$)", re.I)
+CATEGORIAS_ERP = ("compra", "pagamento", "apagar", "contas_reais", "termos", "producao")
+FORA_ERP = re.compile(r"assin(ar|atura)|\bplanos?\b|upgrade|checkout|stripe|mercado ?pago|asaas|pagar\.me|"
+                      r"(n[uú]mero|dados|cadastrar|adicionar|salvar) (do |o |um )?cart[aã]o|cvv|validade do cart|"
+                      r"conta banc|dados banc|senha|2fa|dois fatores|e-?mail de recupera", re.I)
+URL_FORA_ERP = re.compile(r"/(assinatura|billing|planos?|checkout|pagamento-plano|upgrade)(/|\?|$)", re.I)
+
+
+def livre_erp(analise: dict, tool: str, args: dict, intencao: str, cfg: dict, url: str = "") -> bool:
+    """Matheus (23/10): "Pro erp n precisa de aprovação" — in his own ERP (raizconnect.com.br) the agent simulates a
+    client (buys supplies, finishes sales, closes the till, deletes test records) without asking, even above the
+    "compra: nunca" rule, and he is told. Only by the page the browser is on (a summary can't claim it). Never this way:
+    paying for the ERP's own plan, card or bank data, passwords and account security, messages to people (other
+    category, still asks)."""
+    if not cfg.get("erp_sem_perguntar", True) or (tool or "").lower() != "browser":
+        return False
+    if analise.get("categoria") not in CATEGORIAS_ERP or not URL_ERP.match(url or "") or URL_FORA_ERP.search(url):
+        return False
+    return not FORA_ERP.search(f"{intencao} {_texto(args)} {analise.get('resumo', '')}")
+
+
 # ------------------------------------------------------------------ leak guard (22/10, from Claude Duet's classifier)
 # What goes to other people (a message, an e-mail, a post, a form sent for review) never carries a card number, a CPF,
 # a password or an access token, whatever the rule of the category says and even where messages go without asking

@@ -168,6 +168,21 @@ checa(r and r["action"] == "block" and "cofre" in r["message"], f"digitando senh
 proxima.update(categoria="nenhuma", resumo="abrir menu")
 checa(ap.checar(tool_name="browser_click", args={"ref": "@e12"}, session_id="s-m") is None, "categoria nenhuma passa")
 
+# ERP da Raiz (23/10, "Pro erp n precisa de aprovação"): compra/venda no raizconnect.com.br passa acima do "compra: nunca"
+ap.ver_pagina(tool_name="browser_navigate", args={"url": "https://raizconnect.com.br/compras/nova"}, result='{"ok": true}',
+              session_id="s-erp")
+ap.ver_pagina(tool_name="browser_snapshot", args={}, result='- button "Finalizar compra" [ref=e5]', session_id="s-erp")
+proxima.update(categoria="compra", resumo="Finalizar a compra de insumos")
+avisos.clear()
+checa(ap.checar(tool_name="browser_click", args={"ref": "@e5"}, session_id="s-erp") is None and avisos and
+      "ERP Raiz" in avisos[0][1], f"compra no ERP passa e é avisada ({avisos})")
+proxima.update(categoria="pagamento", resumo="Assinar o plano Pro")
+r = ap.checar(tool_name="browser_click", args={"ref": "@e5"}, session_id="s-erp")
+checa(r and r["action"] == "block", f"assinar plano no ERP continua nunca ({r})")
+proxima.update(categoria="compra", resumo="Finalizar a compra de insumos")
+r = ap.checar(tool_name="browser_click", args={"ref": "@e12"}, session_id="s-m")
+checa(r and r["action"] == "block" and "compra: nunca" in r["message"], f"compra fora do ERP continua nunca ({r})")
+
 # rotina (cron): com approvals.cron_mode approve o Hermes aprovaria sozinho o portão do plugin; o "perguntar" das
 # regras não pode virar "permitir" numa rodada sem ninguém (no A0 a rotina perguntava): não roda e ele é avisado
 CRON = "cron_af83c3f846eb_20261023_100800"

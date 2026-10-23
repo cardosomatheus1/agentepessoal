@@ -143,6 +143,18 @@ class RevisarAcao(Extension):
                                             "", "", None, "progresso")
             except Exception as exc:
                 print(f"aprovacoes: 99Food notice failed: {exc}", flush=True)
+        if decisao != "permitir" and rv.livre_erp(analise, tool_name, args, intencao, cfg,
+                                                  agent.context.get_data("_navegador_url") or ""):
+            decisao = "permitir"  # 23/10: "Pro erp n precisa de aprovação", even above "compra: nunca"
+            analise["resumo"] = f"{analise['resumo']} — ERP Raiz: liberado pelo Matheus"[:300]
+            try:
+                wa = whatsapp()
+                if wa:
+                    await asyncio.to_thread(wa.enviar, wa.dono(agent.context),
+                                            f"📣 *ERP Raiz (sem pedir ok)* — {agent.context.name or 'tarefa'}\n\n{analise['resumo']}",
+                                            "", "", None, "progresso")
+            except Exception as exc:
+                print(f"aprovacoes: ERP notice failed: {exc}", flush=True)
         if analise["categoria"] != "nenhuma" and agent.context.id in rv.somente_leitura():
             decisao = "nunca"  # read-only chats (daily brief, proactive research) never change anything
         print(f"aprovacoes: {tool_name} -> {analise['categoria']}/{decisao}: {analise['resumo']}", flush=True)

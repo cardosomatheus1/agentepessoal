@@ -163,6 +163,33 @@ class Suite:
         ok(not rv.livre_99food({"categoria": "contas_reais", "resumo": "loja na 99"}, "browser", {}, "",
                                {"noventa_e_nove_sem_perguntar": False}, site), "desligável na configuração")
 
+    def t_erp_sem_perguntar(self):
+        rv, cfg = self.rv, {}
+        site = "https://raizconnect.com.br/compras/nova"
+        livre = lambda cat, resumo, url=site, intencao="": rv.livre_erp({"categoria": cat, "resumo": resumo},  # noqa: E731
+                                                                        "browser", {"action": "click", "ref": 7}, intencao, cfg, url)
+        # os bloqueios reais de 23/10 (teste de cliente novo, conta TESTE Luffy)
+        ok(livre("compra", "Finalizar a compra de insumos da Distribuidora Teste Alimentos Ltda"), "compra de insumos")
+        ok(livre("compra", "Finalizar a venda do X-Burger", "https://raizconnect.com.br/vendas/rapida"), "finalizar venda")
+        ok(livre("pagamento", "Registrar pagamento em cartão da venda", "https://app.raizconnect.com.br/caixa"),
+           "forma de pagamento da venda, subdomínio")
+        ok(livre("apagar", "Excluir o produto de teste Refrigerante"), "apagar registro de teste")
+        ok(rv.veredito({"compra": "nunca"}, {"categoria": "compra"}) == "nunca", "fora do ERP a regra nunca continua")
+        ok(not livre("compra", "Finalizar a compra", "https://www.mercadolivre.com.br/checkout"), "outro site: não")
+        ok(not livre("compra", "Finalizar a compra", ""), "página desconhecida: não")
+        ok(not livre("compra", "Finalizar compra no raizconnect.com.br", "https://loja.exemplo.com/"),
+           "só pela página, não pelo texto")
+        ok(not livre("compra", "Comprar", "https://raizconnect.com.br.evil.io/"), "endereço parecido não vale")
+        ok(not livre("pagamento", "Assinar o plano Pro do ERP"), "assinar plano do próprio ERP, não")
+        ok(not livre("pagamento", "Confirmar", "https://raizconnect.com.br/assinatura"), "página de assinatura, não")
+        ok(not livre("pagamento", "Cadastrar cartão de crédito para a cobrança"), "dados de cartão, não")
+        ok(not livre("contas_reais", "Trocar a senha da conta"), "senha, não")
+        ok(not livre("mensagem_terceiros", "Enviar o recibo por WhatsApp ao cliente"), "mensagem a pessoas continua pedindo")
+        ok(not livre("senha_seguranca", "Ativar 2FA"), "segurança da conta, não")
+        ok(not rv.livre_erp({"categoria": "compra", "resumo": "x"}, "code_execution_tool", {}, "", cfg, site), "só no navegador")
+        ok(not rv.livre_erp({"categoria": "compra", "resumo": "x"}, "browser", {}, "", {"erp_sem_perguntar": False}, site),
+           "desligável na configuração")
+
     # ------------------------------------------------------------------ "Nesta tarefa" (14/10)
 
     def t_nesta_tarefa_so_a_categoria_e_so_esta_tarefa(self):

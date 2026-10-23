@@ -13,6 +13,9 @@ regras:
   producao: perguntar         # mexer em sistemas em produção, deploy, banco de dados
 # Instagram messages: no approval, each one is announced on the phone (Matheus, 12/10). Publish and unsend still ask.
 instagram_sem_perguntar: true
+# His ERP (raizconnect.com.br): buying, selling, the till and deleting test records go without asking, even above
+# "compra: nunca"; each one is announced on the phone. The ERP's own plan, card/bank data and passwords never (23/10).
+erp_sem_perguntar: true
 # Actions you chose "Sempre permitir" for (one per line, filled by the buttons)
 sempre_permitir: ""
 # Minutes to wait for your answer before giving up on the action

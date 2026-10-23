@@ -192,6 +192,10 @@ def checar(tool_name="", args=None, **kw):
         motivos = rv.vazamento({"args": args_a0, "intencao": quer}, cofre)
         if motivos:
             return _barrar(motivos)
+    pagina = (_paginas.get(sessao) or {}).get("url", "")
+    if decisao != "permitir" and rv.livre_erp(analise, nome_a0, args_a0, quer, cfg, pagina):
+        _avisar(login, f"📣 *ERP Raiz (sem pedir ok)*\n\n{analise['resumo']}")
+        return None
     if decisao == "nunca":
         return {"action": "block", "message": (
             f"[Aprovações] Bloqueado pela regra do Matheus ({analise['categoria']}: nunca): «{analise['resumo']}». "
@@ -199,7 +203,6 @@ def checar(tool_name="", args=None, **kw):
     if decisao == "permitir":
         return None
     conversa = ponte.conversa(sessao)
-    pagina = (_paginas.get(sessao) or {}).get("url", "")
     if rv.liberacao_vale(analise, nome_a0, conversa.get_data("_aprovacoes_liberadas") or {}, pagina, time.time()):
         return None  # a janela da prospecção: ele já aprovou essa ação (só no Instagram, minutos)
     with _trava:
