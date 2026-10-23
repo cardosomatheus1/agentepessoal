@@ -26,6 +26,7 @@ from typing import Any
 PLUGINS = Path("/a0/usr/plugins")
 DADOS = Path("/opt/data/agentepessoal")
 SESSOES = DADOS / "sessoes.json"   # session id -> login, written by the bridge (ponte) when it opens a session
+PREFIXO_MIN = 4                    # "cron_*" ok; "*" or "c*" would hand every session to one person
 DONO_PADRAO = "matheus"            # sessions nobody claimed (operator tests, cron of the owner) are the owner's
 MANUAL_MAX = 6000                  # characters of the tool manual that go into the schema description
 
@@ -87,7 +88,7 @@ def login_mapeado(sessao: str) -> str:
         return ""
     login = mapa.get(sessao)
     if not login:
-        prefixos = sorted((k for k in mapa if isinstance(k, str) and k.endswith("*") and sessao.startswith(k[:-1])),
+        prefixos = sorted((k for k in mapa if isinstance(k, str) and k.endswith("*") and len(k) > PREFIXO_MIN and sessao.startswith(k[:-1])),
                           key=len, reverse=True)
         login = mapa[prefixos[0]] if prefixos else ""
     return str(login or "").strip().lower()

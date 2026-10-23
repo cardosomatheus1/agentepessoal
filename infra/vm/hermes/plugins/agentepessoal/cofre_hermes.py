@@ -69,6 +69,11 @@ def _dados(kw: dict) -> dict:
         return {}
 
 
+def _esconder(valor, kw: dict):
+    """Máscara de todos os cofres, o do dono da sessão primeiro (para o modelo ver os nomes que ele usa)."""
+    return mascarar(mascarar(valor, _dados(kw)), _todos())
+
+
 def _todos() -> dict:
     """Os valores de todas as pessoas, só para mascarar (esconder a mais nunca vaza; a menos, sim)."""
     c = cofre()
@@ -94,10 +99,18 @@ def _so_nomes(valor, c):
     return valor
 
 
+NIVEIS_ESCAPE = 3  # JSON dentro de JSON (ex.: uma ferramenta lê um .json e o resultado volta como JSON): 2 níveis
+
+
 def _formas(valor: str) -> set:
-    """O valor como está e como aparece dentro de um JSON (as ferramentas do Hermes devolvem JSON: uma senha com `"`,
-    `\\`, quebra de linha ou acento volta escapada e passaria pela troca exata; revisão OpenCode, 23/10)."""
-    return {valor, json.dumps(valor)[1:-1], json.dumps(valor, ensure_ascii=False)[1:-1]}
+    """O valor como está e como aparece dentro de JSON, até NIVEIS_ESCAPE níveis (as ferramentas do Hermes devolvem
+    JSON: uma senha com `"`, `\\`, quebra de linha ou acento volta escapada e passaria pela troca exata; revisões
+    OpenCode de 23/10)."""
+    formas, nivel = {valor}, {valor}
+    for _ in range(NIVEIS_ESCAPE):
+        nivel = {json.dumps(f, ensure_ascii=a)[1:-1] for f in nivel for a in (True, False)}
+        formas |= nivel
+    return formas
 
 
 def mascarar(valor, dados: dict):
@@ -105,7 +118,7 @@ def mascarar(valor, dados: dict):
     if not dados:
         return valor
     if isinstance(valor, str):
-        trocas = sorted(((f, n) for n, v in dados.items() if v and len(v) >= 4 for f in _formas(v)),
+        trocas = sorted(((f, n) for n, v in dados.items() if isinstance(v, str) and len(v) >= 4 for f in _formas(v)),
                         key=lambda t: -len(t[0]))
         for forma, nome in trocas:
             valor = valor.replace(forma, f"§§secret({nome})")
@@ -129,12 +142,11 @@ def _registrar(login: str, ferramenta: str, usados: list, sessao: str) -> None:
 
 def executar(tool_name="", args=None, next_call=None, **kw):
     """Middleware `tool_execution`."""
-    todos = _todos()
     if not isinstance(args, dict) or "§§secret(" not in json.dumps(args, ensure_ascii=False, default=str):
-        return mascarar(next_call(args), todos)
+        return _esconder(next_call(args), kw)
     c = cofre()
     if tool_name not in ACAO:
-        return mascarar(next_call(_so_nomes(args, c)), todos)
+        return _esconder(next_call(_so_nomes(args, c)), kw)
     if not _login(kw):
         return json.dumps({"error": "Esta conversa não está ligada a uma pessoa, então não há cofre para usar aqui. "
                                     "Peça a senha pelo canal da pessoa (Telegram/WhatsApp) ou rode a tarefa na conversa dela."},
@@ -149,7 +161,8 @@ def executar(tool_name="", args=None, next_call=None, **kw):
             f"Use um desses ou peça para ele mandar no Telegram/WhatsApp `/senha {faltando[0]} valor`.")},
             ensure_ascii=False)
     _registrar(_login(kw), tool_name, pedidos, str(kw.get("session_id") or kw.get("task_id") or ""))
-    resultado = mascarar(next_call(c.trocar(args, dados)), {**todos, **dados})
+    # o do dono primeiro, depois o de todos: juntar os dois num dict perderia o valor de outra pessoa com o mesmo nome
+    resultado = _esconder(next_call(c.trocar(args, dados)), kw)
     if isinstance(resultado, str) and pedidos:
         resultado += AVISO_USO.format(nomes=", ".join(f"{n} ({len(dados[n])} caracteres)" for n in pedidos))
     return resultado
@@ -159,7 +172,7 @@ def resultado_mascarado(tool_name="", args=None, result=None, **kw):
     """Gancho `transform_tool_result`: devolve o texto só quando algo foi mascarado."""
     if not isinstance(result, str):
         return None
-    novo = mascarar(result, _todos())
+    novo = _esconder(result, kw)
     return novo if novo != result else None
 
 
@@ -167,10 +180,7 @@ def pedido_mascarado(request=None, **kw):
     """Middleware `llm_request`: tira do pedido ao modelo qualquer valor do cofre (mensagens e prompt)."""
     if not isinstance(request, dict):
         return None
-    dados = _todos()
-    if not dados:
-        return None
-    novo = {k: (mascarar(v, dados) if k in ("messages", "system", "input", "instructions") else v)
+    novo = {k: (_esconder(v, kw) if k in ("messages", "system", "input", "instructions") else v)
             for k, v in request.items()}
     if novo == request:
         return None

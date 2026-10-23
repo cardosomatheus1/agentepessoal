@@ -84,6 +84,8 @@ ponte.SESSOES.write_text(json.dumps({"tg-fernanda-1": "fernanda", "cron_ab*": "i
 checa(ponte.login_mapeado("cron_abc_20261023") == "will" and ponte.login_mapeado("cron_abx") == "ilia",
       "chave com * cobre as sessões que começam com ela (a mais longa vale)")
 checa(ponte.login_mapeado("outra") == "", "login_mapeado não inventa dono (o cofre depende disso)")
+ponte.SESSOES.write_text(json.dumps({"*": "ilia", "c*": "will"}))
+checa(ponte.login_mapeado("qualquer") == "" and ponte.login_mapeado("cron_x") == "", "prefixo curto demais não vale")
 ponte.SESSOES.write_text("[1, 2]")
 checa(ponte.login_mapeado("x") == "" and ponte.login_da_sessao("x") == ponte.DONO_PADRAO, "mapa estragado não quebra")
 checa("helpers.tool" in sys.modules and not hasattr(sys.modules["helpers.tool"], "PrintStyle"), "só os módulos mínimos")
