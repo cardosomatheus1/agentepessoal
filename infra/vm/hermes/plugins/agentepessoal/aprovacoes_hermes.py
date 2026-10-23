@@ -10,7 +10,9 @@ O que é nosso de verdade e entra aqui, num gancho `pre_tool_call`:
 - as liberações do Matheus: mensagem no Instagram (avisada no celular), app da Meta da Raiz, homologação da 99, janela
   da prospecção, "Nesta tarefa" (escolha `session`) e "Sempre permitir" (escolha `always`, que também entra na lista
   que o revisor lê, como no A0);
-- a trava contra vazamento (cartão, CPF, token, valor do cofre) no que sai para outras pessoas, acima de qualquer regra.
+- a trava contra vazamento (cartão, CPF, token, valor do cofre) no que sai para outras pessoas, acima de qualquer regra;
+- numa rodada do cron (ninguém para responder; o `cron_mode: approve` aprovaria sozinho) o "perguntar" não roda: o
+  Matheus é avisado e a rotina diz PRECISA DE VOCÊ (as liberações acima continuam valendo).
 
 O Hermes não tem a "intenção declarada" do A0: o rótulo do elemento vem da última leitura da página (`post_tool_call`
 do browser_snapshot guarda ref → rótulo por sessão) e a página atual do último browser_navigate.
@@ -46,6 +48,8 @@ _trava = threading.Lock()
 _paginas: dict[str, dict] = {}     # sessão -> {"url": ..., "refs": {"e12": 'button "Enviar"'}}
 _pendentes: dict[str, dict] = {}   # rule_key -> {"sessao", "categoria", "resumo"}
 _tarefa: dict[str, dict] = {}      # sessão -> {categoria: quando} ("Nesta tarefa" = escolha session)
+_rotina_avisada: dict[str, set] = {}  # rodada do cron -> categorias já avisadas ao Matheus
+ROTINA = re.compile(r"^cron_[A-Za-z0-9]+_\d{8}_\d{6}$")  # a sessão de uma rodada do cron (igual a acesso_hermes.ROTINA)
 
 
 def _modulo(nome: str, caminho: Path):
@@ -207,6 +211,8 @@ def checar(tool_name="", args=None, **kw):
     if rv.livre_99food(analise, nome_a0, args_a0, quer, cfg, pagina):
         _avisar(login, f"📣 *99Food (sem pedir ok)*\n\n{analise['resumo']}")
         return None
+    if ROTINA.match(sessao):
+        return _rotina_sem_ok(login, sessao, analise)
     chave = "ap-" + hashlib.sha256(f"{tool_name}|{json.dumps(args, sort_keys=True, default=str)}".encode()).hexdigest()[:16]
     with _trava:
         _pendentes[chave] = {"sessao": sessao, "categoria": analise["categoria"], "resumo": analise["resumo"],
@@ -215,6 +221,27 @@ def checar(tool_name="", args=None, **kw):
             _pendentes.pop(velha, None)
     return {"action": "approve", "rule_key": chave,
             "message": f"{analise['resumo'] or tool_name} ({analise['categoria'].replace('_', ' ')})"}
+
+
+def _rotina_sem_ok(login: str, sessao: str, analise: dict) -> dict:
+    """Rotina (cron) com uma ação que pede o ok do Matheus. O cron do Hermes, com `approvals.cron_mode: approve` (para
+    o código das rotinas rodar como no A0), aprovaria sozinho o portão do plugin: o "perguntar" das regras viraria
+    "permitir" sem ninguém ver (ex.: um Direct lido na prospecção pedindo um e-mail). No A0 a rotina perguntava; aqui
+    não há quem responda: a ação não roda, ele é avisado (uma vez por categoria na rodada) e a rotina segue com o resto
+    e diz na resposta final. O que já é livre (Instagram, Meta da Raiz, 99, janela da prospecção) passou antes."""
+    resumo = analise.get("resumo") or "uma ação"
+    categoria = str(analise.get("categoria") or "")
+    with _trava:
+        avisadas = _rotina_avisada.setdefault(sessao, set())
+        novo = categoria not in avisadas
+        avisadas.add(categoria)
+    if novo:
+        _avisar(login, f"🔒 *Rotina pediu seu ok e não fez*\n\n{resumo} ({categoria.replace('_', ' ')}). "
+                       "Se quiser, peça na conversa que eu faço.")
+    return {"action": "block", "message": (
+        f"[Aprovações] Rotina sem ninguém para aprovar: «{resumo}» ({categoria.replace('_', ' ')}) pede o ok do "
+        "Matheus e NÃO foi executado (ele foi avisado). Não tente de novo nem por outro caminho; siga com o resto da "
+        "rotina e, na resposta final, diga em uma linha: PRECISA DE VOCÊ: <isso>.")}
 
 
 def _barrar(motivos: list) -> dict:

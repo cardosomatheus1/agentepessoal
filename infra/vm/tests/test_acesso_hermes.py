@@ -168,6 +168,39 @@ checa(r and r["action"] == "block" and "cofre" in r["message"], f"digitando senh
 proxima.update(categoria="nenhuma", resumo="abrir menu")
 checa(ap.checar(tool_name="browser_click", args={"ref": "@e12"}, session_id="s-m") is None, "categoria nenhuma passa")
 
+# rotina (cron): com approvals.cron_mode approve o Hermes aprovaria sozinho o portão do plugin; o "perguntar" das
+# regras não pode virar "permitir" numa rodada sem ninguém (no A0 a rotina perguntava): não roda e ele é avisado
+CRON = "cron_af83c3f846eb_20261023_100800"
+ap.ver_pagina(tool_name="browser_navigate", args={"url": "https://www.instagram.com/direct/t/1/"}, result='{"ok": true}',
+              session_id=CRON)
+ap.ver_pagina(tool_name="browser_snapshot", args={}, result=snap, session_id=CRON)
+rv.classificar = classificar
+avisos.clear()
+proxima.update(categoria="mensagem_terceiros", sempre_permitida=False, resumo="Enviar e-mail para fulano@x.com: «oi»")
+r = ap.checar(tool_name="mcp_google_send_gmail_message", args={"to": "fulano@x.com", "body": "oi"}, session_id=CRON)
+checa(r and r["action"] == "block" and "PRECISA DE VOCÊ" in r["message"] and "fulano@x.com" in r["message"],
+      f"rotina: e-mail (perguntar) não roda sozinho ({r})")
+checa(len(avisos) == 1 and avisos[0][0] == "matheus" and "fulano@x.com" in avisos[0][1], f"rotina: ele é avisado ({avisos})")
+r = ap.checar(tool_name="mcp_google_send_gmail_message", args={"to": "outro@x.com", "body": "oi"}, session_id=CRON)
+checa(r and r["action"] == "block" and len(avisos) == 1, "rotina: a mesma categoria na rodada não repete o aviso")
+proxima.update(categoria="mensagem_terceiros", resumo="Enviar no Instagram para @fulano: «Oi»")
+avisos.clear()
+checa(ap.checar(tool_name="browser_click", args={"ref": "@e12"}, session_id=CRON) is None and avisos and
+      "Instagram (sem pedir ok)" in avisos[0][1], "rotina: Direct da prospecção segue livre (e avisado), como no A0")
+ponte.conversa(CRON).set_data("_aprovacoes_liberadas", {"categorias": ["mensagem_terceiros", "publicar"],
+                                                        "ate": __import__("time").time() + 600})
+proxima.update(categoria="publicar", resumo="Publicar comentário no post de @fulano")
+checa(ap.checar(tool_name="browser_click", args={"ref": "@e12"}, session_id=CRON) is None,
+      "rotina: a janela da prospecção (comentário aprovado) segue valendo")
+ponte.conversa(CRON).set_data("_aprovacoes_liberadas", None)
+proxima.update(categoria="pagamento", resumo="Pagar o plano")
+r = ap.checar(tool_name="browser_click", args={"ref": "@e12"}, session_id=CRON)
+checa(r and r["action"] == "block" and "nunca" in r["message"], f"rotina: nunca segue nunca ({r})")
+proxima.update(categoria="nenhuma", resumo="abrir menu")
+checa(ap.checar(tool_name="browser_click", args={"ref": "@e12"}, session_id=CRON) is None, "rotina: categoria nenhuma passa")
+r = ap.checar(tool_name="mcp_google_send_gmail_message", args={"to": "a@b.com", "body": "oi"}, session_id="s-m")
+checa(r is None or r.get("action") != "block" or "Rotina" not in r.get("message", ""), "fora da rotina nada muda")
+
 
 def falha(*a, **k):
     raise RuntimeError("fora do ar")

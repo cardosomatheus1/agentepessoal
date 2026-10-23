@@ -200,8 +200,11 @@ esteve no ar continua valendo. O A0 fica parado e intacto por 7 dias (até 30/10
   (`cerebro_operador.py`) segue igual e o relógio do Hermes processa a entrada (conferido: decisão 96 registrada).
 - `falhas_do_dia.py` (conserto noturno) lê também os logs do Hermes e dos convidados.
 - `/voz` estava desligado no A0 (nunca ligado: não havia `voz.json`); segue desligado.
-- No cron do Hermes, `approvals.cron_mode` fica em `deny` (padrão dele): rotina não roda `execute_code` nem comando
-  perigoso sem alguém para aprovar; ela usa o terminal comum (visto na Prospecção — buscar de 08:07).
+- No cron do Hermes, `approvals.cron_mode` passou a `approve` (commit 362e036: rotinas rodam código como no A0, com a
+  trava de rotina do `acesso_hermes.py`). Efeito colateral corrigido em seguida: o portão do NOSSO plugin também seria
+  aprovado sozinho, então o "perguntar" das regras (e-mail a terceiros, publicar fora do Instagram, contas…) passava
+  sem o Matheus numa rotina; agora `aprovacoes_hermes.py` não executa, avisa ele e a rotina diz PRECISA DE VOCÊ. O
+  livre do Instagram, da Meta da Raiz, da 99 e a janela da prospecção seguem como no A0.
 - Pendente (fase 9): `implantar.py --moldes` e `--segundo-cerebro` ainda testam dentro do container do A0 (param com
   aviso); `/voz` (respostas em áudio) no Hermes, se o Matheus quiser.
 
