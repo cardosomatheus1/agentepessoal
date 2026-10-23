@@ -204,6 +204,23 @@ def main() -> int:
     respostas["/v1/runs/run_7"] = [{"status": "completed", "output": "fim run_7"}]
     p.acompanhar_hermes("run_7", "matheus", "123", espera=5, pausa=0)
     ok(ands[-1] == ("✅ Terminei", True) and p.ativos_hermes("matheus") == [], f"o último fecha a mensagem ({ands[-1]})")
+    # o Hermes reiniciou no meio (23/10, implantação): o run some (404); a ponte não fica 6 h perguntando, tira o
+    # pedido dos que rodam e diz a ele que foi interrompido
+    import urllib.error
+    respostas["/v1/runs"] = {"run_id": "run_x"}
+    p.entregar_hermes({"usuario": "matheus", "texto": "cria a conta no TikTok", "botao": ""}, "123")
+    hermes_antes = p._hermes
+
+    def sumiu(caminho, corpo=None, timeout=60, usuario=""):
+        if caminho == "/v1/runs/run_x":
+            raise urllib.error.HTTPError(caminho, 404, "Not Found", {}, None)
+        return hermes_antes(caminho, corpo, timeout, usuario)
+
+    p._hermes = sumiu
+    estado = p.acompanhar_hermes("run_x", "matheus", "123", espera=30, pausa=0)
+    p._hermes = hermes_antes
+    ok(estado == "sumiu" and p.ativos_hermes("matheus") == [] and "interrompido" in enviados[-1][1],
+       f"run sumido: sai dos que rodam e ele é avisado ({estado}, {enviados[-1]})")
     respostas["/v1/runs"] = {"run_id": "run_7"}
     p.entregar_hermes({"usuario": "matheus", "texto": "faz X", "botao": ""}, "123")
     p.entregar_hermes({"usuario": "matheus", "texto": "/parar", "botao": ""}, "123")

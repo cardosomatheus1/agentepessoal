@@ -1448,10 +1448,26 @@ def acompanhar_hermes(run_id: str, usuario: str, chat: str, espera: float = HERM
     """Segue o run até o fim: cada pedido de ok vira botões; passou de 45 s, a mensagem de andamento (o que ele está
     fazendo, editada no lugar); a resposta final vai à pessoa. Devolve o estado final."""
     vistos, inicio = set(), time.time()
-    fim, ultimo_andamento = inicio + espera, 0.0
+    fim, ultimo_andamento, sumido = inicio + espera, 0.0, 0
     while time.time() < fim:
         try:
             st = _hermes(f"/v1/runs/{run_id}", usuario=usuario)
+            sumido = 0
+        except urllib.error.HTTPError as exc:
+            # 23/10: o Hermes reiniciou (implantação) no meio de um pedido do Matheus: o run deixou de existir (404)
+            # e a ponte ficou 6 h perguntando por ele, sem resposta a ele e com o pedido contando como "rodando"
+            sumido = sumido + 1 if exc.code == 404 else 0
+            if sumido >= 3:
+                ativos_hermes(usuario, run_id, fim=True)
+                if usuario in _ANDAMENTO_ABERTO and not texto_andamento_hermes(usuario):
+                    _ANDAMENTO_ABERTO.discard(usuario)
+                    andamento_hermes(usuario, "⚠️ Interrompido", fim=True)
+                responder_hermes(usuario, chat, "⚠️ Seu pedido foi interrompido no meio (o agente reiniciou). Diga "
+                                                "\"continua\" que eu retomo de onde parei, ou mande de novo.")
+                return "sumiu"
+            log(f"hermes: run {run_id} não lido: {exc}")
+            time.sleep(pausa * 5)
+            continue
         except Exception as exc:
             log(f"hermes: run {run_id} não lido: {exc}")
             time.sleep(pausa * 5)
