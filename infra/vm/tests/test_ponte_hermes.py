@@ -242,6 +242,42 @@ def main() -> int:
     p.entregar_hermes({"usuario": "matheus", "texto": "/parar", "botao": ""}, "123")
     ok(chamadas[-1] == ("/v1/runs/run_7/stop", {}) and p.ativos_hermes("matheus") == [] and "Parei" in enviados[-1][1],
        "/parar para o que roda")
+    # tarefas longas (tarefas_hermes.py): o run some no meio de uma tarefa com plano em disco -> nada de "diga
+    # continua" (o vigia do Hermes retoma sozinho); o andamento mostra o passo; o /parar pausa as tarefas dele
+    p.USR_HOST = tmp / "usr"
+    pasta_t = p.USR_HOST / "tarefas" / "matheus" / "1023-1530-abcd"
+    pasta_t.mkdir(parents=True)
+    (pasta_t / "plano.json").write_text(json.dumps({
+        "id": "1023-1530-abcd", "login": "matheus", "titulo": "Teste E2E", "estado": "aberta", "sessao": "tg-matheus",
+        "sessao_atual": "tg-matheus", "sessao_alvo": "tg-matheus",
+        "passos": [{"n": 1, "titulo": "Cadastro", "estado": "feito"}, {"n": 2, "titulo": "Estoque", "estado": "fazendo"},
+                   {"n": 3, "titulo": "Relatório", "estado": "falta"}]}))
+    ok(p.pasta_tarefas("ilia") == tmp / "convidados" / "ilia" / "a0usr" / "tarefas" / "ilia"
+       and p.pasta_tarefas("matheus") == p.USR_HOST / "tarefas" / "matheus", "tarefas do convidado ficam na pasta dele")
+    ok([t["id"] for t in p.tarefas_abertas("matheus", "tg-matheus")] == ["1023-1530-abcd"]
+       and p.tarefas_abertas("matheus", "tgp1-matheus") == [] and p.tarefas_abertas("ilia") == [], "tarefas abertas por sessão")
+    ok(p.passo_da_tarefa("matheus", "tg-matheus") == "passo 2/3: Estoque", p.passo_da_tarefa("matheus", "tg-matheus"))
+    respostas["/v1/runs"] = {"run_id": "run_t"}
+    p.entregar_hermes({"usuario": "matheus", "texto": "testa a Raiz inteira", "botao": ""}, "123")
+    ok("passo 2/3: Estoque" in p.texto_andamento_hermes("matheus"), "andamento mostra o passo da tarefa")
+
+    def sumiu_t(caminho, corpo=None, timeout=60, usuario=""):
+        if caminho == "/v1/runs/run_t":
+            raise urllib.error.HTTPError(caminho, 404, "Not Found", {}, None)
+        return hermes_antes(caminho, corpo, timeout, usuario)
+
+    p._hermes = sumiu_t
+    n = len(enviados)
+    estado = p.acompanhar_hermes("run_t", "matheus", "123", espera=30, pausa=0)
+    p._hermes = hermes_antes
+    ok(estado == "sumiu" and len(enviados) == n and p.ativos_hermes("matheus") == [],
+       f"run sumido com tarefa longa: sem 'diga continua' (o vigia retoma) ({enviados[n:]})")
+    respostas["/v1/runs"] = {"run_id": "run_t2"}
+    p.entregar_hermes({"usuario": "matheus", "texto": "faz Y", "botao": ""}, "123")
+    p.entregar_hermes({"usuario": "matheus", "texto": "/parar", "botao": ""}, "123")
+    ok((pasta_t / "pausada").exists() and "Teste E2E" in enviados[-1][1] and "pausada" in enviados[-1][1],
+       f"/parar pausa a tarefa longa e diz como retomar ({enviados[-1]})")
+    ok(p.tarefas_abertas("matheus") == [], "pausada não conta como aberta para a ponte")
     p.entregar_hermes({"usuario": "matheus", "texto": "/nova", "botao": ""}, "123")
     nova = p.sessao_hermes("matheus")
     ok(nova.startswith("tg-matheus-") and json.loads(p.HERMES_SESSOES.read_text()).get(nova) == "matheus",

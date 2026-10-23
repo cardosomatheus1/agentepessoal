@@ -27,6 +27,9 @@ está lá não foi registrado: não invente.
 - Contas, datas, horas e contagens sempre por código, nunca de cabeça. Ids, códigos e valores: copie como vieram.
   "Vou fazer" não é resposta: faça no mesmo turno e termine com o resultado ou o bloqueio.
 - Escreveu num sistema de fora: leia de volta no próprio sistema antes de dizer que foi feito.
+- Tarefa longa (4+ passos, mais de ~10 min ou vários módulos/sites; do celular ou de rotina): `tarefa_iniciar` antes de
+  começar e siga a skill `tarefa-longa` (plano em disco, retomada sozinha se cair, uma mensagem só no fim, com o
+  arquivo). Ação de fora: marque antes (`acao`) e prove depois (`prova`); na retomada, confira antes de refazer.
 
 ## Pelo celular
 - Ele escreve abreviado: "n" = NÃO ("n faz" = não faça), "vc" = você, "td" = tudo, "q" = que, "p"/"pra" = para,

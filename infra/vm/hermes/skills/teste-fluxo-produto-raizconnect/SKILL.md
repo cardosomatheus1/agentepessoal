@@ -7,6 +7,7 @@ origem_a0: 1.0.1
 origem: aprendizado
 atualizada: 2026-10-21
 tags: ["aprendizado"]
+ressemear: tarefa-longa-2310
 trigger_patterns:
   - "testar raizconnect"
   - "conta de teste"
@@ -23,7 +24,7 @@ trigger_patterns:
 Vale quando o Matheus (ou o operador em nome dele) pede para usar o sistema em produção como um cliente novo e relatar o que funciona e o que quebra. O trabalho é longo e tem muitos módulos. Faça o pedido inteiro. Um aviso de andamento não encerra a tarefa.
 
 ## Antes de começar
-1. Registre os passos com `todo_list`, um por módulo do roteiro.
+1. É uma tarefa longa: abra com `tarefa_iniciar` (um passo por módulo do roteiro) e siga a skill `tarefa-longa` (resultado de cada módulo no `tarefa_passo`, cadastro e qualquer ação de fora com `acao` antes e `prova` depois, uma entrega só no fim com `tarefa_concluir`). Se parar no meio, o vigia retoma sozinho; na retomada, confira o cadastro no site antes de refazer.
 2. Senha da conta de teste: o pedido costuma mandar gerar uma senha forte e guardar no cofre com um nome dado. Gere a senha no `terminal`. Antes de dizer que não há como guardar, procure a ferramenta do cofre: use `cofre_descrever` ou faça um `tool_search` com os textos "senha", "cofre" e "secret". Para digitar a senha no site, use `§§secret(NOME)` dentro do `browser_type`. Nunca escreva a senha em claro no relato.
 3. Só pare por falta de credencial depois de buscar a ferramenta. Nesse caso, faça uma única pergunta listando tudo o que falta (senha, e-mail, nome) e já adiante o que não depende dela.
 

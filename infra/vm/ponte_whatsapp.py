@@ -1372,6 +1372,58 @@ def instancia(usuario: str) -> tuple[str, str]:
     return (f"http://127.0.0.1:{porta}", f"hermes-{login}") if porta else (HERMES_URL, "hermes")
 
 
+# Tarefas longas (tarefas_hermes.py do plugin, 23/10): o plano de cada uma fica em /a0/usr/tarefas/<login>/<id> do
+# Hermes da pessoa. A ponte só lê (andamento, run sumido) e marca "pausada" no /parar; quem retoma é o vigia do Hermes.
+def pasta_tarefas(usuario: str) -> Path:
+    login = re.sub(r"[^a-z0-9_-]", "", str(usuario or "").lower())
+    if login and (HERMES_CONVIDADOS / login / "porta").exists():
+        return HERMES_CONVIDADOS / login / "a0usr" / "tarefas" / login
+    return USR_HOST / "tarefas" / login
+
+
+def tarefas_abertas(usuario: str, sessao: str = "") -> list:
+    """Os planos abertos (não pausados) da pessoa; com `sessao`, só os que andam nessa sessão."""
+    abertas = []
+    if not usuario:
+        return abertas
+    for arq in sorted(pasta_tarefas(usuario).glob("*/plano.json")):
+        try:
+            plano = json.loads(arq.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if plano.get("estado") != "aberta" or (arq.parent / "pausada").exists():
+            continue
+        if sessao and sessao not in (plano.get("sessao"), plano.get("sessao_atual"), plano.get("sessao_alvo")):
+            continue
+        abertas.append({**plano, "_pasta": str(arq.parent)})
+    return abertas
+
+
+def pausar_tarefas(usuario: str) -> list:
+    """O /parar: as tarefas abertas da pessoa ficam pausadas (o vigia do Hermes não as retoma). Devolve os títulos."""
+    titulos = []
+    for plano in tarefas_abertas(usuario):
+        try:
+            (Path(plano["_pasta"]) / "pausada").write_text(str(time.time()))
+            titulos.append(str(plano.get("titulo") or plano.get("id")))
+        except OSError as exc:
+            log(f"hermes: tarefa {plano.get('id')} não pausou: {exc}")
+    return titulos
+
+
+def passo_da_tarefa(usuario: str, sessao: str) -> str:
+    """"passo 3/5: <título>" da tarefa longa que anda nesta sessão ("" sem tarefa), para a mensagem de andamento."""
+    for plano in tarefas_abertas(usuario, sessao)[:1]:
+        passos = plano.get("passos") or []
+        atual = next((p for p in passos if p.get("estado") == "fazendo"), None) or next(
+            (p for p in passos if p.get("estado") == "falta"), None)
+        feitos = sum(1 for p in passos if p.get("estado") == "feito")
+        if atual:
+            return f"passo {atual.get('n')}/{len(passos)}: {resumo_pedido(str(atual.get('titulo') or ''), 50)}"
+        return f"{feitos}/{len(passos)} passos feitos"
+    return ""
+
+
 def _hermes(caminho: str, corpo: dict | None = None, timeout: int = 60, usuario: str = "") -> dict:
     base = instancia(usuario)[0] if usuario else HERMES_URL
     req = urllib.request.Request(base + caminho, data=json.dumps(corpo).encode() if corpo is not None else None,
@@ -1458,10 +1510,19 @@ def acompanhar_hermes(run_id: str, usuario: str, chat: str, espera: float = HERM
             # e a ponte ficou 6 h perguntando por ele, sem resposta a ele e com o pedido contando como "rodando"
             sumido = sumido + 1 if exc.code == 404 else 0
             if sumido >= 3:
+                with _TRAVA_HERMES:
+                    sessao_run = str((_HERMES_RUNS.get(run_id) or {}).get("sessao") or "")
                 ativos_hermes(usuario, run_id, fim=True)
+                # uma tarefa longa anda nesta sessão: o vigia do Hermes retoma sozinho do próximo passo (sem aviso
+                # no meio; a pessoa recebe só o resultado no fim)
+                com_tarefa = bool(sessao_run and tarefas_abertas(usuario, sessao_run))
                 if usuario in _ANDAMENTO_ABERTO and not texto_andamento_hermes(usuario):
                     _ANDAMENTO_ABERTO.discard(usuario)
-                    andamento_hermes(usuario, "⚠️ Interrompido", fim=True)
+                    andamento_hermes(usuario, "⏳ O agente reiniciou no meio; retomo a tarefa sozinho de onde parou."
+                                     if com_tarefa else "⚠️ Interrompido", fim=True)
+                if com_tarefa:
+                    log(f"hermes: run {run_id} de {usuario} sumiu; a tarefa longa da sessão {sessao_run} será retomada")
+                    return "sumiu"
                 responder_hermes(usuario, chat, "⚠️ Seu pedido foi interrompido no meio (o agente reiniciou). Diga "
                                                 "\"continua\" que eu retomo de onde parei, ou mande de novo.")
                 return "sumiu"
@@ -1624,6 +1685,10 @@ def texto_andamento_hermes(usuario: str, agora: float | None = None) -> str:
     minutos = lambda i: max(1, round((agora - i["desde"]) / 60))  # noqa: E731
     if not pedidos:
         return ""
+    for i in pedidos:  # tarefa longa nesta sessão: o passo do plano diz mais que o último evento
+        passo = passo_da_tarefa(usuario, str(i.get("sessao") or ""))
+        if passo:
+            i["fazendo"] = passo
     if len(pedidos) == 1:
         i = pedidos[0]
         return (f"⏳ Trabalhando no seu pedido ({minutos(i)} min" + (f" · {i['fazendo']}" if i.get("fazendo") else "")
@@ -1668,7 +1733,11 @@ def comando_hermes(usuario: str, chat: str, texto: str) -> bool:
             except Exception as exc:
                 log(f"hermes: /parar {run_id}: {exc}")
             ativos_hermes(usuario, run_id, fim=True)
-        responder_hermes(usuario, chat, "⏹️ Parei o que estava rodando." if parados else "Nada estava rodando.")
+        pausadas = pausar_tarefas(usuario)  # senão o vigia das tarefas longas retomaria o que ele mandou parar
+        nota = (f" A tarefa longa «{pausadas[0]}» ficou pausada" if len(pausadas) == 1 else
+                f" {len(pausadas)} tarefas longas ficaram pausadas" if pausadas else "")
+        nota += "; diga \"continua\" para retomar." if pausadas else ""
+        responder_hermes(usuario, chat, ("⏹️ Parei o que estava rodando." if parados else "Nada estava rodando.") + nota)
         return True
     if cmd in ("/nova", "/novo", "nova conversa"):
         sessao_hermes(usuario, "tg", nova=True)

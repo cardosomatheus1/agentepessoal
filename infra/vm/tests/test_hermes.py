@@ -121,7 +121,8 @@ checa("FROM python:3.12.8-slim" in df_mcp and "workspace-mcp==2.0.1" in df_mcp a
       "conector do Google com a versão e as dependências do A0")
 # fase 3: as 27 skills do A0 adaptadas às ferramentas do Hermes, semeadas uma vez (depois são do curador dele)
 skills = sorted(d for d in (H / "skills").iterdir() if d.is_dir())
-checa(len(skills) == 27, f"as 27 skills do A0 adaptadas ({len(skills)})")
+checa(len(skills) == 28 and (H / "skills" / "tarefa-longa").is_dir(),
+      f"as 27 skills do A0 adaptadas + tarefa-longa (23/10) ({len(skills)})")
 ANTIGAS = re.compile(r"`browser`|vision_load|code_execution|search_engine|ferramentas_extras|call_subordinate|notify_user|"
                      r"document_query|`response`|`scheduler`|salvar_rotina|me_mostre|tarefa_limite|criar_gatilho|"
                      r"browser_id|`content`|upload_file|`pesquisar`|`wait`")

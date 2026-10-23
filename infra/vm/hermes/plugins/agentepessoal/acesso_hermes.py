@@ -25,6 +25,7 @@ CONVIDADO_PODE = frozenset({
     "web_search", "web_extract", "vision_analyze", "video_analyze", "clarify", "todo_list", "text_to_speech",
     "lembrar", "ficha", "cofre_descrever", "analisar_imagens", "assistir_video", "videos_em_alta", "whatsapp_enviar",
     "terminal_isolado", "ler", "conversa_externa",
+    "tarefa_iniciar", "tarefa_passo", "tarefa_status", "tarefa_concluir",  # as tarefas longas dele (só as dele)
 })
 # Virada (fase 8): no Hermes PRÓPRIO do convidado (hermes/convidado.sh: memória, conversas, cron e navegador só dele)
 # voltam o navegador (perfil dele), a memória e a busca nas conversas (as dele), os subagentes e as rotinas (até 5, no

@@ -94,6 +94,9 @@ def _extras() -> list:
         feitas.append(("conversa_pendente", botoes.reentregar))
     if externas is not None:
         feitas.append(("externas_hermes", externas.passo_do_relogio))
+    tarefas = sys.modules.get("agentepessoal_tarefas")
+    if tarefas is not None:  # o vigia das tarefas longas (as deste container: o Matheus aqui, o convidado no dele)
+        feitas.append(("tarefas_hermes", tarefas.passo_do_relogio))
     return feitas
 
 
