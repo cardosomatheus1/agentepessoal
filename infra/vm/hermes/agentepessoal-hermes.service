@@ -1,0 +1,15 @@
+# Starts the Hermes container at boot only after the firewall closed its network and the read-only view of the
+# agent's data is mounted (23/10 migration; OpenCode review: with Docker's own restart policy the container came up
+# seconds before agentepessoal-firewall.service). The container itself is created by subir.sh with --restart no.
+[Unit]
+Description=Hermes do agente (depois do firewall e da vista dos dados)
+After=docker.service agentepessoal-firewall.service agentepessoal-hermes-dados.service
+Requires=docker.service agentepessoal-firewall.service agentepessoal-hermes-dados.service
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=/bin/sh -c 'iptables -C INPUT -s "$$(docker network inspect hermes -f "{{range .IPAM.Config}}{{.Subnet}}{{end}}")" -j DROP'
+ExecStart=/usr/bin/docker start hermes
+ExecStop=/usr/bin/docker stop hermes
+[Install]
+WantedBy=multi-user.target

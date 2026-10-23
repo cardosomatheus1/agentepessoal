@@ -48,8 +48,9 @@ iptables -C INPUT -s "$(docker network inspect hermes -f '{{range .IPAM.Config}}
 # No ensaio, o que dá poder de agir fora das ferramentas aparece vazio no container: chave da ponte do celular, cofre,
 # chaves e login do A0, credenciais AWS, perfis logados do navegador, tokens dos conectores, celular e caixas.
 ESCONDIDOS=()
-for f in .env secrets.env settings.json usuarios.json usuarios.json.antes-operador; do
-  [ -e "/opt/hermes/a0usr/$f" ] && ESCONDIDOS+=(-v "/dev/null:/a0/usr/$f:ro")  # (vista só leitura: não cria o que falta)
+for caminho in /opt/hermes/a0usr/.env /opt/hermes/a0usr/secrets.env /opt/hermes/a0usr/settings.json /opt/hermes/a0usr/usuarios.json*; do
+  f=$(basename "$caminho")
+  [ -f "$caminho" ] && ESCONDIDOS+=(-v "/dev/null:/a0/usr/$f:ro")  # (vista só leitura: não cria o que falta)
 done
 for d in .aws whatsapp segredos navegador navegador_visual mcp celular delegados; do
   [ -d "/opt/hermes/a0usr/$d" ] && ESCONDIDOS+=(--mount "type=tmpfs,destination=/a0/usr/$d,tmpfs-mode=0755")
@@ -58,7 +59,7 @@ done
 # em /opt/hermes/data/agentepessoal/ensaio_celular.jsonl (whatsapp/helpers/ponte.py, conteudo/helpers/conteudo.py).
 # E, no ensaio, a chave da ponte do celular (/a0/usr/whatsapp) e os valores do cofre (/a0/usr/segredos) aparecem vazios
 # no container: um terminal ou código do Hermes não tem com que mandar ao celular nem publicar por fora das ferramentas.
-docker run -d --name hermes --restart unless-stopped --network hermes \
+docker run -d --name hermes --restart no --network hermes \
   --memory 3g --memory-swap 3g \
   --add-host host.docker.internal:host-gateway \
   -v "$DADOS":/opt/data \
@@ -72,6 +73,10 @@ docker run -d --name hermes --restart unless-stopped --network hermes \
   -e AGENTEPESSOAL_ENSAIO=1 \
   -p 127.0.0.1:8642:8642 \
   "$IMAGEM" gateway run >/dev/null
+# Na subida da VM quem liga o Hermes é esta unidade, depois do firewall e da vista (não o reinício do próprio Docker).
+install -m 644 "$AQUI/agentepessoal-hermes.service" /etc/systemd/system/agentepessoal-hermes.service
+systemctl daemon-reload
+systemctl enable -q agentepessoal-hermes.service
 for i in $(seq 1 60); do
   curl -fsS -m 3 http://127.0.0.1:8642/health >/dev/null 2>&1 && break
   sleep 2

@@ -46,8 +46,11 @@ checa(re.search(r"FROM ghcr.io/astral-sh/uv:\d+\.\d+\.\d+ AS uv", df), "uv com v
 checa(subprocess.run(["bash", "-n", str(H / "subir.sh")]).returncode == 0, "sintaxe do script")
 for d in (".aws", "whatsapp", "segredos", "navegador", "mcp", "celular", "delegados"):
     checa(re.search(rf"for d in (?:[^;]*\s)?{re.escape(d)}(?=[\s;])", sh), f"no ensaio {d} aparece vazio no Hermes")
-for f in (".env", "secrets.env", "settings.json", "usuarios.json"):
-    checa(re.search(rf"for f in (?:[^;]*\s)?{re.escape(f)}(?=[\s;])", sh), f"no ensaio {f} aparece vazio no Hermes")
+for f in ("/.env ", "/secrets.env ", "/settings.json ", "/usuarios.json*;"):
+    checa(re.search(rf"for caminho in [^;]*{re.escape(f.rstrip(';'))}", sh), f"no ensaio {f.strip('/ ;')} aparece vazio no Hermes")
+ue = (H / "agentepessoal-hermes.service").read_text()
+checa("--restart no" in sh and "agentepessoal-firewall.service" in ue and "ExecStartPre=" in ue,
+      "na subida da VM o Hermes só liga depois do firewall (não pelo reinício do Docker)")
 checa('"${ESCONDIDOS[@]}"' in sh and "--network hermes" in sh, "o container usa a rede própria e os escondidos")
 checa(sh.index("HERMES_SEM_FIREWALL") < sh.index("docker run"), "não sobe sem a rede fechada")
 fw = (RAIZ / "infra" / "vm" / "firewall.sh").read_text()
