@@ -80,15 +80,21 @@ case "$ACAO" in
 virar)
   [ -f "$FONTE/subir.sh" ] || { echo "VIRADA_SEM_FONTE: implante o Hermes (implantar.py --hermes) antes"; exit 1; }
   opencode_no_host
-  chave hermes
+  # revisão OpenCode 23/10: a chave só vira com o Hermes já de pé no modo novo. A imagem antes (pode levar minutos);
+  # com o A0 parado e o Hermes subindo, as mensagens esperam na fila da ponte (o A0 "fora do ar" as segura).
+  HERMES_SO_IMAGEM=1 bash "$FONTE/subir.sh" | grep -q "^HERMES_IMAGEM_OK" || { echo "VIRADA_FALHOU: a imagem não ficou pronta"; exit 1; }
   docker update --restart no agent-zero >/dev/null 2>&1 || true
   docker stop -t 60 agent-zero >/dev/null 2>&1 || true
   systemctl disable --now agentepessoal-google-mcp.service agentepessoal-agent-tools.service >/dev/null 2>&1 || true
-  if ! bash "$FONTE/subir.sh" > /var/log/agentepessoal-virada.log 2>&1; then
+  if ! HERMES_VIRADA=1 bash "$FONTE/subir.sh" > /var/log/agentepessoal-virada.log 2>&1; then
     tail -30 /var/log/agentepessoal-virada.log
-    echo "VIRADA_FALHOU: o Hermes não subiu no modo virada. Para voltar: bash /opt/hermes/virada.sh voltar"; exit 1
+    echo "VIRADA_FALHOU: o Hermes não subiu no modo virada; voltando ao A0"
+    bash "$0" voltar "virada falhou: volta automática"
+    exit 1
   fi
   grep -E "^(HERMES_OK|CONVIDADO_OK|PORTAL_OK)" /var/log/agentepessoal-virada.log || true
+  chave hermes
+  /opt/agentepessoal/firewall.sh || true  # agora pela chave (a subida da VM também)
   rotinas_hermes ligar
   systemctl enable -q agentepessoal-portal-tunnel.service 2>/dev/null && systemctl restart agentepessoal-portal-tunnel.service || true
   systemctl restart agentepessoal-url.service || true
@@ -100,10 +106,16 @@ voltar)
   fi
   chave a0
   if [ -f "$FONTE/subir.sh" ]; then
-    bash "$FONTE/subir.sh" > /var/log/agentepessoal-volta.log 2>&1 || {
+    HERMES_VIRADA=0 bash "$FONTE/subir.sh" > /var/log/agentepessoal-volta.log 2>&1 || {
       tail -20 /var/log/agentepessoal-volta.log; echo "VOLTA: o Hermes não voltou ao ensaio; parando o Hermes";
-      docker stop hermes >/dev/null 2>&1 || true; }
+      for c in $(docker ps --format '{{.Names}}' | grep -E '^hermes' || true); do docker stop "$c" >/dev/null 2>&1 || true; done; }
   fi
+  # nenhum navegador do Hermes pode seguir aberto num perfil de verdade quando o A0 voltar (mesmos perfis)
+  for c in $(docker ps --format '{{.Names}}' | grep -E '^hermes-navegador' || true); do
+    docker inspect -f '{{range .Mounts}}{{.Source}} {{end}}' "$c" | grep -q "/opt/a0/usr/navegador/sessions" \
+      && { docker stop "$c" >/dev/null; echo "VOLTA: $c parado (perfil de verdade)"; }
+  done
+  /opt/agentepessoal/firewall.sh || true
   systemctl disable --now agentepessoal-portal-tunnel.service >/dev/null 2>&1 || true
   docker update --restart unless-stopped agent-zero >/dev/null
   docker start agent-zero >/dev/null

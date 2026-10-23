@@ -59,7 +59,9 @@ ESC=()
 for f in .env secrets.env settings.json usuarios.json usuarios.json.antes-operador; do
   [ -f "/opt/hermes/a0usr/$f" ] && ESC+=(-v "/dev/null:/a0/usr/$f:ro")
 done
-for d in .aws segredos mcp delegados navegador navegador_visual .time_travel .tmp workdir chats chats_arquivo \
+# (o cofre fica visível como no A0: o do convidado é /a0/usr/segredos/<login>.json e só o dele vale nas ferramentas,
+# cofre_hermes.py; ele não tem terminal nem leitura de arquivos para ver o resto)
+for d in .aws mcp delegados navegador navegador_visual .time_travel .tmp workdir chats chats_arquivo \
          segundo_cerebro celular; do
   [ -d "/opt/hermes/a0usr/$d" ] && ESC+=(--mount "type=tmpfs,destination=/a0/usr/$d,tmpfs-mode=0755")
 done

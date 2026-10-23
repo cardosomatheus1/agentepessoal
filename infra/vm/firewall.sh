@@ -53,6 +53,7 @@ fi
 VIRADA=0
 python3 -c 'import json,sys; sys.exit(0 if json.load(open("/var/lib/agentepessoal/destino.json")).get("padrao") == "hermes" else 1)' \
   2>/dev/null && VIRADA=1
+[ -n "${HERMES_VIRADA:-}" ] && VIRADA="$HERMES_VIRADA"  # virada.sh sobe o modo novo antes de virar a chave
 aceitar_input() {  # $1 rede, $2 porta, $3 1=pôr / 0=tirar (acima do DROP da rede)
   local a=(INPUT -s "$1" -p tcp --dport "$2" -j ACCEPT)
   iptables -C "${a[@]}" 2>/dev/null && iptables -D "${a[@]}"

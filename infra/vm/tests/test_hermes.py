@@ -144,9 +144,13 @@ checa("MODO=(-e PORTAL_SO_LEITURA=1)" in po and 'MONTAGEM="/opt/a0/usr:/a0/usr:r
 vi = (H / "virada.sh").read_text()
 checa(subprocess.run(["bash", "-n", str(H / "virada.sh")]).returncode == 0, "sintaxe do virada.sh")
 v, vo = vi.split("\nvirar)", 1)[1].split("\n  ;;", 1)[0], vi.split("\nvoltar)", 1)[1].split("\n  ;;", 1)[0]
-checa(v.index("chave hermes") < v.index("docker stop") < v.index('bash "$FONTE/subir.sh"') < v.index("rotinas_hermes ligar")
+checa(v.index("HERMES_SO_IMAGEM=1") < v.index("docker stop") < v.index('HERMES_VIRADA=1 bash "$FONTE/subir.sh"')
+      < v.index("chave hermes") < v.index("rotinas_hermes ligar") and 'bash "$0" voltar' in v
       and "docker update --restart no agent-zero" in v and "docker rm" not in vi,
-      "virar: chave, A0 parado (não removido, sem reinício automático), Hermes no modo virada, rotinas ligadas")
+      "virar: imagem antes, A0 parado (não removido), Hermes de pé no modo virada, só então a chave e as rotinas; "
+      "se falhar, volta sozinho")
+checa("grep -q \"/opt/a0/usr/navegador/sessions\"" in vo and vo.index("navegador/sessions") < vo.index("docker start agent-zero"),
+      "voltar: nenhum navegador do Hermes fica num perfil de verdade quando o A0 volta")
 checa(vo.index("rotinas_hermes pausar") < vo.index("chave a0") < vo.index("docker start agent-zero")
       and "docker update --restart unless-stopped agent-zero" in vo,
       "voltar: pausa as do Hermes antes de religar o A0 (nenhuma rotina roda duas vezes)")

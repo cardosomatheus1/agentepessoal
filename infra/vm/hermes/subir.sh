@@ -13,6 +13,7 @@ AQUI="$(cd "$(dirname "$0")" && pwd)"
 VIRADA=0
 python3 -c 'import json,sys; sys.exit(0 if json.load(open("/var/lib/agentepessoal/destino.json")).get("padrao") == "hermes" else 1)' \
   2>/dev/null && VIRADA=1
+[ -n "${HERMES_VIRADA:-}" ] && VIRADA="$HERMES_VIRADA"  # virada.sh sobe o modo novo antes de virar a chave
 if [ "$VIRADA" = 1 ] && [ "$(docker inspect -f '{{.State.Running}}' agent-zero 2>/dev/null)" = true ]; then
   echo "HERMES_A0_RODANDO: na virada o A0 precisa estar parado (o perfil do navegador e as rotinas são os mesmos)"; exit 1
 fi
@@ -61,6 +62,7 @@ fi
 # Constrói antes de derrubar: o Hermes fica fora o mínimo (com cache, repetir não refaz nada).
 grep -q "^FROM $BASE\$" "$AQUI/imagem/Dockerfile" || { echo "HERMES_IMAGEM: o Dockerfile não parte de $BASE"; exit 1; }
 docker image inspect "$IMAGEM" >/dev/null 2>&1 || docker build -q -t "$IMAGEM" "$AQUI/imagem" >/dev/null
+[ "${HERMES_SO_IMAGEM:-0}" = 1 ] && { echo "HERMES_IMAGEM_OK $IMAGEM"; exit 0; }  # virada.sh: a imagem antes de parar o A0
 docker rm -f hermes >/dev/null 2>&1 || true  # antes de remontar a vista: nada a segurando
 for c in $(docker ps -a --format '{{.Names}}' | grep -E '^hermes-' | grep -vE '^hermes-(navegador|mcp|sombra)' || true); do
   docker rm -f "$c" >/dev/null 2>&1 || true  # os Hermes dos convidados também usam a vista (sobem de novo abaixo)

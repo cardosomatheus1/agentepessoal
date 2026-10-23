@@ -89,6 +89,9 @@ def _extras() -> list:
         m = sys.modules.get("agentepessoal_email")
         if m is not None:
             feitas.append(("email_hermes", m.passo))
+    botoes = sys.modules.get("agentepessoal_botoes")
+    if botoes is not None:  # o que não chegou à conversa (ponte fora do ar) vai de novo
+        feitas.append(("conversa_pendente", botoes.reentregar))
     if externas is not None:
         feitas.append(("externas_hermes", externas.passo_do_relogio))
     return feitas

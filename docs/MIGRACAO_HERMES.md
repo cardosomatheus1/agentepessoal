@@ -123,37 +123,61 @@ Estado em 23/10, fim da fase 7 (✅ feito e conferido ao vivo no ensaio · ⏳ f
 | 4 | Navegador com os perfis logados (Instagram, Meta…) | ✅ 23/10. `hermes-navegador`: o Chromium 1228 do A0 com uma **cópia** do perfil `shared` (o A0 segue com o dele), CDP só na rede hermes (repasse 9223, firewall só para ele); o Hermes usa as ferramentas `browser_*` dele (não o Browser Use: cada clique passa pelas aprovações). Ao vivo: logado como @raiz.connect, leu a caixa do Direct e abriu a conversa com Mais Congelados (o único clique liberado no ensaio é abrir conversa/aba do Direct, pelo rótulo lido), nada digitado nem enviado |
 | 5 | Rotinas como agendamentos do Hermes (desligados) + acordar a VM | ✅ 23/10. As 23 tarefas do A0 no cron do Hermes, pausadas (`rotinas_aplicar.py` a cada implantação: nova nasce pausada, atualizar não liga), Sonnet; bloco de tarefa agendada, correções aprovadas, portão (script do cron com `wakeAgent`), autoavaliação e resultado ao celular com as regras do A0 (`rotinas_hermes.py`); `reuniao` por cima do cron; ficha e decisões no 1º turno (`contexto_hermes.py`). As 17 ligadas rodaram uma vez à mão (`rotina_rodar.py`, sem ligar): todas terminaram, 0 erro; o que gravaria deu "ensaio: só leitura" (esperado) e o que iria ao celular ficou em `ensaio_celular.jsonl`. O despertar da VM lê o cron do Hermes (só os ativos) |
 | 6 | Ponte com chave A0/Hermes; páginas (Segundo Cérebro, Painel, Tarefas, Cofre) com login próprio | ✅ 23/10. Ponte: `/var/lib/agentepessoal/destino.json` (por login; padrão A0; só `teste_hermes` no Hermes), pedido pelo `/v1/runs` na sessão `tg-<login>`, senha colada vira `§§secret` antes de sair da ponte, pedido de ok vira 3 botões que respondem o run, `teste_*` sem celular. Ao vivo pela fila do Telegram (como a função de controle): o Hermes respondeu a decisão da garantia; um `rm -rf` pediu ok → botões → "Recusar" pelo botão → não rodou. Portal (`infra/vm/portal`, 127.0.0.1:8650, mesmos logins): Segundo Cérebro (mesmo portão, Node próprio), Painel, Tarefas e Cofre (mesmos `main.html`), só leitura até a virada; conferido ao vivo. Depois: áudio (`audio_hermes.py`: o mesmo faster-whisper do A0 antes do modelo, só a pasta do celular de quem fala; ao vivo um áudio gerado pela voz da Polly foi transcrito em 6 s e respondido) e andamento editado no Telegram. Falta (⏳, ver lista): Telegram real de teste (precisa do Matheus: um bot de teste), celular, delegar, memória separada dos convidados |
-| 7 | Ensaio geral: um dia inteiro do Hermes "em sombra" (mesmas rotinas, saída só para o operador) | ⏳ em andamento: `hermes-sombra` desde 23/10 08:06 UTC (05:06 Bahia), cópia dos dados (`/opt/hermes/sombra`), as 17 rotinas ligadas nos horários do A0, relógio ligado (já atualizou o painel e a conferência na cópia), ensaio; para sozinho em 24/10 08:06 UTC. Conferir: `bash /opt/hermes/sombra.sh conferir` (o que rodou, o que falhou, o que teria ido ao celular). A lista de conferência ainda tem ⏳ (acima): não está toda ✅ |
+| 7 | Ensaio geral: um dia inteiro do Hermes "em sombra" (mesmas rotinas, saída só para o operador) | ➖ pulado por decisão do Matheus (23/10: "Não quero esse dia sombra, ele n ja sabe as rotinas?"); a sombra parou às 08:47 UTC sem nenhum erro (nenhuma rotina tinha chegado na hora). Antes: `hermes-sombra` desde 23/10 08:06 UTC (05:06 Bahia), cópia dos dados (`/opt/hermes/sombra`), as 17 rotinas ligadas nos horários do A0, relógio ligado (já atualizou o painel e a conferência na cópia), ensaio; para sozinho em 24/10 08:06 UTC. Conferir: `bash /opt/hermes/sombra.sh conferir` (o que rodou, o que falhou, o que teria ido ao celular). A lista de conferência ainda tem ⏳ (acima): não está toda ✅ |
 | 8 | Corte (com aviso ao Matheus) | Matheus usa só o Hermes; A0 parado 7 dias |
 | 9 | Limpeza: remover o A0, atualizar CLAUDE.md, CI e documentos | nada mais aponta para o A0 |
 
-## Antes da virada (o que falta) e o plano da fase 8
+## A virada (fase 8, 23/10)
 
-**Precisa do Matheus:** (1) marcar o dia/hora da virada (proposta: um sábado de manhã, depois de uma semana sem ⏳
-abaixo); (2) criar um bot de teste no BotFather e mandar o token por `/senha TG_TESTE_TOKEN …` (ou aceitar que o teste
-real seja com o bot de sempre, só no login dele, na hora da virada); (3) dizer se os convidados (Ilia, Will) podem
-ficar sem navegador e sem rotinas próprias na primeira semana; (4) nada de 2FA/captcha pendente hoje: o perfil do
-navegador (Instagram, Google, Meta…) e o OAuth do Google já estão logados.
+Matheus, 23/10: "Não quero esse dia sombra, ele n ja sabe as rotinas?" e "Hermes 100%": o dia de sombra parou no
+meio (a `hermes-sombra` foi removida; a cópia dos dados dela fica em `/opt/hermes/sombra` para consulta: até parar,
+nenhuma rotina tinha chegado na hora, e o relógio rodou sem erro na cópia) e a virada foi feita no mesmo dia.
 
-**Falta construir/conferir (⏳ da lista):** ferramenta do celular (Android), `delegar` ao
-OpenClaw, conversas externas pelo WhatsApp Web, memória separada dos convidados (perfis do Hermes ou bloco filtrado),
-CRM na planilha, `me_mostre`, OpenCode fora do container do A0, `saude.py`/`memguard.sh`/`backup.sh` com o Hermes,
-`setup.sh`/`deploy.py`, `mandar_msg.py` para o Hermes. Conferir o dia de sombra (`sombra.sh conferir`).
+**O que entrou para o Hermes ser o agente de todos** (commit 08d7ae4 e seguintes):
+- ponte do celular (`ponte_whatsapp.py`): os botões das nossas mensagens (fios, iniciativa, rascunho, prospecção,
+  contas, conversas externas, rotina, semana de posts) rodam as MESMAS funções do `receber.py` do A0 dentro do Hermes
+  da pessoa (`botoes_hermes.py`, sem modelo); `/parar`, `/nova`, `/painel`, `/pendentes`, `/atividade`, `/ajuda`;
+  mensagem nova com um pedido rodando entra nele (steer do Hermes, como a correção do A0); `/conversa` para o plugin
+  entregar "na conversa" (resposta de loja, "Faz pra mim"); Hermes fora do ar segura a mensagem na fila; WhatsApp
+  também; `/voz` responde que as respostas em áudio ainda não voltaram (ninguém tinha ligado);
+- convidados (Ilia, Will; decisão 1): um Hermes para cada um (`hermes/convidado.sh`: `hermes-<login>`, rede própria,
+  memória, conversas e rotinas só dele, até 5 rotinas de hora em hora no máximo e sem código, navegador no perfil
+  dele `pessoa_<login>`, sem os conectores nem os dados do Matheus, SOUL com as instruções do projeto dele no A0);
+- conversas externas pelo WhatsApp Web (decisão 3: ferramenta `conversa_externa` e o vigia no relógio, no navegador
+  da instância da pessoa), celular Android (decisão 2: adb + uiautomator2 na imagem, o `android` ligado na rede do
+  Hermes só na porta do adb; a tela vira um arquivo para o `vision_analyze`), `delegar` só ao OpenClaw (decisão 5;
+  para o resto, `delegate_task`), `me_mostre` com a página **Navegador** do portal (a tela do navegador do Hermes,
+  clique, texto e teclas; só o Matheus), CRM na planilha pelo conector Google do Hermes (`mcp_hermes.py`), limite do
+  dia do convidado (`limite_hermes.py`);
+- `subir.sh` no modo virada (chave `"padrao": "hermes"` em `/var/lib/agentepessoal/destino.json`): dados graváveis,
+  relógio ligado, sem ensaio, rede com credenciais Meta/ponte/caixas, navegador no perfil de verdade (o A0 parado),
+  Google com as permissões do A0, portal gravável; recusa subir com o A0 rodando;
+- host: `firewall.sh` (portas do A0 só na virada; redes dos convidados; celular só adb), `saude.py` (contêineres,
+  API e relógio do cron do Hermes, rotinas dele, cópia `hermes/` no S3), `memguard.sh` (não mexe no A0 parado;
+  reinicia o Hermes ou o navegador que mais usa memória), `backup.sh` (+ `/opt/hermes` e a chave), `watchdog.sh`
+  (conversas do Hermes contam como uso), túnel do portal (`agentepessoal-portal-tunnel.service`; o link do agente
+  passa a abrir o portal), `setup.sh` (VM nova já virada; re-execução não religa o A0);
+- operador: `a0py` na VM (os helpers no A0 se no ar, senão no Hermes; usado por decisoes/ficha/cerebro/conteúdo/
+  avisar_matheus), `mandar_msg.py` (pedido ao Hermes pela API), `virada.py`, OpenCode 2 + Ponytail no host
+  (`revisar_opencode.py`), `implantar.py <plugin>` testa num container descartável da imagem do A0 quando ele está
+  parado (o Hermes relê a ferramenta quando o arquivo muda).
 
-**Virada (um passo, reversível, com aviso ao Matheus antes):**
-1. `rotinas.py`/agendador do A0: pausar as 17 rotinas ligadas (pelas APIs do agendador; anotar quais).
-2. `subir.sh` sem `AGENTEPESSOAL_ENSAIO` e com `AGENTEPESSOAL_RELOGIO=1`; vista dos dados `rw`; escondidos só o que é
-   de outros (convidados, delegados); rede: liberar 8789 (ponte, para mandar ao celular) e 8788 (credenciais Meta);
-   navegador com o perfil `shared` de verdade (o A0 parado); Google com as permissões do A0; portal sem
-   `PORTAL_SO_LEITURA`.
-3. Ligar no Hermes as rotinas `ligada_no_a0` (`jobs.resume_job`, como o `sombra.sh`).
-4. `destino.json`: `"padrao": "hermes"`; `report_url.py`/túnel apontando para o portal (:8650).
-5. Conferir na hora: uma mensagem do Matheus pelo Telegram, um botão de ok, o resumo da manhã no dia seguinte.
-6. A0: `docker stop agent-zero` (não apagar) por 7 dias.
+**Virar** (feito em 23/10): `python3 infra/operador/virada.py virar --motivo "..."` (na VM: `bash /opt/hermes/virada.sh
+virar`): OpenCode para o host → a imagem nova pronta → A0 parado (`docker stop`, sem reinício automático; os dados e
+as rotinas dele ficam como estão, nada dele roda) e o conector Google/adb do A0 desligados → `subir.sh` no modo virada
+(+ Hermes dos convidados); só com tudo de pé a chave vira (`"padrao": "hermes"`, todo login) → no cron do Hermes,
+ligadas as 17 que estavam ligadas no A0 → túnel do portal. Nesses minutos as mensagens esperam na fila da ponte; se o
+Hermes não subir, ele mesmo volta ao A0. Nenhuma rotina roda nos dois lados: o A0 parado não roda nada.
 
-**Voltar (minutos):** `destino.json` `"padrao": "a0"`; `docker start agent-zero`; religar as 17 rotinas do A0;
-pausar as do Hermes; `subir.sh` de volta ao ensaio (`AGENTEPESSOAL_ENSAIO=1`, vista `ro`). Os dados vivos são os
-mesmos dos dois lados (nada a copiar de volta), exceto o que o Hermes gravou enquanto esteve no ar, que fica válido.
+**Voltar ao A0 (um comando, minutos):**
+
+    python3 infra/operador/virada.py voltar --motivo "voltar ao A0: <por quê>"
+    (na VM, como root: bash /opt/hermes/virada.sh voltar)
+
+Ele pausa todas as rotinas do Hermes, põe a chave em `"padrao": "a0"`, sobe o Hermes de novo no ensaio (só leitura,
+nada ao celular, navegador na cópia, convidados removidos), desliga o túnel do portal, religa o A0 (com o reinício
+automático de antes) e os serviços dele. Os dados vivos são os mesmos dos dois lados: o que o Hermes gravou enquanto
+esteve no ar continua valendo. O A0 fica parado e intacto por 7 dias (até 30/10); só então a fase 9 o remove.
 
 ## Decisões do Matheus (23/10)
 1. Convidados (ilia, will) e o login da Fernanda: **continuam**.

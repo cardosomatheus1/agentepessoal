@@ -136,7 +136,12 @@ try:
     checa(False, "o WhatsApp de um convidado não abre no navegador do Matheus")
 except nav_mod.SemWhatsApp:
     pass
-checa(plugin.externas.meus_logins(["ilia", "matheus", "will"], "") == ["matheus"]
+try:
+    asyncio.run(nav_mod._runtime(ex_mod, "fernanda", "Fernanda"))
+    checa(False, "o WhatsApp da Fernanda (não convidada) não abre no navegador do Matheus")
+except nav_mod.SemWhatsApp:
+    pass
+checa(plugin.externas.meus_logins(["fernanda", "ilia", "matheus", "will"], "") == ["matheus"]
       and plugin.externas.meus_logins(["ilia", "matheus"], "ilia") == ["ilia"], "vigia: cada instância só os logins dela")
 rec = sys.modules["whatsapp_receber_vigia"]
 checa(rec._entregar is plugin.botoes._entregar and getattr(rec, "_hermes", False), "o receber do A0 entrega no Hermes (ponte)")
@@ -161,6 +166,20 @@ checa(r == {"ok": True} and feitos_b == [("fio", "matheus", "fio:matheus:f1:faze
       f"botão do fio: função do A0, e o 'faz pra mim' vira pedido no Hermes: {feitos_b}")
 checa(asyncio.run(plugin.botoes.tratar("matheus", "xx:1"))["ok"] is False, "botão desconhecido: não faz nada")
 plugin.botoes.receber = _receber_orig
+# a ponte fora do ar: o que ia para a conversa fica pendente e vai no próximo minuto (nunca se perde)
+plugin.botoes.PENDENTES = tmp / "pendente.jsonl"
+
+
+def _falha(u, t):
+    raise OSError("ponte fora")
+plugin.botoes.conversa = _falha
+checa(plugin.botoes._para_a_conversa("matheus", "resposta da loja")["ok"] and plugin.botoes.PENDENTES.exists(),
+      "ponte fora: fica pendente")
+entregues_p = []
+checa(plugin.botoes.reentregar(lambda u, t: entregues_p.append((u, t)) or {"ok": True}) == 1
+      and entregues_p == [("matheus", "resposta da loja")] and not plugin.botoes.PENDENTES.exists(), "e vai depois")
+rec2 = plugin.botoes.receber()
+checa(rec2._para_a_conversa is plugin.botoes._para_a_conversa, "o vigia e o aprender entregam sem o UserMessage do A0")
 # delegar só ao OpenClaw; celular com a tela num arquivo
 checa("motor" not in registradas["delegar"][0]["parameters"]["properties"] and "OpenClaw" in registradas["delegar"][0]["description"],
       "delegar: o motor é sempre o OpenClaw (o Hermes tem delegate_task)")

@@ -21,6 +21,7 @@ PLUGINS = Path("/a0/usr/plugins")
 RAIZ = PLUGINS / "conversas_externas"
 ACORDADO = Path("/opt/data/agentepessoal/acordado")
 CONVIDADOS = PLUGINS / "login_usuarios" / "helpers" / "convidados.py"
+DONO_DO_PERFIL = "matheus"  # o perfil `shared` do navegador é o dele (navegador_por_pessoa do A0)
 
 
 def _modulo(nome: str, caminho: Path):
@@ -40,11 +41,10 @@ def _convidados():
 
 
 def meus_logins(todos: list, instancia: str) -> list:
-    """Quem esta instância atende: o convidado dela, ou (no principal) todos menos os convidados."""
+    """Quem esta instância atende: o convidado dela, ou (no principal) o dono do perfil do navegador."""
     if instancia:
         return [l for l in todos if l == instancia]
-    c = _convidados()
-    return [l for l in todos if not c.convidado(l)]
+    return [l for l in todos if l == DONO_DO_PERFIL]
 
 
 def _navegador_cdp():
@@ -72,8 +72,8 @@ def instalar():
         async def _runtime(ex_, login, nome):
             if instancia and login != instancia:
                 raise SemWhatsApp("a aba do WhatsApp não é desta pessoa")
-            if not instancia and _convidados().convidado(login):
-                raise SemWhatsApp("o WhatsApp de um convidado só abre no navegador dele")
+            if not instancia and login != DONO_DO_PERFIL:  # revisão OpenCode 23/10: a Fernanda não é convidada
+                raise SemWhatsApp("o navegador deste agente é o do Matheus: o WhatsApp de outra pessoa não abre nele")
             return _navegador_cdp()
 
         def manter_acordado(ex_, login):

@@ -54,6 +54,11 @@ def _api_stub() -> None:
     api.Response = Response
     sys.modules["helpers.api"] = api
     sys.modules["helpers"].api = api
+    if "helpers.message_queue" not in sys.modules:  # os botões registram a mensagem no log do A0 antes de entregar
+        mq = types.ModuleType("helpers.message_queue")
+        mq.log_user_message = lambda *a, **k: None
+        sys.modules["helpers.message_queue"] = mq
+        sys.modules["helpers"].message_queue = mq
 
 
 def conversa(usuario: str, texto: str) -> dict:
@@ -66,9 +71,64 @@ def conversa(usuario: str, texto: str) -> dict:
         return json.loads(r.read() or b"{}")
 
 
+PENDENTES = Path("/opt/data/agentepessoal/conversa_pendente.jsonl")
+
+
 def _entregar(usuario: str, texto: str, anexos: list, mid: str, fonte: str, audio: bool = False, idioma: str = "") -> dict:
-    r = conversa(usuario, texto + (("\n\nArquivos: " + ", ".join(anexos)) if anexos else ""))
-    return {"ok": bool(r.get("ok")), "hermes": True}
+    """Nunca perde o que ia para a conversa (revisão OpenCode 23/10: o vigia marca a resposta da loja como lida antes
+    de entregar): se a ponte não aceitou agora, fica em PENDENTES e o relógio tenta de novo (reentregar)."""
+    texto = texto + (("\n\nArquivos: " + ", ".join(anexos)) if anexos else "")
+    try:
+        r = conversa(usuario, texto)
+        if r.get("ok"):
+            return {"ok": True, "hermes": True}
+    except Exception as exc:
+        r = {"erro": f"{type(exc).__name__}: {exc}"}
+    import time
+
+    PENDENTES.parent.mkdir(parents=True, exist_ok=True)
+    with PENDENTES.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"em": time.time(), "usuario": usuario, "texto": texto, "erro": str(r)[:200]},
+                           ensure_ascii=False) + "\n")
+    return {"ok": True, "hermes": True, "pendente": True}
+
+
+def _para_a_conversa(usuario: str, texto: str) -> dict:
+    """O _para_a_conversa do A0 sem o que só existe nele (agent.UserMessage, message_queue): a mesma entrega."""
+    return _entregar(usuario, texto, [], "", " (botão)")
+
+
+def reentregar(conversa_fn=None, agora: float | None = None) -> int:
+    """No relógio: o que ficou pendente vai de novo (até 24 h; depois fica no arquivo .falhou para o operador)."""
+    import time
+
+    if not PENDENTES.exists():
+        return 0
+    conversa_fn = conversa_fn or conversa
+    agora = agora or time.time()
+    linhas = PENDENTES.read_text(encoding="utf-8").splitlines()
+    PENDENTES.unlink()
+    ficam, entregues = [], 0
+    for linha in linhas:
+        try:
+            item = json.loads(linha)
+        except ValueError:
+            continue
+        try:
+            if conversa_fn(item["usuario"], item["texto"]).get("ok"):
+                entregues += 1
+                continue
+        except Exception:
+            pass
+        if agora - float(item.get("em") or agora) > 24 * 3600:
+            with PENDENTES.with_suffix(".falhou").open("a", encoding="utf-8") as f:
+                f.write(linha + "\n")
+        else:
+            ficam.append(linha)
+    if ficam:
+        with PENDENTES.open("a", encoding="utf-8") as f:
+            f.write("\n".join(ficam) + "\n")
+    return entregues
 
 
 def receber():
@@ -82,7 +142,7 @@ def receber():
         spec.loader.exec_module(m)
         m._mtime = mtime
         sys.modules[NOME] = m
-    m._entregar, m._hermes = _entregar, True
+    m._entregar, m._para_a_conversa, m._hermes = _entregar, _para_a_conversa, True
     return m
 
 
