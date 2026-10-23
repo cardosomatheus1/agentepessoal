@@ -21,6 +21,8 @@ cfg = yaml.safe_load((H / "config.yaml").read_text())
 checa(cfg["model"]["provider"] == "bedrock" and "haiku" in cfg["model"]["default"], "Haiku no dia a dia (decisão 23/10)")
 checa(cfg["timezone"] == "America/Bahia", "fuso dele")
 checa("/a0/usr/skills" in cfg["skills"]["external_dirs"], "as skills de hoje entram no lugar onde estão")
+checa("agentepessoal" in cfg["plugins"]["enabled"], "o plugin com as nossas ferramentas ligado")
+checa((H / "plugins" / "agentepessoal" / "plugin.yaml").exists(), "o plugin está na pasta que o subir.sh copia")
 sh = (H / "subir.sh").read_text()
 checa("AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/bedrock" in sh, "modelo só pelo proxy")
 checa("ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/bedrock" in sh,

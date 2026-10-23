@@ -16,3 +16,7 @@ compression:
   enabled: true
 approvals:
   mode: "smart"
+plugins:
+  enabled:
+    - agentepessoal           # as nossas ferramentas (infra/vm/hermes/plugins/agentepessoal)
+  load_timeout_seconds: 60    # 35 ferramentas carregando os helpers grandes (prospecção) na subida

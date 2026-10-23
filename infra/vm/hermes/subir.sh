@@ -12,6 +12,11 @@ mkdir -p "$DADOS"
 chmod 700 /opt/hermes
 install -m 644 "$AQUI/config.yaml" "$DADOS/config.yaml"
 install -m 644 "$AQUI/SOUL.md" "$DADOS/SOUL.md"
+# Os nossos plugins do Hermes: a pasta inteira é trocada (o que saiu do git sai daqui também).
+mkdir -p "$DADOS/plugins"
+for p in "$AQUI"/plugins/*/; do
+  nome=$(basename "$p"); rm -rf "$DADOS/plugins/$nome"; cp -r "$p" "$DADOS/plugins/$nome"
+done
 # Chave do API server: gerada uma vez, só na VM (nunca no git nem no chat).
 if [ ! -s /opt/hermes/api_key ]; then
   umask 077; openssl rand -hex 32 > /opt/hermes/api_key

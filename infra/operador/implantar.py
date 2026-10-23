@@ -110,7 +110,7 @@ def host(args: list) -> None:
     print(f"implantado no host: {arquivo} @ {head[:8]}")
 
 
-HERMES_ARQUIVOS = ("infra/vm/hermes/config.yaml", "infra/vm/hermes/SOUL.md", "infra/vm/hermes/subir.sh")
+HERMES_ARQUIVOS = ("infra/vm/hermes",)  # config.yaml, SOUL.md, subir.sh e plugins/
 
 
 def hermes(args: list) -> None:
