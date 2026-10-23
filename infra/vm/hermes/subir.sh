@@ -21,13 +21,21 @@ done
 if [ ! -s /opt/hermes/api_key ]; then
   umask 077; openssl rand -hex 32 > /opt/hermes/api_key
 fi
-docker pull -q "$IMAGEM" >/dev/null
-docker rm -f hermes >/dev/null 2>&1 || true
+docker pull -q "$IMAGEM" >/dev/null        # baixa antes de derrubar: o Hermes fica fora o mínimo
+docker rm -f hermes >/dev/null 2>&1 || true  # antes de remontar a vista: nada a segurando
+# Vista dos dados vivos para o Hermes (dono 10000 na vista, nada muda no disco): ver agentepessoal-hermes-dados.service.
+command -v bindfs >/dev/null || DEBIAN_FRONTEND=noninteractive apt-get install -y -q bindfs >/dev/null
+install -m 644 "$AQUI/agentepessoal-hermes-dados.service" /etc/systemd/system/agentepessoal-hermes-dados.service
+systemctl daemon-reload
+systemctl enable -q agentepessoal-hermes-dados.service
+systemctl restart agentepessoal-hermes-dados.service
+for i in $(seq 1 20); do mountpoint -q /opt/hermes/a0usr && break; sleep 1; done
+mountpoint -q /opt/hermes/a0usr || { echo "HERMES_SEM_DADOS: a vista /opt/hermes/a0usr não montou"; exit 1; }
 docker run -d --name hermes --restart unless-stopped \
   --memory 3g --memory-swap 3g \
   --add-host host.docker.internal:host-gateway \
   -v "$DADOS":/opt/data \
-  -v /opt/a0/usr:/a0/usr \
+  -v /opt/hermes/a0usr:/a0/usr \
   -e AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/bedrock \
   -e ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/bedrock \
   -e AWS_ACCESS_KEY_ID=proxy -e AWS_SECRET_ACCESS_KEY=proxy -e AWS_REGION=us-east-1 -e AWS_EC2_METADATA_DISABLED=true \

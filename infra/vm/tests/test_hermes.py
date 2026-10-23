@@ -30,7 +30,11 @@ checa("ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/bedrock" in s
 checa("PONTE OK" in sh, "a instalação só passa com uma resposta de verdade do modelo")
 checa("AWS_ACCESS_KEY_ID=proxy" in sh and "AWS_EC2_METADATA_DISABLED=true" in sh, "nenhuma credencial real no Hermes")
 checa("-p 127.0.0.1:8642:8642" in sh, "API server só no loopback do host")
-checa("-v /opt/a0/usr:/a0/usr" in sh, "dados vivos no mesmo caminho")
+checa("-v /opt/hermes/a0usr:/a0/usr" in sh, "dados vivos no mesmo caminho, pela vista com dono do Hermes")
+un = (H / "agentepessoal-hermes-dados.service").read_text()
+checa("--create-for-user=0" in un and "--force-user=10000" in un and "Before=docker.service" in un,
+      "a vista: o Hermes vê como dono, o disco continua root, e sobe antes do docker")
+checa(sh.index("mountpoint -q /opt/hermes/a0usr ||") < sh.index("docker run"), "o container só sobe com a vista montada")
 checa(re.search(r'IMAGEM="nousresearch/hermes-agent:v\d+\.\d+\.\d+"', sh), "imagem com versão fixa")
 checa(subprocess.run(["bash", "-n", str(H / "subir.sh")]).returncode == 0, "sintaxe do script")
 alma = (H / "SOUL.md").read_text()
