@@ -8,6 +8,9 @@ import threading
 
 DESTINO = ("127.0.0.1", 9222)
 ESCUTA = ("0.0.0.0", int(sys.argv[1]) if len(sys.argv) > 1 else 9223)
+if len(sys.argv) > 2:  # virada: o mesmo repasse leva o adb da rede do Hermes ao celular (hermes-celular, subir.sh)
+    _h, _, _p = sys.argv[2].rpartition(":")
+    DESTINO = (_h, int(_p))
 
 
 def _bombear(origem: socket.socket, destino: socket.socket) -> None:

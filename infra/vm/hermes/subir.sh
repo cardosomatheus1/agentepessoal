@@ -143,14 +143,17 @@ docker run -d --name hermes --restart no --network hermes \
   -e BROWSER_CDP_URL="$CDP" \
   -p 127.0.0.1:8642:8642 \
   "$IMAGEM" gateway run >/dev/null
-# Virada: o celular Android na rede do Hermes (IP fixo .0.252, nome "android" como na rede phone do A0; firewall.sh
-# deixa o Hermes falar só com a porta do adb e o celular não abre nada no Hermes nem no host).
+# Virada: o celular Android ao alcance do Hermes. O container do Android não aceita uma segunda rede (o Android cuida das
+# rotas dele: "direct route for the gateway could not be found"), então um repasse (hermes-celular, o mesmo
+# cdp_encaminhar.py) fica nas duas redes: IP fixo .0.252 e nome "android" na rede do Hermes, porta 5555 levada ao
+# android:5555 da rede phone. firewall.sh deixa o Hermes falar só com essa porta; o repasse não abre nada no Hermes.
+docker rm -f hermes-celular >/dev/null 2>&1 || true
 if [ "$VIRADA" = 1 ] && docker inspect android >/dev/null 2>&1; then
   SUBH=$(docker network inspect hermes -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
-  docker network inspect hermes -f '{{range .Containers}}{{.Name}} {{end}}' | grep -qw android \
-    || docker network connect --ip "${SUBH%.*.*}.0.252" --alias android hermes android
-elif docker inspect android >/dev/null 2>&1; then
-  docker network disconnect hermes android >/dev/null 2>&1 || true
+  docker run -d --name hermes-celular --restart no --network phone --memory 64m --user 10000:10000 \
+    -v /opt/hermes/navegador/cdp_encaminhar.py:/opt/encaminhar.py:ro --entrypoint python3 "$IMAGEM" \
+    /opt/encaminhar.py 5555 android:5555 >/dev/null
+  docker network connect --ip "${SUBH%.*.*}.0.252" --alias android hermes hermes-celular
 fi
 /opt/agentepessoal/firewall.sh || { echo "HERMES_SEM_FIREWALL"; exit 1; }
 # Na subida da VM quem liga o Hermes é esta unidade, depois do firewall e da vista (não o reinício do próprio Docker).

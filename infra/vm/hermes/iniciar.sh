@@ -4,7 +4,7 @@
 # Os containers são criados pelo subir.sh / convidado.sh (--restart no): aqui só `docker start` dos que existem.
 #   iniciar.sh [parar]
 set -u
-nomes=(hermes-navegador hermes-mcp hermes portal)
+nomes=(hermes-navegador hermes-mcp hermes-celular hermes portal)
 for c in $(docker ps -a --format '{{.Names}}' | grep -E '^hermes-navegador-' || true); do
   nomes+=("$c" "hermes-${c#hermes-navegador-}")
 done

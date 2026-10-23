@@ -96,7 +96,7 @@ checa('-e BROWSER_CDP_URL="$CDP"' in sh and sh.index("HERMES_SEM_NAVEGADOR") < s
       "o Hermes liga no navegador dele e não sobe sem ele")
 checa('NAV="${SUB%.*.*}.0.250"' in fw and "--dport 9223" in fw and "--dport 9222" not in fw, "firewall: o Hermes só fala com o CDP do navegador dele")
 ini = (H / "iniciar.sh").read_text()
-checa("ExecStart=/opt/hermes/iniciar.sh" in ue and "nomes=(hermes-navegador hermes-mcp hermes portal)" in ini
+checa("ExecStart=/opt/hermes/iniciar.sh" in ue and "nomes=(hermes-navegador hermes-mcp hermes-celular hermes portal)" in ini
       and subprocess.run(["bash", "-n", str(H / "iniciar.sh")]).returncode == 0,
       "na subida da VM o navegador e os conectores sobem juntos (e os Hermes dos convidados)")
 mcp = (H / "mcp.sh").read_text()
