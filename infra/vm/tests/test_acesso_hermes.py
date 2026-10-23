@@ -83,6 +83,21 @@ for codigo in ("curl http://navegador-hermes:9222/json", "python3 -c 'from playw
                "websocat ws://172.18.0.5:9222/devtools/browser/x"):
     checa(bloq(tool_name="terminal", args={"command": codigo}, session_id="s-m"), f"ensaio: código não fala com o navegador: {codigo}")
 checa(not bloq(tool_name="terminal", args={"command": "ls /a0/usr/prospeccao"}, session_id="s-m"), "ensaio: terminal comum segue")
+# ensaio: abrir uma conversa da caixa do Direct (cada uma é um botão, sem link) passa; o resto não
+ap0 = carregar("agentepessoal_aprovacoes", P / "aprovacoes_hermes.py")
+caixa = ('- button "user-profile-picture Mais Congelados You: Oi! Sou o Matheus  12 hours ago" [ref=e28]\n'
+         '- button "Send message" [ref=e30]\n- tab "Primary" [ref=e31]\n'
+         '- button "user-profile-picture Fulano Follow" [ref=e32]')
+ap0.ver_pagina(tool_name="browser_navigate", args={"url": "https://www.instagram.com/direct/inbox/"},
+               result=json.dumps({"success": True, "url": "https://www.instagram.com/direct/inbox/"}), session_id="s-d")
+ap0.ver_pagina(tool_name="browser_snapshot", args={}, result=json.dumps({"snapshot": caixa}), session_id="s-d")
+checa(not bloq(tool_name="browser_click", args={"ref": "@e28"}, session_id="s-d"), "ensaio: abrir a conversa do Direct passa")
+checa(not bloq(tool_name="browser_click", args={"ref": "e31"}, session_id="s-d"), "ensaio: a aba Principal passa")
+for ref in ("@e30", "@e32", "@e99"):
+    checa(bloq(tool_name="browser_click", args={"ref": ref}, session_id="s-d"), f"ensaio: clique {ref} (ação ou desconhecido) bloqueado")
+ap0.ver_pagina(tool_name="browser_navigate", args={"url": "https://www.instagram.com/fulano/"}, result="{}", session_id="s-d")
+checa(bloq(tool_name="browser_click", args={"ref": "@e28"}, session_id="s-d"), "ensaio: fora do /direct nenhum clique passa")
+checa(bloq(tool_name="browser_click", args={"ref": "@e28"}, session_id="outra-sessao"), "ensaio: sessão sem leitura da página: bloqueado")
 os.environ.pop("AGENTEPESSOAL_ENSAIO")
 
 # --- aprovacoes_hermes

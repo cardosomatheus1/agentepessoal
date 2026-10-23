@@ -5,8 +5,9 @@ Hermes trata erro ou demora dele como bloqueio):
   (login_usuarios/helpers/convidados.py). Nunca o `terminal`, o `execute_code` ou os arquivos do Hermes (leem
   /a0/usr/segredos e os dados de todos): o computador deles é o `terminal_isolado` (caixa própria). Nem a memória, a
   busca nas conversas, as skills, o cron ou o navegador do Matheus. Caminho local fora das pastas deles é recusado.
-- Ensaio até a virada (AGENTEPESSOAL_ENSAIO=1): o navegador só lê (abrir, ler a página, rolar, voltar, ver imagens).
-  Clicar, digitar, teclar, rodar JS ou CDP ficam bloqueados: com o perfil logado do Instagram, um clique pode seguir,
+- Ensaio até a virada (AGENTEPESSOAL_ENSAIO=1): o navegador só lê (abrir, ler a página, rolar, voltar, ver imagens;
+  e o clique que só abre uma conversa da caixa do Direct). Clicar no resto, digitar, teclar, rodar JS ou CDP ficam
+  bloqueados: com o perfil logado do Instagram, um clique pode seguir,
   curtir ou mandar um Direct. E o terminal/código não fala com o navegador por fora (CDP, devtools, Playwright).
 """
 import importlib.util
@@ -33,6 +34,15 @@ NAVEGADOR_SO_LE = frozenset({"browser_navigate", "browser_snapshot", "browser_sc
 CDP = re.compile(r"(?i)\bcdp\b|devtools|remote-debugging|:922[23]\b|navegador-hermes|hermes-navegador|playwright|puppeteer|"
                  r"chrome-remote-interface|websocket|\bws://|agent-browser")
 CODIGO = frozenset({"terminal", "execute_code", "process_manage"})
+# Ensaio: o único clique que passa é o de ABRIR uma conversa (ou uma aba da caixa) no Direct do Instagram, pelo rótulo
+# que a última leitura da página deu ao elemento (a lista não tem links: cada conversa é um botão). Nada com cara de
+# ação (enviar, seguir, curtir, apagar…), nada fora do /direct.
+DIRECT = re.compile(r"^https://(www\.)?instagram\.com/direct/")
+ABRIR_CONVERSA = re.compile(r'^(button|link|tab|listitem|gridcell|row) "(user-profile-picture |'
+                            r'(Primary|General|Requests|Principal|Geral|Solicita[çc][õo]es|Mensagens)\b)')
+ACAO = re.compile(r"(?i)\b(send|enviar|envie|follow|seguir|like|curtir|delete|apagar|excluir|unsend|cancelar envio|"
+                  r"block|bloquear|report|denunciar|restrict|restringir|accept|aceitar|decline|recusar|call|ligar|"
+                  r"video|chamada|new message|nova mensagem|reply|responder|react|reagir|share|compartilhar)\b")
 
 
 def ensaio() -> bool:
@@ -71,6 +81,8 @@ def checar(tool_name="", args=None, session_id="", task_id="", **kw):
             if proibido:
                 return _bloqueio(f"O caminho {proibido} não é desta pessoa: só os arquivos que ela mandou.")
     if ensaio():
+        if tool_name == "browser_click" and abre_conversa(str(session_id or task_id or ""), args):
+            return None
         if tool_name.startswith("browser_") and tool_name not in NAVEGADOR_SO_LE:
             return _bloqueio("Ensaio do Hermes: até a virada o navegador só lê (abrir, ler a página, rolar, voltar). "
                              "Clicar, digitar e teclar continuam com o agente de hoje; não tente de outro jeito. "
@@ -79,6 +91,15 @@ def checar(tool_name="", args=None, session_id="", task_id="", **kw):
             return _bloqueio("Ensaio do Hermes: o terminal e o código não falam com o navegador por fora. Use as "
                              "ferramentas browser_* (no ensaio, só leitura).")
     return None
+
+
+def abre_conversa(sessao: str, args: dict) -> bool:
+    """O clique só abre uma conversa (ou aba) da caixa do Direct: elemento conhecido, rótulo de conversa, sem ação."""
+    aprov = sys.modules.get("agentepessoal_aprovacoes")
+    if aprov is None:
+        return False
+    rotulo, url = aprov.alvo(sessao, str(args.get("ref") or ""))
+    return bool(rotulo and DIRECT.match(url or "") and ABRIR_CONVERSA.match(rotulo) and not ACAO.search(rotulo))
 
 
 def registrar(ctx) -> None:

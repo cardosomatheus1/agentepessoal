@@ -112,6 +112,13 @@ def ver_pagina(tool_name="", args=None, result=None, **kw):
     return None
 
 
+def alvo(sessao: str, ref: str) -> tuple:
+    """(rótulo do elemento `ref` na última leitura da página, página atual) desta sessão; ("", "") se não se sabe."""
+    with _trava:
+        pagina = dict(_paginas.get(sessao) or {})
+    return (pagina.get("refs") or {}).get(str(ref or "").lstrip("@"), ""), pagina.get("url", "")
+
+
 def intencao(tool_name: str, args: dict, sessao: str) -> str:
     with _trava:
         pagina = dict(_paginas.get(sessao) or {})
