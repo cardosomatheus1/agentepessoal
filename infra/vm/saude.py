@@ -25,6 +25,10 @@ BACKUP_MAX_H = 26
 RODANDO_MAX_H = 3
 HIBERNACAO_FALHOU = Path("/var/lib/agentepessoal/hibernacao_falhou")  # written by hibernate.sh
 BINDER = Path("/sys/module/binder_linux")  # the phone container needs it
+# 23/10: pane do kernel no io_uring (estabilidade.py desliga o io_uring e guarda a pane do pstore em pane_kernel.json)
+IO_URING = Path("/proc/sys/kernel/io_uring_disabled")
+PANE = Path("/var/lib/agentepessoal/pane_kernel.json")
+PANE_DIAS = 2
 # 12/10 review: the backup said "done" but nobody ever restored from it. Every day these copies come back from S3 to a
 # temporary folder and must open (JSON parses, SQLite passes integrity_check) and keep up with the live file.
 # 20/10: the decisions live in the Segundo Cérebro's Pasta (the old JSON is a read-only archive now)
@@ -232,6 +236,18 @@ def checar() -> list[str]:
         problemas.append("a ponte do celular não responde")
     if not BINDER.exists():
         problemas.append("o driver do celular virtual (binder) não está carregado: o celular não sobe (kernel novo?)")
+    try:
+        if IO_URING.read_text().strip() != "2":
+            problemas.append("a proteção do kernel (io_uring desligado) não está ativa: a VM pode cair de novo como em 23/10")
+    except OSError:
+        pass  # kernel sem essa chave
+    try:
+        if time.time() - PANE.stat().st_mtime < PANE_DIAS * 86400:
+            pane = json.loads(PANE.read_text(encoding="utf-8"))
+            problemas.append(f"a VM caiu por falha do kernel em {pane.get('quando', '?')} (processo {pane.get('processo') or '?'}, "
+                             f"{pane.get('onde') or '?'}) e voltou; registro em {pane.get('s3') or pane.get('pstore')}")
+    except (OSError, ValueError):
+        pass
     try:
         if time.time() - HIBERNACAO_FALHOU.stat().st_mtime < 24 * 3600:
             problemas.append("a hibernação falhou e a VM foi desligada: religou do zero, sem as conversas abertas")

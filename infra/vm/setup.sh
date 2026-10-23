@@ -77,7 +77,7 @@ modprobe binder_linux devices="binder,hwbinder,vndbinder" || \
 mkdir -p /opt/agentepessoal /var/lib/agentepessoal /opt/a0/usr /opt/android-data
 [ -x /opt/agentepessoal/venv/bin/python ] || python3 -m venv /opt/agentepessoal/venv
 /opt/agentepessoal/venv/bin/pip install --quiet --upgrade boto3 aws-bedrock-token-generator croniter google-auth requests  # google-auth: Vertex AI through AWS federation (bedrock_proxy)
-install -m 755 "$B/bedrock_proxy.py" "$B/report_url.py" "$B/watchdog.sh" "$B/memguard.sh" "$B/backup.sh" "$B/hibernate.sh" "$B/entrada.sh" "$B/credenciais_meta.py" "$B/ponte_whatsapp.py" "$B/proximo_despertar.py" "$B/saude.py" "$B/firewall.sh" "$B/caixa_convidados.py" "$B/caixa_delegados.py" "$B/delegado_hermes.py" "$B/delegado_openclaw.py" /opt/agentepessoal/
+install -m 755 "$B/bedrock_proxy.py" "$B/report_url.py" "$B/watchdog.sh" "$B/memguard.sh" "$B/backup.sh" "$B/hibernate.sh" "$B/entrada.sh" "$B/credenciais_meta.py" "$B/ponte_whatsapp.py" "$B/proximo_despertar.py" "$B/saude.py" "$B/firewall.sh" "$B/caixa_convidados.py" "$B/caixa_delegados.py" "$B/delegado_hermes.py" "$B/delegado_openclaw.py" "$B/estabilidade.py" "$B/opencode_tunel.sh" /opt/agentepessoal/
 install -m 755 "$B/phone/install_apps.sh" "$B/phone/google_id.sh" "$B/agent_tools.sh" /opt/agentepessoal/
 
 # Mark resumes from hibernation so the idle timer restarts.
@@ -492,6 +492,26 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
+
+# Kernel stability (23/10: kernel panic in io_uring; estabilidade.py): io_uring off, a panic reboots in 10 s, a panic
+# kept by pstore goes to S3 with a notice; daily disk cleanup (unnamed images, old Hermes images, journal cap).
+for u in agentepessoal-estabilidade.service agentepessoal-limpeza-disco.service agentepessoal-limpeza-disco.timer; do
+  install -m 644 "$B/unidades/$u" "/etc/systemd/system/$u"
+done
+systemctl daemon-reload
+systemctl enable agentepessoal-estabilidade.service agentepessoal-limpeza-disco.timer
+systemctl start --no-block agentepessoal-estabilidade.service
+systemctl start agentepessoal-limpeza-disco.timer
+
+# OpenCode do Matheus (usuário opencodemobile, instalado à mão em 23/10): o túnel e a publicação do endereço vêm do
+# repositório (opencode_tunel.sh: endereço fixo com o token da Cloudflare no cofre, senão o túnel rápido).
+if id opencodemobile >/dev/null 2>&1; then
+  for u in opencodemobile-cloudflare.service opencodemobile-publish-url.service opencodemobile-publish-url.timer; do
+    install -m 644 "$B/unidades/$u" "/etc/systemd/system/$u"
+  done
+  systemctl daemon-reload
+  systemctl enable opencodemobile-cloudflare.service opencodemobile-publish-url.timer
+fi
 
 # Full stops (not hibernation) also get a final backup.
 cat > /etc/systemd/system/agentepessoal-backup-on-shutdown.service <<'EOF'

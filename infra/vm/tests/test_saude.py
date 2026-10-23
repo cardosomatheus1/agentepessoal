@@ -52,6 +52,8 @@ def main() -> int:
     s._cmd = lambda *a: "true" if a[0] == "docker" else "backup to s3 ... done"
     s.shutil.disk_usage = lambda caminho: type("U", (), {"used": 10, "total": 100})()
     s.BINDER, s.HIBERNACAO_FALHOU = tmp / "sem_binder", tmp / "hibernacao_falhou"
+    s.IO_URING, s.PANE = tmp / "io_uring_disabled", tmp / "pane_kernel.json"
+    s.IO_URING.write_text("2\n")
     s.conferir_backup = lambda hermes=False: []  # restore check tested on its own below
     s.HIBERNACAO_FALHOU.touch()
     achados = s.checar()
@@ -61,6 +63,18 @@ def main() -> int:
     s.HIBERNACAO_FALHOU.unlink()
     if s.checar():
         falhas.append(f"checar: tudo bem devia dar lista vazia: {s.checar()}")
+    # 23/10: io_uring ligado de novo e uma pane recente aparecem; pane antiga não
+    s.IO_URING.write_text("0\n")
+    s.PANE.write_text('{"quando": "2026-10-23T21:49:44Z", "processo": "DelayedTaskSche", "onde": "do_raw_spin_lock", '
+                      '"s3": "s3://b/incidentes/x.txt"}')
+    achados = s.checar()
+    if len(achados) != 2 or not any("io_uring" in a for a in achados) or not any("DelayedTaskSche" in a and "s3://" in a for a in achados):
+        falhas.append(f"checar: io_uring ligado e pane recente deviam aparecer: {achados}")
+    s.IO_URING.write_text("2\n")
+    velho = __import__("time").time() - 3 * 86400
+    __import__("os").utime(s.PANE, (velho, velho))
+    if s.checar():
+        falhas.append(f"checar: pane de 3 dias atrás não é mais aviso: {s.checar()}")
     # restore check: a copy from S3 must open and keep up with the live file
     import json as _json
     import os

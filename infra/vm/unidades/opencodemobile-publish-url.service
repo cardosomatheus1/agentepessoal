@@ -1,0 +1,6 @@
+[Unit]
+Description=Keep the current OpenCode Mobile address in AWS SSM (opencode_tunel.sh publicar)
+After=network-online.target opencodemobile-cloudflare.service
+[Service]
+Type=oneshot
+ExecStart=/opt/agentepessoal/opencode_tunel.sh publicar

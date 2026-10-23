@@ -1,0 +1,7 @@
+[Unit]
+Description=Disk cleanup once a day (estabilidade.py limpar)
+[Timer]
+OnCalendar=*-*-* 12:17:00 UTC
+Persistent=true
+[Install]
+WantedBy=timers.target

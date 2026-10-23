@@ -1,0 +1,11 @@
+[Unit]
+Description=Kernel stability (io_uring off, panic reboots) and saving a kernel panic kept by pstore (estabilidade.py)
+After=network-online.target systemd-pstore.service
+Wants=network-online.target
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/python3 /opt/agentepessoal/estabilidade.py aplicar
+TimeoutStartSec=15min
+[Install]
+WantedBy=multi-user.target

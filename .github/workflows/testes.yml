@@ -27,6 +27,10 @@ jobs:
         run: |
           python3 infra/vm/tests/test_cofre_ponte.py
           python3 infra/vm/tests/test_saude.py
+          python3 infra/vm/tests/test_estabilidade.py
+          python3 infra/vm/tests/test_opencode_tunel.py
+          python3 infra/control/tests/test_recuperar.py
+          python3 infra/control/tests/test_controle_opencode.py
           python3 infra/vm/tests/test_comandos_ponte.py
           python3 infra/vm/tests/test_bilhete_ponte.py
           python3 infra/vm/tests/test_fila_ponte.py

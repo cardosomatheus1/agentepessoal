@@ -4,8 +4,14 @@
     python3 infra/operador/implantar.py --host ponte_whatsapp.py [--reiniciar agentepessoal-whatsapp.service] [--forcar]
     python3 infra/operador/implantar.py --host caixa_convidados.py --unidade agentepessoal-caixas.service
     python3 infra/operador/implantar.py --host caixa_delegados.py --unidade agentepessoal-delegados.service
+    python3 infra/operador/implantar.py --host estabilidade.py --unidade agentepessoal-estabilidade.service
+    python3 infra/operador/implantar.py --host estabilidade.py --unidade agentepessoal-limpeza-disco.timer
+    python3 infra/operador/implantar.py --host opencode_tunel.sh --unidade opencodemobile-publish-url.timer
+    python3 infra/operador/implantar.py --host opencode_tunel.sh --unidade opencodemobile-cloudflare.service --sem-reiniciar
     python3 infra/operador/implantar.py --hermes          (o Hermes ao lado do A0: infra/vm/hermes, fase 1 da migração)
-        (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it)
+        (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it;
+         a .timer also brings the .service of the same name; --sem-reiniciar installs without restarting it, e.g. a
+         tunnel whose address would change: it takes effect on the next start)
     python3 infra/operador/implantar.py --moldes [--forcar]   (video/carousel templates, infra/reels/moldes, for the agent)
     python3 infra/operador/implantar.py --calibracao   (AR Board criteria, calibracao/*/criterios.md, for the Crítico)
     python3 infra/operador/implantar.py --controle [--forcar]   (the control page / webhooks Lambda, infra/control)
@@ -58,7 +64,7 @@ def vm(comando: str, timeout: int = 600) -> str:
 HOST_ARQUIVOS = ("bedrock_proxy.py", "report_url.py", "watchdog.sh", "memguard.sh", "backup.sh", "hibernate.sh",
                  "entrada.sh", "credenciais_meta.py", "ponte_whatsapp.py", "proximo_despertar.py", "agent_tools.sh",
                  "saude.py", "firewall.sh", "usuarios.py", "caixa_convidados.py", "caixa_delegados.py",
-                 "delegado_hermes.py", "delegado_openclaw.py")
+                 "delegado_hermes.py", "delegado_openclaw.py", "estabilidade.py", "opencode_tunel.sh")
 
 
 def _conferir_git(caminhos: list) -> str:
@@ -80,9 +86,12 @@ def host(args: list) -> None:
         raise SystemExit(f"script de host desconhecido: {arquivo!r} (conhecidos: {', '.join(HOST_ARQUIVOS)})")
     caminho = f"infra/vm/{arquivo}"
     unidade_nova = args[args.index("--unidade") + 1] if "--unidade" in args else ""
-    caminhos = [caminho] + ([f"infra/vm/unidades/{unidade_nova}"] if unidade_nova else [])
-    if unidade_nova and not (RAIZ / caminhos[1]).exists():
-        raise SystemExit(f"unidade desconhecida: {unidade_nova} (esperada em infra/vm/unidades/)")
+    # a .timer leva junto a .service de mesmo nome (23/10: limpeza de disco diária)
+    unidades = [unidade_nova] + ([unidade_nova[:-6] + ".service"] if unidade_nova.endswith(".timer") else []) if unidade_nova else []
+    caminhos = [caminho] + [f"infra/vm/unidades/{u}" for u in unidades]
+    for c in caminhos[1:]:
+        if not (RAIZ / c).exists():
+            raise SystemExit(f"unidade desconhecida: {c} (esperada em infra/vm/unidades/)")
     head = _conferir_git(caminhos)
     versao = f"/opt/agentepessoal/.versao-{arquivo}"
     no_ar = vm(f"cat {versao} 2>/dev/null | head -1").split(" ")[0]
@@ -93,15 +102,15 @@ def host(args: list) -> None:
     boto3.client("s3", region_name="us-east-1").put_object(Bucket=BUCKET, Key=chave, Body=pacote)
     checar = f"bash -n {{f}}" if arquivo.endswith(".sh") else "python3 -m py_compile {f}"
     unidade = args[args.index("--reiniciar") + 1] if "--reiniciar" in args else unidade_nova
-    instalar = (f" && install -m 644 {{e}}/infra/vm/unidades/{unidade_nova} /etc/systemd/system/{unidade_nova} && "
-                f"systemctl daemon-reload && systemctl enable -q {unidade_nova}") if unidade_nova else ""
+    instalar = ("".join(f" && install -m 644 {{e}}/infra/vm/unidades/{u} /etc/systemd/system/{u}" for u in unidades)
+                + f" && systemctl daemon-reload && systemctl enable -q {unidade_nova}") if unidade_nova else ""
     estagio = "/tmp/implantar-host"
     saida = vm(f"rm -rf {estagio} && mkdir -p {estagio} && aws s3 cp --quiet s3://{BUCKET}/{chave} - | tar xz -C {estagio} && "
                f"{checar.format(f=f'{estagio}/{caminho}')} && echo SINTAXE_OK && "
                f"install -m 755 {estagio}/{caminho} /opt/agentepessoal/{arquivo} && "
                f"echo '{head} {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}' > {versao} && cat {versao}"
                + instalar.format(e=estagio)
-               + (f" && systemctl restart {unidade} && systemctl is-active {unidade}" if unidade else ""))
+               + (f" && systemctl restart {unidade} && systemctl is-active {unidade}" if unidade and "--sem-reiniciar" not in args else ""))
     print(saida[-800:])
     if "SINTAXE_OK" not in saida:
         raise SystemExit("o script não passou na conferência de sintaxe: nada foi trocado.")

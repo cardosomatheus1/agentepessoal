@@ -22,6 +22,9 @@ INSTANCE_ID = os.environ["INSTANCE_ID"]
 PASSWORD_SHA256 = os.environ["PASSWORD_SHA256"]
 URL_PARAM = os.environ.get("URL_PARAM", "/agentepessoal/agent-url")
 PHONE_PARAM = os.environ.get("PHONE_PARAM", "/agentepessoal/phone-url")
+# 23/10: o OpenCode do Matheus na VM (opencodemobile.service) sai por um túnel cujo endereço muda a cada boot; a VM o
+# publica aqui (opencode_tunel.sh). A página mostra o endereço do momento (o OpenCode continua pedindo a senha dele).
+OPENCODE_PARAM = os.environ.get("OPENCODE_PARAM", "/agentepessoal/opencode/url")
 BUCKET = os.environ.get("BUCKET", "")
 WAKE_ROLE_ARN = os.environ.get("WAKE_ROLE_ARN", "")
 WAKE_LATER = os.environ.get("WAKE_LATER_SCHEDULE", "agentepessoal-acordar-depois")
@@ -77,11 +80,14 @@ def _status() -> dict:
     phone = _param(PHONE_PARAM) if state == "running" else ""
     ready = bool(url.startswith("https://") and _reachable(url))
     phone_ready = bool(phone.startswith("https://") and _reachable(phone))
+    opencode = _param(OPENCODE_PARAM) if state == "running" else ""
+    opencode_ready = bool(opencode.startswith("https://") and _reachable(opencode))
     return {
         "state": state,
         "url": url if ready else "",
         "ready": ready,
         "phone_url": phone if phone_ready else "",
+        "opencode_url": opencode if opencode_ready else "",
     }
 
 
@@ -267,6 +273,7 @@ details.up summary{cursor:pointer;font-weight:600;padding:10px 0}textarea{width:
 <div class="status"><span id="dot" class="dot"></span><span id="label">…</span></div>
 <a id="open" class="btn primary" hidden>Abrir o agente</a>
 <a id="phone" class="btn secondary" target="_blank" rel="noopener" hidden>Ver celular</a>
+<a id="opencode" class="btn secondary" target="_blank" rel="noopener" hidden>Abrir OpenCode</a>
 <button id="start" class="primary" onclick="act('start')" hidden>Ligar</button>
 <button id="stop" class="secondary" onclick="act('stop')" hidden>Hibernar agora</button>
 <div class="up">
@@ -305,7 +312,7 @@ async function call(action){const r=await fetch(location.origin+location.pathnam
 const d=await r.json();if(r.status===401){try{localStorage.removeItem("agkey")}catch(e){}$("panel").hidden=true;$("nokey").hidden=false;throw new Error("Link pessoal inválido.")}return d}
 function render(s){const L={running:s.ready?"Ligado e pronto":"Acordando o agente…",pending:"Ligando a máquina…",stopping:"Hibernando…",stopped:"Desligado (hibernado)"};
 $("label").textContent=L[s.state]||s.state;$("dot").className="dot "+(s.ready?"ok":(s.state==="stopped"?"":"warn"));
-$("open").hidden=!s.ready;if(s.ready)$("open").href=s.url;$("phone").hidden=!s.phone_url;if(s.phone_url)$("phone").href=s.phone_url;$("start").hidden=s.state!=="stopped";$("stop").hidden=s.state!=="running";
+$("open").hidden=!s.ready;if(s.ready)$("open").href=s.url;$("phone").hidden=!s.phone_url;if(s.phone_url)$("phone").href=s.phone_url;$("opencode").hidden=!s.opencode_url;if(s.opencode_url)$("opencode").href=s.opencode_url;$("start").hidden=s.state!=="stopped";$("stop").hidden=s.state!=="running";
 if(s.ready&&autoOpen){location.href=s.url;return}
 clearTimeout(timer);if((!s.ready||!s.phone_url)&&s.state!=="stopped")timer=setTimeout(refresh,2500)}
 async function refresh(){try{$("err").textContent="";render(await call("status"))}catch(e){$("err").textContent=e.message}}

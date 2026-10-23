@@ -1,0 +1,6 @@
+[Unit]
+Description=Disk cleanup: unnamed Docker images, old Hermes images (keeps in use + 2 newest), journal cap
+After=docker.service
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/agentepessoal/estabilidade.py limpar

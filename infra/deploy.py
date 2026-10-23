@@ -3,6 +3,8 @@
 Idempotent: re-running reuses existing resources (found by name/tag).
 Usage:  python infra/deploy.py            create / update cloud resources
         python infra/deploy.py --update   also push vm/ changes to the running VM (re-runs setup.sh)
+        python infra/deploy.py --recuperacao   only the stuck-VM alarms and their function (infra/control/recuperar.py)
+        python infra/deploy.py --controle-iam  only the control function's permissions
 """
 
 import gzip
@@ -42,6 +44,7 @@ WAKE_ROLE = f"{NAME}-acordar-vm"
 WAKE_LATER = f"{NAME}-acordar-depois"
 WHATSAPP_QUEUE = f"{NAME}-whatsapp"
 PARAM_WHATSAPP = f"/{NAME}/whatsapp/config"
+PARAM_OPENCODE = f"/{NAME}/opencode/url"
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
@@ -500,6 +503,87 @@ def ensure_safety_wake(instance_id: str) -> None:
         scheduler.update_schedule(**args)
 
 
+# ---------------------------------------------------------------- VM travada (23/10)
+
+RECOVERY_FUNCTION = f"{NAME}-recuperar-vm"
+ALARM_REBOOT = f"{NAME}-vm-travada"
+ALARM_RESTART = f"{NAME}-vm-travada-religar"
+PARAM_RECOVERY = f"/{NAME}/recuperacao"
+
+
+def recovery_alarms(instance_id: str, function_arn: str) -> list[dict]:
+    """Two stages on the instance status check (missing data = hibernated/stopped = fine):
+    3 min failing → EC2 reboots it, and the function saves its console to S3 before the reboot wipes it;
+    15 min failing (the reboot did not fix it) → the function stops (forced) and starts it again (recuperar.py).
+    23/10: a kernel panic did not reboot by itself and the old single alarm (5 min) acted only 10 min later."""
+    base = dict(Namespace="AWS/EC2", MetricName="StatusCheckFailed_Instance", Statistic="Maximum", Period=60,
+                Threshold=1.0, ComparisonOperator="GreaterThanOrEqualToThreshold", TreatMissingData="notBreaching",
+                Dimensions=[{"Name": "InstanceId", "Value": instance_id}], Tags=TAGS)
+    return [
+        {**base, "AlarmName": ALARM_REBOOT, "EvaluationPeriods": 3, "DatapointsToAlarm": 3,
+         "AlarmDescription": "VM do agente travada há 3 min: reinicia e guarda o console (infra/deploy.py)",
+         "AlarmActions": [f"arn:aws:automate:{REGION}:ec2:reboot", function_arn]},
+        {**base, "AlarmName": ALARM_RESTART, "EvaluationPeriods": 15, "DatapointsToAlarm": 15,
+         "AlarmDescription": "VM do agente travada há 15 min (o reinício não resolveu): desliga e liga (recuperar.py)",
+         "AlarmActions": [function_arn]},
+    ]
+
+
+def ensure_recovery(instance_id: str) -> None:
+    role_arn = ensure_role(
+        RECOVERY_FUNCTION, "lambda.amazonaws.com", ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"],
+        {"Version": "2012-10-17", "Statement": [
+            {"Effect": "Allow", "Action": ["ec2:DescribeInstances", "ec2:DescribeInstanceStatus"], "Resource": "*"},
+            {"Effect": "Allow", "Action": ["ec2:GetConsoleOutput", "ec2:StopInstances", "ec2:StartInstances"],
+             "Resource": f"arn:aws:ec2:{REGION}:{account}:instance/{instance_id}"},
+            {"Effect": "Allow", "Action": "s3:PutObject", "Resource": f"arn:aws:s3:::{BUCKET}/incidentes/*"},
+            {"Effect": "Allow", "Action": ["ssm:GetParameter", "ssm:PutParameter"],
+             "Resource": f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_RECOVERY}"},
+            {"Effect": "Allow", "Action": "ssm:GetParameter",  # Telegram notice (same settings as the control page)
+             "Resource": f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_WHATSAPP}"},
+            {"Effect": "Allow", "Action": "kms:Decrypt", "Resource": "*",
+             "Condition": {"StringEquals": {"kms:ViaService": f"ssm.{REGION}.amazonaws.com"}}},
+        ]},
+    )
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(HERE / "control/recuperar.py", "recuperar.py")
+    env = {"Variables": {"INSTANCE_ID": instance_id, "BUCKET": BUCKET, "PARAM_ESTADO": PARAM_RECOVERY,
+                         "WHATSAPP_PARAM": PARAM_WHATSAPP}}
+    try:
+        lam.get_function(FunctionName=RECOVERY_FUNCTION)
+        lam.update_function_code(FunctionName=RECOVERY_FUNCTION, ZipFile=buf.getvalue())
+        lam.get_waiter("function_updated_v2").wait(FunctionName=RECOVERY_FUNCTION)
+        lam.update_function_configuration(FunctionName=RECOVERY_FUNCTION, Environment=env, Timeout=900)
+        lam.get_waiter("function_updated_v2").wait(FunctionName=RECOVERY_FUNCTION)
+        log("updated recovery function")
+    except lam.exceptions.ResourceNotFoundException:
+        for attempt in range(6):  # new roles take a few seconds before Lambda can assume them
+            try:
+                lam.create_function(FunctionName=RECOVERY_FUNCTION, Runtime="python3.12", Role=role_arn,
+                                    Handler="recuperar.handler", Code={"ZipFile": buf.getvalue()}, Timeout=900,
+                                    MemorySize=128, Environment=env, Tags={"Project": NAME})
+                break
+            except lam.exceptions.InvalidParameterValueException:
+                if attempt == 5:
+                    raise
+                time.sleep(10)
+        lam.get_waiter("function_active_v2").wait(FunctionName=RECOVERY_FUNCTION)
+        log("created recovery function")
+    function_arn = lam.get_function(FunctionName=RECOVERY_FUNCTION)["Configuration"]["FunctionArn"]
+    cw = session.client("cloudwatch")
+    for alarm in recovery_alarms(instance_id, function_arn):
+        try:
+            lam.add_permission(FunctionName=RECOVERY_FUNCTION, StatementId=f"alarme-{alarm['AlarmName']}",
+                               Action="lambda:InvokeFunction", Principal="lambda.alarms.cloudwatch.amazonaws.com",
+                               SourceAccount=account,
+                               SourceArn=f"arn:aws:cloudwatch:{REGION}:{account}:alarm:{alarm['AlarmName']}")
+        except lam.exceptions.ResourceConflictException:
+            pass
+        cw.put_metric_alarm(**alarm)
+        log(f"alarm {alarm['AlarmName']}: {alarm['EvaluationPeriods']} min")
+
+
 # ---------------------------------------------------------------- control page
 
 def ensure_whatsapp_queue() -> str:
@@ -510,8 +594,8 @@ def ensure_whatsapp_queue() -> str:
     return url
 
 
-def ensure_control(instance_id: str, password: str) -> str:
-    role_arn = ensure_role(
+def ensure_control_role(instance_id: str) -> str:
+    return ensure_role(
         CONTROL_ROLE,
         "lambda.amazonaws.com",
         ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"],
@@ -531,6 +615,11 @@ def ensure_control(instance_id: str, password: str) -> str:
                         f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_URL}",
                         f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_PHONE}",
                     ],
+                },
+                {   # 23/10: "Abrir OpenCode" (the VM publishes the tunnel address there; read only)
+                    "Effect": "Allow",
+                    "Action": "ssm:GetParameter",
+                    "Resource": f"arn:aws:ssm:{REGION}:{account}:parameter{PARAM_OPENCODE}",
                 },
                 {   # "Baixar app Android": presigned GET of the APK built by android/build.sh
                     "Effect": "Allow",
@@ -573,6 +662,10 @@ def ensure_control(instance_id: str, password: str) -> str:
             ],
         },
     )
+
+
+def ensure_control(instance_id: str, password: str) -> str:
+    role_arn = ensure_control_role(instance_id)
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(HERE / "control/index.py", "index.py")
@@ -655,6 +748,11 @@ def ensure_upload_cors(page_url: str) -> None:
 def main() -> None:
     if "--despertar" in sys.argv:  # only the wake-up schedules (no VM, page or password changes)
         return ensure_wake_schedule(find_instance()["InstanceId"])
+    if "--recuperacao" in sys.argv:  # only the stuck-VM alarms and their function (23/10)
+        return ensure_recovery(find_instance()["InstanceId"])
+    if "--controle-iam" in sys.argv:  # only the control function's permissions (code: implantar.py --controle)
+        ensure_control_role(find_instance()["InstanceId"])
+        return log("control role policy updated")
     log(f"account {account}, region {REGION}")
     password, created = ensure_parameters()
     ensure_bucket()
@@ -667,6 +765,7 @@ def main() -> None:
     existed = find_instance() is not None
     instance_id = ensure_instance(profile, subnet, sg)
     ensure_wake_schedule(instance_id)
+    ensure_recovery(instance_id)
     url = ensure_control(instance_id, password)
     if existed and "--update" in sys.argv:
         update_running_vm(instance_id)
