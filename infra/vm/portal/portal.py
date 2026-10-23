@@ -18,6 +18,7 @@ import asyncio
 import base64
 import hashlib
 import hmac
+import html
 import importlib.util
 import json
 import os
@@ -139,20 +140,22 @@ CASCA = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta n
 async def entrar(request: web.Request) -> web.Response:
     volta = request.query.get("volta", "/")
     if request.method == "GET":
-        return web.Response(text=ENTRAR.format(volta=_seguro(volta), erro=""), content_type="text/html")
+        return web.Response(text=ENTRAR.format(volta=html.escape(_seguro(volta), quote=True), erro=""),
+                            content_type="text/html")
     dados = await request.post()
     volta = _seguro(str(dados.get("volta") or "/"))
+    volta_html = html.escape(volta, quote=True)  # nunca cru no HTML (revisão OpenCode 23/10: XSS refletido)
     ip = request.headers.get("CF-Connecting-IP") or request.remote or "?"
     bloq = request.app["bloqueio"]
     if bloq.bloqueado(ip):
-        return web.Response(text=ENTRAR.format(volta=volta, erro="Muitas tentativas. Espere 15 minutos."),
+        return web.Response(text=ENTRAR.format(volta=volta_html, erro="Muitas tentativas. Espere 15 minutos."),
                             content_type="text/html", status=429)
     login = str(dados.get("login") or "").strip().lower()
     u = await asyncio.to_thread(usuarios().verificar, login, str(dados.get("senha") or ""))
     if not u:
         bloq.falhou(ip)
         await asyncio.sleep(min(bloq.espera(), 5) if hasattr(bloq, "espera") else 1)
-        return web.Response(text=ENTRAR.format(volta=volta, erro="Login ou senha errados."), content_type="text/html",
+        return web.Response(text=ENTRAR.format(volta=volta_html, erro="Login ou senha errados."), content_type="text/html",
                             status=401)
     resposta = web.HTTPFound(volta)
     resposta.set_cookie(COOKIE, assinar(login), max_age=VIDA, httponly=True, samesite="Lax",
@@ -161,7 +164,10 @@ async def entrar(request: web.Request) -> web.Response:
 
 
 def _seguro(volta: str) -> str:
-    return volta if volta.startswith("/") and not volta.startswith("//") and "\\" not in volta else "/"
+    """Só um caminho deste portal (nem outro site, nem texto que vire HTML ou script)."""
+    import re
+
+    return volta if re.fullmatch(r"/[A-Za-z0-9/_-]{0,80}", volta or "") and not volta.startswith("//") else "/"
 
 
 async def sair(request: web.Request) -> web.Response:

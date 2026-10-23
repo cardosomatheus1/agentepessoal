@@ -63,6 +63,11 @@ async def main():
         checa(r.status == 302 and r.headers["Location"].startswith("/entrar"), "sem sessão: vai para o login")
         r = await c.post("/plugins/cofre/cofre", json={}, headers={"X-Portal": "1"})
         checa(r.status == 401, "API sem sessão: 401")
+        r = await c.get('/entrar?volta="><script>alert(1)</script>')
+        checa("<script>alert" not in await r.text(), "o 'volta' nunca vira HTML/script (XSS)")
+        r = await c.post("/entrar", data={"login": "x", "senha": "y", "volta": '/a"><script>alert(1)</script>'},
+                         allow_redirects=False)
+        checa("<script>alert" not in await r.text(), "nem na resposta de senha errada")
         r = await c.post("/entrar", data={"login": "matheus", "senha": "errada", "volta": "/painel"}, allow_redirects=False)
         checa(r.status == 401, "senha errada não entra")
         r = await c.post("/entrar", data={"login": "matheus", "senha": "certa", "volta": "//mal.com"}, allow_redirects=False)
