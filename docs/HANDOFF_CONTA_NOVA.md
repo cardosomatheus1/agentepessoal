@@ -29,6 +29,26 @@ aprovar_pendente, tarefa_atualizar, rotinas aplicar/criar, rodar_testes*, resumo
 param com aviso e dizem o equivalente. `implantar.py --moldes` e `--segundo-cerebro` ainda dependem do container do A0
 (pendente, fase 9). Revisão independente: `revisar_opencode.py` (OpenCode 2 + Ponytail no host).
 
+**Pane do kernel de 23/10 (21:49 UTC) e o que mudou:**
+- Causa (rastro no pstore do UEFI, cópia em `s3://agentepessoal-backup-964862484412/incidentes/pstore-179279219-20261023.txt`):
+  Oops em `io_ring_ctx_wait_and_kill ← io_uring_release ← close` no kernel 6.8.0-1066-aws (o mais novo do 22.04; não
+  há correção para instalar), processo Node (`DelayedTaskSche`) de um `npm` que o OpenCode rodou no host. A VM não
+  religou sozinha; o alarme a reiniciou às 22:00 e um `StopInstances` manual às 22:01 derrubou esse boot; o operador
+  ligou às 22:10.
+- `infra/vm/estabilidade.py` (`agentepessoal-estabilidade.service`, no boot): `kernel.io_uring_disabled=2` (Node/npm,
+  Docker, Chromium, Android, Hermes e OpenCode conferidos depois), `kernel.panic=10`, `panic_on_oops=1`, journal
+  persistente (800 MB), pane do pstore → S3 `incidentes/` + aviso ao Matheus + `pane_kernel.json` (o `saude.py` mostra
+  por 2 dias e avisa se o io_uring voltar a ligar). `estabilidade.py limpar` (timer diário 12:17 UTC): imagens sem nome,
+  imagens antigas do Hermes (fica a em uso + 2), teto do journal.
+- Alarmes em 2 etapas (`infra/deploy.py --recuperacao`, função `agentepessoal-recuperar-vm` = `infra/control/recuperar.py`):
+  3 min com a checagem falhando → reinicia + guarda o console no S3; 15 min → desliga (forçado) e liga, até 3 vezes em
+  6 h, nunca com a VM hibernando/desligada. Não desligue a VM à mão enquanto o reinício do alarme está acontecendo.
+- OpenCode do Matheus (`opencodemobile.service`, 127.0.0.1:4096, senha própria): túnel e publicação do endereço agora
+  no repo (`opencode_tunel.sh`, `infra/vm/unidades/opencodemobile-*`); a página de controle tem "Abrir OpenCode" (o
+  endereço do momento). Endereço fixo: o Matheus cria um túnel nomeado na Cloudflare dele (destino
+  `http://localhost:4096`, ex. `opencode.raizconnect.com.br`) e manda `/senha CLOUDFLARE_TUNEL_OPENCODE <token>` (e,
+  se outro nome, `/senha OPENCODE_ENDERECO <host>`): em 1 min o túnel troca sozinho.
+
 **Main Opus (IA Business):** a sessão "Main Opus NEXOS" mudou para a conta `sejaorbyte`: agora é
 `session_01QSS9nA3EubusWfC583rR7M` na `ros-dev-construcao`. A antiga `session_016QkuBRR8Fbb2Vgx95bXE3c` e o despertador
 de hora em hora dela (Routine `trig_01M1piaGZesGNpTAakPLn3JH`, da conta antiga) estão **obsoletos** (não apagados).
