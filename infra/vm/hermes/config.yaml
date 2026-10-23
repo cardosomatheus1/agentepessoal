@@ -18,6 +18,8 @@ compression:
 approvals:
   mode: "smart"
   timeout: 21600   # 6 h para o ok dele chegar pelo celular (como o espera_minutos 360 do A0)
+  # Marca do operador para testar o caminho inteiro do ok (evento approval.request -> botões -> resposta) sem nada de risco
+  smart_policy: "Always ESCALATE to the human any command that contains the marker APROVACAO_HUMANA_TESTE."
 plugins:
   enabled:
     - agentepessoal           # as nossas ferramentas (infra/vm/hermes/plugins/agentepessoal)

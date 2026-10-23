@@ -59,6 +59,7 @@ checa("docker network inspect hermes" in fw and '-s "$HERMES" -j DROP' in fw and
       and '-s "$HERMES" -d "$destino" -j DROP' in fw, "firewall: rede hermes só com o proxy e a internet")
 checa(sh.index("HERMES_SEM_ENSAIO") < sh.index("docker run"), "não sobe sem a trava do ensaio nos plugins no ar")
 checa("-o allow_other,ro " in un, "até a virada o Hermes vê os dados do A0 só para leitura")
+checa("AGENTEPESSOAL_RELOGIO=1" not in sh, "até a virada o relógio (post na hora, nota do dia…) é do A0, não do Hermes")
 checa("-e AGENTEPESSOAL_ENSAIO=1" in sh, "até a virada o Hermes está em ensaio: nada vai ao celular nem à Meta")
 checa("/a0/usr/skills" not in str((cfg.get("skills") or {}).get("external_dirs") or ""),
       "o Hermes não lê as skills vivas do A0 (mandam usar ferramentas de lá; e external_dirs é só leitura para o curador)")

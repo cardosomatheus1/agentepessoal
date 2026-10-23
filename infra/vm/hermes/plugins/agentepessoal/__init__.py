@@ -25,6 +25,7 @@ cofre = _sub("agentepessoal_cofre", "cofre_hermes.py")
 uso = _sub("agentepessoal_uso", "uso_hermes.py")
 acesso = _sub("agentepessoal_acesso", "acesso_hermes.py")
 aprovacoes = _sub("agentepessoal_aprovacoes", "aprovacoes_hermes.py")
+relogio = _sub("agentepessoal_relogio", "relogio_hermes.py")
 log = logging.getLogger("agentepessoal")
 
 # (plugin, ferramenta). "Hermes primeiro" (23/10): só entra o que é nosso de verdade (dados, Raiz, Segundo Cérebro).
@@ -62,6 +63,7 @@ def register(ctx):
     uso.registrar(ctx)    # dono/sessão/rotina de cada chamada de modelo, para o uso.jsonl do proxy
     acesso.registrar(ctx)  # convidados só com o uso pessoal; ensaio: navegador só lê
     aprovacoes.registrar(ctx)  # revisor + regras do Matheus antes de ação de risco
+    relogio.registrar(ctx)  # tarefas de fundo sem modelo (só com AGENTEPESSOAL_RELOGIO=1: até a virada, o A0 roda)
     feitas, puladas = [], []
     for plugin, nome in FERRAMENTAS:
         try:
