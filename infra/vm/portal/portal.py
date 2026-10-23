@@ -25,6 +25,7 @@ import json
 import os
 import sys
 import time
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -100,6 +101,14 @@ async def guarda(request: web.Request, handler):
     request["login"] = login_do_cookie(request.cookies.get(COOKIE, ""))
     if request.path in ("/entrar", "/saude"):
         return await handler(request)
+    sem_login_com_link = (request.path == "/navegador" and request.query.get("t")) or (
+        request.path == "/api/navegador" and request.method == "POST" and request.headers.get("X-Portal") == "1")
+    if sem_login_com_link and not request["login"]:
+        # o link assinado do "Resolver aqui" (Telegram, sem login): a própria rota confere o token
+        resposta = await handler(request)
+        resposta.headers.setdefault("Cache-Control", "private, no-store")
+        resposta.headers.setdefault("Referrer-Policy", "no-referrer")
+        return resposta
     if request.method == "POST" and request.headers.get("X-Portal") != "1":
         return web.json_response({"erro": "pedido sem o cabeçalho do portal"}, status=403)
     if not request["login"]:
@@ -271,36 +280,39 @@ async def api_cofre(request: web.Request) -> web.Response:
 
 
 # ------------------------------------------------------------------ Navegador (virada, fase 8)
-# O A0 mostrava o navegador dele na interface (o "Navegador" do app): a pessoa resolvia ali um login, um captcha, ou
-# fazia uma tarefa enquanto o me_mostre gravava. O Hermes não tem interface: esta página mostra a tela do navegador
-# dele (hermes-navegador, por CDP: PORTAL_CDP) e manda o clique, o texto e as teclas da pessoa. Só o dono (Matheus).
+# O "Navegador" e o "🖥️ Resolver aqui" do A0 (navegador_visual: tela.html/tela.py) no Hermes: a tela do navegador dele
+# (hermes-navegador, por CDP: PORTAL_CDP), onde um toque é um clique, segurar é "segure o botão" (Cloudflare, até 15 s),
+# segurar e arrastar arrasta, arrastar rola; abas (lista, nova, trocar), endereço, digitar e teclas. Entra quem tem
+# sessão do portal como dono, ou o link assinado que o agente manda no Telegram (ferramenta `resolver_aqui`: a mesma
+# assinatura do A0, com o segredo da ponte, 30 min, só o dono); "✅ Terminei" avisa a conversa que pediu.
 CDP = os.environ.get("PORTAL_CDP", "")
 DONO_NAVEGADOR = "matheus"
+CHAVE_PONTE = Path(os.environ.get("PORTAL_CHAVE_PONTE", "/a0/usr/whatsapp/.chave"))
+PONTE_URL = os.environ.get("PORTAL_PONTE", "http://127.0.0.1:8789")  # a ponte do celular (o portal roda na rede do host)
+PAGINA_NAVEGADOR = AQUI / "navegador.html"
 TECLAS_NAV = {"Enter": (13, "\r"), "Backspace": (8, ""), "Tab": (9, "\t"), "Escape": (27, "")}
+PRONTO = ("(Ele resolveu o que você pediu na tela do navegador, pelo botão \"Resolver aqui\" do Telegram. Leia a página de "
+          "novo (browser_snapshot), confira se ficou certo e siga com a tarefa; se não ficou, diga o que falta.)")
+TAMANHO = "(() => [innerWidth, innerHeight])()"
+PRONTOS: set = set()  # os links cujo "✅ Terminei" já foi avisado
 
-NAVEGADOR = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Navegador</title><style>body{font-family:system-ui;margin:0;padding:8px}#tela{width:100%;max-width:1280px;border:1px solid #ccc;
-cursor:crosshair}input,button,select{font-size:15px;padding:6px;margin:2px}#url{width:60%}#txt{width:50%}.l{display:flex;flex-wrap:wrap;
-align-items:center}</style></head><body><div class="l"><a href="/">Início</a>&nbsp;<select id="aba"></select>
-<input id="url" placeholder="endereço"><button onclick="ir()">Ir</button></div>
-<img id="tela" alt="tela do navegador"><div class="l"><input id="txt" placeholder="texto para digitar no campo clicado">
-<button onclick="cmd({acao:'digitar',texto:txt.value}).then(()=>txt.value='')">Digitar</button>
-<button onclick="cmd({acao:'tecla',tecla:'Enter'})">Enter</button><button onclick="cmd({acao:'tecla',tecla:'Backspace'})">⌫</button>
-<button onclick="cmd({acao:'tecla',tecla:'Tab'})">Tab</button><button onclick="cmd({acao:'rolar',dy:-500})">▲</button>
-<button onclick="cmd({acao:'rolar',dy:500})">▼</button><button onclick="cmd({acao:'voltar'})">◀ Voltar</button></div>
-<script>
-const tela=document.getElementById('tela'),aba=document.getElementById('aba'),url=document.getElementById('url'),txt=document.getElementById('txt');
-async function cmd(d){d.aba=aba.value;const r=await fetch('/api/navegador',{method:'POST',headers:{'Content-Type':'application/json','X-Portal':'1'},body:JSON.stringify(d)});
- if(r.status===401){location.href='/entrar?volta=/navegador';return}const j=await r.json();if(j.erro)alert(j.erro);atualizar();return j}
-function ir(){cmd({acao:'ir',url:url.value})}
-async function abas(){const j=await cmd({acao:'abas'});if(!j||!j.abas)return;const atual=aba.value;aba.innerHTML='';
- for(const a of j.abas){const o=document.createElement('option');o.value=a.id;o.textContent=(a.title||a.url).slice(0,60);aba.appendChild(o)}
- if(atual&&j.abas.some(a=>a.id===atual))aba.value=atual;const s=j.abas.find(a=>a.id===aba.value);if(s&&document.activeElement!==url)url.value=s.url}
-function atualizar(){tela.src='/api/navegador/tela?aba='+encodeURIComponent(aba.value||'')+'&t='+Date.now()}
-tela.onclick=e=>{const b=tela.getBoundingClientRect();cmd({acao:'clique',x:Math.round((e.clientX-b.left)*tela.naturalWidth/b.width),
- y:Math.round((e.clientY-b.top)*tela.naturalHeight/b.height)})};
-aba.onchange=()=>{abas();atualizar()};abas().then(atualizar);setInterval(atualizar,1500);setInterval(abas,6000);
-</script></body></html>"""
+
+def tela_helper():
+    return _modulo("portal_navegador_tela", PLUGINS / "navegador_visual" / "helpers" / "tela.py")
+
+
+def pode_navegador(login: str) -> bool:
+    """O navegador do agente é do dono; os logins de teste do operador (teste_*, sem celular) servem para conferir."""
+    return login == DONO_NAVEGADOR or login.startswith("teste_")
+
+
+def token_do_navegador(token: str) -> dict | None:
+    """O link do "Resolver aqui": assinado com o segredo da ponte, ainda válido e do dono (nunca de um convidado)."""
+    if not token:
+        return None
+    t = tela_helper()
+    dados = t.conferir(token, t.segredo(CHAVE_PONTE))
+    return dados if dados and pode_navegador(str(dados.get("usuario") or "")) else None
 
 
 async def _cdp_abas() -> list:
@@ -311,12 +323,23 @@ async def _cdp_abas() -> list:
             return [a for a in await r.json(content_type=None) if a.get("type") == "page"]
 
 
+async def _cdp_http(caminho: str, metodo: str = "GET") -> dict:
+    import aiohttp
+
+    async with aiohttp.ClientSession() as s:
+        async with s.request(metodo, f"{CDP}{caminho}", timeout=aiohttp.ClientTimeout(total=10)) as r:
+            try:
+                return await r.json(content_type=None)
+            except Exception:
+                return {}
+
+
 async def _cdp(aba: str, metodo: str, params: dict | None = None) -> dict:
     import aiohttp
 
-    alvo = next((a for a in await _cdp_abas() if a["id"] == aba), None) if aba else None
+    abas = await _cdp_abas()
+    alvo = next((a for a in abas if a["id"] == aba), None) if aba else None
     if alvo is None:
-        abas = await _cdp_abas()
         if not abas:
             raise web.HTTPNotFound(text="nenhuma aba aberta")
         alvo = abas[0]
@@ -332,36 +355,87 @@ async def _cdp(aba: str, metodo: str, params: dict | None = None) -> dict:
     return {}
 
 
-def _so_dono(request: web.Request) -> None:
-    if request["login"] != DONO_NAVEGADOR or not CDP:
-        raise web.HTTPForbidden(text="o navegador do agente é só do Matheus (e só depois da virada)")
+def _autorizado(request: web.Request, token: str = "") -> dict | None:
+    """{"login", "sessao"} de quem pode mexer no navegador do agente, ou HTTPForbidden."""
+    if not CDP:
+        raise web.HTTPForbidden(text="o navegador do agente só existe depois da virada")
+    dados = token_do_navegador(token or request.query.get("t", ""))
+    if dados:
+        return {"login": dados["usuario"], "sessao": dados["contexto"], "token": token or request.query.get("t", "")}
+    if request.get("login") == DONO_NAVEGADOR:
+        return {"login": DONO_NAVEGADOR, "sessao": "", "token": ""}
+    raise web.HTTPForbidden(text="o navegador do agente é só do Matheus")
 
 
 async def navegador(request: web.Request) -> web.Response:
-    _so_dono(request)
-    return web.Response(text=NAVEGADOR, content_type="text/html")
+    token = request.query.get("t", "")
+    if token and token_do_navegador(token) is None:
+        return web.Response(text="<h3 style='font-family:sans-serif;padding:24px'>Este link expirou. Peça de novo ao "
+                                 "agente.</h3>", status=403, content_type="text/html")
+    _autorizado(request, token)
+    pagina = PAGINA_NAVEGADOR.read_text(encoding="utf-8").replace("__TOKEN__", html.escape(token, quote=True))
+    return web.Response(text=pagina, content_type="text/html")
 
 
-async def navegador_tela(request: web.Request) -> web.Response:
-    _so_dono(request)
-    r = await _cdp(request.query.get("aba", ""), "Page.captureScreenshot", {"format": "jpeg", "quality": 60})
-    return web.Response(body=base64.b64decode(r.get("data") or ""), content_type="image/jpeg")
+def texto_pronto(login: str, sessao: str) -> str:
+    """O aviso de "✅ Terminei": vai na conversa do celular da pessoa (tg-<login>); se o pedido nasceu em outra sessão
+    (uma rotina), o agente sabe qual é para achar o contexto."""
+    return PRONTO if sessao == f"tg-{login}" else PRONTO + f" (O pedido do botão veio da sessão {sessao}: veja o que era.)"
+
+
+def _ponte_pronto(login: str, sessao: str) -> None:
+    """Pela ponte do celular (POST /conversa, como os botões): ela abre o pedido na conversa da pessoa no Hermes, segue
+    até o fim e manda a resposta ao celular (um /v1/runs direto daqui terminaria sem ninguém para entregar)."""
+    req = urllib.request.Request(PONTE_URL + "/conversa",
+                                 data=json.dumps({"usuario": login, "texto": texto_pronto(login, sessao)}).encode(),
+                                 headers={"Content-Type": "application/json", "X-Chave": CHAVE_PONTE.read_text().strip()})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        r.read()
 
 
 async def navegador_api(request: web.Request) -> web.Response:
-    _so_dono(request)
     d = await request.json()
+    quem = _autorizado(request, str(d.get("t") or ""))
     acao, aba = str(d.get("acao") or ""), str(d.get("aba") or "")
+    if acao == "pronto":
+        if not quem["sessao"]:
+            return web.json_response({"erro": "sem conversa esperando (abra pelo botão do Telegram)"}, status=400)
+        if quem["token"] in PRONTOS:  # um aviso por link: apertar de novo não abre outro pedido
+            return web.json_response({"ok": True, "repetido": True})
+        PRONTOS.add(quem["token"])
+        await asyncio.to_thread(_ponte_pronto, quem["login"], quem["sessao"])
+        return web.json_response({"ok": True})
     if acao == "abas":
-        return web.json_response({"abas": [{"id": a["id"], "url": a.get("url", ""), "title": a.get("title", "")}
+        return web.json_response({"abas": [{"id": a["id"], "url": a.get("url", ""), "titulo": a.get("title", "")}
                                            for a in await _cdp_abas()]})
-    if acao == "clique":
-        x, y = int(d.get("x") or 0), int(d.get("y") or 0)
-        for tipo in ("mousePressed", "mouseReleased"):
-            await _cdp(aba, "Input.dispatchMouseEvent", {"type": tipo, "x": x, "y": y, "button": "left", "clickCount": 1})
-    elif acao == "digitar":
+    if acao == "abrir" and d.get("nova"):
+        url = str(d.get("url") or "about:blank")
+        if not url.startswith(("https://", "about:blank")):
+            return web.json_response({"erro": "só endereço https"}, status=400)
+        nova = await _cdp_http(f"/json/new?{urllib.parse.quote(url, safe=':/?&=%')}", "PUT")
+        return web.json_response({"ok": True, "aba": nova.get("id", "")})
+    if acao == "ativar":
+        await _cdp_http(f"/json/activate/{urllib.parse.quote(aba)}")
+        return web.json_response({"ok": True})
+    if acao == "quadro":
+        r = await _cdp(aba, "Page.captureScreenshot", {"format": "jpeg", "quality": int(d.get("qualidade") or 60)})
+        return web.json_response({"imagem": r.get("data", "")})
+    if acao == "abrir":
+        url = str(d.get("url") or "").strip()
+        if not url.startswith("https://"):
+            url = "https://" + url.split("://", 1)[-1]
+        await _cdp(aba, "Page.navigate", {"url": url})
+        return web.json_response({"ok": True})
+    if acao == "voltar":
+        await _cdp(aba, "Runtime.evaluate", {"expression": "history.back()"})
+        return web.json_response({"ok": True})
+    if acao == "recarregar":
+        await _cdp(aba, "Page.reload", {})
+        return web.json_response({"ok": True})
+    if acao == "texto":
         await _cdp(aba, "Input.insertText", {"text": str(d.get("texto") or "")[:2000]})
-    elif acao == "tecla":
+        return web.json_response({"ok": True})
+    if acao == "tecla":
         tecla = str(d.get("tecla") or "")
         if tecla not in TECLAS_NAV:
             return web.json_response({"erro": "tecla desconhecida"}, status=400)
@@ -370,18 +444,43 @@ async def navegador_api(request: web.Request) -> web.Response:
         await _cdp(aba, "Input.dispatchKeyEvent", {**base, "type": "keyDown" if texto else "rawKeyDown",
                                                    **({"text": texto} if texto else {})})
         await _cdp(aba, "Input.dispatchKeyEvent", {**base, "type": "keyUp"})
-    elif acao == "rolar":
-        await _cdp(aba, "Input.dispatchMouseEvent", {"type": "mouseWheel", "x": 200, "y": 200, "deltaX": 0,
-                                                     "deltaY": int(d.get("dy") or 0)})
-    elif acao == "ir":
-        endereco = str(d.get("url") or "").strip()
-        if not endereco.startswith(("http://", "https://")):
-            endereco = "https://" + endereco
-        await _cdp(aba, "Page.navigate", {"url": endereco})
-    elif acao == "voltar":
-        await _cdp(aba, "Runtime.evaluate", {"expression": "history.back()"})
-    else:
+        return web.json_response({"ok": True})
+    if acao not in ("toque", "segurar", "arrastar", "rolar"):
         return web.json_response({"erro": "ação desconhecida"}, status=400)
+    medida = await _cdp(aba, "Runtime.evaluate", {"expression": TAMANHO, "returnByValue": True})
+    largura, altura = ((medida.get("result") or {}).get("value") or [0, 0])[:2]
+    if not largura or not altura:
+        return web.json_response({"erro": "não consegui medir a página"}, status=502)
+
+    def ponto(fx, fy):
+        return (max(0.0, min(1.0, float(fx or 0))) * largura, max(0.0, min(1.0, float(fy or 0))) * altura)
+
+    async def mouse(tipo: str, x: float, y: float, botoes: int = 0):
+        await _cdp(aba, "Input.dispatchMouseEvent", {"type": tipo, "x": x, "y": y, "button": "left" if tipo != "mouseMoved" else
+                                                     ("left" if botoes else "none"), "buttons": botoes, "clickCount": 1})
+
+    if acao == "toque":
+        x, y = ponto(d.get("fx"), d.get("fy"))
+        await mouse("mousePressed", x, y, 1)
+        await mouse("mouseReleased", x, y)
+    elif acao == "segurar":  # "segure o botão" (Cloudflare): o mesmo tempo que a pessoa segurou, até 15 s
+        x, y = ponto(d.get("fx"), d.get("fy"))
+        await mouse("mouseMoved", x, y)
+        await mouse("mousePressed", x, y, 1)
+        await asyncio.sleep(max(0.5, min(15.0, float(d.get("ms") or 0) / 1000)))
+        await mouse("mouseReleased", x, y)
+    elif acao == "arrastar":
+        pontos = [ponto(*p[:2]) for p in (d.get("pontos") or [])][:200]
+        if len(pontos) < 2:
+            return web.json_response({"erro": "arraste curto"}, status=400)
+        await mouse("mouseMoved", *pontos[0])
+        await mouse("mousePressed", *pontos[0], 1)
+        for x, y in pontos[1:]:
+            await mouse("mouseMoved", x, y, 1)
+        await mouse("mouseReleased", *pontos[-1])
+    else:
+        await _cdp(aba, "Input.dispatchMouseEvent", {"type": "mouseWheel", "x": largura / 2, "y": altura / 2, "deltaX": 0,
+                                                     "deltaY": float(d.get("dy") or 0) * altura})
     return web.json_response({"ok": True})
 
 
@@ -437,7 +536,6 @@ def app() -> web.Application:
     a.router.add_post("/plugins/quadro/quadro", api_quadro)
     a.router.add_post("/plugins/cofre/cofre", api_cofre)
     a.router.add_get("/navegador", navegador)
-    a.router.add_get("/api/navegador/tela", navegador_tela)
     a.router.add_post("/api/navegador", navegador_api)
     for caminho in ("/segundo-cerebro", "/segundo-cerebro/", "/api/segundo-cerebro", "/icon.svg", "/manifest.webmanifest",
                     "/_next/{resto:.*}", "/segundo-cerebro/{resto:.*}", "/api/segundo-cerebro/{resto:.*}"):

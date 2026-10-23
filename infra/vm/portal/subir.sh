@@ -8,6 +8,7 @@ IMAGEM="${1:?imagem do Hermes}"
 B=/opt/hermes/portal
 mkdir -p "$B/app" "$B/segundo_cerebro/releases"; chmod 700 "$B"
 install -m 644 "$AQUI/portal.py" "$B/app/portal.py"
+install -m 644 "$AQUI/navegador.html" "$B/app/navegador.html"  # o Navegador / "Resolver aqui" (tela.html do A0)
 [ -s "$B/segredo" ] || { umask 077; openssl rand -hex 32 > "$B/segredo"; }
 install -m 600 /opt/hermes/api_key "$B/hermes_api_key"
 # a release do Segundo Cérebro que o A0 serve, numa pasta do portal (o estado do Node do A0 fica com ele)

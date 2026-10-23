@@ -70,7 +70,9 @@ Estado em 23/10, depois da virada (✅ feito e conferido · ⏳ falta · ➖ nã
   `todo_list`) · ✅ celular (D2: adb/uiautomator2 na imagem, repasse `hermes-celular`; ao vivo leu a tela do Android)
   · ✅ conversas_externas (D3: ferramenta e vigia no Hermes de cada pessoa; ao vivo o WhatsApp Web da Ilia logado no navegador dela)
 - ✅ arquivo_grande (`entrada.sh` do host segue igual: o arquivo cai em /opt/a0/usr, que o Hermes vê) · ✅ agent_delegates (D5: `delegar` só ao OpenClaw)
-- ➖ limpeza (o Hermes fecha o próprio navegador) · ✅ navegador_por_pessoa (cada convidado tem o navegador dele no Hermes dele) · D navegador_visual
+- ➖ limpeza (o Hermes fecha o próprio navegador) · ✅ navegador_por_pessoa (cada convidado tem o navegador dele no Hermes dele) · ✅ navegador_visual ("🖥️ Resolver aqui": a ferramenta `resolver_aqui` manda ao Matheus o print e o botão do
+  Telegram com link assinado de 30 min, só dele; abre a página Navegador do portal nessa aba, com toque, segurar até 15 s,
+  arrastar, rolar, abas, endereço, digitar e teclas; "✅ Terminei" volta à conversa dele pela ponte e o agente confere)
 - ➖ acoes_paralelas, cache_prompt, controle_agente, estilo_claude, interface_celular, navegador_rapido, prompt_enxuto,
   resultados_grandes, resumo_seguro — as regras de sempre estão no `SOUL.md`; as do celular e da rotina, nos blocos
   dos ganchos (`rotinas_hermes.py`)

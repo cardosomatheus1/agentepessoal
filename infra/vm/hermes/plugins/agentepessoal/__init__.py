@@ -35,6 +35,7 @@ botoes = _sub("agentepessoal_botoes", "botoes_hermes.py")  # botões/comandos do
 externas = _sub("agentepessoal_externas", "externas_hermes.py")  # conversas externas (ferramenta + vigia do relógio)
 mcp = _sub("agentepessoal_mcp", "mcp_hermes.py")  # conector Google para código sem modelo (CRM da prospecção)
 limite = _sub("agentepessoal_limite", "limite_hermes.py")  # limite do dia do convidado (relógio do Hermes dele)
+resolver = _sub("agentepessoal_resolver", "resolver_hermes.py")  # "🖥️ Resolver aqui" (o navegador_visual do A0)
 log = logging.getLogger("agentepessoal")
 
 # (plugin, ferramenta). "Hermes primeiro" (23/10): só entra o que é nosso de verdade (dados, Raiz, Segundo Cérebro).
@@ -122,6 +123,7 @@ def register(ctx):
     rotinas.registrar(ctx)  # rodada do cron: bloco de tarefa agendada e o resultado ao celular (regras do A0)
     contexto.registrar(ctx)  # ficha e decisões em vigor de quem fala, no 1º turno
     audio.registrar(ctx)  # áudio do celular transcrito antes do modelo (faster-whisper, como no A0)
+    resolver.registrar(ctx)  # "🖥️ Resolver aqui": print + botão para o Matheus fazer na aba (só o dono)
     try:  # `reuniao` por cima do cron do Hermes (briefing e pós-reunião)
         reuniao.registrar(ctx)
         feitas_extra = ["reuniao"]

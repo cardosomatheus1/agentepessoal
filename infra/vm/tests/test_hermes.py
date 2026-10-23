@@ -128,6 +128,13 @@ for d in skills:
     checa(cab.get("name") == d.name and cab.get("description") and cab.get("adaptada_hermes"), f"skill {d.name}: cabeçalho")
     checa(not ANTIGAS.search(texto), f"skill {d.name} ainda cita ferramenta do A0: {ANTIGAS.findall(texto)[:3]}")
 checa('[ -e "$SK/$n" ] || { cp -r' in sh and "chown -R 10000:10000" in sh, "skill semeada só se ainda não existe (o curador cuida)")
+checa('grep -qx "$n@$marca .*" "$SEMEADAS"' in sh and "skills_antigas" in sh,
+      "ressemear só quando a fonte pede (ressemear: <marca>), uma vez por marca, guardando a do curador")
+login_skill = (H / "skills" / "login-sites-navegador" / "SKILL.md").read_text()
+checa("resolver_aqui" in login_skill and "tool_search" not in login_skill and "\nressemear: " in login_skill,
+      "a skill de login manda usar o resolver_aqui (e é ressemeada)")
+checa('install -m 644 "$AQUI/navegador.html"' in (H.parent / "portal" / "subir.sh").read_text(),
+      "o portal leva a página do Navegador (tela.html do A0)")
 # fase 7: o dia de sombra numa cópia dos dados, no ensaio, com o relógio; para sozinho
 so = (H / "sombra.sh").read_text()
 checa(subprocess.run(["bash", "-n", str(H / "sombra.sh")]).returncode == 0, "sintaxe do sombra.sh")

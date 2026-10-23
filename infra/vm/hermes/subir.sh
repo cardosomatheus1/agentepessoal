@@ -35,9 +35,18 @@ done
 SK="$DADOS/skills/agentepessoal"
 mkdir -p "$SK" "$DADOS/agentepessoal"
 install -m 644 "$AQUI/skills/DESCRIPTION.md" "$SK/DESCRIPTION.md"
+SEMEADAS="$DADOS/agentepessoal/skills_semeadas.txt"; touch "$SEMEADAS"
 for s in "$AQUI"/skills/*/; do
   n=$(basename "$s")
-  [ -e "$SK/$n" ] || { cp -r "$s" "$SK/$n"; echo "$n $(date -u +%FT%TZ)" >> "$DADOS/agentepessoal/skills_semeadas.txt"; }
+  [ -e "$SK/$n" ] || { cp -r "$s" "$SK/$n"; echo "$n $(date -u +%FT%TZ)" >> "$SEMEADAS"; }
+  # Ressemear (só quando a fonte pede, com `ressemear: <marca>` no cabeçalho, uma vez por marca): uma ferramenta nova
+  # muda o que a skill manda fazer (ex.: resolver_aqui). A versão do curador fica guardada em skills_antigas/.
+  marca=$(sed -n 's/^ressemear: *//p' "$s/SKILL.md" | head -1 | tr -cd 'A-Za-z0-9_.-')
+  if [ -n "$marca" ] && ! grep -qx "$n@$marca .*" "$SEMEADAS"; then
+    mkdir -p "$DADOS/agentepessoal/skills_antigas"
+    [ -e "$SK/$n" ] && cp -r "$SK/$n" "$DADOS/agentepessoal/skills_antigas/$n-$(date -u +%Y%m%dT%H%M%S)"
+    rm -rf "$SK/$n"; cp -r "$s" "$SK/$n"; echo "$n@$marca $(date -u +%FT%TZ)" >> "$SEMEADAS"
+  fi
 done
 # As rotinas (fase 5): a fonte vai junto e o rotinas_aplicar.py (dentro do container, depois de subir) cria as novas
 # PAUSADAS e atualiza as que existem sem mudar ligada/pausada. O portão das rotinas que têm um (portao.json do A0) é

@@ -1,8 +1,9 @@
 ---
 name: login-sites-navegador
 description: "Entrar em sites e painéis (portais de parceiros, 99Food, iFood, Nexos, redes sociais) pelo navegador do agente usando senhas do cofre, ou entregar o navegador ao Matheus (botão \"Resolver aqui\") para ele logar; e o que fazer quando o botão Entrar não responde, a página dá erro, o certificado é recusado ou o site recusa."
-version: 1.0.5
+version: 1.0.6
 adaptada_hermes: 2026-10-23
+ressemear: resolver-aqui-1
 origem_a0: 1.0.5
 origem: aprendizado
 atualizada: 2026-10-22
@@ -34,9 +35,9 @@ trigger_patterns:
 Quando o pedido é mandar o botão "Resolver aqui" com o navegador aberto numa página de login para ELE entrar (conta dele, sem você digitar nada):
 1. Abra (ou reabra) a URL e **confirme que a página carregou de verdade**: o `browser_snapshot` deve mostrar o formulário ou os botões de login. Uma página de erro ("Parece que algo deu errado"), em branco ou com spinner infinito NÃO está pronta para entregar.
 2. Se vier erro ou página vazia, **recarregue você mesmo**. Espere 3–5 s (`terminal` com `sleep 5`) e chame `browser_navigate` de novo. Se persistir, tente outra abordagem, como abrir pela página inicial do site. Faça pelo menos 3 tentativas com abordagens diferentes antes de relatar falha. "Não digite nada nessa página" proíbe preencher campos, não proíbe recarregar ou reabrir.
-3. Com a página de login visível, envie pelo **canal que o pedido citou** (ex.: Telegram), com o botão "Resolver aqui" e o print. Descubra o nome exato da ferramenta de handoff/Telegram com `tool_search` (texto "telegram" ou "resolver"). Não troque de canal por conta própria. Se a ferramenta do canal pedido não existir ou falhar, diga isso com clareza em vez de mandar recado por outro canal e dar a tarefa por entregue.
-4. Não digite nada, não clique em Entrar, não aceite termos. Espere o Matheus apertar "Terminei".
-5. Ao receber "Terminei", faça `browser_snapshot` e `browser_vision`. Responda "entrou" se a página saiu da tela de login (cite qual página). Se não, diga o que apareceu (erro, 2FA, captcha, ainda no login).
+3. Com a página de login visível, chame **`resolver_aqui`** com `pedido` (o que ele deve fazer, curto: "Entre na sua conta do iFood; o código chega no seu e-mail") e `aba` (o id da aba ou um pedaço do endereço; vazio = a da frente). Ela manda a ele no Telegram o print e o botão "🖥️ Resolver aqui", que abre essa aba no celular dele (link de 30 min). Se ela responder "NÃO FEITO", diga isso com clareza; não troque de canal por conta própria nem dê a tarefa por entregue.
+4. Termine a sua resposta dizendo, em uma linha, o que ele precisa fazer e que você espera. Não digite nada, não clique em Entrar, não aceite termos.
+5. Quando ele apertar "✅ Terminei", a conversa recebe o aviso: faça `browser_snapshot` (e `browser_vision` se precisar ver). Responda "entrou" se a página saiu da tela de login (cite qual página). Se não, diga o que apareceu (erro, 2FA, captcha, ainda no login) e, se for algo dele de novo, mande outro `resolver_aqui`.
 
 ## Se o navegador recusa o certificado ("Your connection is not private", ERR_CERT_*)
 Não é erro transitório. Não é motivo para clicar em "Advanced" e prosseguir, nem para digitar senha. Mas também não pare na primeira tentativa. Diagnostique antes de pedir ajuda:
@@ -55,7 +56,7 @@ Não é erro transitório. Não é motivo para clicar em "Advanced" e prosseguir
   - Se já era o certo, faça no máximo uma nova tentativa e pare: repetir pode bloquear a conta.
 - Você não vê o valor de um segredo. Não afirme de quem é um e-mail nem que o segredo "está errado" sem evidência. Diga só o que o site respondeu e qual método usou.
 - Antes de desistir de um envio, tente `browser_click` e `browser_press` "Enter". Confira com `browser_vision` se a senha foi preenchida e se há erro escondido.
-- Pare e avise o Matheus só nestes casos:
+- Pare e chame o Matheus com `resolver_aqui` (print + botão para ele fazer na tela) só nestes casos. Captcha e "segure o botão" são sempre dele: nunca tente resolver você mesmo.
   - captcha;
   - código por SMS/e-mail;
   - 2FA;

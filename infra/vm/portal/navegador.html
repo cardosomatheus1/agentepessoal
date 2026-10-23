@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Navegador do agente</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root { --fundo: #0f1115; --texto: #e9ecf1; --borda: #2a2f3a; --botao: #1d2230; --verde: #22c55e; --suave: #9aa3b2; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--fundo); color: var(--texto);
+    font: 15px/1.35 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { padding: 8px 12px; border-bottom: 1px solid var(--borda); display: grid; gap: 6px; }
+  header .dica { font-size: 13px; }
+  .linha { display: flex; gap: 6px; align-items: center; }
+  select, input { min-width: 0; min-height: 38px; border-radius: 10px; border: 1px solid var(--borda);
+    background: #151922; color: var(--texto); padding: 0 10px; font-size: 16px; }
+  select { flex: 2; } input { flex: 3; }
+  #palco { flex: 1; overflow: hidden; display: flex; align-items: flex-start; justify-content: center; touch-action: none;
+    -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+  #tela { max-width: 100%; max-height: 100%; user-select: none; -webkit-user-drag: none; -webkit-touch-callout: none;
+    pointer-events: none; }
+  #toque { position: fixed; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%;
+    border: 2px solid var(--verde); pointer-events: none; opacity: 0; transition: opacity .4s; }
+  footer { padding: 8px; border-top: 1px solid var(--borda); display: grid; gap: 6px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+  button { flex: 1; min-height: 40px; border: 1px solid var(--borda); background: var(--botao); color: var(--texto);
+    border-radius: 10px; font-size: 14px; }
+  button.pronto { background: var(--verde); color: #04160a; border-color: transparent; font-weight: 600; }
+  #aviso { font-size: 12px; color: var(--suave); min-height: 16px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="dica">Toque na imagem como se fosse a página. Arrastar: segure e arraste. "Segure o botão" (Cloudflare):
+    segure parado pelo tempo pedido (até 15 s).</div>
+  <div class="linha"><select id="aba" title="abas"></select><button id="nova" style="flex:0 0 auto;padding:0 12px">+ aba</button></div>
+  <div class="linha"><input id="url" placeholder="endereço (https://…)" autocomplete="off"><button id="ir" style="flex:0 0 auto;padding:0 14px">Ir</button></div>
+</header>
+<div id="palco"><img id="tela" alt="tela do navegador do agente"></div>
+<div id="toque"></div>
+<footer>
+  <div class="linha">
+    <input id="texto" placeholder="Digitar na página" autocomplete="off">
+    <button id="enviar">Digitar</button>
+  </div>
+  <div class="linha">
+    <button data-tecla="Enter">Enter</button>
+    <button data-tecla="Backspace">⌫</button>
+    <button data-tecla="Tab">Tab</button>
+    <button data-rolar="-0.6">▲</button>
+    <button data-rolar="0.6">▼</button>
+    <button id="voltar">◀</button>
+    <button id="recarregar">⟳</button>
+  </div>
+  <div class="linha" id="linha-pronto"><button class="pronto" id="pronto">✅ Terminei, pode seguir</button></div>
+  <div id="aviso"></div>
+</footer>
+<script>
+const TOKEN = "__TOKEN__";  // o link assinado do "Resolver aqui" (vazio quando aberto pelo portal com login)
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+const tela = document.getElementById("tela"), palco = document.getElementById("palco"), aviso = document.getElementById("aviso");
+const abaSel = document.getElementById("aba"), urlIn = document.getElementById("url");
+if (!TOKEN) document.getElementById("linha-pronto").style.display = "none";
+let ocupado = false, proximo = null, abaAtual = new URLSearchParams(location.search).get("aba") || "";
+
+async function api(acao, extra = {}) {
+  const r = await fetch("/api/navegador", { method: "POST", credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "X-Portal": "1" },
+    body: JSON.stringify({ t: TOKEN, aba: abaAtual, acao, ...extra }) });
+  if (r.status === 401) { location.href = "/entrar?volta=/navegador"; throw new Error("login"); }
+  if (r.status === 403) { aviso.textContent = "O link expirou. Peça de novo ao agente."; throw new Error("expirou"); }
+  const j = await r.json();
+  if (j.erro) aviso.textContent = j.erro;
+  return j;
+}
+async function abas() {
+  try {
+    const j = await api("abas");
+    if (!j.abas) return;
+    if (!abaAtual || !j.abas.some(a => a.id === abaAtual)) abaAtual = (j.abas[0] || {}).id || "";
+    abaSel.innerHTML = "";
+    for (const a of j.abas) {
+      const o = document.createElement("option"); o.value = a.id; o.textContent = (a.titulo || a.url || "aba").slice(0, 60);
+      abaSel.appendChild(o);
+    }
+    abaSel.value = abaAtual;
+    const s = j.abas.find(a => a.id === abaAtual);
+    if (s && document.activeElement !== urlIn) urlIn.value = s.url || "";
+  } catch (e) {}
+}
+async function quadro() {
+  if (ocupado || document.hidden) return;
+  ocupado = true;
+  try {
+    const q = await api("quadro");
+    if (q.imagem) tela.src = "data:image/jpeg;base64," + q.imagem;
+  } catch (e) {} finally { ocupado = false; }
+}
+function logo() { clearTimeout(proximo); proximo = setTimeout(quadro, 350); }
+abaSel.onchange = async () => { abaAtual = abaSel.value; await api("ativar"); abas(); logo(); };
+document.getElementById("nova").onclick = async () => {
+  const j = await api("abrir", { url: urlIn.value.startsWith("https://") ? urlIn.value : "about:blank", nova: true });
+  if (j.aba) abaAtual = j.aba; abas(); logo();
+};
+document.getElementById("ir").onclick = async () => { await api("abrir", { url: urlIn.value }); abas(); logo(); };
+abas().then(quadro); setInterval(quadro, 900); setInterval(abas, 5000);
+
+function fracao(ev) {
+  const r = tela.getBoundingClientRect();
+  return [(ev.clientX - r.left) / r.width, (ev.clientY - r.top) / r.height];
+}
+function marcar(ev) {
+  const m = document.getElementById("toque");
+  m.style.left = ev.clientX + "px"; m.style.top = ev.clientY + "px"; m.style.opacity = 1;
+  setTimeout(() => (m.style.opacity = 0), 350);
+}
+let inicio = null, pontos = [], segurou = null;
+palco.addEventListener("contextmenu", (ev) => ev.preventDefault());  // segurar não abre o menu do celular
+palco.addEventListener("pointerdown", (ev) => {
+  ev.preventDefault(); inicio = ev; inicio.quando = Date.now(); pontos = [fracao(ev)];
+  segurou = setTimeout(() => (segurou = "sim"), 450);
+});
+palco.addEventListener("pointermove", (ev) => { if (inicio) pontos.push(fracao(ev)); });
+palco.addEventListener("pointerup", async (ev) => {
+  if (!inicio) return;
+  const longe = Math.hypot(ev.clientX - inicio.clientX, ev.clientY - inicio.clientY) > 12;
+  const arrastou = longe && segurou === "sim";
+  const segurado = !longe && segurou === "sim" ? Date.now() - inicio.quando : 0;
+  clearTimeout(segurou); segurou = null; inicio = null;
+  marcar(ev);
+  try {
+    if (arrastou) await api("arrastar", { pontos });
+    else if (segurado) { const [fx, fy] = fracao(ev); await api("segurar", { fx, fy, ms: segurado }); }
+    else if (longe) await api("rolar", { dy: -(pontos[pontos.length - 1][1] - pontos[0][1]) });
+    else { const [fx, fy] = fracao(ev); await api("toque", { fx, fy }); }
+  } catch (e) {}
+  logo();
+});
+document.getElementById("enviar").onclick = async () => {
+  const c = document.getElementById("texto");
+  if (!c.value) return;
+  await api("texto", { texto: c.value }); c.value = ""; logo();
+};
+document.querySelectorAll("[data-tecla]").forEach((b) => (b.onclick = async () => { await api("tecla", { tecla: b.dataset.tecla }); logo(); }));
+document.querySelectorAll("[data-rolar]").forEach((b) => (b.onclick = async () => { await api("rolar", { dy: Number(b.dataset.rolar) }); logo(); }));
+document.getElementById("voltar").onclick = async () => { await api("voltar"); logo(); };
+document.getElementById("recarregar").onclick = async () => { await api("recarregar"); logo(); };
+document.getElementById("pronto").onclick = async () => {
+  await api("pronto");
+  aviso.textContent = "Avisei o agente. Pode fechar.";
+  if (tg) setTimeout(() => tg.close(), 700);
+};
+</script>
+</body>
+</html>
