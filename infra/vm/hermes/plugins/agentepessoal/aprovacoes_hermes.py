@@ -92,10 +92,19 @@ def ver_pagina(tool_name="", args=None, result=None, **kw):
         pagina = _paginas.setdefault(sessao, {"url": "", "refs": {}})
         if tool_name == "browser_navigate" and isinstance(args, dict) and args.get("url"):
             pagina["url"] = str(args["url"])
+        texto = result
+        try:  # as ferramentas browser_* devolvem JSON ({"success", "url", "snapshot": "<texto>"}): o texto vem dentro
+            dados = json.loads(result)
+        except ValueError:
+            dados = None
+        if isinstance(dados, dict):
+            texto = str(dados.get("snapshot") or "")
+            if isinstance(dados.get("url"), str) and dados["url"].startswith("http"):
+                pagina["url"] = dados["url"]
         achou = URL.findall(result)
         if achou:
             pagina["url"] = achou[-1]
-        refs = {ref: (f'{papel} "{rotulo}"' if rotulo else papel) for papel, rotulo, ref in REF.findall(result)}
+        refs = {ref: (f'{papel} "{rotulo}"' if rotulo else papel) for papel, rotulo, ref in REF.findall(texto)}
         if refs:
             pagina["refs"] = refs
         if tool_name == "browser_type" and isinstance(args, dict):  # Enter depois disso envia o que foi digitado

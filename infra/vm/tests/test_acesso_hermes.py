@@ -8,6 +8,7 @@
   message; "Nesta tarefa" (session) and "Sempre permitir" (always) work as on the A0.
 Run from the repository root: python3 infra/vm/tests/test_acesso_hermes.py"""
 import importlib.util
+import json
 import os
 import sys
 import tempfile
@@ -109,7 +110,9 @@ sys.modules["whatsapp_ponte"] = wa
 snap = '- textbox "Mensagem" [ref=e3]\n- button "Enviar" [ref=e12]\n- link "Perfil" [ref=e14]'
 ap.ver_pagina(tool_name="browser_navigate", args={"url": "https://www.instagram.com/direct/t/1/"}, result='{"ok": true}',
               session_id="s-m")
-ap.ver_pagina(tool_name="browser_snapshot", args={}, result=snap, session_id="s-m")
+# como o Hermes devolve (JSON com o texto da página dentro; revisão OpenCode 23/10: o texto cru não aparecia)
+ap.ver_pagina(tool_name="browser_snapshot", args={}, result=json.dumps({"success": True, "snapshot": "- generic:\n  " + snap.replace("\n", "\n  "),
+                                                                       "element_count": 3}), session_id="s-m")
 checa(ap.intencao("browser_click", {"ref": "@e12"}, "s-m") == 'click no elemento button "Enviar" na página https://www.instagram.com/direct/t/1/',
       f"intenção do clique pelo rótulo: {ap.intencao('browser_click', {'ref': '@e12'}, 's-m')}")
 checa(ap.checar(tool_name="browser_snapshot", args={}, session_id="s-m") is None and not classes, "ler a página não passa pelo revisor")
