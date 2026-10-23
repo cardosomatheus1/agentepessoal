@@ -8,8 +8,8 @@
 | Lógica e estado (nota, sequência, limites, travas, revisor) | `plugins/prospeccao/helpers/prospeccao.py` | código; a única coisa que escreve `/a0/usr/prospeccao/<login>.json` |
 | Fontes de leads fora do Instagram | `plugins/prospeccao/helpers/fontes.py` | código; escreve `<login>_fontes.json` |
 | Ferramenta do agente | `plugins/prospeccao/tools/prospeccao.py` | expõe as funções acima ao modelo |
-| Como fazer no Instagram | `skills/prospeccao-instagram/SKILL.md` | o modelo segue; nada de regra de negócio aqui |
-| Rodadas agendadas | `plugins/prospeccao/rodadas.py` (prompts curtos que carregam a skill) | agendador do Agent Zero |
+| Como fazer no Instagram | skill `prospeccao-instagram` do Hermes (`infra/vm/hermes/skills/`, semeada uma vez; a do A0 em `skills/` é legado) | o modelo segue; nada de regra de negócio aqui |
+| Rodadas agendadas | cron do Hermes, fonte em `infra/vm/hermes/rotinas/` (laMIuaPt buscar, F9Ku9frw executar, aPzaUZiW resumo; `rodadas.py` era o do A0) | cron do Hermes (desde 23/10) |
 | Diário | `/a0/usr/prospeccao/<login>_eventos.jsonl` | append-only, gravado por `salvar()` |
 
 Princípio: **o modelo decide o texto e opera o navegador; o código decide o que pode acontecer.** Quem pode receber o
@@ -54,8 +54,9 @@ quê, quando, quantas vezes e em que ordem é regra do código, nunca do modelo.
 1. `git pull`; confira no `git log` se outra sessão mexeu na prospecção nas últimas horas.
 2. Mude o código com teste novo em `tests/suite.py`; a suíte inteira passa.
 3. Commit + push.
-4. `python3 infra/operador/implantar.py prospeccao --skill prospeccao-instagram`. Ele testa numa cópia de estágio
-   na VM antes de trocar a viva e grava a versão em `.versao`.
+4. `python3 infra/operador/implantar.py prospeccao`. Ele testa numa cópia de estágio na VM (container descartável)
+   antes de trocar a viva e grava a versão em `.versao`; o Hermes usa o código novo na próxima chamada. Rodada nova ou
+   mudada: `infra/vm/hermes/rotinas/` + `implantar.py --hermes`.
 5. Correção de dado vivo: função do helper (com teste), nunca edição do JSON.
 
 ## Erros de 11/10 que esta estrutura impede

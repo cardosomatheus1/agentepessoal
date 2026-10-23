@@ -1,3 +1,5 @@
+import sys as _sys, pathlib as _pl; _sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import legado_a0; legado_a0.parar("resetar_chat.py", "/nova no Telegram começa outra sessão do Hermes (tg-<login>-<data>)")
 import os
 import asyncio, sys, boto3
 from playwright.async_api import async_playwright

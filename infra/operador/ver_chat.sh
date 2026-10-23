@@ -1,3 +1,5 @@
+# LEGADO (A0): conversas do Agent Zero (/opt/a0/usr/chats). Desde 23/10 o agente é o Hermes: as sessões dele se leem com
+# python3 infra/operador/hermes_ao_vivo.py sessao <id> (ex.: tg-matheus).
 # Prints the last messages of one agent conversation. On the VM: bash ver_chat.sh <chat id>
 python3 - "$1" <<'PY'
 import json, sys

@@ -1,5 +1,8 @@
 # Arquitetura — App pessoal com Agent Zero na AWS
 
+> **Desde 23/10 o agente é o Hermes** (o Agent Zero está parado só para a volta até 30/10): a arquitetura atual está em
+> `docs/MIGRACAO_HERMES.md` e no começo de `docs/HANDOFF_CONTA_NOVA.md`. Este documento é o desenho original (A0).
+
 Status: o app (`app/`) roda localmente; a **VM do agente sob demanda já está na AWS** (ver `infra/README.md`): página de controle Ligar/Desligar, desligamento automático após 30 min sem uso, túnel HTTPS e backup no S3.
 
 ## Objetivo

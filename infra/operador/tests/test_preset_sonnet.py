@@ -1,6 +1,8 @@
 """The Sonnet preset keeps 40% of the context for history (20/10) and the cheap utility model from Default."""
 
 import importlib.util
+import os
+os.environ["A0_LEGADO"] = "1"  # preset_sonnet.py é do A0 (legado desde 23/10): o teste segue valendo para a volta
 import sys
 import types
 from pathlib import Path

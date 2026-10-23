@@ -199,6 +199,10 @@ def comando_moldes(head: str, chave: str, quando: str) -> str:
 def moldes(args: list) -> None:
     """The templates the agent renders its Reels and carousels with (22/10, Matheus: "Leve"): committed and pushed,
     refused when the VM runs a newer version from another session, tested on the VM before the swap."""
+    # 23/10 (virada ao Hermes): este caminho ainda testa/instala dentro do container do A0, parado até 30/10
+    if "true" not in vm("docker inspect -f '{{.State.Running}}' agent-zero 2>/dev/null || echo false"):
+        raise SystemExit("moldes: ainda depende do container do A0 (parado desde a virada ao Hermes). "
+                         "Pendente da fase 9 (docs/MIGRACAO_HERMES.md); nada foi mudado.")
     head = _conferir_git([MOLDES])
     no_ar = vm(f"cat {MOLDES_VM}/.versao 2>/dev/null | head -1").split(" ")[0]
     if no_ar and "--forcar" not in args and subprocess.run(["git", "merge-base", "--is-ancestor", no_ar, head], cwd=RAIZ).returncode:
@@ -273,6 +277,10 @@ def segundo_cerebro(args: list) -> None:
     if "--preparar" in args:
         sc.preparar(None, python_suite)
         return
+    # 23/10 (virada ao Hermes): este caminho ainda testa/instala dentro do container do A0, parado até 30/10
+    if "true" not in vm("docker inspect -f '{{.State.Running}}' agent-zero 2>/dev/null || echo false"):
+        raise SystemExit("segundo_cerebro: ainda depende do container do A0 (parado desde a virada ao Hermes). "
+                         "Pendente da fase 9 (docs/MIGRACAO_HERMES.md); nada foi mudado.")
 
     def conferir_conta() -> None:
         conta = boto3.client("sts", region_name="us-east-1").get_caller_identity()["Account"]

@@ -4,6 +4,8 @@
 
 Prints the field before and after. Login as A0_LOGIN (default matheus) with A0_SENHA.
 """
+import sys as _sys, pathlib as _pl; _sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import legado_a0; legado_a0.parar("tarefa_atualizar.py", "mude a rotina em infra/vm/hermes/rotinas/<uuid>.json (com teste) e implante com implantar.py --hermes")
 import asyncio
 import json
 import os

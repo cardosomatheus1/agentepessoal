@@ -1,5 +1,8 @@
 # Segundo Cérebro: preparar, implantar, reverter
 
+> **23/10: o agente é o Hermes** (A0 parado só para a volta até 30/10). Logs: `docker logs hermes` e `/opt/hermes/data/logs/`; o
+> OpenCode roda no host. O que abaixo cita o container `agent-zero` vale só para a volta (`docs/MIGRACAO_HERMES.md`).
+
 O que vai para a VM: o build standalone do `app/` (Next) e o plugin `infra/vm/plugins/segundo_cerebro` (o gateway
 dentro do Agent Zero). Contrato de sessão e de rotas: `app/SECOND_BRAIN.md`. Código: `infra/operador/segundo_cerebro.py`
 (daqui) e `infra/operador/segundo_cerebro_vm.py` (roda na VM). Nenhuma infraestrutura nova: mesmo bucket S3, mesmo

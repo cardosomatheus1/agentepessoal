@@ -1,3 +1,5 @@
+import sys as _sys, pathlib as _pl; _sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import legado_a0; legado_a0.parar("resumo_novo.py", "o 📰 Resumo do dia é a rotina nW924Nkj no cron do Hermes (infra/vm/hermes/rotinas/nW924Nkj.json)")
 import os
 import asyncio, boto3, json
 from playwright.async_api import async_playwright

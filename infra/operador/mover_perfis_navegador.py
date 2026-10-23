@@ -7,7 +7,8 @@ Stops the container (60 s grace), copies the profiles out (with the browser clos
 starts it again. On start, plugin navegador_por_pessoa points /a0/tmp/browser/sessions at the copy and keeps the old
 folder aside (sessions.antes-*), never deleting it. Refuses while a scheduled round is running (unless
 --mesmo-com-rodada), when backup.sh would upload the profiles to S3, or without disk space."""
-
+import sys as _sys, pathlib as _pl; _sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import legado_a0; legado_a0.parar("mover_perfis_navegador.py", "feito em 12/10; o navegador do Hermes usa o perfil por navegador.sh")
 import sys
 import time
 

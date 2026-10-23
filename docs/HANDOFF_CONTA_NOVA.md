@@ -3,6 +3,37 @@
 Retrato de 10/10/2026. A conversa antiga do Claude Code não passa para a conta nova: tudo o que importa está neste
 repositório (código, este documento e `infra/operador/`) e na própria máquina do agente, que continua igual.
 
+## Desde 23/10: o agente é o Hermes (leia antes do resto)
+
+Virada feita em 23/10 (09:36 UTC; `docs/MIGRACAO_HERMES.md`). O que está abaixo, de 10/10 a 22/10, descreve o Agent
+Zero: vale como histórico e para a volta (o A0 fica parado e intacto até 30/10).
+
+| Peça | Onde | Observação |
+|---|---|---|
+| Agente (Matheus) | contêiner `hermes` (imagem `agentepessoal/hermes`, dados em `/opt/hermes/data`) | API só em 127.0.0.1:8642; os dados vivos em `/opt/a0/usr` vistos em `/a0/usr` (bindfs `/opt/hermes/a0usr`) |
+| Convidados | `hermes-ilia`, `hermes-will` (portas 8660/8661, redes próprias) | Isolados: só o que é deles (`infra/vm/hermes/convidado.sh`) |
+| Navegadores | `hermes-navegador` (perfil `shared`), `hermes-navegador-<login>` (perfil `pessoa_<login>`) | CDP só na rede do Hermes; o portal mostra o do Matheus em `/navegador` |
+| Conectores | `hermes-mcp` (Google com as permissões do A0, GitHub) | Tokens só lá |
+| Celular | `android` + repasse `hermes-celular` (o Hermes chama de `android:5555`) | |
+| Rotinas | cron do Hermes (`/opt/hermes/data/cron/jobs.json`); fonte em `infra/vm/hermes/rotinas/` | 17 ligadas; Sonnet; mudar = git + `implantar.py --hermes` |
+| Tarefas de fundo (post na hora, CRM, nota do dia, e-mail, conversas externas) | relógio do plugin no Hermes | `relogio_hermes.py` |
+| Portal (link do agente) | contêiner `portal`, 127.0.0.1:8650, túnel `agentepessoal-portal-tunnel` | Login de sempre; Segundo Cérebro, Painel, Tarefas, Cofre, Navegador |
+| Ponte do celular | a mesma (`agentepessoal-whatsapp`), chave `/var/lib/agentepessoal/destino.json` (`"padrao": "hermes"`) | Botões e comandos sem modelo pelas funções do A0 dentro do Hermes |
+| A0 | `agent-zero` **parado** (`restart=no`) | Volta: `python3 infra/operador/virada.py voltar --motivo "..."` |
+
+**Como operar agora:** `virada.py estado`; `hermes_ao_vivo.py sessao tg-matheus` (ler a conversa dele),
+`aprovar <run> once|deny`, `parar <run>`, `telegram "<texto>"` (login de teste pela fila), `run "<texto>"`;
+`mandar_msg.py <arquivo>` (pedido ao Hermes pela API, sem celular); `avisar_matheus.py "texto"` (aviso no Telegram);
+helpers na VM por `/opt/agentepessoal/a0py`. Os scripts que falavam com a interface do A0 (resetar/apagar/retomar chat,
+aprovar_pendente, tarefa_atualizar, rotinas aplicar/criar, rodar_testes*, resumo_novo, tarefas_auxiliar, preset_sonnet)
+param com aviso e dizem o equivalente. `implantar.py --moldes` e `--segundo-cerebro` ainda dependem do container do A0
+(pendente, fase 9). Revisão independente: `revisar_opencode.py` (OpenCode 2 + Ponytail no host).
+
+**Main Opus (IA Business):** a sessão "Main Opus NEXOS" mudou para a conta `sejaorbyte`: agora é
+`session_01QSS9nA3EubusWfC583rR7M` na `ros-dev-construcao`. A antiga `session_016QkuBRR8Fbb2Vgx95bXE3c` e o despertador
+de hora em hora dela (Routine `trig_01M1piaGZesGNpTAakPLn3JH`, da conta antiga) estão **obsoletos** (não apagados).
+Nenhuma rotina do agente apontava para a sessão antiga.
+
 ## O que é
 
 O **agente pessoal do Matheus** é um Agent Zero rodando numa EC2 da AWS (conta `964862484412`, `us-east-1`), com
@@ -46,8 +77,9 @@ Nada do agente depende da conta do Claude: ele continua rodando durante e depois
   da prospecção**. A sessão "A nova" (session_018b16p9f4oKpXfQ9CdRtjVi) não mexe mais, a menos que o Matheus diga.
 - **Máquina de build do IA Business** trocada para a conta do Matheus por `/opt/ros-construcao/trocar_conta.sh`. O
   login anterior ficou em `/home/ec2-user/.claude-conta-anterior/`; para voltar, copie de lá e rode o mesmo script ao
-  contrário. A Main Opus está na sessão `session_016QkuBRR8Fbb2Vgx95bXE3c` ("Main Opus NEXOS"), apontada no
-  `bridge-pointer.json`. Tem um despertador de segurança de hora em hora: Routine `trig_01M1piaGZesGNpTAakPLn3JH`.
+  contrário. A Main Opus estava na sessão `session_016QkuBRR8Fbb2Vgx95bXE3c` ("Main Opus NEXOS"), apontada no
+  `bridge-pointer.json`, com um despertador de hora em hora (Routine `trig_01M1piaGZesGNpTAakPLn3JH`). **Obsoleto desde
+  23/10:** a Main Opus está em `session_01QSS9nA3EubusWfC583rR7M` (conta sejaorbyte); a Routine antiga fica sem apagar.
 - **Trilhas interrompidas na troca** (ROS-F9-008, ROS-F9-006, ROS-F8-005): cada uma roda como sessão própria no tmux
   `trilha-<nome>`, aberta na worktree original com `claude --agent opus-builder`. O `trilha-builder` só funciona como
   subagente, porque a guarda ROS-F0-036 compara a raiz do projeto com a árvore do cwd. A ordem de cada trilha limita a

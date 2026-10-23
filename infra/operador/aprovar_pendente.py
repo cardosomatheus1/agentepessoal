@@ -2,6 +2,8 @@
 Usage: A0_SENHA=... python3 infra/operador/aprovar_pendente.py <chat id> [--so-ver]
 
 Only for what Matheus already said he approves (12/10: "aprovo tudo lá do Instagram"); it prints what is approved."""
+import sys as _sys, pathlib as _pl; _sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import legado_a0; legado_a0.parar("aprovar_pendente.py", "o pedido de ok chega como botões no Telegram; pelo operador: hermes_ao_vivo.py aprovar <run_id> once|deny")
 import asyncio
 import json
 import os

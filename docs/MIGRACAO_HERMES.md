@@ -104,9 +104,9 @@ Estado em 23/10, depois da virada (✅ feito e conferido · ⏳ falta · ➖ nã
 ### Operador e CI
 - ✅ `implantar.py --hermes` (Hermes + portal) · ✅ `hermes_ao_vivo.py` (travas, cofre, ferramentas, run, destino,
   telegram) · ✅ rotinas: `rotinas_aplicar.py`/`rotina_rodar.py` · ✅ `mandar_msg.py` (API do Hermes), `a0py` (helpers do
-  operador no A0 ou no Hermes), `virada.py` · ⏳ `ver_chat`
-- ⏳ `falhas_do_dia.py` · ✅ `revisar_opencode.py` (usado em cada passo) · ⏳ hooks do Cérebro: o de fim de resposta segue (grava um arquivo na VM); o de início (`.claude/hooks/cerebro_inicio.py`) ainda chama `docker exec agent-zero` e precisa trocar para `/opt/agentepessoal/a0py` (arquivo de configuração do Claude Code: fica para o Matheus autorizar) · ✅ CI verde (615/615
-  e os testes do host) · ⏳ `CLAUDE.md` e `HANDOFF` (fase 9)
+  operador no A0 ou no Hermes), `virada.py` · ✅ `hermes_ao_vivo.py sessao|aprovar|parar` (no lugar de `ver_chat`, `aprovar_pendente`, `retomar_chat`)
+- ✅ `falhas_do_dia.py` (logs do Hermes) · ✅ `revisar_opencode.py` (usado em cada passo) · ✅ hooks do Cérebro (início por `a0py`; fim pelo relógio do Hermes; os dois conferidos ao vivo) · ✅ CI verde (615/615
+  e os testes do host) · ✅ `CLAUDE.md` e `HANDOFF` com o Hermes como principal (23/10)
 
 ### Fora da AWS / feitos à mão
 - ✅ `vigia_google.gs` (o gatilho chega à ponte e vai ao Hermes, sessão `gatilhos-<login>`) · ⏳ conserto noturno (lê os logs do Hermes)
@@ -188,6 +188,20 @@ Ele pausa todas as rotinas do Hermes, põe a chave em `"padrao": "a0"`, sobe o H
 nada ao celular, navegador na cópia, convidados removidos), desliga o túnel do portal, religa o A0 (com o reinício
 automático de antes) e os serviços dele. Os dados vivos são os mesmos dos dois lados: o que o Hermes gravou enquanto
 esteve no ar continua valendo. O A0 fica parado e intacto por 7 dias (até 30/10); só então a fase 9 o remove.
+
+## Depois da virada (23/10, tarde)
+- Matheus respondeu no Telegram ("Oi", 08:08:59 da Bahia = 11:08:59 UTC) e o Hermes respondeu em 1,3 s na sessão
+  `tg-matheus`; ele mandou "pode fazer as trocas completas aí, deixar principalmente o Hermes aí como principal para
+  tudo": `CLAUDE.md`, o handoff, as arquiteturas e as ferramentas do operador passaram a tratar o Hermes como o agente
+  (as do A0 param com aviso de legado e dizem o equivalente: `infra/operador/legado_a0.py`).
+- Ganchos do Claude Code: o de início (`cerebro_inicio.py`) lê o Segundo Cérebro por `a0py` (no Hermes); o de fim
+  (`cerebro_operador.py`) segue igual e o relógio do Hermes processa a entrada (conferido: decisão 96 registrada).
+- `falhas_do_dia.py` (conserto noturno) lê também os logs do Hermes e dos convidados.
+- `/voz` estava desligado no A0 (nunca ligado: não havia `voz.json`); segue desligado.
+- No cron do Hermes, `approvals.cron_mode` fica em `deny` (padrão dele): rotina não roda `execute_code` nem comando
+  perigoso sem alguém para aprovar; ela usa o terminal comum (visto na Prospecção — buscar de 08:07).
+- Pendente (fase 9): `implantar.py --moldes` e `--segundo-cerebro` ainda testam dentro do container do A0 (param com
+  aviso); `/voz` (respostas em áudio) no Hermes, se o Matheus quiser.
 
 ## Decisões do Matheus (23/10)
 1. Convidados (ilia, will) e o login da Fernanda: **continuam**.

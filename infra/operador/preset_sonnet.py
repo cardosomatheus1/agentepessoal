@@ -15,7 +15,8 @@ comes back as a function call Agent Zero runs. Needs prompt_enxuto's chat_model_
 (without it Agent Zero's own cache markers force Chat Completions and the tools are silently dropped); the cache points
 then come from our proxy. `tool_choice: auto` because Sonnet 5.5 on Bedrock rejects Agent Zero's default "required"
 ("type any is not supported for this model"); `responses_state: local` because there is no stored response on Bedrock."""
-
+import sys as _sys, pathlib as _pl; _sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import legado_a0; legado_a0.parar("preset_sonnet.py", "o modelo do Hermes está em infra/vm/hermes/config.yaml (Haiku) e por rotina (Sonnet), implantar.py --hermes")
 import asyncio
 import json
 import os

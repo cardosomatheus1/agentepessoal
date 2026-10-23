@@ -41,7 +41,8 @@ def ler_da_vm(timeout: int = 45) -> str:
     iid = os.environ.get("VM_ID", "i-0498b4f39560b01a9")
     b64 = base64.b64encode(SCRIPT.encode()).decode()
     cmd = (f"echo {b64} | base64 -d > /opt/a0/usr/tmp_cerebro_inicio.py && "
-           "docker exec agent-zero python3 /a0/usr/tmp_cerebro_inicio.py; rm -f /opt/a0/usr/tmp_cerebro_inicio.py")
+           # 23/10 (virada ao Hermes, autorizado pelo Matheus): a0py roda no Hermes (no A0 só se ele estiver no ar)
+           "/opt/agentepessoal/a0py /a0/usr/tmp_cerebro_inicio.py; rm -f /opt/a0/usr/tmp_cerebro_inicio.py")
     cid = ssm.send_command(InstanceIds=[iid], DocumentName="AWS-RunShellScript", Parameters={"commands": [cmd]},
                            TimeoutSeconds=60)["Command"]["CommandId"]
     fim = time.time() + timeout

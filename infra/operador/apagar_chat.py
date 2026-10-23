@@ -1,3 +1,5 @@
+import sys as _sys, pathlib as _pl; _sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import legado_a0; legado_a0.parar("apagar_chat.py", "sessões do Hermes: hermes_ao_vivo.py sessao <id> para ler; apagar só com ordem do Matheus")
 import os
 import asyncio, sys, boto3
 from playwright.async_api import async_playwright

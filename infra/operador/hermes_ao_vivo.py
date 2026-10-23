@@ -11,6 +11,9 @@ Uso, da raiz do repositório:
                                                           # pelo /v1/runs (o caminho da ponte): eventos e aprovação
   python3 infra/operador/hermes_ao_vivo.py destino <login> a0|hermes [--motivo "..."]
                                                           # a chave da ponte (fase 6): só logins teste_* até a virada
+  python3 infra/operador/hermes_ao_vivo.py sessao <id> [n]  # as últimas n mensagens de uma sessão (ex.: tg-matheus)
+  python3 infra/operador/hermes_ao_vivo.py aprovar <run_id> once|session|always|deny   # o pedido de ok de um run
+  python3 infra/operador/hermes_ao_vivo.py parar <run_id>  # para um run (como o /parar do celular)
   python3 infra/operador/hermes_ao_vivo.py telegram "<texto>" [--botao <id>]
                                                           # o caminho inteiro: SQS (como a função do Telegram) -> ponte
                                                           # -> Hermes -> resposta do login teste_hermes (sem celular)
@@ -139,6 +142,32 @@ while time.time() < fim:
 '''
 
 
+SESSAO = COMUM + r'''
+sessao, n = sys.argv[1], int(sys.argv[2])
+d = api(f"/api/sessions/{sessao}/messages")
+msgs = d.get("data") or d.get("messages") or (d if isinstance(d, list) else [])
+for m in msgs[-n:]:
+    conteudo = m.get("content")
+    if isinstance(conteudo, list):
+        conteudo = " ".join(str(c.get("text") or "") for c in conteudo if isinstance(c, dict))
+    print(f"[{m.get('role')}] {str(conteudo or m.get('tool_calls') or '')[:1500]}")
+'''
+
+APROVAR = COMUM + r'''
+run, escolha = sys.argv[1], sys.argv[2]
+st = api(f"/v1/runs/{run}")
+ap = st.get("approval") or {}
+print("PEDIDO", json.dumps(ap, ensure_ascii=False)[:600])
+if st.get("status") == "waiting_for_approval":
+    print("RESPOSTA", api(f"/v1/runs/{run}/approval", {"choice": escolha, "request_id": ap.get("request_id")}))
+else:
+    print("ESTADO", st.get("status"), "(nada esperando ok)")
+'''
+
+PARAR = COMUM + r'''
+print("PARAR", api(f"/v1/runs/{sys.argv[1]}/stop", {}))
+'''
+
 DESTINO = r'''
 import json, os, sys, time
 from pathlib import Path
@@ -207,9 +236,18 @@ def main(argv: list) -> int:
         login, para = argv[1].lower(), argv[2]
         motivo = argv[argv.index("--motivo") + 1] if "--motivo" in argv else "teste da ponte com o Hermes"
         if para not in ("a0", "hermes") or (para == "hermes" and not login.startswith("teste_")):
-            print("até a virada (fase 8) só logins teste_* vão ao Hermes; destino: a0 ou hermes")
+            print("por login, só os teste_*; a chave de todos é virada.py virar|voltar (docs/MIGRACAO_HERMES.md)")
             return 2
         rodar(DESTINO, login, para, motivo)
+    elif acao == "sessao":
+        rodar(SESSAO, argv[1], argv[2] if len(argv) > 2 else "20")
+    elif acao == "aprovar":
+        if len(argv) < 3 or argv[2] not in ("once", "session", "always", "deny"):
+            print("uso: aprovar <run_id> once|session|always|deny")
+            return 2
+        rodar(APROVAR, argv[1], argv[2])
+    elif acao == "parar":
+        rodar(PARAR, argv[1])
     elif acao == "telegram":
         botao = argv[argv.index("--botao") + 1] if "--botao" in argv else ""
         antes = subprocess.run([sys.executable, str(AQUI / "vmcmd.py"), "python3 -c \"" + CONTAR.replace("\n", ";").replace('"', "'") + "\""],

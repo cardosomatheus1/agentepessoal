@@ -1,5 +1,8 @@
 # Conserto noturno do agente
 
+> **23/10: o agente é o Hermes** (A0 parado só para a volta até 30/10). Logs: `docker logs hermes` e `/opt/hermes/data/logs/`; o
+> OpenCode roda no host. O que abaixo cita o container `agent-zero` vale só para a volta (`docs/MIGRACAO_HERMES.md`).
+
 Decisão do Matheus (21/10): "tem como ele ver a falha e se autocorrigir?" → "Pode fazer, direto no ar como recomendou".
 Toda noite uma sessão do Claude Code lê as falhas do agente nas últimas 24 h, conserta as que são defeito das nossas
 ferramentas, com teste, implanta e manda um resumo ao celular dele. Este arquivo é o roteiro dessa sessão; mudar o

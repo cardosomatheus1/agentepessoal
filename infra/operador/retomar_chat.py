@@ -3,6 +3,8 @@ Usage: A0_SENHA=... python3 infra/operador/retomar_chat.py <chat id> [--pausar]
 
 Why (12/10): the loop detector pauses a conversation that repeats the same step; a scheduled round paused that way
 never moves again (nobody presses the button), and the next runs of the same round get stuck behind it."""
+import sys as _sys, pathlib as _pl; _sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import legado_a0; legado_a0.parar("retomar_chat.py", "no Hermes não há conversa pausada: /parar (no celular) ou hermes_ao_vivo.py parar <run_id>")
 import asyncio
 import json
 import os

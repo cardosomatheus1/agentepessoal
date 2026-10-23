@@ -7,7 +7,8 @@ carries a count, the chats where it happened and up to 3 real examples (argument
 can be tested with the call the agent really made.
 
 Usage, from the repository root:  python3 infra/operador/falhas_do_dia.py [horas] [--json]
-(reads /opt/a0/usr/chats on the VM through SSM; no live data is changed)."""
+(reads /opt/a0/usr/chats and, since the cutover of 23/10, the Hermes logs on the VM through SSM; no live data is
+changed)."""
 
 import json
 import re
@@ -128,6 +129,22 @@ for f in glob.glob("/opt/a0/usr/chats/*/chat.json"):
         kv = l.get("kvps") if isinstance(l.get("kvps"), dict) else {}
         saida.append({"chat": chat, "tipo": l["type"], "kvps": kv, "conteudo": str(l.get("content") or "")[:1500],
                       "ferramenta": kv.get("_tool_name") or kv.get("tool_name") or ("code_execution_tool" if l["type"] == "code_exe" else "")})
+# 23/10 (virada ao Hermes): as falhas de ferramenta do Hermes (e dos Hermes dos convidados) estão nos logs dele:
+# "<data hora>,ms WARNING [<sessão>] agent.tool_executor: Tool <nome> returned error (<s>): <resultado>" (hora da Bahia)
+import re, datetime
+LINHA = re.compile(r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d),\d+ \w+ \[([^\]]+)\] agent\.tool_executor: Tool (\S+) returned error \([^)]*\): (.*)$")
+fuso = datetime.timezone(datetime.timedelta(hours=-3))
+for f in glob.glob("/opt/hermes/data/logs/agent.log*") + glob.glob("/opt/hermes/convidados/*/data/logs/agent.log*"):
+    if os.path.getmtime(f) < desde:
+        continue
+    for linha in open(f, encoding="utf-8", errors="replace"):
+        m = LINHA.match(linha.rstrip("\n"))
+        if not m:
+            continue
+        quando = datetime.datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=fuso).timestamp()
+        if quando < desde:
+            continue
+        saida.append({"chat": m.group(2), "tipo": "tool", "kvps": {}, "conteudo": m.group(4)[:1500], "ferramenta": m.group(3)})
 print(json.dumps(saida, ensure_ascii=False))
 '''
 

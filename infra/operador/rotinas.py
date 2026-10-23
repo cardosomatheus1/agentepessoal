@@ -1,4 +1,6 @@
-"""The agent's scheduled routines kept in git (12/10 review, §4.5: 5 routine prompts lived only on the VM). Usage:
+"""(LEGADO desde 23/10: as rotinas do agente vivem no cron do Hermes, fonte em infra/vm/hermes/rotinas/; exportar e
+comparar ainda leem o tasks.json do A0 parado; aplicar e criar só com A0_LEGADO=1.)
+The agent's scheduled routines kept in git (12/10 review, §4.5: 5 routine prompts lived only on the VM). Usage:
 
     python3 infra/operador/rotinas.py exportar          # live → infra/vm/rotinas/<uuid>.json (then review and commit)
     python3 infra/operador/rotinas.py comparar          # what differs between the VM and git
@@ -165,6 +167,9 @@ def main() -> None:
     else:
         if len(args) < 2:
             raise SystemExit(__doc__)
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import legado_a0  # 23/10: as rotinas vivem no cron do Hermes (infra/vm/hermes/rotinas/, implantar.py --hermes)
+        legado_a0.parar("rotinas.py " + args[0], "mude infra/vm/hermes/rotinas/<uuid>.json (com teste) e rode implantar.py --hermes")
         asyncio.run(criar(args[1]) if args[0] == "criar" else aplicar(args[1]))
 
 

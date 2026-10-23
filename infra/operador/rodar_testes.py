@@ -1,3 +1,5 @@
+import sys as _sys, pathlib as _pl; _sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import legado_a0; legado_a0.parar("rodar_testes.py", "python3 infra/operador/rodar_suites_locais.py (e o implantar.py roda a suíte do plugin numa cópia)")
 import os
 import asyncio, boto3, json, sys
 from playwright.async_api import async_playwright
