@@ -9,8 +9,8 @@ que o A0 fazia em volta de cada rodada e o cron do Hermes não faz:
 - `post_llm_call` (fim da rodada): confirma o estado do portão, roda a autoavaliação (uma linha; melhoria vira
   proposta com Aplicar/Não no celular, no máximo 1 por semana) e a resposta final vai ao celular do dono como no A0
   (whatsapp/extensions/.../_50_enviar_resposta.py): "SEM NOVIDADE" fica quieto; "PRECISA DE VOCÊ" ou bloqueio vai como
-  urgente (chega no horário de silêncio); o resto como progresso, com o nome da rotina e o id dela no A0 (a ponte junta
-  os avisos da noite no resumo da manhã pelo id). No ensaio, nada vai ao celular: fica em ensaio_celular.jsonl.
+  urgente (chega no horário de silêncio); o resto como progresso, com o nome da rotina (a ponte junta os avisos da
+  noite dentro do 📰 Resumo do dia pelo nome, como no A0). No ensaio, nada vai ao celular: fica em ensaio_celular.jsonl.
 
 O mapa job do Hermes → rotina do A0 fica em /opt/data/agentepessoal/rotinas.json (escrito pelo operador)."""
 import importlib.util
@@ -167,7 +167,8 @@ def entregar(session_id="", assistant_response="", **kw):
         return None
     login = sys.modules["agentepessoal_ponte_a0"].login_da_sessao(session_id)
     tipo = "urgente" if (p.urgente(texto) or p.pede_tela(texto)) else "progresso"
-    erro = p.enviar(login, mensagem(r["nome"], texto), "", "", None, tipo, False, r["a0"], None, reenviar=True)
+    # `rotina` = o NOME, como o A0 (_50_enviar_resposta): a ponte põe os avisos da noite dentro do 📰 Resumo do dia
+    erro = p.enviar(login, mensagem(r["nome"], texto), "", "", None, tipo, False, r["nome"], None, reenviar=True)
     log.warning("rotinas: resultado de %s (%s) para %s: %s", r["nome"], session_id, login, erro or "ok")
     return None
 

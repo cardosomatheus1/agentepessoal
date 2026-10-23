@@ -538,6 +538,7 @@ def _bloco_guardados(itens: list, limite: int) -> str:
 MANHA_ATE = "08:30"
 RESUMO_MANHA = Path("/var/lib/agentepessoal/resumo_manha.json")  # {login: "AAAA-MM-DD" of the last morning summary}
 AGENDADAS = Path("/opt/a0/usr/scheduler/tasks.json")  # read only: does the owner have a 📰 routine switched on?
+HERMES_JOBS = Path("/opt/hermes/data/cron/jobs.json")  # the same question after the cutover (read only)
 
 
 def _arquivo_fila(usuario: str) -> Path:
@@ -548,6 +549,14 @@ def _tem_resumo_da_manha(usuario: str) -> bool:
     """The VM's owner with a morning summary routine (name starting with 📰) that is not switched off."""
     if usuario != DONO:
         return False
+    if destino(usuario) == "hermes":  # 23/10 (virada): as rotinas estão no cron do Hermes
+        try:
+            dados = json.loads(HERMES_JOBS.read_text(encoding="utf-8"))
+        except Exception:
+            return False
+        jobs = dados.get("jobs", []) if isinstance(dados, dict) else dados
+        return any(str(j.get("name", "")).startswith("📰") and j.get("enabled", True) and j.get("state") != "paused"
+                   for j in jobs)
     try:
         tarefas = json.loads(AGENDADAS.read_text(encoding="utf-8")).get("tasks") or []
     except Exception:

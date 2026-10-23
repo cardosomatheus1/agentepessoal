@@ -107,8 +107,9 @@ checa(rh.contexto(session_id="api-123", is_first_turn=True) is None and rh.conte
 rh.entregar(session_id=sess, assistant_response="Achei 2 e-mails novos do PayGo.", user_message="pedido")
 time.sleep(0.2)
 (a, k) = enviados[-1]
-checa(a[0] == "matheus" and a[1].startswith("*🔎 Radar e fios soltos*\n\nAchei 2") and a[5] == "progresso" and a[7] == "HL76nfIg"
-      and k.get("reenviar"), f"resultado ao celular do dono, com o nome e o id do A0: {enviados[-1]}")
+checa(a[0] == "matheus" and a[1].startswith("*🔎 Radar e fios soltos*\n\nAchei 2") and a[5] == "progresso"
+      and a[7] == "🔎 Radar e fios soltos" and k.get("reenviar"),
+      f"resultado ao celular do dono, com o nome da rotina (o 📰 junta os avisos da noite, como no A0): {enviados[-1]}")
 checa(confirmados == ["HL76nfIg"] and avaliados and avaliados[-1][0] == "HL76nfIg", "portão confirmado e autoavaliação")
 rh.entregar(session_id=sess, assistant_response="de novo")
 checa(len(enviados) == 1, "a mesma rodada nunca vira 2 mensagens")

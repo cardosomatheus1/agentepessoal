@@ -165,6 +165,15 @@ def main() -> int:
         ok(not p.esperando_resumo("outra", sete_e_vinte), "a rotina do dono não vale para outra pessoa")
         p.AGENDADAS.write_text(json.dumps({"tasks": [{"name": "📰 Resumo do dia", "state": "disabled"}]}))
         ok(not p.esperando_resumo("matheus", sete_e_vinte), "rotina desligada: não espera")
+        # virada: a rotina está no cron do Hermes
+        p.DESTINO = tmp / "destino.json"
+        p.DESTINO.write_text(json.dumps({"padrao": "hermes"}))
+        p.HERMES_JOBS = tmp / "jobs.json"
+        p.HERMES_JOBS.write_text(json.dumps({"jobs": [{"name": "📰 Resumo do dia", "enabled": True, "state": "scheduled"}]}))
+        ok(p.esperando_resumo("matheus", sete_e_vinte), "virada: o 📰 ligado no cron do Hermes também segura a noite")
+        p.HERMES_JOBS.write_text(json.dumps({"jobs": [{"name": "📰 Resumo do dia", "enabled": False, "state": "paused"}]}))
+        ok(not p.esperando_resumo("matheus", sete_e_vinte), "virada: pausado no Hermes, não espera")
+        p.DESTINO.unlink()
         p.RESUMO_MANHA.write_text(json.dumps({"matheus": "2026-10-12"}))
         ok(p.esperando_resumo("matheus", sete_e_vinte), "7h20: a noite espera o resumo")
         ok(not p.esperando_resumo("matheus", sete_e_vinte + 75 * 60), "8h35: passou do limite, sai sozinho")
