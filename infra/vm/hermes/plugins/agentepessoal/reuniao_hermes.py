@@ -5,8 +5,7 @@ pós, os horários, a nota da reunião no Segundo Cérebro); só o agendamento m
 (cron.jobs.create_job, o mesmo que o cronjob_manage usa), com o id guardado como "hermes:<id>".
 No ensaio o registro é só leitura: agendar/cancelar/pos_registrado devolvem o aviso do ensaio (as reuniões seguem com o A0)."""
 import importlib.util
-import inspect
-import json
+import os
 import sys
 from pathlib import Path
 
@@ -76,10 +75,14 @@ def agendar(login: str, evento_id: str, titulo: str, inicio: str, fim: str = "",
                           name=f"📝 Pós-reunião: {r['titulo']}"[:80], deliver="local", repeat=1)
     r["tarefa_pos"] = PREFIXO + str(job["id"])
     feito.append(f"pergunta do pós às {quando_pos.astimezone(a._tz()).strftime('%H:%M')}")
-    with a._exclusivo(login):  # relê: aplica só esta reunião ao estado atual
-        atual = a.carregar(login)
-        atual["reunioes"] = [x for x in atual["reunioes"] if x["evento_id"] != r["evento_id"]] + [r]
-        a.salvar(login, atual)
+    try:
+        with a._exclusivo(login):  # relê: aplica só esta reunião ao estado atual
+            atual = a.carregar(login)
+            atual["reunioes"] = [x for x in atual["reunioes"] if x["evento_id"] != r["evento_id"]] + [r]
+            a.salvar(login, atual)
+    except BaseException:
+        _remover(r, cron)  # sem o registro, nenhum agendamento fica órfão rodando (revisão OpenCode 23/10)
+        raise
     return f"«{r['titulo']}»: " + " e ".join(feito) + "."
 
 
@@ -112,6 +115,8 @@ async def executar(args: dict, session_id=None, task_id=None, **kw) -> str:
     args = dict(args or {})
     login = ponte.login_da_sessao(str(session_id or task_id or ""))
     acao = str(args.get("acao") or "agendar").lower()
+    if acao in ("agendar", "cancelar") and os.environ.get("AGENTEPESSOAL_ENSAIO") == "1":
+        return ponte.ERRO_SO_LEITURA  # no ensaio as reuniões seguem com o A0: nada é agendado aqui
     try:
         if acao == "agendar":
             return agendar(login, *(str(args.get(k) or "") for k in ("evento_id", "titulo", "inicio", "fim",

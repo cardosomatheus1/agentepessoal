@@ -170,6 +170,23 @@ rn.agendar("teste_hermes", "ev1", "Alinhamento NEXOS", novo_ini, "", cron=cf)
 checa(removidos == ["j1", "j2"] and len(criados) == 4, "horário mudou: os antigos saem, os novos entram")
 checa("cancelada" in rn.cancelar("teste_hermes", "ev1", cron=cf) and removidos[-2:] == ["j3", "j4"]
       and not a.carregar("teste_hermes")["reunioes"], "cancelar tira os agendamentos e o registro")
+# a gravação falha (ex.: só leitura): nenhum agendamento fica órfão no cron
+salvar_real = a.salvar
+a.salvar = lambda *x, **k: (_ for _ in ()).throw(OSError(30, "Read-only file system"))
+antes = len(criados)
+try:
+    rn.agendar("teste_hermes", "ev2", "Outra", inicio, fim, cron=cf)
+except OSError:
+    pass
+a.salvar = salvar_real
+checa(len(criados) == antes + 2 and removidos[-2:] == [f"j{antes + 1}", f"j{antes + 2}"],
+      "gravação falhou: os agendamentos criados saem (nada órfão rodando o modelo)")
+import os
+os.environ["AGENTEPESSOAL_ENSAIO"] = "1"
+n = len(criados)
+r_ensaio = asyncio.run(rn.executar({"acao": "agendar", "evento_id": "ev3", "titulo": "X", "inicio": inicio}, session_id="s"))
+checa("Ensaio" in r_ensaio and len(criados) == n, f"no ensaio nada é agendado: {r_ensaio}")
+os.environ.pop("AGENTEPESSOAL_ENSAIO")
 esq = rn.esquema()
 checa(esq["name"] == "reuniao" and {"acao", "evento_id", "titulo", "inicio"} <= set(esq["parameters"]["properties"]),
       "mesmo nome e parâmetros da ferramenta do A0")
