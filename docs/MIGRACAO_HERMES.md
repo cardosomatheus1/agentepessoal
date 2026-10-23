@@ -148,7 +148,12 @@ nosso não entra (ou entra só o que é nosso de verdade: dados, Raiz, Segundo C
 | Persona | `SOUL.md` curto (só regras que valem sempre) | — | regra longa no prompt atrapalha o Haiku |
 
 ### Ensaio até a virada
-Até a fase 8 o Hermes roda com `AGENTEPESSOAL_ENSAIO=1` (`subir.sh`): **nada vai ao celular de ninguém e nada se publica
+Até a fase 8 o Hermes **vê os dados do A0 só para leitura** (`ro` em `agentepessoal-hermes-dados.service`): lê tudo
+(relatórios, fios, decisões, Pasta) e não grava nada em que o A0 aja. Liberar um post, registrar uma iniciativa ou um
+rascunho, revisar os temas: pelo Hermes dá "ensaio: só leitura" e continua com o A0 (revisão OpenCode 23/10: um post
+liberado pelo Hermes seria publicado pelo A0). O livro de ações (SQLite) não abre só para leitura: fica sem ele no
+ensaio. Na fase 7 (dia de sombra) o Hermes roda numa cópia dos dados, gravando nela.
+Além disso, `AGENTEPESSOAL_ENSAIO=1` (`subir.sh`): **nada vai ao celular de ninguém e nada se publica
 na Meta** por ele, mesmo que uma ferramenta tente (botões de fios, iniciativa, rascunho, prospecção…). O que iria fica
 em `/opt/hermes/data/agentepessoal/ensaio_celular.jsonl` para o operador conferir, sem fila de reenvio nem marca de
 aviso em `/a0/usr` (o A0 mandaria depois, ou seguraria o dele). Na virada (fase 8) a variável sai e a ponte do celular

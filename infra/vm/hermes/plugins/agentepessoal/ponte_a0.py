@@ -215,5 +215,27 @@ async def executar(classe, nome: str, args: dict, sessao: str | None) -> str:
         kwargs = args
     else:
         kwargs = {k: v for k, v in args.items() if k in aceitos}
-    resposta = await ferramenta.execute(**kwargs)
+    try:
+        resposta = await ferramenta.execute(**kwargs)
+    except Exception as exc:
+        if somente_leitura(exc):
+            return ERRO_SO_LEITURA
+        raise
     return resposta.message if isinstance(resposta, Response) else str(resposta)
+
+
+# Ensaio até a virada (docs/MIGRACAO_HERMES.md): os dados do A0 chegam aqui só para leitura (agentepessoal-hermes-dados).
+# Uma ação que grava (ou pega trava) cai aqui com um erro claro, para o modelo não tentar outros caminhos à toa.
+ERRO_SO_LEITURA = ("Ensaio do Hermes: os dados do agente estão só para leitura até a virada, e esta ação grava neles. "
+                   "Ela continua sendo feita pelo agente de hoje; não tente de outro jeito. Diga ao operador o que ia fazer.")
+
+
+def somente_leitura(exc: BaseException) -> bool:
+    import errno
+    import sqlite3
+
+    if isinstance(exc, OSError) and exc.errno == errno.EROFS:
+        return True
+    texto = str(exc).lower()
+    return isinstance(exc, sqlite3.OperationalError) and ("readonly" in texto or "read-only" in texto
+                                                          or "unable to open database" in texto)

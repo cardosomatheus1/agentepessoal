@@ -128,6 +128,27 @@ csv.write_text("nome,valor\nbolo,15\n")
 if ler:
     saida = asyncio.run(ler[1]({"caminho": str(csv)}, session_id="s1"))
     checa("bolo" in saida, f"a ferramenta roda pelo Hermes: {saida[:200]}")
+import errno
+import sqlite3
+
+
+class _Grava(ponte.Tool):
+    async def execute(self, **kwargs):
+        raise OSError(errno.EROFS, "Read-only file system", "/a0/usr/prospeccao/matheus.lock")
+
+
+class _Quebra(ponte.Tool):
+    async def execute(self, **kwargs):
+        raise ValueError("outro erro")
+
+
+checa(asyncio.run(ponte.executar(_Grava, "x", {}, "s")) == ponte.ERRO_SO_LEITURA, "ação que grava no ensaio: erro claro")
+checa(ponte.somente_leitura(sqlite3.OperationalError("unable to open database file")), "sqlite só leitura também")
+try:
+    asyncio.run(ponte.executar(_Quebra, "x", {}, "s"))
+    checa(False, "outro erro não é engolido")
+except ValueError:
+    pass
 ponte.SESSOES.write_text(json.dumps({"tg-fernanda-1": "fernanda"}))
 checa(ponte.conversa("tg-fernanda-1").get_data("dono") == "fernanda", "o dono vem do mapa de sessões")
 checa(ponte.conversa("outra").get_data("dono") == ponte.DONO_PADRAO, "sessão sem dono é do Matheus")
