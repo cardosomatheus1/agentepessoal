@@ -74,6 +74,10 @@ checa("BUSCAR_URL" in atalhos["buscar"], "atalho buscar usa o repasse")
 cfg = d.configuracao("hermes", 10, "172.30.0.1")
 checa(cfg["base_url"] == f"http://172.30.0.1:{d.RELAY_PORTA}/openai/v1", "modelo só pelo repasse")
 checa(cfg["segundos"] == 600, "minutos viram segundos")
+checa((cfg["modelo"], cfg["api_mode"]) == (d.MODELO, "codex_responses"), "sem modelo pedido: o padrão")
+cfg_c = d.configuracao("hermes", 10, "172.30.0.1", "anthropic.claude-sonnet-5")
+checa(cfg_c["base_url"] == f"http://172.30.0.1:{d.RELAY_PORTA}/anthropic" and cfg_c["api_mode"] == "anthropic_messages",
+      f"Claude pela rota Anthropic do repasse: {cfg_c}")
 texto = json.dumps(cfg)
 checa("8787" not in texto and "key" not in texto.lower(), "configuração sem proxy direto nem chave")
 for termo in ("/trabalho/saida/", "agent-browser", "buscar", "Não entre em contas", "CAPTCHA"):
@@ -85,8 +89,16 @@ for metodo, caminho, rota in (("POST", "/openai/v1/responses", "modelo"), ("POST
                               ("GET", "/buscar?q=x", "buscar"), ("POST", "/arquivos/presign", ""),
                               ("POST", "/arquivos/gcp_token", ""), ("GET", "/health", ""), ("POST", "/bedrock/x", ""),
                               ("GET", "/openai/v1/responses", ""), ("POST", "/openai/v1/../../arquivos/presign", ""),
-                              ("POST", "/typesafe/x", "")):
+                              ("POST", "/typesafe/x", ""), ("POST", "/anthropic/v1/messages", "modelo"),
+                              ("GET", "/anthropic/v1/messages", ""), ("POST", "/anthropic/v1/files", "")):
     checa(d.rota_permitida(metodo, caminho) == rota, f"repasse {metodo} {caminho} -> {rota!r}")
+for dados, erro in (({"motor": "hermes", "tarefa": "x", "modelo": "outro"}, "modelo deve ser"),
+                    ({"motor": "openclaw", "tarefa": "x", "modelo": "anthropic.claude-sonnet-5"}, "só fala com")):
+    try:
+        d.iniciar(dados)
+        checa(False, f"modelo recusado: {dados}")
+    except d.Recusa as exc:
+        checa(erro in str(exc), f"recusa certa para {dados}: {exc}")
 chamado = []
 d.docker = lambda *a, **k: chamado.append(a) or type("R", (), {"returncode": 0, "stdout": b'{"results": []}'})()
 d.buscar_searxng({"q": "a; rm -rf / & b", "format": "json"})

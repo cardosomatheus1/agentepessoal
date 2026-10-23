@@ -59,7 +59,16 @@ def test_haiku_mesmo_caminho_outro_modelo():
     assert saida[1]["chat"]["name"] == "converse/us.anthropic.claude-sonnet-5-5"
 
 
+def test_sonnet5_do_teste_lado_a_lado():
+    saida = m.com_sonnet([{"name": "Default", "utility": {"name": "luna"}}, {"name": "Haiku", "chat": m.chat("nativo", m.HAIKU)}],
+                         m.SONNET5, "nativo")
+    assert [p["name"] for p in saida] == ["Default", "Haiku", "Sonnet 5 teste"]
+    assert saida[-1]["chat"]["name"] == "converse/us.anthropic.claude-sonnet-5", "the model Hermes gets too"
+    assert saida[1]["chat"]["name"] == "converse/us.anthropic.claude-haiku-5-5", "his everyday preset untouched"
+
+
 if __name__ == "__main__":
+    test_sonnet5_do_teste_lado_a_lado()
     test_haiku_mesmo_caminho_outro_modelo()
     test_historico_40()
     test_utilitario_do_padrao()

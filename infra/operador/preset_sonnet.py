@@ -2,7 +2,7 @@
 points) via Agent Zero's own preset API — never by editing presets.yaml. The chat model is Sonnet; the utility model
 (summaries, memory) stays on the default's cheap one. Usage:
 
-    A0_SENHA=... python3 infra/operador/preset_sonnet.py [--teste | --haiku]            # the "Sonnet" preset (mode: MODO below)
+    A0_SENHA=... python3 infra/operador/preset_sonnet.py [--teste | --haiku | --sonnet5]  # the "Sonnet" preset (mode: MODO below)
     A0_SENHA=... python3 infra/operador/preset_sonnet.py [--teste | --haiku] --teste    # "Sonnet nativo": same, native tool calling,
                                                                     # for a test chat (per-chat override), no one else
 
@@ -41,8 +41,11 @@ NATIVO = {"a0_api_mode": "responses", "responses_state": "local", "tool_choice":
 # 20/10 ~22h (Matheus): the agent moves to Haiku 5.5. Tested through the proxy with one native tool, effort medium and
 # max_tokens 32000: tool call right, ~2 s. Same Bedrock path, same native mode; only the model id changes.
 HAIKU = "Haiku"
+# 23/10 (Matheus, "Faça"): the side-by-side test with Hermes runs both on the same model, Sonnet 5 (the Claude that
+# Bedrock serves to both: Converse for us, Anthropic Messages for Hermes's box). Only the test chats use it.
+SONNET5 = "Sonnet 5 teste"
 MODELOS = {NOME: "converse/us.anthropic.claude-sonnet-5-5", NOME_TESTE: "converse/us.anthropic.claude-sonnet-5-5",
-           HAIKU: "converse/us.anthropic.claude-haiku-5-5"}
+           HAIKU: "converse/us.anthropic.claude-haiku-5-5", SONNET5: "converse/us.anthropic.claude-sonnet-5"}
 
 
 def chat(modo: str, nome: str = NOME) -> dict:
@@ -87,6 +90,8 @@ async def main(nome: str, modo: str):
 if __name__ == "__main__":
     if "--haiku" in sys.argv[1:]:
         asyncio.run(main(HAIKU, MODO))
+    elif "--sonnet5" in sys.argv[1:]:
+        asyncio.run(main(SONNET5, MODO))
     else:
         teste = "--teste" in sys.argv[1:]
         asyncio.run(main(NOME_TESTE if teste else NOME, "nativo" if teste else MODO))

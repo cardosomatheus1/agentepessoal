@@ -41,7 +41,7 @@ def main() -> int:
 
         agente = AIAgent(
             model=cfg["modelo"], provider="relay", base_url=cfg["base_url"], api_key="relay-not-a-credential",
-            api_mode="codex_responses", enabled_toolsets=TOOLSETS, max_iterations=int(cfg.get("passos") or 80),
+            api_mode=cfg.get("api_mode") or "codex_responses", enabled_toolsets=TOOLSETS, max_iterations=int(cfg.get("passos") or 80),
             quiet_mode=True, save_trajectories=False, verbose_logging=False, skip_context_files=True,
             skip_memory=True, skip_background_review=True, load_soul_identity=False, checkpoints_enabled=False,
             fallback_model={}, reasoning_config={"enabled": True, "effort": cfg.get("esforco") or "medium"},

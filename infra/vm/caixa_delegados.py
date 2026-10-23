@@ -42,6 +42,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends chromium fonts-
 """
 MOTORES = ("hermes", "openclaw")
 MODELO = "openai.gpt-6-luna"
+# 23/10 (Matheus, "Faça": the side-by-side test of our agent and Hermes on the same model): the models a box may ask
+# for, each with the API Hermes speaks to it; Claude goes through Bedrock's Anthropic Messages route (bedrock-mantle).
+MODELOS = {"openai.gpt-6-luna": "codex_responses", "anthropic.claude-sonnet-5": "anthropic_messages"}
 PROXY = "http://127.0.0.1:8787"
 SEARXNG_PORTA = 55510
 AGENTES = Path("/opt/a0/usr/workdir/agentes")
@@ -151,9 +154,11 @@ def relay_url(gateway: str) -> str:
     return f"http://{gateway}:{RELAY_PORTA}"
 
 
-def configuracao(motor: str, minutos: int, gateway: str) -> dict:
+def configuracao(motor: str, minutos: int, gateway: str, modelo: str = MODELO) -> dict:
     """/trabalho/config.json: everything the runner needs, nothing secret (the relay holds no credential either)."""
-    return {"motor": motor, "modelo": MODELO, "base_url": f"{relay_url(gateway)}/openai/v1",
+    modo = MODELOS[modelo]
+    base = f"{relay_url(gateway)}/anthropic" if modo == "anthropic_messages" else f"{relay_url(gateway)}/openai/v1"
+    return {"motor": motor, "modelo": modelo, "api_mode": modo, "base_url": base,
             "segundos": minutos * 60, "passos": 120, "esforco": "medium", "sistema": sistema_da_caixa(motor, minutos)}
 
 
@@ -325,6 +330,11 @@ def iniciar(dados: dict) -> dict:
         raise Recusa(f"no máximo {ARQUIVOS_MAX} arquivos por tarefa")
     origens = [origem_permitida(a) for a in arquivos]
     minutos = max(1, min(int(dados.get("minutos") or 10), MINUTOS_MAX))
+    modelo = str(dados.get("modelo") or MODELO).strip()
+    if modelo not in MODELOS:
+        raise Recusa(f"modelo deve ser um de: {', '.join(MODELOS)}")
+    if motor != "hermes" and MODELOS[modelo] != "codex_responses":
+        raise Recusa(f"o {motor} só fala com {MODELO}")
     with _TRAVA:
         if len(rodando()) >= SIMULTANEAS:
             raise Recusa(f"já há {SIMULTANEAS} tarefas delegadas rodando: espere uma terminar")
@@ -343,7 +353,7 @@ def iniciar(dados: dict) -> dict:
         for origem in origens:
             shutil.copyfile(origem, pasta / "entrada" / _nome_seguro(origem.name))
         (pasta / "tarefa.txt").write_text(tarefa)
-        (pasta / "config.json").write_text(json.dumps(configuracao(motor, minutos, gateway), ensure_ascii=False))
+        (pasta / "config.json").write_text(json.dumps(configuracao(motor, minutos, gateway, modelo), ensure_ascii=False))
         subprocess.run(["chown", "-R", "1000:1000", str(pasta)], check=True, timeout=120)
         if motor == "hermes":
             montar_camadas(pasta)
@@ -445,6 +455,8 @@ def rota_permitida(metodo: str, caminho: str) -> str:
         return "modelo"
     if metodo == "GET" and alvo == "/openai/v1/models":
         return "modelo"
+    if metodo == "POST" and alvo == "/anthropic/v1/messages":
+        return "modelo"
     if metodo == "GET" and alvo == "/searxng/search":
         return "searxng"
     if metodo == "GET" and alvo == "/buscar":
@@ -516,6 +528,9 @@ class Repasse(BaseHTTPRequestHandler):
             return
         cab = {"Content-Type": self.headers.get("Content-Type") or "application/json",
                "Accept": self.headers.get("Accept") or "*/*"}
+        for nome in ("anthropic-version", "anthropic-beta"):  # the Messages API needs them; nothing else goes on
+            if self.headers.get(nome):
+                cab[nome] = self.headers[nome][:200]
         try:
             resp = urllib.request.urlopen(urllib.request.Request(PROXY + self.path, data=corpo, headers=cab,
                                                                  method=metodo), timeout=600)
