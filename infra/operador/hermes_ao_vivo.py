@@ -90,7 +90,7 @@ print("METADADOS", dentro("timeout 3 bash -c '</dev/tcp/169.254.169.254/80' 2>&1
 print("INTERNET", dentro("timeout 8 python3 -c \"import urllib.request;print(urllib.request.urlopen('https://www.google.com',timeout=6).status)\" 2>&1 | tail -1"))
 for f in (".env", "settings.json", "usuarios.json", "secrets.env"):
     print("VAZIO", f, dentro(f"wc -c < /a0/usr/{f} 2>/dev/null || echo ausente"))
-for d in ("segredos", "whatsapp", "navegador", "mcp", ".aws", "celular", "delegados"):
+for d in ("segredos", "whatsapp", "navegador", "mcp", ".aws", "celular", "delegados", ".time_travel", ".tmp", "workdir", "caixa", "chats", "chats_arquivo"):
     print("VAZIA", d, dentro(f"ls -A /a0/usr/{d} 2>/dev/null | wc -l"))
 print("GRAVAR", dentro("touch /a0/usr/teste_hermes_ro 2>&1 | tail -1 || true") or "gravou!")
 print("ENSAIO", dentro("printenv AGENTEPESSOAL_ENSAIO"))

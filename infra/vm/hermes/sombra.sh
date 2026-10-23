@@ -21,10 +21,11 @@ iniciar)
   rm -rf "$S/a0usr" "$S/data"
   # a cópia dos dados, sem o que é grande e não muda o dia (workdir, arquivos antigos) e sem o que dá poder de agir
   rsync -a --exclude /workdir --exclude /chats_arquivo --exclude /downloads --exclude /moldes.anterior \
+    --exclude /.time_travel --exclude /.tmp --exclude /caixa --exclude /chats \
     --exclude /navegador --exclude /navegador_visual --exclude /segredos --exclude /whatsapp/.chave --exclude /mcp \
     --exclude /.aws --exclude /celular --exclude /delegados --exclude /.env --exclude /secrets.env \
     --exclude /settings.json --exclude '/usuarios.json*' /opt/a0/usr/ "$S/a0usr/"
-  mkdir -p "$S/a0usr/segredos" "$S/a0usr/mcp" "$S/a0usr/navegador" "$S/a0usr/workdir"
+  mkdir -p "$S/a0usr/segredos" "$S/a0usr/mcp" "$S/a0usr/navegador" "$S/a0usr/workdir" "$S/a0usr/chats"
   chown -R 10000:10000 "$S/a0usr"
   mkdir -p "$S/data/agentepessoal"
   for f in config.yaml SOUL.md; do install -m 644 "/opt/hermes/data/$f" "$S/data/$f"; done

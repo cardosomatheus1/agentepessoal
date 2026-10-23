@@ -80,7 +80,9 @@ for caminho in /opt/hermes/a0usr/.env /opt/hermes/a0usr/secrets.env /opt/hermes/
   f=$(basename "$caminho")
   [ -f "$caminho" ] && ESCONDIDOS+=(-v "/dev/null:/a0/usr/$f:ro")  # (vista só leitura: não cria o que falta)
 done
-for d in .aws whatsapp segredos navegador navegador_visual mcp celular delegados; do
+# .time_travel e workdir guardam instantâneos e perfis de navegador logados (iFood…); chats e chats_arquivo, tokens
+# colados em conversas antigas (EAA… da Meta); .tmp e caixa, o que é de outros (revisão OpenCode 23/10, fase 7)
+for d in .aws whatsapp segredos navegador navegador_visual mcp celular delegados .time_travel .tmp workdir caixa chats chats_arquivo; do
   [ -d "/opt/hermes/a0usr/$d" ] && ESCONDIDOS+=(--mount "type=tmpfs,destination=/a0/usr/$d,tmpfs-mode=0755")
 done
 # AGENTEPESSOAL_ENSAIO=1 até a virada (fase 8): nada vai ao celular nem se publica na Meta pelo Hermes; o que iria fica

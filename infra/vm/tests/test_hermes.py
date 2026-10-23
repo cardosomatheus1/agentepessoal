@@ -45,7 +45,8 @@ pacotes = [t for t in df.split("uv pip install", 1)[1].split("&&", 1)[0].split()
 checa(len(pacotes) >= 5 and all("==" in t for t in pacotes), f"pacotes com versão fixa: {pacotes}")
 checa(re.search(r"FROM ghcr.io/astral-sh/uv:\d+\.\d+\.\d+ AS uv", df), "uv com versão fixa")
 checa(subprocess.run(["bash", "-n", str(H / "subir.sh")]).returncode == 0, "sintaxe do script")
-for d in (".aws", "whatsapp", "segredos", "navegador", "mcp", "celular", "delegados"):
+for d in (".aws", "whatsapp", "segredos", "navegador", "mcp", "celular", "delegados", ".time_travel", ".tmp", "workdir", "caixa", "chats",
+          "chats_arquivo"):
     checa(re.search(rf"for d in (?:[^;]*\s)?{re.escape(d)}(?=[\s;])", sh), f"no ensaio {d} aparece vazio no Hermes")
 for f in ("/.env ", "/secrets.env ", "/settings.json ", "/usuarios.json*;"):
     checa(re.search(rf"for caminho in [^;]*{re.escape(f.rstrip(';'))}", sh), f"no ensaio {f.strip('/ ;')} aparece vazio no Hermes")
@@ -106,7 +107,8 @@ so = (H / "sombra.sh").read_text()
 checa(subprocess.run(["bash", "-n", str(H / "sombra.sh")]).returncode == 0, "sintaxe do sombra.sh")
 checa("-e AGENTEPESSOAL_ENSAIO=1 -e AGENTEPESSOAL_RELOGIO=1" in so and '-v "$S/a0usr":/a0/usr' in so
       and "/opt/hermes/a0usr" not in so and "rsync -a" in so, "sombra: cópia dos dados, ensaio e relógio")
-for x in ("/segredos", "/whatsapp/.chave", "/mcp", "/.aws", "/settings.json", "'/usuarios.json*'", "/.env", "/navegador"):
+for x in ("/segredos", "/whatsapp/.chave", "/mcp", "/.aws", "/settings.json", "'/usuarios.json*'", "/.env", "/navegador",
+          "/.time_travel", "/.tmp", "/workdir", "/caixa", "/chats", "/chats_arquivo"):
     checa(f"--exclude {x}" in so, f"sombra: {x} fica fora da cópia")
 checa("-p 127.0.0.1:8643:8642" in so and "--network hermes" in so and "systemd-run" in so and "--on-active" in so,
       "sombra: só no loopback, rede fechada, para sozinha")
