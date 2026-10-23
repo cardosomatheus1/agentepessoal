@@ -89,6 +89,18 @@ checa(sh.index("HERMES_SEM_MCP") < sh.index("docker run"), "o Hermes não sobe s
 df_mcp = (H / "mcp" / "Dockerfile").read_text()
 checa("FROM python:3.12.8-slim" in df_mcp and "workspace-mcp==2.0.1" in df_mcp and "-c /tmp/versoes.txt" in df_mcp,
       "conector do Google com a versão e as dependências do A0")
+# fase 3: as 27 skills do A0 adaptadas às ferramentas do Hermes, semeadas uma vez (depois são do curador dele)
+skills = sorted(d for d in (H / "skills").iterdir() if d.is_dir())
+checa(len(skills) == 27, f"as 27 skills do A0 adaptadas ({len(skills)})")
+ANTIGAS = re.compile(r"`browser`|vision_load|code_execution|search_engine|ferramentas_extras|call_subordinate|notify_user|"
+                     r"document_query|`response`|`scheduler`|salvar_rotina|me_mostre|tarefa_limite|criar_gatilho|"
+                     r"browser_id|`content`|upload_file|`pesquisar`|`wait`")
+for d in skills:
+    texto = (d / "SKILL.md").read_text()
+    cab = yaml.safe_load(texto.split("---", 2)[1])
+    checa(cab.get("name") == d.name and cab.get("description") and cab.get("adaptada_hermes"), f"skill {d.name}: cabeçalho")
+    checa(not ANTIGAS.search(texto), f"skill {d.name} ainda cita ferramenta do A0: {ANTIGAS.findall(texto)[:3]}")
+checa('[ -e "$SK/$n" ] || { cp -r' in sh and "chown -R 10000:10000" in sh, "skill semeada só se ainda não existe (o curador cuida)")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
     checa(termo in alma, f"a persona traz {termo!r}")

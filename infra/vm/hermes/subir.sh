@@ -19,6 +19,16 @@ mkdir -p "$DADOS/plugins"
 for p in "$AQUI"/plugins/*/; do
   nome=$(basename "$p"); rm -rf "$DADOS/plugins/$nome"; cp -r "$p" "$DADOS/plugins/$nome"
 done
+# As skills do agente (fase 3), adaptadas às ferramentas do Hermes: semeadas UMA vez (a que já existe não é trocada:
+# depois de semeada ela é do curador do Hermes, que melhora e poda; "Hermes primeiro", docs/MIGRACAO_HERMES.md).
+SK="$DADOS/skills/agentepessoal"
+mkdir -p "$SK" "$DADOS/agentepessoal"
+install -m 644 "$AQUI/skills/DESCRIPTION.md" "$SK/DESCRIPTION.md"
+for s in "$AQUI"/skills/*/; do
+  n=$(basename "$s")
+  [ -e "$SK/$n" ] || { cp -r "$s" "$SK/$n"; echo "$n $(date -u +%FT%TZ)" >> "$DADOS/agentepessoal/skills_semeadas.txt"; }
+done
+chown -R 10000:10000 "$SK" "$DADOS/agentepessoal"
 # Chave do API server: gerada uma vez, só na VM (nunca no git nem no chat).
 if [ ! -s /opt/hermes/api_key ]; then
   umask 077; openssl rand -hex 32 > /opt/hermes/api_key
