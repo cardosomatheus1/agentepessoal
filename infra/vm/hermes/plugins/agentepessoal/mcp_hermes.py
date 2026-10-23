@@ -32,13 +32,12 @@ class MCPConfig:
         return cls._instancia
 
     async def call_tool(self, nome: str, argumentos: dict):
-        from mcp import ClientSession
-        from mcp.client.streamable_http import streamable_http_client
-
         servidor, _, ferramenta = str(nome).partition(".")
         url = (self.urls if self.urls is not None else servidores()).get(servidor)
         if not url or not ferramenta:
             raise LookupError(f"conector {servidor!r} não existe neste Hermes")
+        from mcp import ClientSession  # o cliente MCP que vem no Hermes
+        from mcp.client.streamable_http import streamable_http_client
         async with streamable_http_client(url) as (leitura, escrita, *_):
             async with ClientSession(leitura, escrita) as sessao:
                 await sessao.initialize()
