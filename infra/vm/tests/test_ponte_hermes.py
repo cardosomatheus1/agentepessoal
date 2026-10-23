@@ -204,6 +204,22 @@ def main() -> int:
     respostas["/v1/runs/run_7"] = [{"status": "completed", "output": "fim run_7"}]
     p.acompanhar_hermes("run_7", "matheus", "123", espera=5, pausa=0)
     ok(ands[-1] == ("✅ Terminei", True) and p.ativos_hermes("matheus") == [], f"o último fecha a mensagem ({ands[-1]})")
+    # o plugin acorda uma sessão certa da pessoa (os subagentes que ela disparou terminaram): nada de paralelo
+    respostas["/v1/runs"] = {"run_id": "run_s1"}
+    p.entregar_hermes({"usuario": "matheus", "texto": "faz Z", "botao": ""}, "123")
+    respostas["/v1/runs"] = {"run_id": "run_s2"}
+    r = p.entregar_hermes({"usuario": "matheus", "texto": "[subagentes terminaram]", "sessao": "tgp1-matheus"}, "123")
+    ok(r == "run_s2" and chamadas[-1][1]["session_id"] == "tgp1-matheus" and chamadas[-1][1]["input"] == "[subagentes terminaram]",
+       f"aviso numa sessão dele: pedido nessa sessão, sem cabeçalho de paralelo ({chamadas[-1]})")
+    respostas["/v1/runs/run_s2/steer"] = {"accepted": True}
+    r = p.entregar_hermes({"usuario": "matheus", "texto": "[outro aviso]", "sessao": "tgp1-matheus"}, "123")
+    ok(r == "run_s2" and chamadas[-1][0] == "/v1/runs/run_s2/steer", "com um pedido rodando nessa sessão: entra nele")
+    respostas["/v1/runs"] = {"run_id": "run_s3"}
+    p.entregar_hermes({"usuario": "matheus", "texto": "[aviso]", "sessao": "tg-ilia"}, "123")
+    ok(chamadas[-1][1].get("session_id") != "tg-ilia", "sessão de outra pessoa nunca")
+    ok(p.dono_da_sessao("tgp1-matheus") == "matheus" and p.dono_da_sessao("nao-existe") == "", "dono da sessão pelo mapa")
+    for rid in ("run_s1", "run_s2", "run_s3"):
+        p.ativos_hermes("matheus", rid, fim=True)
     # o Hermes reiniciou no meio (23/10, implantação): o run some (404); a ponte não fica 6 h perguntando, tira o
     # pedido dos que rodam e diz a ele que foi interrompido
     import urllib.error

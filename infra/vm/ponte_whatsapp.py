@@ -1590,6 +1590,15 @@ def complementa(usuario: str, em_andamento: str, texto: str, agora: float | None
     return bool(veredito)
 
 
+def dono_da_sessao(sessao: str) -> str:
+    """O login dono de uma sessão do Hermes, pelo mapa que a ponte grava ("" se não é de ninguém)."""
+    try:
+        mapa = json.loads(HERMES_SESSOES.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    return str(mapa.get(sessao) or "") if isinstance(mapa, dict) and not sessao.startswith("atual:") else ""
+
+
 def sessao_paralela(usuario: str) -> str:
     """Uma sessão paralela livre da pessoa (tgp1-<login>…), ou "" com HERMES_MAX_PARALELAS ocupadas."""
     with _TRAVA_HERMES:
@@ -1694,6 +1703,19 @@ def entregar_hermes(dados: dict, chat: str) -> str:
     if not dados.get("gatilho") and not dados.get("audio") and comando_hermes(usuario, chat, str(dados.get("texto") or "")):
         return ""
     sessao = sessao_hermes(usuario, "gatilhos" if dados.get("gatilho") else "tg")
+    if dados.get("sessao") and dono_da_sessao(str(dados["sessao"])) == usuario:
+        # o plugin pede uma sessão certa (ex.: os subagentes que ELA disparou terminaram): entra no que roda nela
+        # ou abre um pedido nela; nada de sessão paralela
+        sessao = str(dados["sessao"])
+        with _TRAVA_HERMES:
+            nela = [r for r in _HERMES_ATIVOS.get(usuario, {}) if (_HERMES_RUNS.get(r) or {}).get("sessao") == sessao]
+        for run_id in reversed(nela):
+            try:
+                if _hermes(f"/v1/runs/{run_id}/steer", {"input": pedido_hermes(dados)}, usuario=usuario).get("accepted"):
+                    return run_id
+            except Exception:
+                continue
+        dados = {**dados, "conversa_nova": True}  # não decide paralelo: vai nesta sessão
     entrada = pedido_hermes(dados)
     if dados.get("gatilho"):  # um aviso de fora (ex.: o vigia do Google), com a instrução que a pessoa deu a ele
         entrada = texto_gatilho(usuario, str(dados["gatilho"]), mascarar_cofres(str(dados.get("texto") or "")))
@@ -1993,10 +2015,10 @@ class Saida(http.server.BaseHTTPRequestHandler):
         pass
 
     @staticmethod
-    def _conversa(usuario: str, texto: str, chat: str) -> None:
+    def _conversa(usuario: str, texto: str, chat: str, sessao: str = "") -> None:
         try:
             ativo()
-            entregar_hermes({"usuario": usuario, "texto": texto}, chat)
+            entregar_hermes({"usuario": usuario, "texto": texto, **({"sessao": sessao} if sessao else {})}, chat)
         except Exception as exc:
             log(f"hermes: /conversa de {usuario} não entregue: {exc}")
 
@@ -2034,7 +2056,10 @@ class Saida(http.server.BaseHTTPRequestHandler):
             if not usuario or not texto or destino(usuario) != "hermes":
                 return self._responder(409, {"erro": "essa pessoa não está no Hermes (ou pedido vazio)"})
             chat = tg_chat(usuario)
-            threading.Thread(target=self._conversa, args=(usuario, texto, chat), daemon=True).start()
+            sessao = str(pedido.get("sessao") or "")
+            if sessao and dono_da_sessao(sessao) != usuario:  # só uma sessão DESSA pessoa
+                return self._responder(403, {"erro": "sessão de outra pessoa"})
+            threading.Thread(target=self._conversa, args=(usuario, texto, chat, sessao), daemon=True).start()
             return self._responder(200, {"ok": True})
         if self.path == "/conferir":  # the plugin asks whether a delivery really came from here (ticket spent now)
             pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")

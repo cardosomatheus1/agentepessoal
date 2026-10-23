@@ -49,6 +49,7 @@ jobs:
           python3 infra/vm/tests/test_ponte_hermes.py
           python3 infra/vm/tests/test_portal.py
           python3 infra/vm/tests/test_resolver_hermes.py
+          python3 infra/vm/tests/test_subagentes_hermes.py
           python3 infra/operador/tests/test_segundo_cerebro.py
           python3 infra/operador/tests/test_cache_relatorio.py
           python3 infra/operador/tests/test_calibracao.py

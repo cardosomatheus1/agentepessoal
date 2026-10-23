@@ -61,11 +61,13 @@ def _api_stub() -> None:
         sys.modules["helpers"].message_queue = mq
 
 
-def conversa(usuario: str, texto: str) -> dict:
-    """O que o A0 entregava na conversa da pessoa vira um pedido no Hermes dela (pela ponte)."""
+def conversa(usuario: str, texto: str, sessao: str = "") -> dict:
+    """O que o A0 entregava na conversa da pessoa vira um pedido no Hermes dela (pela ponte); `sessao`: numa sessão
+    certa dela (ex.: a que disparou os subagentes), em vez da principal ou de uma paralela."""
     import urllib.request
 
-    req = urllib.request.Request(f"{PONTE_URL}/conversa", data=json.dumps({"usuario": usuario, "texto": texto}).encode(),
+    corpo = {"usuario": usuario, "texto": texto, **({"sessao": sessao} if sessao else {})}
+    req = urllib.request.Request(f"{PONTE_URL}/conversa", data=json.dumps(corpo).encode(),
                                  headers={"Content-Type": "application/json", "X-Chave": CHAVE.read_text().strip()})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.loads(r.read() or b"{}")

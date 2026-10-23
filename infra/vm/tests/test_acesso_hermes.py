@@ -249,13 +249,6 @@ checa(ac.checar(tool_name="execute_code", args={"code": "import shutil; shutil.r
       "nem por execute_code")
 checa(not ac.checar(tool_name="terminal", args={"command": "docker ps"}, session_id="s-m"),
       "fora da rotina, o terminal do Matheus segue com as aprovações do Hermes (smart + botões)")
-# subagentes: em segundo plano o resultado não volta pela ponte (ao vivo, 23/10); no lote eles rodam em paralelo
-r = ac.checar(tool_name="delegate_task", args={"tasks": [{"goal": "a"}, {"goal": "b"}], "background": True}, session_id="s-m")
-checa(r and r["action"] == "block" and "background=false" in r["message"], f"delegate_task em segundo plano recusado ({r})")
-checa(not ac.checar(tool_name="delegate_task", args={"tasks": [{"goal": "a"}, {"goal": "b"}]}, session_id="s-m"),
-      "delegate_task em lote (paralelo, resultado no mesmo pedido) segue")
-checa(not ac.checar(tool_name="delegate_task", args={"tasks": [{"goal": "a"}], "background": False}, session_id="s-m"),
-      "background=false segue")
 
 # --- virada: no Hermes PRÓPRIO do convidado voltam o navegador (perfil dele), a memória e as rotinas (limitadas)
 os.environ.pop("AGENTEPESSOAL_ENSAIO", None)
@@ -264,8 +257,6 @@ os.environ["AGENTEPESSOAL_CONVIDADO"] = "ilia"
 checa(ponte.login_da_sessao("qualquer-sessao") == "ilia", "no Hermes dele, toda sessão é dele (inclusive o cron)")
 for f in ("browser_navigate", "browser_click", "memory", "session_search", "conversa_externa"):
     checa(not ac.checar(tool_name=f, args={}, session_id="tg-ilia"), f"convidado no Hermes dele usa {f}")
-checa(ac.checar(tool_name="delegate_task", args={"tasks": [{"goal": "a"}], "background": "true"}, session_id="tg-ilia"),
-      "convidado: subagente em segundo plano também recusado (o resultado não chegaria a ele)")
 for f in ("terminal", "execute_code", "read_file", "write_file", "delegar", "prospeccao", "skill_manage"):
     checa(ac.checar(tool_name=f, args={}, session_id="tg-ilia"), f"convidado nunca usa {f}")
 c = ac._convidados()

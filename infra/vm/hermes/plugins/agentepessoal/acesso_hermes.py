@@ -96,14 +96,6 @@ def _bloqueio(texto: str) -> dict:
 def checar(tool_name="", args=None, session_id="", task_id="", **kw):
     """Gancho `pre_tool_call`: None = segue; {"action": "block"} = não roda."""
     args = args if isinstance(args, dict) else {}
-    if tool_name == "delegate_task" and str(args.get("background")).lower() in ("true", "1", "yes"):
-        # 23/10, ao vivo: pelo API server (a ponte do celular) o resultado de subagentes em segundo plano só fica
-        # guardado para o PRÓXIMO turno ("no model wake"): a pessoa recebia "assim que terminarem eu mando" e nada
-        # chegava. Sem background os subagentes do lote rodam do mesmo jeito em paralelo e o resultado volta neste
-        # pedido.
-        return _bloqueio("Aqui não use background=true: o resultado em segundo plano não chega ao celular da pessoa. "
-                         "Chame delegate_task de novo com as mesmas tarefas e background=false: os subagentes do lote "
-                         "rodam em paralelo do mesmo jeito e o resultado volta neste pedido.")
     ponte = sys.modules["agentepessoal_ponte_a0"]
     login = ponte.login_da_sessao(str(session_id or task_id or ""))
     c = _convidados()
