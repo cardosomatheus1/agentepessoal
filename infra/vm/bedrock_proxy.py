@@ -543,7 +543,8 @@ def _trocas_cofre() -> list:
     """(form, "§§secret(NAME)"), both as UTF-8 bytes, of every value (4+ characters) in every person's vault, longest
     first; re-read only when a vault file changes. An unreadable file keeps the last good list (never "no secrets")."""
     try:
-        arquivos = sorted(a for a in COFRES.glob("*.json") if not a.name.endswith(".descricoes.json"))
+        arquivos = sorted(a for a in [*COFRES.glob("*.json"), *COFRES.glob("convidados/*/*.json")]  # convidados: pasta própria
+                          if not a.name.endswith(".descricoes.json"))
         marca = tuple((a.name, a.stat().st_mtime_ns) for a in arquivos)
     except OSError:
         return _cofres["trocas"]

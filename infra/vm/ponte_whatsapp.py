@@ -754,8 +754,8 @@ def _cofre_transacao(arquivo: Path):
     """Read → change → write as one step, under the same lock as plugins/cofre (flock on <file>.lock, the same file
     seen from the container): 12/10 review, the agent and this bridge could overwrite each other, and a read in the
     middle of a write took the vault as empty. The file is replaced whole (temp file, mode 600, fsync, rename)."""
-    COFRE.mkdir(parents=True, exist_ok=True)
-    os.chmod(COFRE, 0o700)
+    arquivo.parent.mkdir(parents=True, exist_ok=True)
+    os.chmod(arquivo.parent, 0o700)
     with open(arquivo.with_name(arquivo.name + ".lock"), "a") as trava:
         limite = time.time() + 30
         while True:
@@ -786,8 +786,20 @@ def _cofre_transacao(arquivo: Path):
             fcntl.flock(trava, fcntl.LOCK_UN)
 
 
+def pasta_cofre(usuario: str) -> Path:
+    """O cofre do convidado fica numa pasta só dele (segredos/convidados/<login>), a única do cofre que o Hermes dele
+    vê (hermes/convidado.sh; Matheus 23/10: o convidado não acessa nada dele). Os outros: segredos/<login>.json."""
+    login = re.sub(r"[^a-z0-9_.-]", "", usuario.lower())
+    return COFRE / "convidados" / login if convidado_isolado(login) else COFRE
+
+
+def convidado_isolado(usuario: str) -> bool:
+    login = re.sub(r"[^a-z0-9_-]", "", str(usuario or "").lower())
+    return bool(login) and (HERMES_CONVIDADOS / login / "porta").exists()
+
+
 def _arquivo_descricoes(usuario: str) -> Path:
-    return COFRE / f"{re.sub(r'[^a-z0-9_.-]', '', usuario.lower())}.descricoes.json"
+    return pasta_cofre(usuario) / f"{re.sub(r'[^a-z0-9_.-]', '', usuario.lower())}.descricoes.json"
 
 
 def comando_cofre(usuario: str, texto: str) -> str | None:
@@ -813,7 +825,7 @@ def comando_cofre(usuario: str, texto: str) -> str | None:
     if not partes or partes[0].lower().split("@")[0] not in ("/senha", "/senhas", "/apagarsenha", "/cofre"):
         return None
     comando = partes[0].lower().split("@")[0]
-    arquivo = COFRE / f"{re.sub(r'[^a-z0-9_.-]', '', usuario.lower())}.json"
+    arquivo = pasta_cofre(usuario) / f"{re.sub(r'[^a-z0-9_.-]', '', usuario.lower())}.json"
     ilegivel = "Não consegui ler o cofre agora (nada foi mudado). Tente de novo em 1 minuto."
     if comando in ("/senhas", "/cofre") or (comando == "/senha" and len(partes) < 3):
         try:
@@ -1330,7 +1342,7 @@ def mascarar_cofres(texto: str) -> str:
     if not texto:
         return texto
     trocas = []
-    for arq in COFRE.glob("*.json"):
+    for arq in [*COFRE.glob("*.json"), *COFRE.glob("convidados/*/*.json")]:
         if arq.name.endswith(".descricoes.json"):
             continue
         try:
@@ -1810,6 +1822,35 @@ def tratar(url: str, m: dict) -> None:
 
 # ------------------------------------------------------------------ out: agent -> WhatsApp
 
+def chave_convidado_ok(usuario: str, recebida: str) -> bool:
+    try:
+        propria = (HERMES_CONVIDADOS / usuario / "chave").read_text().strip()
+    except OSError:
+        return False
+    return bool(propria and recebida) and secrets.compare_digest(recebida, propria)
+
+
+def arquivo_do_pedido(arquivo: str, convidado: str = "") -> Path | None:
+    """O arquivo que o agente pediu para mandar, no disco do host. Do Hermes de um convidado: só da pasta dele
+    (/opt/hermes/convidados/<login>/a0usr) ou da pasta do celular dele; nunca um arquivo do Matheus."""
+    caminho = Path(arquivo)
+    if convidado:
+        raiz = HERMES_CONVIDADOS / convidado / "a0usr"
+        celular = USR_HOST / "whatsapp" / convidado
+        if str(caminho).startswith(f"{USR_A0}/whatsapp/{convidado}/"):
+            caminho = celular / str(caminho)[len(f"{USR_A0}/whatsapp/{convidado}/"):]
+        elif str(caminho).startswith(USR_A0 + "/"):
+            caminho = raiz / str(caminho)[len(USR_A0) + 1:]
+        caminho = caminho.resolve()
+        permitido = any(str(caminho).startswith(str(r.resolve()) + "/") for r in (raiz, celular))
+        dentro_de_outro = any(str(caminho).startswith(str((raiz / d).resolve()) + "/") for d in ("segredos", "plugins", "caixa"))
+        return caminho if permitido and not dentro_de_outro and caminho.is_file() else None
+    if str(caminho).startswith(USR_A0 + "/"):
+        caminho = USR_HOST / str(caminho)[len(USR_A0) + 1:]
+    caminho = caminho.resolve()
+    return caminho if str(caminho).startswith(str(USR_HOST) + "/") and caminho.is_file() else None
+
+
 class Saida(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
@@ -1831,8 +1872,24 @@ class Saida(http.server.BaseHTTPRequestHandler):
         self.wfile.write(dados)
 
     def do_POST(self):
-        if self.path not in ("/enviar", "/gatilho_url", "/configurar", "/conferir", "/andamento", "/conversa") or not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
+        import io
+
+        bruto = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        self.rfile = io.BytesIO(bruto)  # os ramos abaixo leem o corpo de novo
+        self.convidado = ""
+        if self.path not in ("/enviar", "/gatilho_url", "/configurar", "/conferir", "/andamento", "/conversa"):
             return self._responder(403, {"erro": "sem acesso"})
+        if not secrets.compare_digest(self.headers.get("X-Chave", ""), chave()):
+            # 23/10: o Hermes de um convidado tem chave própria e só fala com a ponte sobre ELE mesmo
+            try:
+                bruto_usuario = str(json.loads(bruto or b"{}").get("usuario") or "").lower()
+                quem = re.sub(r"[^a-z0-9_-]", "", bruto_usuario)
+                quem = quem if quem == bruto_usuario else ""  # o login exato, nada que vire outro depois
+            except (ValueError, AttributeError):
+                quem = ""
+            if not (quem and self.path in ("/enviar", "/andamento", "/conversa") and chave_convidado_ok(quem, self.headers.get("X-Chave", ""))):
+                return self._responder(403, {"erro": "sem acesso"})
+            self.convidado = quem
         if self.path == "/conversa":  # 23/10 (virada): o que um botão ou aviso do plugin entrega "na conversa" da pessoa
             pedido = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
             usuario = re.sub(r"[^a-z0-9_-]", "", str(pedido.get("usuario", "")).lower())
@@ -1913,11 +1970,8 @@ class Saida(http.server.BaseHTTPRequestHandler):
                 if da_noite is not None:
                     resumo_entregue(usuario, da_noite)
                 if pedido.get("arquivo"):
-                    caminho = Path(str(pedido["arquivo"]))
-                    if str(caminho).startswith(USR_A0 + "/"):
-                        caminho = USR_HOST / str(caminho)[len(USR_A0) + 1:]
-                    caminho = caminho.resolve()
-                    if not str(caminho).startswith(str(USR_HOST) + "/") or not caminho.is_file():
+                    caminho = arquivo_do_pedido(str(pedido["arquivo"]), self.convidado)
+                    if caminho is None:
                         return self._responder(400, {"erro": "arquivo não encontrado em /a0/usr"})
                     tg_arquivo(chat, caminho, str(pedido.get("legenda") or ""))
                 return self._responder(200, {"ok": True})
@@ -1931,11 +1985,8 @@ class Saida(http.server.BaseHTTPRequestHandler):
                 if da_noite is not None:
                     resumo_entregue(usuario, da_noite)
             if pedido.get("arquivo"):
-                caminho = Path(str(pedido["arquivo"]))
-                if str(caminho).startswith(USR_A0 + "/"):
-                    caminho = USR_HOST / str(caminho)[len(USR_A0) + 1:]
-                caminho = caminho.resolve()
-                if not str(caminho).startswith(str(USR_HOST) + "/") or not caminho.is_file():
+                caminho = arquivo_do_pedido(str(pedido["arquivo"]), self.convidado)
+                if caminho is None:
                     return self._responder(400, {"erro": "arquivo não encontrado em /a0/usr"})
                 if caminho.stat().st_size > 95 * 1024 * 1024:
                     return self._responder(400, {"erro": "arquivo maior que 95 MB"})

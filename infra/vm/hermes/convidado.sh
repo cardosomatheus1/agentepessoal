@@ -12,6 +12,8 @@ set -euo pipefail
 LOGIN="${1:?login}"; IMAGEM="${2:?imagem}"
 [[ "$LOGIN" =~ ^[a-z0-9_-]{1,32}$ ]] || { echo "CONVIDADO_LOGIN_INVALIDO"; exit 1; }
 AQUI="$(cd "$(dirname "$0")" && pwd)"
+# o código que as ferramentas e os ganchos do convidado usam (o resto dos plugins nem aparece para ele)
+PLUGINS_CONVIDADO="aprovacoes central cofre conversas_externas analisar_imagens ler_arquivo login_usuarios memoria_pessoal video whatsapp"
 B=/opt/hermes/convidados/$LOGIN
 D=$B/data
 mkdir -p "$D/agentepessoal" "$D/plugins"; chmod 700 /opt/hermes/convidados "$B"
@@ -54,21 +56,41 @@ iptables -C INPUT -s "$(docker network inspect "$REDE" -f '{{range .IPAM.Config}
 CDP=$(bash "$AQUI/navegador.sh" "$IMAGEM" --nome "hermes-navegador-$LOGIN" --rede "$REDE" --perfil "pessoa_$LOGIN" --proprio \
       | sed -n 's/^NAVEGADOR_CDP=//p')
 [ -n "$CDP" ] || { echo "CONVIDADO_SEM_NAVEGADOR: $LOGIN"; exit 1; }
-# o que é do Matheus ou de outros não aparece (o convidado também não tem terminal nem arquivos: acesso_hermes.py)
-ESC=()
-for f in .env secrets.env settings.json usuarios.json usuarios.json.antes-operador; do
-  [ -f "/opt/hermes/a0usr/$f" ] && ESC+=(-v "/dev/null:/a0/usr/$f:ro")
+# Isolado (Matheus, 23/10: "precisa ser isolado, de forma alguma acessar nada meu"; "só o meu perfil tem acesso a 100%
+# da máquina"): o convidado NÃO vê os dados do agente. O /a0/usr dele é uma pasta só dele ($B/a0usr: memória, notas,
+# conversas externas, livro, arquivos), e de fora entram só, um a um:
+#  - o código dos plugins que as ferramentas dele usam (só leitura; nada de rotinas, prospecção, conteúdo, Raiz…);
+#  - a pasta do celular DELE (/a0/usr/whatsapp/<login>: anexos e áudios que a ponte grava);
+#  - o cofre DELE (/opt/a0/usr/segredos/convidados/<login>, onde a ponte grava o /senha dele);
+#  - a chave da ponte DELE ($B/chave: a ponte só aceita com ela mensagens para ele mesmo, nunca para o Matheus);
+#  - a chave da caixa dos convidados (o computador isolado dele, terminal_isolado).
+# Nada do cofre, conversas, memória, Segundo Cérebro, perfis do navegador ou tokens de outra pessoa existe no container.
+A=$B/a0usr
+mkdir -p "$A/whatsapp/$LOGIN" "$A/segredos" "$A/caixa" "$A/plugins" "$A/memoria/usuarios" "$A/conversas_externas"
+# a primeira vez, o que já era dele no A0 (a ficha e as conversas externas) vem para a pasta dele (cópia; o original fica)
+for f in "$LOGIN.md" "$LOGIN.diario.jsonl"; do
+  [ -e "$A/memoria/usuarios/$f" ] || [ ! -f "/opt/a0/usr/memoria/usuarios/$f" ] || cp -p "/opt/a0/usr/memoria/usuarios/$f" "$A/memoria/usuarios/$f"
 done
-# (o cofre fica visível como no A0: o do convidado é /a0/usr/segredos/<login>.json e só o dele vale nas ferramentas,
-# cofre_hermes.py; ele não tem terminal nem leitura de arquivos para ver o resto)
-for d in .aws mcp delegados navegador navegador_visual .time_travel .tmp workdir chats chats_arquivo \
-         segundo_cerebro celular; do
-  [ -d "/opt/hermes/a0usr/$d" ] && ESC+=(--mount "type=tmpfs,destination=/a0/usr/$d,tmpfs-mode=0755")
+[ -e "$A/conversas_externas/$LOGIN.json" ] || [ ! -f "/opt/a0/usr/conversas_externas/$LOGIN.json" ] \
+  || cp -p "/opt/a0/usr/conversas_externas/$LOGIN.json" "$A/conversas_externas/$LOGIN.json"
+[ -e "$A/conversas_externas/aprendizado" ] || [ ! -f "/opt/a0/usr/conversas_externas/aprendizado/$LOGIN.json" ] \
+  || { mkdir -p "$A/conversas_externas/aprendizado"; cp -p "/opt/a0/usr/conversas_externas/aprendizado/$LOGIN.json" "$A/conversas_externas/aprendizado/"; }
+chown -R 10000:10000 "$A"; chmod 700 "$A"
+mkdir -p "/opt/a0/usr/segredos/convidados/$LOGIN" "/opt/a0/usr/whatsapp/$LOGIN"; chmod 700 /opt/a0/usr/segredos/convidados
+[ -s "$B/chave" ] || { umask 077; openssl rand -hex 32 > "$B/chave"; }
+chown 10000:10000 "$B/chave"; chmod 400 "$B/chave"
+ESC=(-v "$A":/a0/usr
+     -v "/opt/hermes/a0usr/whatsapp/$LOGIN:/a0/usr/whatsapp/$LOGIN"
+     -v "$B/chave:/a0/usr/whatsapp/.chave:ro"
+     -v "/opt/hermes/a0usr/segredos/convidados/$LOGIN:/a0/usr/segredos"
+     -v "/opt/hermes/a0usr/caixa/segredo.txt:/a0/usr/caixa/segredo.txt:ro")
+for p in $PLUGINS_CONVIDADO; do
+  [ -d "/opt/hermes/a0usr/plugins/$p" ] && ESC+=(-v "/opt/hermes/a0usr/plugins/$p:/a0/usr/plugins/$p:ro")
 done
 docker rm -f "hermes-$LOGIN" >/dev/null 2>&1 || true
 docker run -d --name "hermes-$LOGIN" --restart no --network "$REDE" --memory 1500m --memory-swap 1500m \
   --add-host host.docker.internal:host-gateway \
-  -v "$D":/opt/data -v /opt/hermes/a0usr:/a0/usr "${ESC[@]}" -v /opt/hermes/data/cache/hf:/opt/data/cache/hf \
+  -v "$D":/opt/data "${ESC[@]}" -v /opt/hermes/data/cache/hf:/opt/data/cache/hf \
   -e AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/hermes/bedrock \
   -e ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/hermes/bedrock \
   -e AWS_ACCESS_KEY_ID=proxy -e AWS_SECRET_ACCESS_KEY=proxy -e AWS_REGION=us-east-1 -e AWS_EC2_METADATA_DISABLED=true \

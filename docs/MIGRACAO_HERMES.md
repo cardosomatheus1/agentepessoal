@@ -162,6 +162,16 @@ nenhuma rotina tinha chegado na hora, e o relógio rodou sem erro na cópia) e a
   (`revisar_opencode.py`), `implantar.py <plugin>` testa num container descartável da imagem do A0 quando ele está
   parado (o Hermes relê a ferramenta quando o arquivo muda).
 
+**Convidados isolados** (Matheus, 23/10: "precisa ser isolado, de forma alguma acessar nada meu"; "só o meu perfil tem
+acesso a 100% da máquina"): o Hermes de cada convidado NÃO monta os dados do agente. O `/a0/usr` dele é uma pasta só dele
+(`/opt/hermes/convidados/<login>/a0usr`: memória, notas, conversas externas, livro, arquivos; a ficha e as conversas
+externas dele foram copiadas do A0 na primeira subida) e de fora entram só: o código dos plugins das ferramentas dele
+(só leitura; nada da Raiz, prospecção, conteúdo, cérebro, rotinas), a pasta do celular dele, o cofre dele (agora em
+`segredos/convidados/<login>/`, onde a ponte grava o `/senha` dele), uma chave da ponte só dele (que só vale para mandar
+a ele mesmo, nunca ao Matheus, e só arquivos da pasta dele) e a chave da caixa dos convidados. Conferido de dentro de
+cada container: nada do cofre, conversas, memória, Segundo Cérebro, perfis do navegador ou tokens do Matheus aparece.
+Na volta ao A0, o cofre e as conversas externas que o convidado criou no Hermes ficam nessas pastas novas.
+
 **Virar** (feito em 23/10): `python3 infra/operador/virada.py virar --motivo "..."` (na VM: `bash /opt/hermes/virada.sh
 virar`): OpenCode para o host → a imagem nova pronta → A0 parado (`docker stop`, sem reinício automático; os dados e
 as rotinas dele ficam como estão, nada dele roda) e o conector Google/adb do A0 desligados → `subir.sh` no modo virada

@@ -327,6 +327,10 @@ def main() -> int:
            and "descricao-longa" in bruto, f"máscara de todos os cofres, também escapada em JSON ({n}): {bruto}")
         ok(json.loads(mascarado)["messages"][1]["content"].count("§§secret(") == 3, "o corpo segue JSON válido")
         ok(p.mascarar_cofre(None) == (None, 0) and p.mascarar_cofre(b"nada") == (b"nada", 0), "sem segredo, igual")
+        (pasta / "convidados" / "will").mkdir(parents=True)  # 23/10: o cofre do convidado isolado, na pasta dele
+        (pasta / "convidados" / "will" / "will.json").write_text(json.dumps({"SENHA_W": "segredo-do-will"}))
+        ok(p.mascarar_cofre(b"a senha segredo-do-will")[0] == b"a senha \xc2\xa7\xc2\xa7secret(SENHA_W)",
+           "o cofre do convidado (segredos/convidados/<login>) também é mascarado")
         (pasta / "ilia.json").write_text("{quebrado")
         ok(p.mascarar_cofre(b"outra-da-ilia")[1] == 1, "cofre ilegível: fica a última lista boa (nunca 'sem segredo')")
         cabecalhos.clear(); corpos.clear(); pedidos.clear(); roteiro[:] = [RespostaFalsa(200, com_metricas)]

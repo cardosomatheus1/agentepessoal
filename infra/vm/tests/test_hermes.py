@@ -160,10 +160,23 @@ checa('if v.get("ligada_no_a0") and jobs.get_job(k)' in vi, "virar liga só as q
 co = (H / "convidado.sh").read_text()
 checa(subprocess.run(["bash", "-n", str(H / "convidado.sh")]).returncode == 0, "sintaxe do convidado.sh")
 checa('-e AGENTEPESSOAL_CONVIDADO="$LOGIN"' in co and 'REDE=hermes-$LOGIN' in co and 'c.pop("mcp_servers", None)' in co
-      and '--perfil "pessoa_$LOGIN" --proprio' in co and "segredos" in co and "segundo_cerebro" in co
+      and '--perfil "pessoa_$LOGIN" --proprio' in co
       and not re.search(r"-p \S*0\.0\.0\.0", co) and '-p "127.0.0.1:$PORTA:8642"' in co,
       "convidado: Hermes próprio (rede, navegador no perfil dele, sem conectores nem dados do Matheus, só no loopback)")
 checa("bash \"$AQUI/convidado.sh\" \"$login\" \"$IMAGEM\"" in sh, "na virada o subir.sh sobe o Hermes de cada convidado")
+# isolamento (Matheus 23/10: "de forma alguma acessar nada meu"): o convidado não monta os dados do agente
+montagens = re.findall(r'-v "?([^ "]+)"?(?=[ )\n])', co.split("ESC=(", 1)[1].split("docker rm", 1)[0])
+checa("/opt/hermes/a0usr:/a0/usr" not in co and "/opt/a0/usr:/a0/usr" not in co and '-v "$A":/a0/usr' in co,
+      "convidado: o /a0/usr dele é uma pasta só dele, não os dados do agente")
+fontes = [m.split(":")[0] for m in montagens]
+checa(all(f.startswith(("$A", "$B/chave", "/opt/hermes/a0usr/whatsapp/$LOGIN", "/opt/hermes/a0usr/segredos/convidados/$LOGIN",
+                        "/opt/hermes/a0usr/caixa/segredo.txt", "/opt/hermes/a0usr/plugins/$p")) for f in fontes),
+      f"convidado: só a pasta do celular dele, o cofre dele, a chave dele e o código dos plugins: {fontes}")
+plug = re.search(r'PLUGINS_CONVIDADO="([^"]+)"', co).group(1).split()
+checa(not set(plug) & {"prospeccao", "conteudo", "cerebro", "segundo_cerebro", "rotinas", "auxiliar", "fios_soltos",
+                       "iniciativa", "painel", "quadro", "radar", "concorrentes", "especialistas"}
+      and {"login_usuarios", "whatsapp", "cofre", "conversas_externas"} <= set(plug),
+      "convidado: só o código das ferramentas dele (nada da Raiz, prospecção, conteúdo, cérebro, rotinas do Matheus)")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
     checa(termo in alma, f"a persona traz {termo!r}")

@@ -204,6 +204,47 @@ def main() -> int:
         r._responder = lambda code, c: respostas_http.append(code)
         p.Saida.do_POST(r)
         ok(respostas_http[-1] == esperado, f"/conversa responde {esperado}: {respostas_http[-1]}")
+    # 23/10 isolamento dos convidados (Matheus: "de forma alguma acessar nada meu"): cofre do convidado numa pasta só
+    # dele; a chave da ponte dele só serve para ele mesmo; arquivo só da pasta dele, nunca um do Matheus
+    p.HERMES_CONVIDADOS = tmp / "convidados2"
+    (p.HERMES_CONVIDADOS / "ilia").mkdir(parents=True)
+    (p.HERMES_CONVIDADOS / "ilia" / "porta").write_text("8660")
+    (p.HERMES_CONVIDADOS / "ilia" / "chave").write_text("chave-da-ilia")
+    ok(p.pasta_cofre("ilia") == p.COFRE / "convidados" / "ilia" and p.pasta_cofre("matheus") == p.COFRE,
+       "cofre do convidado na pasta só dele (o Hermes dele monta só ela)")
+    p.cfg = lambda: {"tg_chats": {}}
+    p.comando_cofre("ilia", "/senha WIFI senhaDaIlia99")
+    ok(json.loads((p.COFRE / "convidados" / "ilia" / "ilia.json").read_text()).get("WIFI") == "senhaDaIlia99"
+       and "senhaDaIlia99" not in (p.COFRE / "ilia.json").read_text(), "o /senha do convidado vai à pasta dele")
+    ok(p.mascarar_cofres("é senhaDaIlia99") == "é §§secret(WIFI)", "e o valor dele é mascarado também")
+    ok(p.chave_convidado_ok("ilia", "chave-da-ilia") and not p.chave_convidado_ok("ilia", "outra")
+       and not p.chave_convidado_ok("matheus", "chave-da-ilia"), "chave própria do convidado")
+    p.chave = lambda: "chave-principal"
+    for caminho, usuario, esperado in (("/enviar", "matheus", 403), ("/conversa", "matheus", 403),
+                                       ("/configurar", "ilia", 403), ("/gatilho_url", "ilia", 403),
+                                       ("/enviar", "Ilia ", 403)):
+        corpo = json.dumps({"usuario": usuario, "texto": "oi"}).encode()
+        r = Req(corpo, True)
+        r.path, r.headers = caminho, {"X-Chave": "chave-da-ilia", "Content-Length": str(len(corpo))}
+        r._responder = lambda code, c: respostas_http.append(code)
+        p.Saida.do_POST(r)
+        ok(respostas_http[-1] == esperado, f"chave da Ilia em {caminho} para {usuario!r}: {respostas_http[-1]}")
+    raiz = p.HERMES_CONVIDADOS / "ilia" / "a0usr"
+    (raiz / "workdir").mkdir(parents=True)
+    (raiz / "workdir" / "lista.pdf").write_text("x")
+    p.USR_HOST = tmp / "usr"
+    (p.USR_HOST / "whatsapp" / "ilia").mkdir(parents=True)
+    (p.USR_HOST / "whatsapp" / "ilia" / "foto.jpg").write_text("x")
+    (p.USR_HOST / "segredos").mkdir(parents=True)
+    (p.USR_HOST / "segredos" / "matheus.json").write_text("{}")
+    (p.USR_HOST / "prospeccao").mkdir()
+    (p.USR_HOST / "prospeccao" / "matheus.json").write_text("{}")
+    ok(p.arquivo_do_pedido("/a0/usr/workdir/lista.pdf", "ilia") == (raiz / "workdir" / "lista.pdf").resolve()
+       and p.arquivo_do_pedido("/a0/usr/whatsapp/ilia/foto.jpg", "ilia") is not None, "o convidado manda os arquivos dele")
+    for ruim in ("/a0/usr/segredos/matheus.json", "/a0/usr/prospeccao/matheus.json", str(p.USR_HOST / "segredos" / "matheus.json"),
+                 "/a0/usr/whatsapp/ilia/../../segredos/matheus.json", "/a0/usr/../../etc/passwd"):
+        ok(p.arquivo_do_pedido(ruim, "ilia") is None, f"o convidado nunca manda arquivo do Matheus: {ruim}")
+    ok(p.arquivo_do_pedido("/a0/usr/prospeccao/matheus.json", "") is not None, "o agente do Matheus manda os dele")
     for f in falhas:
         print("FALHA", f)
     print("ponte_hermes:", "ok" if not falhas else f"{len(falhas)} falha(s)")
