@@ -1345,9 +1345,24 @@ def pedido_hermes(dados: dict) -> str:
     return "\n\n".join(t for t in [texto, *extras] if t) or "(mensagem vazia)"
 
 
+HERMES_ANDAMENTO_APOS = 45  # um pedido que passa disso ganha a mensagem de andamento (editada no lugar, como no A0)
+HERMES_ANDAMENTO_CADA = 60
+
+
+def andamento_hermes(usuario: str, texto: str, fim: bool = False) -> None:
+    if str(usuario).startswith("teste_"):
+        return
+    try:
+        andamento(usuario, texto, fim)
+    except Exception as exc:  # o andamento nunca atrapalha o pedido
+        log(f"hermes: andamento de {usuario} não saiu: {exc}")
+
+
 def acompanhar_hermes(run_id: str, usuario: str, chat: str, espera: float = HERMES_ESPERA, pausa: float = 2.0) -> str:
-    """Segue o run até o fim: cada pedido de ok vira botões; a resposta final vai à pessoa. Devolve o estado final."""
-    vistos, fim = set(), time.time() + espera
+    """Segue o run até o fim: cada pedido de ok vira botões; passou de 45 s, a mensagem de andamento (o que ele está
+    fazendo, editada no lugar); a resposta final vai à pessoa. Devolve o estado final."""
+    vistos, inicio = set(), time.time()
+    fim, ultimo_andamento = inicio + espera, 0.0
     while time.time() < fim:
         try:
             st = _hermes(f"/v1/runs/{run_id}")
@@ -1368,9 +1383,17 @@ def acompanhar_hermes(run_id: str, usuario: str, chat: str, espera: float = HERM
         if estado in ("completed", "failed", "cancelled", "stopped"):
             texto = str(st.get("output") or "").strip() or (
                 "⚠️ Não consegui terminar o pedido." if estado != "completed" else "")
+            if ultimo_andamento:
+                andamento_hermes(usuario, "✅ Terminei", fim=True)
             if texto and not texto.upper().startswith("SEM NOVIDADE"):
                 responder_hermes(usuario, chat, texto)
             return estado
+        agora = time.time()
+        if estado == "running" and agora - inicio >= HERMES_ANDAMENTO_APOS and agora - ultimo_andamento >= HERMES_ANDAMENTO_CADA:
+            passo = str(st.get("last_event") or "").replace("_", " ")[:80]
+            andamento_hermes(usuario, f"⏳ Trabalhando no seu pedido ({int((agora - inicio) // 60)} min)"
+                                      + (f": {passo}" if passo and passo != "run.started" else ""))
+            ultimo_andamento = agora
         time.sleep(pausa)
     return "tempo esgotado"
 

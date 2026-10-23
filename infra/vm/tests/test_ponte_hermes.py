@@ -100,6 +100,20 @@ def main() -> int:
     linhas = [json.loads(x) for x in p.HERMES_TESTE.read_text().splitlines()]
     ok(linhas[-1]["texto"] == "PONTE HERMES OK" and linhas[-1]["usuario"] == "teste_hermes" and len(enviados) == 3,
        f"login de teste: resposta no arquivo, nada no Telegram ({linhas})")
+    # a long request gets the progress message (edited in place), closed at the end
+    andamentos = []
+    p.andamento = lambda usuario, texto, fim=False: andamentos.append((usuario, texto, fim)) or "ok"
+    p.HERMES_ANDAMENTO_APOS, p.HERMES_ANDAMENTO_CADA = 0, 0
+    respostas["/v1/runs/run_4"] = [{"status": "running", "last_event": "tool.started"},
+                                   {"status": "running", "last_event": "tool.completed"},
+                                   {"status": "completed", "output": "pronto"}]
+    p.acompanhar_hermes("run_4", "matheus", "123", espera=5, pausa=0)
+    ok(len(andamentos) == 3 and andamentos[0][1].startswith("⏳ Trabalhando") and andamentos[-1] == ("matheus", "✅ Terminei", True),
+       f"andamento editado durante o pedido e fechado no fim: {andamentos}")
+    respostas["/v1/runs/run_5"] = [{"status": "running"}, {"status": "completed", "output": "x"}]
+    n = len(andamentos)
+    p.acompanhar_hermes("run_5", "teste_hermes", "0", espera=5, pausa=0)
+    ok(len(andamentos) == n, "login de teste: sem andamento no Telegram")
     respostas["/v1/runs/run_3"] = [{"status": "completed", "output": "SEM NOVIDADE"}]
     n = len(enviados)
     p.acompanhar_hermes("run_3", "matheus", "123", espera=5, pausa=0)
