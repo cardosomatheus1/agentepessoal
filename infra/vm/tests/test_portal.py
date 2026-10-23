@@ -183,8 +183,10 @@ async def resolver_aqui(c):
     chamadas.clear()
     await api("toque", fx=0.5, fy=0.25)
     cliques = [p for a, m, p in chamadas if m == "Input.dispatchMouseEvent"]
-    checa([p["type"] for p in cliques] == ["mousePressed", "mouseReleased"] and cliques[0]["x"] == 500 and cliques[0]["y"] == 200,
-          f"toque vira clique no ponto da página: {cliques}")
+    checa([p["type"] for p in cliques] == ["mouseMoved", "mousePressed", "mouseReleased"]
+          and all(p["x"] == 500 and p["y"] == 200 for p in cliques) and cliques[0]["buttons"] == 0,
+          f"toque = o ponteiro chega ao ponto e então clica, como o xpra do A0 (o Turnstile recusava clique sem movimento): {cliques}")
+    checa(esperas[-2:] == [0.05, 0.08], f"toque com o tempo de um dedo entre chegar, apertar e soltar: {esperas}")
     chamadas.clear()
     await api("segurar", fx=0.1, fy=0.1, ms=60000)
     tipos = [p["type"] for a, m, p in chamadas if m == "Input.dispatchMouseEvent"]

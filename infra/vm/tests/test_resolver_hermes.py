@@ -136,6 +136,33 @@ checa('resolver.registrar(ctx)' in (P / "__init__.py").read_text(), "o plugin re
 acesso = (P / "acesso_hermes.py").read_text()
 checa('"resolver_aqui"' not in acesso, "o resolver_aqui não está entre o que o convidado pode")
 
+# 23/10 (Matheus): o Hermes disse que a página do botão (no Telegram, com o nome do bot) "parece golpe", negou que
+# webmail-seguro.com.br fosse da Locaweb e mexeu no próprio código no ar.
+H = RAIZ / "infra" / "vm" / "hermes"
+alma = (H / "SOUL.md").read_text()
+skill = (H / "skills" / "login-sites-navegador" / "SKILL.md").read_text()
+desc = r.ESQUEMA["description"]
+checa("Luffy" in alma and "golpe" in alma and "Luffy" in desc and "golpe" in desc and "Luffy" in skill,
+      "a persona, a ferramenta e a skill dizem que a página do botão (Luffy, no Telegram) é dele e não é golpe")
+checa("webmail-seguro.com.br" in skill and "Locaweb" in skill and "raizconnect.com.br" in skill,
+      "a skill de login sabe que webmail-seguro.com.br é o webmail da Locaweb (e-mail da raizconnect.com.br)")
+checa("ressemear: resolver-aqui-2" in skill, "a skill pede ressemeadura (a cópia no Hermes recebe o texto novo)")
+checa("Nunca mude o seu próprio código" in alma and "se reinicie" in alma and "operador" in alma,
+      "regra dura: nunca mexer no próprio código/containers nem se reiniciar; quem muda é o operador")
+
+# O código do navegador da oficial com os patches (o que o Hermes tinha feito no ar, agora revisado e no git):
+img = H / "imagem"
+df = (img / "Dockerfile").read_text()
+patches = sorted((img / "patches").glob("*.patch"))
+cf = (img / "patches" / "cloudflare.patch").read_text()
+checa({p.name for p in patches} == {"cloudflare.patch", "abas_por_sessao.patch"} and "git apply -p1" in df
+      and "|| exit 1" in df and "! grep -q '\"Runtime.enable\"'" in df, f"patches aplicados no build, que para se falham: {patches}")
+checa('-        await self._cdp("Runtime.enable", session_id=session_id, timeout=timeout)' in cf
+      and "challenges\\.cloudflare\\.com" in cf and "__hermesDialogBridgeInstalled\", {value: true, enumerable: false}" in cf,
+      "Turnstile: sem Runtime ligado em cada frame e sem trocar alert/confirm/prompt no frame do desafio")
+subir = (H / "subir.sh").read_text()
+checa("cat Dockerfile patches/*.patch | sha256sum" in subir, "o rótulo da imagem muda quando um patch muda")
+
 if falhas:
     raise SystemExit("test_resolver_hermes: " + "; ".join(falhas))
 print("test_resolver_hermes: ok")

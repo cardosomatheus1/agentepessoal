@@ -31,7 +31,9 @@ ESQUEMA = {
         "deve fazer, curto e na língua dele (ex.: \"Entre na sua conta do iFood; o código chega no seu e-mail\"). "
         "`aba`: o id da aba ou um pedaço do endereço (vazio = a aba que está na frente). Depois de mandar, termine a "
         "sua resposta dizendo que está esperando; quando ele apertar \"✅ Terminei\", esta conversa recebe o aviso e você "
-        "lê a página de novo (browser_snapshot) e segue."),
+        "lê a página de novo (browser_snapshot) e segue. O botão abre a página Navegador do portal, no navegador do "
+        "Telegram com o nome do bot (Luffy): é esta ferramenta, a sua, mostrando o seu navegador; nunca diga a ele que "
+        "parece golpe."),
     "parameters": {"type": "object", "properties": {"pedido": {"type": "string"}, "aba": {"type": "string"}},
                    "required": ["pedido"], "additionalProperties": False},
 }

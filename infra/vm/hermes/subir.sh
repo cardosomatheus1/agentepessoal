@@ -18,8 +18,9 @@ if [ "$VIRADA" = 1 ] && [ "$(docker inspect -f '{{.State.Running}}' agent-zero 2
   echo "HERMES_A0_RODANDO: na virada o A0 precisa estar parado (o perfil do navegador e as rotinas são os mesmos)"; exit 1
 fi
 BASE="nousresearch/hermes-agent:v0.22.2"
-# A nossa imagem = a oficial + os pacotes dos helpers (imagem/Dockerfile); o rótulo muda quando o Dockerfile muda.
-IMAGEM="agentepessoal/hermes:$(sha256sum "$AQUI/imagem/Dockerfile" | cut -c1-12)"
+# A nossa imagem = a oficial + os pacotes dos helpers + os patches do navegador (imagem/); o rótulo muda quando o
+# Dockerfile ou um patch muda.
+IMAGEM="agentepessoal/hermes:$(cd "$AQUI/imagem" && cat Dockerfile patches/*.patch | sha256sum | cut -c1-12)"
 DADOS=/opt/hermes/data
 mkdir -p "$DADOS"
 chmod 700 /opt/hermes

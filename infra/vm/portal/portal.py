@@ -460,8 +460,14 @@ async def navegador_api(request: web.Request) -> web.Response:
                                                      ("left" if botoes else "none"), "buttons": botoes, "clickCount": 1})
 
     if acao == "toque":
+        # Como o toque chegava no A0 (xpra, um mouse de verdade no X): o ponteiro vai ao ponto, depois aperta e solta
+        # com o tempo de um dedo. Sem o movimento, o widget do Cloudflare (Turnstile) recebia um clique "do nada"
+        # dentro do quadro dele e dava "Verification failed" (Matheus, 23/10: "com Hermes não passa nenhum").
         x, y = ponto(d.get("fx"), d.get("fy"))
+        await mouse("mouseMoved", x, y)
+        await asyncio.sleep(0.05)
         await mouse("mousePressed", x, y, 1)
+        await asyncio.sleep(0.08)
         await mouse("mouseReleased", x, y)
     elif acao == "segurar":  # "segure o botão" (Cloudflare): o mesmo tempo que a pessoa segurou, até 15 s
         x, y = ponto(d.get("fx"), d.get("fy"))

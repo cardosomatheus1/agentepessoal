@@ -1,6 +1,8 @@
 # Imagem do Hermes com os pacotes que os helpers dos nossos plugins usam e a oficial não traz (migração, fase 2;
 # faster-whisper na fase 6: o áudio do celular, a mesma versão do A0; adb + uiautomator2 na virada: o celular Android,
 # as mesmas versões do A0; patchright e flask: os moldes de vídeo e a suíte do Segundo Cérebro, como no A0).
+# patches/: correções no código do navegador da oficial (cabeçalho de cada um diz o quê e por quê), aplicadas com git
+# apply; se a oficial mudar e um não encaixar, o build para (nada sobe pela metade).
 # O venv da oficial não tem pip: o uv (versão fixa) instala direto nele. Versões fixas; mude com teste.
 FROM ghcr.io/astral-sh/uv:0.5.11 AS uv
 FROM nousresearch/hermes-agent:v0.22.2
@@ -14,3 +16,9 @@ RUN uv pip install --no-cache --python /opt/hermes/.venv/bin/python3 \
  && rm /usr/local/bin/uv \
  && /opt/hermes/.venv/bin/python3 -c "import bs4, dns.resolver, docx, openpyxl, pypdf, xlrd, yaml, numpy, faster_whisper, uiautomator2, patchright, flask" \
  && adb version
+COPY patches /tmp/patches
+RUN cd /opt/hermes/tools && for p in /tmp/patches/*.patch; do git apply -p1 "$p" || exit 1; done \
+ && ! grep -q '"Runtime.enable"' browser_supervisor_frames.py \
+ && grep -q 'challenges' browser_supervisor_dialogs.py && grep -q '_acquire_own_tab' browser_tool_session.py \
+ && cd /opt/hermes && /opt/hermes/.venv/bin/python3 -c "import tools.browser_tool, tools.browser_supervisor, tools.browser_cdp_tool" \
+ && rm -rf /tmp/patches

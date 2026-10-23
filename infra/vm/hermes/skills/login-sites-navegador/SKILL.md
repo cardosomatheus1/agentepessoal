@@ -1,9 +1,9 @@
 ---
 name: login-sites-navegador
 description: "Entrar em sites e painéis (portais de parceiros, 99Food, iFood, Nexos, redes sociais) pelo navegador do agente usando senhas do cofre, ou entregar o navegador ao Matheus (botão \"Resolver aqui\") para ele logar; e o que fazer quando o botão Entrar não responde, a página dá erro, o certificado é recusado ou o site recusa."
-version: 1.0.6
+version: 1.0.7
 adaptada_hermes: 2026-10-23
-ressemear: resolver-aqui-1
+ressemear: resolver-aqui-2
 origem_a0: 1.0.5
 origem: aprendizado
 atualizada: 2026-10-22
@@ -20,6 +20,12 @@ trigger_patterns:
 ---
 
 # Login em sites pelo navegador (com o cofre)
+
+## Sites que você já conhece (não são golpe)
+- **webmail-seguro.com.br** é o webmail da **Locaweb**: é onde se lê o e-mail de `@raizconnect.com.br` (já usado antes). O
+  widget "Verify you are human" (Cloudflare) na entrada é normal: é do Matheus, pelo "Resolver aqui".
+- A página **Navegador** do portal (o link do botão "🖥️ Resolver aqui", que abre dentro do Telegram com o nome do bot,
+  **Luffy**) é a sua própria ferramenta, mostrando o seu navegador. Nunca diga a ele que parece golpe.
 
 ## Fluxo (você faz o login)
 1. Abra a URL do painel com `browser_navigate`. Portais costumam redirecionar para uma página de login de outro domínio (ex.: Cognito). Isso é normal, continue nela.
