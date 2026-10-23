@@ -18,6 +18,7 @@ Uso, da raiz do repositório:
 import time
 import base64
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -155,29 +156,24 @@ print("DESTINO", json.dumps({k: v for k, v in d.items() if k != "historico"}, en
 '''
 
 TELEGRAM = r'''
-import json, sys, time, boto3
+import json, sys, time
 from pathlib import Path
-texto, botao = sys.argv[1], sys.argv[2]
-sqs = boto3.client("sqs", region_name="us-east-1")
-url = sqs.get_queue_url(QueueName="agentepessoal-whatsapp")["QueueUrl"]
-uid = int(time.time() * 1000) % 2_000_000_000
-upd = ({"update_id": uid, "callback_query": {"id": str(uid), "data": botao}} if botao else
-       {"update_id": uid, "message": {"message_id": uid, "text": texto, "chat": {"id": 0}}})
+antes = int(sys.argv[1])
 arq = Path("/var/lib/agentepessoal/hermes_teste.jsonl")
-antes = len(arq.read_text().splitlines()) if arq.exists() else 0
-sqs.send_message(QueueUrl=url, MessageBody=json.dumps({"canal": "telegram", "usuario": "teste_hermes", "chat": "0",
-                                                       "update": upd, "recebida": time.time()}))
 fim = time.time() + 540
 while time.time() < fim:
     linhas = arq.read_text().splitlines() if arq.exists() else []
     if len(linhas) > antes:
-        for l in linhas[antes:]:
+        time.sleep(2)
+        for l in (arq.read_text().splitlines())[antes:]:
             print("RESPOSTA", l[:3000])
         break
     time.sleep(3)
 else:
     print("SEM_RESPOSTA em 9 min")
 '''
+
+CONTAR = "from pathlib import Path\na = Path('/var/lib/agentepessoal/hermes_teste.jsonl')\nprint('LINHAS', len(a.read_text().splitlines()) if a.exists() else 0)\n"
 
 
 def rodar(script: str, *args: str) -> None:
@@ -216,7 +212,19 @@ def main(argv: list) -> int:
         rodar(DESTINO, login, para, motivo)
     elif acao == "telegram":
         botao = argv[argv.index("--botao") + 1] if "--botao" in argv else ""
-        rodar(TELEGRAM, argv[1], botao)
+        antes = subprocess.run([sys.executable, str(AQUI / "vmcmd.py"), "python3 -c \"" + CONTAR.replace("\n", ";").replace('"', "'") + "\""],
+                               capture_output=True, text=True).stdout
+        n = int((re.search(r"LINHAS (\d+)", antes) or [0, 0])[1])
+        # a fila recebe como a função do Telegram (a VM só lê a fila; quem manda é o operador)
+        import boto3
+        sqs = boto3.client("sqs", region_name="us-east-1")
+        url = sqs.get_queue_url(QueueName="agentepessoal-whatsapp")["QueueUrl"]
+        uid = int(time.time() * 1000) % 2_000_000_000
+        upd = ({"update_id": uid, "callback_query": {"id": str(uid), "data": botao}} if botao else
+               {"update_id": uid, "message": {"message_id": uid, "text": argv[1], "chat": {"id": 0}}})
+        sqs.send_message(QueueUrl=url, MessageBody=json.dumps({"canal": "telegram", "usuario": "teste_hermes", "chat": "0",
+                                                               "update": upd, "recebida": time.time()}))
+        rodar(TELEGRAM, str(n))
     else:
         print(__doc__)
         return 2

@@ -166,6 +166,47 @@ checa(ponte.login_mapeado("qualquer") == "" and ponte.login_mapeado("cron_x") ==
 ponte.SESSOES.write_text("[1, 2]")
 checa(ponte.login_mapeado("x") == "" and ponte.login_da_sessao("x") == ponte.DONO_PADRAO, "mapa estragado não quebra")
 checa("helpers.tool" in sys.modules and not hasattr(sys.modules["helpers.tool"], "PrintStyle"), "só os módulos mínimos")
+# 23/10 (fase 5): o navegador do A0 que as ferramentas pedem (prospecção: a lista do Direct) é o do Hermes, por CDP
+import os as _os
+navegador_mod = sys.modules["plugins._browser.helpers.runtime"]
+checa(asyncio.run(navegador_mod.get_runtime("ctx")) is None or _os.environ.get("BROWSER_CDP_URL"), "sem CDP, sem navegador")
+_os.environ["BROWSER_CDP_URL"] = "http://172.22.0.250:9223"
+rt = asyncio.run(navegador_mod.get_runtime("ctx", create=False))
+rt._abas = lambda: [{"id": "A", "url": "https://www.instagram.com/direct/inbox/", "title": "Direct",
+                     "webSocketDebuggerUrl": "ws://172.22.0.250:9223/devtools/page/A"}]
+lista = asyncio.run(rt.call("list"))["browsers"]
+checa(lista == [{"id": "A", "currentUrl": "https://www.instagram.com/direct/inbox/", "title": "Direct"}], f"abas: {lista}")
+enviados_ws = []
+
+
+class _WS:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
+
+    async def send(self, dado):
+        enviados_ws.append(json.loads(dado))
+
+    async def recv(self):
+        return json.dumps({"id": 1, "result": {"result": {"value": "{\"conversas\": 3}"}}})
+
+
+ws_falso = types.ModuleType("websockets")
+ws_falso.connect = lambda url, **kw: _WS()
+sys.modules["websockets"] = ws_falso
+r = asyncio.run(rt.call("evaluate", "A", "(async () => { return 1; })()"))
+checa(r == {"result": '{"conversas": 3}'} and enviados_ws[-1]["params"]["expression"] == "(async () => { return 1; })()"
+      and enviados_ws[-1]["params"]["awaitPromise"], f"script já chamado vai como está: {enviados_ws[-1]}")
+asyncio.run(rt.call("evaluate", "A", "() => { return 2; }"))
+checa(enviados_ws[-1]["params"]["expression"] == "(() => { return 2; })()", "função vira chamada (como o evaluate do Playwright)")
+try:
+    asyncio.run(rt.call("evaluate", "B", "1"))
+    checa(False, "aba fechada dá erro")
+except LookupError:
+    pass
+_os.environ.pop("BROWSER_CDP_URL")
 if falhas:
     raise SystemExit("test_ponte_a0: " + "; ".join(falhas))
 print(f"test_ponte_a0: ok ({len(registradas)} ferramentas)")

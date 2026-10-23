@@ -59,6 +59,57 @@ async def _sem_extensoes(*args, **kwargs):
     return None
 
 
+class NavegadorCDP:
+    """O que as nossas ferramentas pedem ao navegador do A0 (plugins._browser.helpers.runtime: listar as abas e rodar um
+    script NOSSO numa delas, ex.: a lista do Direct, sem passar pelo modelo), no navegador do Hermes, por CDP
+    (BROWSER_CDP_URL, hermes/navegador.sh). Os scripts são os fixos do código das ferramentas, nunca texto do modelo."""
+
+    def __init__(self, base: str):
+        self.base = base.rstrip("/")
+
+    def _abas(self) -> list:
+        import urllib.request
+
+        with urllib.request.urlopen(f"{self.base}/json/list", timeout=10) as r:
+            return [a for a in json.loads(r.read() or b"[]") if a.get("type") == "page"]
+
+    async def call(self, metodo: str, *args):
+        import asyncio
+        import re
+
+        if metodo == "list":
+            abas = await asyncio.to_thread(self._abas)
+            return {"browsers": [{"id": a["id"], "currentUrl": a.get("url", ""), "title": a.get("title", "")} for a in abas]}
+        if metodo == "evaluate":
+            aba_id, js = args[0], str(args[1])
+            alvo = next((a for a in await asyncio.to_thread(self._abas) if a["id"] == aba_id), None)
+            if alvo is None:
+                raise LookupError("aba fechada")
+            if re.match(r"^\s*(async\s*)?(\(\s*\)|function\s*\(\s*\))\s*(=>|\{)", js) and not re.search(r"\)\s*\(\s*\)\s*;?\s*$", js):
+                js = f"({js})()"  # uma função: chamada, como o evaluate do Playwright faz
+            import websockets
+
+            async with websockets.connect(alvo["webSocketDebuggerUrl"], max_size=50_000_000, open_timeout=10) as ws:
+                await ws.send(json.dumps({"id": 1, "method": "Runtime.evaluate", "params": {
+                    "expression": js, "returnByValue": True, "awaitPromise": True}}))
+                while True:
+                    msg = json.loads(await asyncio.wait_for(ws.recv(), 120))
+                    if msg.get("id") == 1:
+                        break
+            res = msg.get("result") or {}
+            if res.get("exceptionDetails"):
+                raise RuntimeError(str(res["exceptionDetails"].get("text") or "erro no script")[:300])
+            return {"result": (res.get("result") or {}).get("value")}
+        raise ValueError(f"navegador: {metodo} não existe aqui")
+
+
+async def _navegador(context_id=None, create: bool = False):
+    import os
+
+    base = os.environ.get("BROWSER_CDP_URL", "")
+    return NavegadorCDP(base) if base else None
+
+
 def instalar_modulos() -> None:
     if "helpers.tool" in sys.modules and getattr(sys.modules["helpers.tool"], "_ponte_a0", False):
         return
@@ -71,6 +122,22 @@ def instalar_modulos() -> None:
     extension.Extension = type("Extension", (), {})
     sys.modules.update({"helpers": pacote, "helpers.tool": tool, "helpers.extension": extension})
     pacote.tool, pacote.extension = tool, extension
+    if "plugins._browser.helpers.runtime" not in sys.modules:  # o navegador do A0 -> o do Hermes, por CDP
+        runtime = types.ModuleType("plugins._browser.helpers.runtime")
+        runtime.get_runtime = _navegador
+        try:  # o pacote `plugins` do PRÓPRIO Hermes (gateway importa plugins.memory etc.): só ganha o _browser
+            import plugins  # noqa: F401
+        except ImportError:
+            sys.modules["plugins"] = types.ModuleType("plugins")
+            sys.modules["plugins"].__path__ = []
+        for nome in ("plugins._browser", "plugins._browser.helpers"):
+            m = sys.modules.get(nome) or types.ModuleType(nome)
+            m.__path__ = getattr(m, "__path__", [])
+            sys.modules[nome] = m
+        sys.modules["plugins._browser.helpers"].runtime = runtime
+        sys.modules["plugins._browser"].helpers = sys.modules["plugins._browser.helpers"]
+        sys.modules["plugins"]._browser = sys.modules["plugins._browser"]
+        sys.modules["plugins._browser.helpers.runtime"] = runtime
 
 
 _TRAVA = threading.Lock()
