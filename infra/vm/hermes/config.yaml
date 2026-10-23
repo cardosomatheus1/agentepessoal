@@ -40,6 +40,15 @@ approvals:
   # olhava navegador e conectores). Aqui é igual (approve), com o piso do próprio Hermes para o catastrófico e a nossa
   # trava de rotina (acesso_hermes.py: nada de apagar/mover dados vivos fora de workdir/tmp, nem cofre, chaves, docker).
   cron_mode: "approve"
+# 23/10, Matheus: "E para de pedir permissão, eu to te dando permissão pra fazer as coisas". O que ele teve de aprovar
+# hoje foram as conferências do próprio Hermes no terminal: rodar script (heredoc, python -c) e execute_code, que o A0
+# rodava sem perguntar (o revisor só olhava comando destrutivo). Esses passam sempre; continuam pedindo o ok o que é de
+# fato arriscado (rm -rf, docker/kill, sudo…, pelas regras do Hermes) e o que o revisor manda perguntar (aprovacoes_hermes).
+command_allowlist:
+  - "shell execution via heredoc"
+  - "script execution via heredoc"
+  - "script execution via -e/-c flag"
+  - "execute_code"
 plugins:
   enabled:
     - agentepessoal           # as nossas ferramentas (infra/vm/hermes/plugins/agentepessoal)

@@ -198,6 +198,17 @@ r = ap.checar(tool_name="browser_click", args={"ref": "@e12"}, session_id=CRON)
 checa(r and r["action"] == "block" and "nunca" in r["message"], f"rotina: nunca segue nunca ({r})")
 proxima.update(categoria="nenhuma", resumo="abrir menu")
 checa(ap.checar(tool_name="browser_click", args={"ref": "@e12"}, session_id=CRON) is None, "rotina: categoria nenhuma passa")
+# o resultado de um JS com um link do Facebook não muda "a página atual" (executar 23/10: comentário no Instagram barrado)
+ap.ver_pagina(tool_name="browser_navigate", args={"url": "https://www.instagram.com/p/abc/"}, result='{"ok": true}', session_id=CRON)
+ap.ver_pagina(tool_name="browser_console", args={"expression": "x"},
+              result=json.dumps({"success": True, "url": "https://www.facebook.com/x", "result": {"links": ["\"url\": \"https://www.facebook.com/y\""]}}),
+              session_id=CRON)
+checa(ap.alvo(CRON, "e1")[1] == "https://www.instagram.com/p/abc/", f"JS não muda a página atual ({ap.alvo(CRON, 'e1')})")
+proxima.update(categoria="mensagem_terceiros", resumo="Publicar comentário no post")
+avisos.clear()
+checa(ap.checar(tool_name="browser_console", args={"expression": "document.querySelector('[type=submit]').click()"},
+                session_id=CRON) is None and avisos and "Instagram" in avisos[0][1],
+      "rotina: comentário pelo JS no post do Instagram segue livre (avisado)")
 r = ap.checar(tool_name="mcp_google_send_gmail_message", args={"to": "a@b.com", "body": "oi"}, session_id="s-m")
 checa(r is None or r.get("action") != "block" or "Rotina" not in r.get("message", ""), "fora da rotina nada muda")
 

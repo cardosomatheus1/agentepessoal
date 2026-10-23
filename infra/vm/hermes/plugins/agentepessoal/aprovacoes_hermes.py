@@ -41,6 +41,7 @@ LEITURA = frozenset({"browser_navigate", "browser_snapshot", "browser_scroll", "
                      "browser_vision"})
 # Hermes primeiro: comando de terminal e código ficam com as aprovações do próprio Hermes (approvals.mode smart)
 DO_HERMES = frozenset({"terminal", "execute_code", "process_manage"})
+SEM_ENDERECO = frozenset({"browser_console", "browser_cdp", "browser_exec", "browser_get_images", "browser_vision"})
 REF = re.compile(r'^\s*-\s*([\w-]+)(?:\s+"((?:[^"\\]|\\.)*)")?[^\n]*?\[ref=@?(e\d+)\]', re.M)
 URL = re.compile(r'"(?:url|currentUrl|final_url)"\s*:\s*"(https?://[^"]+)"')
 
@@ -103,9 +104,12 @@ def ver_pagina(tool_name="", args=None, result=None, **kw):
             dados = None
         if isinstance(dados, dict):
             texto = str(dados.get("snapshot") or "")
-            if isinstance(dados.get("url"), str) and dados["url"].startswith("http"):
+            if tool_name not in SEM_ENDERECO and isinstance(dados.get("url"), str) and dados["url"].startswith("http"):
                 pagina["url"] = dados["url"]
-        achou = URL.findall(result)
+        # 23/10 (prospecção, executar das 11:38): o resultado de um JS/CDP ou da lista de imagens traz endereços de
+        # QUALQUER coisa da página (um link do Facebook no post): ele virava "a página atual", o revisor leu "comentário
+        # no Facebook" e o comentário pré-aprovado no Instagram foi barrado. Só a navegação diz onde o navegador está.
+        achou = [] if tool_name in SEM_ENDERECO else URL.findall(result)
         if achou:
             pagina["url"] = achou[-1]
         refs = {ref: (f'{papel} "{rotulo}"' if rotulo else papel) for papel, rotulo, ref in REF.findall(texto)}

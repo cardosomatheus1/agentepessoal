@@ -28,6 +28,7 @@ python3 - "$AQUI/config.yaml" "$D/config.yaml" <<'PY'
 import sys, yaml
 c = yaml.safe_load(open(sys.argv[1]))
 c.pop("mcp_servers", None)
+c.pop("command_allowlist", None)  # o "não pede ok para rodar script" é só do Matheus
 yaml.safe_dump(c, open(sys.argv[2], "w"), allow_unicode=True, sort_keys=False)
 PY
 python3 - "$LOGIN" "$D/SOUL.md" <<'PY'

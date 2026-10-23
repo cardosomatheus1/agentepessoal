@@ -186,6 +186,9 @@ checa(not set(plug) & {"prospeccao", "conteudo", "cerebro", "segundo_cerebro", "
       "convidado: só o código das ferramentas dele (nada da Raiz, prospecção, conteúdo, cérebro, rotinas do Matheus)")
 checa(cfg["approvals"].get("cron_mode") == "approve" and cfg["approvals"]["mode"] == "smart",
       "rotinas rodam código como no A0 (cron_mode approve; a trava de rotina fica no acesso_hermes); conversa segue smart + botões")
+checa(set(cfg.get("command_allowlist") or []) == {"shell execution via heredoc", "script execution via heredoc",
+                                                 "script execution via -e/-c flag", "execute_code"},
+      "Matheus 23/10 ('para de pedir permissão'): rodar script/código não pede ok (como no A0); o resto destrutivo pede")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
     checa(termo in alma, f"a persona traz {termo!r}")
