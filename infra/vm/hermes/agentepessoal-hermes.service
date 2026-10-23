@@ -9,7 +9,7 @@ Requires=docker.service agentepessoal-firewall.service agentepessoal-hermes-dado
 Type=oneshot
 RemainAfterExit=yes
 ExecStartPre=/bin/sh -c 'iptables -C INPUT -s "$$(docker network inspect hermes -f "{{range .IPAM.Config}}{{.Subnet}}{{end}}")" -j DROP'
-ExecStart=/usr/bin/docker start hermes
-ExecStop=/usr/bin/docker stop hermes
+ExecStart=/usr/bin/docker start hermes-navegador hermes
+ExecStop=/usr/bin/docker stop hermes hermes-navegador
 [Install]
 WantedBy=multi-user.target

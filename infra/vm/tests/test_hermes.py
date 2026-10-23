@@ -63,6 +63,18 @@ checa("AGENTEPESSOAL_RELOGIO=1" not in sh, "até a virada o relógio (post na ho
 checa("-e AGENTEPESSOAL_ENSAIO=1" in sh, "até a virada o Hermes está em ensaio: nada vai ao celular nem à Meta")
 checa("/a0/usr/skills" not in str((cfg.get("skills") or {}).get("external_dirs") or ""),
       "o Hermes não lê as skills vivas do A0 (mandam usar ferramentas de lá; e external_dirs é só leitura para o curador)")
+nav = (H / "navegador.sh").read_text()
+checa(subprocess.run(["bash", "-n", str(H / "navegador.sh")]).returncode == 0, "sintaxe do navegador.sh")
+checa(cfg["browser"]["backend"] == "off", "navegador pelas ferramentas próprias (cada clique passa pelas aprovações)")
+checa("--password-store=basic" in nav and "--use-mock-keychain" in nav and "chromium-1228" in nav,
+      "o navegador do Hermes abre os cookies do perfil do A0 (mesmo binário e mesmas opções)")
+checa("--network hermes" in nav and not re.search(r"\s(-p|--publish)\s+\S*\d", nav), "o CDP só na rede hermes, nunca publicado no host")
+checa("PERFIL_A0=/opt/a0/usr/navegador/sessions/shared" in nav and "rsync -a" in nav and "perfil.novo" in nav,
+      "até a virada o Hermes usa uma CÓPIA do perfil (o A0 segue com o dele)")
+checa('-e BROWSER_CDP_URL="$CDP"' in sh and sh.index("HERMES_SEM_NAVEGADOR") < sh.index("docker run"),
+      "o Hermes liga no navegador dele e não sobe sem ele")
+checa('NAV="${HERMES%.*.*}.0.250"' in fw and "--dport 9222" in fw, "firewall: o Hermes só fala com o CDP do navegador dele")
+checa("docker start hermes-navegador hermes" in ue, "na subida da VM o navegador sobe junto")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
     checa(termo in alma, f"a persona traz {termo!r}")

@@ -45,6 +45,9 @@ docker network inspect hermes >/dev/null 2>&1 || docker network create hermes >/
 /opt/agentepessoal/firewall.sh || { echo "HERMES_SEM_FIREWALL: a rede do Hermes não ficou fechada"; exit 1; }
 iptables -C INPUT -s "$(docker network inspect hermes -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" -j DROP 2>/dev/null \
   || { echo "HERMES_SEM_FIREWALL: firewall.sh no ar não conhece a rede hermes (implante --host antes)"; exit 1; }
+# O navegador logado do Hermes (fase 4): Chromium próprio com uma cópia do perfil do A0, CDP só na rede hermes.
+CDP=$(bash "$AQUI/navegador.sh" "$IMAGEM" | sed -n 's/^NAVEGADOR_CDP=//p')
+[ -n "$CDP" ] || { echo "HERMES_SEM_NAVEGADOR: o navegador do Hermes não subiu"; exit 1; }
 # No ensaio, o que dá poder de agir fora das ferramentas aparece vazio no container: chave da ponte do celular, cofre,
 # chaves e login do A0, credenciais AWS, perfis logados do navegador, tokens dos conectores, celular e caixas.
 ESCONDIDOS=()
@@ -71,6 +74,7 @@ docker run -d --name hermes --restart no --network hermes \
   -e API_SERVER_ENABLED=true -e API_SERVER_HOST=0.0.0.0 -e API_SERVER_KEY="$(cat /opt/hermes/api_key)" \
   -e HERMES_TIMEZONE=America/Bahia \
   -e AGENTEPESSOAL_ENSAIO=1 \
+  -e BROWSER_CDP_URL="$CDP" \
   -p 127.0.0.1:8642:8642 \
   "$IMAGEM" gateway run >/dev/null
 # Na subida da VM quem liga o Hermes é esta unidade, depois do firewall e da vista (não o reinício do próprio Docker).

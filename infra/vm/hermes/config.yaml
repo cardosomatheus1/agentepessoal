@@ -15,6 +15,11 @@ timezone: "America/Bahia"
 # do próprio Hermes, semeadas uma vez (o curador cuida delas depois).
 compression:
   enabled: true
+# Navegador: as ferramentas próprias do Hermes (browser_navigate/snapshot/click…), não o Browser Use (browser_exec): a
+# aprovação antes de clicar e o ensaio só leitura precisam ver cada ação (revisor do A0). Ele liga no nosso Chromium
+# logado por BROWSER_CDP_URL (navegador.sh).
+browser:
+  backend: "off"
 approvals:
   mode: "smart"
   timeout: 21600   # 6 h para o ok dele chegar pelo celular (como o espera_minutos 360 do A0)
