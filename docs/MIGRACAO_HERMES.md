@@ -107,7 +107,7 @@ portar (era conserto do A0; conferir que o Hermes não tem o defeito) · **D** =
 | Fase | O que | Pronto quando |
 |---|---|---|
 | 0 | Inventário e plano (este documento) | ✅ 23/10 |
-| 1 | Hermes base ao lado do A0: container próprio, dados montados, modelo pelo proxy, sem canais | responde pelo API server com o Segundo Cérebro no contexto |
+| 1 | Hermes base ao lado do A0: container próprio, dados montados, modelo pelo proxy, sem canais | responde pelo API server com o Segundo Cérebro no contexto ✅ 23/10 (`implantar.py --hermes`; v0.22.2; respondeu a oferta e a garantia citando `Raiz/oferta.md` e a decisão 22). Falta: o proxy registrar o uso das chamadas do Hermes (caminho `invoke` do Bedrock não entra no `uso.jsonl`) |
 | 2 | Plugin `agentepessoal` para o Hermes: cofre, aprovações, ferramentas dos helpers, regras no prompt, relógio | suítes dos plugins passando no Hermes; cada ferramenta chamada uma vez |
 | 3 | Skills e MCP (Google, GitHub) | as 27 skills listadas e usadas; Gmail lido |
 | 4 | Navegador com os perfis logados (Instagram, Meta…) | Hermes abre o Instagram logado e lê um Direct sem enviar |
