@@ -45,6 +45,8 @@ def enviar(login, texto, arquivo="", legenda=""):
 
 
 t.enviar = enviar
+checa(t.passo_do_relogio(raiz=tmp, conversa_fn=lambda *a: 1 / 0) == [], "logo depois de carregar (Hermes subindo): o vigia espera")
+t._CARREGADO = 0
 AGORA = 1_800_000_000.0
 
 # ---- criar: pasta da pessoa, pedido como veio, passos em ordem (cada um depende do anterior, salvo [] = independente)

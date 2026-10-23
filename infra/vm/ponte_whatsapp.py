@@ -2084,12 +2084,22 @@ class Saida(http.server.BaseHTTPRequestHandler):
         pass
 
     @staticmethod
-    def _conversa(usuario: str, texto: str, chat: str, sessao: str = "") -> None:
-        try:
-            ativo()
-            entregar_hermes({"usuario": usuario, "texto": texto, **({"sessao": sessao} if sessao else {})}, chat)
-        except Exception as exc:
-            log(f"hermes: /conversa de {usuario} não entregue: {exc}")
+    def _conversa(usuario: str, texto: str, chat: str, sessao: str = "", tentativas: int = 12, pausa: float = 5.0) -> None:
+        # 23/10: o Hermes subindo (reinício, VM religada) recusa a conexão por alguns segundos; o pedido (ex.: a
+        # retomada de uma tarefa longa) espera e vai, em vez de se perder
+        for tentativa in range(tentativas):
+            try:
+                ativo()
+                entregar_hermes({"usuario": usuario, "texto": texto, **({"sessao": sessao} if sessao else {})}, chat)
+                return
+            except AgenteFora as exc:
+                erro = exc
+                if tentativa < tentativas - 1:
+                    time.sleep(pausa)
+            except Exception as exc:
+                erro = exc
+                break
+        log(f"hermes: /conversa de {usuario} não entregue: {erro}")
 
     def _responder(self, code: int, corpo: dict) -> None:
         dados = json.dumps(corpo, ensure_ascii=False).encode()

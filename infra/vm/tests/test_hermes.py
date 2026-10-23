@@ -116,6 +116,10 @@ checa('MCP="${SUB%.*.*}.0.251"' in fw and "--dport 8765" in fw and "--dport 8766
 checa(re.search(r'if \[ "\$VIRADA" = 1 \]; then  # as permissões do A0[^\n]*\n  export HERMES_GOOGLE_PERMISSOES="gmail:readonly '
                 r'calendar:readonly drive:full docs:full sheets:full"', sh), "Google com as permissões do A0 só na virada")
 checa(sh.index("HERMES_SEM_MCP") < sh.index("docker run"), "o Hermes não sobe sem os conectores")
+checa(sh.index("systemctl stop agentepessoal-hermes.service") < sh.index("systemctl restart agentepessoal-hermes-dados.service")
+      and sh.index("systemctl start agentepessoal-hermes.service") < sh.index('echo "HERMES_OK'),
+      "a unidade do Hermes fica parada enquanto o subir.sh remonta a vista e recria os containers (23/10: o restart da "
+      "vista a reiniciava junto e ela falhava com 'hermes não ligou'); volta no fim")
 df_mcp = (H / "mcp" / "Dockerfile").read_text()
 checa("FROM python:3.12.8-slim" in df_mcp and "workspace-mcp==2.0.1" in df_mcp and "-c /tmp/versoes.txt" in df_mcp,
       "conector do Google com a versão e as dependências do A0")

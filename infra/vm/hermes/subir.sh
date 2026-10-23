@@ -73,6 +73,10 @@ fi
 grep -q "^FROM $BASE\$" "$AQUI/imagem/Dockerfile" || { echo "HERMES_IMAGEM: o Dockerfile não parte de $BASE"; exit 1; }
 docker image inspect "$IMAGEM" >/dev/null 2>&1 || docker build -q -t "$IMAGEM" "$AQUI/imagem" >/dev/null
 [ "${HERMES_SO_IMAGEM:-0}" = 1 ] && { echo "HERMES_IMAGEM_OK $IMAGEM"; exit 0; }  # virada.sh: a imagem antes de parar o A0
+# 23/10: a unidade agentepessoal-hermes.service tem Requires= na vista dos dados; o restart da vista (abaixo) a
+# reiniciava junto: o ExecStop parava navegador/conectores/portal e o ExecStart tentava `docker start` dos containers
+# que este script acabou de remover ("hermes não ligou", unidade em falha). Parada aqui; volta no fim, já com tudo de pé.
+systemctl stop agentepessoal-hermes.service 2>/dev/null || true
 docker rm -f hermes >/dev/null 2>&1 || true  # antes de remontar a vista: nada a segurando
 for c in $(docker ps -a --format '{{.Names}}' | grep -E '^hermes-' | grep -vE '^hermes-(navegador|mcp|sombra)' || true); do
   docker rm -f "$c" >/dev/null 2>&1 || true  # os Hermes dos convidados também usam a vista (sobem de novo abaixo)
@@ -203,6 +207,7 @@ if echo "$RESPOSTA" | grep -qi "PONTE OK"; then
     rsync -a --delete "$AQUI/" /opt/hermes/fonte/hermes/
     [ -d "$AQUI/../portal" ] && rsync -a --delete "$AQUI/../portal/" /opt/hermes/fonte/portal/
   fi
+  systemctl start agentepessoal-hermes.service || { echo "HERMES_UNIDADE: agentepessoal-hermes.service não ficou ativa"; exit 1; }
   echo "HERMES_OK $(docker inspect -f '{{.Image}}' hermes) modo=$([ "$VIRADA" = 1 ] && echo virada || echo ensaio)"; exit 0
 fi
 echo "HERMES_NAO_RESPONDEU: ${RESPOSTA:0:400}"; docker logs --tail 40 hermes; exit 1

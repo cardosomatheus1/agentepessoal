@@ -278,6 +278,20 @@ def main() -> int:
     ok((pasta_t / "pausada").exists() and "Teste E2E" in enviados[-1][1] and "pausada" in enviados[-1][1],
        f"/parar pausa a tarefa longa e diz como retomar ({enviados[-1]})")
     ok(p.tarefas_abertas("matheus") == [], "pausada não conta como aberta para a ponte")
+    # /conversa com o Hermes subindo: espera e entrega (não perde a retomada)
+    tentativas = []
+
+    def subindo(dados, chat):
+        tentativas.append(dados)
+        if len(tentativas) < 3:
+            raise p.AgenteFora("o Hermes não respondeu: Connection reset by peer")
+        return "run_c"
+
+    entregar_antes, ativo_antes = p.entregar_hermes, p.ativo
+    p.entregar_hermes, p.ativo = subindo, lambda: None
+    p.Saida._conversa("matheus", "[retome a tarefa]", "123", "tg-matheus", pausa=0)
+    p.entregar_hermes, p.ativo = entregar_antes, ativo_antes
+    ok(len(tentativas) == 3 and tentativas[-1]["sessao"] == "tg-matheus", f"/conversa espera o Hermes subir ({len(tentativas)})")
     p.entregar_hermes({"usuario": "matheus", "texto": "/nova", "botao": ""}, "123")
     nova = p.sessao_hermes("matheus")
     ok(nova.startswith("tg-matheus-") and json.loads(p.HERMES_SESSOES.read_text()).get(nova) == "matheus",

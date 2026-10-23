@@ -57,6 +57,9 @@ BACKOFF = (120, 300, 900, 1800, 3600, 7200)  # s entre retomadas sem progresso (
 MAX_RETOMADAS = len(BACKOFF)
 SEM_SINAL = 20 * 60         # turno sem batimento (fora de ferramenta) há mais que isso = parado
 FERRAMENTA_MAX = 7 * 3600   # uma ferramenta (ou o ok pelo celular dentro dela) pode demorar até isso
+ESPERA_SUBIDA = 90         # s depois que o plugin carregou: o API server do Hermes ainda está subindo (23/10, ao vivo:
+                           # a 1ª retomada depois da queda da VM saiu antes dele ouvir e se perdeu)
+_CARREGADO = time.time()
 ENTREGA_MAX = 6             # tentativas do vigia de entregar o resultado quando a ponte falhou
 RESULTADO_PASSO_MAX = 60000
 STATUS_RESULTADO_MAX = 9000
@@ -650,7 +653,7 @@ def passo_do_relogio(raiz: Path | None = None, vivas: Path | None = None, agora:
     agora = agora or time.time()
     raiz = raiz or RAIZ
     feito = []
-    if not raiz.is_dir():
+    if not raiz.is_dir() or time.time() - _CARREGADO < ESPERA_SUBIDA:
         return feito
     for arq in sorted(raiz.glob("*/*/plano.json")):
         p = arq.parent
