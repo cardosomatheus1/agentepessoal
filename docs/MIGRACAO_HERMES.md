@@ -48,63 +48,69 @@ Base da decisão: teste lado a lado de 23/10 (`infra/operador/lado_a_lado/`), me
 Legenda: **H** = o Hermes já faz (só configurar) · **P** = portar (helper reaproveitado, camada nova) · **N** = não
 portar (era conserto do A0; conferir que o Hermes não tem o defeito) · **D** = decisão do Matheus.
 
+Estado em 23/10, fim da fase 7 (✅ feito e conferido ao vivo no ensaio · ⏳ falta, antes da virada · ➖ não porta).
+
 ### Plugins (49)
-- [ ] prospeccao (P) — o maior ativo; ferramenta + navegador logado + CRM + rodadas
-- [ ] conteudo (P) — publicação na hora certa (relógio), semana, stories, crítico/designer
-- [ ] especialistas (P) · [ ] concorrentes (P) · [ ] painel (P + página) · [ ] quadro (P + página)
-- [ ] cerebro (P) · [ ] segundo_cerebro gateway (P: portão próprio) · [ ] memoria_pessoal (P/H)
-- [ ] fios_soltos (P) · [ ] iniciativa (P) · [ ] auxiliar (P) · [ ] radar (P) · [ ] canais (P/H)
-- [ ] aprovacoes (P) · [ ] cofre (P) · [ ] login_usuarios (P/D) · [ ] whatsapp (P: destino da ponte, avisos, IMAP, gatilhos)
-- [ ] conectores (H) · [ ] central/livro (P) · [ ] rotinas: salvar_rotina, me_mostre, portão, autoavaliação (P/H)
-- [ ] agenda_confiavel (P: validade das tarefas) · [ ] aprendizado (H: revisão de skills do Hermes)
-- [ ] pesquisa (P: precisa do SearXNG fora do container do A0) · [ ] video (P) · [ ] analisar_imagens (P/H)
-- [ ] ler_arquivo (H) · [ ] consultar_sol (P) · [ ] objetivo_vivo (P) · [ ] celular_rapido (P/D) · [ ] celular_tela (D)
-- [ ] conversas_externas (P/D) · [ ] arquivo_grande (P: entrada por S3) · [ ] agent_delegates (D: OpenClaw fica?)
-- [ ] limpeza (N/P: abas e /tmp) · [ ] navegador_por_pessoa (P) · [ ] navegador_visual (D)
-- [ ] acoes_paralelas, cache_prompt, controle_agente, estilo_claude, interface_celular, navegador_rapido,
-      prompt_enxuto, resultados_grandes, resumo_seguro (N) — **mas** as regras de `_12_regras_base` e
-      `_60_conversa_whatsapp` vão para o prompt do Hermes
-- [ ] nexos_ads_campaign3_fixed (D: descartar)
+- ✅ prospeccao — ferramenta pela ponte; navegador logado por CDP (a lista do Direct pelo script, sem passar pelo
+  modelo); rodadas buscar/executar/resumo no cron do Hermes. ⏳ CRM na planilha (`_46_crm_raiz` usa o MCP do A0)
+- ✅ conteudo (publicação na hora pelo relógio; no ensaio nada se publica) · ✅ especialistas · ✅ concorrentes
+- ✅ painel e quadro (portal) · ✅ cerebro (ferramenta + relógio: nota do dia, versão, cópia) · ✅ segundo_cerebro
+  (portal, mesmo portão) · ✅ memoria_pessoal (ficha e decisões no 1º turno; `decisao`, `ficha`, `lembrar`)
+- ✅ fios_soltos · ✅ iniciativa · ✅ auxiliar (contas, rascunho; `reuniao` por cima do cron do Hermes) · ✅ radar
+- ✅ aprovacoes (revisor e regras do A0; botões pela ponte) · ✅ cofre (máscara no proxy + ponte; ferramentas que agem)
+  · ✅ login_usuarios (convidados só com uso pessoal; o portal usa os mesmos logins) · ✅ whatsapp (chave na ponte,
+  ensaio, reenvio pelo relógio). ⏳ e-mail para o agente (`_57`, IMAP → pedido numa sessão do Hermes), gatilhos
+  (`/gatilho` da função de controle → Hermes), andamento editado no Telegram (a ponte hoje manda só a resposta final)
+- ✅ conectores (H: MCP Google/GitHub do Hermes, container `hermes-mcp`) · ✅ central/livro (+ conferência no relógio)
+- ✅ rotinas: portão (script do cron, `wakeAgent`), autoavaliação e correções aprovadas · H: `salvar_rotina` = cronjob_manage
+  · ⏳ `me_mostre` (gravar a tela para virar rotina) · ⏳ `canal`, `painel_vivo` (os painéis existentes aparecem no portal)
+- ➖ agenda_confiavel (o cron do Hermes tem catch-up e trava própria) · H aprendizado (curador do Hermes)
+- H pesquisa (`web_search`/`web_extract` do Hermes; o SearXNG do A0 não faz falta) · ✅ video · ✅ analisar_imagens
+- H ler_arquivo (`read_file`) + ✅ `ler` (PDF/Word/planilha) · ✅ consultar_sol · ⏳ objetivo_vivo (`passos` saiu: H
+  `todo_list`) · ⏳ celular_rapido/celular_tela (D2: o Android continua; a ferramenta precisa de adb/uiautomator2 na
+  imagem e da rede até o `android`) · ⏳ conversas_externas (D3: continua; abre conversa no A0 hoje)
+- ⏳ arquivo_grande (entrada por S3 → pasta do Hermes) · ⏳ agent_delegates (D5: `delegar` ao OpenClaw pela caixa)
+- ➖ limpeza (o Hermes fecha o próprio navegador) · ⏳ navegador_por_pessoa (convidados sem navegador por ora) · D navegador_visual
+- ➖ acoes_paralelas, cache_prompt, controle_agente, estilo_claude, interface_celular, navegador_rapido, prompt_enxuto,
+  resultados_grandes, resumo_seguro — as regras de sempre estão no `SOUL.md`; as do celular e da rotina, nos blocos
+  dos ganchos (`rotinas_hermes.py`)
+- D nexos_ads_campaign3_fixed (descartar)
 
-### Rotinas
-- [ ] 💡 Iniciativa · [ ] 🗓️ Semana de posts · [ ] 🔎 Radar e fios soltos · [ ] ✍️ Meu estilo de escrita
-- [ ] 📣 Raiz fechamento do dia · [ ] PayGo chamado · [ ] 🗓️ Raiz revisão do mês · [ ] 📈 Raiz números da semana
-- [ ] 🗓️ Revisão da semana · [ ] Radar semanal de IA · [ ] 📰 Resumo do dia · [ ] 🫂 Te conhecer
-- [ ] 🔭 Concorrentes semana · [ ] desligadas: 🧵 Fios soltos, Nexos fase 2, iFood chamado (migram desligadas)
-- [ ] 🎯 prospecção: buscar, executar, resumo do dia · [ ] briefing/pós-reunião · [ ] painéis vivos · [ ] portão e correções por rotina
+### Rotinas (23 no A0: 17 ligadas, 6 desligadas)
+- ✅ todas no cron do Hermes (`infra/vm/hermes/rotinas/`, mesmo horário e pedido, só as ferramentas trocadas; o teste
+  confere os itens essenciais de cada uma), criadas pausadas; ✅ as 17 ligadas rodadas uma vez à mão (`rotina_rodar.py`,
+  sem ligar) com saída só para o operador; ✅ desligadas migram desligadas
+- ✅ briefing/pós-reunião (`reuniao` agenda únicos no cron do Hermes) · ✅ portão e correções por rotina · ⏳ painéis vivos novos
 
-### Skills (27 em `/a0/usr/skills`)
-- [ ] as 5 do git (celular, manutencao-maquina, pedidos-knauf-claude, piloto-rapido, prospeccao-instagram)
-- [ ] as 22 da VM (análise de métricas, calculadora, conta em redes, consultas rápidas, e-mail Outlook, formulários
-      de portais, Direct no navegador, landing, login em sites, logs iFood, bom dia/radar, leitura e rolagem,
-      orquestrar, pesquisa de concorrentes, leads locais, posts/carrossel, pedidos avulsos, rascunho de mensagens,
-      relatório de concorrentes, respostas do Segundo Cérebro, status de homologação, teste do produto)
+### Skills (27)
+- ✅ as 27 adaptadas às ferramentas do Hermes e semeadas uma vez (o curador cuida); listadas e lidas pelo Hermes.
+  ⏳ `celular` e `piloto-rapido` dependem da ferramenta do celular
 
 ### Serviços do servidor
-- [ ] proxy de modelo (fica) · [ ] ponte (muda o destino) · [ ] credenciais Meta/voz (fica) · [ ] caixas de convidados e delegados
-- [ ] túnel e URL do agente (`report_url.py`: túnel próprio para o Hermes e as páginas)
-- [ ] `proximo_despertar.py` · [ ] `saude.py` · [ ] `watchdog.sh` · [ ] `memguard.sh` · [ ] `backup.sh` (+ dados do Hermes)
-- [ ] `entrada.sh` · [ ] `firewall.sh` (portas novas) · [ ] `setup.sh` / `deploy.py` (instalação do Hermes)
-- [ ] Android virtual e ws-scrcpy (D) · [ ] SearXNG fora do container do A0 · [ ] OpenCode e Claude Code CLI fora do container
+- ✅ proxy (máscara do cofre e uso do Hermes) · ✅ ponte (chave A0/Hermes) · ✅ credenciais Meta/voz (ficam)
+- ⏳ caixas de convidados e delegados (ficam; `terminal_isolado` pela ponte ✅, `delegar` ⏳)
+- ⏳ túnel e URL do agente (`report_url.py` → portal :8650 na virada) · ✅ `proximo_despertar.py` (lê o cron do Hermes)
+- ⏳ `saude.py`, `watchdog.sh` (o Hermes conta como atividade pelo proxy ✅), `memguard.sh` (incluir os containers do
+  Hermes), `backup.sh` (+ `/opt/hermes`) · ✅ `firewall.sh` (rede hermes, navegador, conectores)
+- ⏳ `setup.sh` / `deploy.py` (instalar o Hermes numa VM nova) · D Android e ws-scrcpy · ➖ SearXNG
+- ⏳ OpenCode 2 + Ponytail fora do container do A0
 
-### Dados e logins (não podem se perder)
-- [ ] `/opt/a0/usr` inteiro montado no Hermes · [ ] `scheduler/tasks.json` convertido · [ ] `agenda/limites.json`
-- [ ] perfis do navegador (Instagram, Google, Meta, claude.ai, Hotmail, iFood, 99Food, WhatsApp Web)
-- [ ] OAuth do workspace-mcp · [ ] cofre e `.descricoes` · [ ] conversas antigas (exportar para busca)
-- [ ] `/var/lib/agentepessoal/*` · [ ] configs vivas (MCP GitHub, presets, regras "Sempre permitir")
+### Dados e logins
+- ✅ `/opt/a0/usr` montado no Hermes (só leitura até a virada) · ✅ tarefas agendadas convertidas · ➖ `agenda/limites.json`
+- ✅ perfis do navegador (cópia do `shared`; na virada, o próprio) · ✅ OAuth do workspace-mcp (cópia no `hermes-mcp`)
+- ✅ cofre e `.descricoes` (mesmos arquivos) · ⏳ conversas antigas (no ensaio escondidas: têm tokens colados; na
+  virada `lembrar` lê as do A0) · ✅ `/var/lib/agentepessoal/*` (ficam) · ✅ MCP GitHub · ⏳ "Sempre permitir" do A0
+  (vazio hoje; o do Hermes fica em `/opt/hermes/data/agentepessoal/aprovacoes_sempre.txt`)
 
 ### Operador e CI
-- [ ] `implantar.py` com destino Hermes · [ ] `rotinas.py` para os agendamentos do Hermes · [ ] `mandar_msg.py`/`ver_chat`
-- [ ] `falhas_do_dia.py` (conserto noturno) · [ ] `revisar_opencode.py` · [ ] hooks do Cérebro (`.claude/hooks`)
-- [ ] **OpenCode 2 + Ponytail** (revisor obrigatório antes de implantar, decisão #35; usado no conserto noturno): hoje
-      vive na camada do container do A0 (`/root/.config/opencode`, Claude Code CLI apontado para `/bedrock`) e some
-      com ele. Ganha casa própria (container ou host, versão fixa, mesma config e modelos Claude 5.5 pelo proxy) e o
-      `revisar_opencode.py` passa a apontar para lá **antes** de qualquer desligamento do A0.
-- [ ] CI (`.github/workflows/testes.yml`) · [ ] `CLAUDE.md` e `docs/HANDOFF_CONTA_NOVA.md`
+- ✅ `implantar.py --hermes` (Hermes + portal) · ✅ `hermes_ao_vivo.py` (travas, cofre, ferramentas, run, destino,
+  telegram) · ✅ rotinas: `rotinas_aplicar.py`/`rotina_rodar.py` · ⏳ `mandar_msg.py`/`ver_chat` para o Hermes
+- ⏳ `falhas_do_dia.py` · ✅ `revisar_opencode.py` (usado em cada passo) · ✅ hooks do Cérebro · ✅ CI verde (615/615
+  e os testes do host) · ⏳ `CLAUDE.md` e `HANDOFF` (fase 9)
 
 ### Fora da AWS / feitos à mão
-- [ ] Apps Script `vigia_google.gs` (aponta para o gatilho) · [ ] conserto noturno (sessão do Claude Code)
-- [ ] snapshot DLM e alarme de VM travada (continuam) · [ ] app Android e página de controle (continuam)
+- ⏳ `vigia_google.gs` (o gatilho chega à ponte: muda com ela) · ⏳ conserto noturno (lê os logs do Hermes)
+- ✅ snapshot DLM e alarme da VM (continuam) · ✅ app Android e página de controle (continuam)
 
 ## Fases
 
@@ -115,11 +121,40 @@ portar (era conserto do A0; conferir que o Hermes não tem o defeito) · **D** =
 | 2 | Plugin `agentepessoal` para o Hermes: cofre, aprovações, ferramentas dos helpers, regras no prompt, relógio | ✅ 23/10. Ponte com 22 ferramentas, vista bindfs só leitura, imagem própria, cofre (`cofre_hermes.py`). Depois: **máscara no proxy** (`/hermes/bedrock`: todo valor de qualquer cofre vira `§§secret(NOME)` em TODA chamada do Hermes, inclusive resumo da compressão e título, que não passam pelo middleware; ao vivo: um valor de teste colado na conversa → 2 chamadas, 2 mascaradas, resposta só com o nome); **uso** do `invoke` (fluxo event-stream) no `uso.jsonl` com `origem: hermes`, `api: invoke`, dono/conversa/rotina pelos cabeçalhos X-A0-* (`uso_hermes.py`); **convidados** só com uso pessoal (`acesso_hermes.py`: sem terminal, execute_code, arquivos, memória, busca nas conversas, skills, cron, navegador; só os arquivos dele); **aprovações** (`aprovacoes_hermes.py`: mesmo revisor e regras do A0 nos cliques/teclas/JS do navegador e nos conectores que escrevem; nunca = bloqueio, perguntar = portão do Hermes; liberações do Instagram/Meta/99/prospecção, "Nesta tarefa" = `session`, "Sempre" = `always` + lista do revisor; trava de vazamento; terminal fica com o smart do Hermes; ao vivo pelo `/v1/runs`: `approval.request` com `request_id` e escolhas, `deny` resolvido e o agente parou); **relógio** (`relogio_hermes.py`: 7 tarefas do `job_loop`, mesmos arquivos, só com `AGENTEPESSOAL_RELOGIO=1`, um por container); teste instável (614/615) resolvido; CI verde. Fica para a fase 6: a ponte mascarar a senha colada **antes** de mandar ao Hermes (hoje ela não chega ao modelo, mas fica no histórico salvo dele, em `/opt/hermes/data`, root 700) e a memória separada dos convidados (a do Hermes é uma só) |
 | 3 | Skills e MCP (Google, GitHub) | ✅ 23/10. As 27 skills adaptadas às ferramentas do Hermes (`infra/vm/hermes/skills`: mesmo conteúdo de negócio, só o "como"; teste recusa nome de ferramenta do A0) e semeadas uma vez em `skills/agentepessoal` (depois são do curador); Hermes listou as 27 e leu a da prospecção. Conectores no container `hermes-mcp` (tokens só lá; o Hermes só tem o endereço): Google com o workspace-mcp do A0 (no ensaio tudo só leitura) e repasse do GitHub; ao vivo leu os 3 últimos e-mails (só remetente/assunto) e listou repositórios. `vision_analyze` do Hermes funciona pelo Bedrock |
 | 4 | Navegador com os perfis logados (Instagram, Meta…) | ✅ 23/10. `hermes-navegador`: o Chromium 1228 do A0 com uma **cópia** do perfil `shared` (o A0 segue com o dele), CDP só na rede hermes (repasse 9223, firewall só para ele); o Hermes usa as ferramentas `browser_*` dele (não o Browser Use: cada clique passa pelas aprovações). Ao vivo: logado como @raiz.connect, leu a caixa do Direct e abriu a conversa com Mais Congelados (o único clique liberado no ensaio é abrir conversa/aba do Direct, pelo rótulo lido), nada digitado nem enviado |
-| 5 | Rotinas como agendamentos do Hermes (desligados) + acordar a VM | cada rotina rodada uma vez à mão, resultado só para o operador |
-| 6 | Ponte com chave A0/Hermes; páginas (Segundo Cérebro, Painel, Tarefas, Cofre) com login próprio | operador conversa com o Hermes pelo Telegram de teste |
-| 7 | Ensaio geral: um dia inteiro do Hermes "em sombra" (mesmas rotinas, saída só para o operador) | lista de conferência toda ✅ |
+| 5 | Rotinas como agendamentos do Hermes (desligados) + acordar a VM | ✅ 23/10. As 23 tarefas do A0 no cron do Hermes, pausadas (`rotinas_aplicar.py` a cada implantação: nova nasce pausada, atualizar não liga), Sonnet; bloco de tarefa agendada, correções aprovadas, portão (script do cron com `wakeAgent`), autoavaliação e resultado ao celular com as regras do A0 (`rotinas_hermes.py`); `reuniao` por cima do cron; ficha e decisões no 1º turno (`contexto_hermes.py`). As 17 ligadas rodaram uma vez à mão (`rotina_rodar.py`, sem ligar): todas terminaram, 0 erro; o que gravaria deu "ensaio: só leitura" (esperado) e o que iria ao celular ficou em `ensaio_celular.jsonl`. O despertar da VM lê o cron do Hermes (só os ativos) |
+| 6 | Ponte com chave A0/Hermes; páginas (Segundo Cérebro, Painel, Tarefas, Cofre) com login próprio | ✅ 23/10. Ponte: `/var/lib/agentepessoal/destino.json` (por login; padrão A0; só `teste_hermes` no Hermes), pedido pelo `/v1/runs` na sessão `tg-<login>`, senha colada vira `§§secret` antes de sair da ponte, pedido de ok vira 3 botões que respondem o run, `teste_*` sem celular. Ao vivo pela fila do Telegram (como a função de controle): o Hermes respondeu a decisão da garantia; um `rm -rf` pediu ok → botões → "Recusar" pelo botão → não rodou. Portal (`infra/vm/portal`, 127.0.0.1:8650, mesmos logins): Segundo Cérebro (mesmo portão, Node próprio), Painel, Tarefas e Cofre (mesmos `main.html`), só leitura até a virada; conferido ao vivo. Falta (⏳, ver lista): Telegram real de teste (precisa do Matheus: um bot de teste), áudio pelo Hermes, andamento editado, e-mail/gatilhos, celular, delegar, memória separada dos convidados |
+| 7 | Ensaio geral: um dia inteiro do Hermes "em sombra" (mesmas rotinas, saída só para o operador) | ⏳ em andamento: `hermes-sombra` desde 23/10 08:06 UTC (05:06 Bahia), cópia dos dados (`/opt/hermes/sombra`), as 17 rotinas ligadas nos horários do A0, relógio ligado (já atualizou o painel e a conferência na cópia), ensaio; para sozinho em 24/10 08:06 UTC. Conferir: `bash /opt/hermes/sombra.sh conferir` (o que rodou, o que falhou, o que teria ido ao celular). A lista de conferência ainda tem ⏳ (acima): não está toda ✅ |
 | 8 | Corte (com aviso ao Matheus) | Matheus usa só o Hermes; A0 parado 7 dias |
 | 9 | Limpeza: remover o A0, atualizar CLAUDE.md, CI e documentos | nada mais aponta para o A0 |
+
+## Antes da virada (o que falta) e o plano da fase 8
+
+**Precisa do Matheus:** (1) marcar o dia/hora da virada (proposta: um sábado de manhã, depois de uma semana sem ⏳
+abaixo); (2) criar um bot de teste no BotFather e mandar o token por `/senha TG_TESTE_TOKEN …` (ou aceitar que o teste
+real seja com o bot de sempre, só no login dele, na hora da virada); (3) dizer se os convidados (Ilia, Will) podem
+ficar sem navegador e sem rotinas próprias na primeira semana; (4) nada de 2FA/captcha pendente hoje: o perfil do
+navegador (Instagram, Google, Meta…) e o OAuth do Google já estão logados.
+
+**Falta construir/conferir (⏳ da lista):** áudio (transcrição para o Hermes), andamento editado no Telegram, e-mail
+para o agente e gatilhos (vigia do Google) entregues ao Hermes, ferramenta do celular (Android), `delegar` ao
+OpenClaw, conversas externas pelo WhatsApp Web, memória separada dos convidados (perfis do Hermes ou bloco filtrado),
+CRM na planilha, `me_mostre`, OpenCode fora do container do A0, `saude.py`/`memguard.sh`/`backup.sh` com o Hermes,
+`setup.sh`/`deploy.py`, `mandar_msg.py` para o Hermes. Conferir o dia de sombra (`sombra.sh conferir`).
+
+**Virada (um passo, reversível, com aviso ao Matheus antes):**
+1. `rotinas.py`/agendador do A0: pausar as 17 rotinas ligadas (pelas APIs do agendador; anotar quais).
+2. `subir.sh` sem `AGENTEPESSOAL_ENSAIO` e com `AGENTEPESSOAL_RELOGIO=1`; vista dos dados `rw`; escondidos só o que é
+   de outros (convidados, delegados); rede: liberar 8789 (ponte, para mandar ao celular) e 8788 (credenciais Meta);
+   navegador com o perfil `shared` de verdade (o A0 parado); Google com as permissões do A0; portal sem
+   `PORTAL_SO_LEITURA`.
+3. Ligar no Hermes as rotinas `ligada_no_a0` (`jobs.resume_job`, como o `sombra.sh`).
+4. `destino.json`: `"padrao": "hermes"`; `report_url.py`/túnel apontando para o portal (:8650).
+5. Conferir na hora: uma mensagem do Matheus pelo Telegram, um botão de ok, o resumo da manhã no dia seguinte.
+6. A0: `docker stop agent-zero` (não apagar) por 7 dias.
+
+**Voltar (minutos):** `destino.json` `"padrao": "a0"`; `docker start agent-zero`; religar as 17 rotinas do A0;
+pausar as do Hermes; `subir.sh` de volta ao ensaio (`AGENTEPESSOAL_ENSAIO=1`, vista `ro`). Os dados vivos são os
+mesmos dos dois lados (nada a copiar de volta), exceto o que o Hermes gravou enquanto esteve no ar, que fica válido.
 
 ## Decisões do Matheus (23/10)
 1. Convidados (ilia, will) e o login da Fernanda: **continuam**.
