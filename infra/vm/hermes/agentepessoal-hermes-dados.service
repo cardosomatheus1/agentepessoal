@@ -8,7 +8,7 @@ RequiresMountsFor=/opt/a0/usr
 [Service]
 Type=forking
 ExecStartPre=/bin/mkdir -p /opt/hermes/a0usr
-ExecStart=/usr/bin/bindfs -o allow_other --force-user=10000 --force-group=10000 --create-for-user=0 --create-for-group=0 --enable-lock-forwarding /opt/a0/usr /opt/hermes/a0usr
+ExecStart=/usr/bin/bindfs -o allow_other --force-user=10000 --force-group=10000 --create-for-user=0 --create-for-group=0 --multithreaded --enable-lock-forwarding /opt/a0/usr /opt/hermes/a0usr
 ExecStop=/bin/fusermount -u /opt/hermes/a0usr
 Restart=on-failure
 RestartSec=5

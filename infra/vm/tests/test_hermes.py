@@ -34,6 +34,8 @@ checa("-v /opt/hermes/a0usr:/a0/usr" in sh, "dados vivos no mesmo caminho, pela 
 un = (H / "agentepessoal-hermes-dados.service").read_text()
 checa("--create-for-user=0" in un and "--force-user=10000" in un and "Before=docker.service" in un,
       "a vista: o Hermes vê como dono, o disco continua root, e sobe antes do docker")
+checa("--enable-lock-forwarding" not in un or "--multithreaded" in un,
+      "repasse de trava só com --multithreaded (o bindfs recusa subir sem ele: 23/10)")
 checa(sh.index("mountpoint -q /opt/hermes/a0usr ||") < sh.index("docker run"), "o container só sobe com a vista montada")
 checa(re.search(r'IMAGEM="nousresearch/hermes-agent:v\d+\.\d+\.\d+"', sh), "imagem com versão fixa")
 checa(subprocess.run(["bash", "-n", str(H / "subir.sh")]).returncode == 0, "sintaxe do script")
