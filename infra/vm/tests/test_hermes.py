@@ -20,11 +20,12 @@ def checa(cond, msg):
 cfg = yaml.safe_load((H / "config.yaml").read_text())
 checa(cfg["model"]["provider"] == "bedrock" and "haiku" in cfg["model"]["default"], "Haiku no dia a dia (decisão 23/10)")
 checa(cfg["timezone"] == "America/Bahia", "fuso dele")
+checa(cfg["approvals"]["timeout"] >= 3600, "o ok pelo celular tem horas para chegar, como no A0")
 checa("agentepessoal" in cfg["plugins"]["enabled"], "o plugin com as nossas ferramentas ligado")
 checa((H / "plugins" / "agentepessoal" / "plugin.yaml").exists(), "o plugin está na pasta que o subir.sh copia")
 sh = (H / "subir.sh").read_text()
-checa("AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/bedrock" in sh, "modelo só pelo proxy")
-checa("ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/bedrock" in sh,
+checa("AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/hermes/bedrock" in sh, "modelo só pelo proxy")
+checa("ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/hermes/bedrock" in sh,
       "Claude no Bedrock (SDK AnthropicBedrock, que ignora o endpoint do boto3) também pelo proxy")
 checa("PONTE OK" in sh, "a instalação só passa com uma resposta de verdade do modelo")
 checa("AWS_ACCESS_KEY_ID=proxy" in sh and "AWS_EC2_METADATA_DISABLED=true" in sh, "nenhuma credencial real no Hermes")

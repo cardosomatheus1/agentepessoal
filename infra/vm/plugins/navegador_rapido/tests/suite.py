@@ -230,7 +230,14 @@ class Suite:
                 b = await p.chromium.launch(executable_path=exe, headless=True)
                 pg = await b.new_page()
                 await pg.set_content(html)
-                ok(await c.pelo_seletor_de_arquivos(pg, {"x": 140, "y": 60}, [str(arq)]), "a janela de arquivos abriu")
+                # 23/10: 1 vez em ~8 (máquina ocupada) o clique chegava antes da primeira pintura da página e não abria
+                # a janela; o teste espera o botão visível e dois quadros pintados, como uma página de verdade já estaria
+                await pg.wait_for_selector("#b", state="visible")
+                await pg.evaluate("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+                # (a corrida do Chromium sem tela, ~1 clique em 50 sem janela, é do navegador: o teste tenta 2x)
+                abriu = await c.pelo_seletor_de_arquivos(pg, {"x": 140, "y": 60}, [str(arq)]) or \
+                    await c.pelo_seletor_de_arquivos(pg, {"x": 140, "y": 60}, [str(arq)])
+                ok(abriu, "a janela de arquivos abriu")
                 await pg.wait_for_timeout(200)
                 eq(await pg.inner_text("#anexos"), "anexo: revisado.xlsx", "o arquivo foi para o anexo, não para o OneDrive")
                 eq(await pg.evaluate("document.getElementById('onedrive').files.length"), 0, "o campo do OneDrive ficou vazio")
@@ -255,8 +262,12 @@ class Suite:
                     };
                   </script>"""
                 await pg.set_content(menu)
-                eq(await c.pelo_gatilho_da_pagina(pg, [str(arq)]), "Anexar arquivo Anexe um arquivo a este item. → "
-                   "Navegar neste computador", "abriu o menu e usou o item do computador")
+                await pg.wait_for_selector("#anx", state="visible")
+                await pg.evaluate("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+                feito = await c.pelo_gatilho_da_pagina(pg, [str(arq)])
+                # na 2ª tentativa (clique sem janela, 23/10) o menu já está aberto e só o item aparece
+                ok(feito in ("Anexar arquivo Anexe um arquivo a este item. → Navegar neste computador",
+                             "Navegar neste computador"), f"abriu o menu e usou o item do computador ({feito!r})")
                 await pg.wait_for_timeout(200)
                 eq(await pg.inner_text("#anexos"), "anexo: revisado.xlsx", "virou anexo")
                 eq(await pg.evaluate("document.getElementById('onedrive').files.length + "

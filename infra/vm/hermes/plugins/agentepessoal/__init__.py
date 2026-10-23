@@ -11,10 +11,20 @@ _spec = importlib.util.spec_from_file_location("agentepessoal_ponte_a0", _aqui /
 ponte = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = ponte  # dataclasses look their module up in sys.modules
 _spec.loader.exec_module(ponte)
-_spec_c = importlib.util.spec_from_file_location("agentepessoal_cofre", _aqui / "cofre_hermes.py")
-cofre = importlib.util.module_from_spec(_spec_c)
-sys.modules[_spec_c.name] = cofre
-_spec_c.loader.exec_module(cofre)
+
+
+def _sub(nome: str, arquivo: str):
+    spec = importlib.util.spec_from_file_location(nome, _aqui / arquivo)
+    modulo = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = modulo
+    spec.loader.exec_module(modulo)
+    return modulo
+
+
+cofre = _sub("agentepessoal_cofre", "cofre_hermes.py")
+uso = _sub("agentepessoal_uso", "uso_hermes.py")
+acesso = _sub("agentepessoal_acesso", "acesso_hermes.py")
+aprovacoes = _sub("agentepessoal_aprovacoes", "aprovacoes_hermes.py")
 log = logging.getLogger("agentepessoal")
 
 # (plugin, ferramenta). "Hermes primeiro" (23/10): só entra o que é nosso de verdade (dados, Raiz, Segundo Cérebro).
@@ -49,6 +59,9 @@ def _manipulador(classe, nome):
 
 def register(ctx):
     cofre.registrar(ctx)  # antes das ferramentas: sem ele, nenhuma recebe senha (o §§secret segue como texto)
+    uso.registrar(ctx)    # dono/sessão/rotina de cada chamada de modelo, para o uso.jsonl do proxy
+    acesso.registrar(ctx)  # convidados só com o uso pessoal; ensaio: navegador só lê
+    aprovacoes.registrar(ctx)  # revisor + regras do Matheus antes de ação de risco
     feitas, puladas = [], []
     for plugin, nome in FERRAMENTAS:
         try:

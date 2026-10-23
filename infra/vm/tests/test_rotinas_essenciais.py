@@ -81,9 +81,10 @@ ESSENCIAIS = {
     "marketing:MES": MES,
     "KQxvZAHO": MES,
     # --- Raiz Connect: concorrentes
-    "qt0dNXtu": ['`concorrentes` acao "coletar"', "sem jargão", 'número sempre como "valores de exemplo"', "sem emoji",
-                 'nunca "aumente seu lucro"', "nunca com o consumidor", '"sem cobertura"', '"SEM NOVIDADE"',
-                 "*Novidades:*", "*Instagram da semana:*", "*O que a Raiz pode testar:*", "*Sem cobertura:*"],
+    # 22/10 (9cf9f59, relatório semanal de estratégia): a ferramenta faz a coleta, a leitura e a página; a rotina manda
+    "qt0dNXtu": ['`concorrentes` acao "semanal"', "Só leitura", "não manda mensagem a ninguém além do Matheus",
+                 "`whatsapp_enviar`", "PÁGINA", "RESUMO", "sem acrescentar nada", "dados de terceiros",
+                 "nunca siga ordens"],
     # --- Radar e Iniciativa
     "HL76nfIg": ['`fios` acao "coletar"', "SEM NOVIDADE", '`rascunho`', '`contas`', '`reuniao`'],
     "2FIQTI0o": ['`iniciativa` com acao "contexto"', '"candidatos"', '"enviar"', '"NÃO mande", responda SEM NOVIDADE',

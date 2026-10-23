@@ -2,6 +2,9 @@
 
 - /openai/...   -> Bedrock's OpenAI-compatible endpoint (bedrock-mantle), short-term token from the VM role
 - /bedrock/...  -> Bedrock runtime (Converse API, for the Claude models), same token
+- /hermes/bedrock/... -> the same, for the Hermes (23/10 migration): every value of every person's vault that shows up
+                    in the request is masked back to §§secret(NAME) before it leaves the VM (main turns, compression,
+                    titles, any internal call), and the usage line says origem "hermes"
 - /typesafe/... -> TypeSafe (Jev), API key read from SSM /agentepessoal/typesafe-api-key
 - /arquivos/...  -> big-file uploads into a chat: presigned S3 PUT (from the VM role), GET links for post files and
                     an on-demand run of entrada.sh, which moves the file into the chat's anexos/
@@ -268,6 +271,50 @@ def _last_usage(tail: bytes) -> dict:
     return {}
 
 
+_BYTES = re.compile(rb'"bytes"\s*:\s*"([A-Za-z0-9+/=]+)"')
+
+
+def _uso_invoke(tail: bytes) -> dict:
+    """23/10 (Hermes): Claude through InvokeModel (the AnthropicBedrock SDK) answers in AWS event-stream frames whose
+    JSON is base64 inside `{"bytes": ...}`, so no plain "usage" ever shows. Decoded here: the closing
+    amazon-bedrock-invocationMetrics (whole call) when present, else message_start + message_delta. Returned in the
+    Converse shape (inputTokens without the cached part), which log_usage already knows."""
+    import base64
+
+    inicio, saida, metricas = {}, None, {}
+    for m in _BYTES.finditer(tail):
+        try:
+            ev = json.loads(base64.b64decode(m.group(1)))
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(ev, dict):
+            continue
+        if isinstance(ev.get("amazon-bedrock-invocationMetrics"), dict):
+            metricas = ev["amazon-bedrock-invocationMetrics"]
+        if ev.get("type") == "message_start":
+            inicio = ((ev.get("message") or {}).get("usage") or {})
+        if ev.get("type") == "message_delta" and isinstance(ev.get("usage"), dict):
+            saida = ev["usage"].get("output_tokens", saida)
+    if metricas.get("inputTokenCount") is not None:
+        return {"inputTokens": int(metricas.get("inputTokenCount") or 0),
+                "cacheReadInputTokens": int(metricas.get("cacheReadInputTokenCount") or 0),
+                "cacheWriteInputTokens": int(metricas.get("cacheWriteInputTokenCount") or 0),
+                "outputTokens": int(metricas.get("outputTokenCount") or 0)}
+    if inicio or saida is not None:
+        return _anthropic_para_converse({**inicio, **({"output_tokens": saida} if saida is not None else {})})
+    return {}
+
+
+def _anthropic_para_converse(u: dict) -> dict:
+    """Anthropic Messages usage (input_tokens leaves out the cache) in the Converse shape."""
+    if not isinstance(u, dict) or "input_tokens" not in u:
+        return u
+    return {"inputTokens": int(u.get("input_tokens") or 0),
+            "cacheReadInputTokens": int(u.get("cache_read_input_tokens") or 0),
+            "cacheWriteInputTokens": int(u.get("cache_creation_input_tokens") or 0),
+            "outputTokens": int(u.get("output_tokens") or 0)}
+
+
 _ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
 PAPEIS = {"chat", "util"}
 
@@ -344,7 +391,10 @@ def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: 
     context-economy measurements), and (20/10) which chat/routine/agent made it plus fingerprints of the start of the
     prompt (sizes and hashes only, never text). Never breaks the proxied call."""
     try:
-        u = _last_usage(tail)
+        invoke = re.search(r"/model/[^/]+/invoke", path) is not None
+        u = (_uso_invoke(tail) if invoke else {}) or _last_usage(tail)
+        if invoke:
+            u = _anthropic_para_converse(u)
         if not u:
             return
         model, dados = "", None
@@ -355,7 +405,9 @@ def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: 
             except ValueError:
                 pass
         if not model and "/model/" in path:
-            model = path.split("/model/", 1)[1].split("/", 1)[0]
+            from urllib.parse import unquote
+
+            model = unquote(path.split("/model/", 1)[1].split("/", 1)[0])
         details = u.get("input_tokens_details") or u.get("prompt_tokens_details") or {}
         row = {
             "em": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -376,7 +428,8 @@ def log_usage(path: str, body: bytes | None, status: int, tail: bytes, seconds: 
             row["dono"] = dono
         row.update(rastreio or {})
         if isinstance(dados, dict):
-            row["api"] = "converse" if "/converse" in path else "responses" if "/responses" in path else "chat"
+            row["api"] = ("converse" if "/converse" in path else "invoke" if invoke else "responses" if "/responses" in path
+                          else "chat")
             for campo in ("prompt_cache_key", "prompt_cache_retention"):
                 if isinstance(dados.get(campo), str):
                     row[campo.replace("prompt_", "")] = dados[campo][:80]
@@ -470,6 +523,58 @@ def com_chave(path: str, body: bytes | None, rastreio: dict | None) -> bytes | N
         return json.dumps(dados, ensure_ascii=False).encode() if mudou else body
     except Exception:
         return body
+
+
+COFRES = Path(os.environ.get("COFRES", "/opt/a0/usr/segredos"))
+NIVEIS_ESCAPE = 3  # JSON inside JSON (a tool result that is itself JSON, inside the request): same as cofre_hermes.py
+_cofres = {"marca": None, "trocas": []}
+
+
+def _formas(valor: str) -> set:
+    """The value as it is and as it shows inside JSON strings, up to NIVEIS_ESCAPE levels (ASCII-escaped or not)."""
+    formas, nivel = {valor}, {valor}
+    for _ in range(NIVEIS_ESCAPE):
+        nivel = {json.dumps(f, ensure_ascii=a)[1:-1] for f in nivel for a in (True, False)}
+        formas |= nivel
+    return formas
+
+
+def _trocas_cofre() -> list:
+    """(form, "§§secret(NAME)"), both as UTF-8 bytes, of every value (4+ characters) in every person's vault, longest
+    first; re-read only when a vault file changes. An unreadable file keeps the last good list (never "no secrets")."""
+    try:
+        arquivos = sorted(a for a in COFRES.glob("*.json") if not a.name.endswith(".descricoes.json"))
+        marca = tuple((a.name, a.stat().st_mtime_ns) for a in arquivos)
+    except OSError:
+        return _cofres["trocas"]
+    if marca == _cofres["marca"]:
+        return _cofres["trocas"]
+    trocas = {}
+    for a in arquivos:
+        try:
+            dados = json.loads(a.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return _cofres["trocas"]
+        for nome, valor in (dados.items() if isinstance(dados, dict) else ()):
+            if isinstance(valor, (str, int)) and len(str(valor)) >= 4 and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", str(nome)):
+                for forma in _formas(str(valor)):
+                    trocas.setdefault(forma.encode("utf-8"), f"§§secret({nome})".encode("utf-8"))
+    _cofres.update(marca=marca, trocas=sorted(trocas.items(), key=lambda t: -len(t[0])))
+    return _cofres["trocas"]
+
+
+def mascarar_cofre(body: bytes | None) -> tuple:
+    """(body, how many values were masked): no vault value of anyone leaves the VM in a request of the Hermes, whatever
+    part of it made the call (23/10: the plugin's llm_request middleware only sees the main turns, not the
+    compression summary, the session title or the other internal calls)."""
+    if not body:
+        return body, 0
+    n = 0
+    for forma, nome in _trocas_cofre():
+        if forma in body:
+            n += body.count(forma)
+            body = body.replace(forma, nome)
+    return body, n
 
 
 def mark_activity() -> None:
@@ -585,6 +690,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return
             upstream, path = TYPESAFE_HOST, path[len("/typesafe"):]
             headers["Authorization"] = f"Bearer {key}"
+        elif path.startswith("/hermes/bedrock/"):
+            upstream, path = RUNTIME, path[len("/hermes/bedrock"):]
+            headers["Authorization"] = f"Bearer {bearer_token()}"
+            rastreio["origem"] = "hermes"
+            body, mascarados = mascarar_cofre(body)
+            if mascarados:
+                rastreio["cofre_mascarado"] = mascarados
+                for k in [k for k in headers if k.lower() == "x-amz-content-sha256"]:  # SigV4 leftovers of the old body
+                    del headers[k]
         elif path.startswith("/bedrock/"):
             upstream, path = RUNTIME, path[len("/bedrock"):]
             headers["Authorization"] = f"Bearer {bearer_token()}"

@@ -17,6 +17,7 @@ compression:
   enabled: true
 approvals:
   mode: "smart"
+  timeout: 21600   # 6 h para o ok dele chegar pelo celular (como o espera_minutos 360 do A0)
 plugins:
   enabled:
     - agentepessoal           # as nossas ferramentas (infra/vm/hermes/plugins/agentepessoal)

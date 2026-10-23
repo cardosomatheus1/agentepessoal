@@ -51,7 +51,7 @@ CURTAS: dict[str, str] = {
     # --- plugins deste repositório
     "prospeccao": "Prospecção da Raiz, só pela @raiz.connect (nunca o perfil pessoal). Tudo pré-aprovado pelo Matheus dentro "
                   "dos limites do dia; o revisor confere cada texto: reprovado volta com \"REESCREVA\" e o motivo (corrija só "
-                  "esse item); execute só ações entregues como APROVADAS, com o texto exato. Regras e modelos: acao \"playbook\"; no navegador: skill `prospeccao-instagram`. `acao`: playbook | contexto | registrar | rejeitar | fontes | fontes_instagram | conferir_estoque | estoque_conferido | buscar_script | avaliar_api | perfis_script | avaliar_perfis | limite_consulta | liberar_consultas | liberar_bloqueio | scripts_conta | propor | comentar | comentado | pular_comentario | editar | caixa_lida | ler_direct | direct_script | falha | proxima | resultado | etapa | entrou | cartao | assumir | devolver | apagada | importar_lista | variante | token_meta | hoje | metricas. O manual completo vem depois do primeiro resultado.",
+                  "esse item); execute só ações entregues como APROVADAS, com o texto exato. Regras e modelos: acao \"playbook\"; no navegador: skill `prospeccao-instagram`. `acao`: playbook | contexto | registrar | rejeitar | fontes | fontes_instagram | conferir_estoque | estoque_conferido | buscar_script | avaliar_api | perfis_script | avaliar_perfis | limite_consulta | liberar_consultas | liberar_bloqueio | scripts_conta | propor | comentar | comentado | pular_comentario | editar | caixa_lida | ler_direct | direct_script | falha | proxima | resultado | etapa | entrou | cartao | assumir | devolver | apagada | importar_lista | variante | token_meta | hoje | metricas | temas. O manual completo vem depois do primeiro resultado.",
     "conversa_externa": "Fala com lojas e negócios pelo WhatsApp DA PRÓPRIA PESSOA, em nome dela, e vigia a resposta. `acao` "
                         "estado|conectar|abrir|enviar|ler|esperar_dono|encerrar|listar|responder_por_mim|sugerir_resposta… "
                         "Marcar, reservar, aceitar preço ou passar dado pessoal só com o sim dela (`esperar_dono`, `confirmado`); "
@@ -62,8 +62,8 @@ CURTAS: dict[str, str] = {
     "salvar_rotina": "Rotinas (viram skills). `acao` salvar (`nome`, `descricao`, `passos`, `verificar`, `entregar`, `aprovacao`, "
                      "`gatilhos`) | corrigir (`nome`, `correcao`) | ler (`nome`) | ajustar (`nome`, `trecho`, `novo`, `versao` lida).",
     "me_mostre": "Grava a pessoa fazendo uma tarefa no Navegador desta conversa para virar rotina. `acao` iniciar|parar.",
-    "concorrentes": "Vigia de concorrentes da Raiz. `acao` coletar (lê as fontes e devolve o que é novo) | ultima | instagram | "
-                    "listar | adicionar | fonte | tirar_fonte | grupo | remover. Fonte \"Sem cobertura\" não quer dizer sem novidade.",
+    "concorrentes": "Vigia de concorrentes da Raiz. `acao` semanal (relatório da semana com a página) | ideias | coletar (lê as "
+                    "fontes e devolve o que é novo) | ultima | instagram | listar | adicionar | fonte | tirar_fonte | grupo | remover. Fonte \"Sem cobertura\" não quer dizer sem novidade.",
     "ferramentas_extras": "As ferramentas fora desta lista (conectores Google/GitHub e as de uso raro; instrução que manda "
                           "usar uma que você não tem: está aqui). `acao` buscar (`texto`) | usar (`nome`, `args`).",
     "consultar_sol":"Conselho de um modelo mais forte (só aconselha; não é autorização da pessoa). `pergunta`, `contexto` "
@@ -88,7 +88,7 @@ CURTAS: dict[str, str] = {
              "(`trecho`) | listar. Ordem ou permissão vai na `decisao`.",
     "lembrar": "Busca nas conversas antigas de quem fala. `busca` (palavras-chave), opcional `limite`.",
     "fios": "Fios soltos (o que ficou em aberto). `acao` listar | coletar (`horas`) | salvar (`fios`: lista de {titulo, dono, "
-            "prazo, prioridade, proximo_passo, ligacoes, area}) | resolver (`resolvidos`/`id`) | adiar (`id`, `ate`) | avisar (`id`).",
+            "prazo, prioridade, proximo_passo, ligacoes, area}) | resolver (`resolvidos`/`id`) | adiar (`id`, `ate`) | avisar (`id`) | conferir.",
     "cerebro": "Segundo Cérebro do Matheus (a Pasta). `acao` consultar (`texto`: responde \"o que decidi/onde parou/quem é\") | "
                "assunto (`titulo`/`ref`, `onde_parou`, `estado`, `area`) | assuntos | desfazer (`ref` ou \"ultimo\", `motivo`) | "
                "reuniao (`titulo`, `data`, `participantes`, `resumo`, `decisoes`, `proximos`) | "

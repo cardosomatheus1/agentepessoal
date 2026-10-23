@@ -284,6 +284,65 @@ def main() -> int:
         u = json.loads(p.USAGE_FILE.read_text().splitlines()[-1])
         ok((u["rotina"], u["api"], u["cache_key"], u["cache_retention"]) == ("HL76nfIg", "responses", "a0-c-x-a0", "24h")
            and "cache_gravado_1h" not in u and segredo not in json.dumps(u), f"linha do GPT: {u}")
+        # 23/10 (Hermes): Claude through InvokeModel answers in event-stream frames with base64 JSON inside; usage read
+        import base64
+
+        def quadro(ev):
+            return b"\x00\x00\x01\x0b:event-type\x07\x00\x05chunk" + json.dumps(
+                {"bytes": base64.b64encode(json.dumps(ev).encode()).decode(), "p": "abcd"}).encode() + b"\x8a\x1b"
+        fluxo = (quadro({"type": "message_start", "message": {"usage": {"input_tokens": 50, "cache_read_input_tokens": 1000,
+                                                                        "cache_creation_input_tokens": 200, "output_tokens": 1}}})
+                 + quadro({"type": "content_block_delta", "delta": {"text": "oi"}})
+                 + quadro({"type": "message_delta", "usage": {"output_tokens": 42}}))
+        ok(p._uso_invoke(fluxo) == {"inputTokens": 50, "cacheReadInputTokens": 1000, "cacheWriteInputTokens": 200,
+                                    "outputTokens": 42}, f"uso do fluxo do invoke: {p._uso_invoke(fluxo)}")
+        com_metricas = fluxo + quadro({"type": "message_stop", "amazon-bedrock-invocationMetrics": {
+            "inputTokenCount": 51, "outputTokenCount": 43, "cacheReadInputTokenCount": 1000, "cacheWriteInputTokenCount": 200}})
+        ok(p._uso_invoke(com_metricas)["inputTokens"] == 51 and p._uso_invoke(com_metricas)["outputTokens"] == 43,
+           "as métricas do fim valem pela chamada inteira")
+        ok(p._uso_invoke(com_metricas[-300:]) != {} and p._uso_invoke(b"lixo") == {}, "só o fim (cauda) basta; lixo = nada")
+        rota_i = "/model/us.anthropic.claude-haiku-5-5/invoke-with-response-stream"
+        log_usage_real(rota_i, b'{"messages": [{"role": "user", "content": "oi"}]}', 200, com_metricas, 2.0, "matheus",
+                       {"origem": "hermes", "conversa": "sess_1"})
+        u = json.loads(p.USAGE_FILE.read_text().splitlines()[-1])
+        ok((u["modelo"], u["entrada"], u["cache"], u["cache_gravado"], u["saida"], u["api"], u["origem"], u["dono"]) ==
+           ("us.anthropic.claude-haiku-5-5", 1251, 1000, 200, 43, "invoke", "hermes", "matheus"), f"linha do Hermes no uso: {u}")
+        log_usage_real("/model/us.anthropic.claude-haiku-5-5/invoke", b"{}", 200,
+                       b'{"content": [], "usage": {"input_tokens": 7, "cache_read_input_tokens": 3, "output_tokens": 2}}', 1.0)
+        u = json.loads(p.USAGE_FILE.read_text().splitlines()[-1])
+        ok((u["entrada"], u["cache"], u["saida"]) == (10, 3, 2), f"invoke sem fluxo: entrada com o cache ({u})")
+        # 23/10 (Hermes): no vault value of anyone leaves the VM in a Hermes request (any internal call included)
+        pasta = Path(tempfile.mkdtemp(prefix="cofres-"))
+        (pasta / "matheus.json").write_text(json.dumps({"SENHA_IG": 'p"a\\çã0', "PIN": "12", "TOKEN_X": "tok-abc-123"}))
+        (pasta / "ilia.json").write_text(json.dumps({"SENHA_IG": "outra-da-ilia"}))
+        (pasta / "matheus.descricoes.json").write_text(json.dumps({"SENHA_IG": "descricao-longa"}))
+        p.COFRES = pasta
+        texto = 'senha p"a\\çã0 e tok-abc-123, da ilia outra-da-ilia, pin 12, descricao-longa'
+        corpo = json.dumps({"messages": [{"role": "user", "content": texto},
+                                         {"role": "tool", "content": json.dumps({"saida": texto})}]}).encode()
+        mascarado, n = p.mascarar_cofre(corpo)
+        bruto = mascarado.decode()
+        ok(n == 6 and "tok-abc-123" not in bruto and "outra-da-ilia" not in bruto and "çã0" not in bruto
+           and "\\u00e7" not in bruto and bruto.count("§§secret(SENHA_IG)") == 4 and "pin 12" in bruto
+           and "descricao-longa" in bruto, f"máscara de todos os cofres, também escapada em JSON ({n}): {bruto}")
+        ok(json.loads(mascarado)["messages"][1]["content"].count("§§secret(") == 3, "o corpo segue JSON válido")
+        ok(p.mascarar_cofre(None) == (None, 0) and p.mascarar_cofre(b"nada") == (b"nada", 0), "sem segredo, igual")
+        (pasta / "ilia.json").write_text("{quebrado")
+        ok(p.mascarar_cofre(b"outra-da-ilia")[1] == 1, "cofre ilegível: fica a última lista boa (nunca 'sem segredo')")
+        cabecalhos.clear(); corpos.clear(); pedidos.clear(); roteiro[:] = [RespostaFalsa(200, com_metricas)]
+        req = urllib.request.Request(f"{base}/hermes/bedrock{rota_i}", data=corpo, method="POST",
+                                     headers={"X-Amz-Content-Sha256": "abc", "X-A0-Dono": "matheus"})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            r.read()
+        ok(pedidos[0][:2] == ("bedrock-runtime.us-east-1.amazonaws.com", rota_i) and pedidos[0][2] == "Bearer tok",
+           f"o Hermes vai ao Bedrock pelo mesmo caminho, sem o prefixo ({pedidos})")
+        ok(b"tok-abc-123" not in corpos[0] and b"secret(TOKEN_X)" in corpos[0] and "x-amz-content-sha256" not in cabecalhos[0],
+           f"o pedido do Hermes sai mascarado e sem o hash do corpo antigo ({cabecalhos[0]})")
+        cabecalhos.clear(); corpos.clear(); roteiro[:] = [RespostaFalsa(200, b"{}")]
+        req = urllib.request.Request(f"{base}/bedrock{rota_i}", data=corpo, method="POST")
+        with urllib.request.urlopen(req, timeout=5) as r:
+            r.read()
+        ok(corpos[0] == corpo, "o caminho do A0 não muda (a máscara dele é a dele)")
     finally:
         servidor.shutdown()
     for f in falhas:

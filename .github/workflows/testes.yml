@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Dependências
-        run: pip install boto3 cryptography croniter pillow pyyaml aiohttp "flask==3.0.3"  # flask: segundo_cerebro gateway suite (same as Agent Zero)
+        run: pip install boto3 cryptography croniter pillow pyyaml aiohttp "flask==3.0.3" python-docx==1.1.2 openpyxl==3.1.5 pypdf==5.1.0 xlrd==2.0.1  # flask: segundo_cerebro gateway suite (same as Agent Zero); docx/openpyxl/pypdf: ler_arquivo (same pins as the Hermes image)
       - name: Pasta /a0/usr vazia (as suítes só usam logins teste_* e pastas temporárias)
         run: sudo mkdir -p /a0/usr && sudo chown -R "$USER" /a0
       - name: Suítes dos plugins
@@ -43,6 +43,7 @@ jobs:
           python3 infra/vm/tests/test_hermes.py
           python3 infra/vm/tests/test_ponte_a0.py
           python3 infra/vm/tests/test_cofre_hermes.py
+          python3 infra/vm/tests/test_acesso_hermes.py
           python3 infra/operador/tests/test_segundo_cerebro.py
           python3 infra/operador/tests/test_cache_relatorio.py
           python3 infra/operador/tests/test_calibracao.py

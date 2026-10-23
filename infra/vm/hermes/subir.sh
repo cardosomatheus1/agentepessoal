@@ -65,8 +65,8 @@ docker run -d --name hermes --restart no --network hermes \
   -v "$DADOS":/opt/data \
   -v /opt/hermes/a0usr:/a0/usr \
   "${ESCONDIDOS[@]}" \
-  -e AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/bedrock \
-  -e ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/bedrock \
+  -e AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/hermes/bedrock \
+  -e ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/hermes/bedrock \
   -e AWS_ACCESS_KEY_ID=proxy -e AWS_SECRET_ACCESS_KEY=proxy -e AWS_REGION=us-east-1 -e AWS_EC2_METADATA_DISABLED=true \
   -e API_SERVER_ENABLED=true -e API_SERVER_HOST=0.0.0.0 -e API_SERVER_KEY="$(cat /opt/hermes/api_key)" \
   -e HERMES_TIMEZONE=America/Bahia \

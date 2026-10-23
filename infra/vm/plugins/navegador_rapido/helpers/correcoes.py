@@ -612,7 +612,17 @@ async def achar_gatilho(page, padrao: str) -> dict | None:
 
 async def pelo_gatilho_da_pagina(page, caminhos: list[str]) -> str:
     """No ref given: an open "from this computer" item, else the attach button and then that item. Returns what was
-    clicked, or "" when no click opened a file window."""
+    clicked, or "" when no click opened a file window. 23/10: about 1 time in 50 a click of headless Chromium opens no
+    window (the file-window interception and the click race); nothing was attached then, so the whole try runs once
+    more (these triggers only open a menu or a file window)."""
+    for _ in range(2):
+        feito = await _pelo_gatilho_uma_vez(page, caminhos)
+        if feito:
+            return feito
+    return ""
+
+
+async def _pelo_gatilho_uma_vez(page, caminhos: list[str]) -> str:
     ponto = await achar_gatilho(page, GATILHO_COMPUTADOR)
     if ponto and await pelo_seletor_de_arquivos(page, ponto, caminhos, espera_ms=4000):
         return ponto["texto"]
