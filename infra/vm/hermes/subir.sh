@@ -37,5 +37,5 @@ done
 # De pé não basta: uma pergunta de verdade ao modelo, pelo mesmo caminho das conversas (Claude no Bedrock pelo proxy).
 RESPOSTA=$(curl -sS -m 120 http://127.0.0.1:8642/v1/chat/completions -H "Authorization: Bearer $(cat /opt/hermes/api_key)" \
   -H 'Content-Type: application/json' -d '{"model":"hermes","messages":[{"role":"user","content":"Responda só: PONTE OK"}]}' || true)
-if echo "$RESPOSTA" | grep -q "PONTE OK"; then echo "HERMES_OK $(docker inspect -f '{{.Image}}' hermes)"; exit 0; fi
+if echo "$RESPOSTA" | grep -qi "PONTE OK"; then echo "HERMES_OK $(docker inspect -f '{{.Image}}' hermes)"; exit 0; fi
 echo "HERMES_NAO_RESPONDEU: ${RESPOSTA:0:400}"; docker logs --tail 40 hermes; exit 1

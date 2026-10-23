@@ -115,7 +115,7 @@ HERMES_ARQUIVOS = ("infra/vm/hermes/config.yaml", "infra/vm/hermes/SOUL.md", "in
 
 def hermes(args: list) -> None:
     """The Hermes next to Agent Zero (23/10, migration, docs/MIGRACAO_HERMES.md): committed and pushed, config checked
-    on the VM, container recreated by subir.sh (it waits for /health), version recorded. The A0 is not touched."""
+    on the VM, container recreated by subir.sh (it waits for a real answer from the model), version recorded. The A0 is not touched."""
     head = _conferir_git(list(HERMES_ARQUIVOS))
     pacote = subprocess.run(["git", "archive", "--format=tar.gz", "HEAD", *HERMES_ARQUIVOS], cwd=RAIZ, check=True,
                             capture_output=True).stdout
