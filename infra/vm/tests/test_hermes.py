@@ -44,8 +44,15 @@ pacotes = [t for t in df.split("uv pip install", 1)[1].split("&&", 1)[0].split()
 checa(len(pacotes) >= 5 and all("==" in t for t in pacotes), f"pacotes com versão fixa: {pacotes}")
 checa(re.search(r"FROM ghcr.io/astral-sh/uv:\d+\.\d+\.\d+ AS uv", df), "uv com versão fixa")
 checa(subprocess.run(["bash", "-n", str(H / "subir.sh")]).returncode == 0, "sintaxe do script")
-checa("destination=/a0/usr/whatsapp," in sh and "destination=/a0/usr/segredos," in sh,
-      "no ensaio a chave da ponte do celular e o cofre aparecem vazios no Hermes")
+for d in (".aws", "whatsapp", "segredos", "navegador", "mcp", "celular", "delegados"):
+    checa(re.search(rf"for d in (?:[^;]*\s)?{re.escape(d)}(?=[\s;])", sh), f"no ensaio {d} aparece vazio no Hermes")
+for f in (".env", "secrets.env", "settings.json", "usuarios.json"):
+    checa(re.search(rf"for f in (?:[^;]*\s)?{re.escape(f)}(?=[\s;])", sh), f"no ensaio {f} aparece vazio no Hermes")
+checa('"${ESCONDIDOS[@]}"' in sh and "--network hermes" in sh, "o container usa a rede própria e os escondidos")
+checa(sh.index("HERMES_SEM_FIREWALL") < sh.index("docker run"), "não sobe sem a rede fechada")
+fw = (RAIZ / "infra" / "vm" / "firewall.sh").read_text()
+checa("docker network inspect hermes" in fw and '-s "$HERMES" -j DROP' in fw and "--dport 8787" in fw
+      and '-s "$HERMES" -d "$destino" -j DROP' in fw, "firewall: rede hermes só com o proxy e a internet")
 checa(sh.index("HERMES_SEM_ENSAIO") < sh.index("docker run"), "não sobe sem a trava do ensaio nos plugins no ar")
 checa("-o allow_other,ro " in un, "até a virada o Hermes vê os dados do A0 só para leitura")
 checa("-e AGENTEPESSOAL_ENSAIO=1" in sh, "até a virada o Hermes está em ensaio: nada vai ao celular nem à Meta")

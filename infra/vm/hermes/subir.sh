@@ -40,17 +40,30 @@ mountpoint -q /opt/hermes/a0usr || { echo "HERMES_SEM_DADOS: a vista /opt/hermes
 for f in whatsapp/helpers/ponte.py conteudo/helpers/conteudo.py; do
   grep -q AGENTEPESSOAL_ENSAIO "/opt/hermes/a0usr/plugins/$f" || { echo "HERMES_SEM_ENSAIO: $f no ar não tem a trava do ensaio; implante o plugin antes"; exit 1; }
 done
+# Rede própria: internet e, do host, só o proxy do modelo (firewall.sh); sem a regra no lugar, não sobe.
+docker network inspect hermes >/dev/null 2>&1 || docker network create hermes >/dev/null
+/opt/agentepessoal/firewall.sh || { echo "HERMES_SEM_FIREWALL: a rede do Hermes não ficou fechada"; exit 1; }
+iptables -C INPUT -s "$(docker network inspect hermes -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}')" -j DROP 2>/dev/null \
+  || { echo "HERMES_SEM_FIREWALL: firewall.sh no ar não conhece a rede hermes (implante --host antes)"; exit 1; }
+# No ensaio, o que dá poder de agir fora das ferramentas aparece vazio no container: chave da ponte do celular, cofre,
+# chaves e login do A0, credenciais AWS, perfis logados do navegador, tokens dos conectores, celular e caixas.
+ESCONDIDOS=()
+for f in .env secrets.env settings.json usuarios.json usuarios.json.antes-operador; do
+  [ -e "/opt/hermes/a0usr/$f" ] && ESCONDIDOS+=(-v "/dev/null:/a0/usr/$f:ro")  # (vista só leitura: não cria o que falta)
+done
+for d in .aws whatsapp segredos navegador navegador_visual mcp celular delegados; do
+  [ -d "/opt/hermes/a0usr/$d" ] && ESCONDIDOS+=(--mount "type=tmpfs,destination=/a0/usr/$d,tmpfs-mode=0755")
+done
 # AGENTEPESSOAL_ENSAIO=1 até a virada (fase 8): nada vai ao celular nem se publica na Meta pelo Hermes; o que iria fica
 # em /opt/hermes/data/agentepessoal/ensaio_celular.jsonl (whatsapp/helpers/ponte.py, conteudo/helpers/conteudo.py).
 # E, no ensaio, a chave da ponte do celular (/a0/usr/whatsapp) e os valores do cofre (/a0/usr/segredos) aparecem vazios
 # no container: um terminal ou código do Hermes não tem com que mandar ao celular nem publicar por fora das ferramentas.
-docker run -d --name hermes --restart unless-stopped \
+docker run -d --name hermes --restart unless-stopped --network hermes \
   --memory 3g --memory-swap 3g \
   --add-host host.docker.internal:host-gateway \
   -v "$DADOS":/opt/data \
   -v /opt/hermes/a0usr:/a0/usr \
-  --mount type=tmpfs,destination=/a0/usr/whatsapp,tmpfs-mode=0755 \
-  --mount type=tmpfs,destination=/a0/usr/segredos,tmpfs-mode=0755 \
+  "${ESCONDIDOS[@]}" \
   -e AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/bedrock \
   -e ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/bedrock \
   -e AWS_ACCESS_KEY_ID=proxy -e AWS_SECRET_ACCESS_KEY=proxy -e AWS_REGION=us-east-1 -e AWS_EC2_METADATA_DISABLED=true \

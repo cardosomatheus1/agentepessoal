@@ -42,6 +42,24 @@ if [ -n "$DELEGADOS" ]; then
     iptables -C "${regra[@]}" 2>/dev/null || iptables -I "${regra[@]}" || falhou=1
   done
 fi
+# 23/10 (migração): o Hermes principal (rede "hermes", infra/vm/hermes/subir.sh) tem a internet e, do host, só o proxy
+# do modelo (8787) e as respostas das conexões que o host abriu com ele (a porta 8642 publicada); nada do A0, da VPC,
+# do serviço de credenciais (8788), da ponte do celular (8789) nem dos metadados da nuvem (revisão OpenCode 23/10).
+HERMES=$(docker network inspect hermes -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null)
+if [ -n "$HERMES" ]; then
+  regra=(INPUT -s "$HERMES" -j DROP)
+  iptables -C "${regra[@]}" 2>/dev/null || iptables -I "${regra[@]}" || falhou=1
+  for aceita in "-p tcp --dport 8787" "-m state --state ESTABLISHED,RELATED"; do  # acima do DROP
+    # shellcheck disable=SC2206
+    a=(INPUT -s "$HERMES" $aceita -j ACCEPT)
+    iptables -C "${a[@]}" 2>/dev/null && iptables -D "${a[@]}"
+    iptables -I "${a[@]}" || falhou=1
+  done
+  for destino in 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 169.254.0.0/16 100.64.0.0/10; do
+    regra=(DOCKER-USER -s "$HERMES" -d "$destino" -j DROP)
+    iptables -C "${regra[@]}" 2>/dev/null || iptables -I "${regra[@]}" || falhou=1
+  done
+fi
 if [ "$falhou" -eq 0 ]; then
   logger -t agentepessoal "firewall: rede $REDE sem acesso às portas 8787-8790 do host; caixas (${CAIXAS:-ainda sem rede}) só com internet"
 else
