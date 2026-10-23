@@ -43,10 +43,10 @@ void main() {
   vec2 dq = abs(q) - (h - r);
   float d = (length(max(dq, 0.0)) + min(max(dq.x, dq.y), 0.0) - r) / r;
   float miolo = smoothstep(0.18, -0.18, d);
-  float halo = exp(-max(d, 0.0) * 2.6) * 0.32;
+  float halo = exp(-max(d, 0.0) * 5.0) * 0.1;
   float a = (miolo + halo) * clamp(vBrilho, 0.0, 1.0);
   if (a < 0.004) discard;
-  gl_FragColor = vec4(vCor * (miolo * (0.75 + 0.55 * vBrilho) + halo), a);
+  gl_FragColor = vec4(vCor * (miolo * (0.62 + 0.38 * vBrilho) + halo), a);
 }`;
 const VERT_HEX = /* glsl */ `
 attribute vec3 aDe; attribute vec3 aPara; attribute vec2 aTam; attribute vec3 aCor; attribute float aBrilho;
@@ -71,11 +71,11 @@ float hexa(vec2 p, float r) {
 void main() {
   vec2 p = (vUv - 0.5) * 2.6;
   float d = hexa(p, 0.78);
-  float borda = smoothstep(0.075, 0.0, abs(d + 0.03));
+  float borda = smoothstep(0.05, 0.0, abs(d + 0.03));
   float dentro = smoothstep(0.02, -0.02, d);
-  float halo = exp(-max(d, 0.0) * 9.0) * 0.45;
+  float halo = exp(-max(d, 0.0) * 14.0) * 0.12;
   float v = clamp(vBrilho, 0.0, 1.0);
-  vec3 cor = mix(vec3(0.045, 0.07, 0.06), vCor * 0.18, 0.5) * dentro + vCor * (borda * (0.9 + 0.6 * vBrilho) + halo * (1.0 - dentro));
+  vec3 cor = mix(vec3(0.045, 0.07, 0.06), vCor * 0.18, 0.5) * dentro + vCor * (borda * (0.7 + 0.3 * vBrilho) + halo * (1.0 - dentro));
   float a = max(dentro * 0.92, borda + halo) * v;
   if (a < 0.004) discard;
   gl_FragColor = vec4(cor, a);
@@ -85,11 +85,11 @@ const FRAG_SOL = /* glsl */ `
 varying vec2 vUv; uniform float uPulso; uniform vec3 uCor;
 void main() {
   float r = length(vUv - 0.5) * 2.0;
-  float miolo = smoothstep(0.11, 0.07, r);
-  float coroa = exp(-r * 7.0) * 0.75 * uPulso + exp(-r * 2.6) * 0.07;
+  float miolo = smoothstep(0.075, 0.05, r);
+  float coroa = exp(-r * 11.0) * 0.4 * uPulso;
   float a = clamp(miolo + coroa, 0.0, 1.0);
   if (a < 0.003) discard;
-  gl_FragColor = vec4(uCor * (miolo * 1.6 + coroa), a);
+  gl_FragColor = vec4(uCor * (miolo * 1.1 + coroa), a);
 }`;
 
 type Opcoes = {
@@ -115,10 +115,11 @@ export async function criarCena({ el, camadaRotulos, grafo, poses, aoSobre, aoEs
   el.appendChild(renderer.domElement);
   renderer.domElement.style.display = "block";
   const cena = new THREE.Scene();
+  cena.background = new THREE.Color(FUNDO);
   const camera = new THREE.PerspectiveCamera(34, 1, 0.05, 40);
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(cena, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), 0.95, 0.48, 0.16);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), 0.32, 0.25, 0.55) // brilho discreto: só o que é claro de verdade;
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
 
@@ -303,10 +304,10 @@ export async function criarCena({ el, camadaRotulos, grafo, poses, aoSobre, aoEs
     camera.position.set(cam.x + dist * Math.sin(cam.giro) * Math.cos(cam.elev), cam.y + dist * Math.sin(cam.elev), dist * Math.cos(cam.giro) * Math.cos(cam.elev));
     camera.lookAt(cam.x, cam.y, 0);
     sol.quaternion.copy(camera.quaternion);
-    uSol.uPulso.value = parado ? 1 : 1 + 0.12 * Math.sin(agora * 1.8);
+    uSol.uPulso.value = parado ? 1 : 1 + 0.05 * Math.sin(agora * 1.2);
     for (const a of aneis) {
       const m = a.linha.material as InstanceType<typeof THREE.LineBasicMaterial>;
-      m.opacity += ((a.alvo * 0.55) - m.opacity) * Math.min(1, dt * 4);
+      m.opacity += ((a.alvo * 0.3) - m.opacity) * Math.min(1, dt * 4);
       a.linha.visible = m.opacity > 0.01;
     }
     // posições atuais (para clique, ligações e rótulos)
@@ -331,7 +332,7 @@ export async function criarCena({ el, camadaRotulos, grafo, poses, aoSobre, aoEs
     const ligar = (a: [number, number, number], b: [number, number, number], cor: InstanceType<typeof THREE.Color>, f = 1) => {
       if (nl >= maxLig) return;
       ligPos.set([...a, ...b], nl * 6);
-      ligCor.set([cor.r * f, cor.g * f, cor.b * f, cor.r * f * 0.4, cor.g * f * 0.4, cor.b * f * 0.4], nl * 6);
+      ligCor.set([cor.r * f * 0.7, cor.g * f * 0.7, cor.b * f * 0.7, cor.r * f * 0.3, cor.g * f * 0.3, cor.b * f * 0.3], nl * 6);
       nl++;
     };
     if (modo === "forca") {
