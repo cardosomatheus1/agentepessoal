@@ -139,10 +139,18 @@ nosso não entra (ou entra só o que é nosso de verdade: dados, Raiz, Segundo C
 | Busca na web | `web_search`, `web_extract` (testado 23/10) | — (`pesquisar` saiu da ponte) | duas buscas confundem a escolha |
 | Subagentes / tarefas em paralelo | `delegate_task` | `delegar` só para o OpenClaw (decisão 5) | o Hermes orquestra melhor |
 | Lista de passos da tarefa | `todo_list` | `passos` sai (grava no A0) | — |
-| Rotinas e lembretes com hora | `cronjob_manage` (o cron dele) | o que só nós temos (me mostre, autoavaliação, briefing de reunião) volta na fase 5 **por cima** do cron dele | `salvar_rotina`, `me_mostre`, `tarefa_limite`, `criar_gatilho`, `reuniao` gravavam no agendador do A0; `conversa_externa` abre conversa no A0 (volta na fase 6). O teste segue as chamadas de cada ferramenta e recusa qualquer uma que use o agendador ou as conversas do A0 |
+| Rotinas e lembretes com hora | `cronjob_manage` (o cron dele) | o que só nós temos (me mostre, autoavaliação, briefing de reunião) volta na fase 5 **por cima** do cron dele | `salvar_rotina`, `me_mostre`, `tarefa_limite`, `criar_gatilho`, `reuniao` gravavam no agendador do A0; `conversa_externa` abre conversa no A0 (volta na fase 6). Travas: o teste segue as chamadas de cada ferramenta e recusa uso direto do agendador/conversas do A0 (TaskScheduler, AgentContext…); as que só gravam arquivos que o A0 lê ficam fora pela lista de nomes |
 | Skills | curador do Hermes (melhora e poda as sem uso) | o conteúdo das 27, **adaptado** às ferramentas dele | 19 das 27 citam ferramentas do A0; `external_dirs` é só leitura para o curador. Fase 3: cópia adaptada, semeada uma vez no espaço do Hermes; depois é dele |
 | Memória curta / perfil | memória do Hermes (MEMORY/USER) | Segundo Cérebro (decisões, ficha, Pasta) é a fonte | fase 2: o gancho de captura copia para a Pasta o que o Hermes guardar, para não haver duas verdades |
 | Compressão do contexto, aprovações de comando, navegador | os dele | só o cofre (§§secret) e as regras de sempre | — |
 | Ler arquivo | `read_file` (texto) | `ler` (PDF, Word, planilha) | o dele não lê esses formatos |
 | Imagem / vídeo | `vision_analyze`, `video_analyze` | `analisar_imagens`, `assistir_video` por enquanto | conferir na fase 3 se os dele funcionam pelo Bedrock; se sim, os nossos saem |
 | Persona | `SOUL.md` curto (só regras que valem sempre) | — | regra longa no prompt atrapalha o Haiku |
+
+### Ensaio até a virada
+Até a fase 8 o Hermes roda com `AGENTEPESSOAL_ENSAIO=1` (`subir.sh`): **nada vai ao celular de ninguém e nada se publica
+na Meta** por ele, mesmo que uma ferramenta tente (botões de fios, iniciativa, rascunho, prospecção…). O que iria fica
+em `/opt/hermes/data/agentepessoal/ensaio_celular.jsonl` para o operador conferir, sem fila de reenvio nem marca de
+aviso em `/a0/usr` (o A0 mandaria depois, ou seguraria o dele). Na virada (fase 8) a variável sai e a ponte do celular
+passa a entregar as respostas dos botões ao Hermes (fase 6). Pendente da fase 4: o navegador do Hermes logado no
+Instagram também precisa respeitar o ensaio (Direct da prospecção).

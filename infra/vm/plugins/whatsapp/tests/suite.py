@@ -9,6 +9,7 @@ import io
 import json
 import shutil
 import sys
+import os
 import tempfile
 import time
 import traceback
@@ -130,6 +131,28 @@ class Suite:
         eq(v.idioma_da_resposta("Oi, a loja fica perto.", ""), "pt", "sem áudio: português")
         envio = (RAIZ / "extensions" / "python" / "tool_execute_after" / "_50_enviar_resposta.py").read_text(encoding="utf-8")
         ok('ctx.get_data("whatsapp_idioma")' in envio, "a resposta em áudio usa a língua da pessoa")
+
+    def t_ensaio_do_hermes_nao_manda_nem_guarda(self):
+        p = self.p
+        caixa = Path(tempfile.mkdtemp()) / "ensaio.jsonl"
+        antes_saida = p._ler_jsonl(p.SAIDA)
+        p.CAIXA_ENSAIO, velho = caixa, os.environ.get(p.ENSAIO)
+        os.environ[p.ENSAIO] = "1"
+        try:
+            erro = p.enviar(LOGIN, "💡 ideia nova", botoes=[{"id": "x", "titulo": "Bora"}], tipo="progresso", reenviar=True)
+        finally:
+            if velho is None:
+                os.environ.pop(p.ENSAIO, None)
+            else:
+                os.environ[p.ENSAIO] = velho
+        eq(erro, p.ERRO_ENSAIO, "volta como não enviado, dizendo por quê")
+        eq(len(self.enviados), 0, "nada chega à ponte do celular")
+        eq(p._ler_jsonl(p.SAIDA), antes_saida, "nada na fila de reenvio (o A0 mandaria depois)")
+        eq(p._ler_jsonl(p.AVISOS / f"{LOGIN}.jsonl"), [], "nada marcado como avisado (o A0 seguraria o dele)")
+        guardado = p._ler_jsonl(caixa)
+        ok(len(guardado) == 1 and guardado[0]["botoes"][0]["titulo"] == "Bora", f"fica para o operador conferir: {guardado}")
+        eq(p.enviar(LOGIN, "fora do ensaio", tipo="progresso"), "", "sem a variável, envia como sempre")
+        eq(len(self.enviados), 1, "e chega à ponte")
 
     def t_aviso_igual_nao_sai_de_novo(self):
         p = self.p

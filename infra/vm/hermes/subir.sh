@@ -35,6 +35,8 @@ systemctl enable -q agentepessoal-hermes-dados.service
 systemctl restart agentepessoal-hermes-dados.service
 for i in $(seq 1 20); do mountpoint -q /opt/hermes/a0usr && break; sleep 1; done
 mountpoint -q /opt/hermes/a0usr || { echo "HERMES_SEM_DADOS: a vista /opt/hermes/a0usr não montou"; exit 1; }
+# AGENTEPESSOAL_ENSAIO=1 até a virada (fase 8): nada vai ao celular nem se publica na Meta pelo Hermes; o que iria fica
+# em /opt/hermes/data/agentepessoal/ensaio_celular.jsonl (whatsapp/helpers/ponte.py, conteudo/helpers/conteudo.py).
 docker run -d --name hermes --restart unless-stopped \
   --memory 3g --memory-swap 3g \
   --add-host host.docker.internal:host-gateway \
@@ -45,6 +47,7 @@ docker run -d --name hermes --restart unless-stopped \
   -e AWS_ACCESS_KEY_ID=proxy -e AWS_SECRET_ACCESS_KEY=proxy -e AWS_REGION=us-east-1 -e AWS_EC2_METADATA_DISABLED=true \
   -e API_SERVER_ENABLED=true -e API_SERVER_HOST=0.0.0.0 -e API_SERVER_KEY="$(cat /opt/hermes/api_key)" \
   -e HERMES_TIMEZONE=America/Bahia \
+  -e AGENTEPESSOAL_ENSAIO=1 \
   -p 127.0.0.1:8642:8642 \
   "$IMAGEM" gateway run >/dev/null
 for i in $(seq 1 60); do

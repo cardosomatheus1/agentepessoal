@@ -208,6 +208,28 @@ class Suite:
         ok(not c.agendar([dict(CARR, id="v", data="2026-10-23", arquivos=["conteudo/a.png", "conteudo/b.png"])], agora)["ok"],
            "carrossel só com .jpg")
 
+    def t_ensaio_do_hermes_nao_publica(self):
+        import io
+        import urllib.request
+        c = _modulo()
+        chamadas, velho_abrir, velho = [], urllib.request.urlopen, os.environ.get("AGENTEPESSOAL_ENSAIO")
+        urllib.request.urlopen = lambda req, timeout=0: (chamadas.append(req.get_method()), io.BytesIO(b'{"id": "1"}'))[1]
+        os.environ["AGENTEPESSOAL_ENSAIO"] = "1"
+        try:
+            api = c.Api("tok", "IG1")
+            r = api.post("IG1/media_publish", {"creation_id": "C1"})
+            ok("ensaio do Hermes" in r.get("error", {}).get("message", "") and not chamadas,
+               f"no ensaio, escrita na Meta não sai: {r} {chamadas}")
+            ok(api.get("IG1", {"fields": "id"}) == {"id": "1"} and chamadas == ["GET"], "leitura segue normal")
+            os.environ.pop("AGENTEPESSOAL_ENSAIO")
+            ok(api.post("IG1/media", {}) == {"id": "1"} and chamadas == ["GET", "POST"], "fora do ensaio, publica")
+        finally:
+            urllib.request.urlopen = velho_abrir
+            if velho is None:
+                os.environ.pop("AGENTEPESSOAL_ENSAIO", None)
+            else:
+                os.environ["AGENTEPESSOAL_ENSAIO"] = velho
+
     def t_devido_so_na_hora(self):
         c = _modulo()
         c.agendar([ITEM], _ts(c, "2026-10-13", "10:00"))

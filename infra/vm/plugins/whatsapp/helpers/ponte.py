@@ -23,6 +23,16 @@ _abrir = urllib.request.urlopen  # the bridge call (tests replace it in their ow
 PEDIDOS: dict[str, dict] = {}  # login -> code the agent asked for on WhatsApp (pedir_codigo)
 CHAVE = Path("/a0/usr/whatsapp/.chave")
 CAIXA_TESTES = Path("/a0/usr/testes/celular.jsonl")  # phone messages of "teste_*" logins (tests)
+# Migração ao Hermes (23/10): no container do Hermes, até a virada, AGENTEPESSOAL_ENSAIO=1. Nada vai ao celular: o que
+# iria fica numa caixa do próprio Hermes (fora de /a0/usr) e volta como "não enviado", sem fila de reenvio (SAIDA está
+# em /a0/usr: o A0 mandaria depois) e sem marcar aviso (o A0 deixaria de mandar o dele achando que já foi).
+ENSAIO = "AGENTEPESSOAL_ENSAIO"
+CAIXA_ENSAIO = Path("/opt/data/agentepessoal/ensaio_celular.jsonl")
+ERRO_ENSAIO = "ensaio do Hermes: nada vai ao celular antes da virada (guardado para o operador conferir)"
+
+
+def em_ensaio() -> bool:
+    return os.environ.get(ENSAIO) == "1"
 
 
 def chave() -> str:
@@ -159,6 +169,16 @@ def enviar(usuario: str, texto: str = "", arquivo: str = "", legenda: str = "", 
                                 "app": app},
                                ensure_ascii=False) + "\n")
         return ""
+    if em_ensaio():
+        try:
+            CAIXA_ENSAIO.parent.mkdir(parents=True, exist_ok=True)
+            with CAIXA_ENSAIO.open("a", encoding="utf-8") as f:
+                f.write(json.dumps({"em": time.time(), "usuario": usuario, "texto": texto, "arquivo": arquivo,
+                                    "legenda": legenda, "botoes": botoes or [], "tipo": tipo, "rotina": rotina},
+                                   ensure_ascii=False) + "\n")
+        except OSError:
+            pass
+        return ERRO_ENSAIO
     corpo = _corpo(usuario, texto, arquivo, legenda, botoes, tipo, rotina, app)
     marca = _chave_aviso(texto, arquivo, botoes)
     janela = REPETIDO_H.get(corpo["tipo"])

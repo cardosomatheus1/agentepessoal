@@ -374,6 +374,9 @@ class Api:
         import urllib.error
         import urllib.parse
         import urllib.request
+        if metodo != "GET" and os.environ.get("AGENTEPESSOAL_ENSAIO") == "1":
+            # migração ao Hermes (23/10): no ensaio, nada se publica nem se altera na Meta (whatsapp/helpers/ponte.py)
+            return {"error": {"message": "ensaio do Hermes: nada se publica na Meta antes da virada"}}
         dados = urllib.parse.urlencode({**params, "access_token": self.token})
         if metodo == "GET":
             req = urllib.request.Request(f"{GRAPH}/{caminho}?{dados}")
