@@ -96,6 +96,10 @@ portar (era conserto do A0; conferir que o Hermes não tem o defeito) · **D** =
 ### Operador e CI
 - [ ] `implantar.py` com destino Hermes · [ ] `rotinas.py` para os agendamentos do Hermes · [ ] `mandar_msg.py`/`ver_chat`
 - [ ] `falhas_do_dia.py` (conserto noturno) · [ ] `revisar_opencode.py` · [ ] hooks do Cérebro (`.claude/hooks`)
+- [ ] **OpenCode 2 + Ponytail** (revisor obrigatório antes de implantar, decisão #35; usado no conserto noturno): hoje
+      vive na camada do container do A0 (`/root/.config/opencode`, Claude Code CLI apontado para `/bedrock`) e some
+      com ele. Ganha casa própria (container ou host, versão fixa, mesma config e modelos Claude 5.5 pelo proxy) e o
+      `revisar_opencode.py` passa a apontar para lá **antes** de qualquer desligamento do A0.
 - [ ] CI (`.github/workflows/testes.yml`) · [ ] `CLAUDE.md` e `docs/HANDOFF_CONTA_NOVA.md`
 
 ### Fora da AWS / feitos à mão
