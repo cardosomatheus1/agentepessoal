@@ -59,13 +59,26 @@ def hermes(acao: str, dados: dict) -> dict:
         return {"erro": out[-300:]}
 
 
-ESTADO_A0 = r'''import json,sys
+# Done = the chat waits for input AND, after the test's own message, the main agent answered with the `response`
+# tool (logged as type "response", or as an "agent" step "Using response" in native mode). The greeting that every
+# new chat starts with is before the message and never counts (23/10: it did, and a task still running looked done).
+ESTADO_A0 = r'''import json,re,sys
 try: d=json.load(open('/opt/a0/usr/chats/%s/chat.json'))
 except Exception as e: print(json.dumps({"erro":str(e)})); sys.exit()
-lg=d["log"]["logs"]; r=[x for x in lg if x["type"]=="response" and x.get("agentno")==0]
-fim=bool(r) and bool(r[-1].get("kvps",{}).get("finished")) and lg.index(r[-1])>=len(lg)-4
-print(json.dumps({"fim":fim,"progresso":d["log"].get("progress"),"n":len(lg),"resposta":(r[-1]["content"] if r else "")[:6000],
- "ultima":lg[-1]["timestamp"] if lg else 0,"ferramentas":[x.get("heading","")[:60] for x in lg if x["type"]=="tool"][-60:]},ensure_ascii=False))'''
+lg=d["log"]["logs"]
+ini=max([i for i,x in enumerate(lg) if x["type"]=="user"] or [len(lg)])
+depois=lg[ini+1:]
+resp=[x for x in depois if x.get("agentno")==0 and (x["type"]=="response" or "Using response" in (x.get("heading") or ""))]
+texto=""
+if resp:
+  c=resp[-1].get("content") or ""
+  m=re.search(r'"text"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"',c)
+  texto=json.loads('"'+m.group(1)+'"') if m else c
+espera=str(d["log"].get("progress") or "").startswith("Waiting")
+t0=lg[ini]["timestamp"] if ini<len(lg) else 0
+print(json.dumps({"fim":bool(resp) and espera,"progresso":d["log"].get("progress"),"n":len(lg),"resposta":texto[:6000],
+ "segundos":round(resp[-1]["timestamp"]-t0) if resp and t0 else None,
+ "ferramentas":[x.get("heading","")[:60] for x in depois if x["type"]=="tool"][-60:]},ensure_ascii=False))'''
 
 
 def estado_a0(chat: str) -> dict:
@@ -91,7 +104,7 @@ async def rodar_a0(pagina, t: dict) -> dict:
         est = await asyncio.to_thread(estado_a0, chat)
         if est.get("fim"):
             break
-    seg = round(time.time() - inicio)
+    seg = est.get("segundos") if est.get("fim") and est.get("segundos") else round(time.time() - inicio)
     arquivos = await asyncio.to_thread(vm, f"ls -la /opt/a0/usr/workdir/lado_a_lado/a0/{t['id']}/ 2>&1 | tail -n +2")
     return {"motor": "a0", "chat": chat, "terminou": bool(est.get("fim")), "segundos": seg,
             "resposta": est.get("resposta", ""), "ferramentas": est.get("ferramentas", []), "arquivos": arquivos}
@@ -101,7 +114,7 @@ async def rodar_hermes(t: dict) -> dict:
     inicio = time.time()
     r = await asyncio.to_thread(hermes, "iniciar", {"motor": "hermes", "modelo": MODELO_HERMES, "minutos": MINUTOS,
                                                     "tarefa": texto_hermes(t),
-                                                    "arquivos": [f"{ENTRADA}/{a}" for a in t["arquivos"]]})
+                                                    "arquivos": [f"{ENTRADA}/{a}" for a in dict.fromkeys(["contexto.zip", *t["arquivos"]])]})
     if not r.get("id"):
         return {"motor": "hermes", "terminou": False, "erro": r.get("erro") or str(r)[:300], "segundos": 0}
     est = {}
@@ -144,7 +157,8 @@ async def main(saida: Path, ids: list):
             async with trava_h:
                 guardar(t, await rodar_hermes(t))
 
-        await asyncio.gather(*[um_a0(t) for t in tarefas], *[um_hermes(t) for t in tarefas])
+        motores = os.environ.get("MOTORES", "a0,hermes").split(",")
+        await asyncio.gather(*[um_a0(t) for t in tarefas if "a0" in motores], *[um_hermes(t) for t in tarefas if "hermes" in motores])
         await b.close()
 
 
