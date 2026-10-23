@@ -177,6 +177,8 @@ checa(not set(plug) & {"prospeccao", "conteudo", "cerebro", "segundo_cerebro", "
                        "iniciativa", "painel", "quadro", "radar", "concorrentes", "especialistas"}
       and {"login_usuarios", "whatsapp", "cofre", "conversas_externas"} <= set(plug),
       "convidado: só o código das ferramentas dele (nada da Raiz, prospecção, conteúdo, cérebro, rotinas do Matheus)")
+checa(cfg["approvals"].get("cron_mode") == "approve" and cfg["approvals"]["mode"] == "smart",
+      "rotinas rodam código como no A0 (cron_mode approve; a trava de rotina fica no acesso_hermes); conversa segue smart + botões")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO'):
     checa(termo in alma, f"a persona traz {termo!r}")

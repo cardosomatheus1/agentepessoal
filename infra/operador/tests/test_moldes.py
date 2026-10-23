@@ -46,6 +46,27 @@ def test_guarda_a_anterior():
     assert f"mv {m.MOLDES_VM} {m.MOLDES_VM}.anterior" in c and "abc123" in c
 
 
+def test_no_hermes_depois_da_virada():
+    c = m.comando_moldes("abc123", "tmp/x.tgz", "agora", "hermes")
+    assert "agent-zero" not in c and "/opt/venv-a0" not in c, "com o A0 parado, nada roda nele"
+    assert "-u 10000 -e HOME=/opt/data hermes sh -c '/opt/hermes/.venv/bin/python3 /a0/usr/moldes.novo/motor/test_validar.py" in c
+    assert "docker exec -u 10000 -e HOME=/opt/data -w /a0/usr/moldes.novo/motor hermes npm ci" in c
+    assert "AWS_PROFILE=voz" in c and "render.py lanca-app" in c, "a mesma prévia narrada, como no A0"
+
+
+def test_segundo_cerebro_no_portal():
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import segundo_cerebro as sc
+    antes = sc.ALVO_VM
+    sc.ALVO_VM = sc.ALVO_HERMES
+    try:
+        linha = sc._lado_vm("/x", "sondar", "a" * 40)
+    finally:
+        sc.ALVO_VM = antes
+    assert "--container portal" in linha and "--portal-dir /opt/hermes/portal" in linha and "--login-path /entrar" in linha
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

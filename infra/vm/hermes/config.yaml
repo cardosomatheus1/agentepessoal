@@ -36,6 +36,10 @@ approvals:
   timeout: 21600   # 6 h para o ok dele chegar pelo celular (como o espera_minutos 360 do A0)
   # Marca do operador para testar o caminho inteiro do ok (evento approval.request -> botões -> resposta) sem nada de risco
   smart_policy: "Always ESCALATE to the human any command that contains the marker APROVACAO_HUMANA_TESTE."
+  # Rotina (cron) não tem ninguém para aprovar: no A0 as rotinas rodavam código e scripts livremente (o revisor só
+  # olhava navegador e conectores). Aqui é igual (approve), com o piso do próprio Hermes para o catastrófico e a nossa
+  # trava de rotina (acesso_hermes.py: nada de apagar/mover dados vivos fora de workdir/tmp, nem cofre, chaves, docker).
+  cron_mode: "approve"
 plugins:
   enabled:
     - agentepessoal           # as nossas ferramentas (infra/vm/hermes/plugins/agentepessoal)

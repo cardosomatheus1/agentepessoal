@@ -172,24 +172,30 @@ MOLDES_VM = "/opt/a0/usr/moldes"  # /a0/usr/moldes in the container: rendered by
 MOLDES_TESTES = ("motor/test_validar.py", "motor/test_audio.py", "motor/test_voz.py", "motor/test_patchright.py")
 
 
-def comando_moldes(head: str, chave: str, quando: str) -> str:
+# onde os moldes rodam: no Hermes (desde 23/10, o A0 parado) ou no A0 (a volta); (container, opções do exec, python)
+ALVOS_MOLDES = {"hermes": ("hermes", "-u 10000 -e HOME=/opt/data", "/opt/hermes/.venv/bin/python3"),
+                "agent-zero": ("agent-zero", "", "/opt/venv-a0/bin/python")}
+
+
+def comando_moldes(head: str, chave: str, quando: str, alvo: str = "agent-zero") -> str:
     """The VM side of --moldes: unpack next to the live copy, reuse node_modules when package-lock.json did not change
     (else npm ci), run the motor tests and one preview of a real narrated ficha inside the agent container (patchright
     and its Chromium, and the voice through the host's short-lived /voz credentials, as the agent will), and only then
     swap; the previous copy stays as moldes.anterior."""
     novo, ct = f"{MOLDES_VM}.novo", "/a0/usr/moldes.novo"
-    testes = " && ".join(f"/opt/venv-a0/bin/python {ct}/{t}" for t in MOLDES_TESTES)
+    container, opcoes, py = ALVOS_MOLDES[alvo]
+    testes = " && ".join(f"{py} {ct}/{t}" for t in MOLDES_TESTES)
     return (f"rm -rf {novo} /tmp/implantar-moldes && mkdir -p /tmp/implantar-moldes && "
             f"aws s3 cp --quiet s3://{BUCKET}/{chave} - | tar xz -C /tmp/implantar-moldes && "
             f"mv /tmp/implantar-moldes/{MOLDES} {novo} && "
             f"if cmp -s {MOLDES_VM}/motor/package-lock.json {novo}/motor/package-lock.json && test -d {MOLDES_VM}/motor/node_modules; "
             f"then cp -a {MOLDES_VM}/motor/node_modules {novo}/motor/; "
-            f"else docker exec -w {ct}/motor agent-zero npm ci --omit=dev --no-audit --no-fund >/dev/null; fi && "
+            f"else docker exec {opcoes} -w {ct}/motor {container} npm ci --omit=dev --no-audit --no-fund >/dev/null; fi && "
             f"printf '[profile voz]\\nregion = us-east-1\\ncredential_process = python3 {ct}/motor/credencial_voz.py\\n' "
             f"> {novo}/aws-voz.config && "
             f"docker exec -e MOLDES_CACHE=/a0/usr/conteudo/cache-moldes -e AWS_CONFIG_FILE={ct}/aws-voz.config "
-            f"-e AWS_PROFILE=voz -e AWS_REGION=us-east-1 -e AWS_SDK_LOAD_CONFIG=1 agent-zero sh -c '{testes} && "
-            f"/opt/venv-a0/bin/python {ct}/motor/render.py lanca-app {ct}/lanca-app/exemplos/raiz-sistema-computador.json "
+            f"-e AWS_PROFILE=voz -e AWS_REGION=us-east-1 -e AWS_SDK_LOAD_CONFIG=1 {opcoes} {container} sh -c '{testes} && "
+            f"{py} {ct}/motor/render.py lanca-app {ct}/lanca-app/exemplos/raiz-sistema-computador.json "
             f"--previa --saida /tmp/moldes-previa' && echo TESTES_OK && "
             f"echo '{head} {quando}' > {novo}/.versao && "
             f"rm -rf {MOLDES_VM}.anterior && (test -d {MOLDES_VM} && mv {MOLDES_VM} {MOLDES_VM}.anterior || true) && "
@@ -199,10 +205,10 @@ def comando_moldes(head: str, chave: str, quando: str) -> str:
 def moldes(args: list) -> None:
     """The templates the agent renders its Reels and carousels with (22/10, Matheus: "Leve"): committed and pushed,
     refused when the VM runs a newer version from another session, tested on the VM before the swap."""
-    # 23/10 (virada ao Hermes): este caminho ainda testa/instala dentro do container do A0, parado até 30/10
-    if "true" not in vm("docker inspect -f '{{.State.Running}}' agent-zero 2>/dev/null || echo false"):
-        raise SystemExit("moldes: ainda depende do container do A0 (parado desde a virada ao Hermes). "
-                         "Pendente da fase 9 (docs/MIGRACAO_HERMES.md); nada foi mudado.")
+    # 23/10 (virada ao Hermes): os moldes rodam no Hermes (patchright e o Chromium do A0 montado na imagem dele);
+    # no A0 só quando ele está no ar (a volta)
+    alvo = "agent-zero" if "true" in vm("docker inspect -f '{{.State.Running}}' agent-zero 2>/dev/null || echo false") \
+        else "hermes"
     head = _conferir_git([MOLDES])
     no_ar = vm(f"cat {MOLDES_VM}/.versao 2>/dev/null | head -1").split(" ")[0]
     if no_ar and "--forcar" not in args and subprocess.run(["git", "merge-base", "--is-ancestor", no_ar, head], cwd=RAIZ).returncode:
@@ -210,13 +216,13 @@ def moldes(args: list) -> None:
     pacote = subprocess.run(["git", "archive", "--format=tar.gz", "HEAD", MOLDES], cwd=RAIZ, check=True, capture_output=True).stdout
     chave = f"tmp/implantar-moldes-{head[:8]}.tgz"
     boto3.client("s3", region_name="us-east-1").put_object(Bucket=BUCKET, Key=chave, Body=pacote)
-    saida = vm(comando_moldes(head, chave, time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())), timeout=1800)
+    saida = vm(comando_moldes(head, chave, time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), alvo), timeout=1800)
     print(saida[-1500:])
     if "TESTES_OK" not in saida:
         raise SystemExit("os testes dos moldes falharam na VM: nada foi trocado.")
     if head not in saida:
         raise SystemExit("a troca falhou depois dos testes: veja a saída acima.")
-    print(f"implantado: moldes @ {head[:8]}")
+    print(f"implantado: moldes @ {head[:8]} (testado no {alvo})")
 
 
 CONTROLE = ("index.py", "whatsapp.py", "telegram.py")  # what deploy.py zips into the control function
@@ -277,10 +283,11 @@ def segundo_cerebro(args: list) -> None:
     if "--preparar" in args:
         sc.preparar(None, python_suite)
         return
-    # 23/10 (virada ao Hermes): este caminho ainda testa/instala dentro do container do A0, parado até 30/10
-    if "true" not in vm("docker inspect -f '{{.State.Running}}' agent-zero 2>/dev/null || echo false"):
-        raise SystemExit("segundo_cerebro: ainda depende do container do A0 (parado desde a virada ao Hermes). "
-                         "Pendente da fase 9 (docs/MIGRACAO_HERMES.md); nada foi mudado.")
+    # 23/10 (virada ao Hermes): com o A0 parado, o Segundo Cérebro é testado e servido pelo portal (mesmo plugin e
+    # mesma release em /opt/a0/usr/segundo_cerebro; o portal serve uma cópia, sincronizada na troca)
+    hermes_alvo = "true" not in vm("docker inspect -f '{{.State.Running}}' agent-zero 2>/dev/null || echo false")
+    if hermes_alvo:
+        sc.ALVO_VM = sc.ALVO_HERMES
 
     def conferir_conta() -> None:
         conta = boto3.client("sts", region_name="us-east-1").get_caller_identity()["Account"]
@@ -308,6 +315,16 @@ def segundo_cerebro(args: list) -> None:
                 codigos[caminho] = exc.code
             except OSError as exc:
                 codigos[caminho] = f"erro: {type(exc).__name__}"
+        if hermes_alvo:  # o portal: a página manda ao login (302), a API recusa (401), o login abre (200)
+            with_login = {}
+            try:
+                with urllib.request.urlopen(url + "/entrar", timeout=20) as r:
+                    with_login["/entrar"] = r.status
+            except (urllib.error.HTTPError, OSError) as exc:
+                with_login["/entrar"] = getattr(exc, "code", f"erro: {type(exc).__name__}")
+            ok = codigos["/segundo-cerebro"] in (302, 200) and codigos["/api/segundo-cerebro"] == 401 \
+                and with_login["/entrar"] == 200
+            return {"ok": ok, **codigos, **with_login}
         ok = codigos["/segundo-cerebro"] == 401 and codigos["/api/segundo-cerebro"] == 401 and codigos["/login"] == 200
         return {"ok": ok, **codigos}
 

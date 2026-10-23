@@ -50,6 +50,28 @@ ACAO = re.compile(r"(?i)\b(send|enviar|envie|follow|seguir|like|curtir|delete|ap
                   r"video|chamada|new message|nova mensagem|reply|responder|react|reagir|share|compartilhar)\b")
 
 
+# Rotinas (cron, ninguém para aprovar; approvals.cron_mode approve como no A0): o código e os scripts rodam, menos o
+# que apaga/move/trunca dados vivos fora das pastas de trabalho, mexe no cofre, nas chaves ou no Docker, ou fala com a
+# ponte/proxy/navegador por fora das ferramentas.
+ROTINA = re.compile(r"^cron_[A-Za-z0-9]+_\d{8}_\d{6}$")
+ROTINA_PROIBIDO = re.compile(
+    r"(?i)(\b(rm|rmdir|shred|truncate|mv|unlink)\b[^;&|\n]*\s/(a0/usr|opt/data)(?!/(workdir|tmp|cache|scratch|agentepessoal/rotinas)\b)"
+    r"|\b(rm|rmdir|shred|unlink)\b[^;&|\n]*\s/(a0/usr|opt/data)/?(\s|$|['\"])"
+    r"|shutil\.rmtree|os\.(remove|unlink|rmdir)\s*\(\s*['\"]/(a0/usr|opt/data)(?!/(workdir|tmp|cache|scratch))"
+    r"|/a0/usr/segredos|segredos/|API_SERVER_KEY|whatsapp/\.chave|\bdocker\b|:8789\b|:8787\b|:8642\b|:922[23]\b)")
+
+
+def checar_rotina(tool_name: str, args: dict, sessao: str):
+    if not ROTINA.match(sessao or "") or tool_name not in CODIGO:
+        return None
+    texto = json.dumps(args, ensure_ascii=False, default=str)
+    if ROTINA_PROIBIDO.search(texto):
+        return _bloqueio("Rotina: este comando mexe em dados vivos, no cofre, em chaves, no Docker ou nos serviços do "
+                         "agente por fora das ferramentas. Use as ferramentas do agente (ou workdir/tmp para arquivos "
+                         "seus); o que precisar do Matheus, diga na resposta final com PRECISA DE VOCÊ.")
+    return None
+
+
 def ensaio() -> bool:
     return os.environ.get("AGENTEPESSOAL_ENSAIO") == "1"
 
@@ -91,6 +113,9 @@ def checar(tool_name="", args=None, session_id="", task_id="", **kw):
             proibido = c.caminho_proibido(login, args)
             if proibido:
                 return _bloqueio(f"O caminho {proibido} não é desta pessoa: só os arquivos que ela mandou.")
+    bloqueio_rotina = checar_rotina(tool_name, args, str(session_id or task_id or ""))
+    if bloqueio_rotina:
+        return bloqueio_rotina
     if ensaio():
         if tool_name == "browser_click" and abre_conversa(str(session_id or task_id or ""), args):
             return None

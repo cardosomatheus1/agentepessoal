@@ -86,11 +86,31 @@ class Vm:
 
     def http(self, caminho: str) -> int:
         r = self.no_container("curl", "-s", "-o", "/dev/null", "-m", "20", "-w", "%{http_code}",
-                              f"http://127.0.0.1:80{caminho}")
+                              f"{self.a.http_base}{caminho}")
         return int(r.stdout.strip()) if r.stdout.strip().isdigit() else 0
 
     def cache_reset(self) -> None:
+        if self.a.portal_dir:  # 23/10 (Hermes): o portal serve a release de uma cópia dele; troca e reinicia
+            self.sincronizar_portal()
+            return
         self.no_container("curl", "-s", "-m", "20", "-X", "POST", "http://127.0.0.1:80/api/cache_reset")
+
+    def sincronizar_portal(self) -> None:
+        """A release que está em `atual` vai para a pasta do portal (o mesmo que o portal/subir.sh faz) e o portal
+        reinicia (o Node do Segundo Cérebro sobe de novo com ela)."""
+        rel = self.atual()
+        destino = Path(self.a.portal_dir) / NOME
+        if VERSAO.match(rel) and _real_dir(self.estado / "releases" / rel):
+            alvo = destino / "releases" / rel
+            if not alvo.exists():
+                alvo.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copytree(self.estado / "releases" / rel, alvo, symlinks=True)
+            _escrever(destino / "atual", rel + "\n")
+        self.docker("restart", self.a.container, timeout=180)
+        for _ in range(40):
+            if self.http(self.a.login_path) in (200, 302):
+                return
+            time.sleep(2)
 
     def historico(self, texto: str) -> None:
         if not _real_dir(self.estado):
@@ -326,13 +346,16 @@ print(json.dumps(r))
 
     # ---- sondar / reiniciar ----
     def sondar(self) -> dict:
-        r = {"gateway": self.http("/segundo-cerebro"), "api": self.http("/api/segundo-cerebro"), "login": self.http("/login")}
+        r = {"gateway": self.http("/segundo-cerebro"), "api": self.http("/api/segundo-cerebro"),
+             "login": self.http(self.a.login_path)}
         rel = self.atual()
         if VERSAO.match(rel) and _real_dir(self.estado / "releases" / rel) and _real_dir(self.plugin):
             r["release"] = self.smoke(self.plugin, self.estado / "releases" / rel, self.estado / "sonda" / _agora())
         else:
             r["release"] = {"ok": False, "erro": "sem release/plugin no ar"}
-        r["ok"] = r["gateway"] == 401 and r["api"] == 401 and r["login"] in (200, 302) and bool(r["release"].get("ok"))
+        aceitos = {int(x) for x in str(self.a.gateway_ok).split(",") if x.strip().isdigit()}
+        r["gateway_ok"] = r["gateway"] in aceitos and r["api"] == 401  # sem sessão: recusa (o portal manda ao login)
+        r["ok"] = r["gateway_ok"] and r["login"] in (200, 302) and bool(r["release"].get("ok"))
         return r
 
     def reiniciar(self) -> dict:
@@ -340,7 +363,7 @@ print(json.dumps(r))
         if r.returncode:
             return {"ok": False, "erro": r.stderr[-300:]}
         for _ in range(int(self.a.espera_reinicio / 3)):
-            if self.http("/login") in (200, 302):
+            if self.http(self.a.login_path) in (200, 302):
                 self.historico("reiniciar ok")
                 return {"ok": True}
             time.sleep(3)
@@ -391,6 +414,11 @@ def main(argv=None) -> int:
     ap.add_argument("--python-container", default="/opt/venv-a0/bin/python")
     ap.add_argument("--node-container", default="node")
     ap.add_argument("--espera-reinicio", type=int, default=240)
+    # 23/10 (Hermes): o Segundo Cérebro é servido pelo portal (container "portal", 127.0.0.1:8650, login /entrar)
+    ap.add_argument("--http-base", default="http://127.0.0.1:80")
+    ap.add_argument("--login-path", default="/login")
+    ap.add_argument("--portal-dir", default="")
+    ap.add_argument("--gateway-ok", default="401")
     ap.add_argument("--automatico", action="store_true")
     ap.add_argument("--adotar-manual", action="store_true")
     a = ap.parse_args(argv)

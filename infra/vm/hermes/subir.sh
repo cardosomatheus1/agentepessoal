@@ -134,6 +134,7 @@ docker run -d --name hermes --restart no --network hermes \
   --add-host host.docker.internal:host-gateway \
   -v "$DADOS":/opt/data \
   -v /opt/hermes/a0usr:/a0/usr \
+  -v /opt/hermes/navegador/chromium-1228:/a0/tmp/playwright/chromium-1228:ro \
   "${ESCONDIDOS[@]}" \
   -e AWS_ENDPOINT_URL_BEDROCK_RUNTIME=http://host.docker.internal:8787/hermes/bedrock \
   -e ANTHROPIC_BEDROCK_BASE_URL=http://host.docker.internal:8787/hermes/bedrock \

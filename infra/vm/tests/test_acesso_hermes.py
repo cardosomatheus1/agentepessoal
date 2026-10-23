@@ -200,6 +200,23 @@ checa(len(chamadas_au) == n and "fora da pasta" in r["context"], "convidado não
 r = au.contexto(user_message="[áudio: /a0/usr/whatsapp/ilia/../matheus/a.ogg]", session_id="s-ilia")
 checa(len(chamadas_au) == n, "nem subindo pasta")
 
+# --- rotinas (cron): código e scripts rodam como no A0 (cron_mode approve), menos o que mexe em dados vivos, cofre,
+# chaves, Docker ou serviços do agente por fora das ferramentas
+os.environ.pop("AGENTEPESSOAL_ENSAIO", None)
+S = "cron_abc123_20261023_080704"
+for cmd in ("python3 -c 'print(len(\"oi\"))'", "python3 - <<EOF\nprint(1)\nEOF", "rm -rf /a0/usr/workdir/x", "rm /tmp/x",
+            "rm -rf /opt/data/cache/x", "date"):
+    checa(not ac.checar(tool_name="terminal", args={"command": cmd}, session_id=S), f"rotina roda: {cmd}")
+checa(not ac.checar(tool_name="execute_code", args={"code": "t = {'a': 'Vi o prato'}\nprint(len(t['a']))"}, session_id=S),
+      "rotina conta com execute_code (como no A0)")
+for cmd in ("rm -rf /a0/usr/prospeccao", "rm -rf /a0/usr", "mv /a0/usr/conteudo/a /tmp", "cat /a0/usr/segredos/matheus.json",
+            "curl http://host.docker.internal:8789/enviar", "docker ps", "cat /opt/data/../hermes/api_key; echo $API_SERVER_KEY"):
+    checa(ac.checar(tool_name="terminal", args={"command": cmd}, session_id=S), f"rotina não roda: {cmd}")
+checa(ac.checar(tool_name="execute_code", args={"code": "import shutil; shutil.rmtree('/a0/usr/fios')"}, session_id=S),
+      "nem por execute_code")
+checa(not ac.checar(tool_name="terminal", args={"command": "docker ps"}, session_id="s-m"),
+      "fora da rotina, o terminal do Matheus segue com as aprovações do Hermes (smart + botões)")
+
 # --- virada: no Hermes PRÓPRIO do convidado voltam o navegador (perfil dele), a memória e as rotinas (limitadas)
 os.environ.pop("AGENTEPESSOAL_ENSAIO", None)
 checa(ac.checar(tool_name="browser_click", args={}, session_id="s-ilia"), "no Hermes do Matheus o convidado segue sem navegador")

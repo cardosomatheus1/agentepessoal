@@ -300,8 +300,14 @@ def _vm_json(vm, comando: str, timeout: int = 900) -> dict:
         raise SystemExit(f"resposta inesperada da VM:\n{saida[-1500:]}")
 
 
+# 23/10 (virada ao Hermes): o lado da VM fala com o portal (implantar.py põe ALVO_HERMES aqui quando o A0 está parado)
+ALVO_VM = ""
+ALVO_HERMES = ("--container portal --python-container /opt/hermes/.venv/bin/python3 --http-base http://127.0.0.1:8650 "
+               "--login-path /entrar --portal-dir /opt/hermes/portal --gateway-ok 302,401")
+
+
 def _lado_vm(pasta: str, acao: str, versao: str, extra: str = "") -> str:
-    return f"python3 {pasta}/vm/segundo_cerebro_vm.py {acao} --versao {versao} {extra}".strip()
+    return f"python3 {pasta}/vm/segundo_cerebro_vm.py {acao} --versao {versao} {ALVO_VM} {extra}".strip()
 
 
 def guarda_de_versao(no_ar: dict, head: str, eh_ancestral, adotar: bool = False) -> None:
@@ -364,7 +370,7 @@ def _implantar_pacote(vm, enviar, eh_ancestral, url_publica, sondar_publico, hea
         raise SystemExit(f"a troca não terminou ({troca.get('erro', '?')}): rode --segundo-cerebro --rollback e confira.")
     reiniciou = False
     sonda = _vm_json(vm, lado("sondar"), 300)
-    if not sonda.get("ok") and sonda.get("gateway") != 401:
+    if not sonda.get("ok") and not sonda.get("gateway_ok", sonda.get("gateway") == 401):
         # the gateway is not registered in the running web app (first install): it registers at start-up only
         reinicio = _vm_json(vm, lado("reiniciar"), 400)
         reiniciou = True
@@ -383,7 +389,7 @@ def reverter(vm) -> None:
     """Put back the plugin snapshot and the release that ran before the last deploy (not the git version), with the
     copy of the VM-side script the deploy left in /opt/a0/usr/segundo_cerebro/vm. Nothing is deleted."""
     script = f"{VM_USR}/segundo_cerebro/vm/segundo_cerebro_vm.py"
-    volta = _vm_json(vm, f"if test -f {script}; then python3 {script} reverter; else "
+    volta = _vm_json(vm, f"if test -f {script}; then python3 {script} reverter {ALVO_VM}; else "
                          "echo '{\"ok\": false, \"erro\": \"Segundo Cérebro nunca foi implantado nesta VM\"}'; fi", 600)
     if not volta.get("ok"):
         raise SystemExit(f"rollback não feito: {volta.get('erro', volta)}")
