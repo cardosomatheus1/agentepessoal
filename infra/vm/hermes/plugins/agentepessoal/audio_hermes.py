@@ -2,7 +2,7 @@
 que ela baixou em /a0/usr/whatsapp/<login>/) e, antes do modelo ver o turno, este gancho `pre_llm_call` transcreve com o
 mesmo faster-whisper do A0 (whatsapp/api/receber.py: modelo "small", int8, idioma detectado; o usual da pessoa só
 quando a detecção não tem certeza) e entrega o texto como contexto do turno: "🎤 [áudio em pt] …".
-Só arquivos das pastas do celular; um áudio é transcrito uma vez (memória por caminho)."""
+Só arquivos da pasta do celular de quem fala; um áudio é transcrito uma vez (memória por caminho)."""
 import logging
 import re
 import subprocess
@@ -58,8 +58,13 @@ def contexto(user_message="", session_id="", task_id="", **kw):
         return None
     login = sys.modules["agentepessoal_ponte_a0"].login_da_sessao(str(session_id or task_id or ""))
     partes = []
+    import os
+
+    # só a pasta do celular de QUEM fala (revisão OpenCode 23/10: um convidado digitando a marca leria o áudio de outro)
+    permitidas = (f"/a0/usr/whatsapp/{login}/", PASTAS[1])
     for caminho in achados[:3]:
-        if not caminho.startswith(PASTAS) or ".." in caminho:
+        real = os.path.realpath(caminho)
+        if not login or not real.startswith(permitidas) or ".." in caminho:
             partes.append(f"(áudio fora da pasta do celular: {caminho})")
             continue
         if caminho not in _feitos:

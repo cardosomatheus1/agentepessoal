@@ -194,6 +194,11 @@ checa("fora da pasta" in r["context"] and len(chamadas_au) == 1, "arquivo fora d
 checa(au.contexto(user_message="sem áudio", session_id="s-m") is None, "mensagem sem áudio: nada")
 au.contexto(user_message="[áudio: /a0/usr/whatsapp/ilia/x.ogg]", session_id="s-ilia")
 checa(chamadas_au[-1] == ("/a0/usr/whatsapp/ilia/x.ogg", None), "convidado: o idioma dele (Ilia: detectado)")
+n = len(chamadas_au)
+r = au.contexto(user_message="[áudio: /a0/usr/whatsapp/matheus/2026-10/outro.ogg]", session_id="s-ilia")
+checa(len(chamadas_au) == n and "fora da pasta" in r["context"], "convidado não lê o áudio de outra pessoa")
+r = au.contexto(user_message="[áudio: /a0/usr/whatsapp/ilia/../matheus/a.ogg]", session_id="s-ilia")
+checa(len(chamadas_au) == n, "nem subindo pasta")
 
 if falhas:
     raise SystemExit("test_acesso_hermes: " + "; ".join(falhas))
