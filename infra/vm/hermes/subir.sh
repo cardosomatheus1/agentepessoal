@@ -28,7 +28,18 @@ for s in "$AQUI"/skills/*/; do
   n=$(basename "$s")
   [ -e "$SK/$n" ] || { cp -r "$s" "$SK/$n"; echo "$n $(date -u +%FT%TZ)" >> "$DADOS/agentepessoal/skills_semeadas.txt"; }
 done
-chown -R 10000:10000 "$SK" "$DADOS/agentepessoal"
+# As rotinas (fase 5): a fonte vai junto e o rotinas_aplicar.py (dentro do container, depois de subir) cria as novas
+# PAUSADAS e atualiza as que existem sem mudar ligada/pausada. O portão das rotinas que têm um (portao.json do A0) é
+# um "script" do cron do Hermes: um embrulho por rotina em scripts/.
+rm -rf "$DADOS/agentepessoal/rotinas_fonte"; cp -r "$AQUI/rotinas" "$DADOS/agentepessoal/rotinas_fonte"
+install -m 755 "$AQUI/rotinas_aplicar.py" "$DADOS/agentepessoal/rotinas_aplicar.py"
+mkdir -p "$DADOS/scripts"
+install -m 644 "$AQUI/scripts/portao.py" "$DADOS/scripts/portao.py"
+for u in $(python3 -c "import json;print(' '.join(k for k,v in json.load(open('/opt/a0/usr/plugins/rotinas/portao.json')).items() if isinstance(v,dict) and v.get('fontes')))" 2>/dev/null); do
+  printf 'import runpy, sys\nsys.argv = ["portao.py", "%s"]\nrunpy.run_path("/opt/data/scripts/portao.py", run_name="__main__")\n' "$u" \
+    > "$DADOS/scripts/portao_$u.py"
+done
+chown -R 10000:10000 "$SK" "$DADOS/agentepessoal" "$DADOS/scripts"
 # Chave do API server: gerada uma vez, só na VM (nunca no git nem no chat).
 if [ ! -s /opt/hermes/api_key ]; then
   umask 077; openssl rand -hex 32 > /opt/hermes/api_key
@@ -100,5 +111,9 @@ done
 # De pé não basta: uma pergunta de verdade ao modelo, pelo mesmo caminho das conversas (Claude no Bedrock pelo proxy).
 RESPOSTA=$(curl -sS -m 120 http://127.0.0.1:8642/v1/chat/completions -H "Authorization: Bearer $(cat /opt/hermes/api_key)" \
   -H 'Content-Type: application/json' -d '{"model":"hermes","messages":[{"role":"user","content":"Responda só: PONTE OK"}]}' || true)
-if echo "$RESPOSTA" | grep -qi "PONTE OK"; then echo "HERMES_OK $(docker inspect -f '{{.Image}}' hermes)"; exit 0; fi
+if echo "$RESPOSTA" | grep -qi "PONTE OK"; then
+  docker exec hermes python3 /opt/data/agentepessoal/rotinas_aplicar.py | grep "^ROTINAS_OK" \
+    || { echo "HERMES_SEM_ROTINAS: as rotinas não foram aplicadas"; exit 1; }
+  echo "HERMES_OK $(docker inspect -f '{{.Image}}' hermes)"; exit 0
+fi
 echo "HERMES_NAO_RESPONDEU: ${RESPOSTA:0:400}"; docker logs --tail 40 hermes; exit 1

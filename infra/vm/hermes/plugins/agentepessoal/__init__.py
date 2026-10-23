@@ -26,6 +26,9 @@ uso = _sub("agentepessoal_uso", "uso_hermes.py")
 acesso = _sub("agentepessoal_acesso", "acesso_hermes.py")
 aprovacoes = _sub("agentepessoal_aprovacoes", "aprovacoes_hermes.py")
 relogio = _sub("agentepessoal_relogio", "relogio_hermes.py")
+rotinas = _sub("agentepessoal_rotinas", "rotinas_hermes.py")
+contexto = _sub("agentepessoal_contexto", "contexto_hermes.py")
+reuniao = _sub("agentepessoal_reuniao", "reuniao_hermes.py")
 log = logging.getLogger("agentepessoal")
 
 # (plugin, ferramenta). "Hermes primeiro" (23/10): só entra o que é nosso de verdade (dados, Raiz, Segundo Cérebro).
@@ -64,6 +67,14 @@ def register(ctx):
     acesso.registrar(ctx)  # convidados só com o uso pessoal; ensaio: navegador só lê
     aprovacoes.registrar(ctx)  # revisor + regras do Matheus antes de ação de risco
     relogio.registrar(ctx)  # tarefas de fundo sem modelo (só com AGENTEPESSOAL_RELOGIO=1: até a virada, o A0 roda)
+    rotinas.registrar(ctx)  # rodada do cron: bloco de tarefa agendada e o resultado ao celular (regras do A0)
+    contexto.registrar(ctx)  # ficha e decisões em vigor de quem fala, no 1º turno
+    try:  # `reuniao` por cima do cron do Hermes (briefing e pós-reunião)
+        reuniao.registrar(ctx)
+        feitas_extra = ["reuniao"]
+    except Exception as exc:
+        feitas_extra = []
+        log.warning("agentepessoal: reuniao pulada: %s: %s", type(exc).__name__, exc)
     feitas, puladas = [], []
     for plugin, nome in FERRAMENTAS:
         try:
@@ -73,4 +84,5 @@ def register(ctx):
             feitas.append(nome)
         except Exception as exc:  # one broken tool never takes the others down
             puladas.append(f"{plugin}/{nome}: {type(exc).__name__}: {exc}"[:300])
-    log.warning("agentepessoal: %d ferramentas registradas; puladas: %s", len(feitas), puladas or "nenhuma")
+    log.warning("agentepessoal: %d ferramentas registradas; puladas: %s", len(feitas) + len(feitas_extra),
+                puladas or "nenhuma")

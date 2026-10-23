@@ -51,6 +51,7 @@ def main() -> int:
                                                        type("S", (), {"get_caller_identity": lambda self: {"Account": "1"}})())})
         p.instancia = lambda: "i-teste"
         p.TAREFAS = tmp / "tasks.json"
+        p.HERMES = tmp / "hermes_jobs.json"  # absent at first: no Hermes jobs
         agora = dt.datetime(2026, 10, 12, 20, 0, tzinfo=dt.timezone.utc)
 
         p.TAREFAS.write_text('{"tasks": [{"name": "Resumo", "ty', encoding="utf-8")  # cut in half
@@ -71,6 +72,24 @@ def main() -> int:
         p.TAREFAS.write_text(json.dumps({"tasks": []}), encoding="utf-8")
         p.agendar(agora)
         ok(ag.apagados == [p.NOME], "sem nenhuma tarefa, o despertar sai (ficar dormindo é o certo)")
+        # 23/10 (Hermes, fase 5): the Hermes cron wakes the VM too, but only for active jobs (all paused until the cutover)
+        cedo, tarde = (agora + dt.timedelta(hours=2)).isoformat(), (agora + dt.timedelta(hours=5)).isoformat()
+        p.HERMES.write_text(json.dumps({"jobs": [
+            {"id": "a1", "name": "🎯 Prospecção — executar", "enabled": True, "state": "paused", "next_run_at": cedo},
+            {"id": "a2", "name": "📰 Resumo do dia", "enabled": True, "state": "scheduled", "next_run_at": tarde},
+            {"id": "a3", "name": "desligada", "enabled": False, "state": "scheduled", "next_run_at": cedo}]}), encoding="utf-8")
+        p.agendar(agora)
+        c = ag.criados[-1]
+        ok(c["ScheduleExpression"] == "at(2026-10-13T00:55:00)", f"acorda pela rotina ativa do Hermes, não pela pausada: {c}")
+        p.HERMES.write_text(json.dumps({"jobs": [{"id": "a1", "name": "x", "enabled": True, "state": "paused",
+                                                  "next_run_at": cedo}]}), encoding="utf-8")
+        n = len(ag.apagados)
+        p.agendar(agora)
+        ok(len(ag.apagados) == n + 1, "só rotinas pausadas no Hermes (o ensaio): nada acorda a VM por elas")
+        p.HERMES.write_text('{"jobs": [', encoding="utf-8")
+        n = (len(ag.apagados), len(ag.criados))
+        p.agendar(agora)
+        ok((len(ag.apagados), len(ag.criados)) == n, "agendamentos do Hermes ilegíveis: o despertar que já estava fica")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:

@@ -37,6 +37,8 @@ plugin.__file__ = str(P / "__init__.py")
 src = (P / "__init__.py").read_text().replace('_aqui / "ponte_a0.py"', 'Path(__file__).resolve().parent / "ponte_a0.py"')
 exec(compile(src, str(P / "__init__.py"), "exec"), plugin.__dict__)
 plugin.ponte = ponte
+sys.modules["agentepessoal_ponte_a0"].PLUGINS = ponte.PLUGINS  # the modules of the plugin read the bridge from there
+sys.modules["agentepessoal_ponte_a0"].SESSOES = ponte.SESSOES
 
 registradas = {}
 

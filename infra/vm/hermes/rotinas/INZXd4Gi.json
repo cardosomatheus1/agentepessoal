@@ -1,0 +1,9 @@
+{
+ "a0": "INZXd4Gi",
+ "nome": "✍️ Meu estilo de escrita",
+ "agenda": "13 10 1 * *",
+ "fuso": "America/Bahia",
+ "ligada_no_a0": true,
+ "modelo": "us.anthropic.claude-sonnet-5-5",
+ "pedido": "Você aprende o estilo de escrita do usuário em modo só leitura.\n\nAprenda (ou atualize) como o Matheus escreve, para os rascunhos soarem como ele e não como robô. Só leitura: não envie nem altere nada.\n\n1. Com o conector `google` (user_google_email = falhanosistema1111@gmail.com), leia 30 a 40 e-mails que ELE enviou nos últimos 6 meses (busque \"in:sent\"; se vier vazio, \"from:me\"), variados. Ignore encaminhamentos sem texto dele.\n2. `rascunho` acao \"amostras\": o que ele de fato digitou no celular. SÓ isso conta como a voz dele no chat — nunca use prompts de tarefas agendadas, mensagens de teste ou textos de botões.\n3. Escreva o perfil e salve com `rascunho` acao \"estilo_salvar\", `perfil` em português, em duas partes:\n   - *E-mail:* saudações e despedidas, tamanho, tom, tratamento, como pede/cobra/recusa/agradece, 2–3 trechos curtos de exemplo. Se não houver e-mails enviados, diga isso e defina um padrão coerente com ele: curto, direto, cordial, português correto (sem as abreviações do chat), saudação \"Oi, <nome>!\" ou \"Olá, <nome>,\" e despedida \"Abraço,\" / \"Obrigado,\" + \"Matheus\";\n   - *Chat:* como ele escreve no celular (abreviações, pontuação, tamanho, tom), com 3 exemplos curtos reais.\n   Sem nomes de terceiros, valores, telefones ou dados sensíveis nos exemplos.\n4. Resposta final: exatamente SEM NOVIDADE."
+}

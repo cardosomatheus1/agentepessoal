@@ -7,7 +7,9 @@
                                   then does not hibernate)
 
 Reads Agent Zero's /opt/a0/usr/scheduler/tasks.json: "scheduled" tasks (cron fields + timezone)
-and "planned" tasks (a list of datetimes still to run).
+and "planned" tasks (a list of datetimes still to run). 23/10 (Hermes migration, phase 5): also the Hermes cron
+(/opt/hermes/data/cron/jobs.json): every active job (enabled and not paused) by its next_run_at; paused ones (all of
+them until the cutover) wake nothing. No Hermes file = no Hermes jobs; an unreadable one keeps the wake-up already set.
 
 12/10 review: an unreadable tasks file looked like "nothing scheduled" and DELETED the wake-up; now the wake-up already
 set is kept. And a start refused for a moment (the VM still stopping) is retried by EventBridge instead of being lost
@@ -24,6 +26,7 @@ import boto3
 from croniter import croniter
 
 TAREFAS = Path("/opt/a0/usr/scheduler/tasks.json")
+HERMES = Path("/opt/hermes/data/cron/jobs.json")
 REGION = "us-east-1"
 NOME = "agentepessoal-acordar-tarefa"
 ANTES = dt.timedelta(minutes=5)
@@ -62,7 +65,29 @@ def proximas(agora: dt.datetime) -> list[tuple[dt.datetime, str]]:
                         saida.append((d.astimezone(dt.timezone.utc), nome))
                 except ValueError:
                     continue
-    return sorted(saida)
+    return sorted(saida + proximas_hermes(agora))
+
+
+def proximas_hermes(agora: dt.datetime) -> list[tuple[dt.datetime, str]]:
+    if not HERMES.exists():
+        return []
+    try:
+        dados = json.loads(HERMES.read_text())
+        jobs = dados.get("jobs", []) if isinstance(dados, dict) else dados
+    except Exception as exc:
+        raise LeituraFalhou(f"Hermes: {str(exc)[:180]}") from exc
+    saida = []
+    for j in jobs or []:
+        if not isinstance(j, dict) or j.get("enabled") is False or j.get("state") == "paused" or not j.get("next_run_at"):
+            continue
+        try:
+            d = dt.datetime.fromisoformat(str(j["next_run_at"]))
+        except ValueError:
+            continue
+        d = d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
+        if d > agora:
+            saida.append((d.astimezone(dt.timezone.utc), f"Hermes: {j.get('name', j.get('id', ''))}"))
+    return saida
 
 
 def instancia() -> str:

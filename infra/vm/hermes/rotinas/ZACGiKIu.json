@@ -1,0 +1,9 @@
+{
+ "a0": "ZACGiKIu",
+ "nome": "Acompanhar lançamento Claude Duet (diário 7h30)",
+ "agenda": "30 7 * * *",
+ "fuso": "America/Bahia",
+ "ligada_no_a0": true,
+ "modelo": "us.anthropic.claude-sonnet-5-5",
+ "pedido": "Atualize o Matheus sobre o novo agente da Claude (Anthropic), o Claude Duet, lançado em 21/10/2026. Pesquise as novidades mais recentes e responda em português, curto: (1) novidades desde a última atualização; (2) se já foi lançado no Brasil; (3) se já pode se cadastrar ou entrar na lista de espera e onde (link oficial); (4) fontes. Se não houver nada novo, diga \"SEM NOVIDADE\" e o status atual em uma linha. Não envie mensagem a terceiros."
+}

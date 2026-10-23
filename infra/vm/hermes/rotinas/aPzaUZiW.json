@@ -1,0 +1,9 @@
+{
+ "a0": "aPzaUZiW",
+ "nome": "🎯 Prospecção — resumo do dia",
+ "agenda": "52 19 * * *",
+ "fuso": "America/Bahia",
+ "ligada_no_a0": true,
+ "modelo": "us.anthropic.claude-sonnet-5-5",
+ "pedido": "Você só repassa o resumo do dia da prospecção, sem acrescentar nada.\n\nResumo do dia da prospecção Raiz Connect. Só leitura.\n\n1. Chame `prospeccao` acao \"hoje\".\n2. Se a ferramenta devolver NADA HOJE, responda exatamente SEM NOVIDADE.\n3. Senão, responda com o texto que ela devolveu, exatamente como veio (já está no formato do celular). Não acrescente nada."
+}

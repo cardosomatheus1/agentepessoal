@@ -1,0 +1,9 @@
+{
+ "a0": "gOqdMBE3",
+ "nome": "🎯 Prospecção — semana",
+ "agenda": "41 8 * * 1",
+ "fuso": "America/Bahia",
+ "ligada_no_a0": false,
+ "modelo": "us.anthropic.claude-sonnet-5-5",
+ "pedido": "Você faz o relatório semanal da prospecção, só leitura.\n\nRelatório semanal da prospecção Raiz Connect (segunda de manhã). Só leitura.\n\n1. `prospeccao` acao \"metricas\" com dias 7 e de novo com dias 28.\n2. Resposta final (vai inteira ao celular do Matheus), objetiva, no máximo 12 linhas, sem jargão:\n*Semana em números:* perfis aquecidos, abordados, responderam (%), leads (%), demos.\n*O que funcionou:* variante A × B (taxa de resposta de cada uma; só diga que uma é melhor se houver pelo menos 15 abordados em cada), segmento e cidade que mais responderam; respostas a comentários (grupo \"comentarios\" das métricas).\n*O que não funcionou:* propostas que ele pulou (taxa de aprovação), falhas e bloqueios.\n*Mudança para esta semana:* 1 a 3 ajustes concretos (ex.: \"focar em confeitarias de Salvador\", \"usar a variante B\", \"comentários antes da DM\"), cada um com o número que justifica.\nSe ainda houver menos de 20 abordados no total, diga que é cedo para conclusões e só mostre os números.\nSe as métricas de 28 dias trouxerem `ab` preenchido com \"proponho usar só a…\", ponha essa frase em *Mudança para esta semana* e pergunte se pode fixar; quando ele disser que pode, chame `prospeccao` acao \"variante\" com texto \"A\" ou \"B\"."
+}
