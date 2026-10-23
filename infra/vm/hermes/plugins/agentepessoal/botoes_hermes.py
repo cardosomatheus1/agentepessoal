@@ -106,13 +106,19 @@ def reentregar(conversa_fn=None, agora: float | None = None) -> int:
         return 0
     conversa_fn = conversa_fn or conversa
     agora = agora or time.time()
-    linhas = PENDENTES.read_text(encoding="utf-8").splitlines()
-    PENDENTES.unlink()
+    lendo = PENDENTES.with_suffix(".lendo")
+    PENDENTES.rename(lendo)  # o que chegar enquanto isso vai para um arquivo novo (revisão OpenCode 23/10)
+    linhas = lendo.read_text(encoding="utf-8").splitlines()
+    lendo.unlink()
     ficam, entregues = [], 0
     for linha in linhas:
         try:
             item = json.loads(linha)
         except ValueError:
+            continue
+        if agora - float(item.get("em") or agora) > 24 * 3600:  # velha (ex.: de antes de uma volta): só o operador
+            with PENDENTES.with_suffix(".falhou").open("a", encoding="utf-8") as f:
+                f.write(linha + "\n")
             continue
         try:
             if conversa_fn(item["usuario"], item["texto"]).get("ok"):
@@ -120,11 +126,7 @@ def reentregar(conversa_fn=None, agora: float | None = None) -> int:
                 continue
         except Exception:
             pass
-        if agora - float(item.get("em") or agora) > 24 * 3600:
-            with PENDENTES.with_suffix(".falhou").open("a", encoding="utf-8") as f:
-                f.write(linha + "\n")
-        else:
-            ficam.append(linha)
+        ficam.append(linha)
     if ficam:
         with PENDENTES.open("a", encoding="utf-8") as f:
             f.write("\n".join(ficam) + "\n")

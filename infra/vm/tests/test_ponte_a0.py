@@ -178,6 +178,11 @@ checa(plugin.botoes._para_a_conversa("matheus", "resposta da loja")["ok"] and pl
 entregues_p = []
 checa(plugin.botoes.reentregar(lambda u, t: entregues_p.append((u, t)) or {"ok": True}) == 1
       and entregues_p == [("matheus", "resposta da loja")] and not plugin.botoes.PENDENTES.exists(), "e vai depois")
+import time as _t
+plugin.botoes.PENDENTES.write_text(json.dumps({"em": _t.time() - 90000, "usuario": "matheus", "texto": "velha"}) + "\n")
+checa(plugin.botoes.reentregar(lambda u, t: entregues_p.append((u, t)) or {"ok": True}) == 0
+      and plugin.botoes.PENDENTES.with_suffix(".falhou").exists(), "pendência de mais de 24 h não vai mais (fica para o operador)")
+plugin.botoes.conversa = lambda u, t: {"ok": True}
 rec2 = plugin.botoes.receber()
 checa(rec2._para_a_conversa is plugin.botoes._para_a_conversa, "o vigia e o aprender entregam sem o UserMessage do A0")
 # delegar só ao OpenClaw; celular com a tela num arquivo
