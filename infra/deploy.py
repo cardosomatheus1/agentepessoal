@@ -174,9 +174,11 @@ def ensure_vm_role() -> str:
                     "Resource": "*",
                     "Condition": {"StringEquals": {"kms:ViaService": f"ssm.{REGION}.amazonaws.com"}},
                 },
-                {   # ponte_whatsapp reads what the control function queued
+                {   # ponte_whatsapp reads what the control function queued; ChangeMessageVisibility (24/10): a message
+                    # taken while the Hermes restarts goes back to the queue at once (VOLTA_FILA), not after the timeout
                     "Effect": "Allow",
-                    "Action": ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:GetQueueUrl"],
+                    "Action": ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:GetQueueUrl",
+                               "sqs:ChangeMessageVisibility"],
                     "Resource": f"arn:aws:sqs:{REGION}:{account}:{WHATSAPP_QUEUE}",
                 },
                 {   # proximo_despertar.py: wake exactly for the next scheduled task
@@ -185,7 +187,7 @@ def ensure_vm_role() -> str:
                     "Resource": f"arn:aws:scheduler:{REGION}:{account}:schedule/default/{NAME}-acordar-tarefa",
                 },
                 {"Effect": "Allow", "Action": "iam:PassRole", "Resource": f"arn:aws:iam::{account}:role/{WAKE_ROLE}"},
-                {   # the idle watchdog hibernates its own instance
+                {   # hibernate.sh ("Desligar" on the control page; idle hibernation only with HIBERNAR=1) stops it
                     "Effect": "Allow",
                     "Action": "ec2:StopInstances",
                     "Resource": f"arn:aws:ec2:{REGION}:{account}:instance/*",
@@ -744,6 +746,9 @@ def main() -> None:
         return ensure_wake_schedule(find_instance()["InstanceId"])
     if "--recuperacao" in sys.argv:  # only the stuck-VM alarms and their function (23/10)
         return ensure_recovery(find_instance()["InstanceId"])
+    if "--vm-iam" in sys.argv:  # only the VM role's permissions (24/10: sqs:ChangeMessageVisibility for the bridge)
+        ensure_vm_role()
+        return log("VM role policy updated")
     if "--controle-iam" in sys.argv:  # only the control function's permissions (code: implantar.py --controle)
         ensure_control_role(find_instance()["InstanceId"])
         return log("control role policy updated")

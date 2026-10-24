@@ -266,6 +266,17 @@ def main() -> int:
            f"WhatsApp: no máximo 1 a cada 4 min: {whats}")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+    # 24/10 (AccessDenied em sqs:changemessagevisibility às 02:41): toda chamada da ponte à fila é permitida ao papel
+    # da VM no deploy.py (só na fila agentepessoal-whatsapp)
+    import re as _re
+    fonte = (RAIZ / "infra" / "vm" / "ponte_whatsapp.py").read_text()
+    usadas = {"".join(x.capitalize() for x in n.split("_")) for n in _re.findall(r"\bsqs\.([a-z_]+)\(", fonte)}
+    deploy = (RAIZ / "infra" / "deploy.py").read_text()
+    bloco = deploy[deploy.index("# ponte_whatsapp reads what the control function queued"):]
+    bloco = bloco[:bloco.index("WHATSAPP_QUEUE}")]
+    permitidas = set(_re.findall(r'"sqs:(\w+)"', bloco))
+    ok(bool(usadas) and usadas <= permitidas, f"papel da VM sem permissão para {sorted(usadas - permitidas)} (usa {sorted(usadas)})")
+    ok("ChangeMessageVisibility" in usadas, f"a ponte devolve à fila com change_message_visibility: {sorted(usadas)}")
     for f in falhas:
         print("FALHA", f)
     print("fila:", "ok" if not falhas else f"{len(falhas)} falha(s)")
