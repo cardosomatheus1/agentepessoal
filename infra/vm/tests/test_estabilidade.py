@@ -48,7 +48,7 @@ def main() -> int:
     checa("[Journal]" in j and "Storage=persistent" in j and "SystemMaxUse=" in j, f"journald: {j!r}")
     lr = e.texto_logrotate_syslog()
     checa("/var/log/syslog" in lr and "\tdaily" in lr and "maxsize 200M" in lr and "rotate 3" in lr
-          and "rsyslog-rotate" in lr and lr.count("{") == 1 == lr.count("}"), f"logrotate do syslog: {lr!r}")
+          and "rsyslog-rotate" in lr and "su root syslog" in lr and lr.count("{") == 1 == lr.count("}"), f"logrotate do syslog: {lr!r}")
 
     tmp = Path(tempfile.mkdtemp(prefix="estab-"))
     arq = tmp / "etc" / "x.conf"

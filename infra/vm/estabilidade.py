@@ -98,7 +98,7 @@ def texto_logrotate_syslog() -> str:
     arquivos = [f"/var/log/{n}" for n in ("syslog", "mail.info", "mail.warn", "mail.err", "mail.log", "daemon.log",
                                           "kern.log", "auth.log", "user.log", "lpr.log", "cron.log", "debug", "messages")]
     return ("# infra/vm/estabilidade.py (24/10): todo dia, 3 cópias, teto de 200 MB por arquivo\n"
-            + "\n".join(arquivos) + "\n{\n\trotate 3\n\tdaily\n\tmaxsize 200M\n\tmissingok\n\tnotifempty\n\tcompress\n"
+            + "\n".join(arquivos) + "\n{\n\tsu root syslog\n\trotate 3\n\tdaily\n\tmaxsize 200M\n\tmissingok\n\tnotifempty\n\tcompress\n"
             "\tdelaycompress\n\tsharedscripts\n\tpostrotate\n\t\t/usr/lib/rsyslog/rsyslog-rotate\n\tendscript\n}\n")
 
 
