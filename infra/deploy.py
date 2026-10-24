@@ -5,6 +5,7 @@ Usage:  python infra/deploy.py            create / update cloud resources
         python infra/deploy.py --update   also push vm/ changes to the running VM (re-runs setup.sh)
         python infra/deploy.py --recuperacao   only the stuck-VM alarms and their function (infra/control/recuperar.py)
         python infra/deploy.py --controle-iam  only the control function's permissions
+        python infra/deploy.py --opencode      only the OpenCode fixed AWS address (infra/opencode_aws.py, 24/10)
 """
 
 import gzip
@@ -289,7 +290,7 @@ def ensure_security_group(vpc: str) -> str:
         return found[0]["GroupId"]
     sg = ec2.create_security_group(
         GroupName=f"{NAME}-vm",
-        Description="agentepessoal VM: no inbound; access via Cloudflare tunnel and SSM",
+        Description="agentepessoal VM: no inbound; access via Cloudflare tunnel and SSM",  # 24/10: + 4097 from CloudFront VPC origin only (opencode_aws.py)
         VpcId=vpc,
         TagSpecifications=[{"ResourceType": "security-group", "Tags": TAGS}],
     )["GroupId"]
@@ -749,6 +750,9 @@ def main() -> None:
     if "--vm-iam" in sys.argv:  # only the VM role's permissions (24/10: sqs:ChangeMessageVisibility for the bridge)
         ensure_vm_role()
         return log("VM role policy updated")
+    if "--opencode" in sys.argv:  # only the OpenCode fixed address: CloudFront + VPC origin (24/10)
+        from opencode_aws import main as opencode_aws
+        return opencode_aws()
     if "--controle-iam" in sys.argv:  # only the control function's permissions (code: implantar.py --controle)
         ensure_control_role(find_instance()["InstanceId"])
         return log("control role policy updated")

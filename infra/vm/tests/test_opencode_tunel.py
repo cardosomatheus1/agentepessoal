@@ -1,5 +1,6 @@
 """infra/vm/opencode_tunel.sh (23/10): endereço fixo com o token no cofre, túnel rápido sem ele; o endereço do
-momento vai ao SSM; o token nunca na linha de comando. aws/systemctl/journalctl/setpriv falsos, cofre temporário.
+momento vai ao SSM; o token nunca na linha de comando. 24/10: o endereço fixo da AWS (url-aws) tem a preferência
+quando responde; o túnel só volta ao celular depois de 3 falhas seguidas do da AWS. aws/systemctl/journalctl/setpriv falsos, cofre temporário.
 Run from the repository root: python3 infra/vm/tests/test_opencode_tunel.py"""
 
 import json
@@ -19,11 +20,13 @@ def preparar(tmp: Path, cofre: dict, journal: str) -> dict:
     reg = tmp / "chamadas.log"
     (tmp / "journal.txt").write_text(journal)
     falsos = {
-        "aws": 'echo "aws $*" >> "$REG"; case "$*" in *get-parameter*) cat "$TMP/ssm.txt" 2>/dev/null;; *put-parameter*) '
+        "aws": 'echo "aws $*" >> "$REG"; case "$*" in *get-parameter*url-aws*) cat "$TMP/aws.txt" 2>/dev/null;; '
+               '*get-parameter*) cat "$TMP/ssm.txt" 2>/dev/null;; *put-parameter*) '
                'v=$(echo "$*" | sed "s/.*--value \\([^ ]*\\).*/\\1/"); echo "$v" > "$TMP/ssm.txt";; esac',
         "systemctl": 'echo "systemctl $*" >> "$REG"; case "$*" in show*) echo "Fri 2026-10-23 22:10:05 UTC";; esac',
         "journalctl": 'echo "journalctl $*" >> "$REG"; cat "$TMP/journal.txt"',
         "logger": 'echo "logger $*" >> "$REG"',
+        "curl": 'echo "curl $*" >> "$REG"; cat "$TMP/curl.txt" 2>/dev/null || printf 000',
         "setpriv": 'echo "setpriv $* TOKEN=${TUNNEL_TOKEN:-}" >> "$REG"',
     }
     for nome, corpo in falsos.items():
@@ -35,7 +38,8 @@ def preparar(tmp: Path, cofre: dict, journal: str) -> dict:
     av.write_text('#!/bin/bash\necho "avisar $*" >> "$REG"\n')
     av.chmod(0o755)
     return {**os.environ, "AVISAR": str(av), "PATH": f"{bins}:{os.environ['PATH']}", "REG": str(reg), "TMP": str(tmp),
-            "COFRE": str(tmp / "cofre.json"), "AWS": str(bins / "aws")}
+            "COFRE": str(tmp / "cofre.json"), "AWS": str(bins / "aws"), "CURL": str(bins / "curl"),
+            "ESTADO": str(tmp / "estado")}
 
 
 def rodar(tmp: Path, env: dict, *args) -> tuple[int, str]:
@@ -85,6 +89,38 @@ def main() -> int:
     checa("eyJhIjoi-segredo" not in linha.split(" TOKEN=")[0], "token fora dos argumentos")
     checa((tmp / "ssm.txt").read_text().strip() == "https://oc.exemplo.com.br", f"endereço do cofre: {log}")
     checa("eyJhIjoi-segredo" not in "".join(l for l in log.splitlines() if not l.startswith("setpriv")), "token fora dos logs")
+
+    # 4. endereço fixo da AWS (24/10): respondendo (401 sem senha), é ele que vai ao SSM e ao Telegram, mesmo com o
+    # túnel rápido no ar; o teste de vida é /api/session no próprio endereço
+    aws = "https://d1abc2def3.cloudfront.net"
+    tmp = Path(tempfile.mkdtemp(prefix="octun-"))
+    env = preparar(tmp, {}, rapido)
+    (tmp / "aws.txt").write_text(aws + "\n")
+    (tmp / "curl.txt").write_text("401")
+    rc, log = rodar(tmp, env, "publicar")
+    checa(rc == 0 and (tmp / "ssm.txt").read_text().strip() == aws, f"AWS publicado: rc={rc} {log}")
+    checa(f"curl -s -o /dev/null -w %{{http_code}} -m 15 --retry 1 {aws}/api/session" in log, f"teste de vida: {log}")
+    checa(log.count(f"avisar {aws}") == 1 and "reserva" not in log, f"aviso do fixo, uma vez: {log}")
+    # 5. AWS falhando: 2 minutos seguem no da AWS (nada muda nem é avisado); no 3º vai a reserva, avisada como provisória
+    (tmp / "curl.txt").write_text("502")
+    for _ in range(2):
+        rc, log = rodar(tmp, env, "publicar")
+    checa((tmp / "ssm.txt").read_text().strip() == aws and log.count("avisar") == 1, f"tropeço não troca: {log}")
+    rc, log = rodar(tmp, env, "publicar")
+    checa((tmp / "ssm.txt").read_text().strip() == "https://abc-def-ghi.trycloudflare.com", f"3ª falha vai à reserva: {log}")
+    checa("avisar https://abc-def-ghi.trycloudflare.com reserva" in log, f"aviso de provisório: {log}")
+    # 6. AWS volta: o fixo volta ao SSM e ao Telegram, e o contador zera
+    (tmp / "curl.txt").write_text("401")
+    rc, log = rodar(tmp, env, "publicar")
+    checa((tmp / "ssm.txt").read_text().strip() == aws and log.count(f"avisar {aws}") == 2, f"fixo de volta: {log}")
+    checa(not (tmp / "estado" / "opencode-aws-falhas").exists(), "contador zerado")
+    # 7. endereço da AWS inválido no SSM: ignorado, sem curl
+    tmp = Path(tempfile.mkdtemp(prefix="octun-"))
+    env = preparar(tmp, {}, rapido)
+    (tmp / "aws.txt").write_text("None\n")
+    rc, log = rodar(tmp, env, "publicar")
+    checa("curl " not in log and (tmp / "ssm.txt").read_text().strip().endswith("trycloudflare.com")
+          and "reserva" not in log, f"sem AWS = como antes: {log}")
 
     rc, _ = rodar(tmp, env, "outra")
     checa(rc == 64, "ação desconhecida")

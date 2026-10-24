@@ -48,9 +48,13 @@ param com aviso e dizem o equivalente. `implantar.py --moldes` e `--segundo-cere
   sem rede (detalhes em `docs/MIGRACAO_HERMES.md`, "VM sempre ligada e vigias").
 - OpenCode do Matheus (`opencodemobile.service`, 127.0.0.1:4096, senha própria): túnel e publicação do endereço agora
   no repo (`opencode_tunel.sh`, `infra/vm/unidades/opencodemobile-*`); a página de controle tem "Abrir OpenCode" (o
-  endereço do momento). Endereço fixo: o Matheus cria um túnel nomeado na Cloudflare dele (destino
-  `http://localhost:4096`, ex. `opencode.raizconnect.com.br`) e manda `/senha CLOUDFLARE_TUNEL_OPENCODE <token>` (e,
-  se outro nome, `/senha OPENCODE_ENDERECO <host>`): em 1 min o túnel troca sozinho.
+  endereço do momento). **Endereço fixo pela AWS (24/10):** CloudFront (`agentepessoal-opencode`) -> VPC origin ->
+  porta 4097 da VM (só para o grupo `CloudFront-VPCOrigins-Service-SG`; `opencodemobile-aws.socket` só na ens5) ->
+  127.0.0.1:4096. Criado por `python3 infra/opencode_aws.py` (endereço em `/agentepessoal/opencode/url-aws`); lado da
+  VM por `implantar.py --host opencode_tunel.sh --unidade opencodemobile-aws.socket`. `opencode_tunel.sh publicar` dá
+  preferência a ele; o túnel rápido fica de reserva (só vai ao celular após 3 min seguidos do fixo fora). Sem custo
+  (camada grátis da CloudFront; VPC origin não cobra; sem IP elástico). Alternativa antiga, ainda no script: túnel
+  nomeado na Cloudflare dele (`/senha CLOUDFLARE_TUNEL_OPENCODE <token>`).
 
 **Main Opus (IA Business):** a sessão "Main Opus NEXOS" mudou para a conta `sejaorbyte`: agora é
 `session_01QSS9nA3EubusWfC583rR7M` na `ros-dev-construcao`. A antiga `session_016QkuBRR8Fbb2Vgx95bXE3c` e o despertador

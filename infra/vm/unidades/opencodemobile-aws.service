@@ -1,0 +1,14 @@
+# 24/10: repassa a porta 4097 (opencodemobile-aws.socket, só a interface da VPC) para o OpenCode em 127.0.0.1:4096.
+# Repasse de TCP puro (systemd-socket-proxyd): o fluxo de eventos (SSE, /api/event) e o terminal (websocket) passam
+# como vieram. Sem privilégio nenhum (usuário dinâmico), sem disco.
+[Unit]
+Description=OpenCode fixed AWS address: forward 4097 to OpenCode on 127.0.0.1:4096
+Requires=opencodemobile-aws.socket
+After=opencodemobile-aws.socket opencodemobile.service
+[Service]
+ExecStart=/lib/systemd/systemd-socket-proxyd --connections-max=512 127.0.0.1:4096
+DynamicUser=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes

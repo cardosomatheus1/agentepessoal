@@ -9,11 +9,12 @@
     python3 infra/operador/implantar.py --host opencode_tunel.sh --unidade opencodemobile-publish-url.timer
     python3 infra/operador/implantar.py --host opencode_tunel.sh --unidade opencodemobile-cloudflare.service --sem-reiniciar
     python3 infra/operador/implantar.py --host opencode_tunel.sh --unidade opencodemobile.service --sem-reiniciar
+    python3 infra/operador/implantar.py --host opencode_tunel.sh --unidade opencodemobile-aws.socket   (endereço fixo AWS, 24/10)
     python3 infra/operador/implantar.py --host estabilidade.py --unidade agentepessoal-vigia-rede.timer
     python3 infra/operador/implantar.py --host watchdog.sh   (hibernação só com HIBERNAR=1, 24/10)
     python3 infra/operador/implantar.py --hermes          (o Hermes ao lado do A0: infra/vm/hermes, fase 1 da migração)
         (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it;
-         a .timer also brings the .service of the same name; --sem-reiniciar installs without restarting it, e.g. a
+         a .timer or a .socket also brings the .service of the same name; --sem-reiniciar installs without restarting it, e.g. a
          tunnel whose address would change: it takes effect on the next start)
     python3 infra/operador/implantar.py --moldes [--forcar]   (video/carousel templates, infra/reels/moldes, for the agent)
     python3 infra/operador/implantar.py --calibracao   (AR Board criteria, calibracao/*/criterios.md, for the Crítico)
@@ -82,6 +83,17 @@ def _conferir_git(caminhos: list) -> str:
     return head
 
 
+def unidades_de(unidade: str) -> list:
+    """The unit files a --unidade brings: a .timer (23/10, daily disk cleanup) or a .socket (24/10, the OpenCode fixed
+    AWS address) also brings the .service of the same name, which is what it starts."""
+    if not unidade:
+        return []
+    for sufixo in (".timer", ".socket"):
+        if unidade.endswith(sufixo):
+            return [unidade, unidade[: -len(sufixo)] + ".service"]
+    return [unidade]
+
+
 def host(args: list) -> None:
     """A host script: committed and pushed, syntax-checked on the VM before it replaces the live one, version kept."""
     arquivo = args[args.index("--host") + 1] if len(args) > args.index("--host") + 1 else ""
@@ -89,8 +101,7 @@ def host(args: list) -> None:
         raise SystemExit(f"script de host desconhecido: {arquivo!r} (conhecidos: {', '.join(HOST_ARQUIVOS)})")
     caminho = f"infra/vm/{arquivo}"
     unidade_nova = args[args.index("--unidade") + 1] if "--unidade" in args else ""
-    # a .timer leva junto a .service de mesmo nome (23/10: limpeza de disco diária)
-    unidades = [unidade_nova] + ([unidade_nova[:-6] + ".service"] if unidade_nova.endswith(".timer") else []) if unidade_nova else []
+    unidades = unidades_de(unidade_nova)
     caminhos = [caminho] + [f"infra/vm/unidades/{u}" for u in unidades]
     for c in caminhos[1:]:
         if not (RAIZ / c).exists():

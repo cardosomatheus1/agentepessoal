@@ -1,0 +1,14 @@
+# 24/10 (Matheus: "não tem como botar um túnel fixo pelo AWS?"): entrada do endereço fixo do OpenCode pela AWS
+# (infra/opencode_aws.py): CloudFront -> VPC origin -> porta 4097 desta VM -> opencodemobile-aws.service -> 127.0.0.1:4096.
+# Só na interface da VPC (ens5): os containers da VM (Hermes, convidados, caixas) chegam pelas pontes do Docker e não
+# entram aqui; de fora, o security group só abre a 4097 para o grupo da VPC origin da CloudFront. A senha continua a do
+# próprio OpenCode.
+[Unit]
+Description=OpenCode fixed AWS address: port 4097 on the VPC interface only (CloudFront VPC origin)
+[Socket]
+ListenStream=4097
+BindToDevice=ens5
+NoDelay=true
+KeepAlive=true
+[Install]
+WantedBy=sockets.target
