@@ -588,7 +588,7 @@ SEM_FALA = "(nenhuma fala ouvida no áudio do vídeo)"
 
 
 def _whisper(audio: str) -> str:
-    """'[13.5s–14.7s] frase' per line, the times measured on the audio; '' when nothing is said."""
+    """'[13.5s a 14.7s] frase' per line (never a dash: the Crítico's fixed rule reproves any travessão in the material), the times measured on the audio; '' when nothing is said."""
     import subprocess
 
     import numpy as np
@@ -599,12 +599,12 @@ def _whisper(audio: str) -> str:
     som = np.frombuffer(bruto, np.int16).astype(np.float32) / 32768.0
     modelo = WhisperModel(WHISPER, device="cpu", compute_type="int8", cpu_threads=2)
     segmentos, _ = modelo.transcribe(som, language="pt", vad_filter=True)
-    return "\n".join(f"[{s.start:.1f}s–{s.end:.1f}s] {s.text.strip()}" for s in segmentos if s.text.strip())
+    return "\n".join(f"[{s.start:.1f}s a {s.end:.1f}s] {s.text.strip()}" for s in segmentos if s.text.strip())
 
 
 def falas_da_ficha(item: dict) -> str:
     falas = (item.get("ficha") or {}).get("falas") or []
-    return "\n".join(f"[{float(f['inicio']):.1f}s–{float(f['fim']):.1f}s] {str(f['texto']).strip()}" for f in falas)
+    return "\n".join(f"[{float(f['inicio']):.1f}s a {float(f['fim']):.1f}s] {str(f['texto']).strip()}" for f in falas)
 
 
 def narracao_do_video(item: dict, audio: Path) -> str:

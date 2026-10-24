@@ -1,0 +1,6 @@
+{
+ "titulo": "Frases que quem produz comida mais ouve",
+ "brief": "Carrossel de 9 telas (engajar): frases que o produtor de comida mais ouve do cliente ('tá caro', 'faz mais barato?' etc.), conversas encenadas; a número 7 é a que mais dói; fecha dizendo que preço certo não é caro, é o preço que paga o trabalho, e chama para a calculadora grátis na bio.",
+ "fonte": "infra/reels/c_frases/index.html no repositório agentepessoal (feito à mão na semana 1); telas no S3 em conteudo/semana1/2_frases/1..9.jpg",
+ "como_refazer": "O agente refaz sozinho pelo Designer a partir do brief (moldes, identidade do kit) e o Crítico julga."
+}

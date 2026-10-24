@@ -1,0 +1,6 @@
+{
+ "titulo": "Oferta Lucro na Mão em 30 Dias",
+ "brief": "Story do kit da Raiz (helpers/story.py, layouts de story/story.html), 1080x1920, 9h. Layout oferta (sábado): a oferta Lucro na Mão em 30 Dias, com a garantia 'se o Raio-X não achar onde o dinheiro escapa, a gente não cobra a próxima mensalidade', chamada para o link na bio. Sem preço.",
+ "fonte": "arte em conteudo/stories/v2/ no S3, desenhada por helpers/story.py do plugin conteudo (sessão de operador de 22/10; agenda em infra/vm/plugins/conteudo/agendas/semana4-stories.json e semana4-story-dica.json)",
+ "como_refazer": "O agente refaz sozinho: o Designer escreve os campos do layout a partir do brief e helpers/story.py desenha."
+}

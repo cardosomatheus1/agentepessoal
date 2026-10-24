@@ -5,6 +5,7 @@ import datetime as dt
 import json
 import importlib.util
 import os
+import re
 import tempfile
 import traceback
 from pathlib import Path
@@ -856,13 +857,14 @@ class Suite:
         reel = dict(ITEM, id="r", ficha=dict(FICHA, falas=[{"inicio": 18.0, "fim": 20.3, "texto": "Com 40% eu levo."}]))
         geminis = []
         c._OUVIR = lambda caminho: geminis.append(caminho) or "[13.3s] Com 40% eu levo."
-        c._TRANSCREVER = lambda caminho: "[13.5s–14.7s] Deixe em consignação?\n[18.0s–20.3s] Com 40% eu levo."
+        c._TRANSCREVER = lambda caminho: "[13.5s a 14.7s] Deixe em consignação?\n[18.0s a 20.3s] Com 40% eu levo."
         n = c.narracao_do_video(reel, audio)
-        ok(n.startswith("tempos medidos no áudio") and "[18.0s–20.3s] Com 40% eu levo." in n and not geminis,
+        ok(n.startswith("tempos medidos no áudio") and "[18.0s a 20.3s] Com 40% eu levo." in n and not geminis,
            f"o tempo vem medido no áudio, não do Gemini: {n}")
         c._TRANSCREVER = lambda caminho: 1 / 0
         n = c.narracao_do_video(reel, audio)
-        ok(n.startswith("tempos da ficha") and "[18.0s–20.3s]" in n and not geminis, f"sem whisper, as falas da ficha: {n}")
+        ok(n.startswith("tempos da ficha") and "[18.0s a 20.3s]" in n and not geminis, f"sem whisper, as falas da ficha: {n}")
+        ok(not re.search("[—–]", n), "sem travessão: a regra fixa do Crítico reprova qualquer um no material")
         ok(c.narracao_do_video(dict(ITEM, id="r", roteiro="Oi."), audio) == "Oi." and not geminis, "roteiro do post")
         n = c.narracao_do_video(dict(ITEM, id="r"), audio)
         ok(n.startswith("(tempos aproximados") and "não reprove" in n and geminis, f"Gemini só no fim, avisado: {n}")
@@ -893,6 +895,11 @@ class Suite:
         ok(r["ok"] and len(novo["arquivos"]) == 3 and "slide 3 cortado" in chamadas[-1]["ideia"]
            and FICHA["brief"] in chamadas[-1]["ideia"] and novo["ficha"]["spec"] == {"motor": "carrossel_raiz"},
            f"carrossel só com o brief: o Designer desenha de novo sabendo o motivo: {r} {chamadas[-1]}")
+        so_brief = dict(st, id="st-brief", data="2026-10-16", ficha=FICHA)
+        ok(c.agendar([so_brief], agora)["ok"], "agenda story só com brief")
+        r = s.refazer_item(so_brief, {"motivos": ["x"]}, subir=lambda *a: None)
+        novo = next(i for i in c.carregar()["itens"] if i["id"] == "st-brief")
+        ok(r["ok"] and novo["ficha"]["story"]["manchete"] == "Nova", f"story só com o brief: o Designer escreve os campos: {r}")
         reel = dict(ITEM, ficha=dict(FICHA, fonte="erp-saas feat/video-raiz-expectativa"))
         erro = s.refazer_item(reel, {"motivos": ["x"]})["erro"]
         ok("decisão #39" in erro and "feat/video-raiz-expectativa" in erro, f"Reel: precisa do ok no áudio e diz a origem: {erro}")

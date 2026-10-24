@@ -249,8 +249,10 @@ def refazer_item(item: dict, critica: dict, subir=None) -> dict:
         return {"ok": False, "erro": "o plugin de especialistas não está instalado"}
     briefing = {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato, "titulo": titulo, "ideia": ideia,
                 "legenda": item.get("legenda", ""), "data": item["data"], "regras": REGRAS}
-    if item["tipo"] == "STORY" and spec.get("story"):
-        feito = _refazer_story(esp, spec["story"], critica, local / f"story-{item['id']}-a{k}.jpg")
+    if item["tipo"] == "STORY" and (spec.get("story") or ficha):
+        # a story with only the brief: the Designer writes its fields from it (the kit draws them)
+        atuais = spec.get("story") or {"sobre": ideia, "titulo": titulo}
+        feito = _refazer_story(esp, atuais, critica, local / f"story-{item['id']}-a{k}.jpg")
         if not feito:
             return {"ok": False, "erro": "o Designer não devolveu campos válidos para o story"}
         campos, d = feito

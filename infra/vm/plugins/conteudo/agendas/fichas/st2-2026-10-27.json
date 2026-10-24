@@ -1,0 +1,6 @@
+{
+ "titulo": "Chama o carrossel do frete para a loja",
+ "brief": "Story do kit da Raiz (helpers/story.py, layouts de story/story.html), 1080x1920, 9h. Layout post-novo (terça): chama para o carrossel do feed do dia sobre o frete para a loja (o custo da entrega precisa estar na conta). Chamada para ver o post no feed.",
+ "fonte": "arte em conteudo/stories/v2/ no S3, desenhada por helpers/story.py do plugin conteudo (sessão de operador de 22/10; agenda em infra/vm/plugins/conteudo/agendas/semana4-stories.json e semana4-story-dica.json)",
+ "como_refazer": "O agente refaz sozinho: o Designer escreve os campos do layout a partir do brief e helpers/story.py desenha."
+}
