@@ -1,10 +1,11 @@
 ---
 name: tarefa-longa
 description: "Pedido longo (muitos passos, muito tempo, vários módulos ou sites; do celular ou de rotina) com plano em disco: sobrevive a reinício, queda, limite de uso e tempo esgotado, retoma sozinho do próximo passo e entrega uma mensagem só no fim, com o arquivo completo."
-version: 1.0.0
+version: 1.0.1
 adaptada_hermes: 2026-10-23
 origem: operador
-atualizada: 2026-10-23
+atualizada: 2026-10-24
+ressemear: tarefa-longa-2410
 tags: ["tarefas", "persistência"]
 trigger_patterns:
   - "testar de ponta a ponta"
@@ -51,6 +52,12 @@ sem ele pedir. Ele recebe UMA mensagem no fim, com o resumo e o arquivo com tudo
   chamou `resolver_aqui`, não repita a pergunta (deixe `pergunta` vazia).
 - Siga com os passos que não dependem disso. Sem nada mais para fazer: termine a resposta com "ok".
 - Quando ele responder ou apertar "✅ Terminei": `tarefa_status(id)`, mude o passo (`fazendo`/`feito`) e siga.
+
+## Não pare para perguntar se continua
+- Com passo pendente que não depende dele, siga para o próximo no mesmo turno. Nunca termine com "quer que eu
+  continue?", "sigo para o passo X?" nem um balanço no meio: ele já pediu a tarefa inteira (24/10, o teste da Raiz
+  parou no passo 3 perguntando isso). O andamento aparece sozinho no Telegram a cada passo.
+- Parou porque o turno ficou longo demais? Termine a resposta com "ok": o vigia retoma do próximo passo.
 
 ## Retomada
 - O vigia manda "[Aviso automático do vigia de tarefas: ... retome a tarefa <id> ...]": chame `tarefa_status(id)`,

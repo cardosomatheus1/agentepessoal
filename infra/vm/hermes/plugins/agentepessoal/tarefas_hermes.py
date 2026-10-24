@@ -195,6 +195,7 @@ def criar(login: str, titulo: str, pedido: str, passos: list, sessao: str, raiz:
         gravar(p, plano)
         _gravar_atomico(p / "resultado.md", f"# {plano['titulo']}\n\nPedido (como veio): {plano['pedido']}\n\n"
                                             f"Começada em {_hora(agora)} · tarefa {tid}\n")
+    _mostrar(plano)
     return plano
 
 
@@ -263,6 +264,39 @@ def _ponte_whatsapp():
 def enviar(login: str, texto: str, arquivo: str = "", legenda: str = "") -> str:
     """'' quando foi; senão o motivo. Pela ponte do celular (teste_*: a caixa dos testes, nada sai)."""
     return _ponte_whatsapp().enviar(login, texto, arquivo, legenda, None, "resposta", True)
+
+
+def andamento(login: str, texto: str, fim: bool = False) -> str:
+    """A mensagem única de andamento da pessoa no Telegram (a ponte edita a aberta; `fim` fecha). Nunca impede a
+    tarefa: '' quando foi, senão o motivo (24/10, Matheus: "Precisa aparecer no telegram" — uma tarefa aberta por
+    fora do celular, pelo operador ou pela rotina, não mostrava nada)."""
+    try:
+        return _ponte_whatsapp().andamento(login, texto, fim) or ""
+    except Exception as exc:  # noqa: BLE001
+        log.warning("tarefas: andamento não foi: %s: %s", type(exc).__name__, exc)
+        return str(exc)[:200]
+
+
+def texto_andamento(plano: dict) -> str:
+    total = len(plano["passos"])
+    feitos = sum(1 for x in plano["passos"] if x["estado"] == "feito")
+    atual = next((x for x in plano["passos"] if x["estado"] == "fazendo"), None) or proximo(plano)
+    linhas = [f"🔄 {plano['titulo']}", f"{feitos}/{total} passos feitos"]
+    if atual:
+        linhas.append(f"Agora: passo {atual['n']}/{total} — {atual['titulo']}")
+    falhos = sum(1 for x in plano["passos"] if x["estado"] == "falhou")
+    esperando = [x for x in plano["passos"] if x["estado"] == "esperando_matheus"]
+    if falhos:
+        linhas.append(f"{falhos} não deu (vai no relatório)")
+    if esperando:
+        linhas.append("Esperando você no passo " + ", ".join(str(x["n"]) for x in esperando))
+    linhas.append("No fim chega uma mensagem só com o resumo e o arquivo completo.")
+    return "\n".join(linhas)
+
+
+def _mostrar(plano: dict) -> None:
+    if plano.get("estado") == "aberta":
+        andamento(plano["login"], texto_andamento(plano))
 
 
 # ------------------------------------------------------------------ mudanças (as ferramentas)
@@ -360,6 +394,8 @@ def mudar_passo(login: str, tid: str, n, estado: str, resultado: str = "", acao:
             plano["sessao_atual"] = sessao
         (p / "pausada").unlink(missing_ok=True)  # mexeu na tarefa: ela voltou a andar
         gravar(p, plano)
+    if estado or novos_passos:
+        _mostrar(plano)
     if avisar:
         erro_envio = (enviar_fn or enviar)(plano["login"], avisar)
         with trava(p):
@@ -520,6 +556,7 @@ def concluir(login: str, tid: str, resumo: str, parcial: bool = False, sessao: s
             plano["sessao_atual"] = sessao
         _diario(plano, "concluída" + (" (parcial)" if abertos else ""), agora)
         gravar(p, plano)
+    andamento(plano["login"], f"✅ {plano['titulo']}: terminado, mandando o resultado.", fim=True)
     erro = entregar(p, enviar_fn, agora)
     if erro:
         return (f"Concluída, mas a entrega ao celular falhou agora ({erro[:120]}); o vigia tenta de novo sozinho. "

@@ -45,6 +45,9 @@ def enviar(login, texto, arquivo="", legenda=""):
 
 
 t.enviar = enviar
+andamentos = []
+andamento_real = t.andamento
+t.andamento =lambda login, texto, fim=False: andamentos.append({"login": login, "texto": texto, "fim": fim}) or ""
 checa(t.passo_do_relogio(raiz=tmp, conversa_fn=lambda *a: 1 / 0) == [], "logo depois de carregar (Hermes subindo): o vigia espera")
 t._CARREGADO = 0
 AGORA = 1_800_000_000.0
@@ -100,6 +103,19 @@ checa(r.startswith("NÃO FEITO"), "estado fora da lista")
 res = (p / "resultado.md").read_text()
 checa("## Passo 1 — Cadastro" in res and "Conta criada, onboarding ok." in res, "o resultado do passo 1 está no arquivo")
 
+# ---- andamento no Telegram (24/10, Matheus: "Precisa aparecer no telegram"): ao abrir e a cada passo
+meus = [a for a in andamentos if a["login"] == "matheus" and "Teste E2E Raiz" in a["texto"]]
+checa(meus and "0/4 passos feitos" in meus[0]["texto"] and not meus[0]["fim"], f"abrir mostra o andamento: {meus[:1]}")
+checa("1/4 passos feitos" in meus[-1]["texto"] and "Agora: passo 2/4 — Estoque" in meus[-1]["texto"],
+      f"passo feito atualiza o andamento: {meus[-1]['texto']!r}")
+antes = len(andamentos)
+t.mudar_passo("matheus", tid, 1, "fazendo", agora=AGORA + 30)
+checa(len(andamentos) == antes, "pedido recusado não mexe no andamento")
+ponte_falha = types.SimpleNamespace(andamento=lambda *a, **k: 1 / 0)
+orig_pw, t._ponte_whatsapp = t._ponte_whatsapp, lambda: ponte_falha
+checa("division" in andamento_real("matheus", "x"), "ponte fora do ar: o andamento não derruba a tarefa")
+t._ponte_whatsapp = orig_pw
+
 # ---- ação de fora: marcada antes, provada depois; na retomada, conferida antes de refazer
 r = t.mudar_passo("matheus", tid, 2, "fazendo", acao="vou criar o produto Teste no estoque", agora=AGORA + 40)
 r = t.mudar_passo("matheus", tid, 2, "feito", resultado="produto criado", agora=AGORA + 50)
@@ -151,6 +167,7 @@ t.mudar_passo("matheus", tid, 4, "feito", resultado="relatório: 3 problemas", a
 enviados.clear()
 r = t.concluir("matheus", tid, "3 problemas: X, Y, Z.", sessao="tg-matheus", agora=AGORA + 130)
 checa("Responda só: ok" in r and len(enviados) == 1, f"entregue: {r}")
+checa(andamentos[-1]["fim"] and andamentos[-1]["login"] == "matheus", "concluir fecha o andamento")
 e = enviados[0]
 checa(e["login"] == "matheus" and e["arquivo"].endswith(f"-{tid}.md") and "3 problemas" in e["legenda"],
       f"uma mensagem: resumo na legenda e o arquivo ({e})")
