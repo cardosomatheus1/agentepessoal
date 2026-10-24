@@ -1,13 +1,13 @@
 ---
 name: teste-fluxo-produto-raizconnect
 description: "Testar de ponta a ponta o sistema Raiz Connect (raizconnect.com.br) como um cliente novo, com conta de teste, roteiro de módulos e relatório de problemas com prints."
-version: 1.0.1
+version: 1.0.2
 adaptada_hermes: 2026-10-23
 origem_a0: 1.0.1
 origem: aprendizado
-atualizada: 2026-10-21
+atualizada: 2026-10-24
 tags: ["aprendizado"]
-ressemear: tarefa-longa-2310
+ressemear: campos-raiz-2410
 trigger_patterns:
   - "testar raizconnect"
   - "conta de teste"
@@ -57,3 +57,14 @@ Para formulários e refs, siga a skill formularios-portais-parceiros: leia os r�
 
 ## Armadilhas
 - Não termine na primeira etapa por um bloqueio contornável. Parar com o formulário vazio é entregar o pedido pela metade.
+- Não marque um passo "falhou" na primeira tentativa: tente 3 caminhos (outro clique, teclado, outra tela) antes. "Não
+  consegui usar o campo" não é defeito do sistema; diga no relatório o que fez e o que a tela mostrou (24/10: 4 de 10
+  passos "falharam" por isso e o sistema funcionava).
+- Campos de escolha com busca (ficha técnica "Selecione um insumo...", "+ Produto" da tabela de preço, fornecedor…)
+  são comboboxes: clique no campo, digite no "Pesquisar por nome ou código", espere a lista e clique na opção
+  (role=option) ou use setas + Enter.
+- Min/Max: LT, ES e LC não têm botão de editar; são campos de número na própria linha. Digite e aparece "Salvar" na
+  linha (ou "Salvar Alterações" em cima). Anote como sugestão de UX que eles não parecem editáveis.
+- Lotes nascem de: produto com "Controlar lote e validade" ligado (cadastro do produto) + produção; entrada em
+  "Movimentar estoque" com Validade; recebimento de pedido com "Validade de <item>". Teste os três antes de dizer que
+  não há caminho.
