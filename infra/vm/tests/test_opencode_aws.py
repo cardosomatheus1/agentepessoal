@@ -82,6 +82,9 @@ def main() -> int:
     r = oa.regra_entrada("sg-cf")
     checa(r["FromPort"] == r["ToPort"] == 4097 and "IpRanges" not in r and r["UserIdGroupPairs"][0]["GroupId"] == "sg-cf",
           f"regra {r}")
+    import re
+    checa(re.fullmatch(r"[a-zA-Z0-9. _\-:/()#,@\[\]+=&;{}!$*]{1,255}", r["UserIdGroupPairs"][0]["Description"]),
+          "descrição só com os caracteres que a EC2 aceita (24/10: '->' deu InvalidParameterValue)")
 
     # idempotente: a 2ª rodada não cria nada de novo nem abre a porta de novo
     cf, ec2 = CloudFrontFalso(), Ec2Falso()

@@ -82,7 +82,7 @@ def config_distribuicao(vpc_origin_id: str, dominio_privado: str, referencia: st
 def regra_entrada(sg_cloudfront: str) -> dict:
     """The only inbound rule the VM gets: the OpenCode port, from CloudFront's VPC-origin security group."""
     return {"IpProtocol": "tcp", "FromPort": PORTA, "ToPort": PORTA,
-            "UserIdGroupPairs": [{"GroupId": sg_cloudfront, "Description": "CloudFront VPC origin -> OpenCode"}]}
+            "UserIdGroupPairs": [{"GroupId": sg_cloudfront, "Description": "CloudFront VPC origin to OpenCode (opencode_aws.py)"}]}
 
 
 def tem_regra(permissoes: list, sg_cloudfront: str) -> bool:
