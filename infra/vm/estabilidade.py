@@ -59,6 +59,9 @@ SOFTDOG_OPCOES = Path("/etc/modprobe.d/agentepessoal-softdog.conf")
 SYSTEMD_VIGIA = Path("/etc/systemd/system.conf.d/agentepessoal-vigia.conf")
 JOURNALD_ARQ = Path("/etc/systemd/journald.conf.d/agentepessoal.conf")
 JOURNAL_MAX = "800M"
+# 24/10: o /var/log/syslog chegou a 967 MB (o rsyslog só girava por semana, ~160 MB/dia de systemd); o journal já guarda
+# tudo, então o syslog gira todo dia, guarda 3 e tem teto
+LOGROTATE_SYSLOG = Path("/etc/logrotate.d/rsyslog")
 PSTORE = Path("/var/lib/systemd/pstore")
 ESTADO = Path("/var/lib/agentepessoal")
 PANE = ESTADO / "pane_kernel.json"
@@ -89,6 +92,14 @@ def texto_sysctl() -> str:
 def texto_journald() -> str:
     return ("# infra/vm/estabilidade.py: o journal sobrevive ao reinício (o boot que caiu fica legível) e tem teto.\n"
             f"[Journal]\nStorage=persistent\nSystemMaxUse={JOURNAL_MAX}\n")
+
+
+def texto_logrotate_syslog() -> str:
+    arquivos = [f"/var/log/{n}" for n in ("syslog", "mail.info", "mail.warn", "mail.err", "mail.log", "daemon.log",
+                                          "kern.log", "auth.log", "user.log", "lpr.log", "cron.log", "debug", "messages")]
+    return ("# infra/vm/estabilidade.py (24/10): todo dia, 3 cópias, teto de 200 MB por arquivo\n"
+            + "\n".join(arquivos) + "\n{\n\trotate 3\n\tdaily\n\tmaxsize 200M\n\tmissingok\n\tnotifempty\n\tcompress\n"
+            "\tdelaycompress\n\tsharedscripts\n\tpostrotate\n\t\t/usr/lib/rsyslog/rsyslog-rotate\n\tendscript\n}\n")
 
 
 def texto_systemd_vigia() -> str:
@@ -129,6 +140,8 @@ def aplicar_config() -> list[str]:
         feitos.append(str(JOURNALD_ARQ))
         Path("/var/log/journal").mkdir(parents=True, exist_ok=True)
         _cmd("systemctl", "restart", "systemd-journald")
+    if _gravar_se_mudou(LOGROTATE_SYSLOG, texto_logrotate_syslog()):
+        feitos.append(str(LOGROTATE_SYSLOG))
     novo_softdog = _gravar_se_mudou(SOFTDOG_OPCOES, "options softdog soft_panic=1\n")
     novo_softdog |= _gravar_se_mudou(SOFTDOG_MODULO, "softdog\n")
     _cmd("modprobe", "softdog")
