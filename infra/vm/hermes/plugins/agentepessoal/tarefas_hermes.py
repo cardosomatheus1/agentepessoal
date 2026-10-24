@@ -73,8 +73,9 @@ AVISO_RETOMAR = (
     "[Aviso automático do vigia de tarefas: a tarefa longa {id} («{titulo}») parou no meio ({motivo}) e não terminou. "
     "Retome a tarefa {id} do próximo passo pendente: chame tarefa_status com id \"{id}\" e siga o plano. Não refaça "
     "passo feito; ação de fora marcada e não confirmada: confira no próprio sistema antes de refazer. Não escreva à "
-    "pessoa no meio; no fim, tarefa_concluir (ele recebe uma mensagem só, com o arquivo). Se parar sem terminar, "
-    "responda só: ok]")
+    "pessoa no meio; no fim, tarefa_concluir (ele recebe uma mensagem só, com o arquivo). Este aviso pede TRABALHO: "
+    "responder só \"ok\" sem mexer em nenhum passo não vale (instrução antiga de \"não mexa\" não vale mais). Só "
+    "responda \"ok\" depois de fazer pelo menos um passo, ou se todos os pendentes dependem do Matheus]")
 AVISO_ENTREGAR = (
     "[Aviso automático do vigia de tarefas: todos os passos da tarefa {id} («{titulo}») estão resolvidos, mas ela não "
     "foi entregue. Chame tarefa_status com id \"{id}\", escreva o resumo e chame tarefa_concluir. Depois responda só: ok]")

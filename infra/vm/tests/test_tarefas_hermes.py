@@ -369,6 +369,9 @@ d2 = [a for a in andamentos[antes_and:] if "Tique" in a["texto"]]
 checa(len(d1) == 1 and len(d2) == 2 and not [e for e in enviados[antes_env:] if "Tique" in e["texto"]],
       f"tique do andamento a cada {t.ANDAMENTO_TIQUE}s, sem mensagem nova ({len(d1)}, {len(d2)})")
 
+checa("pede TRABALHO" in t.AVISO_RETOMAR and "só \"ok\" sem mexer" in t.AVISO_RETOMAR,
+      "retomada não aceita só 'ok' (24/10: ficou 30 min respondendo ok por uma instrução velha)")
+
 if falhas:
     raise SystemExit("test_tarefas_hermes: " + "; ".join(falhas))
 print("test_tarefas_hermes: ok")
