@@ -43,6 +43,9 @@ param com aviso e dizem o equivalente. `implantar.py --moldes` e `--segundo-cere
 - Alarmes em 2 etapas (`infra/deploy.py --recuperacao`, função `agentepessoal-recuperar-vm` = `infra/control/recuperar.py`):
   3 min com a checagem falhando → reinicia + guarda o console no S3; 15 min → desliga (forçado) e liga, até 3 vezes em
   6 h, nunca com a VM hibernando/desligada. Não desligue a VM à mão enquanto o reinício do alarme está acontecendo.
+- 24/10: a VM fica **sempre ligada** (hibernação só com `HIBERNAR=1`), trava do kernel vira pane que religa, softdog
+  vigia o systemd, vigia da rede religa sem internet por 10 min e o alarme `agentepessoal-vm-sem-rede` pega a VM viva
+  sem rede (detalhes em `docs/MIGRACAO_HERMES.md`, "VM sempre ligada e vigias").
 - OpenCode do Matheus (`opencodemobile.service`, 127.0.0.1:4096, senha própria): túnel e publicação do endereço agora
   no repo (`opencode_tunel.sh`, `infra/vm/unidades/opencodemobile-*`); a página de controle tem "Abrir OpenCode" (o
   endereço do momento). Endereço fixo: o Matheus cria um túnel nomeado na Cloudflare dele (destino

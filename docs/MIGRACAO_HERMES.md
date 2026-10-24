@@ -221,7 +221,28 @@ esteve no ar continua valendo. O A0 fica parado e intacto por 7 dias (até 30/10
   `binder_linux` do container `android`; sem pane no pstore e com as checagens "ok", os alarmes não agiram; religada à
   mão às 23:40. A implantação não foi a causa (rede ok 4 min depois dela), mas o `subir.sh` reiniciava a unidade
   `agentepessoal-hermes.service` junto com a vista dos dados ("hermes não ligou"): corrigido (parada antes, ligada no fim).
-  Pendente: alarme que pegue VM viva sem rede (ex.: SSM sem ping) — decisão do operador/Matheus.
+  Pendente: alarme que pegue VM viva sem rede (ex.: SSM sem ping) — feito em 24/10 (abaixo).
+
+## VM sempre ligada e vigias (24/10, Matheus: "toda hora cai o agente e o OpenCode, não consegue rodar 15 min")
+- Causas das quedas de 23–24/10: (1) 21:49 pane do kernel no io_uring (npm do OpenCode; já corrigido); (2) 23:22 o
+  kernel travou por dentro no meio de uma rajada de erros do `binder_linux` (driver do celular virtual): journal parou,
+  1 núcleo a 100%, saída de rede ~4 KB/5 min, checagens "ok", sem OOM/conntrack/ENA; (3) 01:14 a VM hibernou sozinha
+  (o ócio não contava OpenCode nem rodada longa) e ao acordar (01:22) a placa de rede não voltou (`ena ... Failed to
+  create I/O queues`, console em `incidentes/console-20261024T013155Z-guardar.txt`); já tinha travado ao acordar em
+  11/10 04:55.
+- Hibernação desligada por padrão (`HIBERNAR=1` em `/etc/agentepessoal.env` religa): `watchdog.sh` sai na hora,
+  `hibernate.sh` ("Desligar" da página) faz desligamento normal, `setup.sh` desliga o timer. Custo: a VM já ficava
+  ligada ~19 h/dia; 24 h a US$ 0,17952/h ≈ US$ 131/mês, uns US$ 25/mês a mais.
+- `estabilidade.py`: trava do kernel vira pane que religa em 10 s com rastro no pstore (`softlockup_panic`,
+  `panic_on_rcu_stall`, `hung_task_panic` com 600 s); systemd vigiado pelo softdog (2 min, `soft_panic`); vigia da rede
+  (`agentepessoal-vigia-rede.timer`, 1 min): sem AWS nem internet 4 min → refaz a rede; 10 min (VM no ar há 15+ min) →
+  diagnóstico + religa, no máximo 3× em 6 h; no boot o diagnóstico vai a `incidentes/rede-*.txt` e o Matheus é avisado.
+- Alarme `agentepessoal-vm-sem-rede` (`deploy.py --recuperacao`, definido em `recuperar.alarmes`): NetworkOut < 50 KB em
+  3 × 5 min com a VM ligada → reinicia + console + aviso (saudável 22–24/10: ≥ 300 KB/5 min; travada: 0–4 KB).
+- OpenCode: `infra/vm/unidades/opencodemobile.service` (Restart=always, MemoryHigh 4G/MemoryMax 5G, CPUQuota 250%,
+  OOMScoreAdjust 500); o túnel é `Wants=` (reiniciar o OpenCode não troca mais o endereço).
+- Celular virtual (redroid): é o único driver fora do padrão no kernel e os erros dele precederam a trava de 23:22.
+  Recomendação (decisão do Matheus): ligar o `android` só quando for usar o celular, ou levá-lo a uma VM pequena separada.
 
 ## Decisões do Matheus (23/10)
 1. Convidados (ilia, will) e o login da Fernanda: **continuam**.
