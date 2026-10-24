@@ -48,7 +48,7 @@ endereco_rapido() {  # o último trycloudflare desde que o túnel subiu (não o 
     | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | tail -1
 }
 
-endereco_aws() {  # $1 o endereço fixo da AWS (SSM); ecoa-o se responde agora, vazio se não. Conta as falhas seguidas.
+endereco_aws() {  # $1 o endereço fixo da AWS (SSM), $2 o publicado agora; ecoa $1 se responde, vazio se não.
   local url="$1" codigo falhas_arq="$ESTADO/opencode-aws-falhas"
   printf '%s\n' "$url" | grep -Eq '^https://[a-z0-9.-]+$' || return 0
   codigo=$($CURL -s -o /dev/null -w '%{http_code}' -m 15 --retry 1 "$url/api/session" 2>/dev/null || :)
@@ -62,8 +62,9 @@ endereco_aws() {  # $1 o endereço fixo da AWS (SSM); ecoa-o se responde agora, 
   n=$(( $(cat "$falhas_arq" 2>/dev/null || echo 0) + 1 ))
   echo "$n" > "$falhas_arq"
   logger -t agentepessoal "opencode: endereço da AWS não respondeu ($codigo), falha $n seguida"
-  # até a 3ª falha seguida continua com o da AWS (um tropeço, ou o OpenCode subindo, não troca o endereço do celular)
-  [ "$n" -lt "$FALHAS_PARA_RESERVA" ] && echo "$url"
+  # já publicado: até a 3ª falha seguida continua com ele (um tropeço, ou o OpenCode subindo, não troca o endereço do
+  # celular). Ainda não publicado (24/10: a distribuição recém-criada levou 5 min para responder): só quando responder.
+  [ "$2" = "$url" ] && [ "$n" -lt "$FALHAS_PARA_RESERVA" ] && echo "$url"
   return 0
 }
 
@@ -95,16 +96,16 @@ publicar() {
     systemctl restart "$UNIDADE"
   fi
   local aws_url reserva=""
+  atual=$($AWS ssm get-parameter --region us-east-1 --name "$PARAM" --query Parameter.Value --output text 2>/dev/null || :)
   aws_url=$($AWS ssm get-parameter --region us-east-1 --name "$PARAM_AWS" --query Parameter.Value --output text 2>/dev/null || :)
-  url=$(endereco_aws "$aws_url")
+  url=$(endereco_aws "$aws_url" "$atual")
   if [ -z "$url" ]; then
     url=$(endereco_fixo)
     [ -n "$url" ] || url=$(endereco_rapido)
     [ -n "$url" ] || exit 0
-    printf '%s\n' "$aws_url" | grep -q '^https://' && reserva=reserva
+    [ "$atual" = "$aws_url" ] && reserva=reserva  # caiu do fixo que o celular usava: o aviso diz que é provisório
   fi
   printf '%s\n' "$url" | grep -Eq '^https://[a-z0-9.-]+$' || exit 2
-  atual=$($AWS ssm get-parameter --region us-east-1 --name "$PARAM" --query Parameter.Value --output text 2>/dev/null || :)
   if [ "$url" != "$atual" ]; then
     $AWS ssm put-parameter --region us-east-1 --name "$PARAM" --type String --overwrite --value "$url" >/dev/null
     logger -t agentepessoal "opencode: endereço publicado $url"

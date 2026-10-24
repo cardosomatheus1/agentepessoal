@@ -96,6 +96,12 @@ def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="octun-"))
     env = preparar(tmp, {}, rapido)
     (tmp / "aws.txt").write_text(aws + "\n")
+    rodar(tmp, env, "publicar")  # túnel rápido publicado antes
+    # recém-criado e ainda sem responder (24/10: a distribuição levou 5 min): não vai ao celular antes de responder
+    (tmp / "curl.txt").write_text("000")
+    rc, log = rodar(tmp, env, "publicar")
+    checa((tmp / "ssm.txt").read_text().strip().endswith("trycloudflare.com") and f"avisar {aws}" not in log
+          and "reserva" not in log, f"AWS que ainda não respondeu não é publicado: {log}")
     (tmp / "curl.txt").write_text("401")
     rc, log = rodar(tmp, env, "publicar")
     checa(rc == 0 and (tmp / "ssm.txt").read_text().strip() == aws, f"AWS publicado: rc={rc} {log}")
@@ -105,7 +111,8 @@ def main() -> int:
     (tmp / "curl.txt").write_text("502")
     for _ in range(2):
         rc, log = rodar(tmp, env, "publicar")
-    checa((tmp / "ssm.txt").read_text().strip() == aws and log.count("avisar") == 1, f"tropeço não troca: {log}")
+    checa((tmp / "ssm.txt").read_text().strip() == aws and log.count(f"avisar {aws}") == 1 and "reserva" not in log,
+          f"tropeço não troca: {log}")
     rc, log = rodar(tmp, env, "publicar")
     checa((tmp / "ssm.txt").read_text().strip() == "https://abc-def-ghi.trycloudflare.com", f"3ª falha vai à reserva: {log}")
     checa("avisar https://abc-def-ghi.trycloudflare.com reserva" in log, f"aviso de provisório: {log}")
