@@ -342,6 +342,34 @@ class Suite:
         finally:
             self.limpar()
 
+    def t_conversa_do_hermes_e_login_sem_pasta(self):
+        # 24/10: the Hermes chat turns use the same queue (origem "conversa …"); a teste_* login gets its own
+        # decisions and never the owner's Assuntos
+        self.preparar()
+        try:
+            t = _carregar("cerebro_trabalho_teste2", RAIZ / "helpers" / "trabalho.py")
+            entrada = self.tmp / "entrada"
+            entrada.mkdir()
+            frente = self.a.registrar("Teste E2E da Raiz", onde_parou="começando", area="raiz")
+            (entrada / "a.json").write_text(json.dumps({"sessao": "tg-teste_hermes", "login": "teste_hermes",
+                                                        "origem": "conversa tg-teste_hermes",
+                                                        "dele": ["Decidi que a conta de teste é a qa@raiz.com"],
+                                                        "relato": "ok"}), encoding="utf-8")
+            pedidos = []
+
+            def chamar(pedido):
+                pedidos.append(pedido)
+                return json.dumps({"decisoes": [{"tema": "raiz.conta-teste", "decisao": "Conta de teste: qa@raiz.com",
+                                                 "citacao": "a conta de teste é a qa@raiz.com"}],
+                                   "assuntos": [{"id": frente["id"], "onde_parou": "x", "citacao": "a conta de teste é a qa@raiz.com"}]})
+            r = t.processar(self.mods, entrada, chamar=chamar)
+            ok(r and r[0]["feito"] == [f"decisao:{self.d.ativas('teste_hermes')[0]['id']}"], f"só a decisão dele: {r}")
+            eq(self.d.ativas("teste_hermes")[0]["origem"], "conversa tg-teste_hermes", "origem da conversa")
+            ok("Teste E2E da Raiz" not in pedidos[0], "os Assuntos do dono não vão ao modelo para outro login")
+            eq(self.a.achar(self.a.todos(), frente["id"])["onde_parou"], "começando", "o assunto do dono não muda")
+        finally:
+            self.limpar()
+
     def t_briefing_para_operador_revisor_e_turno(self):
         # 21/10: the same decisions for the agent, the operator and the reviewers; the agent remembers on its own
         self.preparar()

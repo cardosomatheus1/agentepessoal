@@ -25,6 +25,10 @@ glossário em `GLOSSARY.md`). Estrutura dos guias da Playbook Lab: `CLAUDE.md`, 
   (`especialistas`) e o revisor da prospecção recebem as decisões da Raiz, que valem acima dos critérios do AR Board; o
   agente recebe, em cada mensagem dele, as notas da Pasta ligadas ao que ele escreveu (`cerebro_relevante`, busca local,
   sem modelo). A nota do dia pergunta das frentes sem movimento há 7+ dias.
+- **No Hermes (24/10)**: as duas extensões de turno do A0 (`_62_cerebro_captura`, `_27_cerebro`) não rodam lá; o par
+  é `infra/vm/hermes/plugins/agentepessoal/cerebro_hermes.py` (turno → fila `entrada` com `origem` "conversa …" →
+  `trabalho.py`; bloco do que a conversa ainda não tem em todo turno; passo de tarefa longa → assunto ligado). Login
+  sem Pasta (teste_*): só as decisões e pendências dele.
 - **Ferramenta `cerebro`**: consultar, assunto(s), reuniao, desfazer, contexto (entrevista, só grava com o ok dele),
   nota_do_dia, auditoria.
 - **Operador**: `python3 infra/operador/cerebro.py migrar --motivo "…"` (uma vez), `estado`, `auditoria`, `nota`.

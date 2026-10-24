@@ -28,6 +28,7 @@ aprovacoes = _sub("agentepessoal_aprovacoes", "aprovacoes_hermes.py")
 relogio = _sub("agentepessoal_relogio", "relogio_hermes.py")
 rotinas = _sub("agentepessoal_rotinas", "rotinas_hermes.py")
 contexto = _sub("agentepessoal_contexto", "contexto_hermes.py")
+cerebro = _sub("agentepessoal_cerebro", "cerebro_hermes.py")  # Segundo Cérebro: anotação de cada turno + o que ler
 reuniao = _sub("agentepessoal_reuniao", "reuniao_hermes.py")
 audio = _sub("agentepessoal_audio", "audio_hermes.py")
 email = _sub("agentepessoal_email", "email_hermes.py")  # tarefa do relógio (sem registro próprio)
@@ -123,7 +124,8 @@ def register(ctx):
     aprovacoes.registrar(ctx)  # revisor + regras do Matheus antes de ação de risco
     relogio.registrar(ctx)  # tarefas de fundo sem modelo (só com AGENTEPESSOAL_RELOGIO=1: até a virada, o A0 roda)
     rotinas.registrar(ctx)  # rodada do cron: bloco de tarefa agendada e o resultado ao celular (regras do A0)
-    contexto.registrar(ctx)  # ficha e decisões em vigor de quem fala, no 1º turno
+    contexto.registrar(ctx)  # ficha e decisões em vigor de quem fala, no 1º turno e depois de cada resumo
+    cerebro.registrar(ctx)  # Segundo Cérebro: o que ainda não está na conversa (todo turno) e a anotação depois dele
     audio.registrar(ctx)  # áudio do celular transcrito antes do modelo (faster-whisper, como no A0)
     resolver.registrar(ctx)  # "🖥️ Resolver aqui": print + botão para o Matheus fazer na aba (só o dono)
     subagentes.registrar(ctx)  # subagentes em segundo plano: quando terminam, a sessão acorda e a resposta vai ao celular

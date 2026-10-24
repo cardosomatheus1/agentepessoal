@@ -56,6 +56,11 @@ Estado em 23/10, depois da virada (✅ feito e conferido · ⏳ falta · ➖ nã
 - ✅ conteudo (publicação na hora pelo relógio; no ensaio nada se publica) · ✅ especialistas · ✅ concorrentes
 - ✅ painel e quadro (portal) · ✅ cerebro (ferramenta + relógio: nota do dia, versão, cópia) · ✅ segundo_cerebro
   (portal, mesmo portão) · ✅ memoria_pessoal (ficha e decisões no 1º turno; `decisao`, `ficha`, `lembrar`)
+  · ✅ Segundo Cérebro nas conversas (24/10, `cerebro_hermes.py`: faltava o par das extensões `_62_cerebro_captura` e
+  `_27_cerebro` do A0): cada turno do celular vai à fila `segundo_cerebro/entrada` e a anotação automática registra
+  (decisões, pendências, onde parou dos Assuntos; "📌 Anotei"); todo turno leva o que da Pasta a conversa ainda não tem
+  (regras, Assuntos que mudaram, pendências, notas ligadas à mensagem, o assunto da tarefa longa), de novo depois de um
+  resumo; ficha e decisões também voltam depois do resumo; cada passo de tarefa longa move o assunto ligado
 - ✅ fios_soltos · ✅ iniciativa · ✅ auxiliar (contas, rascunho; `reuniao` por cima do cron do Hermes) · ✅ radar
 - ✅ aprovacoes (revisor e regras do A0; botões pela ponte) · ✅ cofre (máscara no proxy + ponte; ferramentas que agem)
   · ✅ login_usuarios (convidados só com uso pessoal; o portal usa os mesmos logins) · ✅ whatsapp (chave na ponte,

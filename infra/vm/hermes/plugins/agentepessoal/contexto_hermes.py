@@ -1,5 +1,5 @@
 """O que o A0 punha em todo turno sobre quem está falando (memoria_pessoal/_17_memoria_pessoal.py), no Hermes
-(migração, fase 5), no 1º turno de cada sessão (gancho `pre_llm_call`): a ficha "Sobre você" e as decisões em vigor
+(migração, fase 5), no 1º turno de cada sessão e depois de cada resumo dela (gancho `pre_llm_call`): a ficha "Sobre você" e as decisões em vigor
 da pessoa, pelos mesmos helpers (só leitura). "Hermes primeiro": a memória curta e o perfil do Hermes seguem dele; isto
 é o que é nosso (o Segundo Cérebro é a fonte das decisões) e evita perguntar de novo o que ele já decidiu.
 Convidados: só a ficha e as decisões deles mesmos, nunca as do Matheus."""
@@ -43,9 +43,24 @@ def bloco(login: str) -> str:
     return "\n\n".join(partes)
 
 
-def contexto(session_id="", task_id="", is_first_turn=False, **kw):
-    """Gancho `pre_llm_call`."""
-    if not is_first_turn:
+MARCAS = ("## Sobre quem fala com você", "## Decisões em vigor")
+
+
+def ja_tem(conversation_history) -> bool:
+    """A conversa ainda leva o bloco? Uma sessão longa (tg-matheus) é resumida de tempos em tempos e o bloco do 1º turno
+    some com o resumo (24/10: as decisões tinham saído da conversa desde 23/10); aí ele volta no turno seguinte."""
+    for m in conversation_history or []:
+        if isinstance(m, dict):
+            for chave in ("api_content", "content"):
+                v = m.get(chave)
+                if isinstance(v, str) and any(x in v for x in MARCAS):
+                    return True
+    return False
+
+
+def contexto(session_id="", task_id="", is_first_turn=False, conversation_history=None, **kw):
+    """Gancho `pre_llm_call`: no 1º turno e de novo quando o resumo da conversa o levou embora."""
+    if not is_first_turn and (conversation_history is None or ja_tem(conversation_history)):
         return None
     login = sys.modules["agentepessoal_ponte_a0"].login_da_sessao(str(session_id or task_id or ""))
     texto = bloco(login)

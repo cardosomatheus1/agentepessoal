@@ -36,21 +36,28 @@ def ler(arquivo: Path) -> dict | None:
     relato = str(d.get("relato") or "").strip()
     if not dele and not relato:
         return None
-    return {"sessao": str(d.get("sessao") or "")[:80], "dele": dele, "relato": relato,
-            "login": str(d.get("login") or "matheus").strip().lower(), "tentativas": int(d.get("tentativas") or 0)}
+    sessao = str(d.get("sessao") or "")[:80]
+    return {"sessao": sessao, "dele": dele, "relato": relato,
+            "login": str(d.get("login") or "matheus").strip().lower(), "tentativas": int(d.get("tentativas") or 0),
+            "origem": str(d.get("origem") or f"operador {sessao}")[:120]}
 
 
 def anotar(entrada: dict, mods, chamar=None) -> dict:
-    """One turn of operator work into the Pasta; the same checks as his phone chat."""
+    """One turn of work into the Pasta; the same checks as his phone chat. 24/10: the agent's own chat turns (Hermes,
+    infra/vm/hermes/plugins/agentepessoal/cerebro_hermes.py) come through here too, with `origem` "conversa <sessão>";
+    a login without the Pasta (teste_*) gets its own decisions and to-dos, never the owner's Assuntos."""
     cap, d, f, a = mods.m("captura"), mods.m("decisoes"), mods.m("fios"), mods.m("assuntos")
     login = entrada["login"]
-    pedido = cap.montar_pedido(entrada["dele"], entrada["relato"], f.abertos(login, 30), a.abertos(20), d.ativas(login),
-                               relato=entrada["relato"])
+    com_pasta = mods.m("pasta").ativa(login)
+    pedido = cap.montar_pedido(entrada["dele"], entrada["relato"], f.abertos(login, 30),
+                               a.abertos(20) if com_pasta else [], d.ativas(login), relato=entrada["relato"])
     propostas = cap.interpretar((chamar or cap.chamar)(pedido))
     if propostas is None:
         raise ValueError("a revisão não devolveu JSON")
-    return cap.aplicar(propostas, entrada["dele"], f"operador {entrada['sessao']}", d, f, a, login,
-                       relato=[entrada["relato"]])
+    if not com_pasta:
+        propostas["assuntos"] = []
+    return cap.aplicar(propostas, entrada["dele"], entrada.get("origem") or f"operador {entrada['sessao']}", d, f, a,
+                       login, relato=[entrada["relato"]])
 
 
 def processar(mods, entrada_dir: Path = None, chamar=None, avisar=None, agora: float | None = None) -> list[dict]:

@@ -173,8 +173,21 @@ def sessao_alvo(login: str, sessao: str, mapa: dict | None = None) -> str:
     return atual if conversa.match(atual) else f"tg-{login}"
 
 
+def _no_cerebro(funcao: str, *args) -> str:
+    """O Segundo Cérebro acompanha a tarefa (cerebro_hermes, 24/10: "não tava gravando cada passo"): o assunto ligado
+    muda sozinho a cada passo. Falha aqui nunca derruba a tarefa."""
+    c = sys.modules.get("agentepessoal_cerebro")
+    if c is None:
+        return ""
+    try:
+        return getattr(c, funcao)(*args) or ""
+    except Exception as exc:
+        log.warning("tarefas: Segundo Cérebro (%s) falhou: %s: %s", funcao, type(exc).__name__, exc)
+        return ""
+
+
 def criar(login: str, titulo: str, pedido: str, passos: list, sessao: str, raiz: Path | None = None,
-          agora: float | None = None, mapa: dict | None = None) -> dict:
+          agora: float | None = None, mapa: dict | None = None, assunto: str = "") -> dict:
     agora = agora or time.time()
     login = _limpo_login(login)
     lista = _passos_de(passos)
@@ -198,8 +211,38 @@ def criar(login: str, titulo: str, pedido: str, passos: list, sessao: str, raiz:
         gravar(p, plano)
         _gravar_atomico(p / "resultado.md", f"# {plano['titulo']}\n\nPedido (como veio): {plano['pedido']}\n\n"
                                             f"Começada em {_hora(agora)} · tarefa {tid}\n")
+    ref = _no_cerebro("assunto_da_tarefa", plano, assunto)
+    if ref:
+        with trava(p):
+            plano = ler(p)
+            plano["assunto"] = ref
+            _diario(plano, f"ligada ao assunto {ref} do Segundo Cérebro", agora)
+            gravar(p, plano)
     _mostrar(plano)
     return plano
+
+
+def ligar_assunto(login: str, tid: str, ref: str, por: str, raiz: Path | None = None, existe=None) -> str:
+    """Liga uma tarefa aberta a um assunto do Segundo Cérebro (operador, `por`="operador: <motivo>", ou o agente):
+    daí em diante cada passo move o onde parou dele. `existe(ref)` -> id do assunto ou "" (padrão: o cerebro_hermes)."""
+    if not str(por or "").strip():
+        raise ValueError("diga quem liga e por quê em `por`")
+    p = pasta(login, tid, raiz)
+    if not (p / "plano.json").exists():
+        raise ValueError(f"não achei a tarefa {tid}")
+    if existe is None:
+        c = sys.modules.get("agentepessoal_cerebro")
+        existe = (lambda r: (c.mods().m("assuntos").achar(c.mods().m("assuntos").todos(), r) or {}).get("id", "")) \
+            if c is not None else (lambda r: "")
+    achado = existe(str(ref or "").strip())
+    if not achado:
+        raise ValueError(f"não achei o assunto {ref!r} no Segundo Cérebro")
+    with trava(p):
+        plano = ler(p)
+        plano["assunto"] = achado
+        _diario(plano, f"ligada ao assunto {achado} ({str(por).strip()[:120]})", time.time())
+        gravar(p, plano)
+    return achado
 
 
 # ------------------------------------------------------------------ situação
@@ -427,6 +470,11 @@ def mudar_passo(login: str, tid: str, n, estado: str, resultado: str = "", acao:
         erro_passo = (enviar_fn or enviar)(plano["login"], texto_passo(plano, terminado))
         if erro_passo:
             log.warning("tarefas: mensagem do passo %s não foi: %s", terminado["n"], str(erro_passo)[:200])
+    if estado in ("feito", "falhou", "esperando_matheus") and plano.get("assunto"):
+        terminado = dict(_passo(plano, n))
+        if estado == "feito":
+            terminado["_resumo"] = str(resultado or "").strip()[:600]
+        _no_cerebro("passo_da_tarefa", plano, terminado)
     if estado or novos_passos:
         _mostrar(plano)
     if avisar:
@@ -589,6 +637,8 @@ def concluir(login: str, tid: str, resumo: str, parcial: bool = False, sessao: s
             plano["sessao_atual"] = sessao
         _diario(plano, "concluída" + (" (parcial)" if abertos else ""), agora)
         gravar(p, plano)
+    if plano.get("assunto"):
+        _no_cerebro("tarefa_concluida", plano, resumo)
     andamento(plano["login"], f"✅ {plano['titulo']}: terminado, mandando o resultado.", fim=True)
     erro = entregar(p, enviar_fn, agora)
     if erro:
@@ -706,6 +756,8 @@ def lembrete(sessao: str, raiz: Path | None = None) -> dict | None:
         feitos = sum(1 for x in plano["passos"] if x["estado"] == "feito")
         esp = [x for x in plano["passos"] if x["estado"] == "esperando_matheus"]
         linha = f"- {plano['id']} «{plano['titulo']}»: {sit}, {feitos}/{len(plano['passos'])} feitos"
+        if plano.get("assunto"):
+            linha += f" (assunto {plano['assunto']} do Segundo Cérebro)"
         if esp:
             linha += "; esperando a pessoa: " + "; ".join(f"passo {x['n']}: {x.get('pergunta') or x['titulo']}" for x in esp)[:400]
         linhas.append(linha)
@@ -865,7 +917,10 @@ ESQUEMAS = {
             "{\"titulo\", \"depende_de\": [números]} (sem depende_de, depende do anterior; [] = independente)."),
         "parameters": {"type": "object", "properties": {
             "titulo": {"type": "string"}, "pedido": {"type": "string"},
-            "passos": {"type": "array", "items": _ITEM}}, "required": ["titulo", "pedido", "passos"]},
+            "passos": {"type": "array", "items": _ITEM},
+            "assunto": {"type": "string", "description": "id do assunto do Segundo Cérebro desta frente, se já existe "
+                        "(veja «Assuntos em andamento»); sem ele, abro um com o título. Cada passo atualiza o onde "
+                        "parou dele sozinho."}}, "required": ["titulo", "pedido", "passos"]},
     },
     "tarefa_passo": {
         "name": "tarefa_passo",
@@ -921,7 +976,7 @@ async def executar(nome: str, args: dict, sessao: str) -> str:
             if isinstance(passos, str):
                 passos = [x.strip(" -•\t") for x in passos.splitlines() if x.strip(" -•\t")]
             plano = await asyncio.to_thread(criar, login, _texto(args.get("titulo")), _texto(args.get("pedido")),
-                                            passos or [], sessao)
+                                            passos or [], sessao, None, None, None, _texto(args.get("assunto")).strip())
             return (f"Tarefa {plano['id']} aberta com {len(plano['passos'])} passos (plano em disco; se parar no meio "
                     "eu retomo sozinho). Comece pelo passo 1: tarefa_passo(id, passo=1, estado=fazendo). Lembre: "
                     "resultado completo em cada feito; nada de mensagens no meio; no fim tarefa_concluir.")
