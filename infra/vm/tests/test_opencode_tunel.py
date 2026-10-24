@@ -31,7 +31,10 @@ def preparar(tmp: Path, cofre: dict, journal: str) -> dict:
         f.write_text(f"#!/bin/bash\n{corpo}\n")
         f.chmod(0o755)
     (tmp / "cofre.json").write_text(json.dumps(cofre))
-    return {**os.environ, "PATH": f"{bins}:{os.environ['PATH']}", "REG": str(reg), "TMP": str(tmp),
+    av = bins / "avisar"
+    av.write_text('#!/bin/bash\necho "avisar $*" >> "$REG"\n')
+    av.chmod(0o755)
+    return {**os.environ, "AVISAR": str(av), "PATH": f"{bins}:{os.environ['PATH']}", "REG": str(reg), "TMP": str(tmp),
             "COFRE": str(tmp / "cofre.json"), "AWS": str(bins / "aws")}
 
 
@@ -60,6 +63,8 @@ def main() -> int:
     checa("systemctl restart" not in log, "sem token não reinicia nada")
     rc, log2 = rodar(tmp, env, "publicar")
     checa(log2.count("put-parameter") == 1, "mesmo endereço: não regrava o SSM")
+    checa(log2.count("avisar https://abc-def-ghi.trycloudflare.com") == 1,
+          f"endereço novo vai ao Telegram uma vez só (Matheus 24/10): {log2}")
     rc, log = rodar(tmp, env, "rodar")
     checa("--url http://127.0.0.1:4096" in log and "--reuid=opencodemobile" in log and "TOKEN=\n" in log,
           f"rodar sem token = túnel rápido como opencodemobile: {log}")

@@ -39,6 +39,23 @@ endereco_rapido() {  # o último trycloudflare desde que o túnel subiu (não o 
     | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | tail -1
 }
 
+avisar() {  # 24/10 (Matheus: "sempre que trocar, falar o novo no Telegram"): o endereço novo vai ao celular dele
+  if [ -n "${AVISAR:-}" ]; then "$AVISAR" "$1"; return; fi
+  python3 - "$1" <<'PY' || logger -t agentepessoal "opencode: aviso do endereço novo não saiu"
+import json, sys, urllib.request
+url = sys.argv[1]
+chave = open("/opt/a0/usr/whatsapp/.chave").read().strip()
+texto = (f"🔗 O endereço do OpenCode mudou. Novo:\n{url}\n\nA senha é a mesma. Para ele parar de mudar, falta o "
+         "túnel fixo na sua Cloudflare (/senha CLOUDFLARE_TUNEL_OPENCODE <token>).")
+if url.endswith("trycloudflare.com") is False:
+    texto = f"🔗 O OpenCode agora está no endereço fixo:\n{url}\n\nA senha é a mesma; este não muda mais."
+req = urllib.request.Request("http://127.0.0.1:8789/enviar", data=json.dumps(
+    {"usuario": "matheus", "texto": texto, "tipo": "resposta"}).encode(),
+    headers={"Content-Type": "application/json", "X-Chave": chave})
+urllib.request.urlopen(req, timeout=30).read()
+PY
+}
+
 publicar() {
   local url atual
   if [ -n "$(segredo CLOUDFLARE_TUNEL_OPENCODE)" ] && [ -n "$(endereco_rapido)" ]; then
@@ -54,6 +71,7 @@ publicar() {
   if [ "$url" != "$atual" ]; then
     $AWS ssm put-parameter --region us-east-1 --name "$PARAM" --type String --overwrite --value "$url" >/dev/null
     logger -t agentepessoal "opencode: endereço publicado $url"
+    avisar "$url"
   fi
 }
 
