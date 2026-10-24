@@ -219,9 +219,15 @@ def tg(metodo: str, dados: dict | None = None, arquivo: tuple[str, Path] | None 
     req = urllib.request.Request(url, data=corpo, headers={"Content-Type": tipo})
     try:
         with urllib.request.urlopen(req, timeout=120) as r:
-            return json.loads(r.read())
+            resposta = json.loads(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(e.read().decode()[:300]) from None
+    if metodo.startswith("send") and (dados or {}).get("chat_id") is not None:
+        mid = (resposta.get("result") or {}).get("message_id") if isinstance(resposta.get("result"), dict) else None
+        if mid:  # a mensagem de andamento sabe quando outra passou à frente dela (e desce para o fim)
+            chave_chat = str(dados["chat_id"])
+            ULTIMA_MSG[chave_chat] = max(int(mid), ULTIMA_MSG.get(chave_chat, 0))
+    return resposta
 
 
 def tg_chat(usuario: str) -> str:
@@ -265,6 +271,7 @@ def tg_texto(chat: str, texto: str, botoes: list | None = None, app: dict | None
 # a new "still working" message per request every 4 minutes (4-8 per request). WhatsApp cannot edit a message: there
 # the combined progress goes at most once every ANDAMENTO_WA seconds. Edits do not buzz the phone.
 ANDAMENTO: dict[str, dict] = {}  # login -> {"chat", "id", "texto", "em"}
+ULTIMA_MSG: dict[str, int] = {}  # chat -> id da última mensagem mandada a ele (24/10: o andamento desce para o fim)
 ANDAMENTO_TRAVA = threading.Lock()
 ANDAMENTO_WA = 4 * 60
 ANDAMENTO_VIDA = 2 * 3600  # an older progress message is left alone: a new one goes
@@ -278,6 +285,19 @@ def andamento(usuario: str, texto: str, fim: bool = False, agora: float | None =
         atual = ANDAMENTO.get(usuario)
         chat = tg_chat(usuario)
         if chat:
+            if atual and atual.get("chat") == chat and agora - atual["em"] < ANDAMENTO_VIDA and not fim \
+                    and ULTIMA_MSG.get(str(chat), 0) > int(atual.get("id") or 0):
+                # 24/10 (Matheus: "uma mensagem a cada passo, e uma mensagem que se atualiza"): outra mensagem passou à
+                # frente; a de andamento desce para o fim, sem vibrar (apaga a velha, manda a nova em silêncio)
+                try:
+                    tg("deleteMessage", {"chat_id": chat, "message_id": atual["id"]})
+                except RuntimeError as exc:
+                    log(f"progress delete failed: {str(exc)[:120]}")
+                r = tg("sendMessage", {"chat_id": chat, "text": texto, "disable_web_page_preview": True,
+                                       "disable_notification": True})
+                ANDAMENTO[usuario] = {"chat": chat, "id": (r.get("result") or {}).get("message_id"), "texto": texto,
+                                      "em": agora}
+                return "enviada"
             if atual and atual.get("chat") == chat and agora - atual["em"] < ANDAMENTO_VIDA:
                 if texto != atual["texto"]:
                     try:
@@ -1424,6 +1444,35 @@ def passo_da_tarefa(usuario: str, sessao: str) -> str:
     return ""
 
 
+def _ha(segundos: float) -> str:
+    m = max(0, int(segundos // 60))
+    return f"{m} min" if m < 60 else f"{m // 60}h{m % 60:02d}"
+
+
+def texto_tarefa(plano: dict, agora: float | None = None) -> str:
+    """A mensagem de andamento de uma tarefa longa (o MESMO texto que o tarefas_hermes.texto_andamento do Hermes
+    escreve, para os dois não se alternarem): título, feitos, o passo de agora e há quanto tempo."""
+    agora = agora or time.time()
+    passos = plano.get("passos") or []
+    total = len(passos)
+    feitos = sum(1 for p in passos if p.get("estado") == "feito")
+    falhos = sum(1 for p in passos if p.get("estado") == "falhou")
+    esperando = [str(p.get("n")) for p in passos if p.get("estado") == "esperando_matheus"]
+    atual = next((p for p in passos if p.get("estado") == "fazendo"), None) or next(
+        (p for p in passos if p.get("estado") == "falta"), None)
+    linhas = [f"⏳ {plano.get('titulo') or 'Tarefa longa'}",
+              f"{feitos}/{total} passos feitos" + (f" · {falhos} não deu" if falhos else "")]
+    if atual:
+        desde = float(atual.get("inicio") or 0)
+        linhas.append(f"Agora: passo {atual.get('n')}/{total} — {atual.get('titulo')}"
+                      + (f" (há {_ha(agora - desde)})" if desde and atual.get("estado") == "fazendo" else ""))
+    if esperando:
+        linhas.append("Esperando você no passo " + ", ".join(esperando))
+    if plano.get("criada_em"):
+        linhas.append(f"Rodando há {_ha(agora - float(plano['criada_em']))} · esta mensagem se atualiza sozinha")
+    return "\n".join(linhas)
+
+
 def pergunta_ja_feita(usuario: str, sessao: str, desde: float) -> bool:
     """Neste run, um passo de tarefa longa desta sessão já mandou a pergunta dele ao celular (esperando_matheus)."""
     if not sessao:
@@ -1708,6 +1757,9 @@ def texto_andamento_hermes(usuario: str, agora: float | None = None) -> str:
             i["fazendo"] = passo
     if len(pedidos) == 1:
         i = pedidos[0]
+        tarefa = tarefas_abertas(usuario, str(i.get("sessao") or ""))[:1]
+        if tarefa:
+            return texto_tarefa(tarefa[0], agora)
         return (f"⏳ Trabalhando no seu pedido ({minutos(i)} min" + (f" · {i['fazendo']}" if i.get("fazendo") else "")
                 + "). Te mando o resultado aqui; esta mensagem se atualiza sozinha (/parar cancela).")
     linhas = [f"⏳ Trabalhando em {len(pedidos)} pedidos (esta mensagem se atualiza sozinha; /parar cancela):"]

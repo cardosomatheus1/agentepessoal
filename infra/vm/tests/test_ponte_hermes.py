@@ -260,7 +260,25 @@ def main() -> int:
     ok(p.passo_da_tarefa("matheus", "tg-matheus") == "passo 2/3: Estoque", p.passo_da_tarefa("matheus", "tg-matheus"))
     respostas["/v1/runs"] = {"run_id": "run_t"}
     p.entregar_hermes({"usuario": "matheus", "texto": "testa a Raiz inteira", "botao": ""}, "123")
-    ok("passo 2/3: Estoque" in p.texto_andamento_hermes("matheus"), "andamento mostra o passo da tarefa")
+    txt_t = p.texto_andamento_hermes("matheus")
+    ok("⏳ Teste E2E" in txt_t and "1/3 passos feitos" in txt_t and "Agora: passo 2/3 — Estoque" in txt_t,
+       f"andamento de tarefa longa: o texto da tarefa ({txt_t!r})")
+    # 24/10: a mensagem de cada passo passa à frente; a de andamento desce para o fim, em silêncio
+    spec_a = importlib.util.spec_from_file_location("ponte_andamento_teste", RAIZ / "infra" / "vm" / "ponte_whatsapp.py")
+    pa = importlib.util.module_from_spec(spec_a)
+    spec_a.loader.exec_module(pa)
+    pa.tg_chat = lambda usuario: "123"
+    chamadas_tg = []
+    pa.tg = lambda metodo, dados=None, arquivo=None: (chamadas_tg.append((metodo, dict(dados or {}))),
+                                                      {"result": {"message_id": 50 + len(chamadas_tg)}})[1]
+    pa.ANDAMENTO["matheus"] = {"chat": "123", "id": 40, "texto": "velho", "em": time.time()}
+    pa.ULTIMA_MSG["123"] = 45
+    ok(pa.andamento("matheus", "novo") == "enviada" and [m for m, _ in chamadas_tg] == ["deleteMessage", "sendMessage"]
+       and chamadas_tg[0][1]["message_id"] == 40 and chamadas_tg[1][1].get("disable_notification") is True,
+       f"andamento desce para o fim sem vibrar ({chamadas_tg})")
+    chamadas_tg.clear()
+    ok(pa.andamento("matheus", "novo 2") == "editada" and [m for m, _ in chamadas_tg] == ["editMessageText"],
+       f"sem nada à frente: só edita ({chamadas_tg})")
 
     def sumiu_t(caminho, corpo=None, timeout=60, usuario=""):
         if caminho == "/v1/runs/run_t":

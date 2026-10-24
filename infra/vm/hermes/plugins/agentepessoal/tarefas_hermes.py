@@ -62,6 +62,8 @@ ESPERA_SUBIDA = 90         # s depois que o plugin carregou: o API server do Her
 _CARREGADO = time.time()
 ENTREGA_MAX = 6             # tentativas do vigia de entregar o resultado quando a ponte falhou
 RESULTADO_PASSO_MAX = 60000
+ANDAMENTO_TIQUE = 120     # s entre atualizações do tempo na mensagem de andamento
+_MOSTRADO: dict = {}
 STATUS_RESULTADO_MAX = 9000
 ROTINA = re.compile(r"^cron_[A-Za-z0-9]+_\d{8}_\d{6}$")
 _LOGIN = re.compile(r"^[a-z0-9_-]{1,32}$")
@@ -277,21 +279,45 @@ def andamento(login: str, texto: str, fim: bool = False) -> str:
         return str(exc)[:200]
 
 
-def texto_andamento(plano: dict) -> str:
-    total = len(plano["passos"])
-    feitos = sum(1 for x in plano["passos"] if x["estado"] == "feito")
-    atual = next((x for x in plano["passos"] if x["estado"] == "fazendo"), None) or proximo(plano)
-    linhas = [f"🔄 {plano['titulo']}", f"{feitos}/{total} passos feitos"]
+def _ha(segundos: float) -> str:
+    m = max(0, int(segundos // 60))
+    return f"{m} min" if m < 60 else f"{m // 60}h{m % 60:02d}"
+
+
+def texto_andamento(plano: dict, agora: float | None = None) -> str:
+    """O MESMO texto que a ponte (ponte_whatsapp.texto_tarefa) escreve a cada 2 min enquanto o run anda, para os dois
+    não se alternarem na mesma mensagem: título, feitos, o passo de agora e há quanto tempo."""
+    agora = agora or time.time()
+    passos = plano.get("passos") or []
+    total = len(passos)
+    feitos = sum(1 for p in passos if p.get("estado") == "feito")
+    falhos = sum(1 for p in passos if p.get("estado") == "falhou")
+    esperando = [str(p.get("n")) for p in passos if p.get("estado") == "esperando_matheus"]
+    atual = next((p for p in passos if p.get("estado") == "fazendo"), None) or next(
+        (p for p in passos if p.get("estado") == "falta"), None)
+    linhas = [f"⏳ {plano.get('titulo') or 'Tarefa longa'}",
+              f"{feitos}/{total} passos feitos" + (f" · {falhos} não deu" if falhos else "")]
     if atual:
-        linhas.append(f"Agora: passo {atual['n']}/{total} — {atual['titulo']}")
-    falhos = sum(1 for x in plano["passos"] if x["estado"] == "falhou")
-    esperando = [x for x in plano["passos"] if x["estado"] == "esperando_matheus"]
-    if falhos:
-        linhas.append(f"{falhos} não deu (vai no relatório)")
+        desde = float(atual.get("inicio") or 0)
+        linhas.append(f"Agora: passo {atual.get('n')}/{total} — {atual.get('titulo')}"
+                      + (f" (há {_ha(agora - desde)})" if desde and atual.get("estado") == "fazendo" else ""))
     if esperando:
-        linhas.append("Esperando você no passo " + ", ".join(str(x["n"]) for x in esperando))
-    linhas.append("No fim chega uma mensagem só com o resumo e o arquivo completo.")
+        linhas.append("Esperando você no passo " + ", ".join(esperando))
+    if plano.get("criada_em"):
+        linhas.append(f"Rodando há {_ha(agora - float(plano['criada_em']))} · esta mensagem se atualiza sozinha")
     return "\n".join(linhas)
+
+
+def texto_passo(plano: dict, passo: dict) -> str:
+    """A mensagem de cada passo terminado (24/10, Matheus: "uma mensagem a cada passo")."""
+    total = len(plano.get("passos") or [])
+    if passo["estado"] == "feito":
+        resumo = " ".join(str(passo.get("_resumo") or "").split())
+        resumo = resumo if len(resumo) <= 280 else resumo[:279].rsplit(" ", 1)[0] + "…"
+        return f"✅ Passo {passo['n']}/{total} — {passo['titulo']}" + (f"\n{resumo}" if resumo else "")
+    erro = " ".join(str(passo.get("erro") or "").split())
+    erro = erro if len(erro) <= 280 else erro[:279].rsplit(" ", 1)[0] + "…"
+    return f"⚠️ Passo {passo['n']}/{total} — {passo['titulo']}: não deu" + (f"\n{erro}" if erro else "")
 
 
 def _mostrar(plano: dict) -> None:
@@ -394,6 +420,12 @@ def mudar_passo(login: str, tid: str, n, estado: str, resultado: str = "", acao:
             plano["sessao_atual"] = sessao
         (p / "pausada").unlink(missing_ok=True)  # mexeu na tarefa: ela voltou a andar
         gravar(p, plano)
+    if estado in ("feito", "falhou"):
+        terminado = dict(_passo(plano, n))
+        terminado["_resumo"] = str(resultado or "").strip().split("\n\n")[0]
+        erro_passo = (enviar_fn or enviar)(plano["login"], texto_passo(plano, terminado))
+        if erro_passo:
+            log.warning("tarefas: mensagem do passo %s não foi: %s", terminado["n"], str(erro_passo)[:200])
     if estado or novos_passos:
         _mostrar(plano)
     if avisar:
@@ -736,6 +768,9 @@ def _vigiar(p: Path, agora: float, vivas, conversa_fn, enviar_fn, inicio_fn) -> 
     if plano.get("estado") != "aberta":
         return []
     sit = situacao(plano, _pausada(p))
+    if sit not in ("pausada", "travada", "concluida") and agora - _MOSTRADO.get(plano["id"], 0) >= ANDAMENTO_TIQUE:
+        _MOSTRADO[plano["id"]] = agora  # o tempo anda na mensagem mesmo entre um passo e outro (Matheus 24/10)
+        _mostrar(plano)
     if sit in ("pausada", "travada", "esperando", "concluida"):
         return []
     sessoes = [s for s in dict.fromkeys([plano.get("sessao"), plano.get("sessao_atual"), plano.get("sessao_alvo")]) if s]

@@ -108,6 +108,14 @@ meus = [a for a in andamentos if a["login"] == "matheus" and "Teste E2E Raiz" in
 checa(meus and "0/4 passos feitos" in meus[0]["texto"] and not meus[0]["fim"], f"abrir mostra o andamento: {meus[:1]}")
 checa("1/4 passos feitos" in meus[-1]["texto"] and "Agora: passo 2/4 — Estoque" in meus[-1]["texto"],
       f"passo feito atualiza o andamento: {meus[-1]['texto']!r}")
+passo_msgs = [e for e in enviados if e["texto"].startswith(("✅ Passo", "⚠️ Passo"))]
+checa(passo_msgs and passo_msgs[0]["texto"].startswith("✅ Passo 1/4 — Cadastro") and "Conta criada" in passo_msgs[0]["texto"],
+      f"uma mensagem a cada passo terminado (Matheus 24/10): {passo_msgs[:1]}")
+tx = t.texto_andamento({"titulo": "T", "criada_em": AGORA, "passos": [
+    {"n": 1, "titulo": "A", "estado": "feito"}, {"n": 2, "titulo": "B", "estado": "fazendo", "inicio": AGORA + 60},
+    {"n": 3, "titulo": "C", "estado": "falhou"}]}, AGORA + 4200)
+checa(tx.splitlines() == ["⏳ T", "1/3 passos feitos · 1 não deu", "Agora: passo 2/3 — B (há 1h09)",
+                          "Rodando há 1h10 · esta mensagem se atualiza sozinha"], f"texto do andamento com o tempo: {tx!r}")
 antes = len(andamentos)
 t.mudar_passo("matheus", tid, 1, "fazendo", agora=AGORA + 30)
 checa(len(andamentos) == antes, "pedido recusado não mexe no andamento")
@@ -348,6 +356,18 @@ sk = (RAIZ / "infra" / "vm" / "hermes" / "skills" / "tarefa-longa" / "SKILL.md")
 checa("Raiz Connect" in sk and "esperando_matheus" in sk and "prova" in sk and "conferido" in sk, "a skill cobre o caso")
 raiz_skill = (RAIZ / "infra" / "vm" / "hermes" / "skills" / "teste-fluxo-produto-raizconnect" / "SKILL.md").read_text()
 checa("tarefa_iniciar" in raiz_skill and "\nressemear: " in raiz_skill, "o teste E2E da Raiz usa tarefa longa (ressemeada)")
+
+# ---- o tempo anda na mensagem: o vigia atualiza o andamento a cada ANDAMENTO_TIQUE, sem mandar mensagem nova
+tq = t.criar("matheus", "Tique", "x", ["a", "b"], "tg-matheus", agora=AGORA)
+t._MOSTRADO.clear()
+antes_and, antes_env = len(andamentos), len(enviados)
+t.passo_do_relogio(agora=AGORA + 10, conversa_fn=lambda *a: {"ok": True}, inicio_fn=lambda pid: "x")
+t.passo_do_relogio(agora=AGORA + 20, conversa_fn=lambda *a: {"ok": True}, inicio_fn=lambda pid: "x")
+d1 = [a for a in andamentos[antes_and:] if "Tique" in a["texto"]]
+t.passo_do_relogio(agora=AGORA + 10 + t.ANDAMENTO_TIQUE, conversa_fn=lambda *a: {"ok": True}, inicio_fn=lambda pid: "x")
+d2 = [a for a in andamentos[antes_and:] if "Tique" in a["texto"]]
+checa(len(d1) == 1 and len(d2) == 2 and not [e for e in enviados[antes_env:] if "Tique" in e["texto"]],
+      f"tique do andamento a cada {t.ANDAMENTO_TIQUE}s, sem mensagem nova ({len(d1)}, {len(d2)})")
 
 if falhas:
     raise SystemExit("test_tarefas_hermes: " + "; ".join(falhas))
