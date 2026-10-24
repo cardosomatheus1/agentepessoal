@@ -8,6 +8,7 @@ import importlib.util
 import json
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[3]
@@ -272,6 +273,20 @@ def main() -> int:
     p._hermes = hermes_antes
     ok(estado == "sumiu" and len(enviados) == n and p.ativos_hermes("matheus") == [],
        f"run sumido com tarefa longa: sem 'diga continua' (o vigia retoma) ({enviados[n:]})")
+    # a pergunta do passo já foi ao celular neste run: a repetição no fim não vai de novo
+    plano_q = json.loads((pasta_t / "plano.json").read_text())
+    plano_q["passos"][1].update({"estado": "esperando_matheus", "avisado_em": time.time()})
+    (pasta_t / "plano.json").write_text(json.dumps(plano_q))
+    respostas["/v1/runs"] = {"run_id": "run_q"}
+    p.entregar_hermes({"usuario": "matheus", "texto": "e o resto?", "botao": "", "conversa_nova": True}, "123")
+    respostas["/v1/runs/run_q"] = [{"status": "completed", "output": "Em qual cidade você quer?"}]
+    n = len(enviados)
+    p.acompanhar_hermes("run_q", "matheus", "123", espera=5, pausa=0)
+    ok(len(enviados) == n, f"pergunta da tarefa já enviada pela ferramenta: não repete ({enviados[n:]})")
+    ok(not p.pergunta_ja_feita("matheus", "tg-matheus", time.time() + 60) and not p.pergunta_ja_feita("matheus", "", 0),
+       "pergunta de antes deste run, ou sem sessão: a resposta vai")
+    plano_q["passos"][1]["estado"] = "fazendo"
+    (pasta_t / "plano.json").write_text(json.dumps(plano_q))
     respostas["/v1/runs"] = {"run_id": "run_t2"}
     p.entregar_hermes({"usuario": "matheus", "texto": "faz Y", "botao": ""}, "123")
     p.entregar_hermes({"usuario": "matheus", "texto": "/parar", "botao": ""}, "123")

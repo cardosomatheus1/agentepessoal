@@ -442,7 +442,10 @@ def status(login: str, tid: str = "", raiz: Path | None = None) -> str:
 
 
 def _nome_arquivo(plano: dict) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", plano["titulo"].lower().encode("ascii", "ignore").decode()).strip("-")[:40]
+    import unicodedata
+
+    sem_acento = unicodedata.normalize("NFKD", plano["titulo"].lower()).encode("ascii", "ignore").decode()
+    slug = re.sub(r"[^a-z0-9]+", "-", sem_acento).strip("-")[:40].strip("-")
     return f"{slug or 'tarefa'}-{plano['id']}.md"
 
 
@@ -499,8 +502,11 @@ def concluir(login: str, tid: str, resumo: str, parcial: bool = False, sessao: s
                     + ". Faça-os (ou marque falhou com o motivo). Só conclua parcial (parcial=true) se a pessoa pediu "
                     "ou se o que falta depende dela e o resto já vale a entrega.")
         corpo = (p / "resultado.md").read_text(encoding="utf-8") if (p / "resultado.md").exists() else ""
-        cab, _, resto = corpo.partition("\n## Passo ")
-        final = cab.rstrip("\n") + f"\n\n## Resumo\n{resumo}\n" + (f"\n## Passo {resto}" if resto else "")
+        cab, *secoes = corpo.split("\n## Passo ")
+        num = lambda x: int(re.match(r"\d+", x).group()) if re.match(r"\d+", x) else 0  # noqa: E731
+        secoes = sorted(secoes, key=num)  # na ordem dos passos (um independente pode ter terminado antes)
+        final = cab.rstrip("\n") + f"\n\n## Resumo\n{resumo}\n" + "".join(
+            f"\n## Passo {x.rstrip(chr(10))}\n" for x in secoes)
         if abertos:
             final += "\n\n## Ficou faltando\n" + "\n".join(
                 f"- Passo {x['n']} — {x['titulo']}: {x['estado']}" + (f" ({x.get('pergunta')})" if x.get("pergunta") else "")

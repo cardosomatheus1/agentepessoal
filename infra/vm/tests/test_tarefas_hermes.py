@@ -157,8 +157,15 @@ checa(e["login"] == "matheus" and e["arquivo"].endswith(f"-{tid}.md") and "3 pro
 final = Path(e["arquivo"]).read_text()
 checa(final.index("## Resumo") < final.index("## Passo 1") < final.index("## Passo 4") and pedido in final,
       "o arquivo: pedido, resumo e todos os passos em ordem")
+checa(t._nome_arquivo({"titulo": "Relatório: açaí & CMV", "id": tid}) == f"relatorio-acai-cmv-{tid}.md", "nome do arquivo sem acento")
 checa(t.concluir("matheus", tid, "de novo").startswith("Já estava concluída") and len(enviados) == 1, "não entrega duas vezes")
 
+ordem = t.criar("matheus", "Ordem", "p", [{"titulo": "A", "depende_de": []}, {"titulo": "B", "depende_de": []}], "tg-matheus")
+t.mudar_passo("matheus", ordem["id"], 2, "feito", resultado="rB")
+t.mudar_passo("matheus", ordem["id"], 1, "feito", resultado="rA")
+t.concluir("matheus", ordem["id"], "ok")
+txt = (t.pasta("matheus", ordem["id"]) / "resultado.md").read_text()
+checa(txt.index("## Passo 1") < txt.index("## Passo 2") and "rA" in txt and "rB" in txt, "arquivo final na ordem dos passos")
 # entrega que falhou: o vigia entrega depois (sem modelo)
 falhar = ["ponte fora"]
 ent = t.criar("matheus", "Entrega", "p", ["a", "b"], "tg-matheus", agora=AGORA)

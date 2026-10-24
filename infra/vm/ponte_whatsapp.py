@@ -1424,6 +1424,17 @@ def passo_da_tarefa(usuario: str, sessao: str) -> str:
     return ""
 
 
+def pergunta_ja_feita(usuario: str, sessao: str, desde: float) -> bool:
+    """Neste run, um passo de tarefa longa desta sessão já mandou a pergunta dele ao celular (esperando_matheus)."""
+    if not sessao:
+        return False
+    for plano in tarefas_abertas(usuario, sessao):
+        for p in plano.get("passos") or []:
+            if p.get("estado") == "esperando_matheus" and float(p.get("avisado_em") or 0) >= desde - 1:
+                return True
+    return False
+
+
 def _hermes(caminho: str, corpo: dict | None = None, timeout: int = 60, usuario: str = "") -> dict:
     base = instancia(usuario)[0] if usuario else HERMES_URL
     req = urllib.request.Request(base + caminho, data=json.dumps(corpo).encode() if corpo is not None else None,
@@ -1544,6 +1555,8 @@ def acompanhar_hermes(run_id: str, usuario: str, chat: str, espera: float = HERM
             responder_hermes(usuario, chat, f"🔐 *Preciso do seu ok:* {pedido}",
                              [{"id": f"haprov:{k}:{d}", "titulo": APROVAR[d][1]} for d in ("aprovar", "tarefa", "recusar")])
         if estado in ("completed", "failed", "cancelled", "stopped"):
+            with _TRAVA_HERMES:
+                sessao_run = str((_HERMES_RUNS.get(run_id) or {}).get("sessao") or "")
             ativos_hermes(usuario, run_id, fim=True)
             texto = str(st.get("output") or "").strip() or (
                 "⚠️ Não consegui terminar o pedido." if estado not in ("completed", "stopped", "cancelled") else "")
@@ -1556,6 +1569,10 @@ def acompanhar_hermes(run_id: str, usuario: str, chat: str, espera: float = HERM
                 else:
                     _ANDAMENTO_ABERTO.discard(usuario)
                     andamento_hermes(usuario, "✅ Terminei", fim=True)
+            if texto and pergunta_ja_feita(usuario, sessao_run, inicio):
+                # 24/10, ao vivo: a pergunta do passo já foi ao celular pela tarefa_passo e o modelo a repetiu no fim
+                log(f"hermes: resposta de {run_id} calada: a pergunta da tarefa longa já foi a {usuario}")
+                return estado
             if texto and not texto.upper().startswith("SEM NOVIDADE") and not ja_respondido(texto):
                 responder_hermes(usuario, chat, texto)
             return estado
