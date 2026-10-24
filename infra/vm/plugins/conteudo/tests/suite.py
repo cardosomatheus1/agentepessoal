@@ -27,6 +27,10 @@ def _modulo():
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     m.especialistas = lambda: None  # the real Crítico calls a model; tests that want one pass a fake
+
+    def sem_whisper(caminho):
+        raise RuntimeError("sem whisper no teste")
+    m._TRANSCREVER = sem_whisper  # the real one loads a model; tests that want one pass a fake
     return m
 
 
@@ -57,12 +61,13 @@ class ApiFalsa:
         return {"permalink": f"https://instagram.com/p/{caminho}"}
 
 
-ITEM = {"id": "seg-pov", "data": "2026-10-14", "hora": "11:45", "tipo": "REELS", "arquivos": ["conteudo/semana1/pov.mp4"],
+FICHA = {"brief": "post de teste: o que é e o que diz", "fonte": "teste (arquivos no S3)"}
+ITEM = {"id": "seg-pov", "ficha": FICHA, "data": "2026-10-14", "hora": "11:45", "tipo": "REELS", "arquivos": ["conteudo/semana1/pov.mp4"],
         "legenda": "POV: você vende salgado e chega mensagem às 23h. Marca quem já passou por isso."}
-CARR = {"id": "ter-frases", "data": "2026-10-15", "hora": "11:45", "tipo": "CARROSSEL",
+CARR = {"id": "ter-frases", "ficha": FICHA, "data": "2026-10-15", "hora": "11:45", "tipo": "CARROSSEL",
         "arquivos": [f"conteudo/semana1/frases/{i}.jpg" for i in range(1, 10)], "legenda": "Qual você mais ouve? Comenta o número."}
 
-FOTO = {"id": "s3-foto", "data": "2026-10-17", "hora": "11:45", "tipo": "IMAGE", "arquivos": ["conteudo/semana3/ifood/foto.jpg"],
+FOTO = {"id": "s3-foto", "ficha": FICHA, "data": "2026-10-17", "hora": "11:45", "tipo": "IMAGE", "arquivos": ["conteudo/semana3/ifood/foto.jpg"],
         "legenda": "Pedidos do iFood na Raiz Connect. Mais clareza para acompanhar os pedidos."}
 
 
@@ -90,8 +95,8 @@ class Suite:
         ok("instante de transição" in m["quadros"], "o Crítico sabe que a troca de cena tem folga (22/10)")
         ok(m["quadros"].startswith("ordem das imagens: 1 = segundo 0.2") and "6 = segundo 3.4" in m["quadros"],
            f"a ordem e o segundo de cada quadro (o último perto do fim, onde fica a chamada): {m['quadros']}")
-        ok(m["narracao"].startswith("[0.6s] Pediu pelo iFood?") and ouvidos[0].endswith("narracao.mp3"),
-           "a narração vem transcrita do áudio do vídeo")
+        ok(m["narracao"].startswith("(tempos aproximados") and "[0.6s] Pediu pelo iFood?" in m["narracao"]
+           and ouvidos[0].endswith("narracao.mp3"), "sem o whisper, o Gemini transcreve e o Crítico sabe que o tempo é aproximado")
         m2 = c.material_do_video(reel, ["/capa.jpg"], baixar=lambda *a: 1 / 0)
         ok(m2["imagens"][0] == "/capa.jpg" and m2["quadros"].startswith("ordem das imagens: 1 = capa"),
            "a capa vem primeiro; o vídeo já baixado não baixa de novo")
@@ -155,7 +160,7 @@ class Suite:
     def t_story_um_por_dia_ao_lado_do_post(self):
         # 22/10, Matheus: "story sim todo dia": o story tem a vaga dele, ao lado do post do feed
         c = _modulo()
-        story = {"id": "qui-story", "data": "2026-10-14", "hora": "09:00", "tipo": "STORY",
+        story = {"id": "qui-story", "ficha": FICHA, "data": "2026-10-14", "hora": "09:00", "tipo": "STORY",
                  "arquivos": ["conteudo/stories/bastidor.jpg"], "legenda": "bastidor: a tela do estoque"}
         agora = _ts(c, "2026-10-13", "10:00")
         r = c.agendar([ITEM, story], agora)
@@ -174,7 +179,8 @@ class Suite:
         eq((criar.get("media_type"), criar.get("image_url"), "caption" in criar),
            ("STORIES", "https://s3/conteudo/stories/bastidor.jpg?assinado", False), "STORIES com a imagem e sem legenda")
         eq(c.devido(_ts(c, "2026-10-14", "11:46"))["id"], "seg-pov", "o story não tira a vaga do post do dia")
-        c.agendar([{"id": "s-video", "data": "2026-10-17", "hora": "09:00", "tipo": "STORY", "arquivos": ["conteudo/s/v.mp4"]}], agora)
+        ok(c.agendar([{"id": "s-video", "ficha": FICHA, "data": "2026-10-17", "hora": "09:00", "tipo": "STORY",
+                       "arquivos": ["conteudo/s/v.mp4"]}], agora)["ok"], "story em vídeo agendado")
         api2 = ApiFalsa()
         c.rodar(api2, lambda t: None, _ts(c, "2026-10-17", "09:01"))
         criar = [x for x in api2.chamadas if x[0] == "POST" and x[1] == "IG1/media"][0][2]
@@ -689,7 +695,7 @@ class Suite:
 
     def t_conferencia_antecipada_aprova_e_vale_na_hora(self):
         c = _modulo()
-        story = {"id": "st", "data": "2026-10-15", "hora": "09:00", "tipo": "STORY", "arquivos": ["conteudo/st/a.jpg"],
+        story = {"id": "st", "ficha": FICHA, "data": "2026-10-15", "hora": "09:00", "tipo": "STORY", "arquivos": ["conteudo/st/a.jpg"],
                  "legenda": "qua: dica"}
         longe = dict(ITEM, id="longe", data="2026-10-18", tipo="CARROSSEL", arquivos=["conteudo/l/1.jpg", "conteudo/l/2.jpg"])
         ok(c.agendar([CARR, story, longe], _ts(c, "2026-10-13", "10:00"))["ok"], "agenda")
@@ -807,10 +813,108 @@ class Suite:
         ok(p["refeita"] == 1 and p["spec"]["story"]["manchete"] == "Confere a nota", "a semana guarda a versão nova")
         reel = next(i for i in itens.values() if i["tipo"] == "REELS")
         ok("decisão #39" in s.refazer_item(reel, {"motivos": ["x"]})["erro"], "Reel não é refeito sem o ok dele no áudio")
-        ok("fora da rotina" in s.refazer_item(dict(CARR), {"motivos": ["x"]})["erro"], "post feito à mão: não sabe refazer")
+        sem_ficha = {k: v for k, v in CARR.items() if k != "ficha"}
+        ok("não tem ficha" in s.refazer_item(sem_ficha, {"motivos": ["x"]})["erro"], "post sem ficha: não sabe refazer")
         Esp.criticar = lambda self, tipo, material: {"veredito": "reprova", "motivos": ["ainda fraco"]}
         r = s.refazer_item(novo, {"motivos": ["x"]}, subir=lambda *a: None)
         ok(not r["ok"] and "também foi reprovada: ainda fraco" in r["erro"], r)
+
+    def t_ficha_obrigatoria_e_anotada(self):
+        # 24/10: s2-expectativa (feito à mão) foi reprovado e o agente não tinha a ficha para refazer
+        c = _modulo()
+        agora = _ts(c, "2026-10-13", "10:00")
+        sem = {k: v for k, v in ITEM.items() if k != "ficha"}
+        r = c.agendar([sem], agora)
+        ok(not r["ok"] and "sem ficha" in r["erro"], f"post sem ficha nem semana é recusado: {r}")
+        ok("sem fonte" in c.agendar([dict(ITEM, ficha={"brief": "x"})], agora)["erro"], "ficha precisa da fonte")
+        ok("falas" in c.agendar([dict(ITEM, ficha=dict(FICHA, falas=[{"inicio": 3, "fim": 1, "texto": "x"}]))], agora)["erro"],
+           "falas com tempo errado")
+        ok("desconhecidos" in c.agendar([dict(ITEM, ficha=dict(FICHA, outra=1))], agora)["erro"], "campo inventado")
+        ok(c.agendar([dict(sem, origem={"semana": "s20261026-1", "n": 1})], agora)["ok"], "post da semana: a proposta é a ficha")
+        # a post scheduled before the ficha existed gets one; the Crítico judges it again with it
+        d = c.carregar()
+        d["itens"].append(dict(sem, id="antigo", data="2026-10-14", estado="pendente", avisado_reprova=False,
+                               conferido={"impressao": "x", "veredito": "reprova", "motivo": "fala x tela"}))
+        c._gravar(d)
+        ok(not c.anotar_ficha("antigo", {"brief": "x"}, "teste")["ok"], "ficha incompleta não entra")
+        ok(not c.anotar_ficha("antigo", FICHA, "")["ok"], "sem motivo não")
+        r = c.anotar_ficha("antigo", dict(FICHA, falas=[{"inicio": 0.2, "fim": 2.5, "texto": "Oi"}]), "feito no kit")
+        it = next(i for i in c.carregar()["itens"] if i["id"] == "antigo")
+        ok(r["ok"] and r["julga_de_novo"] and "conferido" not in it and it["avisado_reprova"] and it["ficha"]["fonte"]
+           and it["data"] == "2026-10-14" and it["arquivos"] == ITEM["arquivos"], f"ficha nova, julga de novo: {r} {it}")
+        ok('"ficha": "nova"' in (c.PASTA / "diario.jsonl").read_text(encoding="utf-8"), "fica no diário")
+        tipo, mat = c.material_do_post(it)
+        ok(mat["brief"] == FICHA["brief"], "o Crítico lê o brief da ficha")
+
+    def t_narracao_com_tempos_medidos(self):
+        # 24/10: o Gemini escrevia os segundos adiantados 4 a 6 s e o Crítico reprovou um Reel sincronizado
+        c = _modulo()
+        pasta = c.PASTA / "cache" / "r"
+        pasta.mkdir(parents=True)
+        audio = pasta / "narracao.mp3"
+        audio.write_bytes(b"mp3")
+        reel = dict(ITEM, id="r", ficha=dict(FICHA, falas=[{"inicio": 18.0, "fim": 20.3, "texto": "Com 40% eu levo."}]))
+        geminis = []
+        c._OUVIR = lambda caminho: geminis.append(caminho) or "[13.3s] Com 40% eu levo."
+        c._TRANSCREVER = lambda caminho: "[13.5s–14.7s] Deixe em consignação?\n[18.0s–20.3s] Com 40% eu levo."
+        n = c.narracao_do_video(reel, audio)
+        ok(n.startswith("tempos medidos no áudio") and "[18.0s–20.3s] Com 40% eu levo." in n and not geminis,
+           f"o tempo vem medido no áudio, não do Gemini: {n}")
+        c._TRANSCREVER = lambda caminho: 1 / 0
+        n = c.narracao_do_video(reel, audio)
+        ok(n.startswith("tempos da ficha") and "[18.0s–20.3s]" in n and not geminis, f"sem whisper, as falas da ficha: {n}")
+        ok(c.narracao_do_video(dict(ITEM, id="r", roteiro="Oi."), audio) == "Oi." and not geminis, "roteiro do post")
+        n = c.narracao_do_video(dict(ITEM, id="r"), audio)
+        ok(n.startswith("(tempos aproximados") and "não reprove" in n and geminis, f"Gemini só no fim, avisado: {n}")
+        c._TRANSCREVER = lambda caminho: ""
+        ok(c.narracao_do_video(dict(ITEM, id="r"), audio) == c.SEM_FALA, "vídeo sem fala: diz que não há fala")
+
+    def t_refaz_pela_ficha(self):
+        # 24/10: post feito fora da rotina, com ficha, é refeito pelo agente sozinho
+        c, s, chamadas = self._semana()
+        agora = _ts(c, "2026-10-13", "10:00")
+        campos = {"layout": "dica", "manchete": "Antiga"}
+        st = {"id": "st-ficha", "data": "2026-10-14", "hora": "09:00", "tipo": "STORY", "arquivos": ["conteudo/st/a.jpg"],
+              "legenda": "dica", "ficha": dict(FICHA, story=campos)}
+        car = dict(CARR, id="car-ficha", data="2026-10-15")
+        ok(c.agendar([st, car], agora)["ok"], "agenda")
+        itens = {i["id"]: i for i in c.carregar()["itens"]}
+        esp = c.especialistas()
+        type(esp).chamar = lambda self, papel, tarefa, material: {"texto": json.dumps({"layout": "dica", "manchete": "Nova"}),
+                                                                   "erro": ""}
+        subidos = []
+        r = s.refazer_item(itens["st-ficha"], {"motivos": ["manchete fraca"]}, subir=lambda l, ch: subidos.append(ch))
+        novo = next(i for i in c.carregar()["itens"] if i["id"] == "st-ficha")
+        ok(r["ok"] and novo["arquivos"] == subidos and subidos[0].startswith("conteudo/semanas/refeitos/st-ficha/")
+           and novo["ficha"]["story"]["manchete"] == "Nova" and novo["ficha"]["fonte"] == FICHA["fonte"]
+           and (c.PASTA / "cache" / "st-ficha" / subidos[0].rsplit("/", 1)[-1]).exists(), f"story pela ficha: {r} {novo}")
+        r = s.refazer_item(itens["car-ficha"], {"motivos": ["slide 3 cortado"]}, subir=lambda *a: None)
+        novo = next(i for i in c.carregar()["itens"] if i["id"] == "car-ficha")
+        ok(r["ok"] and len(novo["arquivos"]) == 3 and "slide 3 cortado" in chamadas[-1]["ideia"]
+           and FICHA["brief"] in chamadas[-1]["ideia"] and novo["ficha"]["spec"] == {"motor": "carrossel_raiz"},
+           f"carrossel só com o brief: o Designer desenha de novo sabendo o motivo: {r} {chamadas[-1]}")
+        reel = dict(ITEM, ficha=dict(FICHA, fonte="erp-saas feat/video-raiz-expectativa"))
+        erro = s.refazer_item(reel, {"motivos": ["x"]})["erro"]
+        ok("decisão #39" in erro and "feat/video-raiz-expectativa" in erro, f"Reel: precisa do ok no áudio e diz a origem: {erro}")
+
+    def t_conferencia_avisa_quando_resolve(self):
+        c = _modulo()
+        ok(c.agendar([CARR], _ts(c, "2026-10-13", "10:00"))["ok"], "agenda")
+        vereditos = ["reprova", "aprova"]
+
+        class Critico:
+            def criticar(self, tipo, material):
+                v = vereditos.pop(0)
+                return {"veredito": v, "motivos": [] if v == "aprova" else ["fala x tela"]}
+        avisos, arq, agora = [], self._arquivo_falso(), _ts(c, "2026-10-14", "10:00")
+        nao = lambda item, critica: {"ok": False, "erro": "Reel"}
+        r = c.conferir_antes(agora, Critico(), nao, avisos.append, **arq)
+        ok(r["veredito"] == "reprova" and avisos[0].startswith("pendente:"), r)
+        ok(c.anotar_ficha("ter-frases", dict(FICHA, brief="melhor"), "operador: ficha")["julga_de_novo"], "julga de novo")
+        r = c.conferir_antes(agora, Critico(), nao, avisos.append, **arq)
+        ok(r["veredito"] == "aprova" and len(avisos) == 2 and avisos[1].startswith("resolvido: o Crítico aprovou ter-frases"),
+           f"ele ouve que resolveu: {avisos}")
+        ok(not c.carregar()["itens"][0]["avisado_reprova"], "avisa uma vez")
 
     def t_semana_video_so_depois_da_aprovacao(self):
         # 22/10, Matheus: "Leve" (the agent makes the Reels too); decision #39: the narration is approved before the video

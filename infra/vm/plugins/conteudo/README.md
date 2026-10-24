@@ -15,6 +15,17 @@ cofre). Autorizado pelo Matheus em 13/10: "1 por dia, nas legendas não use emot
 - A rotina relê o helper quando o arquivo muda e grava em `/a0/usr/conteudo/rotina.json` o pid e o sha256 do helper
   carregado de fato.
 - Estados: `TRANSICOES` em `helpers/conteudo.py`; diário em `/a0/usr/conteudo/diario.jsonl`.
+- **Ficha (24/10):** todo post agendado diz como refazê-lo. Post da rotina da semana: `origem.semana` (a proposta é a
+  ficha). Qualquer outro leva `ficha` = {`brief` (o que é, para quem, o que diz), `fonte` (onde estão os arquivos de
+  origem: repositório, branch, pasta), e se houver `titulo`, `como_refazer`, `story` (campos do kit), `spec` (ficha do
+  molde do Designer), `falas` (narração do Reel com `inicio`/`fim` medidos)}; sem isso `agendar()` recusa. Post antigo
+  ganha ficha por `anotar_ficha()` (script `infra/operador/ficha_conteudo.py`), que faz o Crítico julgar de novo.
+  Reprovado na conferência antecipada, `semana.refazer_item` refaz sozinho story, carrossel e foto pela ficha; Reel
+  continua pedindo o ok do Matheus no áudio (decisão #39) e o aviso diz onde está a origem. Quando um post que ele
+  ouviu como "pendente: reprovou" passa, ele recebe "resolvido".
+- **Fala x tela no Reel (24/10):** a narração que o Crítico recebe tem os tempos medidos no áudio do próprio vídeo
+  (faster-whisper); sem ele, as `falas` da ficha; o Gemini só por último e marcado como aproximado (ele escrevia os
+  segundos 4 a 6 s adiantados e reprovou o `s2-expectativa`, que estava sincronizado).
 
 ## Plano de 22/10: 4 no feed + story todo dia
 

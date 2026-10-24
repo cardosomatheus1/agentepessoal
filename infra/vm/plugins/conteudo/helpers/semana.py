@@ -216,41 +216,57 @@ def _refazer_story(esp, campos: dict, critica: dict, saida: Path) -> tuple[dict,
 
 
 def refazer_item(item: dict, critica: dict, subir=None) -> dict:
-    """The agent redoes a post of the agenda that the advance check reproved (conteudo.conferir_antes): a story from
-    its fields, a feed carousel from the Designer's ficha; the new files go to S3 and replace the old ones on the same
-    post (conteudo.refeito). {"ok": False, "erro"} when it cannot: made outside the weekly routine (no ficha), a Reel
-    (a new narration needs Matheus's ok first, decision #39), or the new version is still reproved."""
-    origem = item.get("origem") or {}
-    if not origem.get("semana"):
-        return {"ok": False, "erro": "foi feito fora da rotina da semana e o agente não tem a ficha para refazer"}
+    """The agent redoes a post of the agenda that the advance check reproved (conteudo.conferir_antes), from what the
+    post carries: its proposal in the weekly routine (origem.semana) or its own ficha (24/10, conteudo.validar_ficha).
+    A story from its fields, a carousel or photo from the Designer's molde ficha (or from the brief, drawn anew); the
+    new files go to S3 and replace the old ones on the same post (conteudo.refeito). {"ok": False, "erro"} when it
+    cannot: no ficha, a Reel (a new narration needs Matheus's ok first, decision #39), or the new version is still
+    reproved."""
+    origem, ficha = item.get("origem") or {}, item.get("ficha")
+    if c().validar_ficha(ficha):
+        ficha = None
+    if not origem.get("semana") and not ficha:
+        return {"ok": False, "erro": "não tem ficha (o que o post é e de onde vieram os arquivos), então não sei refazer"}
     if item["tipo"] == "REELS":
-        return {"ok": False, "erro": "Reel: refazer muda a narração, que precisa do seu ok antes (decisão #39)"}
-    sid, n = origem["semana"], origem.get("n")
-    semana = carregar(sid) or {}
-    p = next((x for x in semana.get("propostas", []) if x["n"] == n), None)
-    if not p:
-        return {"ok": False, "erro": f"a proposta {n} da semana {sid} não existe mais"}
+        return {"ok": False, "erro": "Reel: refazer muda a narração, que precisa do seu ok antes (decisão #39)"
+                                     + (f"; a origem está em {_texto(ficha['fonte'], 120)}" if ficha else "")}
+    if origem.get("semana"):
+        sid, n = origem["semana"], origem.get("n")
+        p = next((x for x in (carregar(sid) or {}).get("propostas", []) if x["n"] == n), None)
+        if not p:
+            return {"ok": False, "erro": f"a proposta {n} da semana {sid} não existe mais"}
+        spec, k = p.get("spec") or {}, 1 + int(p.get("refeita") or 0)
+        titulo, ideia, formato = p.get("titulo", ""), p.get("ideia", ""), p.get("formato_pedido") or item["tipo"]
+        local, chave = _pasta() / sid, (lambda nome: _chave(sid, item["id"], nome))
+    else:
+        spec = {"story": ficha["story"]} if ficha.get("story") else dict(ficha.get("spec") or {})
+        k = 1 + int(item.get("refeitas") or 0)
+        titulo, ideia, formato = ficha.get("titulo", ""), ficha["brief"], item["tipo"]
+        local = c().PASTA / "refeitos" / item["id"]
+        chave = lambda nome: _chave("refeitos", item["id"], nome)  # noqa: E731  (the proxy uploads only under semanas/)
     esp = c().especialistas()
     if esp is None:
         return {"ok": False, "erro": "o plugin de especialistas não está instalado"}
-    k = 1 + int(p.get("refeita") or 0)
-    if item["tipo"] == "STORY" and (p.get("spec") or {}).get("story"):
-        feito = _refazer_story(esp, p["spec"]["story"], critica, _pasta() / sid / f"story-{n}-a{k}.jpg")
+    briefing = {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato, "titulo": titulo, "ideia": ideia,
+                "legenda": item.get("legenda", ""), "data": item["data"], "regras": REGRAS}
+    if item["tipo"] == "STORY" and spec.get("story"):
+        feito = _refazer_story(esp, spec["story"], critica, local / f"story-{item['id']}-a{k}.jpg")
         if not feito:
             return {"ok": False, "erro": "o Designer não devolveu campos válidos para o story"}
         campos, d = feito
         spec_novo, arquivos, nova = {"story": campos}, d["arquivos"], d["critica"]
-    elif (p.get("spec") or {}).get("motor") == "molde" and item["tipo"] == "CARROSSEL":
-        briefing = {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": p.get("formato_pedido") or item["tipo"],
-                    "titulo": p.get("titulo", ""), "ideia": p.get("ideia", ""), "legenda": item.get("legenda", ""),
-                    "data": item["data"], "regras": REGRAS}
-        vistas = [str(c().PASTA / "cache" / item["id"] / a.rsplit("/", 1)[-1]) for a in item["arquivos"]]
-        d = esp.revisar(briefing, p["spec"], critica, vistas)
+    elif item["tipo"] in ("CARROSSEL", "IMAGE") and (spec.get("motor") == "molde" or (ficha and not spec)):
+        if spec.get("motor") == "molde":
+            vistas = [str(c().PASTA / "cache" / item["id"] / a.rsplit("/", 1)[-1]) for a in item["arquivos"]]
+            d = esp.revisar(briefing, spec, critica, vistas)
+        else:  # only the brief: the Designer draws it anew, told what the Crítico reproved
+            d = esp.desenhar(dict(briefing, ideia=ideia + "\n\nA versão anterior foi reprovada pelo Crítico: "
+                                  + "; ".join(str(m) for m in critica.get("motivos") or [])))
         tipo, arquivos, _ = tipo_dos_arquivos(d.get("arquivos"))
         if tipo != item["tipo"]:
-            return {"ok": False, "erro": "o Designer não entregou um carrossel novo"
+            return {"ok": False, "erro": f"o Designer não entregou um {NOME_TIPO[item['tipo']].lower()} novo"
                                          + (f" ({_texto('; '.join(d.get('falta') or []), 160)})" if d.get("falta") else "")}
-        spec_novo, nova = d.get("spec") or p["spec"], _critica(d.get("critica"))
+        spec_novo, nova = d.get("spec") or spec, _critica(d.get("critica"))
     else:
         return {"ok": False, "erro": "não há ficha do Designer para refazer este post"}
     if nova["veredito"] != "aprova":
@@ -260,21 +276,29 @@ def refazer_item(item: dict, critica: dict, subir=None) -> dict:
     chaves = []
     try:
         for a in arquivos:
-            local = _jpg(Path(a))
-            chave = _chave(sid, item["id"], f"a{k}-{local.name}")
-            (subir or _subir_pelo_proxy)(str(local), chave)
-            shutil.copyfile(local, cache / chave.rsplit("/", 1)[-1])
-            chaves.append(chave)
+            arq_local = _jpg(Path(a))
+            ch = chave(f"a{k}-{arq_local.name}")
+            (subir or _subir_pelo_proxy)(str(arq_local), ch)
+            shutil.copyfile(arq_local, cache / ch.rsplit("/", 1)[-1])
+            chaves.append(ch)
     except Exception as exc:
         return {"ok": False, "erro": f"o arquivo refeito não subiu para o S3 ({str(exc)[:120]})"}
-    r = c().refeito(item["id"], chaves, "refeito pelo Designer: " + c().uma_linha(critica.get("motivos") or [], 200))
-    if not r["ok"]:
-        return r
-    with _exclusivo():
-        s = carregar(sid)
-        alvo = next(x for x in s["propostas"] if x["n"] == n)
-        alvo.update(spec=spec_novo, refeita=k, arquivos=chaves, critica=nova)
-        _gravar(s)
+    motivo = "refeito pelo Designer: " + c().uma_linha(critica.get("motivos") or [], 200)
+    if origem.get("semana"):
+        r = c().refeito(item["id"], chaves, motivo)
+        if not r["ok"]:
+            return r
+        with _exclusivo():
+            s = carregar(sid)
+            alvo = next(x for x in s["propostas"] if x["n"] == n)
+            alvo.update(spec=spec_novo, refeita=k, arquivos=chaves, critica=nova)
+            _gravar(s)
+    else:
+        nova_ficha = {key: v for key, v in ficha.items() if key not in ("story", "spec")}
+        nova_ficha.update({"story": spec_novo["story"]} if spec_novo.get("story") else {"spec": spec_novo} if spec_novo else {})
+        r = c().refeito(item["id"], chaves, motivo, ficha=nova_ficha)
+        if not r["ok"]:
+            return r
     return {"ok": True, "arquivos": chaves}
 
 

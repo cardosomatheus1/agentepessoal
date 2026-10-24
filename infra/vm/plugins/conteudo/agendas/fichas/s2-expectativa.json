@@ -1,0 +1,43 @@
+{
+ "titulo": "Expectativa x realidade de quem produz comida",
+ "brief": "Reel de identificação (tipo dar, humor leve, 29,5 s, 9:16) para quem produz comida: a expectativa é o produto lindo (bolo, granola, molho de pimenta); a realidade são as mensagens encenadas 'faz 80?', consignação e '40% de desconto' para revender. Virada: 'Antes de passar o preço, faça a conta' (preço - custo = sobra) e chamada para a calculadora grátis, link na bio. Não fala da oferta. Conversas encenadas e valores de exemplo marcados na tela. Voz Carolina.",
+ "fonte": "erp-saas, branch feat/video-raiz-expectativa, pasta marketing/expectativa (kit de motion da Raiz: index.html, storyboard.md, narracao/roteiro.json e tempos.json, scripts/); vídeo e capa no S3 em conteudo/semana2/expectativa-9x16.mp4 e expectativa-capa.jpg",
+ "como_refazer": "Sessão de operador no erp-saas: ajustar M, EMENDA ou CENAS no topo do <script> de index.html (ou o roteiro em narracao/roteiro.json e depois npm run narracao && npm run audio); npm run render; capa com ffmpeg -ss 6.0; subir ao S3 com nome novo e trocar no post pela função refeito() do plugin conteudo. Narração nova precisa do ok do Matheus no áudio (decisão #39).",
+ "falas": [
+  {
+   "inicio": 0.25,
+   "fim": 3.816,
+   "texto": "Expectativa... o bolo mais lindo que você já fez."
+  },
+  {
+   "inicio": 4.35,
+   "fim": 8.137,
+   "texto": "Realidade: ficou lindo, mas tá caro. Faz oitenta?"
+  },
+  {
+   "inicio": 8.55,
+   "fim": 12.241,
+   "texto": "Expectativa... a loja vai vender a sua granola."
+  },
+  {
+   "inicio": 12.5,
+   "fim": 16.566,
+   "texto": "Realidade... deixe em consignação? A gente paga o que vender."
+  },
+  {
+   "inicio": 17.0,
+   "fim": 20.42,
+   "texto": "E o empório: com quarenta por cento de desconto, eu levo."
+  },
+  {
+   "inicio": 21.0,
+   "fim": 25.226,
+   "texto": "Antes de passar o preço, faça a conta. Aí você sabe até onde pode ir."
+  },
+  {
+   "inicio": 25.7,
+   "fim": 27.947,
+   "texto": "Calculadora grátis, no link da bio."
+  }
+ ]
+}

@@ -132,6 +132,47 @@ def canal(it: dict) -> str:
     return "story" if it.get("tipo") == "STORY" else "feed"
 
 
+# ---- the ficha (24/10): s2-expectativa, a kit Reel scheduled by hand, was reproved a day early and the agent could
+# not redo it ("foi feito fora da rotina da semana e o agente não tem a ficha para refazer"). Now every post carries
+# what is needed to redo it: a post of the weekly routine points to its proposal (origem.semana, whose spec is the
+# ficha); any other one must bring a "ficha" here, or agendar() refuses it. The agent redoes from it by itself
+# (semana.refazer_item): a story from "story" (the kit's fields), a carousel or photo from "spec" (the Designer's
+# molde ficha) or from "brief"; a Reel still needs Matheus's ear on a new narration (decision #39). "falas" (a Reel's
+# narration with the times measured when it was made) also goes to the Crítico when the audio cannot be transcribed.
+FICHA_CAMPOS = ("brief", "fonte", "titulo", "como_refazer", "story", "spec", "falas")
+
+
+def validar_ficha(ficha) -> str:
+    """'' when the ficha is usable, else why not."""
+    if not isinstance(ficha, dict):
+        return "ficha: objeto"
+    if not str(ficha.get("brief") or "").strip():
+        return "ficha sem brief (o que o post é, para quem e o que diz)"
+    if not str(ficha.get("fonte") or "").strip():
+        return "ficha sem fonte (onde estão os arquivos de origem, para refazer)"
+    sobra = sorted(set(ficha) - set(FICHA_CAMPOS))
+    if sobra:
+        return f"ficha com campos desconhecidos: {', '.join(sobra)} (use {', '.join(FICHA_CAMPOS)})"
+    for k in ("story", "spec"):
+        if k in ficha and not isinstance(ficha[k], dict):
+            return f"ficha.{k}: objeto"
+    if "falas" in ficha:
+        falas = ficha["falas"]
+        try:
+            certo = isinstance(falas, list) and falas and all(
+                str(f["texto"]).strip() and 0 <= float(f["inicio"]) < float(f["fim"]) for f in falas)
+        except (KeyError, TypeError, ValueError):
+            certo = False
+        if not certo:
+            return "ficha.falas: lista de {inicio, fim, texto} em segundos"
+    return ""
+
+
+def tem_ficha(it: dict) -> bool:
+    """What is needed to redo the post: its proposal in the weekly routine, or its own ficha."""
+    return bool((it.get("origem") or {}).get("semana")) or not validar_ficha(it.get("ficha"))
+
+
 def _validar_item(it: dict) -> str:
     try:
         dt.date.fromisoformat(str(it.get("data")))
@@ -161,6 +202,10 @@ def _validar_item(it: dict) -> str:
     for campo in ("origem", "liberado"):
         if campo in it and not isinstance(it[campo], dict):
             return f"{campo}: objeto"
+    if "ficha" in it:
+        erro = validar_ficha(it["ficha"])
+        if erro:
+            return erro
     if it["tipo"] == "STORY":  # no caption goes out on a story; "legenda" is only what it is about (for the Crítico)
         texto = str(it.get("legenda") or "").strip()
         return "" if not texto else ("a descrição do story tem emoji" if EMOJI.search(texto) else "")
@@ -178,6 +223,9 @@ def agendar(itens: list, agora: float | None = None) -> dict:
         novos = []
         for it in itens:
             erro = _validar_item(it)
+            if not erro and not tem_ficha(it):
+                erro = ("sem ficha: diga o que o post é e de onde vieram os arquivos (ficha com brief e fonte), para o "
+                        "agente poder refazer se o Crítico reprovar")
             if not erro and it["data"] < hoje:
                 erro = "data no passado"
             if not erro and ((it["data"], canal(it)) in ocupadas or (it["data"], canal(it)) in {(n["data"], canal(n)) for n in novos}):
@@ -189,7 +237,7 @@ def agendar(itens: list, agora: float | None = None) -> dict:
             novos.append({"id": it["id"], "data": it["data"], "hora": it["hora"], "tipo": it["tipo"],
                           "arquivos": list(it["arquivos"]), "legenda": str(it.get("legenda") or "").strip(), "estado": "pendente",
                           "criado_em": agora,
-                          **{k: it[k] for k in ("capa", "capa_ms", "origem", "liberado") if it.get(k)}})
+                          **{k: it[k] for k in ("capa", "capa_ms", "origem", "liberado", "ficha") if it.get(k)}})
         d["itens"].extend(novos)
         _gravar(d)
         for n in novos:
@@ -509,7 +557,10 @@ def material_do_post(item: dict) -> tuple[str, dict]:
                if k.lower().endswith(JPG) and (pasta / k.rsplit("/", 1)[-1]).exists()]
     tipo = {"CARROSSEL": "carrossel", "STORY": "story"}.get(item.get("tipo"), "post")
     material = {"formato": item.get("tipo"), "legenda": item.get("legenda", ""), "data": item.get("data"),
-                "titulo": (item.get("origem") or {}).get("titulo", ""), "imagens": imagens}
+                "titulo": (item.get("origem") or {}).get("titulo", "") or (item.get("ficha") or {}).get("titulo", ""),
+                "imagens": imagens}
+    if (item.get("ficha") or {}).get("brief"):
+        material["brief"] = str(item["ficha"]["brief"])[:1500]
     if item.get("tipo") == "REELS":
         try:
             material.update(material_do_video(item, material["imagens"]))
@@ -526,6 +577,63 @@ def material_do_post(item: dict) -> tuple[str, dict]:
 QUADROS = (0.06, 0.25, 0.45, 0.65, 0.85)
 FIM_S = 0.6  # the last frame: this many seconds before the end
 _OUVIR = None  # set by the tests; else plugins/video/helpers/gemini.py `ouvir`
+# 24/10: s2-expectativa was reproved for "at 13.3 s the voice already says 'Com 40% de desconto eu levo'", but the
+# video is in sync (that line is at 18.0 s; at 13.3 s it says "Deixe em consignação?", which is on the screen). The
+# seconds came from Gemini, which writes them as text and ran 4 to 6 s early (two runs: 14.2 s and 12.8 s). Now the
+# times are measured on the video's own audio (faster-whisper, the same one that transcribes the phone's audio);
+# without it, the ficha's measured falas; Gemini only as the last resort, and the Crítico is told its times are rough.
+_TRANSCREVER = None  # set by the tests; else _whisper
+WHISPER = "small"
+SEM_FALA = "(nenhuma fala ouvida no áudio do vídeo)"
+
+
+def _whisper(audio: str) -> str:
+    """'[13.5s–14.7s] frase' per line, the times measured on the audio; '' when nothing is said."""
+    import subprocess
+
+    import numpy as np
+    from faster_whisper import WhisperModel
+
+    bruto = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-i", audio, "-f", "s16le", "-ac", "1", "-ar",
+                            "16000", "-"], capture_output=True, check=True, timeout=120).stdout
+    som = np.frombuffer(bruto, np.int16).astype(np.float32) / 32768.0
+    modelo = WhisperModel(WHISPER, device="cpu", compute_type="int8", cpu_threads=2)
+    segmentos, _ = modelo.transcribe(som, language="pt", vad_filter=True)
+    return "\n".join(f"[{s.start:.1f}s–{s.end:.1f}s] {s.text.strip()}" for s in segmentos if s.text.strip())
+
+
+def falas_da_ficha(item: dict) -> str:
+    falas = (item.get("ficha") or {}).get("falas") or []
+    return "\n".join(f"[{float(f['inicio']):.1f}s–{float(f['fim']):.1f}s] {str(f['texto']).strip()}" for f in falas)
+
+
+def narracao_do_video(item: dict, audio: Path) -> str:
+    """The narration with its times, for the Crítico's fala × tela check: measured on the audio first."""
+    falha = ""
+    try:
+        if not audio.exists():
+            _rodar(["ffmpeg", "-y", "-loglevel", "error", "-i", str(audio.parent / _video_nome(item)), "-vn", "-ac", "1",
+                    "-b:a", "64k", str(audio)])
+        medida = (_TRANSCREVER or _whisper)(str(audio)).strip()
+        if medida:
+            return "tempos medidos no áudio do vídeo:\n" + medida
+    except Exception as exc:
+        falha = f"{type(exc).__name__}: {str(exc)[:120]}"
+    if falas_da_ficha(item):
+        return "tempos da ficha, medidos quando o vídeo foi feito:\n" + falas_da_ficha(item)
+    if str(item.get("roteiro") or "").strip():
+        return str(item["roteiro"]).strip()
+    if not falha:
+        return SEM_FALA
+    try:
+        return ("(tempos aproximados, escritos por um modelo que ouviu o áudio: podem estar adiantados alguns "
+                "segundos; não reprove por desencontro de fala e tela só por eles)\n" + _ouvir()(str(audio)).strip())
+    except Exception as exc:
+        return f"(narração não transcrita: {falha}; {type(exc).__name__}: {str(exc)[:120]})"
+
+
+def _video_nome(item: dict) -> str:
+    return next(k for k in item["arquivos"] if k.lower().endswith(".mp4")).rsplit("/", 1)[-1]
 
 
 def _rodar(cmd: list, timeout: int = 120) -> str:
@@ -575,16 +683,7 @@ def material_do_video(item: dict, imagens: list | None = None, baixar=None) -> d
             _rodar(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t}", "-i", str(video), "-frames:v", "1", "-q:v", "3",
                     "-vf", "scale=720:-2", str(destino)])
         quadros.append(str(destino))
-    narracao = str(item.get("roteiro") or "").strip()
-    if not narracao:
-        audio = pasta.parent / "narracao.mp3"
-        try:
-            if not audio.exists():
-                _rodar(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), "-vn", "-ac", "1", "-b:a", "64k",
-                        str(audio)])
-            narracao = _ouvir()(str(audio)).strip()
-        except Exception as exc:
-            narracao = f"(narração não transcrita: {type(exc).__name__}: {str(exc)[:120]})"
+    narracao = narracao_do_video(item, pasta.parent / "narracao.mp3")
     capa = [i for i in (imagens or []) if i not in quadros][:1]
     ordem = (["capa"] if capa else []) + [f"segundo {t:.1f}" for t in tempos]
     return {"imagens": capa + quadros, "duracao_s": round(duracao, 1),
@@ -714,23 +813,54 @@ def _anotar(item_id: str, evento: dict, **campos) -> bool:
     return True
 
 
-def refeito(item_id: str, arquivos: list, motivo: str) -> dict:
+def refeito(item_id: str, arquivos: list, motivo: str, ficha: dict | None = None) -> dict:
     """The agent's redo of a pending post the advance check reproved: same id, day, hour, format and caption, new
-    files (already in S3 and in the cache). The old check goes away, so the next pass judges the new files."""
+    files (already in S3 and in the cache) and, for a post with its own ficha, the ficha of the new version. The old
+    check goes away, so the next pass judges the new files."""
     with _exclusivo():
         d = carregar()
         alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
         if not alvo or alvo["estado"] != "pendente":
             return {"ok": False, "erro": f"{item_id}: só post pendente é refeito"}
-        erro = _validar_item(dict(alvo, arquivos=list(arquivos or [])))
+        novo = dict(alvo, arquivos=list(arquivos or []), **({"ficha": ficha} if ficha is not None else {}))
+        erro = _validar_item(novo)
         if erro:
             return {"ok": False, "erro": f"{item_id}: {erro}"}
         antes = alvo["arquivos"]
         alvo["arquivos"] = list(arquivos)
+        if ficha is not None:
+            alvo["ficha"] = ficha
         alvo.pop("conferido", None)
         _gravar(d)
     _diario({"item": item_id, "refeito": True, "de": antes, "para": list(arquivos), "motivo": str(motivo)[:300]})
     return {"ok": True, "id": item_id, "arquivos": list(arquivos)}
+
+
+def anotar_ficha(item_id: str, ficha: dict, motivo: str) -> dict:
+    """Gives a scheduled post (pendente or bloqueada) the ficha it lacks, or a better one (24/10: the posts scheduled by
+    hand before the ficha existed). The Crítico reads the ficha too, so a pending post is judged again on the next
+    pass of the advance check. Nothing else changes: day, hour, files, caption and state stay."""
+    if not str(motivo or "").strip():
+        return {"ok": False, "erro": "diga o motivo"}
+    erro = validar_ficha(ficha)
+    if erro:
+        return {"ok": False, "erro": f"{item_id}: {erro}"}
+    with _exclusivo():
+        d = carregar()
+        alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
+        if not alvo:
+            return {"ok": False, "erro": f"{item_id}: não existe"}
+        if alvo["estado"] not in ("pendente", "bloqueada"):
+            return {"ok": False, "erro": f"{item_id}: está {alvo['estado']}, a ficha não muda mais nada"}
+        tinha = "ficha" in alvo
+        alvo["ficha"] = ficha
+        julgado = alvo.pop("conferido", None) if alvo["estado"] == "pendente" else None
+        if (julgado or {}).get("veredito") == "reprova":  # he was told "pendente": he hears when it is solved
+            alvo["avisado_reprova"] = True
+        _gravar(d)
+    _diario({"item": item_id, "ficha": "trocada" if tinha else "nova", "fonte": str(ficha["fonte"])[:200],
+             "motivo": str(motivo)[:300], **({"conferido_antes": julgado.get("veredito")} if julgado else {})})
+    return {"ok": True, "id": item_id, "estado": alvo["estado"], "julga_de_novo": bool(julgado)}
 
 
 def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, avisar=lambda texto: None,
@@ -754,6 +884,10 @@ def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, av
         if gate["publicar"]:
             _anotar(item["id"], {"conferido": "aprova"},
                     conferido={"impressao": marca, "em": agora, "veredito": "aprova", "motivo": gate["motivo"]})
+            if item.get("avisado_reprova"):  # Matheus heard "pendente: reprovou"; now he hears it is solved
+                _anotar(item["id"], {"avisado": "resolvido"}, avisado_reprova=False)
+                _chamar_aviso(avisar, f"resolvido: o Crítico aprovou {item['id']} ({item['tipo']}, sai {item['data']} às "
+                                      f"{item['hora']}). Não precisa liberar nada.")
             return {"id": item["id"], "veredito": "aprova"}
         if not gate.get("critica"):  # the Crítico failed (timeout, no verdict): not a reproval, try again next pass
             return {"id": item["id"], "veredito": "erro", "motivo": gate["motivo"]}
@@ -774,7 +908,8 @@ def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, av
                 return {"id": item["id"], "veredito": "reprova", "refeito": True}
             erro = str(r.get("erro") or "sem motivo")
         _anotar(item["id"], {"conferido": "reprova", "motivo": gate["motivo"][:300]},
-                conferido={"impressao": marca, "em": agora, "veredito": "reprova", "motivo": gate["motivo"]})
+                conferido={"impressao": marca, "em": agora, "veredito": "reprova", "motivo": gate["motivo"]},
+                avisado_reprova=True)
         botao = f"cs:{LOGIN}:{item['id']}:liberar"
         _chamar_aviso(avisar, f"pendente: o Crítico reprovou {item['id']} ({item['tipo']}, sai {item['data']} às "
                               f"{item['hora']}) e não consegui refazer sozinho ({uma_linha(erro, 160)}): {gate['motivo']}. "
