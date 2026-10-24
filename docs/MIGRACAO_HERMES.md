@@ -208,6 +208,21 @@ esteve no ar continua valendo. O A0 fica parado e intacto por 7 dias (até 30/10
 - Pendente (fase 9): `implantar.py --moldes` e `--segundo-cerebro` ainda testam dentro do container do A0 (param com
   aviso); `/voz` (respostas em áudio) no Hermes, se o Matheus quiser.
 
+## Tarefas longas (23–24/10, Matheus: "Pode fazer e testar")
+- `tarefas_hermes.py` (plugin): `tarefa_iniciar/passo/status/concluir`; plano em `/a0/usr/tarefas/<login>/<id>/`
+  (`plano.json` + `resultado.md`); vigia no relógio (um por container) retoma na sessão da tarefa pela ponte quando nada
+  roda nela (batimento por sessão com pid + início do processo), espera 90 s depois de subir, depois 2/5/15/30/60/120
+  min, 6 retomadas sem progresso e avisa uma vez; entrega única no fim (resumo + arquivo). `/parar` pausa; "continua"
+  retoma. Ação de fora: `acao` antes, `prova` depois, `conferido` na retomada. Regra no SOUL, skill `tarefa-longa`.
+- Ao vivo (teste_hermes): VM travada às 23:23 UTC (ver abaixo) e Hermes reiniciado no passo 3 → retomou sozinho,
+  nenhum passo refeito, entrega única às 00:15; `/parar` pausou 5 min sem retomada; passo esperando a pessoa seguiu os
+  independentes e terminou depois da resposta.
+- Incidente 23/10 23:22 UTC: a VM perdeu a rede (SSM "ConnectionLost", saída ~0, 1 núcleo a 100%) logo depois de erros
+  `binder_linux` do container `android`; sem pane no pstore e com as checagens "ok", os alarmes não agiram; religada à
+  mão às 23:40. A implantação não foi a causa (rede ok 4 min depois dela), mas o `subir.sh` reiniciava a unidade
+  `agentepessoal-hermes.service` junto com a vista dos dados ("hermes não ligou"): corrigido (parada antes, ligada no fim).
+  Pendente: alarme que pegue VM viva sem rede (ex.: SSM sem ping) — decisão do operador/Matheus.
+
 ## Decisões do Matheus (23/10)
 1. Convidados (ilia, will) e o login da Fernanda: **continuam**.
 2. Android virtual (celular, tela ao vivo): **continua**.
