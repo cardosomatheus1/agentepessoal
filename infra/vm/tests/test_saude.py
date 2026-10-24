@@ -49,7 +49,10 @@ def main() -> int:
     s.TAREFAS = tmp / "tasks.json"
     s.TAREFAS.write_text('{"tasks": []}')
     s._http = lambda url: 200
-    s._cmd = lambda *a: "true" if a[0] == "docker" else "backup to s3 ... done"
+    s._cmd = lambda *a: ("true" if a[0] == "docker" else
+                         ("active" if "vigia-rede" in a[-1] else "inactive") if a[0] == "systemctl" else "backup to s3 ... done")
+    s.REDE_ULTIMO, s.SOFTLOCKUP = tmp / "rede_ultimo.json", tmp / "softlockup_panic"
+    s.hibernar_ligado = lambda: False
     s.shutil.disk_usage = lambda caminho: type("U", (), {"used": 10, "total": 100})()
     s.BINDER, s.HIBERNACAO_FALHOU = tmp / "sem_binder", tmp / "hibernacao_falhou"
     s.IO_URING, s.PANE = tmp / "io_uring_disabled", tmp / "pane_kernel.json"
@@ -75,6 +78,36 @@ def main() -> int:
     __import__("os").utime(s.PANE, (velho, velho))
     if s.checar():
         falhas.append(f"checar: pane de 3 dias atrás não é mais aviso: {s.checar()}")
+    # 24/10: sempre ligada: timer da hibernação de volta, vigia da rede parado, trava do kernel sem pane, religada pela rede
+    agora_s = __import__("time").time()
+    if s.problemas_de_ficar_ligada(False, "inactive", "active", "1", None, agora_s):
+        falhas.append("ficar ligada: tudo certo devia dar lista vazia")
+    if s.problemas_de_ficar_ligada(True, "active", "active", "", None, agora_s):
+        falhas.append("ficar ligada: com HIBERNAR=1 o timer da hibernação ligado é normal")
+    achados = s.problemas_de_ficar_ligada(False, "active", "inactive", "0",
+                                          {"sem_rede_desde": "2026-10-23T23:22:00Z", "s3": "s3://b/incidentes/rede.txt"},
+                                          agora_s, agora_s - 3600)
+    if len(achados) != 4 or not any("hibernação automática voltou" in a for a in achados) \
+            or not any("vigia da rede" in a for a in achados) or not any("trava do kernel" in a for a in achados) \
+            or not any("sem internet" in a and "s3://b/incidentes/rede.txt" in a for a in achados):
+        falhas.append(f"ficar ligada: os 4 problemas deviam aparecer: {achados}")
+    if s.problemas_de_ficar_ligada(False, "inactive", "active", "1", {"sem_rede_desde": "x"}, agora_s, agora_s - 3 * 86400):
+        falhas.append("ficar ligada: religada pela rede há 3 dias não é mais aviso")
+    s.SOFTLOCKUP.write_text("0\n")
+    if not any("trava do kernel" in a for a in s.checar()):
+        falhas.append("checar: softlockup_panic=0 devia aparecer")
+    s.SOFTLOCKUP.write_text("1\n")
+    env = tmp / "agentepessoal.env"
+    env.write_text("BACKUP_BUCKET=x\nHIBERNAR=1\n")
+    import importlib.util as _iu
+    spec2 = _iu.spec_from_file_location("saude_env", RAIZ / "infra" / "vm" / "saude.py")
+    s2 = _iu.module_from_spec(spec2)
+    spec2.loader.exec_module(s2)
+    if not s2.hibernar_ligado(env) or s2.hibernar_ligado(tmp / "nao_existe"):
+        falhas.append("hibernar_ligado: só com HIBERNAR=1 no env")
+    env.write_text("HIBERNAR=0\n")
+    if s2.hibernar_ligado(env):
+        falhas.append("hibernar_ligado: HIBERNAR=0 é desligado")
     # restore check: a copy from S3 must open and keep up with the live file
     import json as _json
     import os
@@ -149,7 +182,7 @@ def main() -> int:
     s.shutil.rmtree(tmp, ignore_errors=True)
     for f in falhas:
         print("FALHA", f)
-    print("TESTES", 9 - len(falhas), 9)
+    print("TESTES", 10 - len(falhas), 10)
     return 1 if falhas else 0
 
 

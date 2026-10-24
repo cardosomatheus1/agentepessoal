@@ -7,6 +7,7 @@ cat > /etc/agentepessoal.env <<'EOF'
 BACKUP_BUCKET={{BUCKET}}
 IMAGE={{IMAGE}}
 IDLE_MINUTES={{IDLE_MINUTES}}
+HIBERNAR={{HIBERNAR}}
 EOF
 
 export DEBIAN_FRONTEND=noninteractive

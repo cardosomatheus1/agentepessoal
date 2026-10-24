@@ -8,6 +8,9 @@ Chamada pelos alarmes do CloudWatch (infra/deploy.py, ensure_recovery), os dois 
   que só GUARDA o console no S3 (incidentes/console-<quando>-guardar.txt) antes que o reinício o apague;
 - `agentepessoal-vm-travada-religar` (15 min falhando: o reinício não resolveu): guarda o console, avisa o Matheus no
   Telegram e faz desligar (forçado) + ligar, que leva a VM para outro hospedeiro físico.
+- `agentepessoal-vm-sem-rede` (24/10; saída de rede quase zero por 15 min com a VM ligada, que as checagens não pegam:
+  23/10 23:22 o kernel travou por dentro, só respondendo ARP): o alarme reinicia a VM e esta função guarda o console e
+  avisa o Matheus. Ver `alarmes()`.
 Não age se a VM não está "running" (hibernando, desligada pelo Matheus, ligando), se a checagem já voltou a "ok", nem
 mais de LIMITE vezes em JANELA (fica para uma pessoa olhar). `{"teste": true}` só guarda o console e diz o que faria."""
 
@@ -22,8 +25,40 @@ BUCKET = os.environ.get("BUCKET", "")
 PARAM_ESTADO = os.environ.get("PARAM_ESTADO", "/agentepessoal/recuperacao")
 WHATSAPP_PARAM = os.environ.get("WHATSAPP_PARAM", "/agentepessoal/whatsapp/config")
 ALARME_RELIGAR = "agentepessoal-vm-travada-religar"
+ALARME_REINICIAR = "agentepessoal-vm-travada"
+ALARME_SEM_REDE = "agentepessoal-vm-sem-rede"
+# 24/10: de 22 a 24/10, a cada 5 min a VM saudável mandou >= 300 KB (SSM, túneis, backup); travada, 0 a 4 KB
+SEM_REDE_BYTES_5MIN = 50_000
 LIMITE, JANELA = 3, 6 * 3600
 ESPERA_PARADA = 600  # s até a VM parar depois do desligar forçado
+
+
+def alarmes(instance_id: str, function_arn: str, region: str = "us-east-1", tags: list | None = None) -> list[dict]:
+    """Os alarmes do CloudWatch que chamam esta função (infra/deploy.py, ensure_recovery). Dado ausente = VM desligada
+    ou hibernando = normal (notBreaching).
+    - travada (checagem da instância falhando 3 min): o alarme reinicia, a função guarda o console;
+    - travada-religar (15 min: o reinício não resolveu): a função desliga e liga (outro hospedeiro);
+    - sem-rede (24/10): saída de rede < 50 KB em 3 períodos de 5 min seguidos com a VM ligada: o alarme reinicia, a
+      função guarda o console e avisa. O vigia da rede de dentro da VM (estabilidade.py rede) age antes, aos 10 min,
+      se ele ainda roda; este pega o kernel travado. Só age na troca para ALARM, então não entra em ciclo."""
+    base = dict(Namespace="AWS/EC2", Dimensions=[{"Name": "InstanceId", "Value": instance_id}],
+                TreatMissingData="notBreaching", Tags=tags or [])
+    checagem = dict(base, MetricName="StatusCheckFailed_Instance", Statistic="Maximum", Period=60, Threshold=1.0,
+                    ComparisonOperator="GreaterThanOrEqualToThreshold")
+    return [
+        {**checagem, "AlarmName": ALARME_REINICIAR, "EvaluationPeriods": 3, "DatapointsToAlarm": 3,
+         "AlarmDescription": "VM do agente travada há 3 min: reinicia e guarda o console (infra/control/recuperar.py)",
+         "AlarmActions": [f"arn:aws:automate:{region}:ec2:reboot", function_arn]},
+        {**checagem, "AlarmName": ALARME_RELIGAR, "EvaluationPeriods": 15, "DatapointsToAlarm": 15,
+         "AlarmDescription": "VM do agente travada há 15 min (o reinício não resolveu): desliga e liga (recuperar.py)",
+         "AlarmActions": [function_arn]},
+        {**base, "MetricName": "NetworkOut", "Statistic": "Sum", "Period": 300, "Threshold": float(SEM_REDE_BYTES_5MIN),
+         "ComparisonOperator": "LessThanThreshold", "AlarmName": ALARME_SEM_REDE, "EvaluationPeriods": 3,
+         "DatapointsToAlarm": 3,
+         "AlarmDescription": "VM do agente ligada e sem rede há 15 min (checagens ok, kernel travado): reinicia, guarda o "
+                             "console e avisa (recuperar.py)",
+         "AlarmActions": [f"arn:aws:automate:{region}:ec2:reboot", function_arn]},
+    ]
 
 
 class Recuperar:
@@ -93,11 +128,15 @@ class Recuperar:
         nome = dados.get("alarmName") or event.get("alarme") or ""
         if dados and (dados.get("state") or {}).get("value") != "ALARM":
             return {"feito": "nada", "motivo": "o alarme não está em ALARM"}
-        etapa = "religar" if nome == ALARME_RELIGAR else "guardar"
+        etapa = {ALARME_RELIGAR: "religar", ALARME_SEM_REDE: "sem-rede"}.get(nome, "guardar")
         estado = self.estado()
         if estado != "running":
             return {"feito": "nada", "motivo": f"a VM está {estado} (hibernando, desligada ou ligando)"}
         console = self.guardar_console(etapa)
+        if etapa == "sem-rede":
+            self.avisar("⚠️ A máquina do agente ficou ligada mas sem rede por 15 min (travou por dentro). Reiniciei; "
+                        "volta em uns 3 min e as mensagens esperam na fila.")
+            return {"feito": "console guardado e aviso (o alarme reinicia)", "console": console}
         if etapa == "guardar":
             return {"feito": "console guardado", "console": console}
         checagem = self.checagem()

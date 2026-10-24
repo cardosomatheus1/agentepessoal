@@ -1,0 +1,32 @@
+# OpenCode do Matheus (instalado à mão em 23/10; a unidade vem do repositório desde 24/10, opencode_tunel.sh).
+# 24/10 (Matheus: "toda hora cai o agente e o OpenCode"): volta sempre que sai (não só em falha), e tem teto de memória
+# e CPU para um npm/build não deixar o Hermes sem máquina (4 núcleos, 16 GB): acima de MemoryHigh o kernel segura e
+# recupera memória dele; em MemoryMax mata o processo dele que mais usa (não o Hermes); OOMScoreAdjust faz o mesmo se a
+# VM inteira apertar. CPUQuota=250% deixa 1,5 núcleo sempre livre para o resto.
+[Unit]
+Description=OpenCode 2 Mobile isolated server
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+User=opencodemobile
+Group=opencodemobile
+WorkingDirectory=/home/opencodemobile/projects
+Environment=HOME=/home/opencodemobile
+EnvironmentFile=/etc/opencodemobile.env
+ExecStart=/home/opencodemobile/.opencode/bin/opencode serve --hostname 127.0.0.1 --port 4096
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+MemoryHigh=4G
+MemoryMax=5G
+MemorySwapMax=0
+CPUQuota=250%
+CPUWeight=50
+IOWeight=50
+TasksMax=4096
+OOMScoreAdjust=500
+[Install]
+WantedBy=multi-user.target

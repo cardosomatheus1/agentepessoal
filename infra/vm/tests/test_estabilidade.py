@@ -56,7 +56,15 @@ def main() -> int:
     (proc / "kernel" / "io_uring_disabled").write_text("2\n")
     (proc / "kernel" / "panic").write_text("-1\n")
     v = e.valores_atuais(proc)
-    checa(v == {"kernel.io_uring_disabled": "2", "kernel.panic": "-1", "kernel.panic_on_oops": None}, f"valores_atuais: {v}")
+    checa(v["kernel.io_uring_disabled"] == "2" and v["kernel.panic"] == "-1" and v["kernel.panic_on_oops"] is None
+          and set(v) == set(e.SYSCTLS), f"valores_atuais: {v}")
+
+    # 1b. 24/10 (travada de 23/10 23:22 sem pane): trava do kernel vira pane; systemd vigiado pelo softdog
+    for linha in ("kernel.softlockup_panic = 1", "kernel.panic_on_rcu_stall = 1", "kernel.hung_task_panic = 1",
+                  "kernel.hung_task_timeout_secs = 600"):
+        checa(linha in t.splitlines(), f"sysctl sem «{linha}»")
+    sv = e.texto_systemd_vigia()
+    checa("[Manager]" in sv and "RuntimeWatchdogSec=2min" in sv and "RebootWatchdogSec=" in sv, f"systemd vigia: {sv!r}")
 
     # 2. resumo da pane: processo, onde parou, pilha, que foi no io_uring
     r = e.resumo_pane(PANE)
@@ -107,6 +115,50 @@ def main() -> int:
     checa(sorted(tirar) == ["agentepessoal/hermes:ddd", "agentepessoal/hermes:eee", "agentepessoal/hermes:teste"],
           f"imagens a remover: {tirar}")
     checa(e.imagens_a_remover(imgs[:2], em_uso=set()) == [], "com só 2 imagens do Hermes nada sai")
+
+    # 5. vigia da rede (24/10): conserta aos 4 min, religa aos 10 (não logo depois de ligar), no máximo 3 vezes em 6 h
+    T0 = 1_800_000_000.0
+    checa(e.decidir_rede(True, {}, [], T0, 9999) == ("nada", {}), "rede ok: nada")
+    checa(e.decidir_rede(True, {"falhando_desde": T0 - 300}, [], T0, 9999)[0] == "voltou", "rede voltou")
+    a, st = e.decidir_rede(False, {}, [], T0, 9999)
+    checa(a == "nada" and st["falhando_desde"] == T0, f"primeira falha só marca: {a} {st}")
+    a, st = e.decidir_rede(False, st, [], T0 + 250, 9999)
+    checa(a == "consertar" and st["consertou"], f"4 min: conserta: {a} {st}")
+    a, st2 = e.decidir_rede(False, st, [], T0 + 300, 9999)
+    checa(a == "nada", f"conserta uma vez só: {a}")
+    a, _ = e.decidir_rede(False, st, [], T0 + 601, 9999)
+    checa(a == "reiniciar", f"10 min: religa: {a}")
+    a, _ = e.decidir_rede(False, st, [], T0 + 601, 600)
+    checa(a == "nada", f"VM no ar há só 10 min: não religa (tudo subindo): {a}")
+    tres = [T0 - 3600, T0 - 1800, T0 - 600]
+    a, st3 = e.decidir_rede(False, st, tres, T0 + 601, 9999)
+    checa(a == "segurar" and st3["segurou"], f"3 religadas em 6 h: segura: {a}")
+    checa(e.decidir_rede(False, st3, tres, T0 + 700, 9999)[0] == "nada", "segura avisando uma vez só")
+    antigos = [T0 - 7 * 3600] * 5
+    checa(e.decidir_rede(False, st, antigos, T0 + 601, 9999)[0] == "reiniciar", "religadas antigas não contam")
+    chamados = []
+
+    def conectar(host, porta):
+        chamados.append(host)
+        if host != "s3.us-east-1.amazonaws.com":
+            raise OSError("sem rota")
+    checa(e.alcanca(conectar=conectar) is True and chamados[:2] == ["ssm.us-east-1.amazonaws.com", "s3.us-east-1.amazonaws.com"],
+          f"alcanca: basta um alvo: {chamados}")
+    checa(e.alcanca(conectar=lambda h, p: (_ for _ in ()).throw(OSError("x"))) is False, "alcanca: nenhum responde")
+
+    # 6. no boot, o religamento pendente vai ao S3 e vira o último (com aviso)
+    e.ESTADO = tmp / "estado"
+    e.REDE_PENDENTE, e.REDE_ULTIMO = e.ESTADO / "rede_pendente.json", e.ESTADO / "rede_ultimo.json"
+    checa(e.entregar_rede(enviar=lambda a: "x") is None, "sem pendente: nada")
+    diag = tmp / "rede-20261023T234000Z.txt"
+    diag.write_text("diag")
+    e._gravar_json(e.REDE_PENDENTE, {"quando": "2026-10-23T23:40:00Z", "sem_rede_desde": "2026-10-23T23:22:00Z",
+                                     "diagnostico": str(diag)})
+    r = e.entregar_rede(enviar=lambda a: f"s3://b/incidentes/{a.name}")
+    checa(r and r["s3"].endswith("rede-20261023T234000Z.txt") and not e.REDE_PENDENTE.exists()
+          and json.loads(e.REDE_ULTIMO.read_text())["s3"] == r["s3"], f"entregar_rede: {r}")
+    m = e.mensagem_rede(r)
+    checa("23/10 20:22" in m and "sem internet" in m and "voltou" in m, f"mensagem_rede: {m}")
 
     print(f"TESTES {'ok' if not falhas else 'FALHOU'}")
     for f in falhas:

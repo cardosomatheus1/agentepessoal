@@ -30,7 +30,10 @@ NAME = "agentepessoal"
 INSTANCE_TYPE = "m8g.xlarge"
 DISK_GB = 80
 AMI_PARAM = "/aws/service/canonical/ubuntu/server/22.04/stable/current/arm64/hvm/ebs-gp2/ami-id"
-IDLE_MINUTES = 30
+IDLE_MINUTES = 30  # only used with HIBERNAR=1
+# 24/10 (Matheus: reliability over cost): the VM stays on. Idle hibernation only when this is "1" (written to
+# /etc/agentepessoal.env); a resume on 24/10 left the network card dead. Always on costs ~US$ 25/month more.
+HIBERNAR = "0"
 IMAGE = "agent0ai/agent-zero:v2.13"
 PARAM_PASSWORD = f"/{NAME}/password"
 PARAM_URL = f"/{NAME}/agent-url"
@@ -374,7 +377,7 @@ def upload_bundle() -> None:
 
 def user_data() -> bytes:
     rendered = (HERE / "vm/user-data.sh.tpl").read_text()
-    for key, value in {"BUCKET": BUCKET, "IMAGE": IMAGE, "IDLE_MINUTES": str(IDLE_MINUTES)}.items():
+    for key, value in {"BUCKET": BUCKET, "IMAGE": IMAGE, "IDLE_MINUTES": str(IDLE_MINUTES), "HIBERNAR": HIBERNAR}.items():
         rendered = rendered.replace("{{" + key + "}}", value)
     if "{{" in rendered:
         raise SystemExit("unrendered placeholder in user data")
@@ -512,21 +515,12 @@ PARAM_RECOVERY = f"/{NAME}/recuperacao"
 
 
 def recovery_alarms(instance_id: str, function_arn: str) -> list[dict]:
-    """Two stages on the instance status check (missing data = hibernated/stopped = fine):
-    3 min failing → EC2 reboots it, and the function saves its console to S3 before the reboot wipes it;
-    15 min failing (the reboot did not fix it) → the function stops (forced) and starts it again (recuperar.py).
-    23/10: a kernel panic did not reboot by itself and the old single alarm (5 min) acted only 10 min later."""
-    base = dict(Namespace="AWS/EC2", MetricName="StatusCheckFailed_Instance", Statistic="Maximum", Period=60,
-                Threshold=1.0, ComparisonOperator="GreaterThanOrEqualToThreshold", TreatMissingData="notBreaching",
-                Dimensions=[{"Name": "InstanceId", "Value": instance_id}], Tags=TAGS)
-    return [
-        {**base, "AlarmName": ALARM_REBOOT, "EvaluationPeriods": 3, "DatapointsToAlarm": 3,
-         "AlarmDescription": "VM do agente travada há 3 min: reinicia e guarda o console (infra/deploy.py)",
-         "AlarmActions": [f"arn:aws:automate:{REGION}:ec2:reboot", function_arn]},
-        {**base, "AlarmName": ALARM_RESTART, "EvaluationPeriods": 15, "DatapointsToAlarm": 15,
-         "AlarmDescription": "VM do agente travada há 15 min (o reinício não resolveu): desliga e liga (recuperar.py)",
-         "AlarmActions": [function_arn]},
-    ]
+    """The stuck-VM alarms (two stages on the status check, plus "running but no network" since 24/10): defined next
+    to the function they call, infra/control/recuperar.py (alarmes), so its tests cover them."""
+    sys.path.insert(0, str(HERE / "control"))
+    from recuperar import alarmes
+
+    return alarmes(instance_id, function_arn, REGION, TAGS)
 
 
 def ensure_recovery(instance_id: str) -> None:
@@ -581,7 +575,7 @@ def ensure_recovery(instance_id: str) -> None:
         except lam.exceptions.ResourceConflictException:
             pass
         cw.put_metric_alarm(**alarm)
-        log(f"alarm {alarm['AlarmName']}: {alarm['EvaluationPeriods']} min")
+        log(f"alarm {alarm['AlarmName']}: {alarm['EvaluationPeriods']} x {alarm['Period'] // 60} min")
 
 
 # ---------------------------------------------------------------- control page
@@ -774,7 +768,7 @@ def main() -> None:
     print(f"Control page:  {url}")
     print(f"Personal link: {url}#k={password}")
     print(f"               stored in SSM parameter {PARAM_PASSWORD}")
-    print(f"Backups:       s3://{BUCKET}/usr (hourly and before every hibernation)")
+    print(f"Backups:       s3://{BUCKET}/usr (hourly and before every stop)")
 
 
 if __name__ == "__main__":

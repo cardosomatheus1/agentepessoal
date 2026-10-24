@@ -134,6 +134,27 @@ def main() -> int:
     rel = m.Recuperar(Ec2Falso(), S3Falso(), SsmFalso(), enviar_tg=lambda t: 1 / 0, dormir=lambda s: None, agora=lambda: 5.0)
     checa(rel(alarme(m.ALARME_RELIGAR))["feito"] == "desligada e ligada", "aviso com erro não impede religar")
 
+    # 24/10: VM ligada e sem rede (alarme sobre NetworkOut): guarda o console, avisa, não desliga (o alarme reinicia)
+    rel, avisos = novo(ec2=Ec2Falso(checagem="ok"))
+    r = rel(alarme(m.ALARME_SEM_REDE))
+    checa(rel.ec2.chamadas == ["console"] and len(avisos) == 1 and "sem rede" in avisos[0], f"sem-rede: {r} {avisos}")
+    checa(list(rel.s3.objetos)[0].endswith("-sem-rede.txt"), f"sem-rede: console com a etapa: {rel.s3.objetos}")
+    rel, avisos = novo(ec2=Ec2Falso(estado="stopped"))
+    checa(rel(alarme(m.ALARME_SEM_REDE))["feito"] == "nada" and not avisos, "sem-rede com a VM desligada: nada")
+
+    # os alarmes: os dois da checagem e o da rede (saída < 50 KB em 3 x 5 min; dado ausente = desligada = normal)
+    al = {a["AlarmName"]: a for a in m.alarmes("i-1", "arn:fn")}
+    checa(set(al) == {m.ALARME_REINICIAR, m.ALARME_RELIGAR, m.ALARME_SEM_REDE}, f"alarmes: {list(al)}")
+    sr = al[m.ALARME_SEM_REDE]
+    checa(sr["MetricName"] == "NetworkOut" and sr["Statistic"] == "Sum" and sr["Period"] == 300
+          and sr["EvaluationPeriods"] == 3 and sr["DatapointsToAlarm"] == 3 and sr["ComparisonOperator"] == "LessThanThreshold"
+          and sr["Threshold"] == 50000.0 and sr["TreatMissingData"] == "notBreaching", f"alarme sem rede: {sr}")
+    checa(sr["AlarmActions"] == ["arn:aws:automate:us-east-1:ec2:reboot", "arn:fn"], f"sem rede reinicia e chama: {sr}")
+    checa(al[m.ALARME_RELIGAR]["AlarmActions"] == ["arn:fn"] and al[m.ALARME_REINICIAR]["EvaluationPeriods"] == 3,
+          "alarmes da checagem como antes")
+    # 23/10 23:22-23:40: saída de 3,1 a 3,9 KB por 5 min (travada) dispara; o menor valor saudável de 22-24/10 não
+    checa(3876 < sr["Threshold"] < 300421, "limiar entre o travado e o saudável medidos")
+
     print(f"TESTES {'ok' if not falhas else 'FALHOU'}")
     for f in falhas:
         print("  ✗", f)

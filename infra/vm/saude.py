@@ -45,6 +45,34 @@ TICK = HERMES / "data" / "cron" / "ticker_heartbeat"
 CONTEINERES_HERMES = ("hermes", "hermes-navegador", "hermes-mcp", "portal", "android", "ws-scrcpy")
 CRITICOS_HERMES = ("hermes/data/cron/jobs.json",)
 TICK_MAX = 15 * 60
+# 24/10 (Matheus: "toda hora cai o agente e o OpenCode"): a VM fica ligada (hibernação só com HIBERNAR=1), as travas do
+# kernel viram pane que religa (estabilidade.py) e o vigia da rede religa a VM sem internet por 10 min.
+REDE_ULTIMO = Path("/var/lib/agentepessoal/rede_ultimo.json")
+SOFTLOCKUP = Path("/proc/sys/kernel/softlockup_panic")
+
+
+def hibernar_ligado(env: Path = Path("/etc/agentepessoal.env")) -> bool:
+    try:
+        return any(linha.strip() == "HIBERNAR=1" for linha in env.read_text().splitlines())
+    except OSError:
+        return False
+
+
+def problemas_de_ficar_ligada(hibernar: bool, timer_hibernar: str, timer_rede: str, softlockup: str,
+                              rede_ultimo: dict | None, agora: float, rede_mtime: float = 0) -> list[str]:
+    """timer_*: a saída de `systemctl is-active`; softlockup: /proc/sys/kernel/softlockup_panic ('' = sem a chave)."""
+    saida = []
+    if not hibernar and timer_hibernar == "active":
+        saida.append("a hibernação automática voltou a ficar ligada (deveria estar desligada: a VM fica sempre ligada); "
+                     "systemctl disable --now agentepessoal-watchdog.timer")
+    if timer_rede != "active":
+        saida.append("o vigia da rede (religa a VM sem internet) não está rodando")
+    if softlockup not in ("", "1"):
+        saida.append("a proteção contra trava do kernel (vira pane e religa) não está ativa")
+    if rede_ultimo and agora - rede_mtime < PANE_DIAS * 86400:
+        saida.append(f"a VM ficou sem internet desde {rede_ultimo.get('sem_rede_desde', '?')} e se religou sozinha; "
+                     f"registro em {rede_ultimo.get('s3') or rede_ultimo.get('diagnostico')}")
+    return saida
 
 
 def modo_hermes() -> bool:
@@ -253,6 +281,17 @@ def checar() -> list[str]:
             problemas.append("a hibernação falhou e a VM foi desligada: religou do zero, sem as conversas abertas")
     except OSError:
         pass
+    try:
+        rede, rede_mtime = json.loads(REDE_ULTIMO.read_text(encoding="utf-8")), REDE_ULTIMO.stat().st_mtime
+    except (OSError, ValueError):
+        rede, rede_mtime = None, 0
+    try:
+        softlockup = SOFTLOCKUP.read_text().strip()
+    except OSError:
+        softlockup = ""
+    problemas += problemas_de_ficar_ligada(
+        hibernar_ligado(), _cmd("systemctl", "is-active", "agentepessoal-watchdog.timer").strip(),
+        _cmd("systemctl", "is-active", "agentepessoal-vigia-rede.timer").strip(), softlockup, rede, time.time(), rede_mtime)
     problemas += conferir_backup(hermes)
     feitos = _cmd("journalctl", "-t", "agentepessoal", "--since", f"-{BACKUP_MAX_H}h", "-o", "cat")
     if "backup to s3" not in feitos or " done" not in feitos:

@@ -1,4 +1,4 @@
-"""Control page for the agent + phone VM: shows status, starts it and hibernates it.
+"""Control page for the agent + phone VM: shows status, starts it and stops it (always on since 24/10).
 
 Served through a Lambda Function URL. Every action requires the personal key (sent from the
 link's #k= fragment); only its SHA-256 lives in the function's environment.
@@ -92,7 +92,8 @@ def _status() -> dict:
 
 
 def _hibernate() -> None:
-    """Back up and hibernate from inside the VM; fall back to a direct hibernate."""
+    """Back up and stop from inside the VM (hibernate.sh: a plain stop unless HIBERNAR=1 there, 24/10); fall back to a
+    direct plain stop (24/10: a resume from hibernation left the network card dead)."""
     _set(URL_PARAM, "stopped")
     _set(PHONE_PARAM, "stopped")
     try:
@@ -102,7 +103,7 @@ def _hibernate() -> None:
             Parameters={"commands": ["nohup /opt/agentepessoal/hibernate.sh >/var/log/agentepessoal-hibernate.log 2>&1 &"]},
         )
     except Exception:
-        ec2.stop_instances(InstanceIds=[INSTANCE_ID], Hibernate=True)
+        ec2.stop_instances(InstanceIds=[INSTANCE_ID])
 
 
 def _start() -> None:
@@ -267,7 +268,7 @@ label.btn{display:block;text-align:center;border-radius:999px;padding:13px;font-
 details.up summary{cursor:pointer;font-weight:600;padding:10px 0}textarea{width:100%;min-height:70px;background:#111;border:1px solid var(--line);border-radius:14px;color:var(--fg);padding:12px 14px;font:14px/1.4 inherit;margin-bottom:12px}
 .kv{font-size:13px;color:var(--muted);word-break:break-all;margin-bottom:10px}.kv b{color:var(--fg);font-weight:500}.kv code{color:var(--fg)}
 </style></head><body><div class="card">
-<h1>Agente</h1><p>Liga a máquina só quando você for usar.</p>
+<h1>Agente</h1><p>A máquina do seu agente, sempre ligada.</p>
 <div id="nokey" hidden><div style="height:18px"></div><p>Abra esta página pelo seu link pessoal (o que tem <code>#k=</code> no final).</p></div>
 <div id="panel" hidden>
 <div class="status"><span id="dot" class="dot"></span><span id="label">…</span></div>
@@ -275,7 +276,7 @@ details.up summary{cursor:pointer;font-weight:600;padding:10px 0}textarea{width:
 <a id="phone" class="btn secondary" target="_blank" rel="noopener" hidden>Ver celular</a>
 <a id="opencode" class="btn secondary" target="_blank" rel="noopener" hidden>Abrir OpenCode</a>
 <button id="start" class="primary" onclick="act('start')" hidden>Ligar</button>
-<button id="stop" class="secondary" onclick="act('stop')" hidden>Hibernar agora</button>
+<button id="stop" class="secondary" onclick="act('stop')" hidden>Desligar agora</button>
 <div class="up">
 <label class="btn secondary" for="files">Enviar arquivos</label>
 <input id="files" type="file" multiple hidden onchange="sendFiles(this.files)">
@@ -300,7 +301,7 @@ details.up summary{cursor:pointer;font-weight:600;padding:10px 0}textarea{width:
 <div class="kv" id="tgEstado" style="margin-top:12px"></div>
 </details>
 <button id="apk" class="secondary" onclick="baixarApp()" hidden>Baixar app Android</button>
-<p style="margin-top:16px;font-size:13px">Hiberna sozinha após 30 min sem uso (guarda tudo e volta de onde parou). Depois de clicar em Ligar, o agente abre sozinho quando estiver pronto.</p>
+<p style="margin-top:16px;font-size:13px">Fica ligada o tempo todo (o agente e o OpenCode não caem por falta de uso). Se você desligar, guarda tudo antes; depois de clicar em Ligar, o agente abre sozinho quando estiver pronto.</p>
 </div><div id="err" class="err"></div></div>
 <script>
 // The personal link carries the key in the URL fragment (never sent in requests or logs);
@@ -310,7 +311,7 @@ const m=location.hash.match(/k=([^&]+)/);
 try{if(m){key=decodeURIComponent(m[1]);localStorage.setItem("agkey",key)}else{key=localStorage.getItem("agkey")||""}}catch(e){if(m)key=decodeURIComponent(m[1])}
 async function call(action){const r=await fetch(location.origin+location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:key,action})});
 const d=await r.json();if(r.status===401){try{localStorage.removeItem("agkey")}catch(e){}$("panel").hidden=true;$("nokey").hidden=false;throw new Error("Link pessoal inválido.")}return d}
-function render(s){const L={running:s.ready?"Ligado e pronto":"Acordando o agente…",pending:"Ligando a máquina…",stopping:"Hibernando…",stopped:"Desligado (hibernado)"};
+function render(s){const L={running:s.ready?"Ligado e pronto":"Acordando o agente…",pending:"Ligando a máquina…",stopping:"Desligando…",stopped:"Desligado"};
 $("label").textContent=L[s.state]||s.state;$("dot").className="dot "+(s.ready?"ok":(s.state==="stopped"?"":"warn"));
 $("open").hidden=!s.ready;if(s.ready)$("open").href=s.url;$("phone").hidden=!s.phone_url;if(s.phone_url)$("phone").href=s.phone_url;$("opencode").hidden=!s.opencode_url;if(s.opencode_url)$("opencode").href=s.opencode_url;$("start").hidden=s.state!=="stopped";$("stop").hidden=s.state!=="running";
 if(s.ready&&autoOpen){location.href=s.url;return}

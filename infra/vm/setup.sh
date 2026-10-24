@@ -3,7 +3,10 @@
 # Run by the first-boot user data, and again by `deploy.py --update` to push changes.
 # Expects the bundle extracted at /opt/agentepessoal/bundle and /etc/agentepessoal.env.
 set -euxo pipefail
-source /etc/agentepessoal.env   # BACKUP_BUCKET, IMAGE, IDLE_MINUTES
+source /etc/agentepessoal.env   # BACKUP_BUCKET, IMAGE, IDLE_MINUTES (and HIBERNAR=1 only to turn hibernation back on)
+# 24/10: the VM stays on (Matheus: reliability over cost). Hibernation is off unless HIBERNAR=1: the idle check did not
+# count OpenCode or long Hermes runs, and a resume left the network card (ENA) dead (24/10 01:22).
+HIBERNAR="${HIBERNAR:-0}"
 B=/opt/agentepessoal/bundle
 # 23/10 (virada ao Hermes, fase 8): depois da virada o agente é o Hermes e o A0 fica PARADO (para a volta). Rodar o
 # setup de novo (deploy.py --update) não pode religar o A0 (as rotinas rodariam nos dois); numa VM nova, a chave vem da
@@ -59,9 +62,9 @@ fi
 # Admin access is through SSM Session Manager; no SSH port is opened.
 systemctl disable --now ssh.service ssh.socket 2>/dev/null || true
 
-# Hibernation on Ubuntu Graviton: AWS recommends disabling KASLR.
+# Hibernation on Ubuntu Graviton: AWS recommends disabling KASLR (only needed with HIBERNAR=1).
 REBOOT=0
-if ! grep -q nokaslr /proc/cmdline; then
+if [ "$HIBERNAR" = 1 ] && ! grep -q nokaslr /proc/cmdline; then
   echo 'GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT nokaslr"' > /etc/default/grub.d/99-agentepessoal-nokaslr.cfg
   update-grub
   REBOOT=1
@@ -374,7 +377,7 @@ EOF
 
 cat > /etc/systemd/system/agentepessoal-watchdog.service <<EOF
 [Unit]
-Description=Hibernate the VM when idle
+Description=Hibernate the VM when idle (only with HIBERNAR=1 in /etc/agentepessoal.env; off by default since 24/10)
 [Service]
 Type=oneshot
 Environment=IDLE_MINUTES=${IDLE_MINUTES}
@@ -495,22 +498,27 @@ EOF
 
 # Kernel stability (23/10: kernel panic in io_uring; estabilidade.py): io_uring off, a panic reboots in 10 s, a panic
 # kept by pstore goes to S3 with a notice; daily disk cleanup (unnamed images, old Hermes images, journal cap).
-for u in agentepessoal-estabilidade.service agentepessoal-limpeza-disco.service agentepessoal-limpeza-disco.timer; do
+# 24/10: also the kernel/userspace watchdogs (a stuck CPU, a hung task or a frozen systemd become a panic that reboots)
+# and the network watchdog (no AWS/internet for 10 min while running: reboots itself, at most 3 times in 6 h).
+for u in agentepessoal-estabilidade.service agentepessoal-limpeza-disco.service agentepessoal-limpeza-disco.timer \
+         agentepessoal-vigia-rede.service agentepessoal-vigia-rede.timer; do
   install -m 644 "$B/unidades/$u" "/etc/systemd/system/$u"
 done
 systemctl daemon-reload
-systemctl enable agentepessoal-estabilidade.service agentepessoal-limpeza-disco.timer
+systemctl enable agentepessoal-estabilidade.service agentepessoal-limpeza-disco.timer agentepessoal-vigia-rede.timer
 systemctl start --no-block agentepessoal-estabilidade.service
-systemctl start agentepessoal-limpeza-disco.timer
+systemctl start agentepessoal-limpeza-disco.timer agentepessoal-vigia-rede.timer
 
 # OpenCode do Matheus (usuário opencodemobile, instalado à mão em 23/10): o túnel e a publicação do endereço vêm do
 # repositório (opencode_tunel.sh: endereço fixo com o token da Cloudflare no cofre, senão o túnel rápido).
+# 24/10: the OpenCode unit itself is in the repository too (always restarts; memory/CPU capped so a build cannot starve
+# the Hermes; the tunnel no longer restarts with it, so its address does not change when OpenCode restarts).
 if id opencodemobile >/dev/null 2>&1; then
-  for u in opencodemobile-cloudflare.service opencodemobile-publish-url.service opencodemobile-publish-url.timer; do
+  for u in opencodemobile.service opencodemobile-cloudflare.service opencodemobile-publish-url.service opencodemobile-publish-url.timer; do
     install -m 644 "$B/unidades/$u" "/etc/systemd/system/$u"
   done
   systemctl daemon-reload
-  systemctl enable opencodemobile-cloudflare.service opencodemobile-publish-url.timer
+  systemctl enable opencodemobile.service opencodemobile-cloudflare.service opencodemobile-publish-url.timer
 fi
 
 # Full stops (not hibernation) also get a final backup.
@@ -535,11 +543,16 @@ if [ "$A0_PARADO" = 1 ]; then  # virado: os serviços que só existem dentro do 
   systemctl disable --now agentepessoal-google-mcp agentepessoal-agent-tools >/dev/null 2>&1 || true
 fi
 systemctl enable agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url \
-  agentepessoal-watchdog.timer agentepessoal-memguard.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer agentepessoal-saude.timer agentepessoal-firewall \
+  agentepessoal-memguard.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer agentepessoal-saude.timer agentepessoal-firewall \
   agentepessoal-credenciais-meta agentepessoal-whatsapp
 systemctl restart agentepessoal-proxy agentepessoal-phone-tunnel agentepessoal-url agentepessoal-credenciais-meta agentepessoal-whatsapp
 [ "$A0_PARADO" = 1 ] || { systemctl enable agentepessoal-google-mcp agentepessoal-agent-tools; systemctl restart --no-block agentepessoal-google-mcp; systemctl start agentepessoal-agent-tools; }
-systemctl start agentepessoal-watchdog.timer agentepessoal-memguard.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer agentepessoal-saude.timer agentepessoal-firewall
+if [ "$HIBERNAR" = 1 ]; then  # idle hibernation only on request (24/10)
+  systemctl enable --now agentepessoal-watchdog.timer
+else
+  systemctl disable --now agentepessoal-watchdog.timer 2>/dev/null || true
+fi
+systemctl start agentepessoal-memguard.timer agentepessoal-backup.timer agentepessoal-backup-on-shutdown agentepessoal-entrada.timer agentepessoal-saude.timer agentepessoal-firewall
 
 # First boot only: install test apps on the phone.
 [ -f /var/lib/agentepessoal/apps-installed ] || { /opt/agentepessoal/install_apps.sh && touch /var/lib/agentepessoal/apps-installed; } || true

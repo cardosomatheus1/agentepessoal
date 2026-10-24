@@ -57,7 +57,7 @@ Criado no primeiro boot (`vm/project-carreira/`). No agente, escolha o projeto *
 - `vm/user-data.sh.tpl` — configuração do primeiro boot (Docker, serviços, restauração, projeto).
 - `vm/bedrock_proxy.py` — gera tokens temporários do Bedrock com a role da VM (sem chave guardada) e registra a última atividade.
 - `vm/report_url.py` — liga o túnel Cloudflare do próprio Agent Zero e publica o link no SSM.
-- `vm/watchdog.sh` — a cada 5 min: se não houve uso em 30 min (chamadas ao modelo, conversas gravadas ou CPU ocupada), faz backup e desliga.
+- `vm/watchdog.sh` — desligado por padrão desde 24/10 (a VM fica sempre ligada; a volta da hibernação deixou a VM sem rede duas vezes). Só com `HIBERNAR=1` em `/etc/agentepessoal.env`: a cada 5 min, se não houve uso em 30 min, faz backup e hiberna.
 - `vm/backup.sh` — `aws s3 sync` de `/opt/a0/usr`.
 - `control/index.py` — a página de controle (Lambda).
 

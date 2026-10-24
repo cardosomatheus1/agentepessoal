@@ -1,8 +1,9 @@
 [Unit]
 Description=Tunnel for the authenticated OpenCode Mobile (fixed address with the Cloudflare token in the vault, else a quick tunnel; opencode_tunel.sh)
 After=network-online.target opencodemobile.service
-Wants=network-online.target
-Requires=opencodemobile.service
+# 24/10: Wants (not Requires): a restart of the OpenCode no longer restarts the tunnel, so the address stays the same
+Wants=network-online.target opencodemobile.service
+StartLimitIntervalSec=0
 [Service]
 Type=simple
 ExecStart=/opt/agentepessoal/opencode_tunel.sh rodar

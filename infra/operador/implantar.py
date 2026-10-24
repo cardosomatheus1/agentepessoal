@@ -8,6 +8,9 @@
     python3 infra/operador/implantar.py --host estabilidade.py --unidade agentepessoal-limpeza-disco.timer
     python3 infra/operador/implantar.py --host opencode_tunel.sh --unidade opencodemobile-publish-url.timer
     python3 infra/operador/implantar.py --host opencode_tunel.sh --unidade opencodemobile-cloudflare.service --sem-reiniciar
+    python3 infra/operador/implantar.py --host opencode_tunel.sh --unidade opencodemobile.service --sem-reiniciar
+    python3 infra/operador/implantar.py --host estabilidade.py --unidade agentepessoal-vigia-rede.timer
+    python3 infra/operador/implantar.py --host watchdog.sh   (hibernação só com HIBERNAR=1, 24/10)
     python3 infra/operador/implantar.py --hermes          (o Hermes ao lado do A0: infra/vm/hermes, fase 1 da migração)
         (--unidade also installs/updates that committed systemd unit, infra/vm/unidades/<unidade>, enables and restarts it;
          a .timer also brings the .service of the same name; --sem-reiniciar installs without restarting it, e.g. a

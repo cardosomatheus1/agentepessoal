@@ -4,7 +4,13 @@
 #  - a chat file written by Agent Zero (messages, tool output),
 #  - someone watching the phone screen (ws-scrcpy connection),
 #  - sustained CPU load (a long command still running).
+#
+# 24/10 (Matheus: "toda hora cai o agente e o OpenCode, não consegue rodar 15 min"): DESLIGADO por padrão. Contava só o
+# uso do agente (não o OpenCode nem uma rodada longa do Hermes) e, na volta da hibernação de 24/10 01:22, a placa de
+# rede (ENA) não voltou ("Failed to create I/O queues") e a VM ficou sem rede até o alarme reiniciar. A VM fica ligada;
+# só hiberna com HIBERNAR=1 em /etc/agentepessoal.env (o setup.sh também só liga o timer assim).
 set -u
+[ "${HIBERNAR:-0}" = 1 ] || exit 0
 IDLE_MINUTES="${IDLE_MINUTES:-30}"
 ACTIVITY_FILE=/var/lib/agentepessoal/last-activity
 CHATS_DIR=/opt/a0/usr/chats

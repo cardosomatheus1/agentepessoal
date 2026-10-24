@@ -1,0 +1,7 @@
+[Unit]
+Description=Network watchdog: no AWS/internet for 10 min while running -> reboot (max 3 in 6 h; estabilidade.py rede)
+After=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/agentepessoal/estabilidade.py rede
+TimeoutStartSec=4min
