@@ -168,11 +168,19 @@ def executar(tool_name="", args=None, next_call=None, **kw):
     return resultado
 
 
+DEPOIS: list = []  # (tool_name, texto) -> texto, depois da máscara (dicas_hermes): no Hermes só o 1º gancho vale
+
+
 def resultado_mascarado(tool_name="", args=None, result=None, **kw):
-    """Gancho `transform_tool_result`: devolve o texto só quando algo foi mascarado."""
+    """Gancho `transform_tool_result`: devolve o texto só quando algo mudou (máscara e, depois, as dicas)."""
     if not isinstance(result, str):
         return None
     novo = _esconder(result, kw)
+    for f in DEPOIS:
+        try:
+            novo = f(tool_name, novo)
+        except Exception as exc:  # uma dica nunca derruba a máscara
+            log.warning("dica falhou: %s: %s", type(exc).__name__, exc)
     return novo if novo != result else None
 
 

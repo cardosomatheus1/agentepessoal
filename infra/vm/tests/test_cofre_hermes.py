@@ -116,6 +116,19 @@ helper.salvar("teste_matheus", "NOVA", "outroValor77")
 c2 = cf.contexto_nomes(session_id="s9", is_first_turn=False)
 checa(c2 and "NOVA" in c2["context"], "lista mudou: avisa de novo")
 
+# 27/10: dica junto do erro de ref do navegador, no mesmo gancho, depois da máscara
+dicas = carregar("teste_dicas_hermes", P / "dicas_hermes.py")
+dicas.registrar(cf); dicas.registrar(cf)
+checa(cf.DEPOIS.count(dicas.dica) == 1, "a dica entra uma vez só")
+r = cf.resultado_mascarado(tool_name="browser_click", result='{"error": "Unknown ref: e42"} senhaForte123', session_id="s1")
+checa(r and "browser_snapshot` agora" in r and "e42" in r and "senhaForte123" not in r, f"ref que sumiu: dica e máscara ({r})")
+checa(cf.resultado_mascarado(tool_name="browser_click", result=r, session_id="s1") is None, "a dica não se repete")
+checa(cf.resultado_mascarado(tool_name="terminal", result="Unknown ref: e1", session_id="s1") is None, "só no navegador")
+cf.DEPOIS.append(lambda n, t: 1 / 0)
+checa("§§secret(IG_SENHA)" in (cf.resultado_mascarado(tool_name="x", result="v senhaForte123", session_id="s1") or ""),
+      "uma dica com erro não derruba a máscara")
+cf.DEPOIS.pop()
+
 if falhas:
     print("test_cofre_hermes: FALHOU\n- " + "\n- ".join(falhas))
     sys.exit(1)
