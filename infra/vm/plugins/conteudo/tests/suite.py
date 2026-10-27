@@ -739,6 +739,23 @@ class Suite:
             ok(not erro["ok"], erro)
         c2, s2, _ = self._semana()
         sid2 = s2.propor(self._feed(), _ts(c2, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())["semana"]
+        # he approves one while it is being redone: his decision stays, the redone version is dropped
+        esp2 = c2.especialistas()
+        desenhar = type(esp2).desenhar
+
+        def aprova_no_meio(self, briefing):
+            s2.aprovar(sid2, [2], quem="matheus", subir=lambda *a: None)
+            return desenhar(self, briefing)
+        type(esp2).desenhar = aprova_no_meio
+        try:
+            r = s2.refazer_propostas(sid2, feed={"2": {"titulo": "Reel novo", "ideia": "x", "legenda": "Legenda nova."}},
+                                     enviar=lambda *a: "")
+        finally:
+            type(esp2).desenhar = desenhar
+        p2 = next(p for p in s2.carregar(sid2)["propostas"] if p["n"] == 2)
+        ok(p2["estado"] != "proposta" and p2["titulo"] == "Post 2" and not r["ok"],
+           f"a aprovada no meio não é sobrescrita: {p2['estado']} {p2['titulo']} {r}")
+        ok(sum(1 for i in c2.carregar()["itens"] if i["data"] == "2026-10-28" and i["tipo"] == "REELS") <= 1, "sem post dobrado")
         ok("mande-a em stories" in s2.refazer_propostas(sid2, feed={"6": {"titulo": "x"}}, enviar=lambda *a: "")["erro"],
            "story no lugar errado")
 

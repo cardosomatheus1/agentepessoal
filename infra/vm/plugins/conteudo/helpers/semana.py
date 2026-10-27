@@ -560,10 +560,15 @@ def refazer_propostas(sid: str, feed=None, stories=None, enviar=None) -> dict:
         atual = carregar(sid)
         if atual["estado"] not in ("proposta", "parcial"):
             return {"ok": False, "erro": f"a semana {sid} foi decidida enquanto eu refazia"}
-        mudou = {p["n"]: p for p in itens if p.get("refeita") == rodada}
+        abertas = {p["n"] for p in atual["propostas"] if p["estado"] == "proposta"}  # one he decided meanwhile stays
+        mudou = {p["n"]: p for p in itens if p.get("refeita") == rodada and p["n"] in abertas}
+        perdidos = {por_n[n]["data"] for n in feed if n not in mudou}  # its story was judged with a post that lost
+        mudou = {n: p for n, p in mudou.items() if n in feed or n in stories or p["data"] not in perdidos}
         atual["propostas"] = [mudou.get(p["n"], p) for p in atual["propostas"]]
         _gravar(atual)
     c()._diario({"semana": sid, "refeitas": sorted(mudou), "vereditos": [mudou[n]["critica"]["veredito"] for n in sorted(mudou)]})
+    if not mudou:
+        return {"ok": False, "erro": "você decidiu essas propostas enquanto eu refazia; nada mudou"}
     texto, botoes = mensagem(atual)
     erro = (enviar or _enviar_ponte)(atual.get("login", "matheus"), "Refiz " + ", ".join(map(str, sorted(mudou)))
                                      + ".\n\n" + texto, botoes)
