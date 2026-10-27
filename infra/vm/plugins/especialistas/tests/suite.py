@@ -288,6 +288,25 @@ class Suite:
         ok("c_prato" in json.dumps(chamadas[1][2], ensure_ascii=False), "o crítico vê a ficha")
         eq(d["critica"]["veredito"], "aprova", "crítica anexada")
 
+    def t_ficha_pronta_vai_ao_critico_sem_o_designer(self):
+        # 27/10: the operator writes the ficha (the Designer put the falas out of order three times): checked,
+        # rendered and judged as it is; an error comes back, never a rewrite
+        m = self._e()
+        chamadas = []
+        m.chamar = lambda papel, tarefa, material, **k: chamadas.append(papel) or {"texto": APROVA, "erro": "", "imagens": [], "sem_imagem": []}
+        m._validar_ficha = lambda molde, ficha: [] if ficha.get("pergunta") else ["pergunta: falta"]
+        renders = []
+        m._renderizar = lambda spec, falta: renders.append(spec) or ([], "", [], "", "", list(falta))
+        d = m.julgar_ficha({"formato": "CARROSSEL", "marca": "raiz"}, {"marca": "raiz", "molde": "frases", "formato": "carrossel",
+                                                                     "ficha": {"_marca": "raiz", "pergunta": "Quanto sobra?"}})
+        eq(chamadas, ["critico"], "só o Crítico, nenhum Designer")
+        ok(renders[0]["motor"] == "molde" and renders[0]["_formato_pedido"] == "carrossel"
+           and renders[0]["ficha"]["pergunta"] == "Quanto sobra?", renders[0])
+        eq(d["critica"]["veredito"], "aprova", "julgada como a do Designer")
+        chamadas.clear()
+        d = m.julgar_ficha({"formato": "CARROSSEL"}, {"molde": "frases", "formato": "carrossel", "ficha": {"_marca": "raiz"}})
+        ok(chamadas == ["critico"] and any("pergunta: falta" in f for f in d["falta"]), f"erro volta, sem correção: {chamadas} {d['falta']}")
+
     def t_designer_ilegivel_ou_fora_do_ar_reprova(self):
         m = self._e()
         self._designer(m, "não sei fazer isso")

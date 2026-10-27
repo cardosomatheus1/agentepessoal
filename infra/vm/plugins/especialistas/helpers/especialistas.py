@@ -685,6 +685,20 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
     return out
 
 
+def julgar_ficha(briefing, spec: dict, *, login: str = "matheus") -> dict:
+    """A ficha written outside the Designer (27/10: the operator, after the Designer put the falas out of order three
+    times) checked, rendered and judged exactly as a Designer's: same checks, same render, same Crítico; nothing is
+    rewritten (a ficha error comes back in "falta")."""
+    spec = dict(spec or {})
+    if spec.get("molde") and not spec.get("motor"):
+        spec["motor"] = "molde"
+    pedido = FORMATO_DO_BRIEFING.get(str(briefing.get("formato") or "").upper(), "") if isinstance(briefing, dict) else ""
+    if pedido:
+        spec["_formato_pedido"] = pedido
+    material = {"briefing": briefing} if isinstance(briefing, str) else briefing
+    return _volta(briefing, material, spec, {"erro": "", "texto": ""}, login, correcoes=0)  # no Designer to correct it
+
+
 def revisar(briefing, spec: dict, critica: dict, imagens=None, *, login: str = "matheus") -> dict:
     """One more Designer round on a piece already in the agenda, with the Crítico's reasons (22/10, Matheus: "Se o
     crítico rejeita, automáticamente deveria ser refeito ... durante a etapa de criação"): the advance check, a day
@@ -700,7 +714,7 @@ def revisar(briefing, spec: dict, critica: dict, imagens=None, *, login: str = "
     return _volta(briefing, material, novo, r, login)
 
 
-def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
+def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes: int | None = None) -> dict:
     """One round: check the ficha (with up to CORRECOES fixes against the template's schema), render it, judge it."""
     falta, arquivos, render = [], [], ""
     previa, narracao, folha = [], "", ""
@@ -713,7 +727,7 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str) -> dict:
         # 22/10, real runs: fichas over the template's limits, "_origem" missing, telas without a file, a video
         # shorter than the template allows (refused only when rendering). The Designer gets the template's exact
         # schema, an example and the errors; CORRECOES tries in all, for the ficha and the render together.
-        tentativas = CORRECOES
+        tentativas = CORRECOES if correcoes is None else correcoes
         while True:
             while tentativas and spec.get("motor") == "molde" and any(f.startswith("ficha:") for f in falta):
                 tentativas -= 1

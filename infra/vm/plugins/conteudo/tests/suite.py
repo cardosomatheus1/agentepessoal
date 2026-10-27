@@ -759,6 +759,26 @@ class Suite:
         ok("mande-a em stories" in s2.refazer_propostas(sid2, feed={"6": {"titulo": "x"}}, enviar=lambda *a: "")["erro"],
            "story no lugar errado")
 
+    def t_semana_refazer_com_ficha_pronta(self):
+        # 27/10: the operator's own ficha goes to the Crítico as it is (julgar_ficha), not to the Designer
+        c, s, chamadas = self._semana()
+        sid = s.propor(self._feed(), _ts(c, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())["semana"]
+        esp = c.especialistas()
+        julgadas = []
+        type(esp).julgar_ficha = lambda self, briefing, spec: julgadas.append((briefing, spec)) or {
+            "spec": spec, "arquivos": [], "falta": [], "video_pendente": True, "previa": [], "narracao": "n.m4a",
+            "critica": {"veredito": "aprova", "motivos": [], "sugestoes": []}}
+        try:
+            r = s.refazer_propostas(sid, feed={"2": {"titulo": "Reel", "ideia": "x", "legenda": "Legenda nova.",
+                                                     "spec": {"motor": "molde", "molde": "lanca-app", "formato": "reel",
+                                                              "ficha": {"falas": ["Oi"]}}}}, enviar=lambda *a: "")
+        finally:
+            del type(esp).julgar_ficha
+        ok(r["ok"] and len(chamadas) == 4 and julgadas[0][1]["molde"] == "lanca-app" and julgadas[0][0]["data"] == "2026-10-28",
+           f"a ficha pronta vai ao Crítico, o Designer não é chamado: {len(chamadas)} {julgadas}")
+        p2 = next(p for p in s.carregar(sid)["propostas"] if p["n"] == 2)
+        ok(p2["spec"]["ficha"] == {"falas": ["Oi"]} and p2["video"]["molde"] == "lanca-app", p2)
+
     def t_semana_story_que_chama_o_post_do_dia(self):
         # 26/10: the 9h stories said "Veja o vídeo de hoje" for Reels whose render had failed, one about stock on a day
         # whose Reel was about iFood, and "o post de hoje" on a day with no post; the Crítico saw the story alone

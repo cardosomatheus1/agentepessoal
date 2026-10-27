@@ -384,8 +384,8 @@ def _desenhar(esp, briefing: dict, p: dict) -> dict:
     if esp is None:
         return {"spec": {}, "arquivos": [str(a) for a in p.get("arquivos") or []], "falta": [],
                 "critica": {"veredito": SEM_REVISAO, "motivos": ["o Crítico ainda não está instalado"], "sugestoes": []}}
-    try:
-        d = esp.desenhar(briefing)
+    try:  # a ready ficha (spec) is rendered and judged as it is, without the Designer
+        d = esp.julgar_ficha(briefing, p["spec"]) if isinstance(p.get("spec"), dict) and p["spec"] else esp.desenhar(briefing)
     except Exception as exc:
         return {"spec": {}, "arquivos": [], "falta": [f"o Designer falhou ({type(exc).__name__}: {str(exc)[:120]})"],
                 "critica": {"veredito": SEM_REVISAO, "motivos": ["o Designer falhou antes do Crítico"], "sugestoes": []}}
