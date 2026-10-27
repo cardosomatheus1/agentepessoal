@@ -19,6 +19,9 @@ from pathlib import Path
 OPENCODE = "/root/.opencode/bin/opencode2"
 MODELO = "amazon-bedrock/global.anthropic.claude-opus-5-5"
 DIFF_MAX = 120_000
+# 27/10: o OpenCode do celular (usuário opencodemobile, `opencode serve --service`) ocupa a porta padrão do serviço
+# gerenciado (49374) e o do revisor no host parava com "port 49374 is already in use": o revisor usa outra.
+PORTA_SERVICO = 49391
 BUCKET = "s3://agentepessoal-backup-964862484412/operador"
 ATIVIDADE = "/var/lib/agentepessoal/last-activity"  # infra/vm/watchdog.sh: the VM does not hibernate while it is recent
 
@@ -72,6 +75,7 @@ def comando_vm(chave_s3: str, pasta: str, motivo: str) -> str:
              f"docker exec -w /a0/usr agent-zero sh -c '{rodar}'")
     no_host = (f"{{ [ -e /a0/usr ] || {{ mkdir -p /a0 && ln -s /opt/a0/usr /a0/usr; }}; }} && mkdir -p {pasta} && "
                f"cp /tmp/{chave_s3} {pasta}/diff.patch && cp /tmp/{chave_s3}.pedido {pasta}/pedido.md && "
+               f"cd /a0/usr && HOME=/root {OPENCODE} service set port {PORTA_SERVICO} >/dev/null 2>&1; "
                f"cd /a0/usr && HOME=/root sh -c '{rodar}'")
     return (f"touch {ATIVIDADE}; aws s3 cp {BUCKET}/{chave_s3} /tmp/{chave_s3} >/dev/null && "
             f"echo {p64} | base64 -d > /tmp/{chave_s3}.pedido && "
