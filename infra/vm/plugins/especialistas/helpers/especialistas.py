@@ -338,7 +338,10 @@ def criterios(tipo: str) -> str:
 
 
 def regras_fixas(tipo: str, material) -> list[str]:
-    """Rules checked by code, not by the model: they reprove whatever the model says."""
+    """Rules checked by code, not by the model: they reprove whatever the model says. Only the piece's own text: the
+    post a story calls (post_do_dia) is context, its caption may say "salva" or carry the offer's price."""
+    if isinstance(material, dict):
+        material = {k: v for k, v in material.items() if k != "post_do_dia"}
     texto, _ = _texto_material(material)
     motivos = []
     if EMOJI.search(texto):

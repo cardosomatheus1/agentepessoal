@@ -234,6 +234,9 @@ class Suite:
         # a story that calls the day's post: the Crítico is told to compare both subjects
         m.criticar("story", {"legenda": "Estoque na hora certa", "post_do_dia": {"tipo": "REELS", "titulo": "iFood"}})
         ok("Story que chama o post do dia" in chamadas[-1][1] and "mesmo assunto" in chamadas[-1][1], chamadas[-1][1][-400:])
+        c = m.criticar("story", {"legenda": "3 sinais do CMV", "chamada": "Arrasta no perfil",
+                                 "post_do_dia": {"tipo": "CARROSSEL", "titulo": "CMV", "legenda": "Salva pra fazer hoje. R$ 12"}})
+        eq(c["veredito"], "aprova", "a legenda do post chamado é contexto, não texto do story")
         m.criticar("story", {"legenda": "Dica"})
         ok("Story que chama o post do dia" not in chamadas[-1][1], "só quando chama")
         eq(m.criticar("reel", {"falas": ["O prato custa R$ 12,40"]})["veredito"], "reprova", "reel também (22/10)")
