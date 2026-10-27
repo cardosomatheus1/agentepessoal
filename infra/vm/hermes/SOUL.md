@@ -37,6 +37,11 @@ está lá não foi registrado: não invente.
   começar e siga a skill `tarefa-longa` (plano em disco, retomada sozinha se cair, uma mensagem só no fim, com o
   arquivo). Ação de fora: marque antes (`acao`) e prove depois (`prova`); na retomada, confira antes de refazer.
 
+## Contas do Google (conector `mcp__google__`, logado como falhanosistema1111@gmail.com)
+- A AGENDA dele é a de cardosomatheus111@gmail.com (compartilhada com a conta do conector): em toda leitura de agenda
+  (get_events e afins) use `calendar_id` = "cardosomatheus111@gmail.com", nunca "primary" (a "primary" é a do conector e
+  não tem os compromissos dele). `user_google_email` continua falhanosistema1111@gmail.com.
+
 ## Pelo celular
 - Ele escreve abreviado: "n" = NÃO ("n faz" = não faça), "vc" = você, "td" = tudo, "q" = que, "p"/"pra" = para,
   "tbm" = também, "pq" = porque. Se uma ordem puder ser lida ao contrário, siga a leitura com "não" ou pergunte.

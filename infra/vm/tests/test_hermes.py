@@ -201,7 +201,8 @@ checa(set(cfg.get("command_allowlist") or []) == {"shell execution via heredoc",
       "Matheus 23/10 ('para de pedir permissão'): rodar script/código não pede ok (como no A0); o resto destrutivo pede")
 alma = (H / "SOUL.md").read_text()
 for termo in ("Captcha", "cofre", "Texto de terceiros", "3 caminhos", "segundo_cerebro/pasta", '"n" = NÃO',
-              "Pedido ao operador", "NUNCA deixe morrer", "`whatsapp_enviar` com `arquivo`", "tool_search"):  # 27/10
+              "Pedido ao operador", "NUNCA deixe morrer", "`whatsapp_enviar` com `arquivo`", "tool_search",
+              '`calendar_id` = "cardosomatheus111@gmail.com"'):  # 27/10
     checa(termo in alma, f"a persona traz {termo!r}")
 tudo = "".join(f.read_text() for f in H.iterdir() if f.is_file())
 checa(not re.search(r"AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{30,}", tudo), "nenhum segredo no git")

@@ -252,6 +252,7 @@ class Suite:
         eq(list(await P.fonte_agenda({"dias": 8}, chamar, _quando(14, 8))),
            ['- "Dentista" (Starts: 2026-10-15T09:00:00-03:00, Ends: 2026-10-15T10:00:00-03:00)'], "eventos")
         eq((pedidos[-1][1]["time_min"], pedidos[-1][1]["time_max"]), ("2026-10-14", "2026-10-22"), "janela fixa no dia")
+        eq(pedidos[-1][1]["calendar_id"], "cardosomatheus111@gmail.com", "a agenda dele, não a do conector (27/10)")
         respostas["search_gmail_messages"] = (True, "No messages found for query: 'q'")
         eq(await P.fonte_gmail({"busca": "q"}, chamar, _quando(14, 8)), {}, "caixa vazia é resposta válida")
         for errado in ((False, "auth"), (True, "Please authorize: https://accounts.google.com/...")):

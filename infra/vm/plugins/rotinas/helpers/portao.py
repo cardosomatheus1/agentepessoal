@@ -24,6 +24,9 @@ PASTA = Path("/a0/usr/rotinas/portao")
 CONFIG = Path(__file__).resolve().parents[1] / "portao.json"
 FUSO = ZoneInfo("America/Bahia")
 CONTA = "falhanosistema1111@gmail.com"  # the Google account of the agent's connector (workspace-mcp, single user)
+# 27/10, Matheus: "Mas agenda é no cardosomatheus111@gmail.com": his calendar, shared with the connector's account; the
+# connector's own "primary" never had his meetings
+AGENDA = "cardosomatheus111@gmail.com"
 ESPERA = 60           # seconds per source; slower counts as an error (= run)
 MAX_ITENS = 300
 MAX_CONTEXTO = 4000
@@ -77,7 +80,7 @@ async def fonte_gmail(f: dict, chamar, agora: datetime) -> dict:
 async def fonte_agenda(f: dict, chamar, agora: datetime) -> dict:
     hoje = agora.astimezone(FUSO).date()
     texto = await _google(chamar, "get_events", {
-        "user_google_email": CONTA, "calendar_id": "primary", "time_min": hoje.isoformat(),
+        "user_google_email": CONTA, "calendar_id": AGENDA, "time_min": hoje.isoformat(),
         "time_max": (hoje + timedelta(days=int(f.get("dias", 7)))).isoformat(), "max_results": int(f.get("max", 50))})
     itens = {l.strip(): l.strip()[:200] for l in texto.splitlines() if l.strip().startswith('- "')}
     if not itens and "No events found" not in texto:
