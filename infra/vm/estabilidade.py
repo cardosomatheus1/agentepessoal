@@ -460,6 +460,7 @@ def _livre_gb() -> float:
 PROJETOS = Path("/home/opencodemobile/projects")
 PRINCIPAIS = {"erp-saas", "agentepessoal"}
 PARADO_H = 24
+REFAZ_SOZINHO = {"node_modules", "dist", "build", ".next", ".turbo", "coverage", ".cache", ".vite", "__pycache__"}
 CACHE_TMP_DIAS = 2
 
 
@@ -492,9 +493,22 @@ def projeto_parado(pasta: Path, agora: float | None = None) -> str:
     rc, sujo = _git(pasta, "status", "--porcelain")
     if rc or sujo.strip():
         return "tem mudança ou arquivo novo"
+    rc, ignorados = _git(pasta, "status", "--porcelain", "--ignored")
+    fora = [l[3:] for l in ignorados.splitlines() if l.startswith("!! ")
+            and not any(parte in REFAZ_SOZINHO for parte in Path(l[3:].rstrip("/")).parts)]
+    if rc or fora:
+        return f"arquivo ignorado pelo git que não se refaz ({fora[0] if fora else 'git'})"
     rc, remotos = _git(pasta, "branch", "-r", "--contains", "HEAD")
     if rc or not remotos.strip():
         return "último commit não está no GitHub"
+    if (pasta / ".git").is_dir():  # clone avulso: os outros ramos e o stash dele somem junto com a pasta
+        # (numa worktree eles ficam no repositório principal, que não é tocado)
+        rc, sem_envio = _git(pasta, "log", "--branches", "--not", "--remotes", "--oneline")
+        if rc or sem_envio.strip():
+            return "algum ramo tem commit que não está no GitHub"
+        rc, guardado = _git(pasta, "stash", "list")
+        if rc or guardado.strip():
+            return "tem stash"
     if mexida_recente(pasta, agora - PARADO_H * 3600):
         return f"mexida nas últimas {PARADO_H} h"
     return ""
@@ -502,9 +516,12 @@ def projeto_parado(pasta: Path, agora: float | None = None) -> str:
 
 def remover_projeto(pasta: Path) -> None:
     git = pasta / ".git"
-    if git.is_file():  # worktree: o repositório principal esquece dela também
+    if git.is_file():  # worktree: sai pelo git (uma travada com `worktree lock` ele recusa, e ela fica)
         principal = Path(git.read_text().split("gitdir:", 1)[-1].strip()).parents[1]
-        _git(principal.parent if principal.name == ".git" else principal, "worktree", "remove", "--force", str(pasta))
+        rc, _ = _git(principal.parent if principal.name == ".git" else principal, "worktree", "remove", "--force",
+                     str(pasta))
+        if rc:
+            return
     if pasta.exists():
         shutil.rmtree(pasta, ignore_errors=True)
 
@@ -526,7 +543,7 @@ def limpar_cache_tmp(raiz: Path = Path("/tmp"), agora: float | None = None) -> i
     n = 0
     for p in alvos:
         try:
-            if p.lstat().st_mtime < limite:
+            if p.lstat().st_mtime < limite and not (p.is_dir() and mexida_recente(p, limite)):
                 shutil.rmtree(p, ignore_errors=True) if p.is_dir() and not p.is_symlink() else p.unlink()
                 n += 1
         except OSError:

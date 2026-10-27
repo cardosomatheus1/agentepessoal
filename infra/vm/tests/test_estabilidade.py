@@ -180,14 +180,31 @@ def main() -> int:
     (principal / "a.txt").write_text("a")
     (principal / ".gitignore").write_text("node_modules/\n")
     g("add", ".", cwd=principal); g("commit", "-qm", "a", cwd=principal); g("push", "-q", "origin", "HEAD:master", cwd=principal)
-    for nome in ("velha-limpa", "velha-suja", "velha-sem-push", "recente"):
+    for nome in ("velha-limpa", "velha-suja", "velha-sem-push", "recente", "velha-env", "velha-outro-ramo"):
         g("worktree", "add", "-q", "-b", nome, str(proj / nome), "master", cwd=principal)
         g("config", "commit.gpgsign", "false", cwd=proj / nome)
     (proj / "velha-suja" / "a.txt").write_text("mudou")
     (proj / "velha-sem-push" / "b.txt").write_text("b")
     g("add", ".", cwd=proj / "velha-sem-push"); g("commit", "-qm", "b", cwd=proj / "velha-sem-push")
+    (proj / "velha-env" / ".gitignore").write_text("node_modules/\n.env\n")
+    g("add", ".", cwd=proj / "velha-env"); g("commit", "-qm", "ign", cwd=proj / "velha-env")
+    g("push", "-q", "origin", "velha-env", cwd=proj / "velha-env")
+    (proj / "velha-env" / ".env").write_text("SEGREDO=1")
+    g("branch", "lateral", cwd=proj / "velha-outro-ramo")
+    (proj / "velha-outro-ramo" / "c.txt").write_text("c")
+    g("checkout", "-q", "lateral", cwd=proj / "velha-outro-ramo")
+    g("add", ".", cwd=proj / "velha-outro-ramo"); g("commit", "-qm", "c", cwd=proj / "velha-outro-ramo")
+    g("checkout", "-q", "velha-outro-ramo", cwd=proj / "velha-outro-ramo")
     (proj / "velha-limpa" / "node_modules").mkdir()
     (proj / "velha-limpa" / "node_modules" / "x").write_text("x")
+    avulso = proj / "clone-avulso"  # clone (não worktree) com um ramo local não enviado: fica
+    g("clone", "-q", str(remoto), str(avulso))
+    for k, v in (("user.email", "t@t"), ("user.name", "t"), ("commit.gpgsign", "false")):
+        g("config", k, v, cwd=avulso)
+    g("checkout", "-q", "-b", "so-local", cwd=avulso)
+    (avulso / "d.txt").write_text("d")
+    g("add", ".", cwd=avulso); g("commit", "-qm", "d", cwd=avulso)
+    g("checkout", "-q", "master", cwd=avulso)
     velho = _t.time() - 3 * 86400
     for raiz, dirs, arqs in os.walk(proj):
         for n in dirs + arqs:
@@ -195,11 +212,14 @@ def main() -> int:
     (proj / "recente" / "a.txt").write_text("a")  # mexida agora (mesmo conteúdo: git limpo)
     motivos = {p.name: e.projeto_parado(p) for p in proj.iterdir()}
     checa(motivos == {"erp-saas": "principal", "velha-limpa": "", "velha-suja": "tem mudança ou arquivo novo",
-                      "velha-sem-push": "último commit não está no GitHub", "recente": "mexida nas últimas 24 h"},
+                      "velha-sem-push": "último commit não está no GitHub", "recente": "mexida nas últimas 24 h",
+                      "velha-env": "arquivo ignorado pelo git que não se refaz (.env)",
+                      "velha-outro-ramo": "", "clone-avulso": "algum ramo tem commit que não está no GitHub"},
           f"projeto_parado: {motivos}")
     tirados = e.limpar_projetos(proj)
     lista = subprocess.run(["git", "-C", str(principal), "worktree", "list"], capture_output=True, text=True).stdout
-    checa(tirados == ["velha-limpa"] and not (proj / "velha-limpa").exists() and "velha-limpa" not in lista
+    checa(tirados == ["velha-limpa", "velha-outro-ramo"] and not (proj / "velha-limpa").exists()
+          and "lateral" in subprocess.run(["git", "-C", str(principal), "branch"], capture_output=True, text=True).stdout and "velha-limpa" not in lista
           and (proj / "velha-suja").exists() and (proj / "velha-sem-push").exists(),
           f"limpar_projetos tira só a limpa, parada e no GitHub: {tirados} / {lista}")
     tmp = base / "tmp"
@@ -207,10 +227,14 @@ def main() -> int:
     (tmp / "jest_rt" / "novo").mkdir()
     (tmp / "tmpvelho").mkdir()
     (tmp / "outra-coisa").mkdir()
-    for p in (tmp / "jest_rt" / "antigo", tmp / "tmpvelho", tmp / "outra-coisa"):
+    (tmp / "tmpvivo").mkdir()
+    (tmp / "tmpvivo" / "em-uso").write_text("x")  # pasta antiga com arquivo mexido agora: fica
+    for p in (tmp / "jest_rt" / "antigo", tmp / "tmpvelho", tmp / "outra-coisa", tmp / "tmpvivo"):
         os.utime(p, (velho, velho))
     checa(e.limpar_cache_tmp(tmp) == 2 and (tmp / "jest_rt" / "novo").exists() and (tmp / "outra-coisa").exists()
-          and not (tmp / "tmpvelho").exists(), "cache: só jest_rt e tmp* antigos")
+          and not (tmp / "tmpvelho").exists() and (tmp / "tmpvivo").exists(), "cache: só jest_rt e tmp* antigos")
+    imgs_a0 = [{"ref": "agent0ai/agent-zero:v2.13", "id": "sha:a0", "criada": "2026-09-01"}]
+    checa(e.imagens_a_remover(imgs_a0, em_uso=set()) == [], "a imagem do A0 (base da cópia de teste) nunca sai")
 
     print(f"TESTES {'ok' if not falhas else 'FALHOU'}")
     for f in falhas:
