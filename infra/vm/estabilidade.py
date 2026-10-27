@@ -514,23 +514,23 @@ def projeto_parado(pasta: Path, agora: float | None = None) -> str:
     return ""
 
 
-def remover_projeto(pasta: Path) -> None:
+def remover_projeto(pasta: Path) -> bool:
     git = pasta / ".git"
     if git.is_file():  # worktree: sai pelo git (uma travada com `worktree lock` ele recusa, e ela fica)
         principal = Path(git.read_text().split("gitdir:", 1)[-1].strip()).parents[1]
         rc, _ = _git(principal.parent if principal.name == ".git" else principal, "worktree", "remove", "--force",
                      str(pasta))
         if rc:
-            return
+            return False
     if pasta.exists():
         shutil.rmtree(pasta, ignore_errors=True)
+    return not pasta.exists()
 
 
 def limpar_projetos(raiz: Path = PROJETOS, agora: float | None = None) -> list[str]:
     tirados = []
     for pasta in sorted(p for p in raiz.iterdir() if p.is_dir()) if raiz.is_dir() else []:
-        if not projeto_parado(pasta, agora):
-            remover_projeto(pasta)
+        if not projeto_parado(pasta, agora) and remover_projeto(pasta):
             tirados.append(pasta.name)
     return tirados
 
