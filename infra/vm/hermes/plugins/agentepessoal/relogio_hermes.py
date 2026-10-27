@@ -33,6 +33,7 @@ TRAVA = Path("/opt/data/agentepessoal/relogio.lock")  # um relógio por containe
 INTERVALO = 60
 TAREFAS = (
     ("conteudo", "_46_publicar_conteudo.py"),
+    ("conteudo", "_49_metricas_dia.py"),  # 27/10: seguidores e números do dia, para ter histórico
     ("central", "_45_conferencia.py"),
     ("painel", "_47_painel.py"),
     ("whatsapp", "_58_reenviar_saida.py"),

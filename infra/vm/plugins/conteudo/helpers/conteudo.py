@@ -1095,6 +1095,53 @@ def desempenho(api, dias: int = 7, agora: float | None = None) -> dict:
     return {"ok": True, "dias": int(dias), "posts": posts, "total": total, "seguidores": conta.get("followers_count")}
 
 
+METRICAS_DIA = "metricas_diarias.jsonl"
+HORA_METRICAS = "23:30"  # the day's numbers are kept once, near the end of the day (local time)
+
+
+def metricas_do_dia(api, agora: float | None = None) -> dict | None:
+    """Keeps the account's numbers once a day (25/10: "Quantos seguidores ganhei?" — only the current total existed, so
+    there was no way to say how many came per day). One line per local date: followers, posts, and the day's posts'
+    reach/likes/comments/saves/shares/views. None when today is already kept or it is not the hour yet. Read only on
+    the Meta side."""
+    agora = time.time() if agora is None else agora
+    momento = dt.datetime.fromtimestamp(agora, _tz())
+    hoje = momento.date().isoformat()
+    if momento.strftime("%H:%M") < HORA_METRICAS:
+        return None
+    arq = PASTA / METRICAS_DIA
+    if any(l.get("data") == hoje for l in historico_metricas(400)["dias"]):
+        return None
+    r = desempenho(api, 1, agora)
+    if not r.get("ok"):
+        return {"ok": False, "erro": r.get("erro")}
+    conta = api.get(api.ig, {"fields": "followers_count,follows_count,media_count"}) or {}
+    linha = {"data": hoje, "em": agora, "seguidores": conta.get("followers_count", r.get("seguidores")),
+             "seguindo": conta.get("follows_count"), "posts": conta.get("media_count"),
+             "posts_do_dia": len(r["posts"]), **{k: r["total"].get(k, 0) for k in METRICAS}}
+    PASTA.mkdir(parents=True, exist_ok=True)
+    with open(arq, "a", encoding="utf-8") as f:
+        f.write(json.dumps(linha, ensure_ascii=False) + "\n")
+    return {"ok": True, **linha}
+
+
+def historico_metricas(dias: int = 30) -> dict:
+    """The kept days (newest last) with the follower change against the day before."""
+    arq = PASTA / METRICAS_DIA
+    linhas = []
+    if arq.exists():
+        for l in arq.read_text(encoding="utf-8").splitlines():
+            try:
+                linhas.append(json.loads(l))
+            except ValueError:
+                continue
+    linhas = linhas[-max(1, int(dias)):]
+    for antes, depois in zip([None] + linhas, linhas):
+        if antes and isinstance(antes.get("seguidores"), int) and isinstance(depois.get("seguidores"), int):
+            depois["ganhou_seguidores"] = depois["seguidores"] - antes["seguidores"]
+    return {"ok": True, "dias": linhas, "desde": linhas[0]["data"] if linhas else None}
+
+
 def baixar_post(data: str = "", url=None, baixar=None, agora: float | None = None) -> dict:
     """The files of the day's post, downloaded to /a0/usr/conteudo/cache/<id>/ so the agent can send them to Matheus
     (15/10: asked for today's carousel, the agent looked for local files that only exist in S3 and said "não achei").

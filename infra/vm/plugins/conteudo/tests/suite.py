@@ -246,6 +246,30 @@ class Suite:
         r = c.antecipar("outro-feed", "Poste agora", agora=agora)
         ok(not r["ok"] and "um por dia" in r["erro"], f"hoje já tem post: recusa ({r})")
 
+    def t_metricas_do_dia(self):
+        c = _modulo()
+
+        class ApiConta(ApiFalsa):
+            def __init__(self, seguidores):
+                super().__init__()
+                self.seg = seguidores
+
+            def get(self, caminho, params):
+                if params.get("fields", "").startswith("followers_count"):
+                    return {"followers_count": self.seg, "follows_count": 40, "media_count": 25}
+                if caminho.endswith("/media"):
+                    return {"data": []}
+                return super().get(caminho, params)
+
+        ok(c.metricas_do_dia(ApiConta(90), _ts(c, "2026-10-14", "20:00")) is None, "antes das 23:30, nada")
+        r = c.metricas_do_dia(ApiConta(90), _ts(c, "2026-10-14", "23:40"))
+        ok(r and r["ok"] and r["seguidores"] == 90 and r["seguindo"] == 40, f"guarda o dia: {r}")
+        ok(c.metricas_do_dia(ApiConta(95), _ts(c, "2026-10-14", "23:50")) is None, "uma vez por dia")
+        c.metricas_do_dia(ApiConta(97), _ts(c, "2026-10-15", "23:40"))
+        h = c.historico_metricas(30)
+        ok([d["data"] for d in h["dias"]] == ["2026-10-14", "2026-10-15"] and h["dias"][1]["ganhou_seguidores"] == 7,
+           f"histórico com o ganho do dia: {h}")
+
     def t_ensaio_do_hermes_nao_publica(self):
         import io
         import urllib.request

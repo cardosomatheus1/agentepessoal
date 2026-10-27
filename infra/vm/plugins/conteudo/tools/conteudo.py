@@ -60,6 +60,8 @@ class Conteudo(Tool):
                                                              quem="matheus (pela conversa)"))
         elif acao == "semana":
             r = _semana().ver(str(kwargs.get("semana") or ""))
+        elif acao == "historico":
+            r = c.historico_metricas(_dias(dias, 30))
         elif acao == "antecipar_post":
             r = c.antecipar(str(kwargs.get("id") or ""), str(kwargs.get("motivo") or ""), quem="matheus (pela conversa)")
         elif acao == "liberar_post":
