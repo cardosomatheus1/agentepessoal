@@ -1956,6 +1956,30 @@ class Suite:
         p.salvar(LOGIN, d)
         eq(p.limites(p.carregar(LOGIN))["aquecer"], p.LIMITE_DIA["aquecer"], "depois de 7 dias, limite cheio")
 
+    def t_limites_por_ordem_dele(self):
+        p = self.p
+        d = p.carregar(LOGIN)
+        d["config"]["inicio"] = p.agora() - 30 * 86400
+        p.salvar(LOGIN, d)
+        antes = p.limites(p.carregar(LOGIN))
+        lim = p.definir_limites(LOGIN, {"aquecer": "15", "primeira": 5})  # 26/10: "aquecer pra 15, primeira mensagem 5"
+        eq((lim["aquecer"], lim["dm_abertura"]), (15, 5), "o que ele pediu muda")
+        eq({k: v for k, v in lim.items() if k not in ("aquecer", "dm_abertura")},
+           {k: v for k, v in antes.items() if k not in ("aquecer", "dm_abertura")}, "o resto mantém")
+        ids = [self._lead(f"lim{i}") for i in range(17)]
+        r = p.propor(LOGIN, [{"lead_id": i, "tipo": "aquecer", "texto": ""} for i in ids])
+        eq(len(r["propostas"]), 15, "as rodadas respeitam o limite novo")
+        for errado in ({"aquecer": p.LIMITE_DIA["aquecer"] + 1}, {"curtidas_extras": 3}, {"aquecer": "muito"}):
+            try:
+                p.definir_limites(LOGIN, errado)
+                ok(False, f"recusado: {errado}")
+            except ValueError:
+                pass
+        eq(p.limites(p.carregar(LOGIN))["aquecer"], 15, "pedido recusado não mexe em nada")
+        hist = p.carregar(LOGIN)["config"]["limites_historico"]
+        ok(hist[-1]["para"] == {"aquecer": 15, "dm_abertura": 5} and hist[-1]["por"], "fica registrado quem mudou")
+        eq(p.definir_limites(LOGIN, {})["aquecer"], antes["aquecer"], "\"padrao\" volta à rampa automática")
+
     def t_propostas_pendentes_contam_na_cota(self):
         p = self.p
         m = p.LIMITE_PILOTO["aquecer"] // 2 + 2

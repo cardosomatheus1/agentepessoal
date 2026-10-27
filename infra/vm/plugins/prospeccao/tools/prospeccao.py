@@ -4,6 +4,7 @@ report back; plus stages and numbers."""
 import asyncio
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -575,6 +576,16 @@ class Prospeccao(Tool):
         if acao == "variante":  # A/B decided with the numbers, after the person agrees ("" = alternate again)
             v = await asyncio.to_thread(p.definir_variante, login, texto)
             return r(f"Primeira mensagem: só a variante {v} daqui em diante." if v else "Primeira mensagem: alternando A e B de novo.")
+        if acao == "limites":  # only on the person's order: "aquecer=15 primeira=5"; "padrao" = automatic ramp again
+            pares = dict(re.findall(r"([A-Za-z_ çãéí]+?)\s*[=:]\s*(\d+)", str(texto or "")))
+            if not pares and str(texto or "").strip().lower() not in ("padrao", "padrão", "automatico", "automático"):
+                return r(f"Limites de hoje: {p.limites(p.carregar(login))}. Para mudar: `texto` \"aquecer=15 dm_abertura=5\" "
+                         "(só os que ele pediu) ou \"padrao\" para voltar à rampa automática.")
+            try:
+                lim = await asyncio.to_thread(p.definir_limites, login, {k.strip(): v for k, v in pares.items()})
+            except ValueError as exc:
+                return r(f"Não mudei nada: {exc}")
+            return r(f"Limites por dia em vigor: {lim}. Cotas de hoje: {p.cotas(login)}.")
         if acao in ("assumir", "devolver"):  # he talks to this @ himself / hands it back to the rounds
             lead = await asyncio.to_thread(p.assumir_lead if acao == "assumir" else p.devolver_lead, login, lead_id)
             if not lead:

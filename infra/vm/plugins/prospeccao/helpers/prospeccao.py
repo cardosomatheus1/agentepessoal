@@ -1842,6 +1842,43 @@ def limites(d: dict) -> dict:
     return base
 
 
+NOMES_LIMITE = {"aquecer": "aquecer", "aquecimento": "aquecer", "curtir": "aquecer", "dm_abertura": "dm_abertura",
+                "primeira": "dm_abertura", "primeira_mensagem": "dm_abertura", "abertura": "dm_abertura",
+                "dm_lembrete": "dm_lembrete", "lembrete": "dm_lembrete", "resposta": "resposta", "respostas": "resposta",
+                "parceiro": "parceiro", "parceiros": "parceiro", "seguimento": "seguimento"}
+
+
+@_transacao
+def definir_limites(login: str, novos: dict) -> dict:
+    """The person's own daily limits (26/10: "Vamos reduzir aquecer pra 15, primeira mensagem 5, o resto mantem": the
+    agent had no way to apply it and nobody did). Only what he names changes; a value goes from 0 up to the
+    playbook's ceiling (LIMITE_DIA), never above it (the account's safety). {} goes back to the automatic ramp.
+    Returns the limits in force. Each change is kept in config["limites_historico"] with who made it."""
+    d = carregar(login)
+    antes = dict(d["config"].get("limites") or {})
+    if not novos:
+        d["config"].pop("limites", None)
+        depois = {}
+    else:
+        depois = dict(antes)
+        for nome, valor in novos.items():
+            tipo = NOMES_LIMITE.get(str(nome).strip().lower().replace(" ", "_"))
+            if not tipo:
+                raise ValueError(f"limite desconhecido: {nome!r} (vale: {', '.join(TIPOS)})")
+            try:
+                n = int(valor)
+            except (TypeError, ValueError):
+                raise ValueError(f"{nome}: {valor!r} não é um número") from None
+            if not 0 <= n <= LIMITE_DIA[tipo]:
+                raise ValueError(f"{tipo}: {n} fora do permitido (0 a {LIMITE_DIA[tipo]}, o teto do playbook)")
+            depois[tipo] = n
+        d["config"]["limites"] = depois
+    d["config"]["limites_historico"] = ((d["config"].get("limites_historico") or [])
+                                        + [{"em": agora(), "de": antes, "para": depois, "por": AUTOR["quem"]}])[-20:]
+    salvar(login, d)
+    return limites(d)
+
+
 def _usadas_hoje(d: dict, tipo: str) -> int:
     hoje = _hoje_local()
     return sum(1 for a in d["acoes"] if a["tipo"] == tipo and a["estado"] in ("proposta", "aprovada", "executada")

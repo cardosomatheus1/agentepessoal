@@ -34,6 +34,7 @@ Prospecção de clientes da Raiz Connect, um a um, pela conta @raiz.connect. Tud
 - "apagada": `acao_id`, `detalhe` → uma mensagem nossa foi apagada por ordem do Matheus: ela deixa de contar
 - "importar_lista": `arquivo` (.json com nome novo em /a0/usr/prospeccao/) → põe a lista de empresas na fila; depois "fontes" transforma em leads
 - "variante": `texto` "A" ou "B" fixa a variante da 1ª mensagem (só com o OK do Matheus); vazio volta ao sorteio
+- "limites": `texto` "aquecer=15 dm_abertura=5" muda os limites por dia (só os que o Matheus pediu; o resto fica como está). **Ordem dele sobre limites você aplica na hora com esta ação, sem mandar para o operador.** Nunca acima do teto do playbook (a ferramenta recusa). Vazio mostra os de hoje; "padrao" volta à rampa automática
 - "token_meta": lê o token da Meta da aba aberta e guarda no cofre (o valor nunca passa por você)
 - "hoje": o resumo do dia (ou "NADA HOJE")
 - "temas": a revisão semanal dos temas da primeira mensagem (foco, pausados, números)
