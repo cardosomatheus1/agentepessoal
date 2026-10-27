@@ -68,6 +68,16 @@ class Suite:
         eq(m.executar(LOGIN, "listar"), "Nenhum monitor ativo.", "lista vazia")
         ok(not list(m.PASTA.glob(".*.tmp")), "nenhum temporário largado")
 
+    def t_marcar_avisados(self):
+        m = self.m
+        mid = m.executar(LOGIN, "criar", "gmail", "fatura", "me avisar").split()[1]
+        ok("2 id(s) marcado" in m.executar(LOGIN, "marcar", id="msg1, msg2"), "marca os ids tratados")
+        ok("1 id(s) marcado(s) como avisados (1 já" in m.executar(LOGIN, "marcar", id="msg2 msg3"), "não duplica")
+        av = m.executar(LOGIN, "avisados")
+        ok(all(x in av for x in ("msg1", "msg2", "msg3")), f"lista os avisados: {av}")
+        ok(mid in m.executar(LOGIN, "listar"), "os monitores ficam como estavam")
+        ok("Diga em `id`" in m.executar(LOGIN, "marcar"), "sem ids, pede")
+
     def t_arquivo_ilegivel_nao_apaga_monitores(self):
         m = self.m
         m.executar(LOGIN, "criar", "gmail", "boleto da escola", "me avisar")

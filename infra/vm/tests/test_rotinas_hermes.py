@@ -102,6 +102,17 @@ c = rh.contexto(session_id=sess, is_first_turn=True)["context"]
 checa("LER → ENTENDER → AGIR" in c and "SEM NOVIDADE" in c and "PRECISA DE VOCÊ:" in c and "🔎 Radar e fios soltos" in c
       and str(rh.CHECKPOINTS / "HL76nfIg" / "contexto.md") in c and "whatsapp_enviar" in c, "bloco de tarefa agendada do A0")
 checa("Não repita o fio do PayGo" in c, "as correções aprovadas pelo Matheus entram na rodada")
+import glob as _glob, re as _re
+for _f in _glob.glob(str(Path(__file__).resolve().parents[1] / "hermes" / "rotinas" / "*.json")):
+    _t = json.loads(Path(_f).read_text()).get("pedido", "")
+    for _m in _re.finditer(r"write_file|patch", _t):
+        checa("/a0/usr/" not in _t[max(0, _m.start() - 200):_m.end() + 60],
+              f"{Path(_f).name}: rotina não manda gravar em /a0/usr com write_file/patch (o Hermes recusa; 27/10)")
+ck = rh.CHECKPOINTS / "HL76nfIg" / "contexto.md"
+checa(ck.exists() and "primeira rodada" in ck.read_text(), "a 1ª rodada já encontra o checkpoint para ler (27/10)")
+ck.write_text("visto: x")
+rh.contexto(session_id=sess, is_first_turn=True)
+checa(ck.read_text() == "visto: x", "checkpoint que já existe não é tocado")
 checa(rh.contexto(session_id="api-123", is_first_turn=True) is None and rh.contexto(session_id=sess) is None,
       "só no 1º turno de uma rodada do cron")
 rh.entregar(session_id=sess, assistant_response="Achei 2 e-mails novos do PayGo.", user_message="pedido")

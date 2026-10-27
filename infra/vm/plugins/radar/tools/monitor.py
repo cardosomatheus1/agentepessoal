@@ -106,6 +106,19 @@ def executar(login: str, acao: str = "listar", fonte: str = "", condicao: str = 
             dados["monitores"] = [m for m in dados["monitores"] if m.get("id") != id]
             removido = len(dados["monitores"]) < antes
         return "Removido." if removido else f"Não achei o monitor {id}."
+    if acao in ("marcar", "avisado", "avisados_marcar"):
+        # 27/10: the Radar round wrote "avisados" with write_file/patch, which the Hermes refuses outside /opt/data: the
+        # handled ids were never kept and the same e-mail could be told again. Now it goes through here.
+        ids = [x for x in re.split(r"[\s,;]+", str(id or "")) if x][:200]
+        if not ids:
+            return "Diga em `id` os ids de e-mail/evento já tratados (separados por vírgula)."
+        with mudar(login) as dados:
+            novos = [x for x in ids if x not in dados["avisados"]]
+            dados["avisados"].extend(novos)
+        return f"{len(novos)} id(s) marcado(s) como avisados ({len(ids) - len(novos)} já estavam)."
+    if acao == "avisados":
+        av = carregar(login)["avisados"]
+        return ("Avisados (últimos 100): " + ", ".join(av[-100:])) if av else "Nenhum id avisado ainda."
     lista = carregar(login)["monitores"]
     if not lista:
         return "Nenhum monitor ativo."

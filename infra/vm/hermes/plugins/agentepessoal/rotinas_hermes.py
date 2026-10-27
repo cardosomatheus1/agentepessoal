@@ -126,11 +126,15 @@ def contexto(session_id="", task_id="", is_first_turn=False, **kw):
         return None
     r = rotina(job)
     pasta = CHECKPOINTS / (r["a0"] or job)
+    arq = pasta / "contexto.md"
     try:
         pasta.mkdir(parents=True, exist_ok=True)
+        if not arq.exists():  # 27/10: a 1ª rodada lia um arquivo que não existia ("File not found") e perdia passos
+            arq.write_text(f"# Checkpoint da rotina {r['nome']}\n\n(primeira rodada: nada registrado ainda)\n",
+                           encoding="utf-8")
     except OSError:
         pass
-    texto = TAREFA.format(nome=r["nome"], checkpoint=pasta / "contexto.md")
+    texto = TAREFA.format(nome=r["nome"], checkpoint=arq)
     extra = correcoes(r["a0"])
     return {"context": texto + (f"\n\n{extra}" if extra else "")}
 

@@ -1,6 +1,6 @@
 ### monitor
 Guarda um monitor de evento para o Radar conferir em cada rodada (5 por dia): "me avise quando chegar e-mail do contador", "se mudar a reunião de sexta", "quando aparecer fatura da Vivo".
-- `acao`: "criar" | "listar" | "remover"
+- `acao`: "criar" | "listar" | "remover" | "marcar" (o Radar guarda ids de e-mail/evento já tratados: `id` = ids separados por vírgula) | "avisados" (os ids já tratados)
 - `fonte`: "gmail" ou "agenda"
 - `condicao`: o que procurar, bem concreto (remetente, assunto, palavra, evento)
 - `o_que_fazer`: o que fazer quando achar (padrão: avisar com resumo; nunca envia nem altera nada sozinho)
