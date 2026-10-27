@@ -53,3 +53,9 @@ plugins:
   enabled:
     - agentepessoal           # as nossas ferramentas (infra/vm/hermes/plugins/agentepessoal)
   load_timeout_seconds: 60    # 35 ferramentas carregando os helpers grandes (prospecção) na subida
+# 27/10: vídeo com narração + Crítico passa de 7 min; com o padrão (420 s) a ferramenta `conteudo` morreu 5 vezes em
+# 26/10 no meio da geração que o Matheus pediu.
+timeouts:
+  tools:
+    sequential_call: 1200
+    concurrent_batch: 1200

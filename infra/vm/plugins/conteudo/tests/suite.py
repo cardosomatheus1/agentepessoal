@@ -215,6 +215,37 @@ class Suite:
         ok(not c.agendar([dict(CARR, id="v", data="2026-10-23", arquivos=["conteudo/a.png", "conteudo/b.png"])], agora)["ok"],
            "carrossel só com .jpg")
 
+    def t_story_que_chama_o_post_espera_o_post(self):
+        c = _modulo()
+        chama = {"id": "dom-chama", "ficha": FICHA, "data": "2026-10-14", "hora": "09:00", "tipo": "STORY",
+                 "arquivos": ["conteudo/stories/chama.jpg"], "legenda": "dom: chama o Reel expectativa x realidade"}
+        ok(c.agendar([ITEM, chama], _ts(c, "2026-10-13", "10:00"))["ok"], "post 11:45 e story que chama o post 9:00")
+        ok(c.chama_post(chama) and not c.chama_post(dict(chama, legenda="bastidor da cozinha")), "reconhece o story que chama")
+        ok(c.devido(_ts(c, "2026-10-14", "09:05")) is None, "às 9h o story que chama o Reel não sai antes do Reel")
+        api = ApiFalsa()
+        r = c.rodar(api, lambda t: None, _ts(c, "2026-10-14", "11:46"))
+        ok(r and r["id"] == "seg-pov" and r["estado"] == "publicada", f"o post sai na hora dele: {r}")
+        ok((c.devido(_ts(c, "2026-10-14", "11:50")) or {}).get("id") == "dom-chama", "depois do post, o story sai")
+        c2 = _modulo()
+        so = dict(chama, id="so-story", data="2026-10-16")
+        ok(c2.agendar([so], _ts(c2, "2026-10-13", "10:00"))["ok"], "dia só com story")
+        ok((c2.devido(_ts(c2, "2026-10-16", "09:05")) or {}).get("id") == "so-story", "sem post no dia, sai na hora")
+
+    def t_antecipar_por_ordem_dele(self):
+        c = _modulo()
+        ok(c.agendar([dict(ITEM, data="2026-10-16")], _ts(c, "2026-10-13", "10:00"))["ok"], "Reel agendado para o dia 16")
+        agora = _ts(c, "2026-10-14", "09:20")
+        ok(not c.antecipar("seg-pov", "", agora=agora)["ok"], "sem as palavras dele, não")
+        r = c.antecipar("seg-pov", "Poste agora", agora=agora)
+        ok(r["ok"] and (r["data"], r["hora"]) == ("2026-10-14", "09:20"), f"vai para agora: {r}")
+        ok((c.devido(_ts(c, "2026-10-14", "09:21")) or {}).get("id") == "seg-pov", "a rotina publica na próxima passada")
+        it = next(i for i in c.carregar()["itens"] if i["id"] == "seg-pov")
+        ok(it["antecipado"]["de"] == {"data": "2026-10-16", "hora": "11:45"} and "Poste agora" in it["antecipado"]["motivo"],
+           "fica registrado de onde veio e por quê")
+        ok(c.agendar([dict(CARR, id="outro-feed", data="2026-10-15")], agora)["ok"], "outro post para amanhã")
+        r = c.antecipar("outro-feed", "Poste agora", agora=agora)
+        ok(not r["ok"] and "um por dia" in r["erro"], f"hoje já tem post: recusa ({r})")
+
     def t_ensaio_do_hermes_nao_publica(self):
         import io
         import urllib.request

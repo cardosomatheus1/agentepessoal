@@ -79,6 +79,8 @@ checa(modo_env and modo_env.group(1).startswith("-e AGENTEPESSOAL_RELOGIO=1 --ad
       "relógio só na virada; até lá o ensaio (nada ao celular nem à Meta)")
 checa(sh.index("HERMES_A0_RODANDO") < sh.index("docker run") and "VIRADA=1" in sh,
       "na virada o Hermes não sobe com o A0 rodando (mesmo perfil do navegador e mesmas rotinas)")
+checa(((cfg.get("timeouts") or {}).get("tools") or {}).get("sequential_call", 0) >= 1200,
+      "ferramenta longa (vídeo com narração) tem 20 min, não os 7 do padrão (27/10)")
 checa("/a0/usr/skills" not in str((cfg.get("skills") or {}).get("external_dirs") or ""),
       "o Hermes não lê as skills vivas do A0 (mandam usar ferramentas de lá; e external_dirs é só leitura para o curador)")
 nav = (H / "navegador.sh").read_text()

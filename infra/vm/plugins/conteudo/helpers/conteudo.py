@@ -397,17 +397,30 @@ def trocar_formato(item_id: str, tipo: str, arquivos: list, capa: str = "", agor
     return {"ok": True, "id": item_id, "tipo": tipo, "arquivos": novo["arquivos"], "backup": str(copia)}
 
 
+CHAMA_POST = re.compile(r"\bchama (o|a|pro|pra|para o|para a)\b|video-novo|post-novo", re.I)
+
+
+def chama_post(it: dict) -> bool:
+    """A story that sends people to the day's feed post ("chama o Reel", kit layouts video-novo/post-novo)."""
+    return canal(it) == "story" and bool(CHAMA_POST.search(
+        f"{it.get('legenda') or ''} {json.dumps(it.get('ficha') or {}, ensure_ascii=False)}"))
+
+
 def devido(agora: float | None = None) -> dict | None:
     """Today's post (or story) when its hour has come, unless one of the same slot was already published or
-    attempted today."""
+    attempted today. 27/10: a story that calls the day's feed post waits until that post is out (25/10 the 9:00 story
+    "chama o Reel expectativa" went out while the Reel was only due at 11:45)."""
     agora = time.time() if agora is None else agora
     momento = dt.datetime.fromtimestamp(agora, _tz())
     hoje, hora = momento.date().isoformat(), momento.strftime("%H:%M")
     d = carregar()
     do_dia = [i for i in d["itens"] if i["data"] == hoje]
     feitos = {canal(i) for i in do_dia if i["estado"] in ("publicando", "publicada", "incerta")}
+    feed_do_dia = [i for i in do_dia if canal(i) == "feed" and i["estado"] != "cancelada"]
+    feed_saiu = any(i["estado"] in ("publicada", "incerta") for i in feed_do_dia)
     return next((i for i in sorted(do_dia, key=lambda i: i["hora"])
-                 if i["estado"] == "pendente" and i["hora"] <= hora and canal(i) not in feitos), None)
+                 if i["estado"] == "pendente" and i["hora"] <= hora and canal(i) not in feitos
+                 and not (chama_post(i) and feed_do_dia and not feed_saiu)), None)
 
 
 # ------------------------------------------------------------------ publishing
@@ -757,6 +770,41 @@ def liberar(item_id: str, motivo: str, quem: str = "matheus") -> dict:
     finally:
         AUTOR["quem"] = antes
     return {"ok": True, "id": item_id, "data": alvo["data"], "hora": alvo["hora"]}
+
+
+def antecipar(item_id: str, motivo: str, quem: str = "matheus", agora: float | None = None) -> dict:
+    """His "Poste agora" (25/10: "Poste agora" ... "Eu ja falei que quem decide sou eu", and the agent had no way): a
+    pending post goes to TODAY at THIS minute and the job loop publishes it on its next pass, through the same Crítico
+    gate. Only on his explicit word; refused when today's slot of the same kind (feed/story) is taken."""
+    if not str(motivo or "").strip():
+        return {"ok": False, "erro": "diga o motivo (o que o Matheus disse)"}
+    agora = time.time() if agora is None else agora
+    momento = dt.datetime.fromtimestamp(agora, _tz())
+    hoje, hora = momento.date().isoformat(), momento.strftime("%H:%M")
+    antes = AUTOR["quem"]
+    AUTOR["quem"] = f"{quem}: antecipou {item_id}"
+    try:
+        with _exclusivo():
+            d = carregar()
+            alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
+            if not alvo:
+                return {"ok": False, "erro": f"{item_id}: não existe"}
+            if alvo["estado"] != "pendente":
+                return {"ok": False, "erro": f"{item_id}: está {alvo['estado']} (só um post pendente vai para agora)"}
+            outro = next((i for i in d["itens"] if i is not alvo and i["data"] == hoje and canal(i) == canal(alvo)
+                          and i["estado"] not in ("cancelada", "falhou")), None)
+            if outro:
+                return {"ok": False, "erro": f"hoje já tem {canal(alvo)} ({outro['id']}, {outro['estado']}): "
+                                             "um por dia; o operador decide qual vai"}
+            de = {"data": alvo["data"], "hora": alvo["hora"]}
+            alvo["data"], alvo["hora"] = hoje, hora
+            alvo["antecipado"] = {"por": str(quem)[:80], "em": agora, "motivo": str(motivo)[:200], "de": de}
+            _diario({"item": item_id, "antecipado": alvo["antecipado"]})
+            _gravar(d)
+    finally:
+        AUTOR["quem"] = antes
+    return {"ok": True, "id": item_id, "data": hoje, "hora": hora,
+            "aviso": "a rotina publica na próxima passada (alguns minutos), depois do Crítico"}
 
 
 # ---- the advance check (22/10, Matheus: "Se o crítico rejeita, automáticamente deveria ser refeito, e não logo antes
