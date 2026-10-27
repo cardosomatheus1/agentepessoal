@@ -51,6 +51,7 @@ MOTORES = ("carrossel_raiz", "video_kit_raiz", "molde")
 EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿️‍]")
 TRACO = re.compile("[—–]")
 REAIS = re.compile(r"R\$\s?\d")
+SALVAR = re.compile(r"\bsalv(e|a|ar)\b", re.I)  # 26/10: "Salve para consultar depois." on a story, which cannot be saved
 EXEMPLO = re.compile(r"exemplo|valores ilustrativos|R\$ ?197\b|R\$ ?1\.697\b", re.I)
 
 
@@ -346,6 +347,8 @@ def regras_fixas(tipo: str, material) -> list[str]:
         motivos.append("tem travessão (regra fixa do AR Board: sem — nem –)")
     if tipo in ("post", "carrossel", "story", "reel") and REAIS.search(texto) and not EXEMPLO.search(texto):
         motivos.append('número em R$ sem "valores de exemplo"')
+    if tipo == "story" and SALVAR.search(texto):
+        motivos.append('pede para salvar, e story não se salva no Instagram (use "tira um print" ou "responde aqui")')
     return motivos
 
 
@@ -374,6 +377,10 @@ def criticar(tipo: str, material, *, login: str = "matheus") -> dict:
                    "\"narracao\" é a fala com os tempos. Confira: a tela mostra o que a narração diz naquele momento; nenhum "
                    "texto cortado, sobretudo no último quadro (a chamada); o que a legenda afirma aparece no vídeo. Julgue "
                    "pelo que vê e ouve aqui, não exija prova que não caberia num vídeo.")
+    if isinstance(material, dict) and material.get("post_do_dia"):
+        tarefa += ("\n\n## Story que chama o post do dia\n\"post_do_dia\" é o post do feed que este story manda ver. A manchete "
+                   "tem de falar do mesmo assunto dele: story que promete um assunto e leva a um post de outro é informação "
+                   "falsa (reprova, citando os dois). A imagem do story é a capa ou a tela desse post.")
     r = chamar("critico", tarefa, material, login=login)
     if r["erro"]:
         veredito = {"veredito": "reprova", "motivos": [f"o crítico não respondeu ({r['erro']})"], "sugestoes": []}
@@ -447,8 +454,13 @@ def ambiente_render(pasta: Path) -> dict:
     config.write_text("[profile voz]\nregion = us-east-1\ncredential_process = python3 -c \"import urllib.request; "
                       f"print(urllib.request.urlopen('{VOZ_CREDENCIAIS}', timeout=20).read().decode())\"\n",
                       encoding="utf-8")
-    return {**os.environ, "AWS_CONFIG_FILE": str(config), "AWS_PROFILE": "voz", "AWS_REGION": "us-east-1",
-            "AWS_SDK_LOAD_CONFIG": "1", "MOLDES_CACHE": os.environ.get("MOLDES_CACHE", "/a0/usr/conteudo/cache-moldes")}
+    # 27/10: in the Hermes the Bedrock endpoint points at our HTTP/1 proxy and fake keys are set; the voice (Nova
+    # Sonic, an HTTP/2 stream) inherited them and every Reel since 23/10 failed ("não leu a fala certa")
+    fora = {"AWS_ENDPOINT_URL", "AWS_ENDPOINT_URL_BEDROCK_RUNTIME", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY",
+            "AWS_SESSION_TOKEN"}
+    return {**{k: v for k, v in os.environ.items() if k not in fora}, "AWS_CONFIG_FILE": str(config),
+            "AWS_PROFILE": "voz", "AWS_REGION": "us-east-1", "AWS_SDK_LOAD_CONFIG": "1",
+            "MOLDES_CACHE": os.environ.get("MOLDES_CACHE", "/a0/usr/conteudo/cache-moldes")}
 
 
 def _pasta_saida() -> Path:
@@ -485,8 +497,10 @@ def renderizar_molde(molde: str, formato: str, ficha: dict, previa: bool = False
         return [], "o molde recusou a ficha: " + (r.stderr or r.stdout).strip()[-300:]
     if r.returncode == 3:
         return arquivos, "a conferência do render achou problemas: " + (r.stdout or "").strip()[-300:]
-    if r.returncode != 0:
-        return [], f"o render falhou (código {r.returncode}): " + (r.stderr or "").strip()[-300:]
+    if r.returncode != 0:  # the exception's own line, not the traceback's tail (27/10: the failing fala was cut off)
+        linhas = [x for x in (r.stderr or "").strip().splitlines() if x.strip()]
+        erro = next((x for x in reversed(linhas) if re.match(r"\w+(Error|Exception)\b", x)), linhas[-1] if linhas else "")
+        return [], f"o render falhou (código {r.returncode}): " + erro.strip()[:400]
     return arquivos, ""
 
 

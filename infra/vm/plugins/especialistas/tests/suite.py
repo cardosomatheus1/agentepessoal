@@ -227,6 +227,15 @@ class Suite:
         eq(m.criticar("carrossel", {"slides": ["Custo do prato: R$ 12,40", "valores de exemplo"]})["veredito"],
            "aprova", "com valores de exemplo passa")
         eq(m.criticar("oferta", "Programa por R$ 197/mês")["veredito"], "aprova", "oferta com preço real passa")
+        # 26/10: "Salve para consultar depois." on a story (a story cannot be saved); fine on a feed post
+        c = m.criticar("story", {"legenda": "3 pontos do caixa", "chamada": "Salve para consultar depois."})
+        ok(c["veredito"] == "reprova" and "story não se salva" in c["motivos"][0], c)
+        eq(m.criticar("post", {"legenda": "Salve para consultar depois."})["veredito"], "aprova", "no feed salvar existe")
+        # a story that calls the day's post: the Crítico is told to compare both subjects
+        m.criticar("story", {"legenda": "Estoque na hora certa", "post_do_dia": {"tipo": "REELS", "titulo": "iFood"}})
+        ok("Story que chama o post do dia" in chamadas[-1][1] and "mesmo assunto" in chamadas[-1][1], chamadas[-1][1][-400:])
+        m.criticar("story", {"legenda": "Dica"})
+        ok("Story que chama o post do dia" not in chamadas[-1][1], "só quando chama")
         eq(m.criticar("reel", {"falas": ["O prato custa R$ 12,40"]})["veredito"], "reprova", "reel também (22/10)")
 
     def t_critico_le_o_cerebro_inteiro(self):
@@ -555,6 +564,16 @@ class Suite:
         eq([Path(a).name for a in arquivos], ["slide1.jpg", "slide2.jpg", "slide10.jpg"], "slides na ordem, sem a folha")
         ok(envs[0]["AWS_PROFILE"] == "voz" and "/voz" in Path(envs[0]["AWS_CONFIG_FILE"]).read_text(),
            "a voz usa só a credencial curta do host")
+        # 27/10: the Hermes's Bedrock endpoint (our proxy) and its fake keys never reach the voice
+        os.environ.update(AWS_ENDPOINT_URL_BEDROCK_RUNTIME="http://host.docker.internal:8787/hermes/bedrock",
+                          AWS_ACCESS_KEY_ID="falsa", AWS_SECRET_ACCESS_KEY="falsa")
+        try:
+            env = m.ambiente_render(saida)
+        finally:
+            for k in ("AWS_ENDPOINT_URL_BEDROCK_RUNTIME", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"):
+                os.environ.pop(k, None)
+        ok(not {"AWS_ENDPOINT_URL_BEDROCK_RUNTIME", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"} & set(env)
+           and env["AWS_PROFILE"] == "voz", "a voz não herda o endpoint do proxy nem as chaves falsas")
         ok(cmds[0][1].endswith("moldes/motor/render.py") and cmds[0][2] == "frases", cmds[0])
         ficha = Path(cmds[0][3])
         eq(json.loads(ficha.read_text()), {"pergunta": "Oi"}, "a ficha vai em arquivo")
@@ -562,6 +581,12 @@ class Suite:
                                                                                          stderr="prazo vencido"))
         arquivos, problema = m.renderizar_molde("frases", "carrossel", {})
         ok(arquivos == [] and "recusou a ficha" in problema and "prazo vencido" in problema, problema)
+        rastro = ("Traceback (most recent call last):\n" + "  File \"render.py\", line 9, in x\n" * 40
+                  + "RuntimeError: a voz carolina não leu a fala certa depois de 3 tentativas: 'Oi' (ouvido: 'erro')\n")
+        m.subprocess = types.SimpleNamespace(run=lambda cmd, **kw: types.SimpleNamespace(returncode=1, stdout="", stderr=rastro))
+        arquivos, problema = m.renderizar_molde("frases", "carrossel", {})
+        ok(problema.endswith("RuntimeError: a voz carolina não leu a fala certa depois de 3 tentativas: 'Oi' (ouvido: 'erro')"),
+           f"o erro sai inteiro, não o fim do rastro: {problema}")
 
     # --- the tool
 

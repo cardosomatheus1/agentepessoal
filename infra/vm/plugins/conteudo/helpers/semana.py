@@ -158,8 +158,45 @@ def story():
     return _S["m"]
 
 
-def _desenhar_story(esp, campos: dict, saida: Path) -> dict:
-    """One story: drawn here from the kit's layouts (helpers/story.py) and judged by the Crítico."""
+CHAMA = {"video-novo": ("REELS",), "post-novo": ("CARROSSEL", "IMAGE")}  # the story layouts that send to the day's post
+
+
+def _post_do_dia(campos: dict, dia: str, itens: list) -> tuple[dict | None, str]:
+    """(the feed post a "video-novo"/"post-novo" story calls, why it cannot call it). 26/10: three versions of the week
+    had the 9h story say "Veja o vídeo de hoje" for Reels whose render had failed, one about stock on a day whose Reel
+    was about iFood, and a "post de hoje" on a day with no post; the Crítico, seeing the story alone, approved them."""
+    tipos = CHAMA.get(campos.get("layout"))
+    if not tipos:
+        return None, ""
+    nome = " ou ".join(NOME_TIPO[t] for t in tipos)
+    alvo = next((i for i in itens if i["data"] == dia and i["formato_pedido"] in tipos), None)
+    if alvo is None:
+        na_agenda = next((i for i in c().carregar()["itens"] if i["data"] == dia and i["tipo"] in tipos
+                          and i["estado"] not in ("cancelada", "falhou")), None)
+        if na_agenda:
+            return {"tipo": na_agenda["tipo"], "titulo": _texto(na_agenda.get("legenda"), 120),
+                    "legenda": _texto(na_agenda.get("legenda"), 300)}, ""
+        return None, f"chama o post do dia, mas {_rotulo_dia(dia)} não tem {nome} no feed"
+    if alvo["problema"] or alvo["critica"]["veredito"] == "reprova":
+        return None, (f"chama o {NOME_TIPO[alvo['formato_pedido']]} de {_rotulo_dia(dia)}, que não ficou pronto ("
+                      + _texto(alvo["problema"] or c().uma_linha(alvo["critica"]["motivos"], 120), 140) + ")")
+    return {"tipo": alvo["formato_pedido"], "titulo": alvo["titulo"], "legenda": _texto(alvo["legenda"], 300),
+            "imagem": _imagem_do_post(alvo)}, ""
+
+
+def _imagem_do_post(alvo: dict) -> str:
+    """A picture of the post for the story's cover: the Reel's cover or first screen, the carousel's first slide."""
+    tela = ((((alvo.get("spec") or {}).get("ficha") or {}).get("telas") or [{}])[0] or {}).get("imagem") or ""
+    for a in [alvo.get("capa") or ""] + [x for x in alvo.get("arquivos") or [] if str(x).lower().endswith(IMAGEM)] + [tela]:
+        a = str(a).removeprefix("file://")
+        if a and Path(a).is_file():
+            return a
+    return ""
+
+
+def _desenhar_story(esp, campos: dict, saida: Path, post: dict | None = None) -> dict:
+    """One story: drawn here from the kit's layouts (helpers/story.py) and judged by the Crítico; a story that calls
+    the day's post goes to the Crítico with that post, so it can see whether both talk about the same thing."""
     try:
         story().renderizar(campos, str(saida))
     except Exception as exc:
@@ -169,8 +206,12 @@ def _desenhar_story(esp, campos: dict, saida: Path) -> dict:
         critica = {"veredito": SEM_REVISAO, "motivos": ["o Crítico (plugin especialistas) não está instalado"], "sugestoes": []}
     else:
         try:
-            critica = _critica(esp.criticar("story", {"formato": "STORY", "legenda": _texto(campos.get("manchete"), 200),
-                                                      "texto": _texto(campos.get("texto"), 300), "imagens": [str(saida)]}))
+            material = {"formato": "STORY", "layout": campos.get("layout"), "legenda": _texto(campos.get("manchete"), 200),
+                        "texto": _texto(campos.get("texto"), 300), "chamada": _texto(campos.get("chamada"), 120),
+                        "imagens": [str(saida)]}
+            if post:
+                material["post_do_dia"] = {k: post[k] for k in ("tipo", "titulo", "legenda")}
+            critica = _critica(esp.criticar("story", material))
         except Exception as exc:
             critica = {"veredito": SEM_REVISAO, "motivos": [f"o Crítico falhou ({type(exc).__name__})"], "sugestoes": []}
     return {"arquivos": [str(saida)], "problema": "", "critica": critica}
@@ -182,21 +223,24 @@ STORY_REGRAS = (
     "do dia: manchete, destaque, chamada); \"bastidor\" (tela = caminho de uma tela real em "
     "/a0/usr/plugins/conteudo/story/telas/, pergunta \"Responde aqui no direct: ...\"); \"oferta\" (Lucro na Mão em 30 "
     "Dias: manchete, destaque, itens, chamada; preco e preco_nota só se já estavam). Esquema da semana: seg dica; ter e "
-    "sex post-novo; qua e dom video-novo; qui bastidor; sáb oferta. Manchete até 90 letras, sem emoji, sem travessão, "
+    "sex post-novo; qua e dom video-novo; qui bastidor; sáb oferta. Nunca \"salve\" (story não se salva). "
+    "Manchete até 90 letras, sem emoji, sem travessão, "
     "R$ só com \"valores de exemplo\"; garantia sempre com \"a gente não cobra a próxima mensalidade\".")
 
 
-def _tarefa_story(campos: dict, critica: dict) -> str:
+def _tarefa_story(campos: dict, critica: dict, post: dict | None = None) -> str:
+    chama = (f"\n\n## O post do dia que este story chama\n{post['tipo']}: {post['titulo']} ({post['legenda']}). A manchete "
+             "fala do mesmo assunto." if post else "")
     return ("O Crítico reprovou o story abaixo. Refaça os campos resolvendo cada motivo, mantendo o layout do dia (troque "
             "só se o motivo for o layout) e devolva só o JSON dos campos.\n\n## Motivos do Crítico\n"
             + "\n".join(f"- {m}" for m in critica.get("motivos") or [])
-            + f"\n\n## Campos atuais\n{json.dumps(campos, ensure_ascii=False)[:3000]}\n\n{STORY_REGRAS}")
+            + f"\n\n## Campos atuais\n{json.dumps(campos, ensure_ascii=False)[:3000]}{chama}\n\n{STORY_REGRAS}")
 
 
-def _refazer_story(esp, campos: dict, critica: dict, saida: Path) -> tuple[dict, dict] | None:
+def _refazer_story(esp, campos: dict, critica: dict, saida: Path, post: dict | None = None) -> tuple[dict, dict] | None:
     """The Designer rewrites the story's fields with the Crítico's reasons; drawn and judged again. None when he
     gave nothing usable (no answer, not JSON, or fields the story's own rules refuse)."""
-    r = esp.chamar("designer", _tarefa_story(campos, critica), {"story": campos, "imagens": []})
+    r = esp.chamar("designer", _tarefa_story(campos, critica, post), {"story": campos, "imagens": []})
     achado = re.search(r"\{.*\}", (r or {}).get("texto") or "", re.S) if not (r or {}).get("erro") else None
     try:
         novo = json.loads(achado.group(0)) if achado else None
@@ -211,8 +255,10 @@ def _refazer_story(esp, campos: dict, critica: dict, saida: Path) -> tuple[dict,
         return None
     if story().validar(novo):
         return None
+    if post and post.get("imagem") and not novo.get("imagem") and campos.get("imagem") == post["imagem"]:
+        novo["imagem"] = post["imagem"]
     saida.parent.mkdir(parents=True, exist_ok=True)
-    return novo, _desenhar_story(esp, novo, saida)
+    return novo, _desenhar_story(esp, novo, saida, post)
 
 
 def refazer_item(item: dict, critica: dict, subir=None) -> dict:
@@ -419,14 +465,20 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
                           "previa": d.get("previa", []), "folha": d.get("folha", ""), "narracao": d.get("narracao", "")}
                          if pendente else {})})
     for n, (campos, dia) in enumerate(zip(stories, dias_story), start=len(vagas) + 1):
-        d = _desenhar_story(esp, campos, _pasta() / sid / f"story-{n}.jpg")
-        for k in range(REFAZER_STORY if esp is not None else 0):  # reproved: redone here, before Matheus sees it
+        post, sem_post = _post_do_dia(campos, dia, itens)
+        if post and post.get("imagem") and not campos.get("imagem"):  # the post's own picture, not a text-only card
+            campos = dict(campos, imagem=post["imagem"])
+        d = _desenhar_story(esp, campos, _pasta() / sid / f"story-{n}.jpg", post)
+        for k in range(REFAZER_STORY if esp is not None and not sem_post else 0):  # reproved: redone before he sees it
             if d["critica"]["veredito"] != "reprova":
                 break
-            feito = _refazer_story(esp, campos, d["critica"], _pasta() / sid / f"story-{n}-r{k + 1}.jpg")
+            feito = _refazer_story(esp, campos, d["critica"], _pasta() / sid / f"story-{n}-r{k + 1}.jpg", post)
             if not feito:
                 break
             campos, d = feito
+        if sem_post and d["arquivos"]:  # rewriting the story cannot make the post exist: reproved, says why
+            d["critica"] = {"veredito": "reprova", "motivos": [sem_post] + [m for m in d["critica"]["motivos"]][:4],
+                            "sugestoes": d["critica"].get("sugestoes") or []}
         titulo = f"{campos.get('layout', '?')}: {_texto(campos.get('manchete') or 'oferta Lucro na Mão', 100)}"
         itens.append({"n": n, "id": f"{sid}-{n}", "data": dia, "hora": HORA_STORY, "titulo": titulo, "ideia": "",
                       "formato_pedido": "STORY", "tipo": "STORY" if d["arquivos"] else "", "arquivos": d["arquivos"],
