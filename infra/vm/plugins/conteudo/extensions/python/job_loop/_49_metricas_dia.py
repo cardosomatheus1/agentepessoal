@@ -28,10 +28,11 @@ def _passo() -> None:
         if api is None:
             return
         r = c.metricas_do_dia(api)
+        if r is None or r.get("ok"):  # None after the hour = today is already kept: done for the day
+            import datetime as dt
+            _RODANDO["dia"] = dt.datetime.now(c._tz()).date().isoformat()
         if r:
             print(f"conteudo: métricas do dia: {r}", flush=True)
-            if r.get("ok"):
-                _RODANDO["dia"] = r["data"]
     except Exception as exc:
         print(f"conteudo: métricas do dia: {type(exc).__name__}: {exc}", flush=True)
     finally:

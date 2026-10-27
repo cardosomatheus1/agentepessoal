@@ -1966,6 +1966,10 @@ class Suite:
         eq((lim["aquecer"], lim["dm_abertura"]), (15, 5), "o que ele pediu muda")
         eq({k: v for k, v in lim.items() if k not in ("aquecer", "dm_abertura")},
            {k: v for k, v in antes.items() if k not in ("aquecer", "dm_abertura")}, "o resto mantém")
+        so_aquecer = p.definir_limites(LOGIN, {})  # back to the ramp, then only "aquecer"
+        so_aquecer = p.definir_limites(LOGIN, {"aquecer": 12})
+        eq(so_aquecer["dm_abertura"], antes["dm_abertura"], "o que ele não citou segue a rampa (não pula para o teto)")
+        p.definir_limites(LOGIN, {"aquecer": 15, "dm_abertura": 5})
         ids = [self._lead(f"lim{i}") for i in range(17)]
         r = p.propor(LOGIN, [{"lead_id": i, "tipo": "aquecer", "texto": ""} for i in ids])
         eq(len(r["propostas"]), 15, "as rodadas respeitam o limite novo")

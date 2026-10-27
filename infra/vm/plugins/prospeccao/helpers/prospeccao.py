@@ -1831,12 +1831,11 @@ def limites(d: dict) -> dict:
     """Daily limits: the config's, else the pilot's for the first 7 days, else the playbook's — with the first messages
     going up a step a week (RAMPA_DM; 12/10 blind review: 5 to 12 overnight on day 8). For 7 days after a block,
     everything but the replies runs at half (blind review 3: back to 100% right after the 48 h pause is a robot sign)."""
-    if d["config"].get("limites"):
-        base = {**LIMITE_DIA, **d["config"]["limites"]}
-    else:
-        inicio = d["config"].get("inicio") or (min([l["criado"] for l in d["leads"]] or [agora()]))
-        semana = int(max(0, agora() - inicio) // (7 * 86400))
-        base = dict(LIMITE_PILOTO) if semana == 0 else {**LIMITE_DIA, "dm_abertura": RAMPA_DM[min(semana, len(RAMPA_DM) - 1)]}
+    inicio = d["config"].get("inicio") or (min([l["criado"] for l in d["leads"]] or [agora()]))
+    semana = int(max(0, agora() - inicio) // (7 * 86400))
+    base = dict(LIMITE_PILOTO) if semana == 0 else {**LIMITE_DIA, "dm_abertura": RAMPA_DM[min(semana, len(RAMPA_DM) - 1)]}
+    # the person's own limits (definir_limites) replace only what he named; the rest keeps the ramp ("o resto mantem")
+    base.update(d["config"].get("limites") or {})
     if bloqueio_recente(d):
         base = {k: (v if k == "resposta" else max(1, v // 2)) for k, v in base.items()}
     return base

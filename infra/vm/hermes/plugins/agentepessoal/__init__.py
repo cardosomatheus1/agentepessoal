@@ -38,8 +38,8 @@ mcp = _sub("agentepessoal_mcp", "mcp_hermes.py")  # conector Google para código
 limite = _sub("agentepessoal_limite", "limite_hermes.py")  # limite do dia do convidado (relógio do Hermes dele)
 resolver = _sub("agentepessoal_resolver", "resolver_hermes.py")  # "🖥️ Resolver aqui" (o navegador_visual do A0)
 subagentes = _sub("agentepessoal_subagentes", "subagentes_hermes.py")  # resultado dos subagentes volta ao celular
-tarefas = _sub("agentepessoal_tarefas", "tarefas_hermes.py")
-dicas = _sub("agentepessoal_dicas", "dicas_hermes.py")  # dica junto de erro conhecido (ref do navegador que sumiu)  # tarefas longas: plano em disco, retomada sozinha, entrega no fim
+tarefas = _sub("agentepessoal_tarefas", "tarefas_hermes.py")  # tarefas longas: plano em disco, retomada sozinha, entrega no fim
+dicas = _sub("agentepessoal_dicas", "dicas_hermes.py")  # dica junto de erro conhecido (ref do navegador que sumiu)
 log = logging.getLogger("agentepessoal")
 
 # (plugin, ferramenta). "Hermes primeiro" (23/10): só entra o que é nosso de verdade (dados, Raiz, Segundo Cérebro).
