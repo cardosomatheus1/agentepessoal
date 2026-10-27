@@ -578,6 +578,33 @@ def mascarar_cofre(body: bytes | None) -> tuple:
     return body, n
 
 
+BETA_LIGACAO = "thinking-binding-controls-2026-08-01"
+_INVOKE = re.compile(r"^/model/[^/]+/invoke(-with-response-stream)?$")
+
+
+def raciocinio_sem_ligacao(path: str, body: bytes | None) -> bytes | None:
+    """A Hermes request to Claude with thinking on asks Bedrock to DROP a thinking block bound to another conversation
+    instead of refusing the whole call. 27/10: the Hermes' background skill review replays the chat's history in a new
+    conversation and all 66 of its calls in 7 days died with 400 "Invalid `signature` in `thinking` block" (the agent
+    learned nothing from the chats). Adds to the betas already there; any other body goes through as it is."""
+    if not body or not _INVOKE.match(path.split("?", 1)[0]):
+        return body
+    try:
+        dados = json.loads(body)
+    except ValueError:
+        return body
+    pensar = dados.get("thinking") if isinstance(dados, dict) else None
+    if not isinstance(pensar, dict) or pensar.get("type") in (None, "disabled"):
+        return body
+    ligacao = pensar.get("block_binding") if isinstance(pensar.get("block_binding"), dict) else {}
+    betas = dados.get("anthropic_beta") if isinstance(dados.get("anthropic_beta"), list) else []
+    if ligacao.get("prefix_mismatch_behavior") and BETA_LIGACAO in betas:
+        return body
+    pensar["block_binding"] = {**ligacao, "prefix_mismatch_behavior": ligacao.get("prefix_mismatch_behavior") or "drop_block"}
+    dados["anthropic_beta"] = betas + ([BETA_LIGACAO] if BETA_LIGACAO not in betas else [])
+    return json.dumps(dados, ensure_ascii=False).encode()
+
+
 def mark_activity() -> None:
     try:
         ACTIVITY_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -696,8 +723,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             headers["Authorization"] = f"Bearer {bearer_token()}"
             rastreio["origem"] = "hermes"
             body, mascarados = mascarar_cofre(body)
+            antes = body
+            body = raciocinio_sem_ligacao(path, body)
             if mascarados:
                 rastreio["cofre_mascarado"] = mascarados
+            if mascarados or body is not antes:
                 for k in [k for k in headers if k.lower() == "x-amz-content-sha256"]:  # SigV4 leftovers of the old body
                     del headers[k]
         elif path.startswith("/bedrock/"):

@@ -333,6 +333,27 @@ def main() -> int:
            "o cofre do convidado (segredos/convidados/<login>) também é mascarado")
         (pasta / "ilia.json").write_text("{quebrado")
         ok(p.mascarar_cofre(b"outra-da-ilia")[1] == 1, "cofre ilegível: fica a última lista boa (nunca 'sem segredo')")
+        # 27/10: thinking block bound to another conversation is dropped, not a 400 for the whole call
+        rota_t = "/model/us.anthropic.claude-haiku-5-5/invoke-with-response-stream"
+        com_t = json.dumps({"thinking": {"type": "adaptive"}, "anthropic_beta": ["interleaved-thinking-2025-05-14"],
+                            "messages": []}).encode()
+        novo = json.loads(p.raciocinio_sem_ligacao(rota_t, com_t))
+        ok(novo["thinking"] == {"type": "adaptive", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}
+           and novo["anthropic_beta"] == ["interleaved-thinking-2025-05-14", p.BETA_LIGACAO],
+           f"raciocínio: drop_block e o beta somado aos que já havia ({novo})")
+        ok(p.raciocinio_sem_ligacao(rota_t, json.dumps(novo).encode()) == json.dumps(novo).encode(), "já ajustado: igual")
+        sem = json.dumps({"messages": []}).encode()
+        ok(p.raciocinio_sem_ligacao(rota_t, sem) is sem and p.raciocinio_sem_ligacao("/model/x/converse", com_t) is com_t
+           and p.raciocinio_sem_ligacao(rota_t, b"nao json") == b"nao json"
+           and p.raciocinio_sem_ligacao(rota_t, json.dumps({"thinking": {"type": "disabled"}}).encode())
+           == json.dumps({"thinking": {"type": "disabled"}}).encode(), "sem raciocínio, converse ou outro corpo: igual")
+        cabecalhos.clear(); corpos.clear(); pedidos.clear(); roteiro[:] = [RespostaFalsa(200, com_metricas)]
+        req = urllib.request.Request(f"{base}/hermes/bedrock{rota_t}", data=com_t, method="POST",
+                                     headers={"X-Amz-Content-Sha256": "abc"})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            r.read()
+        ok(json.loads(corpos[0])["thinking"].get("block_binding") and not any(k.lower() == "x-amz-content-sha256"
+           for k in cabecalhos[0]), "pelo proxy: o Bedrock recebe o corpo ajustado, sem o hash do corpo antigo")
         cabecalhos.clear(); corpos.clear(); pedidos.clear(); roteiro[:] = [RespostaFalsa(200, com_metricas)]
         req = urllib.request.Request(f"{base}/hermes/bedrock{rota_i}", data=corpo, method="POST",
                                      headers={"X-Amz-Content-Sha256": "abc", "X-A0-Dono": "matheus"})
