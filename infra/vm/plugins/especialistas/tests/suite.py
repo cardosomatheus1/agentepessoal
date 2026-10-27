@@ -584,12 +584,13 @@ class Suite:
                                                                                          stderr="prazo vencido"))
         arquivos, problema = m.renderizar_molde("frases", "carrossel", {})
         ok(arquivos == [] and "recusou a ficha" in problema and "prazo vencido" in problema, problema)
+        fala = "Na cozinha, aparecem identificados com o selo iFood, ao lado de um pedido de mesa, com o tempo de cada um."
         rastro = ("Traceback (most recent call last):\n" + "  File \"render.py\", line 9, in x\n" * 40
-                  + "RuntimeError: a voz carolina não leu a fala certa depois de 3 tentativas: 'Oi' (ouvido: 'erro')\n")
+                  + f"RuntimeError: a voz carolina não leu a fala certa depois de 3 tentativas: {fala!r} (ouvido: {fala * 2!r})\n")
         m.subprocess = types.SimpleNamespace(run=lambda cmd, **kw: types.SimpleNamespace(returncode=1, stdout="", stderr=rastro))
         arquivos, problema = m.renderizar_molde("frases", "carrossel", {})
-        ok(problema.endswith("RuntimeError: a voz carolina não leu a fala certa depois de 3 tentativas: 'Oi' (ouvido: 'erro')"),
-           f"o erro sai inteiro, não o fim do rastro: {problema}")
+        ok(f"RuntimeError: a voz carolina não leu a fala certa depois de 3 tentativas: {fala!r}" in problema,
+           f"o erro sai do começo, com a fala que falhou (27/10: o fim do rastro cortava a fala): {problema}")
 
     # --- the tool
 
