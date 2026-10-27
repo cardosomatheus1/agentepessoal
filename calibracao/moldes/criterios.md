@@ -45,3 +45,13 @@ cego do catálogo).
 
 - Nenhuma por enquanto: os comentários são claros. A rodada de teste usou fotos genéricas do banco; as regras 1 e 2
   valem para os testes também (fotos de teste coerentes com a ficha).
+
+## Conteúdo Raiz, 27/10 (`conteudo-2026-10-27-semana-28-10` e `conteudo-2026-10-27-reels-refeitos`)
+
+14. **Tela do sistema legível no vídeo.** Tela de computador pequena num vídeo em pé "cliente n ver nada": a tela ocupa a
+    largura toda e a câmera aproxima um ponto (um card, um número, uma coluna), nunca a tela quase inteira (lanca-app:
+    destaque até 50%). [semana-28-10/s20261027-1-1, s20261027-1-2; aprovado em reels-refeitos]
+15. **Nada vazio na cena.** Frase "colada num quadrado sem nada" (contorno fantasma do aparelho) reprova: todo elemento
+    na tela mostra alguma coisa. [semana-28-10/s20261027-1-1, s20261027-1-2]
+16. **Julgar o vídeo, não a prévia.** Quadros parados do fim de cada cena escondem o zoom: na rodada, o Reel vai como
+    vídeo final. [reels-refeitos]
