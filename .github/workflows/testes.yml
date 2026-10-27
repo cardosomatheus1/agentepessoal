@@ -65,6 +65,7 @@ jobs:
           python3 infra/operador/tests/test_cerebro_operador.py
           python3 infra/operador/tests/test_falhas_do_dia.py
           python3 infra/operador/tests/test_revisar_opencode.py
+          python3 infra/operador/tests/test_implantar_estagio.py
           python3 infra/operador/tests/test_legado_a0.py
           python3 infra/operador/tests/test_moldes.py
           python3 infra/reels/moldes/motor/test_validar.py

@@ -46,6 +46,16 @@ VM = "i-0498b4f39560b01a9"
 ssm = boto3.client("ssm", region_name="us-east-1")
 
 
+
+# 27/10: no container descartável (A0 parado) a imagem guarda o código do A0 em /git/agent-zero (o /a0 só se enche na
+# inicialização dele, que o `sleep` pula): teste que importa `helpers` do A0 (ex.: o receber.py do WhatsApp) falhava com
+# "No module named 'helpers'" e nenhum plugin com teste assim podia ser implantado.
+CODIGO_A0_IMAGEM = "/git/agent-zero"
+
+
+def ambiente_estagio(a0_no_ar: bool) -> str:
+    return "" if a0_no_ar else f"-e PYTHONPATH={CODIGO_A0_IMAGEM} "
+
 def sh(*cmd: str) -> str:
     return subprocess.run(cmd, cwd=RAIZ, check=True, capture_output=True, text=True).stdout.strip()
 
@@ -421,7 +431,7 @@ def main() -> None:
                f"$(docker inspect -f '{{{{.Config.Image}}}}' agent-zero) 3600 >/dev/null && ")
     teste = (preparo + f"docker cp {estagio}/{caminho} {alvo}:/tmp/estagio-{plugin} && "
              # ESTAGIO=1: suites skip what only runs inside the agent (e.g. tests that write the live scheduler)
-             f"docker exec -e ESTAGIO=1 {alvo} sh -c 'cd /a0 && /opt/venv-a0/bin/python - <<\"PY\"\n"
+             f"docker exec -e ESTAGIO=1 {ambiente_estagio(a0_no_ar)}{alvo} sh -c 'cd /a0 && /opt/venv-a0/bin/python - <<\"PY\"\n"
              "import asyncio, importlib.util\n"
              f"s = importlib.util.spec_from_file_location(\"estagio\", \"/tmp/estagio-{plugin}/tests/suite.py\")\n"
              "m = importlib.util.module_from_spec(s); s.loader.exec_module(m)\n"
