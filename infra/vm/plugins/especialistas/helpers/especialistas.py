@@ -112,6 +112,9 @@ O que você faz:
   pedindo mais um item da oferta).
 - Antes de reprovar por algo de uma imagem, olha de novo e cita o slide e o texto exato que viu; o que você não
   confirmou na imagem não é motivo.
+- Tela real do sistema (o print inteiro, com o menu, decisão do Matheus) não é texto da peça: rótulo do menu ou da tela
+  ("CMV Real", "Curva ABC", "DRE") não é jargão a explicar. Jargão é só no que a peça escreve ou a voz fala (27/10:
+  um Reel reprovado porque o menu lateral da tela mostrava "CMV").
 
 O que você não faz:
 - Não reescreve a peça inteira nem cria uma nova: aponta o problema e a correção mínima.
@@ -781,6 +784,9 @@ def _renderizar(spec: dict, falta: list) -> tuple:
         render = "no repositório erp-saas: projeto marketing/<nome>/ do kit de motion (skill motion-graphics)"
         falta.append("render do vídeo da Raiz: o kit de motion mora no repositório erp-saas, fora do alcance do agente")
     elif motor == "molde" and not falta:
+        if (str(spec.get("marca") or "raiz").lower() == "raiz" and spec.get("molde") == "lanca-app"
+                and isinstance(spec.get("ficha"), dict) and "selo" not in spec["ficha"]):
+            spec["ficha"]["selo"] = ""  # 27/10: the Raiz launches nothing; the molde's "Lançamento" badge was reproved
         sem = _pode_renderizar()
         formato = str(spec.get("formato") or "carrossel")
         render = f"moldes/motor/render.py {spec.get('molde')} <ficha.json> --formato {formato}"

@@ -540,6 +540,16 @@ class Suite:
         ok(len(vistos) == m.MAX_IMAGENS and vistos[0] == "prev.jpg" and vistos[-1] == "p11.jpg" and vistos[1] == "p01.jpg",
            f"cabe no limite, com a folha e a última cena: {vistos}")
         ok("carrossel_raiz" not in m.KIT and '"motor": "molde"' in m.KIT, "o Designer só vê o motor que roda aqui")
+        # 27/10: the Raiz launches nothing: lanca-app goes without its "Lançamento" badge unless the ficha names one
+        fichas = []
+        m._validar_ficha = lambda molde, ficha: []
+        m.renderizar_molde = lambda molde, formato, ficha, previa=False: fichas.append(dict(ficha)) or (
+            [str(quadros[0]), str(self.tmp / "narracao.m4a")], "")
+        for ficha in ({"_marca": "raiz"}, {"_marca": "raiz", "selo": "Novo painel"}):
+            m._renderizar({"marca": "raiz", "motor": "molde", "molde": "lanca-app", "formato": "reel", "ficha": ficha}, [])
+        m._renderizar({"marca": "nexos", "motor": "molde", "molde": "lanca-app", "formato": "reel", "ficha": {}}, [])
+        eq([f.get("selo", "(padrão)") for f in fichas], ["", "Novo painel", "(padrão)"], "selo vazio só na Raiz sem selo")
+        ok("rótulo do menu" in m.PAPEIS["critico"], "o menu da tela real não é jargão da peça")
 
     def t_renderizar_molde_chama_o_motor(self):
         import os
