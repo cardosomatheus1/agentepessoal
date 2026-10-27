@@ -382,7 +382,10 @@ def criticar(tipo: str, material, *, login: str = "matheus") -> dict:
         tarefa += ("\n\n## Vídeo\nAs imagens são quadros do vídeo (a ordem e o segundo de cada uma estão em \"quadros\") e "
                    "\"narracao\" é a fala com os tempos. Confira: a tela mostra o que a narração diz naquele momento; nenhum "
                    "texto cortado, sobretudo no último quadro (a chamada); o que a legenda afirma aparece no vídeo. Julgue "
-                   "pelo que vê e ouve aqui, não exija prova que não caberia num vídeo.")
+                   "pelo que vê e ouve aqui, não exija prova que não caberia num vídeo. Tela do sistema: ela entra inteira, com "
+                   "o menu, e depois a câmera aproxima um ponto dela (decisão #85: vídeo com zoom e movimento); um quadro "
+                   "aproximado não é tela recortada nem quebra a decisão #85 (27/10: um Reel aprovado pelo Matheus foi "
+                   "travado na publicação por isso).")
     if isinstance(material, dict) and material.get("post_do_dia"):
         tarefa += ("\n\n## Story que chama o post do dia\n\"post_do_dia\" é o post do feed que este story manda ver. A manchete "
                    "tem de falar do mesmo assunto dele: story que promete um assunto e leva a um post de outro é informação "

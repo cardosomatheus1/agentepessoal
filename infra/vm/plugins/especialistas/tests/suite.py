@@ -215,6 +215,14 @@ class Suite:
         eq(texto, "", "sem texto")
         ok("RuntimeError" in nota, nota)
 
+    def t_critico_do_video_sabe_do_zoom(self):
+        # 27/10: the publish gate read a zoomed frame of an approved Reel as a cropped screen (decision #85)
+        m = self._e(com_raiz="Raiz")
+        chamadas = []
+        m.chamar = lambda *a, **k: chamadas.append(a) or {"texto": APROVA, "erro": "", "imagens": [], "sem_imagem": []}
+        m.criticar("reel", {"narracao": [{"t": 0, "fala": "Oi"}], "imagens": []})
+        ok("não é tela recortada" in chamadas[-1][1] and "#85" in chamadas[-1][1], chamadas[-1][1][-500:])
+
     def t_regras_fixas_reprovam_mesmo_com_o_modelo_aprovando(self):
         m = self._e(com_raiz="Raiz")
         chamadas = []
