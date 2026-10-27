@@ -35,7 +35,9 @@ Ou seja: o kernel travou por dentro sem dar pane, e nada religou. Desde então:
 Só biblioteca padrão (roda no python3 do host)."""
 
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -451,6 +453,87 @@ def _livre_gb() -> float:
     return shutil.disk_usage("/").free / 1e9
 
 
+# 27/10 (Matheus: "sao 200gb e enchendo, absurdo"): o OpenCode do celular faz uma cópia do ERP por tarefa (64 em 4 dias,
+# ~15 GB) e nunca apaga; os testes dele deixam o cache do Jest em /tmp (4,5 GB). Sai só a cópia que não tem NADA a
+# perder: sem mudança nem arquivo novo, com o último commit num ramo do GitHub e sem mexer há PARADO_H horas; as cópias
+# principais nunca.
+PROJETOS = Path("/home/opencodemobile/projects")
+PRINCIPAIS = {"erp-saas", "agentepessoal"}
+PARADO_H = 24
+CACHE_TMP_DIAS = 2
+
+
+def _git(pasta: Path, *args: str) -> tuple[int, str]:
+    r = subprocess.run(["git", "-c", "safe.directory=*", "-C", str(pasta), *args], capture_output=True, text=True,
+                       timeout=120)
+    return r.returncode, r.stdout
+
+
+def mexida_recente(pasta: Path, desde: float) -> bool:
+    """Algum arquivo (fora de .git e node_modules) mudou depois de `desde`."""
+    for raiz, dirs, arqs in os.walk(pasta):
+        dirs[:] = [d for d in dirs if d not in (".git", "node_modules")]
+        for nome in arqs + dirs:
+            try:
+                if os.lstat(os.path.join(raiz, nome)).st_mtime > desde:
+                    return True
+            except OSError:
+                continue
+    return False
+
+
+def projeto_parado(pasta: Path, agora: float | None = None) -> str:
+    """'' quando a cópia pode sair; senão o motivo de ficar."""
+    agora = time.time() if agora is None else agora
+    if pasta.name in PRINCIPAIS:
+        return "principal"
+    if not (pasta / ".git").exists():
+        return "sem git"
+    rc, sujo = _git(pasta, "status", "--porcelain")
+    if rc or sujo.strip():
+        return "tem mudança ou arquivo novo"
+    rc, remotos = _git(pasta, "branch", "-r", "--contains", "HEAD")
+    if rc or not remotos.strip():
+        return "último commit não está no GitHub"
+    if mexida_recente(pasta, agora - PARADO_H * 3600):
+        return f"mexida nas últimas {PARADO_H} h"
+    return ""
+
+
+def remover_projeto(pasta: Path) -> None:
+    git = pasta / ".git"
+    if git.is_file():  # worktree: o repositório principal esquece dela também
+        principal = Path(git.read_text().split("gitdir:", 1)[-1].strip()).parents[1]
+        _git(principal.parent if principal.name == ".git" else principal, "worktree", "remove", "--force", str(pasta))
+    if pasta.exists():
+        shutil.rmtree(pasta, ignore_errors=True)
+
+
+def limpar_projetos(raiz: Path = PROJETOS, agora: float | None = None) -> list[str]:
+    tirados = []
+    for pasta in sorted(p for p in raiz.iterdir() if p.is_dir()) if raiz.is_dir() else []:
+        if not projeto_parado(pasta, agora):
+            remover_projeto(pasta)
+            tirados.append(pasta.name)
+    return tirados
+
+
+def limpar_cache_tmp(raiz: Path = Path("/tmp"), agora: float | None = None) -> int:
+    """Cache do Jest (/tmp/jest_rt) e pastas tmp* de mais de CACHE_TMP_DIAS dias. Devolve quantas entradas saíram."""
+    limite = (time.time() if agora is None else agora) - CACHE_TMP_DIAS * 86400
+    alvos = list((raiz / "jest_rt").iterdir()) if (raiz / "jest_rt").is_dir() else []
+    alvos += [p for p in raiz.iterdir() if p.name.startswith("tmp") and p.is_dir()] if raiz.is_dir() else []
+    n = 0
+    for p in alvos:
+        try:
+            if p.lstat().st_mtime < limite:
+                shutil.rmtree(p, ignore_errors=True) if p.is_dir() and not p.is_symlink() else p.unlink()
+                n += 1
+        except OSError:
+            continue
+    return n
+
+
 def limpar() -> dict:
     antes = _livre_gb()
     tirar = imagens_a_remover(_imagens(), _em_uso())
@@ -458,7 +541,10 @@ def limpar() -> dict:
         _cmd("docker", "rmi", ref, timeout=300)
     _cmd("docker", "image", "prune", "-f", timeout=600)  # só as sem nome e sem contêiner
     _cmd("journalctl", f"--vacuum-size={JOURNAL_MAX}")
-    r = {"removidas": tirar, "livre_antes_gb": round(antes, 1), "livre_depois_gb": round(_livre_gb(), 1)}
+    projetos = limpar_projetos()
+    cache = limpar_cache_tmp()
+    r = {"removidas": tirar, "projetos_opencode": projetos, "cache_tmp": cache,
+         "livre_antes_gb": round(antes, 1), "livre_depois_gb": round(_livre_gb(), 1)}
     log(f"limpeza: {json.dumps(r, ensure_ascii=False)}")
     return r
 

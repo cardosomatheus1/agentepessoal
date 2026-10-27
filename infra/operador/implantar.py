@@ -51,6 +51,9 @@ ssm = boto3.client("ssm", region_name="us-east-1")
 # inicialização dele, que o `sleep` pula): teste que importa `helpers` do A0 (ex.: o receber.py do WhatsApp) falhava com
 # "No module named 'helpers'" e nenhum plugin com teste assim podia ser implantado.
 CODIGO_A0_IMAGEM = "/git/agent-zero"
+# 27/10 (Matheus: "Exclui tbm o antigo agente"): o container agent-zero foi apagado; a imagem fica só como base da cópia
+# de teste dos plugins (mesmo Python e dependências do A0), pelo nome.
+IMAGEM_A0 = "agent0ai/agent-zero:v2.13"
 
 
 def ambiente_estagio(a0_no_ar: bool) -> str:
@@ -428,7 +431,7 @@ def main() -> None:
     preparo = ("" if a0_no_ar else
                f"docker rm -f {alvo} >/dev/null 2>&1; docker run -d --name {alvo} --network none --entrypoint sleep "
                f"--mount type=tmpfs,destination=/a0/usr -v /opt/a0/usr/plugins:/a0/usr/plugins:ro "
-               f"$(docker inspect -f '{{{{.Config.Image}}}}' agent-zero) 3600 >/dev/null && ")
+               f"{IMAGEM_A0} 3600 >/dev/null && ")
     teste = (preparo + f"docker cp {estagio}/{caminho} {alvo}:/tmp/estagio-{plugin} && "
              # ESTAGIO=1: suites skip what only runs inside the agent (e.g. tests that write the live scheduler)
              f"docker exec -e ESTAGIO=1 {ambiente_estagio(a0_no_ar)}{alvo} sh -c 'cd /a0 && /opt/venv-a0/bin/python - <<\"PY\"\n"

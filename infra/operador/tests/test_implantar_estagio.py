@@ -17,6 +17,8 @@ if m.ambiente_estagio(False) != "-e PYTHONPATH=/git/agent-zero ":
 fonte = (RAIZ / "infra" / "operador" / "implantar.py").read_text()
 if "docker exec -e ESTAGIO=1 {ambiente_estagio(a0_no_ar)}{alvo}" not in fonte:
     falhas.append("o comando da cópia de teste usa ambiente_estagio")
+if "{IMAGEM_A0} 3600" not in fonte or "inspect -f '{{{{.Config.Image}}}}' agent-zero" in fonte:
+    falhas.append("a cópia de teste usa a imagem pelo nome (o container agent-zero não existe mais)")
 if falhas:
     sys.exit("test_implantar_estagio: " + "; ".join(falhas))
 print("test_implantar_estagio: ok")

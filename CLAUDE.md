@@ -7,8 +7,9 @@ porque erros bobos aconteceram quando duas sessões mexeram na mesma coisa sem r
 O agente do Matheus roda no **Hermes** (`docs/MIGRACAO_HERMES.md`): container `hermes` na VM, os nossos plugins de
 `infra/vm/plugins/` rodam nele pela ponte (`infra/vm/hermes/plugins/agentepessoal`), rotinas no cron dele
 (`infra/vm/hermes/rotinas/`), portal (Segundo Cérebro, Painel, Tarefas, Cofre, Navegador) em `infra/vm/portal`. O Agent
-Zero (A0, container `agent-zero`) está **parado só para a volta** até 30/10: não ligue (as rotinas rodariam duas vezes);
-voltar só com ordem do Matheus, por `python3 infra/operador/virada.py voltar --motivo "..."`. Ferramentas do operador
+Zero (A0) foi **apagado em 27/10** a pedido do Matheus ("Exclui tbm o antigo agente"): o container `agent-zero` não
+existe mais e não há volta (`virada.py voltar` não funciona). Ficam os dados em `/opt/a0/usr` (o Hermes usa) e a imagem
+`agent0ai/agent-zero:v2.13`, só como base da cópia de teste dos plugins no `implantar.py`. Ferramentas do operador
 que falavam com o A0 param com aviso de legado (`infra/operador/legado_a0.py`) e dizem o equivalente no Hermes.
 
 ## Antes de qualquer coisa

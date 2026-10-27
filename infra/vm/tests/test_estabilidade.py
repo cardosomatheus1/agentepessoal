@@ -163,6 +163,55 @@ def main() -> int:
     m = e.mensagem_rede(r)
     checa("23/10 20:22" in m and "sem internet" in m and "voltou" in m, f"mensagem_rede: {m}")
 
+    # 27/10: limpeza das cópias do OpenCode e do cache em /tmp: só sai o que não tem nada a perder
+    import subprocess
+    import time as _t
+    base = Path(tempfile.mkdtemp())
+    g = lambda *a, cwd=None: subprocess.run(["git", "-c", "commit.gpgsign=false", *a], cwd=cwd, check=True,
+                                            capture_output=True)
+    remoto = base / "remoto.git"
+    g("init", "-q", "--bare", str(remoto))
+    proj = base / "projects"
+    proj.mkdir()
+    principal = proj / "erp-saas"
+    g("clone", "-q", str(remoto), str(principal))
+    for k, v in (("user.email", "t@t"), ("user.name", "t"), ("commit.gpgsign", "false")):
+        g("config", k, v, cwd=principal)
+    (principal / "a.txt").write_text("a")
+    (principal / ".gitignore").write_text("node_modules/\n")
+    g("add", ".", cwd=principal); g("commit", "-qm", "a", cwd=principal); g("push", "-q", "origin", "HEAD:master", cwd=principal)
+    for nome in ("velha-limpa", "velha-suja", "velha-sem-push", "recente"):
+        g("worktree", "add", "-q", "-b", nome, str(proj / nome), "master", cwd=principal)
+        g("config", "commit.gpgsign", "false", cwd=proj / nome)
+    (proj / "velha-suja" / "a.txt").write_text("mudou")
+    (proj / "velha-sem-push" / "b.txt").write_text("b")
+    g("add", ".", cwd=proj / "velha-sem-push"); g("commit", "-qm", "b", cwd=proj / "velha-sem-push")
+    (proj / "velha-limpa" / "node_modules").mkdir()
+    (proj / "velha-limpa" / "node_modules" / "x").write_text("x")
+    velho = _t.time() - 3 * 86400
+    for raiz, dirs, arqs in os.walk(proj):
+        for n in dirs + arqs:
+            os.utime(os.path.join(raiz, n), (velho, velho), follow_symlinks=False)
+    (proj / "recente" / "a.txt").write_text("a")  # mexida agora (mesmo conteúdo: git limpo)
+    motivos = {p.name: e.projeto_parado(p) for p in proj.iterdir()}
+    checa(motivos == {"erp-saas": "principal", "velha-limpa": "", "velha-suja": "tem mudança ou arquivo novo",
+                      "velha-sem-push": "último commit não está no GitHub", "recente": "mexida nas últimas 24 h"},
+          f"projeto_parado: {motivos}")
+    tirados = e.limpar_projetos(proj)
+    lista = subprocess.run(["git", "-C", str(principal), "worktree", "list"], capture_output=True, text=True).stdout
+    checa(tirados == ["velha-limpa"] and not (proj / "velha-limpa").exists() and "velha-limpa" not in lista
+          and (proj / "velha-suja").exists() and (proj / "velha-sem-push").exists(),
+          f"limpar_projetos tira só a limpa, parada e no GitHub: {tirados} / {lista}")
+    tmp = base / "tmp"
+    (tmp / "jest_rt" / "antigo").mkdir(parents=True)
+    (tmp / "jest_rt" / "novo").mkdir()
+    (tmp / "tmpvelho").mkdir()
+    (tmp / "outra-coisa").mkdir()
+    for p in (tmp / "jest_rt" / "antigo", tmp / "tmpvelho", tmp / "outra-coisa"):
+        os.utime(p, (velho, velho))
+    checa(e.limpar_cache_tmp(tmp) == 2 and (tmp / "jest_rt" / "novo").exists() and (tmp / "outra-coisa").exists()
+          and not (tmp / "tmpvelho").exists(), "cache: só jest_rt e tmp* antigos")
+
     print(f"TESTES {'ok' if not falhas else 'FALHOU'}")
     for f in falhas:
         print("  ✗", f)
