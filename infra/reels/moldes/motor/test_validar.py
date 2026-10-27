@@ -57,5 +57,11 @@ caso("leitura: ignora separador", palavras_novas(["Seg · Ter · Qua"], []) == 3
 caso("leitura: texto já visto não conta", palavras_novas(["Bolo de pote", "Peça já"], ["Bolo de pote"]) == 2)
 caso("leitura: nada novo", palavras_novas(["a"], ["a"]) == 0)
 
+# 27/10: lanca-app's "Lançamento" badge can be renamed or hidden (empty), never longer than it fits
+LA = json.loads((RAIZ / "lanca-app" / "esquema.json").read_text())
+caso("lanca-app aceita selo vazio", not any("selo" in e for e in validar(LA, {"selo": ""})))
+caso("lanca-app recusa selo longo", any("selo" in e for e in validar(LA, {"selo": "x" * 23})))
+caso("lanca-app esconde o selo vazio", "if (F.selo === '') $('#rSelo').remove()" in (RAIZ / "lanca-app" / "molde.html").read_text())
+
 print(f"validar: {ok}/{ok + falhou}")
 sys.exit(1 if falhou else 0)

@@ -172,6 +172,8 @@ Motor.molde({
     if (F.gancho) $('#gT').textContent = F.gancho; else $('#gT').remove();
     F.dores.forEach((s, k) => { const c = mk('div', 'noti', null, $('#pilha')); c.innerHTML = `<div class="ic">${$m.icone(ICO_NOTI[k % 3])}</div>`;
       const cab = mk('div', 'cab', null, c); mk('span', null, F.nome, cab); mk('span', null, HORA_NOTI[k], cab); mk('div', 'tx t seg', s, c); });
+    // 27/10: the Raiz is not launching anything; a "Lançamento" badge was read as false by the Crítico
+    if (F.selo === '') $('#rSelo').remove(); else if (F.selo) $('#rSelo').textContent = F.selo;
     $('#vPt').textContent = F.pergunta; if (F.aparelho === 'computador') $('#fant').classList.add('pc');
     // 2 reveal: the logo in strips (or the name/photo when the brand has no logo version for this background)
     const lg = $m._logo(true), im = lg.querySelector('img:not(.avatar)');
@@ -267,7 +269,7 @@ Motor.molde({
     $('#rLogo').style.filter = `drop-shadow(0 0 ${8 + 50 * luz}px color-mix(in srgb, var(--destaque) ${Math.round(30 + 60 * luz)}%, transparent))`;
     const br = $('#rBrilho'); if (br) { const k = p(t, aceso - 0.1, 0.9); br.style.background = `linear-gradient(105deg, transparent ${k * 140 - 30}%, var(--destaque) ${k * 140 - 15}%, transparent ${k * 140}%)`; br.style.opacity = k > 0 && k < 1 ? 0.9 : 0; }
     const an = p(t, aceso, 0.9); $('#rAnel').style.opacity = an > 0 && an < 1 ? (1 - an) * 0.8 : 0; $('#rAnel').style.transform = `scale(${1 + an * 5})`;
-    $m.entra('#rSelo', t, a2 + 0.05, 0.5, -30); $('#rSelo').style.transform += ' translateX(-50%)';
+    if ($('#rSelo')) { $m.entra('#rSelo', t, a2 + 0.05, 0.5, -30); $('#rSelo').style.transform += ' translateX(-50%)'; }
     if ($('#rNome')) $m.entra('#rNome', t, aceso, 0.5, 40);
     $m.revela('#rTema', t, aceso + 0.2, 0.07);
     // tour: device in, then per screen: slide in, dive to the spot, outline, caption, pull back

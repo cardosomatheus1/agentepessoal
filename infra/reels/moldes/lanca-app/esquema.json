@@ -44,6 +44,12 @@
    "min": 6,
    "dica": "frase-tema do produto, entra com o logo"
   },
+  "selo": {
+   "tipo": "texto",
+   "max": 22,
+   "obrigatorio": false,
+   "dica": "etiqueta acima do logo (padrão: Lançamento). Só diga Lançamento se for mesmo um lançamento; vazio esconde"
+  },
   "aparelho": {
    "tipo": "escolha",
    "opcoes": [
