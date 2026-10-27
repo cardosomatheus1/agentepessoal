@@ -460,7 +460,9 @@ def _livre_gb() -> float:
 PROJETOS = Path("/home/opencodemobile/projects")
 PRINCIPAIS = {"erp-saas", "agentepessoal"}
 PARADO_H = 24
-REFAZ_SOZINHO = {"node_modules", "dist", "build", ".next", ".turbo", "coverage", ".cache", ".vite", "__pycache__"}
+REFAZ_SOZINHO = {"node_modules", "dist", "build", ".next", ".turbo", "coverage", ".cache", ".vite", "__pycache__",
+                 "e2e-artifacts", "test-results", "playwright-report", ".auth"}  # saídas de teste do ERP
+REFAZ_SUFIXOS = (".tsbuildinfo",)  # cache do TypeScript
 CACHE_TMP_DIAS = 2
 
 
@@ -493,9 +495,10 @@ def projeto_parado(pasta: Path, agora: float | None = None) -> str:
     rc, sujo = _git(pasta, "status", "--porcelain")
     if rc or sujo.strip():
         return "tem mudança ou arquivo novo"
-    rc, ignorados = _git(pasta, "status", "--porcelain", "--ignored")
+    rc, ignorados = _git(pasta, "status", "--porcelain", "--ignored=matching")
     fora = [l[3:] for l in ignorados.splitlines() if l.startswith("!! ")
-            and not any(parte in REFAZ_SOZINHO for parte in Path(l[3:].rstrip("/")).parts)]
+            and not any(parte in REFAZ_SOZINHO for parte in Path(l[3:].rstrip("/")).parts)
+            and not l[3:].rstrip("/").endswith(REFAZ_SUFIXOS)]
     if rc or fora:
         return f"arquivo ignorado pelo git que não se refaz ({fora[0] if fora else 'git'})"
     rc, remotos = _git(pasta, "branch", "-r", "--contains", "HEAD")

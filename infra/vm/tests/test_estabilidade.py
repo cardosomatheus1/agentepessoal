@@ -195,6 +195,13 @@ def main() -> int:
     g("checkout", "-q", "lateral", cwd=proj / "velha-outro-ramo")
     g("add", ".", cwd=proj / "velha-outro-ramo"); g("commit", "-qm", "c", cwd=proj / "velha-outro-ramo")
     g("checkout", "-q", "velha-outro-ramo", cwd=proj / "velha-outro-ramo")
+    (proj / "velha-limpa" / ".gitignore").write_text("node_modules/\n*.tsbuildinfo\ne2e/.auth/\ne2e-artifacts/\n")
+    g("add", ".", cwd=proj / "velha-limpa"); g("commit", "-qm", "ign", cwd=proj / "velha-limpa")
+    g("push", "-q", "origin", "velha-limpa", cwd=proj / "velha-limpa")
+    (proj / "velha-limpa" / "web.tsbuildinfo").write_text("{}")
+    (proj / "velha-limpa" / "e2e" / ".auth").mkdir(parents=True)
+    (proj / "velha-limpa" / "e2e" / ".auth" / "dono.json").write_text("{}")
+    (proj / "velha-limpa" / "e2e-artifacts").mkdir()
     (proj / "velha-limpa" / "node_modules").mkdir()
     (proj / "velha-limpa" / "node_modules" / "x").write_text("x")
     avulso = proj / "clone-avulso"  # clone (não worktree) com um ramo local não enviado: fica
