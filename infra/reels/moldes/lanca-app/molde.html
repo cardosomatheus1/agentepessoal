@@ -17,8 +17,6 @@ body.e-pop .noti{border:5px solid var(--texto);box-shadow:10px 10px 0 var(--text
 .noti .tx{width:620px;height:132px;font-size:50px;font-weight:800;line-height:1.2;margin-top:6px}
 #vP{position:absolute;left:110px;width:770px;top:640px;height:600px;font-size:104px;line-height:1.04;display:flex;align-items:center}
 #vP>div{width:100%}
-#fant{position:absolute;left:310px;top:1330px;width:460px;height:900px;border-radius:70px;border:14px solid var(--destaque);opacity:0}
-#fant.pc{left:110px;width:860px;height:560px;border-radius:26px;top:1420px}
 /* 2 reveal */
 #rSelo{position:absolute;left:50%;top:430px;font-size:38px;transform:translateX(-50%);white-space:nowrap}
 #rLogo{position:absolute;left:160px;top:540px;width:760px;height:300px}
@@ -101,7 +99,6 @@ body.e-pop .ben .bi{border:5px solid var(--texto);box-shadow:8px 8px 0 var(--tex
 <div class="cena" id="cG"><div class="cam full">
  <div class="tit t seg rv" id="gT"></div>
  <div id="pilha"></div>
- <div id="fant"></div>
  <div class="tit t seg" id="vP"><div class="rv" id="vPt"></div></div>
 </div></div>
 
@@ -143,8 +140,9 @@ const cena = ($m, sel, t, i, j, o) => { const q = $m.cena(sel, t, i, j, o), b = 
 const mk = (tag, cls, txt, pai) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (pai) pai.appendChild(e); return e; };
 // device geometry (stage px at scale 1): body box and the screen inside it
 const APAR = {
-  celular: { x: 305, y: 540, w: 470, h: 970, sx: 18, sy: 18, sw: 434, sh: 934, smax: 2.5, larg: 840 },
-  computador: { x: 70, y: 660, w: 940, h: 610, sx: 22, sy: 22, sw: 896, sh: 560, smax: 3.1, larg: 960 },
+  celular: { x: 305, y: 540, w: 470, h: 970, sx: 18, sy: 18, sw: 434, sh: 934, smax: 2.5, larg: 840, alt: 520 },
+  // 27/10 (AR Board, Matheus: "telas do pc ficam mt pequenas, cliente n ver nada"): the computer takes the whole width
+  computador: { x: 20, y: 640, w: 1040, h: 676, sx: 20, sy: 20, sw: 1000, sh: 625, smax: 3.2, larg: 1040, alt: 720 },
 };
 const ICO_NOTI = ['alerta', 'relogio', 'balao'];
 const HORA_NOTI = ['agora', 'agora', 'agora'];
@@ -157,12 +155,16 @@ const marcos = (a, b, textos, ini = 0.15, fimFrac = 0.82) => { const L = textos.
 
 Motor.molde({
   id: 'lanca-app', formatos: ['reel', 'story'],
+  // the preview's picture of a tour scene is the zoomed screen with its caption, not the pulled-back end
+  foto(i) { return D && i >= 3 && i < 3 + D.n ? 0.62 : null; },
   montar(F, M, $m) {
     const { $, brl } = $m, n = F.telas.length;
     if (F.falas.length !== n + 7) $m.erro(`falas: são ${n + 7} (dores, pergunta, revelação, uma por tela (${n}), benefícios, como começar, ${F.oferta ? 'oferta' : 'para quem é'}, chamada); vieram ${F.falas.length}`);
     if (!F.oferta && !F.para_quem) $m.erro('falta a cena 10: oferta de lançamento (com prazo real) ou para_quem (3 perfis)');
     if (F.oferta && F.para_quem) $m.erro('escolha uma: oferta ou para_quem');
-    F.telas.forEach((s, k) => { const d = s.destaque; if (d.x + d.largura > 100.5 || d.y + d.altura > 100.5) $m.erro(`telas[${k + 1}].destaque: passa da borda da tela (x + largura e y + altura até 100)`); });
+    F.telas.forEach((s, k) => { const d = s.destaque; if (d.x + d.largura > 100.5 || d.y + d.altura > 100.5) $m.erro(`telas[${k + 1}].destaque: passa da borda da tela (x + largura e y + altura até 100)`);
+      // 27/10: a spot of 70 to 80% of a computer screen gave a 1.3x zoom and nothing could be read
+      if (F.aparelho === 'computador' && (d.largura > 50 || d.altura > 50)) $m.erro(`telas[${k + 1}].destaque: no computador, até 50% de largura e de altura (um ponto da tela, não ela inteira: senão a câmera não aproxima e ninguém lê)`); });
     // the video must stay a one-minute commercial
     if (window.TEMPOS && window.TEMPOS.length > 1) { const dur = window.TEMPOS[window.TEMPOS.length - 1];
       if (dur < 55 || dur > 65) $m.erro(`duração ${dur.toFixed(1)} s: o molde pede 55 a 65 s (encurte ou alongue as falas)`); }
@@ -174,7 +176,7 @@ Motor.molde({
       const cab = mk('div', 'cab', null, c); mk('span', null, F.nome, cab); mk('span', null, HORA_NOTI[k], cab); mk('div', 'tx t seg', s, c); });
     // 27/10: the Raiz is not launching anything; a "Lançamento" badge was read as false by the Crítico
     if (F.selo === '') $('#rSelo').remove(); else if (F.selo) $('#rSelo').textContent = F.selo;
-    $('#vPt').textContent = F.pergunta; if (F.aparelho === 'computador') $('#fant').classList.add('pc');
+    $('#vPt').textContent = F.pergunta;
     // 2 reveal: the logo in strips (or the name/photo when the brand has no logo version for this background)
     const lg = $m._logo(true), im = lg.querySelector('img:not(.avatar)');
     if (im && !lg.classList.contains('selo')) {
@@ -197,7 +199,7 @@ Motor.molde({
       const x = Math.max(0, d.x - pad), y = Math.max(0, d.y - pad * A.sw / A.sh), w = Math.min(100 - x, d.largura + 2 * pad), h = Math.min(100 - y, d.altura + 2 * pad * A.sw / A.sh);
       return { x: x / 100 * A.sw, y: y / 100 * A.sh, w: w / 100 * A.sw, h: h / 100 * A.sh }; });
     // zoom target of each screen: the spot fits 840 x 520 px, centred with the caption under it
-    D.alvo = D.rect.map(r => { const s = Math.max(1, Math.min(A.smax, A.larg / r.w, 520 / r.h)); const H = r.h * s, grupo = H + 46 + 176;
+    D.alvo = D.rect.map(r => { const s = Math.max(1, Math.min(A.smax, A.larg / r.w, A.alt / r.h)); const H = r.h * s, grupo = H + 46 + 176;
       const top = Math.max(430, 950 - grupo / 2); return { s, cx: 520, cy: top + H / 2, callY: top + H + 46 }; });
     $('#tNome').textContent = F.telas.reduce((a, s) => s.nome.length > a.length ? s.nome : a, '');
     $('#callT').textContent = F.telas.reduce((a, s) => s.legenda.length > a.length ? s.legenda : a, '');
@@ -257,7 +259,6 @@ Motor.molde({
       c.style.transform = `translate(${fora * 1200 + tre}px, ${y}px) rotate(${fora * 8}deg) scale(${1 - 0.03 * depois})`;
       c.style.top = '0px'; c.style.opacity = cl(q * 2) * (1 - fora); c.style.scale = String(0.92 + 0.08 * cl(q));
     });
-    const fq = eo(p(t, a1 + 0.3, Math.max(1, ini(2) - a1 - 0.3))); $('#fant').style.opacity = 0.22 * cl(fq * 3); $('#fant').style.transform = `translateY(${-220 * fq}px)`;
     $('#vP').style.opacity = t >= a1 ? 1 : 0; $m.revela('#vPt', t, a1 + 0.45, 0.07);
     // 2: logo assembles in strips, lights up, then the theme
     const a2 = ini(2); cena($m, '#cR', t, 2, 2, { push: 0.04 });
@@ -277,7 +278,7 @@ Motor.molde({
     cena($m, '#cT', t, 3, 2 + n, { push: 0.01 });
     let k = 0; for (let j = 0; j < n; j++) if (t >= ini(3 + j)) k = j;
     const a = ini(3 + k), b = fim(3 + k), R = D.rect[k], G = D.alvo[k];
-    const zin = eio(p(t, a + 0.6, 0.8)), zout = eio(p(t, b - 0.65, 0.6)), z = zin * (1 - zout);
+    const zin = eio(p(t, a + 0.5, 0.7)), zout = eio(p(t, b - 0.4, 0.35)), z = zin * (1 - zout);  // 27/10: longer on the zoomed screen
     const ent = eo5(p(t, T0 - 0.1, 1.0));
     const s = lerp(1, G.s, z), pcx = A.sx + R.x + R.w / 2, pcy = A.sy + R.y + R.h / 2;
     const cx = lerp(A.x + pcx, G.cx, z), cy = lerp(A.y + pcy, G.cy, z);
@@ -294,7 +295,7 @@ Motor.molde({
     // top title (wide view) and the caption beside the spot (zoomed)
     if ($('#tNome').dataset.k !== String(k)) { $('#tNome').dataset.k = k; $('#tNome').textContent = F.telas[k].nome; $('#tNum').textContent = k + 1; $('#callT').textContent = F.telas[k].legenda; }
     const tq = eo5(p(t, a + 0.1, 0.45)); $('#tTop').style.opacity = tq * (1 - eo(p(t, a + 0.7, 0.4))) * (t < TN ? 1 : 0); $('#tTop').style.transform = `translateY(${(1 - tq) * -30}px)`;
-    const cq = eb(p(t, a + 1.3, 0.5)), cfo = 1 - eo(p(t, b - 0.7, 0.3)), call = $('#call');
+    const cq = eb(p(t, a + 1.3, 0.5)), cfo = 1 - eo(p(t, b - 0.45, 0.25)), call = $('#call');
     call.style.top = G.callY + 'px'; call.style.setProperty('--px', (Math.min(860, Math.max(150, G.cx)) - 110) + 'px');
     call.style.opacity = cl(cq * 2) * cfo; call.style.transform = `translateY(${(1 - cq) * 40}px) scale(${0.9 + 0.1 * cq})`;
     // benefits: each row arrives as the line names it

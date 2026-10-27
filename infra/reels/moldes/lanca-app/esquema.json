@@ -82,7 +82,7 @@
     },
     "destaque": {
      "tipo": "objeto",
-     "dica": "o ponto da tela que importa, em % do print (x e y do canto de cima à esquerda); a câmera mergulha nele",
+     "dica": "o ponto da tela que importa, em % do print (x e y do canto de cima à esquerda); a câmera mergulha nele. No computador, até 50% de largura e de altura: um ponto (um card, uma coluna, um número), nunca a tela quase inteira",
      "campos": {
       "x": {
        "tipo": "numero",

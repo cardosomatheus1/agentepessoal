@@ -18,9 +18,9 @@
    "legenda": "Cada mesa com o tempo e o valor da conta",
    "destaque": {
     "x": 19,
-    "y": 32.5,
-    "largura": 79,
-    "altura": 24
+    "y": 30,
+    "largura": 48,
+    "altura": 30
    }
   },
   {
@@ -28,10 +28,10 @@
    "nome": "Cozinha",
    "legenda": "Mesa e iFood na mesma tela da cozinha",
    "destaque": {
-    "x": 18.8,
-    "y": 30,
-    "largura": 59.5,
-    "altura": 44
+    "x": 38.5,
+    "y": 29.5,
+    "largura": 40,
+    "altura": 45
    }
   },
   {
@@ -40,9 +40,9 @@
    "legenda": "Quanto do faturamento virou custo",
    "destaque": {
     "x": 19,
-    "y": 21.5,
-    "largura": 79,
-    "altura": 24.5
+    "y": 20,
+    "largura": 48,
+    "altura": 28
    }
   },
   {
@@ -51,9 +51,9 @@
    "legenda": "Quanto sobrou no mês, em uma linha",
    "destaque": {
     "x": 19,
-    "y": 16,
-    "largura": 79,
-    "altura": 36
+    "y": 15,
+    "largura": 48,
+    "altura": 38
    }
   }
  ],
@@ -109,5 +109,6 @@
  "nota": "valores de exemplo",
  "_origem": {
   "telas": "sistema"
- }
+ },
+ "selo": ""
 }

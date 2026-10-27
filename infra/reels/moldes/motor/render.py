@@ -258,7 +258,8 @@ def main():
         except ErroMolde as e:
             rel["erros"] = [str(e)]; (saida / "relatorio.json").write_text(json.dumps(rel, ensure_ascii=False, indent=1))
             print("MOLDE RECUSOU:\n  " + str(e)); sys.exit(2)
-        info = pg.evaluate("({erros: Motor.erros, avisos: Motor.avisos, S: Motor.S, N: Motor.N, DUR: Motor.DUR, slides: Motor._slides.length})")
+        info = pg.evaluate("({erros: Motor.erros, avisos: Motor.avisos, S: Motor.S, N: Motor.N, DUR: Motor.DUR, slides: Motor._slides.length, "
+                           "foto: Motor.def && Motor.def.foto ? Array.from({length: Motor.N}, (_, i) => Motor.def.foto(i)) : []})")
         rel["avisos"] = info["avisos"]
         if info["erros"]:
             rel["erros"] = info["erros"]; (saida / "relatorio.json").write_text(json.dumps(rel, ensure_ascii=False, indent=1))
@@ -277,7 +278,11 @@ def main():
                 ini, fim = S[i], S[i + 1]
                 # the picture of each scene is its last moment, with everything on screen (22/10: at 60% the Crítico
                 # saw a step still sliding in and read it as cut text)
-                amostras += [(i, round(ini + (fim - ini) * 0.6, 3), False), (i, round(max(ini, fim - 0.08), 3), True)]
+                # 27/10: a molde may name the moment that shows its scene (lanca-app: the zoomed screen; at the end the
+                # camera had pulled back and Matheus judged screens he could not read)
+                f = (info.get("foto") or [None] * N)[i]
+                foto = round(ini + (fim - ini) * f, 3) if isinstance(f, (int, float)) and 0 < f < 1 else round(max(ini, fim - 0.08), 3)
+                amostras += [(i, round(ini + (fim - ini) * 0.6, 3), False), (i, foto, True)]
             antes = set()
             for i, t, foto in amostras:
                 pg.evaluate(f"render({t})")

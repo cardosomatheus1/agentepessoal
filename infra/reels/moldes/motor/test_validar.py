@@ -63,5 +63,13 @@ caso("lanca-app aceita selo vazio", not any("selo" in e for e in validar(LA, {"s
 caso("lanca-app recusa selo longo", any("selo" in e for e in validar(LA, {"selo": "x" * 23})))
 caso("lanca-app esconde o selo vazio", "if (F.selo === '') $('#rSelo').remove()" in (RAIZ / "lanca-app" / "molde.html").read_text())
 
+# 27/10 (AR Board: "telas do pc ficam mt pequenas", "frase perto de um quadrado sem nada")
+LAH = (RAIZ / "lanca-app" / "molde.html").read_text()
+caso("lanca-app sem o contorno fantasma", "fant" not in LAH)
+caso("lanca-app recusa destaque grande no computador", "d.largura > 50 || d.altura > 50" in LAH)
+caso("lanca-app: a prévia fotografa a tela com zoom", "foto(i)" in LAH and "Motor.def.foto" in (RAIZ / "motor" / "render.py").read_text())
+EX = json.loads((RAIZ / "lanca-app" / "exemplos" / "raiz-sistema-computador.json").read_text())
+caso("exemplo da Raiz com destaques de ponto", all(t["destaque"]["largura"] <= 50 and t["destaque"]["altura"] <= 50 for t in EX["telas"]))
+
 print(f"validar: {ok}/{ok + falhou}")
 sys.exit(1 if falhou else 0)
