@@ -18,6 +18,10 @@ from pathlib import Path
 
 OPENCODE = "/root/.opencode/bin/opencode2"
 MODELO = "amazon-bedrock/global.anthropic.claude-opus-5-5"
+# 27/10: o perfil global do Opus 5.5 ficou fora por mais de meia hora ("Bedrock is unable to process your request")
+# enquanto o perfil us respondia: a revisão tenta o mesmo modelo pelo us antes de desistir
+MODELOS = (MODELO, "amazon-bedrock/us.anthropic.claude-opus-5-5")
+FORA_DO_AR = re.compile(r"Bedrock is unable to process|ServiceUnavailable|Too many requests|ThrottlingException", re.I)
 DIFF_MAX = 120_000
 # 27/10: o OpenCode do celular (usuário opencodemobile, `opencode serve --service`) ocupa a porta padrão do serviço
 # gerenciado (49374) e o do revisor no host parava com "port 49374 is already in use": o revisor usa outra.
@@ -60,7 +64,12 @@ def veredito(saida: str) -> str:
     return m.group(1).lower() if m else ""
 
 
-def comando_vm(chave_s3: str, pasta: str, motivo: str) -> str:
+def fora_do_ar(saida: str) -> bool:
+    """The review did not run because Bedrock refused the model (not a verdict, not our error)."""
+    return not veredito(saida) and bool(FORA_DO_AR.search(_ANSI.sub("", str(saida or ""))))
+
+
+def comando_vm(chave_s3: str, pasta: str, motivo: str, modelo: str = MODELO) -> str:
     pedido = PEDIDO.format(diff=f"{pasta}/diff.patch", motivo=motivo or "(não informado)")
     p64 = base64.b64encode(pedido.encode("utf-8")).decode()
     # 22/10: the VM hibernated in the middle of a review (a call straight to Bedrock is not "use" for watchdog.sh); its
@@ -68,7 +77,7 @@ def comando_vm(chave_s3: str, pasta: str, motivo: str) -> str:
     # 23/10 (virada ao Hermes): com o A0 parado, o mesmo OpenCode 2 + Ponytail roda no host (copiado do container dele
     # por hermes/virada.sh para os mesmos caminhos de /root), com /a0/usr apontando para /opt/a0/usr (o revisor lê os
     # mesmos caminhos) e o papel da VM no lugar das credenciais (o perfil bedrock-agentzero não tem chave).
-    rodar = (f"timeout 900 {OPENCODE} run --model {MODELO} \"$(cat {pasta}/pedido.md)\" > {pasta}/revisao.md 2>&1; "
+    rodar = (f"timeout 900 {OPENCODE} run --model {modelo} \"$(cat {pasta}/pedido.md)\" > {pasta}/revisao.md 2>&1; "
              f"rc=$?; tail -c 6000 {pasta}/revisao.md; echo; echo {FIM}$rc")
     no_a0 = (f"docker exec agent-zero mkdir -p {pasta} && docker cp /tmp/{chave_s3} agent-zero:{pasta}/diff.patch && "
              f"docker cp /tmp/{chave_s3}.pedido agent-zero:{pasta}/pedido.md && "
@@ -100,11 +109,15 @@ def main(argv: list) -> int:
     subprocess.run(["aws", "s3", "cp", str(local), f"{BUCKET}/{chave}"], check=True, capture_output=True)
     pasta = f"/a0/usr/workdir/revisao_opencode/{chave[:-6]}"
     vm = Path(__file__).resolve().parent / "vmcmd.py"
-    saida = subprocess.run([sys.executable, str(vm), comando_vm(chave, pasta, motivo)],
-                           capture_output=True, text=True).stdout
+    for modelo in MODELOS:
+        saida = subprocess.run([sys.executable, str(vm), comando_vm(chave, pasta, motivo, modelo)],
+                               capture_output=True, text=True).stdout
+        v = veredito(saida)
+        if v or not fora_do_ar(saida):
+            break
+        print(f"(o Bedrock não atendeu {modelo.split('/')[-1]}; tentando o próximo perfil)")
     print(saida.strip())
-    print(f"\n(revisão completa na VM: {pasta}/revisao.md; revisor: OpenCode 2 com {MODELO.split('/')[-1]})")
-    v = veredito(saida)
+    print(f"\n(revisão completa na VM: {pasta}/revisao.md; revisor: OpenCode 2 com {modelo.split('/')[-1]})")
     return 0 if v == "aprovado" else 1 if v == "reprovado" else 2
 
 

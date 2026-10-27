@@ -20,6 +20,15 @@ if r.veredito("...\nVEREDITO: APROVADO\n__FIM_OPENCODE=0") != "aprovado":
     falhas.append("veredito aprovado no fim de uma execução boa")
 if r.veredito("Error: Bedrock is unable to process your request.\n__FIM_OPENCODE=1") != "":
     falhas.append("execução que caiu não vale como veredito")
+# 27/10: the global Opus profile was down for half an hour while the us one answered
+if not r.fora_do_ar("\x1b[91mError: \x1b[0mBedrock is unable to process your request.\n__FIM_OPENCODE=1"):
+    falhas.append("Bedrock fora do ar é reconhecido")
+if r.fora_do_ar("VEREDITO: REPROVADO — x\n__FIM_OPENCODE=0") or r.fora_do_ar("Error: model not found\n__FIM_OPENCODE=1"):
+    falhas.append("veredito ou outro erro não troca de perfil")
+if r.MODELOS[0] != r.MODELO or not r.MODELOS[1].endswith("us.anthropic.claude-opus-5-5"):
+    falhas.append("tenta o global e depois o us, o mesmo Opus 5.5")
+if f"run --model {r.MODELOS[1]} " not in r.comando_vm("x.patch", "/p", "m", r.MODELOS[1]):
+    falhas.append("o comando usa o perfil pedido")
 if falhas:
     sys.exit("test_revisar_opencode: " + "; ".join(falhas))
 print("test_revisar_opencode: ok")
