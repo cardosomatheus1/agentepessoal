@@ -402,6 +402,56 @@ def _desenhar(esp, briefing: dict, p: dict) -> dict:
             **{k: d[k] for k in ("video_pendente", "previa", "folha", "narracao") if d.get(k)}}
 
 
+def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict) -> dict:
+    """One feed proposal of the week, drawn by the Designer and judged by the Crítico."""
+    briefing = {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato,
+                "titulo": _texto(p.get("titulo"), 120), "ideia": _texto(p.get("ideia"), 1200),
+                "legenda": str(p.get("legenda") or "").strip(), "data": dia, "regras": REGRAS}
+    d = _desenhar(esp, briefing, p)
+    if nota:
+        d["critica"]["motivos"] = [nota] + d["critica"]["motivos"]
+    legenda = briefing["legenda"] or str(d["spec"].get("legenda") or "").strip()
+    pendente = formato == "REELS" and d.get("video_pendente")
+    tipo, arquivos, capa = ("REELS", [], "") if pendente else tipo_dos_arquivos(d["arquivos"])
+    problema = ""
+    if not tipo:
+        problema = "o Designer não entregou arquivo publicável (.mp4, ou de 1 a 10 imagens)" + (
+            f": {_texto('; '.join(d['falta']), 160)}" if d["falta"] else "")
+    else:
+        problema = c().validar_legenda(legenda)
+    return {"n": n, "id": f"{sid}-{n}", "data": dia, "hora": str(p.get("hora") or HORA), "titulo": briefing["titulo"],
+          "ideia": briefing["ideia"], "formato_pedido": formato, "tipo": tipo, "arquivos": arquivos,
+          "capa": capa, "legenda": legenda, "spec": d["spec"], "critica": d["critica"],
+          "problema": problema, "estado": "proposta",
+          **({"video": {"estado": "aguardando_aprovacao", "molde": d["spec"].get("molde"),
+                        "formato": str(d["spec"].get("formato") or "reel"), "ficha": d["spec"].get("ficha")},
+              "previa": d.get("previa", []), "folha": d.get("folha", ""), "narracao": d.get("narracao", "")}
+             if pendente else {})}
+
+
+def _item_story(esp, sid: str, n: int, campos: dict, dia: str, itens: list, sufixo: str = "") -> dict:
+    """One story of the week, drawn from the kit, judged (with the day's post it calls) and redone when reproved."""
+    post, sem_post = _post_do_dia(campos, dia, itens)
+    if post and post.get("imagem") and not campos.get("imagem"):  # the post's own picture, not a text-only card
+        campos = dict(campos, imagem=post["imagem"])
+    d = _desenhar_story(esp, campos, _pasta() / sid / f"story-{n}{sufixo}.jpg", post)
+    for k in range(REFAZER_STORY if esp is not None and not sem_post else 0):  # reproved: redone before he sees it
+        if d["critica"]["veredito"] != "reprova":
+            break
+        feito = _refazer_story(esp, campos, d["critica"], _pasta() / sid / f"story-{n}{sufixo}-r{k + 1}.jpg", post)
+        if not feito:
+            break
+        campos, d = feito
+    if sem_post and d["arquivos"]:  # rewriting the story cannot make the post exist: reproved, says why
+        d["critica"] = {"veredito": "reprova", "motivos": [sem_post] + [m for m in d["critica"]["motivos"]][:4],
+                        "sugestoes": d["critica"].get("sugestoes") or []}
+    titulo = f"{campos.get('layout', '?')}: {_texto(campos.get('manchete') or 'oferta Lucro na Mão', 100)}"
+    return {"n": n, "id": f"{sid}-{n}", "data": dia, "hora": HORA_STORY, "titulo": titulo, "ideia": "",
+          "formato_pedido": "STORY", "tipo": "STORY" if d["arquivos"] else "", "arquivos": d["arquivos"],
+          "capa": "", "legenda": _texto(campos.get("manchete"), 200), "spec": {"story": campos},
+          "critica": d["critica"], "problema": d["problema"], "estado": "proposta"}
+
+
 def propor(propostas: list, agora: float | None = None, enviar=None, login: str = "matheus", stories=None) -> dict:
     """The week: 4 feed ideas from the routine [{"titulo", "formato" (2 CARROSSEL and 2 REELS), "ideia", "legenda"}]
     and 7 stories [{"layout", "manchete", ...: helpers/story.py}] → each drawn and judged, saved as a new version,
@@ -440,50 +490,9 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
     fila = {f: [p for p in propostas if str(p.get("formato") or "").upper() == f] for f in ("CARROSSEL", "REELS")}
     itens = []
     for n, (formato, dia) in enumerate(vagas, start=1):
-        p = fila[formato].pop(0)
-        briefing = {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato,
-                    "titulo": _texto(p.get("titulo"), 120), "ideia": _texto(p.get("ideia"), 1200),
-                    "legenda": str(p.get("legenda") or "").strip(), "data": dia, "regras": REGRAS}
-        d = _desenhar(esp, briefing, p)
-        if nota:
-            d["critica"]["motivos"] = [nota] + d["critica"]["motivos"]
-        legenda = briefing["legenda"] or str(d["spec"].get("legenda") or "").strip()
-        pendente = formato == "REELS" and d.get("video_pendente")
-        tipo, arquivos, capa = ("REELS", [], "") if pendente else tipo_dos_arquivos(d["arquivos"])
-        problema = ""
-        if not tipo:
-            problema = "o Designer não entregou arquivo publicável (.mp4, ou de 1 a 10 imagens)" + (
-                f": {_texto('; '.join(d['falta']), 160)}" if d["falta"] else "")
-        else:
-            problema = c().validar_legenda(legenda)
-        itens.append({"n": n, "id": f"{sid}-{n}", "data": dia, "hora": str(p.get("hora") or HORA), "titulo": briefing["titulo"],
-                      "ideia": briefing["ideia"], "formato_pedido": formato, "tipo": tipo, "arquivos": arquivos,
-                      "capa": capa, "legenda": legenda, "spec": d["spec"], "critica": d["critica"],
-                      "problema": problema, "estado": "proposta",
-                      **({"video": {"estado": "aguardando_aprovacao", "molde": d["spec"].get("molde"),
-                                    "formato": str(d["spec"].get("formato") or "reel"), "ficha": d["spec"].get("ficha")},
-                          "previa": d.get("previa", []), "folha": d.get("folha", ""), "narracao": d.get("narracao", "")}
-                         if pendente else {})})
+        itens.append(_item_feed(esp, nota, sid, n, formato, dia, fila[formato].pop(0)))
     for n, (campos, dia) in enumerate(zip(stories, dias_story), start=len(vagas) + 1):
-        post, sem_post = _post_do_dia(campos, dia, itens)
-        if post and post.get("imagem") and not campos.get("imagem"):  # the post's own picture, not a text-only card
-            campos = dict(campos, imagem=post["imagem"])
-        d = _desenhar_story(esp, campos, _pasta() / sid / f"story-{n}.jpg", post)
-        for k in range(REFAZER_STORY if esp is not None and not sem_post else 0):  # reproved: redone before he sees it
-            if d["critica"]["veredito"] != "reprova":
-                break
-            feito = _refazer_story(esp, campos, d["critica"], _pasta() / sid / f"story-{n}-r{k + 1}.jpg", post)
-            if not feito:
-                break
-            campos, d = feito
-        if sem_post and d["arquivos"]:  # rewriting the story cannot make the post exist: reproved, says why
-            d["critica"] = {"veredito": "reprova", "motivos": [sem_post] + [m for m in d["critica"]["motivos"]][:4],
-                            "sugestoes": d["critica"].get("sugestoes") or []}
-        titulo = f"{campos.get('layout', '?')}: {_texto(campos.get('manchete') or 'oferta Lucro na Mão', 100)}"
-        itens.append({"n": n, "id": f"{sid}-{n}", "data": dia, "hora": HORA_STORY, "titulo": titulo, "ideia": "",
-                      "formato_pedido": "STORY", "tipo": "STORY" if d["arquivos"] else "", "arquivos": d["arquivos"],
-                      "capa": "", "legenda": _texto(campos.get("manchete"), 200), "spec": {"story": campos},
-                      "critica": d["critica"], "problema": d["problema"], "estado": "proposta"})
+        itens.append(_item_story(esp, sid, n, campos, dia, itens))
     semana = {"id": sid, "criada_em": agora, "estado": "proposta", "login": login, "propostas": itens}
     with _exclusivo():
         for antiga in _pasta().glob("s*.json"):  # an older week still open is replaced: its buttons stop working
@@ -505,6 +514,62 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
     return {"ok": True, "semana": sid, "enviada": not erro, **({"erro_envio": str(erro)[:200]} if erro else {}),
             "propostas": [{"n": i["n"], "data": i["data"], "tipo": i["tipo"] or "?", "titulo": i["titulo"],
                            "critico": i["critica"]["veredito"], "problema": i["problema"]} for i in itens]}
+
+
+def refazer_propostas(sid: str, feed=None, stories=None, enviar=None) -> dict:
+    """Redoes only some proposals of a week still open (27/10, Matheus: "Pode fazer" for the reproved Reel and carousel),
+    in the same days and slots, keeping the others as he saw them. `feed` = {n: {"titulo", "ideia", "legenda"}},
+    `stories` = {n: story fields}. A story that calls a redone feed post is judged again with the new post (its fields
+    unchanged when not given). Then the same week's message goes again, with its buttons."""
+    try:
+        feed = json.loads(feed) if isinstance(feed, str) else (feed or {})
+        stories = json.loads(stories) if isinstance(stories, str) else (stories or {})
+        feed = {int(k): v for k, v in feed.items() if isinstance(v, dict)}
+        stories = {int(k): v for k, v in stories.items() if isinstance(v, dict)}
+    except (ValueError, TypeError, AttributeError):
+        return {"ok": False, "erro": "feed e stories: objetos {número: campos}"}
+    semana = carregar(sid) if re.fullmatch(r"s\d{8}-\d{1,3}", str(sid or "")) else None
+    if not semana or semana["estado"] not in ("proposta", "parcial"):
+        return {"ok": False, "erro": f"a semana {sid} não está aberta"}
+    itens = semana["propostas"]
+    por_n = {p["n"]: p for p in itens}
+    for n, novo in [*feed.items(), *stories.items()]:
+        p = por_n.get(n)
+        if not p or p["estado"] != "proposta":
+            return {"ok": False, "erro": f"a {n} não é uma proposta aberta desta semana"}
+        if (n in feed) == (p["formato_pedido"] == "STORY"):
+            return {"ok": False, "erro": f"a {n} é {NOME_TIPO[p['formato_pedido']]}: mande-a em {'stories' if n in feed else 'feed'}"}
+    if not feed and not stories:
+        return {"ok": False, "erro": "diga quais refazer"}
+    esp = c().especialistas()
+    rodada = 1 + max([int(p.get("refeita") or 0) for p in itens] or [0])
+    capas_velhas = {_imagem_do_post(por_n[n]) for n in feed} - {""}
+    for n, novo in feed.items():
+        velho = por_n[n]
+        item = _item_feed(esp, "", sid, n, velho["formato_pedido"], velho["data"], dict(novo, hora=velho["hora"]))
+        itens[itens.index(velho)] = por_n[n] = dict(item, refeita=rodada)
+    dias = {por_n[n]["data"] for n in feed}
+    for p in list(itens):
+        if p["formato_pedido"] == "STORY" and p["estado"] == "proposta" and (
+                p["n"] in stories or (p["data"] in dias and p["spec"]["story"].get("layout") in CHAMA)):
+            campos = stories.get(p["n"]) or {k: v for k, v in p["spec"]["story"].items()  # the old post's cover goes
+                                             if not (k == "imagem" and v in capas_velhas)}
+            item = _item_story(esp, sid, p["n"], campos, p["data"], itens, sufixo=f"-v{rodada}")
+            itens[itens.index(p)] = por_n[p["n"]] = dict(item, refeita=rodada)
+    with _exclusivo():
+        atual = carregar(sid)
+        if atual["estado"] not in ("proposta", "parcial"):
+            return {"ok": False, "erro": f"a semana {sid} foi decidida enquanto eu refazia"}
+        mudou = {p["n"]: p for p in itens if p.get("refeita") == rodada}
+        atual["propostas"] = [mudou.get(p["n"], p) for p in atual["propostas"]]
+        _gravar(atual)
+    c()._diario({"semana": sid, "refeitas": sorted(mudou), "vereditos": [mudou[n]["critica"]["veredito"] for n in sorted(mudou)]})
+    texto, botoes = mensagem(atual)
+    erro = (enviar or _enviar_ponte)(atual.get("login", "matheus"), "Refiz " + ", ".join(map(str, sorted(mudou)))
+                                     + ".\n\n" + texto, botoes)
+    return {"ok": True, "semana": sid, "enviada": not erro, **({"erro_envio": str(erro)[:200]} if erro else {}),
+            "refeitas": [{"n": p["n"], "data": p["data"], "titulo": p["titulo"], "critico": p["critica"]["veredito"],
+                          "problema": p["problema"]} for p in mudou.values()]}
 
 
 def _rotulo_dia(data: str) -> str:

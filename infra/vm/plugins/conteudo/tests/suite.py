@@ -708,6 +708,40 @@ class Suite:
         ok(len(c.carregar()["itens"]) == 9, "nada duplicado")
         ok(s.botao("outra", "cs:matheus:s20261026-1:todas") == {}, "botão de outra pessoa não vale")
 
+    def t_semana_refazer_so_algumas(self):
+        # 27/10, Matheus ("Pode fazer"): redo only the reproved Reel and carousel, keeping the 7 he saw approved
+        c, s, chamadas = self._semana(reprovar=(2,))  # the Reel of qua 28/10 is reproved
+        r = s.propor(self._feed(), _ts(c, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())
+        sid = r["semana"]
+        antes = {p["n"]: p for p in s.carregar(sid)["propostas"]}
+        ok(antes[6]["critica"]["veredito"] == "reprova", "o story de qua chama o Reel reprovado")
+        enviados = []
+        r = s.refazer_propostas(sid, feed={"2": {"titulo": "Reel novo", "ideia": "gancho melhor", "legenda": "Legenda nova."}},
+                                stories={"11": {"layout": "dica", "manchete": "Dica nova"}},
+                                enviar=lambda login, texto, botoes: enviados.append((texto, botoes)) or "")
+        ok(r["ok"] and sorted(x["n"] for x in r["refeitas"]) == [2, 6, 11], r)
+        depois = {p["n"]: p for p in s.carregar(sid)["propostas"]}
+        ok(chamadas[-1]["titulo"] == "Reel novo" and chamadas[-1]["data"] == "2026-10-28" and len(chamadas) == 5,
+           "só o Reel volta ao Designer, no mesmo dia")
+        ok(depois[2]["titulo"] == "Reel novo" and depois[2]["critica"]["veredito"] == "aprova" and depois[2]["hora"] == "11:45", depois[2])
+        ok(depois[6]["critica"]["veredito"] == "aprova" and depois[6]["spec"]["story"]["manchete"] == "Story 2"
+           and depois[6]["spec"]["story"]["imagem"].endswith("r5-capa.jpg"),
+           f"o story que chama o Reel é julgado de novo, com a capa nova: {depois[6]}")
+        ok(depois[11]["spec"]["story"] == {"layout": "dica", "manchete": "Dica nova"} and depois[11]["arquivos"][0].endswith("-v1.jpg"),
+           depois[11])
+        ok(all(depois[n] == antes[n] for n in antes if n not in (2, 6, 11)), "as outras ficam como ele viu")
+        ok(len(enviados) == 1 and enviados[0][0].startswith("Refiz 2, 6, 11.") and enviados[0][1][0]["id"] == f"cs:matheus:{sid}:todas",
+           enviados and enviados[0][0][:80])
+        ok("Ainda" not in s.botao("matheus", f"cs:matheus:{sid}:todas", subir=lambda *a: None)["mensagem"][:5], "os botões valem")
+        for erro in (s.refazer_propostas(sid, feed={"2": {"titulo": "x"}}),
+                     s.refazer_propostas("s20261026-9", feed={"2": {}}),
+                     s.refazer_propostas(sid)):
+            ok(not erro["ok"], erro)
+        c2, s2, _ = self._semana()
+        sid2 = s2.propor(self._feed(), _ts(c2, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())["semana"]
+        ok("mande-a em stories" in s2.refazer_propostas(sid2, feed={"6": {"titulo": "x"}}, enviar=lambda *a: "")["erro"],
+           "story no lugar errado")
+
     def t_semana_story_que_chama_o_post_do_dia(self):
         # 26/10: the 9h stories said "Veja o vídeo de hoje" for Reels whose render had failed, one about stock on a day
         # whose Reel was about iFood, and "o post de hoje" on a day with no post; the Crítico saw the story alone
