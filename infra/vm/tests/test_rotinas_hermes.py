@@ -116,7 +116,7 @@ checa(ck.read_text() == "visto: x", "checkpoint que já existe não é tocado")
 # 24-27/10, 🎯 Prospecção — executar (4 rodadas): o bloco mandava reler o checkpoint com read_file e reescrever com
 # write_file; a 2ª leitura na mesma rodada volta do Hermes como {"status": "unchanged", "dedup": true} sem "content" e o
 # código do agente (`read_file(p, limit=2000)["content"]`) quebrava com KeyError: 'content'. Agora: acrescentar no fim.
-checa(f"cat >> {ck} <<'FIM'" in c and "read_file` inteiro" not in c and "reescreva com `write_file`" not in c,
+checa(f"cat >> {ck} <<'FIM_CHECKPOINT_7F3'" in c and "read_file` inteiro" not in c and "reescreva com `write_file`" not in c,
       "registrar no checkpoint é acrescentar no fim pelo terminal, sem reler nem reescrever")
 for _f in _glob.glob(str(Path(__file__).resolve().parents[1] / "hermes" / "rotinas" / "*.json")):
     _t = json.loads(Path(_f).read_text()).get("pedido", "")
