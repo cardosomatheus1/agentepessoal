@@ -681,7 +681,11 @@ class Suite:
         agora = _ts(c, "2026-10-26", "07:50")
         s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
         subidos = []
-        r = s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda local, chave: subidos.append((local, chave)))
+        from unittest import mock
+        # the button uses the real clock: pinned to the week's Monday (28/10 on, days 1 and 5 were "o dia já passou")
+        with mock.patch("time.time", return_value=agora):
+            r = s.botao("matheus", "cs:matheus:s20261026-1:todas",
+                        subir=lambda local, chave: subidos.append((local, chave)))
         ok("Agendados" in r["mensagem"] and "Não agendei" not in r["mensagem"], r)
         itens = {i["id"]: i for i in c.carregar()["itens"]}
         ok(len(itens) == 9 and not {"s20261026-1-3", "s20261026-1-8"} & set(itens),
@@ -703,7 +707,8 @@ class Suite:
         api = ApiFalsa()
         pub = c.rodar(api, lambda t: None, _ts(c, "2026-10-27", "11:50"), dormir=lambda x: None, critico=aprova)
         ok(pub["estado"] == "publicada" and any(x[2].get("media_type") == "CAROUSEL" for x in api.chamadas), "o carrossel do dia")
-        de_novo = s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda *a: None)["mensagem"]
+        with mock.patch("time.time", return_value=agora):
+            de_novo = s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda *a: None)["mensagem"]
         ok(de_novo.startswith("Nada para agendar") and "Ainda esperando você: 3, 8" in de_novo, f"aprovar de novo não duplica: {de_novo}")
         ok(len(c.carregar()["itens"]) == 9, "nada duplicado")
         ok(s.botao("outra", "cs:matheus:s20261026-1:todas") == {}, "botão de outra pessoa não vale")
