@@ -28,6 +28,7 @@ CHECKPOINTS = DADOS / "rotinas"         # <a0 uuid ou job>/contexto.md
 JOBS = Path("/opt/data/cron/jobs.json")  # o cron do próprio Hermes (para o nome, se o mapa não tiver)
 CRON = re.compile(r"^cron_([A-Za-z0-9]+)_\d{8}_\d{6}$")
 LIMITE_CELULAR = 3500
+CHECKPOINT_MAX = 16000  # caracteres: o checkpoint só cresce (a rodada acrescenta no fim); o começo antigo é cortado
 log = logging.getLogger("agentepessoal.rotinas")
 _trava = threading.Lock()
 _avisadas: set = set()
@@ -37,7 +38,7 @@ Cada rodada segue LER → ENTENDER → AGIR, qualquer que seja a tarefa:
 1. LER: o que mudou desde a última rodada (o seu checkpoint `{checkpoint}` e as fontes da tarefa), lendo o conteúdo de verdade — a mensagem, o e-mail, a página —, não só status e títulos.
 2. ENTENDER: qual é o objetivo do usuário com esta tarefa e o que o que mudou significa para ele: alguém (uma pessoa, uma sessão, um sistema) está esperando algo que você pode dar? algo de uma fonte precisa chegar a outra? algo travou ou precisa da decisão dele? Quando houver decisão com contexto a tomar (coordenar, priorizar, interpretar o que outros escreveram), chame `consultar_sol` com o texto relevante copiado e peça ações concretas.
 3. AGIR: faça o que essa leitura pede, dentro do que a tarefa e as regras do usuário autorizam — repasse, instrua, corrija, avise. "Observei e não fiz nada" só vale quando o passo 2 concluiu que nada era preciso.
-Registre no checkpoint (leia `{checkpoint}` inteiro com `read_file` e reescreva com `write_file`: o Hermes não sobrescreve arquivo que não leu) o que viu e o que fez, para não repetir ação na próxima rodada (cada rodada começa numa conversa nova: o checkpoint é a sua memória desta rotina).
+Registre no checkpoint o que viu e o que fez, para não repetir ação na próxima rodada (cada rodada começa numa conversa nova: o checkpoint é a sua memória desta rotina). Registrar é ACRESCENTAR no fim, com `terminal`: `cat >> {checkpoint} <<'FIM'` + as linhas novas (data e hora no começo) + `FIM`. Não releia nem reescreva o arquivo inteiro: na mesma rodada, uma 2ª leitura volta `unchanged` sem o conteúdo (também dentro de `execute_code`), e reescrever de memória perde anotações. O começo antigo é cortado sozinho quando o arquivo cresce.
 
 Sua resposta final de cada rodada chega sozinha no celular do usuário (Telegram/WhatsApp): seja curto e comece pelo que importa. Se a rodada gerou um arquivo para ele, mande o arquivo com `whatsapp_enviar` em vez de citar o caminho da pasta (ele não acessa a máquina).
 - Se a tarefa disser para ficar em silêncio quando não houver novidade e esta rodada não tiver nada novo, comece a resposta final com `SEM NOVIDADE` (ela não é enviada).
@@ -119,6 +120,21 @@ def rotina(job: str) -> dict:
     return {"a0": "", "nome": job}
 
 
+def aparar(arq: Path) -> None:
+    """Checkpoint maior que CHECKPOINT_MAX: fica a 1ª linha (o cabeçalho) e as anotações mais novas, inteiras. Roda no
+    começo da rodada, antes de o agente ler (nada escreve nele ao mesmo tempo); troca o arquivo inteiro de uma vez."""
+    texto = arq.read_text(encoding="utf-8", errors="replace")
+    if len(texto) <= CHECKPOINT_MAX:
+        return
+    cabeca = texto.split("\n", 1)[0] if texto.startswith("#") else ""
+    fim = texto[-(CHECKPOINT_MAX - len(cabeca) - 100):]
+    fim = fim.split("\n", 1)[1] if "\n" in fim else fim
+    novo = (f"{cabeca}\n\n" if cabeca else "") + "(anotações mais antigas cortadas para o arquivo não crescer sem fim)\n" + fim
+    tmp = arq.with_suffix(".md.tmp")
+    tmp.write_text(novo, encoding="utf-8")
+    tmp.replace(arq)
+
+
 def contexto(session_id="", task_id="", is_first_turn=False, **kw):
     """Gancho `pre_llm_call`: o bloco de tarefa agendada no 1º turno de uma rodada do cron."""
     job = job_da_sessao(session_id or task_id)
@@ -132,6 +148,8 @@ def contexto(session_id="", task_id="", is_first_turn=False, **kw):
         if not arq.exists():  # 27/10: a 1ª rodada lia um arquivo que não existia ("File not found") e perdia passos
             arq.write_text(f"# Checkpoint da rotina {r['nome']}\n\n(primeira rodada: nada registrado ainda)\n",
                            encoding="utf-8")
+        else:
+            aparar(arq)
     except OSError:
         pass
     texto = TAREFA.format(nome=r["nome"], checkpoint=arq)

@@ -113,6 +113,22 @@ checa(ck.exists() and "primeira rodada" in ck.read_text(), "a 1ª rodada já enc
 ck.write_text("visto: x")
 rh.contexto(session_id=sess, is_first_turn=True)
 checa(ck.read_text() == "visto: x", "checkpoint que já existe não é tocado")
+# 24-27/10, 🎯 Prospecção — executar (4 rodadas): o bloco mandava reler o checkpoint com read_file e reescrever com
+# write_file; a 2ª leitura na mesma rodada volta do Hermes como {"status": "unchanged", "dedup": true} sem "content" e o
+# código do agente (`read_file(p, limit=2000)["content"]`) quebrava com KeyError: 'content'. Agora: acrescentar no fim.
+checa(f"cat >> {ck} <<'FIM'" in c and "read_file` inteiro" not in c and "reescreva com `write_file`" not in c,
+      "registrar no checkpoint é acrescentar no fim pelo terminal, sem reler nem reescrever")
+for _f in _glob.glob(str(Path(__file__).resolve().parents[1] / "hermes" / "rotinas" / "*.json")):
+    _t = json.loads(Path(_f).read_text()).get("pedido", "")
+    checa(not _re.search(r"contexto\.md[^\n]{0,80}(read_file|Leia)[^\n]{0,60}(write_file|patch)", _t),
+          f"{Path(_f).name}: checkpoint da rotina não é relido e reescrito (2ª leitura volta 'unchanged'; 27/10)")
+ck.write_text("# Checkpoint da rotina 🔎 Radar e fios soltos\n\n" + "".join(f"{i:05d} rodada antiga\n" for i in range(3000)))
+rh.contexto(session_id=sess, is_first_turn=True)
+cortado = ck.read_text()
+checa(len(cortado) <= rh.CHECKPOINT_MAX + 200 and cortado.startswith("# Checkpoint da rotina 🔎 Radar")
+      and cortado.endswith("02999 rodada antiga\n") and "\n00000 rodada antiga" not in cortado
+      and "anotações mais antigas cortadas" in cortado,
+      f"checkpoint grande perde o começo e fica com o cabeçalho e o fim ({len(cortado)} caracteres)")
 checa(rh.contexto(session_id="api-123", is_first_turn=True) is None and rh.contexto(session_id=sess) is None,
       "só no 1º turno de uma rodada do cron")
 rh.entregar(session_id=sess, assistant_response="Achei 2 e-mails novos do PayGo.", user_message="pedido")
