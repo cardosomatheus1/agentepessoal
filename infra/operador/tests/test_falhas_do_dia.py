@@ -48,6 +48,39 @@ def main() -> int:
     ok(texto.startswith("# Falhas do agente nas últimas 24 h") and "3× seletor sem ref — browser click (2 conversa(s))" in texto,
        f"relatório: {texto[:300]}")
     ok("Nenhuma falha" in f.relatorio([], 24), "dia sem falha")
+
+    # 29/10: o relatório deu "Nenhuma falha" com 32 erros do Hermes no log de 28/10 (os padrões eram os do A0)
+    hermes = {
+        "ref sumiu": '{"success": false, "error": "Unknown ref: e98"}',
+        "tempo esgotado": '{"output": "[Command timed out after 60s]", "exit_code": 124, "error": null}',
+        "login do conector": ('{"error": "Error calling tool \'search_gmail_messages\': **ACTION REQUIRED: Google '
+                              'Authentication Needed for Google Gmail"}'),
+    }
+    for esperado, texto in hermes.items():
+        ok(f.classificar(texto) == esperado, f"Hermes, {esperado}: veio {f.classificar(texto)!r}")
+    g = f.agrupar([{"chat": "cron_x_20261028_100843", "tipo": "tool", "ferramenta": "browser_scroll", "args": {},
+                    "conteudo": '{"success": false, "error": "algo novo"}', "origem": "hermes"},
+                   {"chat": "C", "tipo": "tool", "ferramenta": "browser", "args": {}, "conteudo": "ok"}])
+    ok(len(g) == 1 and g[0]["tipo"] == "erro da ferramenta", f"erro do Hermes sem padrão conhecido ainda conta: {g}")
+
+    import json
+    import sqlite3
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        banco = str(Path(tmp) / "state.db")
+        c = sqlite3.connect(banco)
+        c.execute("create table messages (id integer primary key, session_id text, role text, content text, "
+                  "tool_call_id text, tool_calls text, tool_name text, timestamp real)")
+        chamada = {"id": "toolu_1", "type": "function", "function": {"name": "browser_click", "arguments": '{"ref": "@e98"}'}}
+        c.execute("insert into messages (session_id, role, tool_calls, timestamp) values (?, 'assistant', ?, 100)",
+                  ("cron_x", json.dumps([chamada])))
+        c.execute("insert into messages (session_id, role, content, tool_call_id, tool_name, timestamp) "
+                  "values ('cron_x', 'tool', 'Unknown ref: e98', 'toolu_1', 'browser_click', 101)")
+        c.commit()
+        c.close()
+        ok(f.args_hermes(banco, "cron_x", "browser_click", 130) == {"ref": "@e98"}, "args da chamada pelo state.db")
+        ok(f.args_hermes(banco, "cron_x", "browser_click", 999) is None, "longe no tempo: sem args (não inventa)")
+        ok(f.args_hermes(banco, "outra", "browser_click", 130) is None, "outra sessão: sem args")
     ok(f._args({"tool_args": {"tool_args": {"action": "click", "ref": 6}}}) == {"action": "click", "ref": 6},
        "argumentos embrulhados lidos")
     ok(f._args({"action": "wait", "browser_snapshot": {}, "_tool_name": "browser"}) == {"action": "wait"},

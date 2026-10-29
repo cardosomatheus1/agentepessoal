@@ -19,12 +19,13 @@ from pathlib import Path
 PADROES = [
     ("argumento recusado", r"NÃO foi executada: argumento desconhecido"),
     ("seletor sem ref", r"could not resolve selector"),
-    ("ref sumiu", r"could not find reference|element is (not attached|detached)"),
+    ("ref sumiu", r"could not find reference|element is (not attached|detached)|Unknown ref"),
     ("navegador caiu", r"Connection closed while reading from the driver|browser has been closed|Target page, context or browser has been closed"),
     ("lista feita pelo site", r"cannot select|helper-backed"),
     ("ref obrigatória", r"ref is required"),
     ("tecla desconhecida", r"Unknown key"),
-    ("tempo esgotado", r"Timeout \d+ms exceeded"),
+    ("tempo esgotado", r"Timeout \d+ms exceeded|timed out after \d+"),
+    ("login do conector", r"Authentication (Needed|required)|ACTION REQUIRED|\bUnauthorized\b"),
     ("terminal ainda rodando", r"Returning control to agent after \d+ seconds|might be still running"),
     ("terminal falhou", r"⟦código de saída [1-9]"),
     ("python com erro", r"Traceback \(most recent call last\)"),
@@ -69,6 +70,8 @@ def agrupar(itens: list) -> list:
             nome = classificar(it.get("conteudo"))
             ferramenta = str(it.get("ferramenta") or "?")
             acao = str((it.get("args") or {}).get("action") or (it.get("args") or {}).get("runtime") or "")
+        if not nome and it.get("origem") == "hermes":  # the Hermes log line itself says "returned error"
+            nome = "erro da ferramenta"
         if not nome:
             continue
         chave = (nome, ferramenta, acao)
@@ -144,16 +147,49 @@ for f in glob.glob("/opt/hermes/data/logs/agent.log*") + glob.glob("/opt/hermes/
         quando = datetime.datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=fuso).timestamp()
         if quando < desde:
             continue
-        saida.append({"chat": m.group(2), "tipo": "tool", "kvps": {}, "conteudo": m.group(4)[:1500], "ferramenta": m.group(3)})
+        args = None
+        try:
+            args = args_hermes(str(Path(f).parents[1] / "state.db"), m.group(2), m.group(3), quando)
+        except Exception:
+            pass
+        saida.append({"chat": m.group(2), "tipo": "tool", "kvps": {"tool_args": args} if isinstance(args, dict) else {},
+                      "conteudo": m.group(4)[:1500], "ferramenta": m.group(3), "origem": "hermes"})
 print(json.dumps(saida, ensure_ascii=False))
 '''
+
+
+def args_hermes(banco: str, sessao: str, ferramenta: str, quando: float):
+    """The arguments of the Hermes tool call that failed (28/10: the log line has only the result): the tool result of
+    that session and tool nearest in time to the log line (2 min at most), then the call with its tool_call_id."""
+    import json as _json
+    import sqlite3
+
+    c = sqlite3.connect(f"file:{banco}?mode=ro", uri=True)
+    try:
+        r = c.execute("select id, tool_call_id from messages where role='tool' and session_id=? and tool_name=? "
+                      "and abs(timestamp - ?) < 120 order by abs(timestamp - ?) limit 1",
+                      (sessao, ferramenta, quando, quando)).fetchone()
+        if not r:
+            return None
+        a = c.execute("select tool_calls from messages where session_id=? and tool_calls like ? and id < ? "
+                      "order by id desc limit 1", (sessao, f"%{r[1]}%", r[0])).fetchone()
+        for chamada in _json.loads(a[0]) if a else []:
+            if chamada.get("id") == r[1]:
+                args = chamada.get("function", {}).get("arguments")
+                return _json.loads(args) if isinstance(args, str) else args
+        return None
+    finally:
+        c.close()
 
 
 def coletar(horas: float) -> list:
     import base64
     import subprocess
 
-    codigo = base64.b64encode(COLETA.encode()).decode()
+    import inspect
+
+    fonte = "from pathlib import Path\n" + inspect.getsource(args_hermes) + COLETA
+    codigo = base64.b64encode(fonte.encode()).decode()
     cmd = f"echo {codigo} | base64 -d > /tmp/coleta_falhas.py && python3 /tmp/coleta_falhas.py {horas} > /tmp/coleta_falhas.json && wc -c /tmp/coleta_falhas.json && aws s3 cp /tmp/coleta_falhas.json s3://agentepessoal-backup-964862484412/operador/coleta_falhas.json >/dev/null"
     vm = Path(__file__).resolve().parent / "vmcmd.py"
     subprocess.run([sys.executable, str(vm), cmd], check=True, capture_output=True, text=True)
