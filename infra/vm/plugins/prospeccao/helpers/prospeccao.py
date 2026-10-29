@@ -2591,7 +2591,7 @@ def definir_conta(login: str, handle: str) -> str:
 
 
 CONFERENCIA_VALE = 40 * 60  # an execution round must have read the Direct and the notifications this recently
-TERMINAL_MAX = 590  # s: the Hermes terminal runs a foreground command for 600 s at most (60 s unless timeout= is given)
+TERMINAL_MAX = 570  # s of sleep: the Hermes terminal takes timeout= up to 600 s (default 60), with 30 s of margin
 
 
 def espera_terminal(ate: str = "") -> str:
@@ -2600,12 +2600,12 @@ def espera_terminal(ate: str = "") -> str:
     m = re.search(r"\b(\d{1,2}):(\d{2})\b", ate or "")
     if not m:
         return ("com `terminal`, `sleep` dos segundos que faltam e timeout 30 s maior (no máximo "
-                f"{TERMINAL_MAX} s por chamada; repita se faltar mais)")
+                f"{TERMINAL_MAX} s de sleep por chamada; repita se faltar mais)")
     agora_local = dt.datetime.fromtimestamp(agora(), _tz())
     alvo = agora_local.replace(hour=int(m.group(1)), minute=int(m.group(2)), second=0, microsecond=0)
     falta = int((alvo - agora_local).total_seconds())
     if falta <= 0:
-        return "já: o horário passou, chame `proxima` agora"
+        return ""
     s = min(falta, TERMINAL_MAX)
     resto = "; depois chame de novo, porque ainda faltará tempo" if falta > TERMINAL_MAX else ""
     return f'com `terminal` {{"command": "sleep {s}", "timeout": {s + 30}}}{resto}'
@@ -3006,7 +3006,10 @@ def aviso_sem_acao(motivo: str) -> str:
     if "confira as respostas" in motivo:
         return f"AINDA NÃO: {motivo}."
     if motivo.startswith("espaçamento"):
-        return (f"ESPERE: {motivo}. Aguarde até esse horário {espera_terminal(motivo)} e chame `proxima` de novo. "
+        espera = espera_terminal(motivo)
+        if not espera:
+            return f"ESPERE: {motivo}. Esse horário já passou: chame `proxima` agora."
+        return (f"ESPERE: {motivo}. Aguarde até esse horário {espera} e chame `proxima` de novo. "
                 "Se o horário passar do início da próxima rodada (minutos 8 e 38), termine. A rodada só termina com "
                 "NADA AGORA ou depois de 3 ações feitas.")
     return f"NADA AGORA: {motivo}. Termine a rodada."

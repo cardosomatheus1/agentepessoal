@@ -3060,11 +3060,14 @@ class Suite:
            and '"command": "sleep 51"' in aviso and '"timeout": 81' in aviso, f"o comando certo, com o timeout: {aviso}")
         self.em(self.hora(10))
         aviso = p.aviso_sem_acao("espaçamento: próxima a partir de 10:30")
-        ok('"command": "sleep 590"' in aviso and '"timeout": 620' in aviso and "de novo" in aviso,
-           f"espera longa: o máximo do terminal (600 s) e repetir: {aviso}")
+        ok('"command": "sleep 570"' in aviso and '"timeout": 600' in aviso and "de novo" in aviso,
+           f"espera longa: timeout no máximo do terminal (600 s) e repetir: {aviso}")
+        for minutos in range(1, 31):  # nenhuma espera passa do teto do terminal do Hermes
+            t = int(re.search(r'"timeout": (\d+)', p.aviso_sem_acao(f"espaçamento: próxima a partir de 10:{minutos:02d}")).group(1))
+            ok(t <= 600, f"timeout {t} > 600 para 10:{minutos:02d}")
         self.em(self.hora(10) + 31 * 60)
-        ok('"command": "sleep 0"' not in p.aviso_sem_acao("espaçamento: próxima a partir de 10:30")
-           and "chame `proxima` agora" in p.aviso_sem_acao("espaçamento: próxima a partir de 10:30"), "horário já passou")
+        ok(p.aviso_sem_acao("espaçamento: próxima a partir de 10:30") == "ESPERE: espaçamento: próxima a partir de 10:30. "
+           "Esse horário já passou: chame `proxima` agora.", "horário já passou")
         aviso = p.aviso_sem_acao("espaçamento: aguarde")
         ok(aviso.startswith("ESPERE") and "`terminal`" in aviso and "timeout" in aviso, f"sem horário: {aviso}")
 
