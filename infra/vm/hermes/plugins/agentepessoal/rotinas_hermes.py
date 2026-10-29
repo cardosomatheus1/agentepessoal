@@ -30,7 +30,9 @@ CRON = re.compile(r"^cron_([A-Za-z0-9]+)_\d{8}_\d{6}$")
 LIMITE_CELULAR = 3500
 # 29/10: o 🔎 Radar respondia SEM NOVIDADE com o Google pedindo login de novo em quase toda chamada (26-28/10): o Matheus
 # não sabia que o Gmail e a Agenda não estavam sendo lidos. Conector que pede login numa rodada vira aviso a ele.
-SEM_LOGIN = re.compile(r"ACTION REQUIRED: \w+ Authentication|Authentication (Needed|required)", re.I)
+# só o "ACTION REQUIRED" é o login que caiu; "Authentication required ... No valid 'user_google_email'" é o modelo que
+# esqueceu o e-mail na chamada (revisão de 29/10: 23× no log), não aviso
+SEM_LOGIN = re.compile(r"ACTION REQUIRED: \w+ Authentication Needed", re.I)
 FONTES = {"google": "Gmail, Agenda e Drive"}
 AVISOS_LOGIN = DADOS / "avisos_conector.json"  # {"<login>|<conector>": "AAAA-MM-DD"}: no máximo 1 aviso por dia
 _sem_login: dict = {}  # sessão -> conectores que pediram login nesta rodada
@@ -180,25 +182,33 @@ def aviso_sem_login(conectores) -> str:
             "religar é preciso entrar de novo nessa conta pelo computador (o operador tem o passo a passo).")
 
 
-def _avisar_hoje(login: str, conectores, agora: float | None = None) -> bool:
-    """True (e anota) quando ainda não houve aviso hoje deste login para algum desses conectores."""
+def _hoje(agora: float | None = None) -> str:
     import time
-    hoje = time.strftime("%Y-%m-%d", time.localtime(agora))
+    return time.strftime("%Y-%m-%d", time.localtime(agora))
+
+
+def _avisos_feitos() -> dict:
     try:
-        feitos = json.loads(AVISOS_LOGIN.read_text(encoding="utf-8"))
+        return json.loads(AVISOS_LOGIN.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        feitos = {}
-    novos = [c for c in conectores if feitos.get(f"{login}|{c}") != hoje]
-    if not novos:
-        return False
-    feitos.update({f"{login}|{c}": hoje for c in novos})
+        return {}
+
+
+def _avisar_hoje(login: str, conectores, agora: float | None = None) -> bool:
+    """True quando ainda não houve aviso hoje deste login para algum desses conectores (anota só depois do envio)."""
+    feitos = _avisos_feitos()
+    return any(feitos.get(f"{login}|{c}") != _hoje(agora) for c in conectores)
+
+
+def _avisado(login: str, conectores, agora: float | None = None) -> None:
+    feitos = _avisos_feitos()
+    feitos.update({f"{login}|{c}": _hoje(agora) for c in conectores})
     try:
         tmp = AVISOS_LOGIN.with_suffix(".tmp")
         tmp.write_text(json.dumps(feitos, ensure_ascii=False), encoding="utf-8")
         tmp.replace(AVISOS_LOGIN)
     except OSError:
         pass
-    return True
 
 
 def mensagem(nome: str, texto: str) -> str:
@@ -211,6 +221,9 @@ def mensagem(nome: str, texto: str) -> str:
 def entregar(session_id="", assistant_response="", **kw):
     """Gancho `post_llm_call`: a resposta final de uma rodada do cron vai ao celular do dono (regras do A0)."""
     job = job_da_sessao(session_id)
+    if job and not (isinstance(assistant_response, str) and assistant_response.strip()):
+        with _trava:  # rodada que termina sem resposta: a anotação dela não fica para trás
+            _sem_login.pop(session_id, None)
     if not job or not isinstance(assistant_response, str) or not assistant_response.strip():
         return None
     with _trava:  # uma entrega por sessão (o gancho não dispara de novo, mas uma repetição nunca vira 2 mensagens)
@@ -241,6 +254,8 @@ def entregar(session_id="", assistant_response="", **kw):
     tipo = "urgente" if (p.urgente(texto) or p.pede_tela(texto)) else "progresso"
     # `rotina` = o NOME, como o A0 (_50_enviar_resposta): a ponte põe os avisos da noite dentro do 📰 Resumo do dia
     erro = p.enviar(login, mensagem(r["nome"], texto), "", "", None, tipo, False, r["nome"], None, reenviar=True)
+    if sem_login and not erro:
+        _avisado(login, sem_login)
     log.warning("rotinas: resultado de %s (%s) para %s: %s", r["nome"], session_id, login, erro or "ok")
     return None
 

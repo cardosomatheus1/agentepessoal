@@ -175,6 +175,27 @@ checa(len(enviados) == 4 and enviados[-1][0][1].endswith("nesta rodada nada dele
       "de novo nessa conta pelo computador (o operador tem o passo a passo).") and "⚠️ Também:" in enviados[-1][0][1],
       "resposta com novidade leva a linha do conector junto")
 checa(rh._sem_login == {}, "a anotação da rodada some depois da entrega")
+# revisão de 29/10: o modelo que esquece o e-mail não é login que caiu (23× no log de 28/10)
+esqueceu = ("{\"error\": \"Error calling tool 'search_gmail_messages': Authentication required for search_gmail_messages. "
+            "No valid 'user_google_email' provided. Please provide a valid Google email address.\"}")
+rh.fonte_sem_login("mcp__google__search_gmail_messages", esqueceu, {"session_id": "cron_abc123_20261028_184045"})
+checa(rh._sem_login == {}, "e-mail esquecido na chamada não vira aviso de login")
+# envio que falha não gasta o aviso do dia; rodada sem resposta não deixa anotação
+rh.AVISOS_LOGIN.unlink()
+falso.enviar = lambda *a, **k: "ponte fora do ar"
+s1 = "cron_abc123_20261029_084045"
+rh.fonte_sem_login("mcp__google__get_events", login_google, {"session_id": s1})
+rh.entregar(session_id=s1, assistant_response="SEM NOVIDADE")
+checa(not rh.AVISOS_LOGIN.exists(), "o aviso que não saiu não conta como dado")
+falso.enviar = lambda *a, **k: enviados.append((a, k)) or ""
+s2 = "cron_abc123_20261029_114045"
+rh.fonte_sem_login("mcp__google__get_events", login_google, {"session_id": s2})
+rh.entregar(session_id=s2, assistant_response="SEM NOVIDADE")
+checa("PRECISA DE VOCÊ:" in enviados[-1][0][1] and rh.AVISOS_LOGIN.exists(), "a rodada seguinte avisa")
+s3 = "cron_abc123_20261029_144045"
+rh.fonte_sem_login("mcp__google__get_events", login_google, {"session_id": s3})
+rh.entregar(session_id=s3, assistant_response="")
+checa(s3 not in rh._sem_login, "rodada sem resposta não deixa a anotação para trás")
 rh.JOBS.write_text(json.dumps({"jobs": [{"id": "zzz", "name": "📅 Briefing: X"}]}))
 checa(rh.rotina("zzz") == {"a0": "", "nome": "📅 Briefing: X"}, "rotina sem mapa (briefing): nome do cron do Hermes")
 
