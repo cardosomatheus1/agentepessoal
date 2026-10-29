@@ -32,7 +32,7 @@ LIMITE_CELULAR = 3500
 # não sabia que o Gmail e a Agenda não estavam sendo lidos. Conector que pede login numa rodada vira aviso a ele.
 # só o "ACTION REQUIRED" é o login que caiu; "Authentication required ... No valid 'user_google_email'" é o modelo que
 # esqueceu o e-mail na chamada (revisão de 29/10: 23× no log), não aviso
-SEM_LOGIN = re.compile(r"ACTION REQUIRED: \w+ Authentication Needed", re.I)
+SEM_LOGIN = re.compile(r"ACTION REQUIRED: \w+ (Authentication Needed|sign-in needed)|Token Expired/Revoked", re.I)
 FONTES = {"google": "Gmail, Agenda e Drive"}
 AVISOS_LOGIN = DADOS / "avisos_conector.json"  # {"<login>|<conector>": "AAAA-MM-DD"}: no máximo 1 aviso por dia
 _sem_login: dict = {}  # sessão -> conectores que pediram login nesta rodada

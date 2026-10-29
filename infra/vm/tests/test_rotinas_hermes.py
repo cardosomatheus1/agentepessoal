@@ -180,6 +180,10 @@ esqueceu = ("{\"error\": \"Error calling tool 'search_gmail_messages': Authentic
             "No valid 'user_google_email' provided. Please provide a valid Google email address.\"}")
 rh.fonte_sem_login("mcp__google__search_gmail_messages", esqueceu, {"session_id": "cron_abc123_20261028_184045"})
 checa(rh._sem_login == {}, "e-mail esquecido na chamada não vira aviso de login")
+for texto in ("**Authentication Required: Token Expired/Revoked for Google Gmail**",
+              "**ACTION REQUIRED: Google sign-in needed**"):
+    rh.fonte_sem_login("mcp__google__get_events", texto, {"session_id": "cron_abc123_20261028_200000"})
+    checa(rh._sem_login.pop("cron_abc123_20261028_200000", None) == {"google"}, f"login caído: {texto}")
 # envio que falha não gasta o aviso do dia; rodada sem resposta não deixa anotação
 rh.AVISOS_LOGIN.unlink()
 falso.enviar = lambda *a, **k: "ponte fora do ar"
