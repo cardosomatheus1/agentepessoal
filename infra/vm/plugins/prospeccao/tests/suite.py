@@ -3051,12 +3051,22 @@ class Suite:
         eq(p.novos_handles(LOGIN, achados), ["doces_da_lu"], "a marca de 429 da busca não vira perfil a avaliar")
 
     def t_espera_com_comando_que_funciona(self):
+        # 28/10 10:14:09, rodada do Hermes: "ESPERE ... a partir de 10:15" mandava o laço do A0 (3 min) pelo
+        # "code_execution_tool"; o agente improvisou `sleep 70` sem timeout e o terminal do Hermes cortou em 60 s
         p = self.p
-        aviso = p.aviso_sem_acao("espaçamento: próxima a partir de 10:05")
-        ok(aviso.startswith("ESPERE") and p.COMANDO_ESPERA in aviso and "echo" in p.COMANDO_ESPERA,
-           f"diz como esperar sem o terminal desistir (15 s sem saída): {aviso}")
-        n = int(re.search(r"seq (\d+)", p.COMANDO_ESPERA).group(1))
-        ok(n * 10 < 240, "cabe no tempo máximo de uma chamada do terminal (240 s)")
+        self.em(self.hora(10) + 14 * 60 + 9)
+        aviso = p.aviso_sem_acao("espaçamento: próxima a partir de 10:15")
+        ok(aviso.startswith("ESPERE") and "`terminal`" in aviso and "code_execution_tool" not in aviso
+           and '"command": "sleep 51"' in aviso and '"timeout": 81' in aviso, f"o comando certo, com o timeout: {aviso}")
+        self.em(self.hora(10))
+        aviso = p.aviso_sem_acao("espaçamento: próxima a partir de 10:30")
+        ok('"command": "sleep 590"' in aviso and '"timeout": 620' in aviso and "de novo" in aviso,
+           f"espera longa: o máximo do terminal (600 s) e repetir: {aviso}")
+        self.em(self.hora(10) + 31 * 60)
+        ok('"command": "sleep 0"' not in p.aviso_sem_acao("espaçamento: próxima a partir de 10:30")
+           and "chame `proxima` agora" in p.aviso_sem_acao("espaçamento: próxima a partir de 10:30"), "horário já passou")
+        aviso = p.aviso_sem_acao("espaçamento: aguarde")
+        ok(aviso.startswith("ESPERE") and "`terminal`" in aviso and "timeout" in aviso, f"sem horário: {aviso}")
 
     def t_folga_e_noite(self):
         """Replies until 22h; after 20h and on the rest day, only replies."""

@@ -2591,7 +2591,27 @@ def definir_conta(login: str, handle: str) -> str:
 
 
 CONFERENCIA_VALE = 40 * 60  # an execution round must have read the Direct and the notifications this recently
-COMANDO_ESPERA = "for i in $(seq 18); do sleep 10; echo $i; done"  # prints every 10 s: the terminal tool gives up after 15 s of silence (max 240 s)
+TERMINAL_MAX = 590  # s: the Hermes terminal runs a foreground command for 600 s at most (60 s unless timeout= is given)
+
+
+def espera_terminal(ate: str = "") -> str:
+    """How to wait in the Hermes terminal until HH:MM (28/10: the A0 loop and its tool name made the agent improvise
+    `sleep 70` without a timeout, cut at 60 s): the exact `terminal` call, seconds counted from now, with its timeout."""
+    m = re.search(r"\b(\d{1,2}):(\d{2})\b", ate or "")
+    if not m:
+        return ("com `terminal`, `sleep` dos segundos que faltam e timeout 30 s maior (no máximo "
+                f"{TERMINAL_MAX} s por chamada; repita se faltar mais)")
+    agora_local = dt.datetime.fromtimestamp(agora(), _tz())
+    alvo = agora_local.replace(hour=int(m.group(1)), minute=int(m.group(2)), second=0, microsecond=0)
+    falta = int((alvo - agora_local).total_seconds())
+    if falta <= 0:
+        return "já: o horário passou, chame `proxima` agora"
+    s = min(falta, TERMINAL_MAX)
+    resto = "; depois chame de novo, porque ainda faltará tempo" if falta > TERMINAL_MAX else ""
+    return f'com `terminal` {{"command": "sleep {s}", "timeout": {s + 30}}}{resto}'
+
+
+COMANDO_ESPERA = espera_terminal()  # for texts with no time of their own (comentários atrasados)
 VARREDURA_H = 4  # 12/10 blind review, item 2: every conversation opened one by one ~3x a day (9h-19h), not every round
 
 
@@ -2986,9 +3006,8 @@ def aviso_sem_acao(motivo: str) -> str:
     if "confira as respostas" in motivo:
         return f"AINDA NÃO: {motivo}."
     if motivo.startswith("espaçamento"):
-        return (f"ESPERE: {motivo}. Aguarde até esse horário com code_execution_tool (terminal): "
-                f"`{COMANDO_ESPERA}` espera cerca de 3 min; repita até dar o horário e chame `proxima` de "
-                "novo. Se o horário passar do início da próxima rodada (minutos 8 e 38), termine. A rodada só termina com "
+        return (f"ESPERE: {motivo}. Aguarde até esse horário {espera_terminal(motivo)} e chame `proxima` de novo. "
+                "Se o horário passar do início da próxima rodada (minutos 8 e 38), termine. A rodada só termina com "
                 "NADA AGORA ou depois de 3 ações feitas.")
     return f"NADA AGORA: {motivo}. Termine a rodada."
 
@@ -3008,7 +3027,7 @@ def aviso_comentarios_pendentes(login: str, motivo: str) -> str:
             "chame `prospeccao` acao \"comentar\" (acao_id, texto, base = trecho entre aspas e a data); só publique se vier "
             "COMENTÁRIO APROVADO e depois chame \"comentado\". Sem post recente ou sem nada escrito: acao \"pular_comentario\" "
             "(acao_id, detalhe) e vá ao próximo. Se \"comentar\" disser \"espaçamento: próxima a partir de HH:MM\", espere até "
-            f"esse horário (`{COMANDO_ESPERA}`) e tente de novo, sem passar do início da próxima rodada (minutos 8 e 38). "
+            f"esse horário ({COMANDO_ESPERA}) e tente de novo, sem passar do início da próxima rodada (minutos 8 e 38). "
             "Depois termine.")
 
 
