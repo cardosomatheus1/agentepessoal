@@ -14,7 +14,7 @@ DICA_REF = ("\n\n⚠️ A ref {ref} não existe mais: a página mudou ou as refs
             "e use a ref NOVA do elemento; não repita {ref}.")
 
 
-def dica(tool_name: str, resultado: str) -> str:
+def dica(tool_name: str, resultado: str, kw=None) -> str:
     if tool_name in ("browser_click", "browser_type", "browser_press", "browser_hover", "browser_select"):
         m = REF_SUMIU.search(resultado[:2000])
         if m and "browser_snapshot` agora" not in resultado:

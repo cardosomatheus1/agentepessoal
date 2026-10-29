@@ -120,6 +120,7 @@ def _esquema(plugin, nome, classe) -> dict:
 
 def register(ctx):
     dicas.registrar(cofre)  # roda dentro do gancho do cofre, depois da máscara
+    rotinas.registrar_fontes(cofre)  # conector que pede login numa rodada do cron vira aviso (29/10)
     cofre.registrar(ctx)  # antes das ferramentas: sem ele, nenhuma recebe senha (o §§secret segue como texto)
     uso.registrar(ctx)    # dono/sessão/rotina de cada chamada de modelo, para o uso.jsonl do proxy
     acesso.registrar(ctx)  # convidados só com o uso pessoal; ensaio: navegador só lê

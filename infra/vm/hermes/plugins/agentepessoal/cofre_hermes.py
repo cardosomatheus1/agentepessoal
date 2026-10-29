@@ -168,7 +168,8 @@ def executar(tool_name="", args=None, next_call=None, **kw):
     return resultado
 
 
-DEPOIS: list = []  # (tool_name, texto) -> texto, depois da máscara (dicas_hermes): no Hermes só o 1º gancho vale
+DEPOIS: list = []  # (tool_name, texto, kw) -> texto, depois da máscara (dicas_hermes, rotinas_hermes): no Hermes só o
+# 1º gancho vale; kw é o do gancho (session_id/task_id)
 
 
 def resultado_mascarado(tool_name="", args=None, result=None, **kw):
@@ -178,7 +179,7 @@ def resultado_mascarado(tool_name="", args=None, result=None, **kw):
     novo = _esconder(result, kw)
     for f in DEPOIS:
         try:
-            novo = f(tool_name, novo)
+            novo = f(tool_name, novo, kw)
         except Exception as exc:  # uma dica nunca derruba a máscara
             log.warning("dica falhou: %s: %s", type(exc).__name__, exc)
     return novo if novo != result else None

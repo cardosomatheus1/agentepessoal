@@ -124,7 +124,7 @@ r = cf.resultado_mascarado(tool_name="browser_click", result='{"error": "Unknown
 checa(r and "browser_snapshot` agora" in r and "e42" in r and "senhaForte123" not in r, f"ref que sumiu: dica e máscara ({r})")
 checa(cf.resultado_mascarado(tool_name="browser_click", result=r, session_id="s1") is None, "a dica não se repete")
 checa(cf.resultado_mascarado(tool_name="terminal", result="Unknown ref: e1", session_id="s1") is None, "só no navegador")
-cf.DEPOIS.append(lambda n, t: 1 / 0)
+cf.DEPOIS.append(lambda n, t, kw: 1 / 0)
 checa("§§secret(IG_SENHA)" in (cf.resultado_mascarado(tool_name="x", result="v senhaForte123", session_id="s1") or ""),
       "uma dica com erro não derruba a máscara")
 cf.DEPOIS.pop()

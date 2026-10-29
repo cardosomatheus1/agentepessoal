@@ -28,6 +28,12 @@ CHECKPOINTS = DADOS / "rotinas"         # <a0 uuid ou job>/contexto.md
 JOBS = Path("/opt/data/cron/jobs.json")  # o cron do próprio Hermes (para o nome, se o mapa não tiver)
 CRON = re.compile(r"^cron_([A-Za-z0-9]+)_\d{8}_\d{6}$")
 LIMITE_CELULAR = 3500
+# 29/10: o 🔎 Radar respondia SEM NOVIDADE com o Google pedindo login de novo em quase toda chamada (26-28/10): o Matheus
+# não sabia que o Gmail e a Agenda não estavam sendo lidos. Conector que pede login numa rodada vira aviso a ele.
+SEM_LOGIN = re.compile(r"ACTION REQUIRED: \w+ Authentication|Authentication (Needed|required)", re.I)
+FONTES = {"google": "Gmail, Agenda e Drive"}
+AVISOS_LOGIN = DADOS / "avisos_conector.json"  # {"<login>|<conector>": "AAAA-MM-DD"}: no máximo 1 aviso por dia
+_sem_login: dict = {}  # sessão -> conectores que pediram login nesta rodada
 CHECKPOINT_MAX = 16000  # caracteres: o checkpoint só cresce (a rodada acrescenta no fim); o começo antigo é cortado
 log = logging.getLogger("agentepessoal.rotinas")
 _trava = threading.Lock()
@@ -157,6 +163,44 @@ def contexto(session_id="", task_id="", is_first_turn=False, **kw):
     return {"context": texto + (f"\n\n{extra}" if extra else "")}
 
 
+def fonte_sem_login(tool_name: str, texto: str, kw=None) -> str:
+    """Dentro do gancho `transform_tool_result` (cofre_hermes.DEPOIS): anota o conector (mcp__<conector>__...) que
+    respondeu pedindo login, na sessão da rodada. Não muda o texto."""
+    nome = str(tool_name or "")
+    sessao = str((kw or {}).get("session_id") or (kw or {}).get("task_id") or "")
+    if nome.startswith("mcp__") and job_da_sessao(sessao) and SEM_LOGIN.search(str(texto or "")[:3000]):
+        with _trava:
+            _sem_login.setdefault(sessao, set()).add(nome.split("__")[1])
+    return texto
+
+
+def aviso_sem_login(conectores) -> str:
+    nomes = ", ".join(f"{c.capitalize()} ({FONTES[c]})" if c in FONTES else c.capitalize() for c in sorted(conectores))
+    return (f"o conector {nomes} do agente desconectou e pede login de novo: nesta rodada nada dele foi lido. Para "
+            "religar é preciso entrar de novo nessa conta pelo computador (o operador tem o passo a passo).")
+
+
+def _avisar_hoje(login: str, conectores, agora: float | None = None) -> bool:
+    """True (e anota) quando ainda não houve aviso hoje deste login para algum desses conectores."""
+    import time
+    hoje = time.strftime("%Y-%m-%d", time.localtime(agora))
+    try:
+        feitos = json.loads(AVISOS_LOGIN.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        feitos = {}
+    novos = [c for c in conectores if feitos.get(f"{login}|{c}") != hoje]
+    if not novos:
+        return False
+    feitos.update({f"{login}|{c}": hoje for c in novos})
+    try:
+        tmp = AVISOS_LOGIN.with_suffix(".tmp")
+        tmp.write_text(json.dumps(feitos, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(AVISOS_LOGIN)
+    except OSError:
+        pass
+    return True
+
+
 def mensagem(nome: str, texto: str) -> str:
     texto = texto.strip()
     if len(texto) > LIMITE_CELULAR:
@@ -184,15 +228,26 @@ def entregar(session_id="", assistant_response="", **kw):
         user = kw.get("user_message")
         threading.Thread(target=_avaliar, args=(r, texto, user if isinstance(user, str) else ""), daemon=True,
                          name="rotinas-autoavaliacao").start()
-    if texto.upper().startswith(p.SILENCIO):
-        log.warning("rotinas: %s sem novidade (não enviada)", session_id)
-        return None
+    with _trava:
+        sem_login = _sem_login.pop(session_id, set())
     login = sys.modules["agentepessoal_ponte_a0"].login_da_sessao(session_id)
+    if texto.upper().startswith(p.SILENCIO):
+        if not sem_login or not _avisar_hoje(login, sem_login):
+            log.warning("rotinas: %s sem novidade (não enviada)", session_id)
+            return None
+        texto = "PRECISA DE VOCÊ: " + aviso_sem_login(sem_login)
+    elif sem_login:
+        texto += "\n\n⚠️ Também: " + aviso_sem_login(sem_login)
     tipo = "urgente" if (p.urgente(texto) or p.pede_tela(texto)) else "progresso"
     # `rotina` = o NOME, como o A0 (_50_enviar_resposta): a ponte põe os avisos da noite dentro do 📰 Resumo do dia
     erro = p.enviar(login, mensagem(r["nome"], texto), "", "", None, tipo, False, r["nome"], None, reenviar=True)
     log.warning("rotinas: resultado de %s (%s) para %s: %s", r["nome"], session_id, login, erro or "ok")
     return None
+
+
+def registrar_fontes(cofre) -> None:
+    if fonte_sem_login not in cofre.DEPOIS:
+        cofre.DEPOIS.append(fonte_sem_login)
 
 
 def registrar(ctx) -> None:

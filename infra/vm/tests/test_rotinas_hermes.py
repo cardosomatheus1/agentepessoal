@@ -146,6 +146,35 @@ rh.entregar(session_id="cron_abc123_20261023_144000", assistant_response="PRECIS
 checa(enviados[-1][0][5] == "urgente", "PRECISA DE VOCÊ vai como urgente")
 rh.entregar(session_id="api-999", assistant_response="conversa normal")
 checa(len(enviados) == 2, "conversa que não é do cron não passa por aqui")
+# 26-28/10, 🔎 Radar: o Google pedia login em quase toda chamada e a rodada respondia SEM NOVIDADE (o resultado real)
+rh.AVISOS_LOGIN = tmp / "avisos_conector.json"
+login_google = ('{"error": "Error calling tool \'search_gmail_messages\': **ACTION REQUIRED: Google Authentication '
+                'Needed for Google Gmail for \'§§secret(NEXOS_REVISOR_EMAIL)\'**\\n\\n1. Open this URL in your browser"}')
+cofre_falso = types.SimpleNamespace(DEPOIS=[])
+rh.registrar_fontes(cofre_falso); rh.registrar_fontes(cofre_falso)
+checa(cofre_falso.DEPOIS == [rh.fonte_sem_login], "a anotação entra uma vez no gancho do cofre")
+radar = "cron_abc123_20261028_084045"
+checa(rh.fonte_sem_login("mcp__google__search_gmail_messages", login_google, {"session_id": radar}) == login_google,
+      "o resultado da ferramenta não muda")
+rh.fonte_sem_login("mcp__google__search_gmail_messages", login_google, {"session_id": "tg-matheus"})
+rh.fonte_sem_login("browser_click", "Authentication required", {"session_id": "cron_abc123_20261028_090000"})
+checa(set(rh._sem_login) == {radar}, f"só conector (mcp__) e só rodada do cron: {rh._sem_login}")
+rh.entregar(session_id=radar, assistant_response="SEM NOVIDADE")
+(a, k) = enviados[-1]
+checa(len(enviados) == 3 and "PRECISA DE VOCÊ:" in a[1] and "Google (Gmail, Agenda e Drive)" in a[1]
+      and "pede login de novo" in a[1] and a[5] == "urgente" and "§§secret" not in a[1],
+      f"SEM NOVIDADE com o Google pedindo login vira aviso urgente: {a[1]}")
+outra = "cron_abc123_20261028_114045"
+rh.fonte_sem_login("mcp__google__get_events", login_google, {"session_id": outra})
+rh.entregar(session_id=outra, assistant_response="SEM NOVIDADE")
+checa(len(enviados) == 3, "no mesmo dia, as outras rodadas não repetem o aviso")
+terceira = "cron_abc123_20261028_144045"
+rh.fonte_sem_login("mcp__google__get_events", login_google, {"session_id": terceira})
+rh.entregar(session_id=terceira, assistant_response="O Rafael respondeu o PayGo.")
+checa(len(enviados) == 4 and enviados[-1][0][1].endswith("nesta rodada nada dele foi lido. Para religar é preciso entrar "
+      "de novo nessa conta pelo computador (o operador tem o passo a passo).") and "⚠️ Também:" in enviados[-1][0][1],
+      "resposta com novidade leva a linha do conector junto")
+checa(rh._sem_login == {}, "a anotação da rodada some depois da entrega")
 rh.JOBS.write_text(json.dumps({"jobs": [{"id": "zzz", "name": "📅 Briefing: X"}]}))
 checa(rh.rotina("zzz") == {"a0": "", "nome": "📅 Briefing: X"}, "rotina sem mapa (briefing): nome do cron do Hermes")
 
