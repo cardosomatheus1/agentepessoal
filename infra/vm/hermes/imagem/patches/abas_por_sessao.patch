@@ -1,6 +1,9 @@
 Cada conversa e cada rotina usam a sua própria aba no navegador compartilhado (CDP): antes, uma rotina navegava a
 aba de uma conversa no meio de um desafio. Registro dono->aba em browser_own_tabs.json; browser_cdp não mexe na
 aba de outra sessão. Feito pelo próprio Hermes no ar em 23/10 (fora do git); revisado e trazido para a imagem.
+29/10: o `tab <ref>` só vai quando o daemon não está na aba da sessão (o agent-browser apaga as refs do snapshot a
+cada `tab`, e cada clique numa ref dava "Unknown ref"), e cada lote prova antes que a aba ativa é a da sessão (marca
+de uso único pelo targetId); senão seleciona de novo ou procura a aba.
 
 --- orig/browser_cdp_tool.py
 +++ vivo/browser_cdp_tool.py
@@ -174,7 +177,7 @@ aba de outra sessão. Feito pelo próprio Hermes no ar em 23/10 (fora do git); r
  from hermes_cli._subprocess_compat import windows_hide_flags
  from tools.browser_tool_origin import origin as _bt
  from tools import browser_tool_cdp as _cdp
-@@ -322,6 +330,278 @@
+@@ -322,6 +330,314 @@
      return info
  
  
@@ -422,38 +425,74 @@ aba de outra sessão. Feito pelo próprio Hermes no ar em 23/10 (fora do git); r
 +
 +def _run_in_own_tab(task_id: str, session_info: dict[str, Any], base_parts: list[str], engine: str,
 +                    timeout: int, label: str, command: str, steps: list) -> dict[str, Any]:
-+    """Run ``steps`` as ``batch --bail`` after ``tab <ref>``. A failed select means the daemon restarted
-+    (refs are per daemon) or the tab was closed: the tab is looked up again by targetId, once."""
-+    for attempt in range(2):
++    """Run ``steps`` as ``batch --bail`` in this session's own tab. ``tab <ref>`` is sent only when the daemon is
++    not already on it (29/10, agentepessoal: agent-browser drops the snapshot refs on every ``tab`` select, even of
++    the active tab, so a select before each command made every click on a snapshot ref "Unknown ref"); each batch
++    first proves the active tab is ours (``_own_tab_check_step``). A failed check selects the tab again; a failed
++    select means the daemon restarted (refs are per daemon) or the tab was closed: it is looked up again by
++    targetId, once."""
++    procurou = False
++    for _ in range(3):
 +        with _own_tab_lock(session_info), _own_tab_acquire_lock:
 +            if not session_info.get("tab_ref"):
 +                error = _acquire_own_tab(task_id, session_info, base_parts, engine, timeout)
 +                if error:
 +                    return {"success": False, "error": error}
 +        _cdp._ensure_cdp_supervisor(task_id)
-+        payload = json.dumps([["tab", session_info["tab_ref"]], *steps]).encode("utf-8")
++        conferir = _own_tab_check_step(session_info)
++        selecionar = not conferir or session_info.get("tab_selected") != session_info["tab_ref"]
++        prefixo = ([["tab", session_info["tab_ref"]]] if selecionar else []) + conferir
++        payload = json.dumps([*prefixo, *steps]).encode("utf-8")
 +        raw = _spawn_and_collect(task_id, session_info, base_parts + ["--json", "batch", "--bail"],
 +                                 command, engine, timeout, payload)
 +        if not isinstance(raw, list):
 +            return raw  # timeout / transport failure, already shaped
-+        if raw and isinstance(raw[0], dict) and not raw[0].get("success"):
-+            if attempt:
-+                break
-+            _bt.logger.info("Own tab %s is no longer known to the agent-browser daemon (task=%s): %s; looking it up again",
-+                            session_info.get("tab_ref"), task_id, raw[0].get("error"))
-+            _cdp._stop_cdp_supervisor(task_id)
-+            with _own_tab_lock(session_info):
-+                for key in ("tab_ref", "tab_target_id", "tab_owner"):
-+                    session_info.pop(key, None)
-+            continue
-+        return _unwrap_batch_result(raw[1:], command)
++        falhou = next((r for r in raw[:len(prefixo)] if isinstance(r, dict) and not r.get("success")), None)
++        if falhou is None:
++            session_info["tab_selected"] = session_info["tab_ref"]
++            return _unwrap_batch_result(raw[len(prefixo):], command)
++        session_info.pop("tab_selected", None)
++        if not selecionar:
++            continue  # the daemon is on another tab (a popup, a restart): select ours, same ref
++        if procurou:
++            break
++        procurou = True
++        _bt.logger.info("Own tab %s is no longer this session's tab in the agent-browser daemon (task=%s): %s; "
++                        "looking it up again", session_info.get("tab_ref"), task_id, falhou.get("error"))
++        _cdp._stop_cdp_supervisor(task_id)
++        with _own_tab_lock(session_info):
++            for key in ("tab_ref", "tab_target_id", "tab_owner"):
++                session_info.pop(key, None)
 +    return {"success": False, "error": f"Browser command '{command}' could not select this session's own tab"}
++
++
++_OWN_TAB_CHECK_KEY = "Symbol.for('hermes.own_tab_check')"
++
++
++def _own_tab_check_step(session_info: dict[str, Any]) -> list:
++    """Batch steps proving ``tab <ref>`` selected THIS session's tab (28/10, agentepessoal: the daemon's ref had
++    come to point at another session's tab, so snapshot refs were "Unknown ref" and a step could land on another
++    conversation's page): a one-off nonce is put on the session's target over CDP (by targetId, which never moves)
++    and an ``eval`` right after the select throws unless it reads it back, so ``--bail`` stops before any step and
++    the caller looks the tab up again. No check (the previous behavior) when the nonce cannot be set."""
++    target_id, cdp_url = session_info.get("tab_target_id"), session_info.get("cdp_url")
++    if not target_id or not cdp_url:
++        return []
++    from tools.browser_cdp_tool import _cdp_call, _run_async
++    nonce = uuid.uuid4().hex
++    try:
++        _run_async(_cdp_call(cdp_url, "Runtime.evaluate", {"expression": f"window[{_OWN_TAB_CHECK_KEY}]='{nonce}'"},
++                             target_id, 5.0))
++    except Exception as e:
++        _bt.logger.debug("own tab check for %s not set: %s", str(target_id)[:8], e)
++        return []
++    return [["eval", f"window[{_OWN_TAB_CHECK_KEY}]==='{nonce}'||(()=>{{throw new Error('not this session tab')}})()"]]
 +
 +
  def _create_cloud_session_or_fallback(task_id: str, provider) -> dict[str, Any]:
      """Cloud session; fall back to local Chromium (marked degraded) on failure. ``cdp_url``
      is resolved here because some providers return an HTTP discovery URL, not a websocket."""
-@@ -636,6 +916,8 @@
+@@ -636,6 +952,8 @@
                  return {"success": True, "data": {"path": recovered_path, "raw": raw}}
          return {"success": False, "error": f"Non-JSON output from agent-browser for '{command}': {raw}", "returncode": returncode}
  
@@ -462,7 +501,7 @@ aba de outra sessão. Feito pelo próprio Hermes no ar em 23/10 (fora do git); r
      # Empty snapshot content is a common sign of daemon/CDP issues.
      if command == "snapshot" and parsed.get("success"):
          snap_data = parsed.get("data", {})
-@@ -875,6 +1157,17 @@
+@@ -875,6 +1193,17 @@
  
      argv = _agent_browser_argv(browser_cmd)
      spawn_command, spawn_args, stdin_payload = _shim_safe_args(argv[0], command, args)

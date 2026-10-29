@@ -188,6 +188,17 @@ checa({p.name for p in patches} == {"cloudflare.patch", "abas_por_sessao.patch"}
 checa('-        await self._cdp("Runtime.enable", session_id=session_id, timeout=timeout)' in cf
       and "challenges\\.cloudflare\\.com" in cf and "__hermesDialogBridgeInstalled\", {value: true, enumerable: false}" in cf,
       "Turnstile: sem Runtime ligado em cada frame e sem trocar alert/confirm/prompt no frame do desafio")
+# 29/10: cada clique numa ref do snapshot dava "Unknown ref" (12× em 28/10; ao vivo, o link do example.com): o
+# agent-browser apaga as refs a cada `tab <ref>`, e o patch selecionava a aba antes de TODO comando; e a ref da aba às
+# vezes apontava a aba de outra sessão. Agora o `tab` só vai quando muda, e cada lote prova antes que a aba é a dela.
+ab = (img / "patches" / "abas_por_sessao.patch").read_text()
+checa('+        payload = json.dumps([["tab", session_info["tab_ref"]], *steps])' not in ab
+      and 'session_info.get("tab_selected") != session_info["tab_ref"]' in ab
+      and '+        prefixo = ([["tab", session_info["tab_ref"]]] if selecionar else []) + conferir' in ab,
+      "a aba só é selecionada quando muda (o select apaga as refs do snapshot)")
+checa("+def _own_tab_check_step(" in ab and "throw new Error('not this session tab')" in ab
+      and '"Runtime.evaluate"' in ab and "target_id, 5.0" in ab,
+      "cada lote prova pela marca no targetId que a aba ativa é a da sessão (nada roda na aba de outra conversa)")
 subir = (H / "subir.sh").read_text()
 checa("cat Dockerfile patches/*.patch | sha256sum" in subir, "o rótulo da imagem muda quando um patch muda")
 
