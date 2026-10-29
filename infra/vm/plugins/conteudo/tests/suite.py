@@ -966,7 +966,9 @@ class Suite:
         c, s, _ = self._semana()
         agora = _ts(c, "2026-10-26", "07:50")
         s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
-        s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda *a: None)
+        from unittest import mock
+        with mock.patch("time.time", return_value=agora):  # the button uses the real clock (the week is 26/10)
+            s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda *a: None)
         itens = {i["id"]: i for i in c.carregar()["itens"]}
         st = next(i for i in itens.values() if i["tipo"] == "STORY")
 
@@ -1129,6 +1131,16 @@ class Suite:
                 (Path(saida) / "video.mp4").write_bytes(b"video")
                 return [str(Path(saida) / "video.mp4")], ""
         s.c().AUTOR["quem"] = "teste"
+        from unittest import mock
+        relogio = mock.patch("time.time", return_value=agora)  # concluir_video uses the real clock (29/10 on: "já passou")
+        relogio.start()
+        try:
+            self._renderizar_semana(vf, s, c, Motor, pedidos, enviados)
+        finally:
+            relogio.stop()
+
+    def _renderizar_semana(self, vf, s, c, Motor, pedidos, enviados):
+        """The background render of t_semana_video_so_depois_da_aprovacao (run with the clock on the week's Monday)."""
         r = vf.gerar("s20261026-1", 2, semana=s, esp=Motor())
         ok(r["ok"] and pedidos == [("lanca-app", "reel", {"_marca": "raiz", "falas": ["Oi"]}, False, 2)], (r, pedidos))
         item = next(i for i in c.carregar()["itens"] if i["id"] == "s20261026-1-2")
