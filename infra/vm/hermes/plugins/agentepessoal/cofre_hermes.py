@@ -11,6 +11,7 @@
 import importlib.util
 import json
 import logging
+import re
 import sys
 import threading
 from pathlib import Path
@@ -113,16 +114,26 @@ def _formas(valor: str) -> set:
     return formas
 
 
+# Imagem ou arquivo em base64 (print de 40 KB a 4 MB): nunca mascarado (01/11: um valor de 4 caracteres caiu por acaso
+# dentro do base64 de um print, o "§" quebrou a imagem e a visão morreu com "Invalid symbol 194", 3× em 31/10). O maior
+# valor do cofre tem 1648 caracteres; texto, token e senha nunca formam uma sequência assim.
+BLOCO_BASE64 = re.compile(r"(?:[A-Za-z0-9+=]|\\?/){4000,}")
+
+
 def mascarar(valor, dados: dict):
-    """Cada valor do cofre (≥ 4 caracteres) volta a ser §§secret(NOME), em texto, dict ou lista."""
+    """Cada valor do cofre (≥ 4 caracteres) volta a ser §§secret(NOME), em texto, dict ou lista (imagem em base64 não)."""
     if not dados:
         return valor
     if isinstance(valor, str):
         trocas = sorted(((f, n) for n, v in dados.items() if isinstance(v, str) and len(v) >= 4 for f in _formas(v)),
                         key=lambda t: -len(t[0]))
-        for forma, nome in trocas:
-            valor = valor.replace(forma, f"§§secret({nome})")
-        return valor
+        partes = BLOCO_BASE64.split(valor)
+        blocos = BLOCO_BASE64.findall(valor)
+        for i, parte in enumerate(partes):
+            for forma, nome in trocas:
+                parte = parte.replace(forma, f"§§secret({nome})")
+            partes[i] = parte
+        return "".join(p + (blocos[i] if i < len(blocos) else "") for i, p in enumerate(partes))
     if isinstance(valor, dict):
         return {k: mascarar(v, dados) for k, v in valor.items()}
     if isinstance(valor, (list, tuple)):

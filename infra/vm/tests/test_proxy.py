@@ -331,6 +331,24 @@ def main() -> int:
         (pasta / "convidados" / "will" / "will.json").write_text(json.dumps({"SENHA_W": "segredo-do-will"}))
         ok(p.mascarar_cofre(b"a senha segredo-do-will")[0] == b"a senha \xc2\xa7\xc2\xa7secret(SENHA_W)",
            "o cofre do convidado (segredos/convidados/<login>) também é mascarado")
+        # 31/10: valor curto do cofre dentro do base64 de um print -> "§" quebrava a imagem (400 "Invalid symbol 194")
+        import base64 as b64
+        import random
+        rnd = random.Random(7)
+        img = b64.b64encode(bytes(rnd.getrandbits(8) for _ in range(60000))).decode()
+        img = img[:30000] + "Zq9W" + img[30004:]  # o valor do cofre por acaso no meio da imagem
+        (pasta / "will.json").write_text(json.dumps({"PIN_CURTO": "Zq9W"}))
+        pedido = json.dumps({"messages": [{"role": "user", "content": [
+            {"type": "text", "text": "o pin é Zq9W"},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img}},
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64," + img}}]}]}).encode()
+        mascarado, n = p.mascarar_cofre(pedido)
+        conteudo = json.loads(mascarado)["messages"][0]["content"]
+        ok(n == 1 and conteudo[0]["text"] == "o pin é §§secret(PIN_CURTO)" and conteudo[1]["source"]["data"] == img
+           and conteudo[2]["image_url"]["url"].endswith(img), "imagem em base64 passa intacta; o texto segue mascarado")
+        ok(b64.b64decode(conteudo[1]["source"]["data"]) and p.mascarar_cofre(json.dumps({"x": img}).encode())[1] == 0,
+           "a imagem continua base64 válido")
+        (pasta / "will.json").unlink()
         (pasta / "ilia.json").write_text("{quebrado")
         ok(p.mascarar_cofre(b"outra-da-ilia")[1] == 1, "cofre ilegível: fica a última lista boa (nunca 'sem segredo')")
         # 27/10: thinking block bound to another conversation is dropped, not a 400 for the whole call

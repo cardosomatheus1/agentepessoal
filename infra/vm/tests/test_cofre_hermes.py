@@ -108,6 +108,21 @@ checa(novo and "senhaForte123" not in json.dumps(novo["request"]) and "§§secre
 checa("senhaForte123" in json.dumps(pedido), "o pedido original não é alterado no lugar")
 checa(cf.pedido_mascarado(request={"messages": [{"role": "user", "content": "oi"}]}, session_id="s1") is None,
       "sem valor, o pedido segue igual")
+# 31/10: valor do cofre por acaso dentro do base64 de um print -> o "§" quebrava a imagem ("Invalid symbol 194")
+import base64 as _b64
+import random as _rnd
+_r = _rnd.Random(7)
+img = _b64.b64encode(bytes(_r.getrandbits(8) for _ in range(60000))).decode()
+img = img[:30000] + "senhaForte123" + img[30013:]
+pedido = {"messages": [{"role": "user", "content": [
+    {"type": "text", "text": "senhaForte123"},
+    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img}},
+    {"type": "image_url", "image_url": {"url": "data:image/png;base64," + img}}]}]}
+novo = cf.pedido_mascarado(request=pedido, session_id="s1")["request"]["messages"][0]["content"]
+checa(novo[0]["text"] == "§§secret(IG_SENHA)" and novo[1]["source"]["data"] == img and novo[2]["image_url"]["url"].endswith(img),
+      "imagem em base64 passa intacta; o texto segue mascarado")
+checa(cf.mascarar(f"a {img} b senhaForte123", {"IG_SENHA": "senhaForte123"}) == f"a {img} b §§secret(IG_SENHA)",
+      "texto com imagem no meio: só o texto é mascarado")
 
 c1 = cf.contexto_nomes(session_id="s9", is_first_turn=True)
 checa(c1 and "IG_SENHA" in c1["context"] and "senhaForte123" not in c1["context"], "nomes no início, nunca valores")

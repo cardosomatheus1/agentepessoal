@@ -564,18 +564,33 @@ def _trocas_cofre() -> list:
     return _cofres["trocas"]
 
 
+# An image or file in base64 (a screenshot is 40 KB to 4 MB): a long run of the base64 alphabet (JSON may write "/" as
+# "\/"). Never masked (01/11: a 4-character vault value turned up by chance inside a screenshot's base64, the "§" of
+# §§secret broke it and the vision call died with 400 "invalid base64 image data: Invalid symbol 194", 3× on 31/10).
+# The longest vault value is 1648 characters, and text, tokens and passwords never make a run this long.
+BLOCO_BASE64 = re.compile(rb"(?:[A-Za-z0-9+=]|\\?/){4000,}")
+
+
 def mascarar_cofre(body: bytes | None) -> tuple:
     """(body, how many values were masked): no vault value of anyone leaves the VM in a request of the Hermes, whatever
     part of it made the call (23/10: the plugin's llm_request middleware only sees the main turns, not the
-    compression summary, the session title or the other internal calls)."""
+    compression summary, the session title or the other internal calls). Images in base64 go untouched."""
     if not body:
         return body, 0
-    n = 0
-    for forma, nome in _trocas_cofre():
-        if forma in body:
-            n += body.count(forma)
-            body = body.replace(forma, nome)
-    return body, n
+    trocas = _trocas_cofre()
+    pedacos, inicio = [], 0
+    for m in BLOCO_BASE64.finditer(body):
+        pedacos += [(body[inicio:m.start()], True), (m.group(0), False)]
+        inicio = m.end()
+    pedacos.append((body[inicio:], True))
+    n, novo = 0, []
+    for pedaco, trocar in pedacos:
+        for forma, nome in trocas if trocar else ():
+            if forma in pedaco:
+                n += pedaco.count(forma)
+                pedaco = pedaco.replace(forma, nome)
+        novo.append(pedaco)
+    return (b"".join(novo) if n else body), n
 
 
 BETA_LIGACAO = "thinking-binding-controls-2026-08-01"
