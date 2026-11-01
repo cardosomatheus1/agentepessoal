@@ -451,10 +451,11 @@ class Suite:
                                 Extension=type("Extension", (), {}))})
             sys.modules["cerebro_modulos"] = self.mods
             feito = job.tique(hoje20, enviar=enviados.append)
-            ok(any(x.startswith("nota do dia") for x in feito) and len(enviados) == 1, f"escreveu e mandou uma vez {feito}")
-            ok("Responda “bora”" in enviados[0], "convida para a entrevista enquanto faltar contexto")
+            notas = lambda: [e for e in enviados if not e.startswith("🔎 Auditoria mensal")]  # dia 1: a auditoria também
+            ok(any(x.startswith("nota do dia") for x in feito) and len(notas()) == 1, f"escreveu e mandou uma vez {feito}")
+            ok("Responda “bora”" in notas()[0], "convida para a entrevista enquanto faltar contexto")
             job.tique(hoje20 + 120, enviar=enviados.append)
-            eq(len(enviados), 1, "não repete no mesmo dia")
+            eq(len(notas()), 1, "não repete no mesmo dia")
         finally:
             self.limpar()
 
