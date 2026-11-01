@@ -348,6 +348,11 @@ def main() -> int:
            and conteudo[2]["image_url"]["url"].endswith(img), "imagem em base64 passa intacta; o texto segue mascarado")
         ok(b64.b64decode(conteudo[1]["source"]["data"]) and p.mascarar_cofre(json.dumps({"x": img}).encode())[1] == 0,
            "a imagem continua base64 válido")
+        import time as _tempo
+        pesado = (("x" * 3999 + " ") * 260).encode()  # ~1 MB de sequências logo abaixo do limite (revisão de 01/11)
+        t0 = _tempo.time()
+        p.mascarar_cofre(pesado)
+        ok(_tempo.time() - t0 < 2, f"sequências longas não deixam a máscara lenta ({_tempo.time() - t0:.1f} s)")
         (pasta / "will.json").unlink()
         (pasta / "ilia.json").write_text("{quebrado")
         ok(p.mascarar_cofre(b"outra-da-ilia")[1] == 1, "cofre ilegível: fica a última lista boa (nunca 'sem segredo')")

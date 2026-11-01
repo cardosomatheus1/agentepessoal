@@ -117,7 +117,9 @@ def _formas(valor: str) -> set:
 # Imagem ou arquivo em base64 (print de 40 KB a 4 MB): nunca mascarado (01/11: um valor de 4 caracteres caiu por acaso
 # dentro do base64 de um print, o "§" quebrou a imagem e a visão morreu com "Invalid symbol 194", 3× em 31/10). O maior
 # valor do cofre tem 1648 caracteres; texto, token e senha nunca formam uma sequência assim.
-BLOCO_BASE64 = re.compile(r"(?:[A-Za-z0-9+=]|\\?/){4000,}")
+# só começa no início de uma sequência (lookbehind): sem isso cada sequência menor era tentada a partir de cada caractere
+# (54 s com 1 MB de sequências de 3999, revisão de 01/11)
+BLOCO_BASE64 = re.compile(r"(?<![A-Za-z0-9+=/\\])(?:[A-Za-z0-9+=]|\\?/){4000,}")
 
 
 def mascarar(valor, dados: dict):
@@ -127,13 +129,15 @@ def mascarar(valor, dados: dict):
     if isinstance(valor, str):
         trocas = sorted(((f, n) for n, v in dados.items() if isinstance(v, str) and len(v) >= 4 for f in _formas(v)),
                         key=lambda t: -len(t[0]))
-        partes = BLOCO_BASE64.split(valor)
-        blocos = BLOCO_BASE64.findall(valor)
-        for i, parte in enumerate(partes):
+        def trocar(parte):
             for forma, nome in trocas:
                 parte = parte.replace(forma, f"§§secret({nome})")
-            partes[i] = parte
-        return "".join(p + (blocos[i] if i < len(blocos) else "") for i, p in enumerate(partes))
+            return parte
+        novo, inicio = [], 0
+        for m in BLOCO_BASE64.finditer(valor):
+            novo += [trocar(valor[inicio:m.start()]), m.group(0)]
+            inicio = m.end()
+        return "".join(novo) + trocar(valor[inicio:])
     if isinstance(valor, dict):
         return {k: mascarar(v, dados) for k, v in valor.items()}
     if isinstance(valor, (list, tuple)):

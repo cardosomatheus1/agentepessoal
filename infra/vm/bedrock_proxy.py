@@ -568,7 +568,9 @@ def _trocas_cofre() -> list:
 # "\/"). Never masked (01/11: a 4-character vault value turned up by chance inside a screenshot's base64, the "§" of
 # §§secret broke it and the vision call died with 400 "invalid base64 image data: Invalid symbol 194", 3× on 31/10).
 # The longest vault value is 1648 characters, and text, tokens and passwords never make a run this long.
-BLOCO_BASE64 = re.compile(rb"(?:[A-Za-z0-9+=]|\\?/){4000,}")
+# Only starts at the beginning of a run (lookbehind): without it every shorter run was tried from each character (54 s
+# on 1 MB of 3999-character runs, revisão de 01/11).
+BLOCO_BASE64 = re.compile(rb"(?<![A-Za-z0-9+=/\\])(?:[A-Za-z0-9+=]|\\?/){4000,}")
 
 
 def mascarar_cofre(body: bytes | None) -> tuple:

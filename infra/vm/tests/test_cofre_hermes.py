@@ -123,6 +123,10 @@ checa(novo[0]["text"] == "§§secret(IG_SENHA)" and novo[1]["source"]["data"] ==
       "imagem em base64 passa intacta; o texto segue mascarado")
 checa(cf.mascarar(f"a {img} b senhaForte123", {"IG_SENHA": "senhaForte123"}) == f"a {img} b §§secret(IG_SENHA)",
       "texto com imagem no meio: só o texto é mascarado")
+import time as _tempo
+_t0 = _tempo.time()
+cf.mascarar(("x" * 3999 + " ") * 260, {"IG_SENHA": "senhaForte123"})
+checa(_tempo.time() - _t0 < 2, f"sequências longas não deixam a máscara lenta ({_tempo.time() - _t0:.1f} s)")
 
 c1 = cf.contexto_nomes(session_id="s9", is_first_turn=True)
 checa(c1 and "IG_SENHA" in c1["context"] and "senhaForte123" not in c1["context"], "nomes no início, nunca valores")
