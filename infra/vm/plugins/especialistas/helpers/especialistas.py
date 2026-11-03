@@ -177,6 +177,7 @@ Seu vocabulário é FECHADO. Cada ação tem "motivo" em português simples (uma
 - {"acao": "pedir_ao_matheus", "pergunta": "...", "opcoes": ["...", "..."], "item": id opcional, "motivo"}: só
   para o que é decisão dele: publicar algo que o Crítico reprovou, apagar o que já saiu, mudar a estratégia, aprovar a
   semana. Até 3 opções curtas. Com "item" de um post reprovado/bloqueado, o botão "Publicar mesmo assim" vai junto.
+  No máximo UMA pergunta por execução: a mais importante agora (as outras ficam para a próxima).
 
 O que você nunca faz: publicar, liberar o que o Crítico reprovou, apagar o que já saiu, pôr dois posts (ou dois
 stories) no mesmo dia, mexer em item publicando/publicada/incerta, mudar legenda. Na dúvida entre agir e perguntar,
@@ -288,9 +289,13 @@ def chamar_claude(papel: str, tarefa: str, login: str = "matheus", max_saida: in
     except Exception as exc:
         return {"texto": "", "erro": f"{type(exc).__name__}: {str(exc)[:200]}", "uso": {}}
     u = data.get("usage") or {}
+    # the host proxy adds cache points: most of the prompt comes as cache write/read, not inputTokens (03/11: "4")
     entrada, saida = int(u.get("inputTokens") or 0), int(u.get("outputTokens") or 0)
-    uso = {"entrada": entrada, "saida": saida, "modelo": MODELO_CLAUDE,
-           "usd": round(entrada * PRECO_CLAUDE["entrada"] + saida * PRECO_CLAUDE["saida"], 4)}
+    grava, le = int(u.get("cacheWriteInputTokens") or 0), int(u.get("cacheReadInputTokens") or 0)
+    p = PRECO_CLAUDE
+    uso = {"entrada": entrada + grava + le, "saida": saida, "cache_lido": le, "modelo": MODELO_CLAUDE,
+           "usd": round(entrada * p["entrada"] + grava * p["entrada"] * 1.25 + le * p["entrada"] * 0.1
+                        + saida * p["saida"], 4)}
     texto = "".join(c.get("text", "") for c in ((data.get("output") or {}).get("message") or {}).get("content") or []
                     if isinstance(c, dict))
     return {"texto": texto, "erro": "" if texto else f"sem texto na resposta ({data.get('stopReason')})", "uso": uso}

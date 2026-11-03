@@ -314,7 +314,7 @@ def validar(acoes, itens: list, agora: float) -> tuple[list, list]:
         elif nome == "trocar":
             x, y = sim[a["item_a"]], sim[a["item_b"]]
             (x["data"], x["hora"]), (y["data"], y["hora"]) = (y["data"], y["hora"]), (x["data"], x["hora"])
-        tocados.update(_ids(a))
+        tocados.update(_ids(a) + (["pergunta"] if nome == "pedir_ao_matheus" else []))
         aceitas.append({k: (v.strip() if isinstance(v, str) else v) for k, v in a.items()})
     return aceitas, recusadas
 
@@ -348,6 +348,8 @@ def _erro(a, sim: dict, tocados: set, abertas: list, ocupado, agora: float, ja: 
             return "pedir_ao_matheus: opcoes é uma lista de até 3 textos"
         if any(_mesma(p.get("pergunta"), a["pergunta"]) for p in abertas):
             return "pedir_ao_matheus: a mesma pergunta já foi feita nas últimas 24 h"
+        if "pergunta" in tocados:
+            return "pedir_ao_matheus: uma pergunta por execução (a mensagem fica curta e os botões claros)"
         return ""
     for i in _ids(a):
         if sim[i]["estado"] in NAO_TOCA:
@@ -408,7 +410,7 @@ def _descrever(a: dict, itens: dict) -> str:
     if nome == "trocar":
         return f"Troquei as datas de {rotulo(a['item_a'])} e {rotulo(a['item_b'])}"
     if nome == "refazer":
-        return f"Mandei refazer {rotulo(a['item'])}: {_curto(a['instrucao'], 160)}"
+        return f"Mandei refazer {rotulo(a['item'])}"
     return nome
 
 
@@ -467,7 +469,8 @@ def _pergunta(a: dict, agora: float, itens: dict) -> tuple[str, list]:
     login = c().LOGIN
     botoes = []
     it = itens.get(a.get("item") or "")
-    if it and (it["estado"] == "bloqueada" or (it.get("conferido") or {}).get("veredito") == "reprova"):
+    hoje = _momento(agora).date().isoformat()  # liberar a past day's item would publish nothing
+    if it and it["data"] >= hoje and (it["estado"] == "bloqueada" or (it.get("conferido") or {}).get("veredito") == "reprova"):
         botoes.append({"id": f"cs:{login}:{it['id']}:liberar", "titulo": "🔓 Publicar mesmo assim"})
     for k, o in enumerate(registro["opcoes"], 1):
         if len(botoes) < 3:

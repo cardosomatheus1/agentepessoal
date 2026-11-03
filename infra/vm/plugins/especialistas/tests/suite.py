@@ -115,7 +115,8 @@ class Suite:
         def enviar(url, body, login, papel, tempo):
             enviados.append((url, body, login, papel, tempo))
             return {"output": {"message": {"content": [{"reasoningContent": {}}, {"text": '{"visto": "ok", "acoes": []}'}]}},
-                    "usage": {"inputTokens": 20000, "outputTokens": 1500}, "stopReason": "end_turn"}
+                    "usage": {"inputTokens": 4, "cacheWriteInputTokens": 20000, "cacheReadInputTokens": 1000,
+                              "outputTokens": 1500}, "stopReason": "end_turn"}
         m._enviar_claude = enviar
         r = m.chamar_claude("gestor", "Decida.", login="teste_ana")
         url, body, login, papel, tempo = enviados[0]
@@ -124,7 +125,8 @@ class Suite:
         eq(body["additionalModelRequestFields"]["output_config"]["effort"], "high", "pensa com cuidado")
         eq((login, papel), ("teste_ana", "gestor"), "dono e papel nos cabeçalhos (uso por dono)")
         eq(r["texto"], '{"visto": "ok", "acoes": []}', "só o texto")
-        eq(r["uso"]["usd"], round(20000 * 4 / 1e6 + 1500 * 20 / 1e6, 4), "custo da execução")
+        eq(r["uso"]["entrada"], 21004, "a entrada conta o cache que o proxy põe")
+        eq(r["uso"]["usd"], round(4 * 4 / 1e6 + 20000 * 5 / 1e6 + 1000 * 0.4 / 1e6 + 1500 * 20 / 1e6, 4), "custo da execução")
 
         def cai(*a):
             raise OSError("sem rede")

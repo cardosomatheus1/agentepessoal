@@ -1575,6 +1575,15 @@ class Suite:
         diario = [json.loads(l) for l in (c.PASTA / "diario.jsonl").read_text(encoding="utf-8").splitlines()]
         ok(any(e.get("item") == "st-ter" and e.get("para") == "cancelada" and e["quem"].startswith("gestor:") for e in diario),
            "o cancelamento fica no diário como do gestor")
+        # a second question in the same run is refused (one message, clear buttons); a past day's item gets no "liberar"
+        r2 = g.rodar("manual", _ts(c, "2026-11-04", "09:00"), modelo=self._modelo([
+            {"acao": "pedir_ao_matheus", "item": "car-ter", "pergunta": "E o carrossel de ontem?", "opcoes": ["Cancela"],
+             "motivo": "parado"},
+            {"acao": "pedir_ao_matheus", "pergunta": "Aprovo a semana?", "opcoes": ["Sim"], "motivo": "semana vazia"}]),
+            avisar=lambda t, b=None: avisos.append((t, b)), contexto={})
+        ok("uma pergunta por execução" in r2["recusadas"][0]["erro"], r2["recusadas"])
+        ok([b["id"] for b in avisos[-1][1]] == [avisos[-1][1][0]["id"]] and avisos[-1][1][0]["id"].endswith(":o1"),
+           f"dia que passou: sem botão de liberar ({avisos[-1][1]})")
         resp = g.semana().botao("matheus", ids[2])
         ok("Refaz para sexta" in resp.get("conversa", "") and "Publico o carrossel" in resp["conversa"], resp)
         ok(not r["recusadas"] and r["uso"]["usd"] == 0.066, r)
