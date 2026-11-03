@@ -229,7 +229,37 @@ class Suite:
         c2 = _modulo()
         so = dict(chama, id="so-story", data="2026-10-16")
         ok(c2.agendar([so], _ts(c2, "2026-10-13", "10:00"))["ok"], "dia só com story")
-        ok((c2.devido(_ts(c2, "2026-10-16", "09:05")) or {}).get("id") == "so-story", "sem post no dia, sai na hora")
+        # 03/11: o story que anuncia um post não sai sozinho (antes, sem post no dia, saía na hora)
+        ok(c2.devido(_ts(c2, "2026-10-16", "09:05")) is None, "sem post no dia, o story que chama não sai")
+        avisos = []
+        ok(c2.segurar_stories_sem_post(_ts(c2, "2026-10-16", "09:05"), avisos.append) == ["so-story"], "fica bloqueado")
+        ok(avisos and "não saiu" in avisos[0], f"e avisa: {avisos}")
+        dica = dict(chama, id="dica", data="2026-10-17", legenda="dica: confira o insumo que mais subiu")
+        ok(c2.agendar([dica], _ts(c2, "2026-10-13", "10:00"))["ok"], "story comum")
+        ok((c2.devido(_ts(c2, "2026-10-17", "09:05")) or {}).get("id") == "dica", "story que não chama post sai às 9h")
+
+    def t_story_da_semana_marcado_so_no_titulo_espera_e_cai_com_o_post(self):
+        # 03/11: "3 sinais ... Carrossel novo." (post-novo só em origem.titulo) saiu às 9h; o carrossel foi reprovado.
+        c = _modulo()
+        st = {"id": "st-sinais", "ficha": FICHA, "data": "2026-10-14", "hora": "09:00", "tipo": "STORY",
+              "arquivos": ["conteudo/stories/s.jpg"], "legenda": "3 sinais de que o seu preço ficou para trás.",
+              "origem": {"semana": "s1", "n": 10, "titulo": "post-novo: 3 sinais de que o seu preço ficou para trás."}}
+        ok(c.chama_post(st), "reconhece pelo título da semana")
+        ok(c.chama_post(dict(st, origem={}, legenda="3 sinais. Carrossel novo.")), "e pelo texto 'Carrossel novo'")
+        ok(c.agendar([ITEM, st], _ts(c, "2026-10-13", "10:00"))["ok"], "post 11:45 e story 9:00")
+        ok(c.devido(_ts(c, "2026-10-14", "09:05")) is None, "às 9h não sai")
+        with c._exclusivo():
+            d = c.carregar(); post = next(i for i in d["itens"] if i["id"] == "seg-pov")
+            c._mudar(post, "bloqueada", bloqueio="o Crítico reprovou"); c._gravar(d)
+        ok(c.segurar_stories_sem_post(_ts(c, "2026-10-14", "11:50")) == ["st-sinais"], "post reprovado: o story fica bloqueado")
+        estado = {i["id"]: i for i in c.carregar()["itens"]}
+        ok(estado["st-sinais"]["estado"] == "bloqueada" and estado["st-sinais"]["espera_post"] == "seg-pov", estado["st-sinais"])
+        ok(c.liberar("seg-pov", "libera o post")["ok"], "ele libera o post")
+        ok({i["id"]: i["estado"] for i in c.carregar()["itens"]}["st-sinais"] == "pendente", "o story volta junto")
+        ok(c.devido(_ts(c, "2026-10-14", "11:55"))["id"] == "seg-pov", "primeiro o post")
+        r = c.rodar(ApiFalsa(), lambda t: None, _ts(c, "2026-10-14", "11:55"))
+        ok(r and r["id"] == "seg-pov" and r["estado"] == "publicada", f"o post sai: {r}")
+        ok((c.devido(_ts(c, "2026-10-14", "11:56")) or {}).get("id") == "st-sinais", "e o story sai logo depois")
 
     def t_antecipar_por_ordem_dele(self):
         c = _modulo()
@@ -699,14 +729,17 @@ class Suite:
         ok(reel["tipo"] == "REELS" and reel["capa"].endswith("r2-capa.jpg"), reel)
         ok(len(subidos) == sum(len(i["arquivos"]) + (1 if i.get("capa") else 0) for i in itens.values()), "cada arquivo subiu")
         ok((c.PASTA / "cache" / "s20261026-1-1" / "c1-1.jpg").exists(), "cópia local para o Crítico da publicação")
-        # the daily publish: the story at 9h, the carousel at 11:45, the same day (the gate's Crítico approves)
+        # the daily publish (the gate's Crítico approves): the story that announces the carousel waits for it (03/11),
+        # so 9h passes empty, the carousel goes at 11:45 and the story right after
         aprova = type("C", (), {"criticar": lambda self, t, m: {"veredito": "aprova"}})()
         api = ApiFalsa()
-        pub = c.rodar(api, lambda t: None, _ts(c, "2026-10-27", "09:05"), dormir=lambda x: None, critico=aprova)
-        ok(pub["estado"] == "publicada" and any(x[2].get("media_type") == "STORIES" for x in api.chamadas), pub)
-        api = ApiFalsa()
+        ok(c.rodar(api, lambda t: None, _ts(c, "2026-10-27", "09:05"), dormir=lambda x: None, critico=aprova) is None,
+           "às 9h o story que anuncia o carrossel espera")
         pub = c.rodar(api, lambda t: None, _ts(c, "2026-10-27", "11:50"), dormir=lambda x: None, critico=aprova)
         ok(pub["estado"] == "publicada" and any(x[2].get("media_type") == "CAROUSEL" for x in api.chamadas), "o carrossel do dia")
+        api = ApiFalsa()
+        pub = c.rodar(api, lambda t: None, _ts(c, "2026-10-27", "11:51"), dormir=lambda x: None, critico=aprova)
+        ok(pub and pub["estado"] == "publicada" and any(x[2].get("media_type") == "STORIES" for x in api.chamadas), pub)
         with mock.patch("time.time", return_value=agora):
             de_novo = s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda *a: None)["mensagem"]
         ok(de_novo.startswith("Nada para agendar") and "Ainda esperando você: 3, 8" in de_novo, f"aprovar de novo não duplica: {de_novo}")

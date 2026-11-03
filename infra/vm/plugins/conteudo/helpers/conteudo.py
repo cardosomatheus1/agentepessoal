@@ -397,13 +397,49 @@ def trocar_formato(item_id: str, tipo: str, arquivos: list, capa: str = "", agor
     return {"ok": True, "id": item_id, "tipo": tipo, "arquivos": novo["arquivos"], "backup": str(copia)}
 
 
-CHAMA_POST = re.compile(r"\bchama (o|a|pro|pra|para o|para a)\b|video-novo|post-novo", re.I)
+CHAMA_POST = re.compile(r"\bchama (o|a|pro|pra|para o|para a)\b|video-novo|post-novo|"
+                        r"\b(carrossel|reel|v[ií]deo|post) nov[oa]\b|\bnov[oa] (carrossel|reel|v[ií]deo|post)\b", re.I)
 
 
 def chama_post(it: dict) -> bool:
-    """A story that sends people to the day's feed post ("chama o Reel", kit layouts video-novo/post-novo)."""
+    """A story that sends people to the day's feed post ("chama o Reel", kit layouts video-novo/post-novo, "Carrossel
+    novo."). 03/11: the week's stories carry the layout only in origem.titulo ("post-novo: ..."), which was not read,
+    so "3 sinais ... Carrossel novo." went out at 9:00 and the carrossel, reproved, never did."""
     return canal(it) == "story" and bool(CHAMA_POST.search(
-        f"{it.get('legenda') or ''} {json.dumps(it.get('ficha') or {}, ensure_ascii=False)}"))
+        f"{it.get('legenda') or ''} {json.dumps(it.get('ficha') or {}, ensure_ascii=False)} "
+        f"{(it.get('origem') or {}).get('titulo') or ''}"))
+
+
+NAO_SAI = ("bloqueada", "cancelada", "falhou")
+
+
+def segurar_stories_sem_post(agora: float | None = None, avisar=lambda texto: None) -> list[str]:
+    """A story that announces the day's feed post never goes out alone (Matheus, 03/11: "fica um storys la falando que
+    tem"): at its hour, if the day has no feed post or the post will not go out (bloqueada, cancelada, falhou), the
+    story is blocked with the reason and `espera_post`. liberar() of that post brings the story back to pendente."""
+    agora = time.time() if agora is None else agora
+    momento = dt.datetime.fromtimestamp(agora, _tz())
+    hoje, hora = momento.date().isoformat(), momento.strftime("%H:%M")
+    segurados = []
+    with _exclusivo():
+        d = carregar()
+        do_dia = [i for i in d["itens"] if i["data"] == hoje]
+        feed = [i for i in do_dia if canal(i) == "feed"]
+        if any(i["estado"] not in NAO_SAI for i in feed):
+            return []  # the post is still coming (or already out): devido() makes the story wait for it
+        for st in do_dia:
+            if st["estado"] == "pendente" and st["hora"] <= hora and chama_post(st):
+                post = feed[0]["id"] if feed else ""
+                motivo = (f"o post que ele anuncia ({post}) não saiu hoje ({feed[0]['estado']})" if feed
+                          else "anuncia um post e não há post no feed hoje")
+                _mudar(st, "bloqueada", bloqueio=motivo, espera_post=post)
+                segurados.append(st["id"])
+        if segurados:
+            _gravar(d)
+    for sid in segurados:
+        _chamar_aviso(avisar, f"pendente: o story de hoje da @raiz.connect ({sid}) não saiu porque o post que ele anuncia "
+                              f"não saiu. Liberando o post, o story sai logo depois dele.")
+    return segurados
 
 
 def devido(agora: float | None = None) -> dict | None:
@@ -418,9 +454,10 @@ def devido(agora: float | None = None) -> dict | None:
     feitos = {canal(i) for i in do_dia if i["estado"] in ("publicando", "publicada", "incerta")}
     feed_do_dia = [i for i in do_dia if canal(i) == "feed" and i["estado"] != "cancelada"]
     feed_saiu = any(i["estado"] in ("publicada", "incerta") for i in feed_do_dia)
+    # 03/11: a story that calls the post goes only after the post is out (never before it, never without it).
     return next((i for i in sorted(do_dia, key=lambda i: i["hora"])
                  if i["estado"] == "pendente" and i["hora"] <= hora and canal(i) not in feitos
-                 and not (chama_post(i) and feed_do_dia and not feed_saiu)), None)
+                 and not (chama_post(i) and not feed_saiu)), None)
 
 
 # ------------------------------------------------------------------ publishing
@@ -761,6 +798,10 @@ def liberar(item_id: str, motivo: str, quem: str = "matheus") -> dict:
             if alvo["estado"] == "bloqueada":
                 registro["bloqueio"] = alvo.get("bloqueio", "")
                 _mudar(alvo, "pendente", liberado=registro)
+                # the stories held because this post did not go out come back with it (they wait for it to publish)
+                for st in d["itens"]:
+                    if st["estado"] == "bloqueada" and st.get("espera_post") == item_id:
+                        _mudar(st, "pendente", liberado=dict(registro, motivo=f"o post {item_id} foi liberado"))
             elif alvo["estado"] == "pendente":
                 alvo["liberado"] = registro
                 _diario({"item": item_id, "liberado": registro})
@@ -971,6 +1012,7 @@ def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, av
 def rodar(api, avisar=lambda texto: None, agora: float | None = None, dormir=time.sleep, critico=_PADRAO) -> dict | None:
     """One pass of the job loop: publishes today's post if due and the Crítico's gate lets it. The reservation
     (pendente → publicando) is saved before talking to Meta, so two passes can never publish the same item."""
+    segurar_stories_sem_post(agora, avisar)
     previsto = devido(agora)
     if not previsto:
         return None
