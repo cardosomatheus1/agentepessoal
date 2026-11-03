@@ -90,8 +90,8 @@ class Suite:
 
     def t_souls_tem_personalidade_regras_e_o_que_nao_faz(self):
         m = self._e()
-        eq(sorted(m.PAPEIS), ["critico", "designer"], "os dois papéis")
-        for papel, soul in m.PAPEIS.items():
+        eq(sorted(m.PAPEIS), ["critico", "designer", "gestor"], "os três papéis")
+        for papel, soul in ((p, s) for p, s in m.PAPEIS.items() if p != "gestor"):
             ok("O que você faz:" in soul, f"{papel}: seção do que faz")
             ok("O que você não faz:" in soul, f"{papel}: seção do que não faz")
             nao_faz = soul.split("O que você não faz:")[1].split("\n\n")[0]
@@ -102,6 +102,35 @@ class Suite:
             ok(termo in c, f"crítico cita {termo!r}")
         # 22/10: the agent renders the Raiz with the moldes; the identity stays the kit's (marca raiz)
         ok("Não foge do kit na Raiz" in m.PAPEIS["designer"], "designer sabe que a Raiz usa molde só com o kit")
+
+    def t_gestor_vocabulario_fechado_e_opus(self):
+        # 03/11, Matheus: "ta faltando um agente gestor tbm ... ser de fato uma inteligência"
+        m = self._e()
+        g = m.PAPEIS["gestor"]
+        for termo in ('"segurar"', '"remarcar"', '"cancelar"', '"refazer"', '"trocar"', '"pedir_ao_matheus"', "FECHADO",
+                      "nunca faz: publicar", "liberar o que o Crítico reprovou", "apagar o que já saiu", "lista vazia"):
+            ok(termo in g, f"gestor cita {termo!r}")
+        enviados = []
+
+        def enviar(url, body, login, papel, tempo):
+            enviados.append((url, body, login, papel, tempo))
+            return {"output": {"message": {"content": [{"reasoningContent": {}}, {"text": '{"visto": "ok", "acoes": []}'}]}},
+                    "usage": {"inputTokens": 20000, "outputTokens": 1500}, "stopReason": "end_turn"}
+        m._enviar_claude = enviar
+        r = m.chamar_claude("gestor", "Decida.", login="teste_ana")
+        url, body, login, papel, tempo = enviados[0]
+        ok(url.endswith("/bedrock/model/us.anthropic.claude-opus-5-5/converse") and tempo < 240, url)
+        eq(body["system"][0]["text"], g, "o papel vai como system")
+        eq(body["additionalModelRequestFields"]["output_config"]["effort"], "high", "pensa com cuidado")
+        eq((login, papel), ("teste_ana", "gestor"), "dono e papel nos cabeçalhos (uso por dono)")
+        eq(r["texto"], '{"visto": "ok", "acoes": []}', "só o texto")
+        eq(r["uso"]["usd"], round(20000 * 4 / 1e6 + 1500 * 20 / 1e6, 4), "custo da execução")
+
+        def cai(*a):
+            raise OSError("sem rede")
+        m._enviar_claude = cai
+        ok(m.chamar_claude("gestor", "x")["erro"].startswith("OSError"), "rede fora: erro, sem levantar")
+        ok(m.chamar_claude("bruxo", "x")["erro"].startswith("papel desconhecido"), "papel inventado")
 
     # --- strict parsing, fail closed
 

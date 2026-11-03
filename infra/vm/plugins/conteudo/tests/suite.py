@@ -1498,6 +1498,261 @@ class Suite:
            "a conferência antecipada roda na rotina, com o refazer do agente")
         ok('tipo="urgente"' in ext, "falha chega na hora (é um pendente:)")
 
+    # ------------------------------------------------------------------ the Gestor (03/11)
+
+    def _gestor(self):
+        """gestor.py over a fresh conteudo (and the real semana.py over it), plus the 03/11 week: today Tuesday 03/11
+        the 9h story announces the 11:45 carrossel; Friday 06/11 another carrossel; Wednesday 04/11 a Reel."""
+        c = _modulo()
+        spec = importlib.util.spec_from_file_location("semana_gestor_teste", RAIZ / "helpers" / "semana.py")
+        s = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(s)
+        s._C["fixo"] = c
+        spec = importlib.util.spec_from_file_location("gestor_teste", RAIZ / "helpers" / "gestor.py")
+        g = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(g)
+        g._C.update(fixo=c, semana_fixa=s)
+        s._G["fixo"] = g
+        jpgs = [f"conteudo/semanas/s1/c{i}.jpg" for i in range(1, 4)]
+        itens = [
+            {"id": "st-ter", "ficha": FICHA, "data": "2026-11-03", "hora": "09:00", "tipo": "STORY",
+             "arquivos": ["conteudo/st/ter.jpg"], "legenda": "3 sinais de que o seu preço ficou para trás.",
+             "origem": {"semana": "s20261027-1", "n": 10, "titulo": "post-novo: 3 sinais de que o seu preço ficou para trás. Carrossel novo."}},
+            {"id": "car-ter", "ficha": FICHA, "data": "2026-11-03", "hora": "11:45", "tipo": "CARROSSEL", "arquivos": jpgs,
+             "legenda": "3 sinais de que o seu preço ficou para trás. Salve para revisar.",
+             "origem": {"semana": "s20261027-1", "n": 3, "titulo": "3 sinais de que o seu preço ficou para trás"}},
+            {"id": "reel-qua", "ficha": FICHA, "data": "2026-11-04", "hora": "11:45", "tipo": "REELS",
+             "arquivos": ["conteudo/r/qua.mp4"], "legenda": "iFood, 99 e balcão no mesmo lugar."},
+            {"id": "car-sex", "ficha": FICHA, "data": "2026-11-06", "hora": "11:45", "tipo": "CARROSSEL", "arquivos": jpgs,
+             "legenda": "O custo da marmita que você esquece de contar."},
+        ]
+        ok(c.agendar(itens, _ts(c, "2026-10-30", "10:00"))["ok"], "semana agendada")
+        return c, g
+
+    @staticmethod
+    def _modelo(acoes, visto="vi a agenda"):
+        pedidos = []
+
+        def modelo(tarefa):
+            pedidos.append(tarefa)
+            return {"texto": json.dumps({"visto": visto, "acoes": acoes}, ensure_ascii=False),
+                    "erro": "", "uso": {"entrada": 12000, "saida": 900, "usd": 0.066}}
+        modelo.pedidos = pedidos
+        return modelo
+
+    @staticmethod
+    def _mexer(c, item_id, para, **campos):
+        with c._exclusivo():
+            d = c.carregar()
+            alvo = next(i for i in d["itens"] if i["id"] == item_id)
+            if para:
+                c._mudar(alvo, para, **campos)
+            else:
+                alvo.update(campos)
+            c._gravar(d)
+
+    def t_gestor_story_anunciando_post_bloqueado(self):
+        # 01/11 and 03/11: the post the story announced was reproved and never went out
+        c, g = self._gestor()
+        self._mexer(c, "car-ter", "bloqueada", bloqueio="o Crítico reprovou: tela cortada no slide 4",
+                    critica={"veredito": "reprova", "motivos": ["tela cortada no slide 4"]})
+        modelo = self._modelo([
+            {"acao": "cancelar", "item": "st-ter", "motivo": "o story anuncia o carrossel de hoje, que foi reprovado"},
+            {"acao": "pedir_ao_matheus", "item": "car-ter", "pergunta": "Publico o carrossel mesmo reprovado?",
+             "opcoes": ["Deixa parado", "Refaz para sexta"], "motivo": "liberar reprovado é decisão dele"}])
+        avisos = []
+        r = g.rodar("evento: car-ter bloqueada", _ts(c, "2026-11-03", "08:40"), modelo=modelo,
+                    avisar=lambda t, b=None: avisos.append((t, b)), contexto={})
+        ok("anuncia_o_post_do_dia" in modelo.pedidos[0] and "st-ter: story que anuncia car-ter" in modelo.pedidos[0],
+           "o gestor vê que o story anuncia um post bloqueado")
+        estado = {i["id"]: i for i in c.carregar()["itens"]}
+        ok(estado["st-ter"]["estado"] == "cancelada" and estado["car-ter"]["estado"] == "bloqueada", estado["st-ter"])
+        ok(len(avisos) == 1, f"uma mensagem só: {avisos}")
+        texto, botoes = avisos[0]
+        ok("Cancelei st-ter" in texto and "Por quê: o story anuncia" in texto and "Publico o carrossel" in texto, texto)
+        ids = [b["id"] for b in botoes]
+        ok(ids[0] == "cs:matheus:car-ter:liberar" and len(ids) == 3 and all(len(i.encode()) <= 64 for i in ids), ids)
+        diario = [json.loads(l) for l in (c.PASTA / "diario.jsonl").read_text(encoding="utf-8").splitlines()]
+        ok(any(e.get("item") == "st-ter" and e.get("para") == "cancelada" and e["quem"].startswith("gestor:") for e in diario),
+           "o cancelamento fica no diário como do gestor")
+        resp = g.semana().botao("matheus", ids[2])
+        ok("Refaz para sexta" in resp.get("conversa", "") and "Publico o carrossel" in resp["conversa"], resp)
+        ok(not r["recusadas"] and r["uso"]["usd"] == 0.066, r)
+
+    def t_gestor_reprovado_duas_vezes_refaz_ou_troca(self):
+        # 03/11: the carrossel reproved twice (redo included), 3 h before its hour
+        c, g = self._gestor()
+        self._mexer(c, "car-ter", None, refeitas=2, conferido={"veredito": "reprova", "impressao": "x",
+                                                                "motivo": "o Crítico reprovou: tela cortada no slide 4"})
+        self._mexer(c, "car-sex", None, conferido={"veredito": "aprova", "impressao": "y", "motivo": "o Crítico aprovou"})
+        agora = _ts(c, "2026-11-03", "08:45")
+        refeitos = []
+
+        def refazer(item, critica):
+            refeitos.append((item["id"], critica))
+            return {"ok": True, "arquivos": ["conteudo/novo/1.jpg", "conteudo/novo/2.jpg"]}
+        instrucao = "Mostre no slide 4 a tela inteira do CMV, com o menu, sem cortar o gráfico"
+        r = g.rodar("horário 08:30", agora, modelo=self._modelo([
+            {"acao": "refazer", "item": "car-ter", "instrucao": instrucao, "motivo": "dá tempo de refazer até 11:45"}]),
+            avisar=lambda t, b=None: None, refazer=refazer, contexto={})
+        ok(refeitos and refeitos[0][0] == "car-ter" and any(instrucao in m for m in refeitos[0][1]["motivos"])
+           and any("tela cortada" in m for m in refeitos[0][1]["motivos"]), f"refaz com a instrução e os motivos: {refeitos}")
+        ok(next(i for i in c.carregar()["itens"] if i["id"] == "car-ter")["refeitas"] == 3, "conta a tentativa")
+        ok(r["resultados"][0]["ok"], r)
+        # a fourth redo is refused; swapping with the approved Friday carrossel is the way out
+        r = g.rodar("evento: car-ter reprovado", agora + 600, modelo=self._modelo([
+            {"acao": "refazer", "item": "car-ter", "instrucao": instrucao, "motivo": "mais uma"},
+            {"acao": "trocar", "item_a": "car-ter", "item_b": "car-sex", "motivo": "o de sexta já está aprovado"}]),
+            avisar=lambda t, b=None: None, refazer=refazer, contexto={})
+        ok(len(refeitos) == 1 and "refeito 3 vezes" in r["recusadas"][0]["erro"], r["recusadas"])
+        estado = {i["id"]: (i["data"], i["hora"]) for i in c.carregar()["itens"]}
+        ok(estado["car-ter"] == ("2026-11-06", "11:45") and estado["car-sex"] == ("2026-11-03", "11:45"), estado)
+        r = g.rodar("manual", _ts(c, "2026-11-03", "11:40"), modelo=self._modelo([
+            {"acao": "refazer", "item": "car-sex", "instrucao": instrucao, "motivo": "x"}]), contexto={})
+        ok("não dá tempo" in r["recusadas"][0]["erro"], "a 5 min da hora não refaz")
+
+    def t_gestor_dois_carrosseis_do_mesmo_tema(self):
+        c, g = self._gestor()
+        self._mexer(c, "car-sex", None, legenda="Mais 3 sinais de que o seu preço ficou para trás.",
+                    origem={"semana": "s20261027-1", "n": 4, "titulo": "Mais 3 sinais de que o seu preço ficou para trás"})
+        modelo = self._modelo([
+            {"acao": "remarcar", "item": "car-sex", "data": "2026-11-04", "hora": "11:45", "motivo": "tema repetido"},
+            {"acao": "remarcar", "item": "car-sex", "data": "2026-11-07", "hora": "11:45", "motivo": "repete o tema de terça"}])
+        avisos = []
+        r = g.rodar("horário 20:00", _ts(c, "2026-11-02", "20:00"), modelo=modelo,
+                    avisar=lambda t, b=None: avisos.append(t), contexto={})
+        ok("Mais 3 sinais" in modelo.pedidos[0] and "3 sinais de que o seu preço" in modelo.pedidos[0], "vê os dois assuntos")
+        ok("já tem feed (reel-qua)" in r["recusadas"][0]["erro"], f"dois posts no mesmo dia: recusa ({r['recusadas']})")
+        ok(next(i for i in c.carregar()["itens"] if i["id"] == "car-sex")["data"] == "2026-11-07", "vai para sábado")
+        ok(len(avisos) == 1 and "Remarquei car-sex" in avisos[0] and "07/11" in avisos[0], avisos)
+
+    def t_gestor_item_no_passado(self):
+        c, g = self._gestor()
+        agora = _ts(c, "2026-11-05", "08:35")  # car-ter (03/11) and reel-qua (04/11) never went out: routine stopped
+        modelo = self._modelo([
+            {"acao": "remarcar", "item": "car-ter", "data": "2026-11-04", "hora": "11:45", "motivo": "ontem"},
+            {"acao": "remarcar", "item": "reel-qua", "data": "2026-11-05", "hora": "11:45", "motivo": "o Reel de ontem não saiu"},
+            {"acao": "cancelar", "item": "st-ter", "motivo": "anunciava o carrossel de terça, que não saiu"}])
+        r = g.rodar("horário 08:30", agora, modelo=modelo, contexto={})
+        ok("car-ter: era para sair 2026-11-03 11:45 e continua pendente" in modelo.pedidos[0], "o gestor vê o atraso")
+        ok("já passou" in r["recusadas"][0]["erro"], r["recusadas"])
+        estado = {i["id"]: i for i in c.carregar()["itens"]}
+        ok((estado["reel-qua"]["data"], estado["reel-qua"]["hora"]) == ("2026-11-05", "11:45"), estado["reel-qua"])
+        ok(estado["st-ter"]["estado"] == "cancelada" and estado["car-ter"]["data"] == "2026-11-03", "o resto como pedido")
+
+    def t_gestor_nada_errado_nada_feito_e_silencio(self):
+        c, g = self._gestor()
+        antes = (c.PASTA / "agenda.json").read_bytes()
+        avisos = []
+        r = g.rodar("horário 08:30", _ts(c, "2026-11-02", "08:31"), modelo=self._modelo([], "tudo certo"),
+                    avisar=lambda t, b=None: avisos.append(t), contexto={})
+        ok(not avisos and not r["mensagem"] and not r["aceitas"], f"silêncio: {r}")
+        ok((c.PASTA / "agenda.json").read_bytes() == antes, "a agenda não muda")
+        linha = json.loads((c.PASTA / "gestor.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        ok(linha["uso"]["usd"] == 0.066 and linha["feitas"] == [], f"o custo fica registrado: {linha}")
+
+    def t_gestor_recusa_acao_proibida(self):
+        c, g = self._gestor()
+        self._mexer(c, "st-ter", "publicando")
+        self._mexer(c, "st-ter", "publicada", media_id="1")
+        antes = (c.PASTA / "agenda.json").read_bytes()
+        avisos = []
+        proibidas = [
+            {"acao": "publicar", "item": "car-ter", "motivo": "já está bom"},
+            {"acao": "liberar", "item": "car-ter", "motivo": "o Crítico exagerou"},
+            {"acao": "apagar", "item": "st-ter", "motivo": "saiu errado"},
+            {"acao": "cancelar", "item": "st-ter", "motivo": "saiu errado"},
+            {"acao": "segurar", "item": "car-ter", "motivo": ""},
+            {"acao": "refazer", "item": "car-ter", "instrucao": "nova legenda", "legenda": "Nova legenda", "motivo": "x"},
+            {"acao": "refazer", "item": "reel-qua", "instrucao": "troque a narração do começo", "motivo": "fala fora da tela"},
+            {"acao": "remarcar", "item": "car-sex", "data": "2026-11-03", "hora": "18:00", "motivo": "adiantar"},
+            {"acao": "trocar", "item_a": "car-sex", "item_b": "st-ter", "motivo": "trocar com o story que já saiu"},
+            {"acao": "segurar", "item": "nao-existe", "motivo": "x"},
+            "segura tudo",
+        ]
+        r = g.rodar("manual", _ts(c, "2026-11-03", "09:30"), modelo=self._modelo(proibidas),
+                    avisar=lambda t, b=None: avisos.append(t), contexto={})
+        ok(not r["aceitas"] and len(r["recusadas"]) == len(proibidas), f"todas recusadas: {[x['erro'] for x in r['recusadas']]}")
+        erros = " | ".join(x["erro"] for x in r["recusadas"])
+        for trecho in ("fora do vocabulário: 'publicar'", "fora do vocabulário: 'liberar'", "fora do vocabulário: 'apagar'",
+                       "st-ter está publicada", "sem motivo", "campos que não existem: legenda", "decisão #39",
+                       "já tem feed (car-ter)", "não existe na agenda", "não é um objeto"):
+            ok(trecho in erros, f"{trecho!r} em {erros}")
+        ok((c.PASTA / "agenda.json").read_bytes() == antes and not avisos, "nada muda e nada vai ao celular")
+        diario = [json.loads(l) for l in (c.PASTA / "diario.jsonl").read_text(encoding="utf-8").splitlines()]
+        ok(sum(e.get("gestor") == "recusada" for e in diario) == len(proibidas), "cada recusa vai ao diário")
+        # and the helper itself refuses the agent (only the Gestor or the operator move things)
+        ok(not c.segurar("car-ter", "x")["ok"] and not c.remarcar("car-ter", "2026-11-08", "11:45", "x")["ok"]
+           and not c.trocar_datas("car-ter", "car-sex", "x")["ok"] and not c.cancelar("car-ter", "x")["ok"], "agente não")
+
+    def t_gestor_quando_roda_trava_seco_e_teto(self):
+        c, g = self._gestor()
+        ok(g.quando_rodar(_ts(c, "2026-11-03", "08:00")) == "", "fora do horário, sem evento: não roda")
+        ok(g.quando_rodar(_ts(c, "2026-11-03", "08:31")) == "horário 08:30", "08:30")
+        r = g.rodar("horário 08:30", _ts(c, "2026-11-03", "08:31"), modelo=self._modelo([]), contexto={})
+        ok(g.quando_rodar(_ts(c, "2026-11-03", "08:40")) == "", "o horário roda uma vez só")
+        ok(g.quando_rodar(_ts(c, "2026-11-03", "11:20")) == "horário 11:15", "11:15")
+        ok(g.quando_rodar(_ts(c, "2026-11-03", "21:30")) == "", "20:00 só até uma hora depois")
+        self._mexer(c, "car-ter", "bloqueada", bloqueio="o Crítico reprovou")
+        ok(g.quando_rodar(_ts(c, "2026-11-03", "08:50")).startswith("evento: car-ter bloqueada"), "bloqueio é evento")
+        g.rodar(g.quando_rodar(_ts(c, "2026-11-03", "08:50")), _ts(c, "2026-11-03", "08:50"), modelo=self._modelo([]), contexto={})
+        ok(g.quando_rodar(_ts(c, "2026-11-03", "08:52")) == "", "evento visto não volta")
+        # the Gestor's own moves are not events (no loop)
+        c.AUTOR["quem"] = "gestor: teste"
+        c.segurar("car-sex", "teste")
+        c.AUTOR["quem"] = "agente"
+        ok(g.quando_rodar(_ts(c, "2026-11-03", "09:30")) == "", "o que o gestor fez não chama o gestor")
+        # a lock held by another run: skip
+        import fcntl
+        with open(c.PASTA / "gestor.lock", "a") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            ok(g.rodar("manual", _ts(c, "2026-11-03", "09:30"), modelo=self._modelo([]), contexto={}).get("pulou"),
+               "nunca dois gestores juntos")
+        # dry run: decides and shows, changes and sends nothing
+        antes = (c.PASTA / "agenda.json").read_bytes()
+        avisos = []
+        r = g.rodar("manual", _ts(c, "2026-11-03", "09:30"), seco=True, avisar=lambda t, b=None: avisos.append(t),
+                    modelo=self._modelo([{"acao": "cancelar", "item": "reel-qua", "motivo": "teste seco"}]), contexto={})
+        ok(r["aceitas"] and "Cancelei reel-qua" in r["mensagem"] and not avisos
+           and (c.PASTA / "agenda.json").read_bytes() == antes, f"seco: {r}")
+        # a model answer that is not JSON: nothing happens
+        r = g.rodar("manual", _ts(c, "2026-11-03", "09:31"), modelo=lambda t: {"texto": "acho que", "erro": "", "uso": {}},
+                    contexto={})
+        ok("ilegível" in r["erro"] and (c.PASTA / "agenda.json").read_bytes() == antes, r)
+        # the daily ceiling
+        for _ in range(g.MAX_POR_DIA):
+            g.rodar("manual", _ts(c, "2026-11-03", "10:00"), modelo=self._modelo([]), contexto={})
+        ok("teto do dia" in g.rodar("manual", _ts(c, "2026-11-03", "10:01"), modelo=self._modelo([]), contexto={})["pulou"],
+           "teto de execuções por dia")
+
+    def t_gestor_prompt_no_teto_de_custo(self):
+        c, g = self._gestor()
+        st = g.estado(_ts(c, "2026-11-03", "08:31"), {"raiz": "oferta Lucro na Mão em 30 Dias. " * 9000, "decisoes": "d" * 30000})
+        texto = g.tarefa_no_teto(st, "horário 08:30")
+        ok(g._custo_max(texto) <= g.TETO_USD and "Lucro na Mão" in texto, f"cabe no teto: {g._custo_max(texto):.3f}")
+        ok(g._custo_max(g.tarefa(st, "x")) > g.TETO_USD, "sem o corte passaria")
+        ok("dia de post no plano e sem post" in texto, "o buraco da semana seguinte aparece")
+
+    def t_extensao_chama_o_gestor(self):
+        ext = (RAIZ / "extensions" / "python" / "job_loop" / "_46_publicar_conteudo.py").read_text(encoding="utf-8")
+        ok("_gestor().quando_rodar()" in ext and "_gestor().rodar(motivo, avisar=_avisar_gestor, refazer=_semana().refazer_item)" in ext,
+           "a rotina roda o gestor nas horas e nos eventos")
+        ok("if not _GERINDO[\"sim\"] and not _CONFERINDO[\"sim\"]" in ext, "nunca junto com a conferência antecipada")
+
+    def t_lento_gestor_modelo_real(self):
+        """Optional and slow: the real Claude Opus through the host proxy (only on the VM, GESTOR_MODELO_REAL=1)."""
+        if os.environ.get("GESTOR_MODELO_REAL") != "1":
+            return
+        c, g = self._gestor()
+        spec = importlib.util.spec_from_file_location("esp_real", RAIZ.parent / "especialistas" / "helpers" / "especialistas.py")
+        esp = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(esp)
+        self._mexer(c, "car-ter", "bloqueada", bloqueio="o Crítico reprovou: tela cortada no slide 4")
+        r = g.rodar("manual", _ts(c, "2026-11-03", "08:40"), seco=True, contexto={},
+                    modelo=lambda t: esp.chamar_claude("gestor", t, max_saida=g.MAX_SAIDA))
+        ok("erro" not in r and r["uso"].get("usd", 1) <= g.TETO_USD, r)
+        ok(not any(x["acao"].get("acao") in ("publicar", "liberar") for x in r["recusadas"] if isinstance(x["acao"], dict)), r)
+
     async def rodar(self, so: str = "") -> dict:
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:

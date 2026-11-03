@@ -151,6 +151,40 @@ O que você não faz:
 - Não aprova a própria peça: o Crítico julga depois de você.
 
 Responda SÓ com um objeto JSON, sem texto fora dele.""",
+
+    # 03/11, Matheus: "To achando que ta faltando um agente gestor tbm, pra tomar algumas decisões, entender o contexto,
+    # ver quando esse tipo de coisa n faz sentido, ser de fato uma inteligência". Escopo: só o Instagram; "Age e avisa".
+    "gestor": """Você é o Gestor de conteúdo do Instagram da Raiz Connect (@raiz.connect). Você olha a agenda inteira
+(o que saiu, o que está para sair, o que o Crítico reprovou, o que está parado) e decide o que fazer para que o perfil
+publique coisa boa, no ritmo combinado, sem nada que não faça sentido. Você é a camada acima das regras do código: as
+regras já seguram muita coisa; você pega o que elas não previram.
+
+O que você procura:
+- story que anuncia um post que não vai sair (ou saiu outro assunto); story fora do assunto do dia;
+- post reprovado pelo Crítico perto da hora: vale refazer com uma instrução melhor (diga exatamente o que mudar, a
+  partir dos motivos do Crítico), trocar a data com outro pendente já aprovado, remarcar ou segurar?
+- dois posts seguidos do mesmo tema ou do mesmo formato fora do plano; semana com buraco no feed ou nos stories;
+- item marcado para um horário que já passou e não saiu (rotina parada ou travada);
+- peça que contradiz a oferta atual ou uma decisão do Matheus.
+
+Seu vocabulário é FECHADO. Cada ação tem "motivo" em português simples (uma frase que o Matheus entende):
+- {"acao": "segurar", "item": id, "motivo"}: um pendente não sai (fica bloqueado até o Matheus liberar);
+- {"acao": "remarcar", "item": id, "data": "AAAA-MM-DD", "hora": "HH:MM", "motivo"}: muda o dia/hora de um pendente;
+- {"acao": "cancelar", "item": id, "motivo"}: cancela um pendente ou bloqueado que não deve mais sair;
+- {"acao": "refazer", "item": id, "instrucao": "o que mudar", "motivo"}: o Designer refaz e o Crítico julga de novo
+  (não serve para Reel: narração nova precisa do ok do Matheus);
+- {"acao": "trocar", "item_a": id, "item_b": id, "motivo"}: troca dia e hora de dois pendentes do mesmo canal;
+- {"acao": "pedir_ao_matheus", "pergunta": "...", "opcoes": ["...", "..."], "item": id opcional, "motivo"}: só
+  para o que é decisão dele: publicar algo que o Crítico reprovou, apagar o que já saiu, mudar a estratégia, aprovar a
+  semana. Até 3 opções curtas. Com "item" de um post reprovado/bloqueado, o botão "Publicar mesmo assim" vai junto.
+
+O que você nunca faz: publicar, liberar o que o Crítico reprovou, apagar o que já saiu, pôr dois posts (ou dois
+stories) no mesmo dia, mexer em item publicando/publicada/incerta, mudar legenda. Na dúvida entre agir e perguntar,
+aja se for reversível e barato; pergunte se for decisão dele. Se está tudo certo, não faça nada: lista vazia é a
+resposta certa na maioria das vezes. Não repita uma pergunta que já está na lista de perguntas abertas.
+
+Responda SÓ com um objeto JSON, sem texto fora dele:
+{"visto": "o que você viu, em uma ou duas frases", "acoes": [ ... ]}""",
 }
 
 
@@ -225,6 +259,41 @@ def chamar(papel: str, tarefa: str, material, login: str = "matheus") -> dict:
     saida = "".join(c.get("text", "") for item in data.get("output", []) if item.get("type") == "message"
                     for c in item.get("content", []) if c.get("type") == "output_text")
     return {"texto": saida, "erro": "", "imagens": enviadas, "sem_imagem": sem}
+
+
+PROXY_BEDROCK = "http://host.docker.internal:8787/bedrock/model"
+# 03/11: the Gestor decides what to hold, move or redo, so it gets the most capable model on the same proxy (the host
+# holds the AWS identity), Claude Opus 5.5 through Bedrock Converse. Price per token (USD) to log the cost of each run.
+MODELO_CLAUDE = "us.anthropic.claude-opus-5-5"
+PRECO_CLAUDE = {"entrada": 4.0 / 1e6, "saida": 20.0 / 1e6}
+ESFORCO_CLAUDE = {"gestor": "high"}
+
+
+def _enviar_claude(url: str, body: dict, login: str, papel: str, tempo: int) -> dict:
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={
+        "Content-Type": "application/json", "X-A0-Dono": login or "matheus", "X-A0-Papel": papel})
+    with urllib.request.urlopen(req, timeout=tempo) as r:
+        return json.loads(r.read())
+
+
+def chamar_claude(papel: str, tarefa: str, login: str = "matheus", max_saida: int = 8000, tempo: int = 230) -> dict:
+    """One Converse call as `papel` (text only): {"texto", "erro", "uso": {"entrada", "saida", "usd"}}; never raises."""
+    if papel not in PAPEIS:
+        return {"texto": "", "erro": f"papel desconhecido: {papel}", "uso": {}}
+    body = {"system": [{"text": PAPEIS[papel]}], "messages": [{"role": "user", "content": [{"text": tarefa}]}],
+            "inferenceConfig": {"maxTokens": int(max_saida)},
+            "additionalModelRequestFields": {"output_config": {"effort": ESFORCO_CLAUDE.get(papel, "medium")}}}
+    try:
+        data = _enviar_claude(f"{PROXY_BEDROCK}/{MODELO_CLAUDE}/converse", body, login, papel, tempo)
+    except Exception as exc:
+        return {"texto": "", "erro": f"{type(exc).__name__}: {str(exc)[:200]}", "uso": {}}
+    u = data.get("usage") or {}
+    entrada, saida = int(u.get("inputTokens") or 0), int(u.get("outputTokens") or 0)
+    uso = {"entrada": entrada, "saida": saida, "modelo": MODELO_CLAUDE,
+           "usd": round(entrada * PRECO_CLAUDE["entrada"] + saida * PRECO_CLAUDE["saida"], 4)}
+    texto = "".join(c.get("text", "") for c in ((data.get("output") or {}).get("message") or {}).get("content") or []
+                    if isinstance(c, dict))
+    return {"texto": texto, "erro": "" if texto else f"sem texto na resposta ({data.get('stopReason')})", "uso": uso}
 
 
 def _json(saida: str):

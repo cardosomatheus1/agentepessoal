@@ -17,6 +17,7 @@ _ATUAL: dict = {}
 _RODANDO = {"sim": False}
 _CONFERINDO = {"sim": False, "ultima": 0.0}
 CONFERIR_CADA = 600  # seconds between passes of the advance check (one post judged, and redone if reproved, per pass)
+_GERINDO = {"sim": False}  # 03/11: the Gestor (helpers/gestor.py) at its hours and on events, never with the check
 
 
 def _helper():
@@ -95,6 +96,48 @@ def _conferir() -> None:
         _CONFERINDO.update(sim=False, ultima=time.time())
 
 
+def _gestor():
+    caminho = _CAMINHO.parent / "gestor.py"
+    marca = caminho.stat().st_mtime_ns
+    if _ATUAL.get("marca_gestor") != marca:
+        spec = importlib.util.spec_from_file_location("conteudo_gestor", caminho)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        m._C["fixo"] = _helper()  # the same helper instance the routine publishes with
+        _ATUAL.update(marca_gestor=marca, gestor=m)
+    _ATUAL["gestor"]._C["fixo"] = _helper()
+    return _ATUAL["gestor"]
+
+
+def _avisar_gestor(texto: str, botoes: list | None = None) -> None:
+    """The Gestor's one message per run (only when it did something or needs him)."""
+    caminho = Path("/a0/usr/plugins/whatsapp/helpers/ponte.py")
+    try:
+        ponte = sys.modules.get("whatsapp_ponte")
+        if ponte is None and caminho.exists():
+            s = importlib.util.spec_from_file_location("whatsapp_ponte", caminho)
+            ponte = importlib.util.module_from_spec(s)
+            s.loader.exec_module(ponte)
+        erro = ponte.enviar("matheus", texto, botoes=botoes, rotina="🧭 Gestor de conteúdo", reenviar=True) \
+            if ponte else "ponte indisponível"
+        if erro:
+            print(f"conteudo: aviso do gestor não saiu: {erro}", flush=True)
+    except Exception as exc:
+        print(f"conteudo: aviso do gestor não saiu: {exc}", flush=True)
+
+
+def _gerir(motivo: str) -> None:
+    """Matheus, 03/11: "ta faltando um agente gestor tbm ... ser de fato uma inteligência" ("Age e avisa")."""
+    try:
+        r = _gestor().rodar(motivo, avisar=_avisar_gestor, refazer=_semana().refazer_item)
+        print(f"conteudo: gestor ({motivo}): {r.get('pulou') or r.get('erro') or len(r.get('aceitas') or [])} "
+              f"ação(ões), US$ {(r.get('uso') or {}).get('usd')}", flush=True)
+    except Exception as exc:
+        print(f"conteudo: gestor: {type(exc).__name__}: {exc}", flush=True)
+    finally:
+        _GERINDO["sim"] = False
+
+
 class PublicarConteudo(Extension):
     async def execute(self, **kwargs):
         try:
@@ -104,7 +147,16 @@ class PublicarConteudo(Extension):
             print(f"conteudo: helper não carregou: {type(exc).__name__}: {exc}", flush=True)
             return
         laco = asyncio.get_running_loop()
-        if not _CONFERINDO["sim"] and time.time() - _CONFERINDO["ultima"] >= CONFERIR_CADA:
+        if not _GERINDO["sim"] and not _CONFERINDO["sim"]:  # never redoing the same post as the advance check
+            try:
+                motivo = _gestor().quando_rodar()
+            except Exception as exc:
+                motivo = ""
+                print(f"conteudo: gestor: {type(exc).__name__}: {exc}", flush=True)
+            if motivo:
+                _GERINDO["sim"] = True
+                laco.run_in_executor(None, _gerir, motivo)
+        if not _CONFERINDO["sim"] and not _GERINDO["sim"] and time.time() - _CONFERINDO["ultima"] >= CONFERIR_CADA:
             _CONFERINDO["sim"] = True
             laco.run_in_executor(None, _conferir)
         if _RODANDO["sim"]:

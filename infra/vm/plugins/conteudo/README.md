@@ -43,3 +43,15 @@ da gestão e 2 de custo e preço.
   (tipo `story` no plugin especialistas) e vai uma mensagem com os 11. Reel: só prévia e narração na proposta
   (decisão #39); aprovado, `helpers/video_fila.py` gera o vídeo em segundo plano (um por vez, voz pela credencial curta
   `/voz` do host) e `semana.concluir_video` agenda e avisa.
+
+## Gestor de conteúdo (03/11, "Age e avisa", só o Instagram)
+
+`helpers/gestor.py`: às 08:30, 11:15 e 20:00 e quando algo é bloqueado, reprovado, não se refaz ou a publicação falha
+(rotina `_46`, nunca dois juntos), o papel `gestor` do especialistas (Claude Opus 5.5) lê a agenda (7 dias para trás e
+para frente), o Crítico, o diário, a semana proposta, as decisões e a oferta, e devolve ações de um vocabulário fechado.
+- Pode, só no que ainda não saiu: segurar, remarcar, cancelar, trocar datas de dois pendentes do mesmo canal, mandar
+  refazer (não Reel) com instrução; e perguntar ao Matheus (com botões). Sempre com motivo, tudo no diário.
+- Não pode: publicar, liberar reprovado, apagar o que saiu, dois no mesmo dia, mexer em publicando/publicada/incerta,
+  mudar legenda. Ação fora disso é recusada pelo código e vai ao diário.
+- Uma mensagem por execução, só quando agiu ou precisa dele. Teto: US$ 0,30 por execução, 10 execuções e US$ 2 por dia
+  (`gestor.jsonl` guarda o custo). Modo seco: `gestor.rodar(seco=True)` decide e mostra, sem executar.

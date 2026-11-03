@@ -142,6 +142,22 @@ def dias_livres(agora: float, n: int = STORIES, canal: str = "story", janela: in
 
 
 _S: dict = {}
+_G: dict = {}
+
+
+def gestor():
+    """gestor.py next to this file, sharing this file's conteudo instance (the tests may pin theirs in _G["fixo"])."""
+    if "fixo" in _G:
+        return _G["fixo"]
+    caminho = Path(__file__).resolve().parent / "gestor.py"
+    marca = caminho.stat().st_mtime_ns
+    if _G.get("marca") != marca:
+        spec = importlib.util.spec_from_file_location("conteudo_gestor_semana", caminho)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        _G.update(marca=marca, m=m)
+    _G["m"]._C["fixo"] = c()
+    return _G["m"]
 
 
 def story():
@@ -863,6 +879,8 @@ def botao(login: str, botao_id: str, subir=None) -> dict:
             return {"mensagem": f"Não liberei: {r['erro']}"}
         return {"mensagem": f"🔓 Liberado. O post {alvo} sai no horário dele ({r['hora']} de {_rotulo_dia(r['data'])}), "
                             "se ainda for o dia dele; senão, fica pendente e eu te aviso."}
+    if re.fullmatch(r"g[0-9a-f]{8}", alvo) and re.fullmatch(r"o\d", acao):  # an option of a Gestor question (gestor.py)
+        return gestor().resposta(alvo, int(acao[1:]))
     try:
         semana = carregar(alvo)
     except ValueError:

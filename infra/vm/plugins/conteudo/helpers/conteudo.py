@@ -264,11 +264,114 @@ def tentar_de_novo(item_id: str) -> dict:
     return {"ok": True, "id": item_id, "data": alvo["data"], "hora": alvo["hora"]}
 
 
+def _gestor_ou_operador() -> bool:
+    """03/11: the Gestor (helpers/gestor.py, Matheus: "Age e avisa") may hold, move, swap and cancel what has not gone
+    out; it acts with AUTOR "gestor: <motivo>", the operator with "operador: <motivo>"."""
+    return str(AUTOR["quem"]).startswith(("operador:", "gestor:"))
+
+
+MARGEM_MIN = 10  # the Gestor never moves an item to (or from) less than this many minutes from now
+
+
+def segurar(item_id: str, motivo: str) -> dict:
+    """pendente → bloqueada by the Gestor or the operator: the item does not go out until Matheus releases it
+    (liberar(), his button "Publicar mesmo assim"). Nothing published is touched."""
+    if not _gestor_ou_operador():
+        return {"ok": False, "erro": "só o gestor ou o operador seguram um item"}
+    if not str(motivo or "").strip():
+        return {"ok": False, "erro": "diga o motivo"}
+    with _exclusivo():
+        d = carregar()
+        alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
+        if not alvo:
+            return {"ok": False, "erro": f"{item_id}: não existe"}
+        if alvo["estado"] != "pendente":
+            return {"ok": False, "erro": f"{item_id}: está {alvo['estado']} (só pendente é segurado)"}
+        _mudar(alvo, "bloqueada", bloqueio=f"segurado: {str(motivo)[:200]}", segurado_por=str(AUTOR["quem"])[:80])
+        _gravar(d)
+    return {"ok": True, "id": item_id, "data": alvo["data"], "hora": alvo["hora"]}
+
+
+def _hora_valida(hora: str) -> bool:
+    try:
+        h, m = str(hora).split(":")
+        return len(str(hora)) == 5 and 0 <= int(h) < 24 and 0 <= int(m) < 60
+    except ValueError:
+        return False
+
+
+def remarcar(item_id: str, data: str, hora: str, motivo: str, agora: float | None = None) -> dict:
+    """Moves ONE pending item to another day and/or hour (Gestor or operator). Refused when the new moment is past or
+    too close, the day already has an item of the same slot (one feed post and one story a day), or the item is not
+    pendente. The Crítico's check of the same files stays valid (the files and caption did not change)."""
+    if not _gestor_ou_operador():
+        return {"ok": False, "erro": "só o gestor ou o operador remarcam um item"}
+    if not str(motivo or "").strip():
+        return {"ok": False, "erro": "diga o motivo"}
+    agora = time.time() if agora is None else agora
+    try:
+        dt.date.fromisoformat(str(data))
+    except ValueError:
+        return {"ok": False, "erro": "data (AAAA-MM-DD) inválida"}
+    if not _hora_valida(hora):
+        return {"ok": False, "erro": "hora (HH:MM) inválida"}
+    with _exclusivo():
+        d = carregar()
+        alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
+        if not alvo:
+            return {"ok": False, "erro": f"{item_id}: não existe"}
+        if alvo["estado"] != "pendente":
+            return {"ok": False, "erro": f"{item_id}: está {alvo['estado']} (só pendente é remarcado)"}
+        if _quando({"data": data, "hora": hora}) < agora + MARGEM_MIN * 60:
+            return {"ok": False, "erro": f"{data} {hora} já passou ou está a menos de {MARGEM_MIN} min"}
+        outro = next((i for i in d["itens"] if i is not alvo and i["data"] == data and canal(i) == canal(alvo)
+                      and i["estado"] not in ("cancelada", "falhou")), None)
+        if outro:
+            return {"ok": False, "erro": f"{data} já tem {canal(alvo)} ({outro['id']}, {outro['estado']}): um por dia"}
+        de = {"data": alvo["data"], "hora": alvo["hora"]}
+        alvo["data"], alvo["hora"] = str(data), str(hora)
+        _gravar(d)
+    _diario({"item": item_id, "remarcado": True, "de_data": de["data"], "de_hora": de["hora"], "para_data": data,
+             "para_hora": hora, "motivo": str(motivo)[:300]})
+    return {"ok": True, "id": item_id, "de": de, "data": data, "hora": hora}
+
+
+def trocar_datas(item_a: str, item_b: str, motivo: str, agora: float | None = None) -> dict:
+    """Swaps the day and hour of two pending items of the same slot (Gestor or operator), e.g. a reproved carousel
+    and an approved one of the week. Both must still be at least MARGEM_MIN minutes away."""
+    if not _gestor_ou_operador():
+        return {"ok": False, "erro": "só o gestor ou o operador trocam itens"}
+    if not str(motivo or "").strip():
+        return {"ok": False, "erro": "diga o motivo"}
+    if item_a == item_b:
+        return {"ok": False, "erro": "troca de um item com ele mesmo"}
+    agora = time.time() if agora is None else agora
+    with _exclusivo():
+        d = carregar()
+        a = next((i for i in d["itens"] if i["id"] == item_a), None)
+        b = next((i for i in d["itens"] if i["id"] == item_b), None)
+        if not a or not b:
+            return {"ok": False, "erro": f"{item_a if not a else item_b}: não existe"}
+        for i in (a, b):
+            if i["estado"] != "pendente":
+                return {"ok": False, "erro": f"{i['id']}: está {i['estado']} (só pendente troca)"}
+            if _quando(i) < agora + MARGEM_MIN * 60:
+                return {"ok": False, "erro": f"{i['id']}: sai em menos de {MARGEM_MIN} min"}
+        if canal(a) != canal(b):
+            return {"ok": False, "erro": "um é story e o outro é post do feed: só troca dentro do mesmo canal"}
+        (a["data"], a["hora"]), (b["data"], b["hora"]) = (b["data"], b["hora"]), (a["data"], a["hora"])
+        _gravar(d)
+    _diario({"trocados": [item_a, item_b], "motivo": str(motivo)[:300],
+             "agora": {item_a: f"{a['data']} {a['hora']}", item_b: f"{b['data']} {b['hora']}"}})
+    return {"ok": True, item_a: {"data": a["data"], "hora": a["hora"]}, item_b: {"data": b["data"], "hora": b["hora"]}}
+
+
 def cancelar(item_id: str, motivo: str = "") -> dict:
-    """pendente → cancelada, only by the operator (14/10: the old brigadeiro Reel is replaced by the kit version and
-    replanejar() cannot change the files). The day becomes free for agendar(); nothing published is ever touched."""
-    if not str(AUTOR["quem"]).startswith("operador:"):
-        return {"ok": False, "erro": "só o operador cancela um post (AUTOR['quem'] = 'operador: <motivo>')"}
+    """pendente (or bloqueada) → cancelada, only by the operator (14/10: the old brigadeiro Reel is replaced by the kit
+    version and replanejar() cannot change the files) or the Gestor (03/11). The day becomes free for agendar();
+    nothing published is ever touched."""
+    if not _gestor_ou_operador():
+        return {"ok": False, "erro": "só o operador ou o gestor cancelam um post (AUTOR['quem'] = 'operador: <motivo>')"}
     with _exclusivo():
         d = carregar()
         alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
