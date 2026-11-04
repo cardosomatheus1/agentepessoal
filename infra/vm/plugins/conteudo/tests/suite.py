@@ -1748,6 +1748,21 @@ class Suite:
         ok(len(avisos) == 1 and "Criei um story para 05/11: o Crítico aprovou e está agendado" in avisos[0][0]
            and not avisos[0][1], avisos)
         ok("criar" in g.ACOES and "pedir_ao_matheus" not in g.ACOES, "o vocabulário cria e não pergunta")
+        # a day whose post the week is still redoing by itself: no second one on top of it
+        with s._exclusivo():
+            sem = s.carregar(novo[0]["origem"]["semana"])
+            sem["propostas"].append(dict(sem["propostas"][0], n=99, id="x-99", data="2026-11-08", formato_pedido="STORY",
+                                         estado="proposta", critica={"veredito": "reprova", "motivos": ["fraco"]}))
+            sem["estado"] = "parcial"
+            s._gravar(sem)
+        st = g.estado(_ts(c, "2026-11-04", "20:10"), contexto={})
+        ok(any("2026-11-08" in b and "refazendo" in b for b in st["buracos"]), st["buracos"])
+        r = g.rodar("manual", _ts(c, "2026-11-04", "20:10"), modelo=self._modelo([
+            {"acao": "criar", "data": "2026-11-08", "formato": "STORY", "story": dica, "motivo": "domingo sem story"}]),
+            contexto={})
+        ok("sendo refeito pelo agente" in r["recusadas"][0]["erro"], r["recusadas"])
+        ok("ainda está refazendo" in s.criar("2026-11-08", "STORY", {"story": dica}, agora=_ts(c, "2026-11-04", "20:10"))["erro"],
+           "e a função recusa também")
 
     def t_gestor_reprovado_duas_vezes_refaz_ou_troca(self):
         # 03/11: the carrossel reproved twice (redo included), 3 h before its hour

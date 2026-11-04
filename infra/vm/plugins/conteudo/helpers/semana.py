@@ -811,6 +811,26 @@ def _avisar(avisar, texto: str) -> None:
         print(f"conteudo: aviso não saiu: {exc}", flush=True)
 
 
+def em_refacao(data: str, canal_: str, agora: float | None = None) -> str:
+    """The open proposal of an autonomous week the agent is still redoing for that day and slot ("" when none): the
+    Gestor does not create another one on top of it."""
+    agora = time.time() if agora is None else agora
+    if not _pasta().exists():
+        return ""
+    for arq in sorted(_pasta().glob("s*.json")):
+        try:
+            s = json.loads(arq.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if not s.get("autonomo") or s.get("estado") not in ("proposta", "parcial"):
+            continue
+        for p in s.get("propostas") or []:
+            if (p.get("estado") == "proposta" and p.get("data") == data
+                    and ("story" if p.get("formato_pedido") == "STORY" else "feed") == canal_):
+                return f"{s['id']}-{p['n']}"
+    return ""
+
+
 def criar(data: str, formato: str, dados: dict, agora: float | None = None, subir=None, quem: str = "gestor") -> dict:
     """The Gestor fills a hole (04/11): one new feed post {"titulo", "ideia", "legenda"} or story {"story": fields} for
     `data`, appended to the newest week, drawn and judged like the week's; approved goes into the agenda now, reproved
@@ -829,6 +849,8 @@ def criar(data: str, formato: str, dados: dict, agora: float | None = None, subi
         return {"ok": False, "erro": f"{data} {hora} já passou ou está perto demais para criar"}
     if data in _ocupados(canal_):
         return {"ok": False, "erro": f"{data} já tem {canal_}"}
+    if em_refacao(data, canal_, agora):
+        return {"ok": False, "erro": f"{data}: o agente ainda está refazendo {em_refacao(data, canal_, agora)} para esse dia"}
     if formato == "STORY" and (not isinstance(dados.get("story"), dict) or story().validar(dados["story"])):
         return {"ok": False, "erro": "story: campos do kit (" + (story().validar(dados.get("story"))
                                                                  if isinstance(dados.get("story"), dict) else "objeto") + ")"}

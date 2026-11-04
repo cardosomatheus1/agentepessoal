@@ -150,10 +150,13 @@ def _buracos(itens: list, hoje: dt.date) -> list:
     for k in range(DIAS + 1):
         dia = hoje + dt.timedelta(days=k)
         iso = dia.isoformat()
-        if not any(i["data"] == iso and c().canal(i) == "story" for i in vivos):
-            saida.append(f"{iso} ({DIAS_SEMANA[dia.weekday()]}): sem story")
-        if dia.weekday() in plano and not any(i["data"] == iso and c().canal(i) == "feed" for i in vivos):
-            saida.append(f"{iso} ({DIAS_SEMANA[dia.weekday()]}): dia de post no plano e sem post")
+        for canal_, falta in (("story", "sem story"), ("feed", "dia de post no plano e sem post")):
+            if canal_ == "feed" and dia.weekday() not in plano:
+                continue
+            if not any(i["data"] == iso and c().canal(i) == canal_ for i in vivos):
+                refazendo = semana().em_refacao(iso, canal_)
+                saida.append(f"{iso} ({DIAS_SEMANA[dia.weekday()]}): {falta}"
+                             + (f" (o agente está refazendo {refazendo}: não crie outro)" if refazendo else ""))
     return saida
 
 
@@ -408,6 +411,9 @@ def _erro_criar(a: dict, sim: dict, ocupado, agora: float) -> str:
     outro = ocupado(a["data"], canal_, set())
     if outro:
         return f"criar: {a['data']} já tem {canal_} ({outro['id']}): um por dia"
+    refazendo = semana().em_refacao(a["data"], canal_, agora)
+    if refazendo:
+        return f"criar: {a['data']} já tem {canal_} sendo refeito pelo agente ({refazendo}); espere a decisão dele"
     if formato == "STORY":
         if not isinstance(a.get("story"), dict) or not a["story"].get("layout"):
             return "criar: story precisa de \"story\" com os campos do kit (layout, manchete, ...)"
