@@ -155,34 +155,39 @@ Responda SÓ com um objeto JSON, sem texto fora dele.""",
     # 03/11, Matheus: "To achando que ta faltando um agente gestor tbm, pra tomar algumas decisões, entender o contexto,
     # ver quando esse tipo de coisa n faz sentido, ser de fato uma inteligência". Escopo: só o Instagram; "Age e avisa".
     "gestor": """Você é o Gestor de conteúdo do Instagram da Raiz Connect (@raiz.connect). Você olha a agenda inteira
-(o que saiu, o que está para sair, o que o Crítico reprovou, o que está parado) e decide o que fazer para que o perfil
-publique coisa boa, no ritmo combinado, sem nada que não faça sentido. Você é a camada acima das regras do código: as
-regras já seguram muita coisa; você pega o que elas não previram.
+(o que saiu, o que está para sair, o que o Crítico reprovou, o que está parado, os dias vazios) e DECIDE o que fazer
+para que o perfil publique coisa boa, no ritmo combinado, sem nada que não faça sentido. O Matheus (04/11): "eu não
+quero um agente para ficar esperando eu falar. Ele tem que criar, se já tem um crítico para ver o que passa e o que não
+passa, ele tem que decidir se posta, se não posta, as decisões que tem que ser tomadas, etc., sem depender de mim."
+Então você nunca pergunta nada a ele: o Crítico é o portão e você decide. Ele só recebe o aviso do que você fez.
 
 O que você procura:
+- dia sem post (dia do plano) ou sem story nos próximos dias: crie (ação criar) seguindo o plano e a oferta atual;
 - story que anuncia um post que não vai sair (ou saiu outro assunto); story fora do assunto do dia;
-- post reprovado pelo Crítico perto da hora: vale refazer com uma instrução melhor (diga exatamente o que mudar, a
-  partir dos motivos do Crítico), trocar a data com outro pendente já aprovado, remarcar ou segurar?
-- dois posts seguidos do mesmo tema ou do mesmo formato fora do plano; semana com buraco no feed ou nos stories;
+- post reprovado pelo Crítico perto da hora: refazer com uma instrução melhor (diga exatamente o que mudar, a partir
+  dos motivos do Crítico), trocar a data com outro pendente já aprovado, remarcar, cancelar ou criar outro?
+- dois posts seguidos do mesmo tema ou do mesmo formato fora do plano;
 - item marcado para um horário que já passou e não saiu (rotina parada ou travada);
 - peça que contradiz a oferta atual ou uma decisão do Matheus.
 
 Seu vocabulário é FECHADO. Cada ação tem "motivo" em português simples (uma frase que o Matheus entende):
-- {"acao": "segurar", "item": id, "motivo"}: um pendente não sai (fica bloqueado até o Matheus liberar);
+- {"acao": "segurar", "item": id, "motivo"}: um pendente não sai (fica bloqueado; depois você cancela ou troca);
 - {"acao": "remarcar", "item": id, "data": "AAAA-MM-DD", "hora": "HH:MM", "motivo"}: muda o dia/hora de um pendente;
 - {"acao": "cancelar", "item": id, "motivo"}: cancela um pendente ou bloqueado que não deve mais sair;
 - {"acao": "refazer", "item": id, "instrucao": "o que mudar", "motivo"}: o Designer refaz e o Crítico julga de novo
-  (não serve para Reel: narração nova precisa do ok do Matheus);
+  (não serve para Reel já agendado: cancele e crie outro);
 - {"acao": "trocar", "item_a": id, "item_b": id, "motivo"}: troca dia e hora de dois pendentes do mesmo canal;
-- {"acao": "pedir_ao_matheus", "pergunta": "...", "opcoes": ["...", "..."], "item": id opcional, "motivo"}: só
-  para o que é decisão dele: publicar algo que o Crítico reprovou, apagar o que já saiu, mudar a estratégia, aprovar a
-  semana. Até 3 opções curtas. Com "item" de um post reprovado/bloqueado, o botão "Publicar mesmo assim" vai junto.
-  No máximo UMA pergunta por execução: a mais importante agora (as outras ficam para a próxima).
+- {"acao": "criar", "data": "AAAA-MM-DD", "formato": "CARROSSEL"|"REELS"|"IMAGE"|"STORY", "titulo", "ideia",
+  "legenda", "motivo"} para o feed, ou {"acao": "criar", "data", "formato": "STORY", "story": {"layout", "manchete",
+  "destaque", "texto", "chamada", ...}, "motivo"} para um story (layouts: dica, post-novo, video-novo, bastidor com
+  "tela" de /a0/usr/plugins/conteudo/story/telas/, oferta): o Designer desenha, o Crítico julga; aprovado entra na
+  agenda, reprovado o agente refaz sozinho. Só em dia sem item daquele canal; no máximo 2 por execução. Story
+  post-novo/video-novo só em dia que tem esse post. Legenda sem emoji, sem travessão, R$ só com "valores de exemplo".
 
 O que você nunca faz: publicar, liberar o que o Crítico reprovou, apagar o que já saiu, pôr dois posts (ou dois
-stories) no mesmo dia, mexer em item publicando/publicada/incerta, mudar legenda. Na dúvida entre agir e perguntar,
-aja se for reversível e barato; pergunte se for decisão dele. Se está tudo certo, não faça nada: lista vazia é a
-resposta certa na maioria das vezes. Não repita uma pergunta que já está na lista de perguntas abertas.
+stories) no mesmo dia, mexer em item publicando/publicada/incerta, mudar legenda, perguntar ao Matheus, gastar dinheiro
+(anúncio, impulsionar), mandar mensagem a outras pessoas. Se está tudo certo, não faça nada: lista vazia é a resposta
+certa na maioria das vezes.
 
 Responda SÓ com um objeto JSON, sem texto fora dele:
 {"visto": "o que você viu, em uma ou duas frases", "acoes": [ ... ]}""",
@@ -559,7 +564,8 @@ def _pasta_saida() -> Path:
 def renderizar_molde(molde: str, formato: str, ficha: dict, previa: bool = False, saida: Path | None = None,
                      timeout: int = 900, processos: int = 0) -> tuple[list[str], str]:
     """Runs moldes/motor/render.py; returns (files, problem). Exit 2 = ficha refused, 3 = the check found problems.
-    previa: the check, the contact sheet and the narration only (narracao.m4a), never the video (decision #39)."""
+    previa: the check, the contact sheet and the narration only (narracao.m4a), never the video (that comes after the
+    Crítico approves the preview)."""
     moldes = pasta_moldes()
     saida = saida or _pasta_saida()
     saida.mkdir(parents=True, exist_ok=True)
@@ -835,7 +841,7 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes:
             "inteiras, sempre a do fim entre elas. Em cada tela do sistema, a tela entra inteira (tema escuro, com o menu) "
             "e depois a câmera aproxima o destaque, como o Matheus pediu (decisão #85: vídeo com zoom e movimento); o "
             "quadro do zoom não é recorte. A narração são as \"falas\" da ficha, uma por cena, na ordem das cenas. Esta "
-            "revisão é a etapa ANTES do Matheus: depois dela ele ouve o áudio e só então o vídeo é feito (decisão #39); "
+            "revisão decide: aprovada, o vídeo é feito e publicado sem passar pelo Matheus (decisão dele, 04/11); "
             "não reprove por falta da aprovação dele.")
     tipo = ("carrossel" if formato == "carrossel" or spec.get("motor") == "carrossel_raiz"
             else "reel" if formato == "reel" else "post")
@@ -887,7 +893,7 @@ def _renderizar(spec: dict, falta: list) -> tuple:
             arquivos, problema = renderizar_molde(str(spec["molde"]), formato, spec["ficha"])
             if problema:
                 falta.append(problema)
-        else:  # a video: only the preview and the narration now; the video after Matheus approves (decision #39)
+        else:  # a video: only the preview and the narration now; the video after the Crítico approves the preview
             feitos, problema = renderizar_molde(str(spec["molde"]), formato, spec["ficha"], previa=True)
             previa = [a for a in feitos if Path(a).suffix.lower() in EXT_IMAGEM and Path(a).name != "prev.jpg"]
             narracao = next((a for a in feitos if a.endswith(".m4a")), "")

@@ -6,7 +6,8 @@ through _mudar() (TRANSICOES) and lands in the journal. Rules that are code, not
 - captions without emoji, at most 2200 characters and 30 hashtags;
 - a post whose publish call was made but not confirmed becomes "incerta" and is never retried by itself;
 - 20/10: when the especialistas plugin exists, the Crítico judges each post right before it goes out; "reprova" or any
-  error blocks it ("bloqueada", fail closed) until Matheus releases it (liberar(), his override is recorded);
+  error blocks it ("bloqueada", fail closed); 04/11 the Gestor (helpers/gestor.py) decides what to do with it (redo,
+  swap, cancel, create another) and Matheus only hears the result. liberar() stays for his explicit word;
 - 22/10: each post is judged up to CONFERIR_HORAS before (conferir_antes), a reproved one is redone by the agent and
   judged again, and at the hour an approval of the same files and caption (impressao) is the gate."""
 
@@ -274,8 +275,8 @@ MARGEM_MIN = 10  # the Gestor never moves an item to (or from) less than this ma
 
 
 def segurar(item_id: str, motivo: str) -> dict:
-    """pendente → bloqueada by the Gestor or the operator: the item does not go out until Matheus releases it
-    (liberar(), his button "Publicar mesmo assim"). Nothing published is touched."""
+    """pendente → bloqueada by the Gestor or the operator: the item does not go out (the Gestor later cancels it or
+    replaces it; liberar() only on Matheus's own word). Nothing published is touched."""
     if not _gestor_ou_operador():
         return {"ok": False, "erro": "só o gestor ou o operador seguram um item"}
     if not str(motivo or "").strip():
@@ -540,8 +541,8 @@ def segurar_stories_sem_post(agora: float | None = None, avisar=lambda texto: No
         if segurados:
             _gravar(d)
     for sid in segurados:
-        _chamar_aviso(avisar, f"pendente: o story de hoje da @raiz.connect ({sid}) não saiu porque o post que ele anuncia "
-                              f"não saiu. Liberando o post, o story sai logo depois dele.")
+        _chamar_aviso(avisar, f"🧭 Conteúdo: o story de hoje da @raiz.connect ({sid}) não saiu porque o post que ele "
+                              "anuncia não saiu (story nunca anuncia post que não existe). O gestor decide o resto.")
     return segurados
 
 
@@ -954,8 +955,9 @@ def antecipar(item_id: str, motivo: str, quem: str = "matheus", agora: float | N
 # ---- the advance check (22/10, Matheus: "Se o crítico rejeita, automáticamente deveria ser refeito, e não logo antes
 # de postar, durante a etapa de criação"). The garantia was blocked twice at its hour that day. Now every pending post
 # is judged CONFERIR_HORAS before it goes out, on the exact files and caption (impressao); a reproved one is redone by
-# the agent (semana.refazer_item, up to REFAZER_MAX times) and judged again; only what cannot be redone reaches Matheus,
-# a day early. At the hour, an approval of the same impressao is the gate: nothing is judged again at the last minute.
+# the agent (semana.refazer_item, up to REFAZER_MAX times) and judged again; what cannot be redone is a journal event
+# the Gestor acts on (04/11: no question to Matheus, no "Publicar mesmo assim" button). At the hour, an approval of the
+# same impressao is the gate: nothing is judged again at the last minute.
 CONFERIR_HORAS = 36
 REFAZER_MAX = 2
 
@@ -1076,10 +1078,8 @@ def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, av
         if gate["publicar"]:
             _anotar(item["id"], {"conferido": "aprova"},
                     conferido={"impressao": marca, "em": agora, "veredito": "aprova", "motivo": gate["motivo"]})
-            if item.get("avisado_reprova"):  # Matheus heard "pendente: reprovou"; now he hears it is solved
+            if item.get("avisado_reprova"):  # the reproval was an event for the Gestor; solved, it is no longer one
                 _anotar(item["id"], {"avisado": "resolvido"}, avisado_reprova=False)
-                _chamar_aviso(avisar, f"resolvido: o Crítico aprovou {item['id']} ({item['tipo']}, sai {item['data']} às "
-                                      f"{item['hora']}). Não precisa liberar nada.")
             return {"id": item["id"], "veredito": "aprova"}
         if not gate.get("critica"):  # the Crítico failed (timeout, no verdict): not a reproval, try again next pass
             return {"id": item["id"], "veredito": "erro", "motivo": gate["motivo"]}
@@ -1099,15 +1099,11 @@ def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, av
             if r.get("ok"):
                 return {"id": item["id"], "veredito": "reprova", "refeito": True}
             erro = str(r.get("erro") or "sem motivo")
-        _anotar(item["id"], {"conferido": "reprova", "motivo": gate["motivo"][:300]},
+        # 04/11: no message here. The journal line is an event: the Gestor runs within minutes and decides (another
+        # redo with a better instruction, swap, cancel, or create another) and tells Matheus what it decided.
+        _anotar(item["id"], {"conferido": "reprova", "motivo": gate["motivo"][:300], "nao_refez": uma_linha(erro, 160)},
                 conferido={"impressao": marca, "em": agora, "veredito": "reprova", "motivo": gate["motivo"]},
                 avisado_reprova=True)
-        botao = f"cs:{LOGIN}:{item['id']}:liberar"
-        _chamar_aviso(avisar, f"pendente: o Crítico reprovou {item['id']} ({item['tipo']}, sai {item['data']} às "
-                              f"{item['hora']}) e não consegui refazer sozinho ({uma_linha(erro, 160)}): {gate['motivo']}. "
-                              f"Se nada mudar até lá, ele fica bloqueado; para publicar mesmo assim, toque no botão ou "
-                              f"diga \"libera o post {item['id']}\".",
-                      [{"id": botao, "titulo": "🔓 Publicar mesmo assim"}] if len(botao.encode()) <= 64 else None)
         return {"id": item["id"], "veredito": "reprova", "refeito": False, "erro": erro}
     return None
 
@@ -1135,11 +1131,9 @@ def rodar(api, avisar=lambda texto: None, agora: float | None = None, dormir=tim
                 return None
             _mudar(alvo, "bloqueada", bloqueio=gate["motivo"], **({"critica": gate["critica"]} if gate.get("critica") else {}))
             _gravar(d)
-        botao = f"cs:{LOGIN}:{previsto['id']}:liberar"
-        _chamar_aviso(avisar, f"pendente: o post de hoje da @raiz.connect ({previsto['id']}) não saiu: {gate['motivo']}. "
-                              f"Ele fica bloqueado na agenda; para publicar mesmo assim, toque no botão ou diga "
-                              f"\"libera o post {previsto['id']}\".",
-                      [{"id": botao, "titulo": "🔓 Publicar mesmo assim"}] if len(botao.encode()) <= 64 else None)
+        # 04/11: a notice, not a question: the Gestor gets the event and decides (redo, swap, cancel, create another)
+        _chamar_aviso(avisar, f"🧭 Conteúdo: o post de hoje da @raiz.connect ({previsto['id']}) não saiu: "
+                              f"{gate['motivo']}. O gestor de conteúdo decide o que fazer e te conta.")
         return {"id": previsto["id"], "estado": "bloqueada", "motivo": gate["motivo"]}
     with _exclusivo():
         item = devido(agora)

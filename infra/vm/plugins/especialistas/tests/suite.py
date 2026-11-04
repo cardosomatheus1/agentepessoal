@@ -107,9 +107,14 @@ class Suite:
         # 03/11, Matheus: "ta faltando um agente gestor tbm ... ser de fato uma inteligência"
         m = self._e()
         g = m.PAPEIS["gestor"]
-        for termo in ('"segurar"', '"remarcar"', '"cancelar"', '"refazer"', '"trocar"', '"pedir_ao_matheus"', "FECHADO",
-                      "nunca faz: publicar", "liberar o que o Crítico reprovou", "apagar o que já saiu", "lista vazia"):
+        for termo in ('"segurar"', '"remarcar"', '"cancelar"', '"refazer"', '"trocar"', '"criar"', "FECHADO",
+                      "nunca faz: publicar", "liberar o que o Crítico reprovou", "apagar o que já saiu", "lista vazia",
+                      "perguntar ao Matheus", "sem depender de mim"):
             ok(termo in g, f"gestor cita {termo!r}")
+        # 04/11, Matheus: "eu não quero um agente para ficar esperando eu falar": the Gestor has no question to ask
+        ok("pedir_ao_matheus" not in g, "o gestor não tem como perguntar")
+        ok("decisão #39" not in m.PAPEIS["critico"] and "sem passar pelo Matheus" in Path(m.__file__).read_text(encoding="utf-8"),
+           "o Crítico sabe que a prévia aprovada vira vídeo e sai")
         enviados = []
 
         def enviar(url, body, login, papel, tempo):

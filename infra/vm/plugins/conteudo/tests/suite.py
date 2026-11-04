@@ -591,6 +591,10 @@ class Suite:
         s = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(s)
         s._C["fixo"] = c
+        # 04/11: propor() schedules what the Crítico approved by itself: no S3 and no background render in a test
+        s._subir_pelo_proxy = lambda local, chave: None
+        s.iniciar_video = lambda sid, n, popen=None: None
+        s._enviar_ponte = lambda login, texto, botoes: ""
         arte = Path(tempfile.mkdtemp(prefix="conteudo_arte_"))
         chamadas = []
 
@@ -623,6 +627,12 @@ class Suite:
 
             def criticar(self, tipo, material):
                 return {"veredito": "aprova", "motivos": []}
+
+            def chamar(self, papel, tarefa, material):  # the Designer rewriting a story (a "dica" when told so)
+                campos = dict(material.get("story") or {})
+                if 'troque o layout para "dica"' in tarefa:
+                    campos = {"layout": "dica", "manchete": "Dica no lugar do post"}
+                return {"texto": json.dumps(dict(campos, manchete=campos.get("manchete", "") + " refeito")), "erro": ""}
         c.especialistas = (lambda: Esp()) if esp == "falso" else (lambda: None)
 
         class StoryFalso:  # helpers/story.py draws with a browser; here a file is enough
@@ -676,16 +686,22 @@ class Suite:
         ok(ps[1]["capa"].endswith("r2-capa.jpg"), "a imagem junto do vídeo vira a capa do Reel")
         ok(len(enviados) == 1, "uma mensagem só")
         login, texto, botoes = enviados[0]
-        ok("4 no feed e 7 stories" in texto and "\n11. " in texto and "Story 09:00" in texto and "Crítico reprovou" in texto, texto)
-        ok([b["id"] for b in botoes] == ["cs:matheus:s20261026-1:todas", "cs:matheus:s20261026-1:algumas",
-                                         "cs:matheus:s20261026-1:refazer"] and botoes[0]["titulo"] == "✅ Aprovar 9 de 11", botoes)
-        ok(all(len(b["id"].encode()) <= 64 for b in botoes), "cabe no callback do Telegram")
-        ok(c.carregar()["itens"] == [], "propor não agenda nada")
-        ok(not s.propor(self._feed()[:3], agora, enviar=lambda *a: "", stories=self._stories())["ok"], "menos de 4 no feed é recusado")
+        ok("4 no feed e 7 stories" in texto and "\n11. " in texto and "Story 09:00" in texto and "refazendo (Crítico: gancho fraco"
+           in texto and "agendado" in texto, texto)
+        # 04/11, Matheus: "eu não quero um agente para ficar esperando eu falar": a notice, no approval button
+        ok(botoes == [], f"sem botão de aprovação: {botoes}")
+        ok(r["agendados"] == [1, 2, 4, 5, 6, 7, 9, 10, 11] and len(c.carregar()["itens"]) == 9,
+           f"o que o Crítico aprovou foi para a agenda: {r['agendados']}")
+        ok([p["estado"] for p in s.carregar("s20261026-1")["propostas"] if p["n"] in (3, 8)] == ["proposta", "proposta"],
+           "as reprovadas ficam abertas para o agente refazer")
+        c2, s2, _ = self._semana()
+        ok(not s2.propor(self._feed()[:3], agora, enviar=lambda *a: "", stories=self._stories())["ok"], "menos de 4 no feed é recusado")
         tres = [dict(p, formato="CARROSSEL") for p in self._feed()]
-        erro = s.propor(tres, agora, enviar=lambda *a: "", stories=self._stories())["erro"]
+        erro = s2.propor(tres, agora, enviar=lambda *a: "", stories=self._stories())["erro"]
         ok("4 vaga(s) no feed" in erro and "ter 27/10 Carrossel" in erro and "qua 28/10 Reel" in erro, f"a mistura segue as vagas: {erro}")
-        ok(not s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories()[:5])["ok"], "7 stories")
+        ok(not s2.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories()[:5])["ok"], "7 stories")
+        erro = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())["erro"]
+        ok("1 vaga(s) no feed (sex 30/10 Carrossel)" in erro, f"o que já foi agendado sozinho não volta à proposta: {erro}")
 
     def t_semana_sem_critico_nao_aprova_sozinha(self):
         c, s, _ = self._semana(esp=None)
@@ -695,8 +711,10 @@ class Suite:
                      stories=self._stories())
         ok(r["ok"] and all(p["critico"] == "sem revisão" for p in r["propostas"]), r)
         texto, botoes = enviados[0]
-        ok(texto.count("sem revisão do Crítico") == 11 and "não está instalado" in texto, texto)
+        ok(texto.count("sem revisão do Crítico, não sai") == 11 and "não está instalado" in texto and botoes == [], texto)
         ok(c.carregar()["itens"] == [] and s.carregar(r["semana"])["estado"] == "proposta", "nada aprovado sozinho")
+        ok(s.passo_autonomo(_ts(c, "2026-10-26", "08:00"), avisar=enviados.append) is None and len(enviados) == 1,
+           "sem o Crítico, o agente também não decide nada sozinho")
         # a Designer that breaks on one, and a story that cannot be drawn: they cannot be scheduled and say why
         c, s, _ = self._semana(quebrar=(4,))
         st = self._stories()
@@ -706,17 +724,18 @@ class Suite:
         ok(ps[3]["problema"].startswith("o Designer não entregou") and "render fora" in ps[3]["problema"], ps[3])
         ok(ps[4]["problema"].startswith("o story não foi desenhado") and not ps[4]["tipo"], ps[4])
 
-    def t_semana_aprovar_todas_escreve_a_agenda(self):
+    def t_semana_aprovado_pelo_critico_agendado_sem_ok(self):
+        # 04/11, Matheus: "se já tem um crítico para ver o que passa e o que não passa, ele tem que decidir se posta":
+        # what the Crítico approved goes into the agenda in the same call, nobody taps a button
         c, s, _ = self._semana()
         agora = _ts(c, "2026-10-26", "07:50")
-        s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
-        subidos = []
-        from unittest import mock
-        # the button uses the real clock: pinned to the week's Monday (28/10 on, days 1 and 5 were "o dia já passou")
-        with mock.patch("time.time", return_value=agora):
-            r = s.botao("matheus", "cs:matheus:s20261026-1:todas",
-                        subir=lambda local, chave: subidos.append((local, chave)))
-        ok("Agendados" in r["mensagem"] and "Não agendei" not in r["mensagem"], r)
+        subidos, enviados = [], []
+        r = s.propor(self._feed(), agora, enviar=lambda l, t, b: enviados.append((t, b)) or "", stories=self._stories(),
+                     subir=lambda local, chave: subidos.append((local, chave)))
+        ok(r["ok"] and r["agendados"] and enviados[0][1] == [], f"agendado sem o ok, sem botão: {r}")
+        diario = [json.loads(l) for l in (c.PASTA / "diario.jsonl").read_text(encoding="utf-8").splitlines()]
+        ok(any(e.get("para") == "pendente" and e["quem"].startswith("gestor: o Crítico aprovou") for e in diario),
+           "o diário diz que foi o Crítico quem decidiu")
         itens = {i["id"]: i for i in c.carregar()["itens"]}
         ok(len(itens) == 9 and not {"s20261026-1-3", "s20261026-1-8"} & set(itens),
            f"as reprovadas (e o story que chama a reprovada) ficam de fora do 'todas': {sorted(itens)}")
@@ -740,9 +759,11 @@ class Suite:
         api = ApiFalsa()
         pub = c.rodar(api, lambda t: None, _ts(c, "2026-10-27", "11:51"), dormir=lambda x: None, critico=aprova)
         ok(pub and pub["estado"] == "publicada" and any(x[2].get("media_type") == "STORIES" for x in api.chamadas), pub)
-        with mock.patch("time.time", return_value=agora):
+        from unittest import mock
+        with mock.patch("time.time", return_value=agora):  # an old message's button still works and duplicates nothing
             de_novo = s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda *a: None)["mensagem"]
-        ok(de_novo.startswith("Nada para agendar") and "Ainda esperando você: 3, 8" in de_novo, f"aprovar de novo não duplica: {de_novo}")
+        ok(de_novo.startswith("Nada para agendar") and "Ainda abertas (o agente refaz sozinho as reprovadas): 3, 8" in de_novo,
+           f"aprovar de novo não duplica: {de_novo}")
         ok(len(c.carregar()["itens"]) == 9, "nada duplicado")
         ok(s.botao("outra", "cs:matheus:s20261026-1:todas") == {}, "botão de outra pessoa não vale")
 
@@ -754,10 +775,10 @@ class Suite:
         antes = {p["n"]: p for p in s.carregar(sid)["propostas"]}
         ok(antes[6]["critica"]["veredito"] == "reprova", "o story de qua chama o Reel reprovado")
         enviados = []
+        agora = _ts(c, "2026-10-26", "08:30")
         r = s.refazer_propostas(sid, feed={"2": {"titulo": "Reel novo", "ideia": "gancho melhor", "legenda": "Legenda nova."}},
-                                stories={"11": {"layout": "dica", "manchete": "Dica nova"}},
-                                enviar=lambda login, texto, botoes: enviados.append((texto, botoes)) or "")
-        ok(r["ok"] and sorted(x["n"] for x in r["refeitas"]) == [2, 6, 11], r)
+                                enviar=lambda login, texto, botoes: enviados.append((texto, botoes)) or "", agora=agora)
+        ok(r["ok"] and sorted(x["n"] for x in r["refeitas"]) == [2, 6], r)
         depois = {p["n"]: p for p in s.carregar(sid)["propostas"]}
         ok(chamadas[-1]["titulo"] == "Reel novo" and chamadas[-1]["data"] == "2026-10-28" and len(chamadas) == 5,
            "só o Reel volta ao Designer, no mesmo dia")
@@ -765,41 +786,38 @@ class Suite:
         ok(depois[6]["critica"]["veredito"] == "aprova" and depois[6]["spec"]["story"]["manchete"] == "Story 2"
            and depois[6]["spec"]["story"]["imagem"].endswith("r5-capa.jpg"),
            f"o story que chama o Reel é julgado de novo, com a capa nova: {depois[6]}")
-        ok(depois[11]["spec"]["story"] == {"layout": "dica", "manchete": "Dica nova"} and depois[11]["arquivos"][0].endswith("-v1.jpg"),
-           depois[11])
-        ok(all(depois[n] == antes[n] for n in antes if n not in (2, 6, 11)), "as outras ficam como ele viu")
-        ok(len(enviados) == 1 and enviados[0][0].startswith("Refiz 2, 6, 11.") and enviados[0][1][0]["id"] == f"cs:matheus:{sid}:todas",
-           enviados and enviados[0][0][:80])
-        ok("Ainda" not in s.botao("matheus", f"cs:matheus:{sid}:todas", subir=lambda *a: None)["mensagem"][:5], "os botões valem")
+        ok(depois[2]["estado"] == "agendada" and depois[6]["estado"] == "agendada", "refeitas e aprovadas: entram sozinhas")
+        ok(all(depois[n] == antes[n] for n in antes if n not in (2, 6)), "as outras ficam como estavam")
+        ok(len(enviados) == 1 and enviados[0][0].startswith("Refiz 2, 6.") and enviados[0][1] == [], enviados)
         for erro in (s.refazer_propostas(sid, feed={"2": {"titulo": "x"}}),
                      s.refazer_propostas("s20261026-9", feed={"2": {}}),
                      s.refazer_propostas(sid)):
             ok(not erro["ok"], erro)
         c2, s2, _ = self._semana()
         sid2 = s2.propor(self._feed(), _ts(c2, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())["semana"]
-        # he approves one while it is being redone: his decision stays, the redone version is dropped
+        # he approves the reproved one by number while it is being redone: his decision stays, the redone one is dropped
         esp2 = c2.especialistas()
         desenhar = type(esp2).desenhar
 
         def aprova_no_meio(self, briefing):
-            s2.aprovar(sid2, [2], quem="matheus", subir=lambda *a: None)
+            s2.aprovar(sid2, [3], quem="matheus", agora=_ts(c2, "2026-10-26", "08:00"), subir=lambda *a: None)
             return desenhar(self, briefing)
         type(esp2).desenhar = aprova_no_meio
         try:
-            r = s2.refazer_propostas(sid2, feed={"2": {"titulo": "Reel novo", "ideia": "x", "legenda": "Legenda nova."}},
+            r = s2.refazer_propostas(sid2, feed={"3": {"titulo": "Carrossel novo", "ideia": "x", "legenda": "Legenda nova."}},
                                      enviar=lambda *a: "")
         finally:
             type(esp2).desenhar = desenhar
-        p2 = next(p for p in s2.carregar(sid2)["propostas"] if p["n"] == 2)
-        ok(p2["estado"] != "proposta" and p2["titulo"] == "Post 2" and not r["ok"],
-           f"a aprovada no meio não é sobrescrita: {p2['estado']} {p2['titulo']} {r}")
-        ok(sum(1 for i in c2.carregar()["itens"] if i["data"] == "2026-10-28" and i["tipo"] == "REELS") <= 1, "sem post dobrado")
-        ok("mande-a em stories" in s2.refazer_propostas(sid2, feed={"6": {"titulo": "x"}}, enviar=lambda *a: "")["erro"],
+        p3 = next(p for p in s2.carregar(sid2)["propostas"] if p["n"] == 3)
+        ok(p3["estado"] != "proposta" and p3["titulo"] == "Post 3" and not r["ok"],
+           f"a aprovada no meio não é sobrescrita: {p3['estado']} {p3['titulo']} {r}")
+        ok(sum(1 for i in c2.carregar()["itens"] if i["data"] == "2026-10-30" and i["tipo"] == "CARROSSEL") <= 1, "sem post dobrado")
+        ok("mande-a em stories" in s2.refazer_propostas(sid2, feed={"8": {"titulo": "x"}}, enviar=lambda *a: "")["erro"],
            "story no lugar errado")
 
     def t_semana_refazer_com_ficha_pronta(self):
         # 27/10: the operator's own ficha goes to the Crítico as it is (julgar_ficha), not to the Designer
-        c, s, chamadas = self._semana()
+        c, s, chamadas = self._semana(reprovar=(2,))
         sid = s.propor(self._feed(), _ts(c, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())["semana"]
         esp = c.especialistas()
         julgadas = []
@@ -895,6 +913,111 @@ class Suite:
             Esp.chamar = lambda self, papel, tarefa, material, f=fora: {"texto": json.dumps(f), "erro": ""}
             ok(s2._refazer_story(Esp(), {"layout": "dica"}, {"motivos": ["x"]}, Path(tempfile.mkdtemp()) / "s.jpg") is None, fora)
 
+    # ---- 04/11, Matheus: "Mas eu já falei que eu não quero um agente para ficar esperando eu falar. Ele tem que criar,
+    # se já tem um crítico para ver o que passa e o que não passa, ele tem que decidir se posta, se não posta, as
+    # decisões que tem que ser tomadas, etc., sem depender de mim."
+
+    def _passos(self, s, agora, avisos, maximo=12):
+        feitos = []
+        for k in range(maximo):
+            r = s.passo_autonomo(agora + 60 * k, avisar=lambda t, b=None: avisos.append((t, b)))
+            if r is None:
+                return feitos
+            feitos.append(r)
+        raise Falha(f"o passo autônomo não parou: {feitos}")
+
+    def t_autonomo_reprovado_e_refeito_e_agendado(self):
+        c, s, chamadas = self._semana()  # the carrossel of sex 30/10 (3) is reproved; its story (8) calls it
+        agora = _ts(c, "2026-10-26", "07:50")
+        s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
+        avisos = []
+        feitos = self._passos(s, agora + 600, avisos)
+        ok([f["decisao"] for f in feitos] == ["refeita e agendada", "refeita e agendada"] and [f["n"] for f in feitos] == [3, 8],
+           f"primeiro o post, depois o story que o chama: {feitos}")
+        ok(len(chamadas) == 5 and "A versão anterior foi reprovada pelo Crítico: gancho fraco" in chamadas[-1]["ideia"]
+           and chamadas[-1]["data"] == "2026-10-30", "o Designer refaz sabendo o motivo, na mesma vaga")
+        itens = {i["id"]: i for i in c.carregar()["itens"]}
+        ok(itens["s20261026-1-3"]["estado"] == "pendente" and itens["s20261026-1-3"]["data"] == "2026-10-30"
+           and "liberado" not in itens["s20261026-1-3"], f"refeito e aprovado: na agenda, sem liberação de ninguém")
+        ok(itens["s20261026-1-8"]["tipo"] == "STORY" and len(itens) == 11, sorted(itens))
+        ok(len(avisos) == 2 and all(b is None for _, b in avisos) and avisos[0][0].startswith("🧭 Conteúdo: refiz o carrossel de sex 30/10")
+           and "agendado para sex 30/10 às 11:45" in avisos[0][0], f"só o aviso do resultado: {avisos}")
+        ok(s.carregar("s20261026-1")["estado"] == "aprovada", "a semana fecha sozinha")
+
+    def t_autonomo_depois_de_n_falhas_decide_sem_perguntar(self):
+        c, s, chamadas = self._semana(reprovar=tuple([3] + list(range(5, 60))))  # the carrossel never passes
+        agora = _ts(c, "2026-10-26", "07:50")
+        enviados = []
+        s.propor(self._feed(), agora, enviar=lambda l, t, b: enviados.append((t, b)) or "", stories=self._stories())
+        avisos = []
+        feitos = self._passos(s, agora + 600, avisos)
+        ok([f["decisao"] for f in feitos] == ["refeita, ainda reprovada"] * s.REFAZER_AUTO
+           + ["nova ideia reprovada", "sem post", "refeita e agendada"], f"refaz N vezes, tenta outra ideia e decide: {feitos}")
+        ok(len(chamadas) == 4 + s.REFAZER_AUTO + 1 and "Ideia NOVA" in chamadas[-1]["ideia"]
+           and "diferente de \"Post 3\"" in chamadas[-1]["ideia"] and not chamadas[-1]["legenda"], chamadas[-1])
+        p3, p8 = [p for p in s.carregar("s20261026-1")["propostas"] if p["n"] in (3, 8)]
+        ok(p3["estado"] == "descartada" and "reprovou" in p3["decisao"], p3)
+        ok(p8["estado"] == "agendada" and p8["spec"]["story"]["layout"] == "dica",
+           f"o story que chamava o carrossel vira dica, não anuncia post que não existe: {p8['spec']}")
+        ok(not any(i["data"] == "2026-10-30" and i["tipo"] == "CARROSSEL" for i in c.carregar()["itens"]), "o dia fica sem post")
+        textos = [t for t, _ in avisos]
+        ok(any("Decidi deixar o dia sem ele" in t and "sex 30/10" in t for t in textos), textos)
+        ok(all(b is None for _, b in avisos) and not any("?" in t for t in textos), f"nenhuma pergunta: {textos}")
+        ok(not any(b for _, b in enviados), "nenhum botão")
+        diario = (c.PASTA / "diario.jsonl").read_text(encoding="utf-8")
+        ok('"descartada": 3' in diario and '"refeita_auto": 3' in diario, "cada decisão no diário")
+        # too close to its hour: no redo, the day is left free at once
+        c2, s2, _ = self._semana()
+        s2.propor(self._feed(), _ts(c2, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())
+        av2 = []
+        self._passos(s2, _ts(c2, "2026-10-30", "10:30"), av2)
+        p3 = next(p for p in s2.carregar("s20261026-1")["propostas"] if p["n"] == 3)
+        ok(p3["estado"] == "descartada" and "não dá tempo" in p3["decisao"] and "ficou de fora" in av2[0][0], (p3, av2))
+
+    def t_autonomo_semana_antiga_so_pelo_operador(self):
+        # s20261102-1 was proposed before 04/11 and sat waiting for his buttons: the operator hands it over (assumir)
+        c, s, _ = self._semana()
+        s.propor(self._feed(), _ts(c, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())
+        velha = s.carregar("s20261026-1")
+        velha.pop("autonomo")
+        velha["estado"] = "proposta"
+        for p in velha["propostas"]:
+            p["estado"] = "proposta"
+        s._gravar(velha)
+        c._gravar({"itens": []})
+        agora = _ts(c, "2026-10-28", "08:00")
+        ok(s.passo_autonomo(agora, avisar=lambda t: None) is None, "semana de antes de 04/11: o passo não mexe sozinho")
+        ok(not s.assumir("s20261026-1", agora)["ok"], "só o operador entrega a semana")
+        c.AUTOR["quem"] = "operador: Matheus decidiu autonomia total do conteúdo em 04/11"
+        r = s.assumir("s20261026-1", agora)
+        c.AUTOR["quem"] = "agente"
+        ok(r["ok"] and r["agendados"] == [2, 4, 6, 7, 9, 10, 11] and r["passados"] == [1, 5] and not r["descartados"]
+           and r["abertas"] == [3, 8], r)
+        avisos = []
+        feitos = self._passos(s, agora + 60, avisos)
+        ok([f["n"] for f in feitos] == [3, 8] and all(not b for _, b in avisos), f"e segue sozinha: {feitos} {avisos}")
+        ok(not any("ficou de fora" in t for t, _ in avisos), "o que já tinha passado sai sem aviso")
+
+    def t_caminho_normal_sem_botao_de_aprovacao(self):
+        # every message of the normal path (week, redo, blocked at the hour, the Gestor) is a notice without buttons
+        c, s, _ = self._semana(reprovar=tuple([3] + list(range(5, 60))))
+        agora = _ts(c, "2026-10-26", "07:50")
+        mensagens = []
+        s.propor(self._feed(), agora, enviar=lambda l, t, b: mensagens.append((t, b)) or "", stories=self._stories())
+        self._passos(s, agora + 600, mensagens)
+        reprova = type("C", (), {"criticar": lambda self, t, m: {"veredito": "reprova", "motivos": ["tela cortada"]}})()
+        c.rodar(ApiFalsa(), lambda t, b=None: mensagens.append((t, b)), _ts(c, "2026-10-27", "11:50"),
+                dormir=lambda x: None, critico=reprova)
+        ok(next(i for i in c.carregar()["itens"] if i["id"] == "s20261026-1-1")["estado"] == "bloqueada", "o Crítico segurou")
+        ok(len(mensagens) >= 4 and all(not b for _, b in mensagens), f"nenhum botão: {[b for _, b in mensagens if b]}")
+        for t, _ in mensagens:
+            for proibido in ("Aprovar", "Publicar mesmo assim", "Escolher", "Como seguimos", "Preciso de você"):
+                ok(proibido not in t, f"{proibido!r} em {t}")
+        for nome in ("semana.py", "gestor.py", "conteudo.py"):
+            fonte = (RAIZ / "helpers" / nome).read_text(encoding="utf-8")
+            ok('"titulo": "🔓 Publicar mesmo assim"' not in fonte and '"titulo": "✅ Aprovar' not in fonte
+               and "pedir_ao_matheus\": {" not in fonte, f"{nome}: nenhum botão de aprovação no código")
+
     def _arquivo_falso(self):
         return {"url": lambda chave: "https://s3/" + chave,
                 "baixar": lambda link, caminho: Path(caminho).write_bytes(b"\xff\xd8 " + link.encode())}
@@ -961,16 +1084,16 @@ class Suite:
            and it["refeitas"] == 1 and "conferido" not in it and not avisos, f"reprovado: refeito sozinho, sem avisar: {r} {it}")
         r = c.conferir_antes(agora, Critico(), refazer, avisos.append, **arq)
         ok(r["veredito"] == "aprova" and c.carregar()["itens"][0]["conferido"]["veredito"] == "aprova", "a versão nova é julgada")
-        # cannot be redone (made outside the weekly routine): Matheus hears it a day early, once, with the button
+        # cannot be redone (made outside the weekly routine): 04/11, no question and no "Publicar mesmo assim" button;
+        # the journal line is an event for the Gestor, who decides and tells Matheus what it did
         c2 = _modulo()
         c2.agendar([CARR], _ts(c2, "2026-10-13", "10:00"))
         nao = lambda item, critica: {"ok": False, "erro": "foi feito fora da rotina da semana"}
         r = c2.conferir_antes(agora, Critico(), nao, lambda t, b=None: avisos.append((t, b)), **arq)
-        ok(not r["refeito"] and len(avisos) == 1, r)
-        texto, botoes = avisos[0]
-        ok(texto.startswith("pendente:") and "sai 2026-10-15 às 11:45" in texto and "fora da rotina" in texto
-           and "slide 3 cortado" in texto and botoes[0]["id"] == "cs:matheus:ter-frases:liberar", texto)
-        ok(c2.conferir_antes(agora, Critico(), nao, avisos.append, **arq) is None and len(avisos) == 1, "avisa uma vez só")
+        ok(not r["refeito"] and not avisos, f"nada vai ao Matheus: {r} {avisos}")
+        ev = [json.loads(l) for l in (c2.PASTA / "diario.jsonl").read_text(encoding="utf-8").splitlines()][-1]
+        ok(ev.get("conferido") == "reprova" and "fora da rotina" in ev.get("nao_refez", ""), ev)
+        ok(c2.conferir_antes(agora, Critico(), nao, avisos.append, **arq) is None and not avisos, "julga uma vez só")
         ok(c2.carregar()["itens"][0]["estado"] == "pendente", "continua pendente: o portão da hora ainda decide")
         # always reproved: at most REFAZER_MAX redos, then the notice
         c3 = _modulo()
@@ -979,8 +1102,8 @@ class Suite:
         sempre = lambda item, critica: c3.refeito(item["id"], [f"conteudo/x{item.get('refeitas', 0)}/{k}.jpg" for k in (1, 2)], "x")
         avisos.clear()
         rs = [c3.conferir_antes(agora, Critico(), sempre, lambda t, b=None: avisos.append(t), **arq) for _ in range(4)]
-        ok([x and x.get("refeito") for x in rs[:3]] == [True, True, False] and rs[3] is None and len(avisos) == 1
-           and "já refiz 2 vezes" in avisos[0], f"{rs} {avisos}")
+        ok([x and x.get("refeito") for x in rs[:3]] == [True, True, False] and rs[3] is None and not avisos
+           and "já refiz 2 vezes" in rs[2]["erro"], f"{rs} {avisos}")
         # the Crítico down is not a reproval: nothing redone, nothing said, judged again next pass
         c5 = _modulo()
         c5.agendar([CARR], _ts(c5, "2026-10-13", "10:00"))
@@ -998,10 +1121,7 @@ class Suite:
     def t_semana_refaz_item_da_agenda(self):
         c, s, _ = self._semana()
         agora = _ts(c, "2026-10-26", "07:50")
-        s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
-        from unittest import mock
-        with mock.patch("time.time", return_value=agora):  # the button uses the real clock (the week is 26/10)
-            s.botao("matheus", "cs:matheus:s20261026-1:todas", subir=lambda *a: None)
+        s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())  # the approved ones go in by themselves
         itens = {i["id"]: i for i in c.carregar()["itens"]}
         st = next(i for i in itens.values() if i["tipo"] == "STORY")
 
@@ -1020,7 +1140,7 @@ class Suite:
         p = next(x for x in s.carregar("s20261026-1")["propostas"] if x["id"] == st["id"])
         ok(p["refeita"] == 1 and p["spec"]["story"]["manchete"] == "Confere a nota", "a semana guarda a versão nova")
         reel = next(i for i in itens.values() if i["tipo"] == "REELS")
-        ok("decisão #39" in s.refazer_item(reel, {"motivos": ["x"]})["erro"], "Reel não é refeito sem o ok dele no áudio")
+        ok("cancela e cria outro" in s.refazer_item(reel, {"motivos": ["x"]})["erro"], "Reel agendado: o gestor cria outro")
         sem_ficha = {k: v for k, v in CARR.items() if k != "ficha"}
         ok("não tem ficha" in s.refazer_item(sem_ficha, {"motivos": ["x"]})["erro"], "post sem ficha: não sabe refazer")
         Esp.criticar = lambda self, tipo, material: {"veredito": "reprova", "motivos": ["ainda fraco"]}
@@ -1109,9 +1229,9 @@ class Suite:
         ok(r["ok"] and novo["ficha"]["story"]["manchete"] == "Nova", f"story só com o brief: o Designer escreve os campos: {r}")
         reel = dict(ITEM, ficha=dict(FICHA, fonte="erp-saas feat/video-raiz-expectativa"))
         erro = s.refazer_item(reel, {"motivos": ["x"]})["erro"]
-        ok("decisão #39" in erro and "feat/video-raiz-expectativa" in erro, f"Reel: precisa do ok no áudio e diz a origem: {erro}")
+        ok("cria outro" in erro and "feat/video-raiz-expectativa" in erro, f"Reel: o gestor cria outro e diz a origem: {erro}")
 
-    def t_conferencia_avisa_quando_resolve(self):
+    def t_conferencia_resolve_sem_mensagem(self):
         c = _modulo()
         ok(c.agendar([CARR], _ts(c, "2026-10-13", "10:00"))["ok"], "agenda")
         vereditos = ["reprova", "aprova"]
@@ -1123,33 +1243,29 @@ class Suite:
         avisos, arq, agora = [], self._arquivo_falso(), _ts(c, "2026-10-14", "10:00")
         nao = lambda item, critica: {"ok": False, "erro": "Reel"}
         r = c.conferir_antes(agora, Critico(), nao, avisos.append, **arq)
-        ok(r["veredito"] == "reprova" and avisos[0].startswith("pendente:"), r)
+        ok(r["veredito"] == "reprova" and not avisos, f"04/11: a reprovação é com o gestor, não com o Matheus: {avisos}")
         ok(c.anotar_ficha("ter-frases", dict(FICHA, brief="melhor"), "operador: ficha")["julga_de_novo"], "julga de novo")
         r = c.conferir_antes(agora, Critico(), nao, avisos.append, **arq)
-        ok(r["veredito"] == "aprova" and len(avisos) == 2 and avisos[1].startswith("resolvido: o Crítico aprovou ter-frases"),
-           f"ele ouve que resolveu: {avisos}")
-        ok(not c.carregar()["itens"][0]["avisado_reprova"], "avisa uma vez")
+        ok(r["veredito"] == "aprova" and not avisos, f"resolvido sem mensagem: {avisos}")
+        ok(not c.carregar()["itens"][0]["avisado_reprova"], "a marca sai")
 
-    def t_semana_video_so_depois_da_aprovacao(self):
-        # 22/10, Matheus: "Leve" (the agent makes the Reels too); decision #39: the narration is approved before the video
+    def t_semana_video_sai_quando_o_critico_aprova_a_previa(self):
+        # 22/10, Matheus: "Leve" (the agent makes the Reels too). 04/11 replaced decision #39 (his ear first): the Crítico
+        # judges the preview and narration, and an approved one becomes the video by itself
         c, s, _ = self._semana(video_pendente=True)
         agora = _ts(c, "2026-10-26", "07:50")
         enviados, lancados = [], []
         s._enviar_ponte = lambda login, texto, botoes: enviados.append(texto) or ""
         s.iniciar_video = lambda sid, n: lancados.append((sid, n))
-        s._subir_pelo_proxy = lambda local, chave: None
-        s.propor(self._feed(), agora, enviar=lambda l, t, b: enviados.append(t) or "", stories=self._stories())
+        r = s.propor(self._feed(), agora, enviar=lambda l, t, b: enviados.append(t) or "", stories=self._stories())
         ps = s.carregar("s20261026-1")["propostas"]
         reel = ps[1]
-        ok(reel["tipo"] == "REELS" and reel["arquivos"] == [] and reel["video"]["estado"] == "aguardando_aprovacao"
-           and not reel["problema"], reel)
-        ok("Ouça a narração" in enviados[0] and "mostra a 2" in enviados[0], "a mensagem pede para ouvir antes")
+        ok(reel["tipo"] == "REELS" and reel["arquivos"] == [] and reel["estado"] == "gerando_video"
+           and reel["video"]["estado"] == "na_fila" and not reel["problema"], reel)
+        ok(r["gerando_video"] == [2, 4] and lancados == [("s20261026-1", 2), ("s20261026-1", 4)], r)
+        ok("Ouça a narração" not in enviados[0] and "o vídeo está sendo feito" in enviados[0], enviados[0])
         ok(next(p for p in s.ver("s20261026-1")["propostas"] if p["n"] == 2)["narracao"].endswith("narracao2.m4a"),
            "\"mostra a 2\" tem o áudio")
-        ok(not s.concluir_video("s20261026-1", 2, video="/x.mp4")["ok"], "sem aprovação não há vídeo para concluir")
-        r = s.aprovar("s20261026-1", None, agora=agora, subir=lambda *a: None)
-        ok(r["gerando_video"] == [2, 4] and lancados == [("s20261026-1", 2), ("s20261026-1", 4)], r)
-        ok("Gerando o vídeo de 2, 4" in r["texto"], r["texto"])
         ok(sorted(i["id"] for i in c.carregar()["itens"] if i["tipo"] == "REELS") == [], "nenhum Reel na agenda ainda")
         # the background render: the approved ficha goes to the moldes, and the video goes into the agenda by itself
         spec = importlib.util.spec_from_file_location("video_fila_teste", RAIZ / "helpers" / "video_fila.py")
@@ -1185,22 +1301,28 @@ class Suite:
         ok(not r["ok"] and p4["estado"] == "erro" and "render falhou" in p4["erro"] and "não entrou na agenda" in enviados[-1], p4)
         ok(not vf.gerar("s20261026-1", 2, semana=s, esp=Motor())["ok"], "um vídeo já agendado não é refeito")
 
-    def t_semana_aprovacao_parcial(self):
+    def t_semana_ordem_explicita_dele_ainda_vale(self):
+        # 04/11: nobody waits for him, but his own word still overrides (a reproved one by number) and old buttons work
         c, s, _ = self._semana()
         agora = _ts(c, "2026-10-26", "07:50")
-        s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
+
+        def sobe(local, chave):  # one that fails to upload is not scheduled, the others go
+            if "/r4" in chave:
+                raise RuntimeError("proxy fora do ar")
+        r = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories(), subir=sobe)
+        p4 = s.carregar("s20261026-1")["propostas"][3]
+        ok(4 not in r["agendados"] and p4["estado"] == "erro" and "não subiu" in p4["erro"] and 5 in r["agendados"], (r, p4))
         r = s.botao("matheus", "cs:matheus:s20261026-1:algumas")
         ok("aprovar_semana" in r["conversa"] and "s20261026-1" in r["conversa"] and "Não aprove nenhum outro" in r["conversa"], r)
-        r = s.aprovar("s20261026-1", "2 e 3", quem="matheus (pela conversa)", agora=agora, subir=lambda *a: None)
-        ok(r["ok"] and r["agendados"] == [2, 3], r)
+        r = s.aprovar("s20261026-1", "3", quem="matheus (pela conversa)", agora=agora, subir=lambda *a: None)
+        ok(r["ok"] and r["agendados"] == [3], r)
         itens = {i["id"]: i for i in c.carregar()["itens"]}
-        ok(sorted(itens) == ["s20261026-1-2", "s20261026-1-3"], sorted(itens))
         lib = itens["s20261026-1-3"]["liberado"]
         ok(lib["por"] == "matheus (pela conversa)" and "gancho fraco" in lib["critica"], f"a decisão dele fica registrada: {lib}")
         ok("liberado" not in itens["s20261026-1-2"], "só a reprovada leva a liberação")
         semana = s.carregar("s20261026-1")
-        ok(semana["estado"] == "parcial" and [p["estado"] for p in semana["propostas"]].count("proposta") == 9, semana["estado"])
-        ok("Ainda esperando você: 1, 4, 5, 6, 7, 8, 9, 10, 11" in r["texto"], r["texto"])
+        ok(semana["estado"] == "parcial" and [p["n"] for p in semana["propostas"] if p["estado"] == "proposta"] == [8], semana["estado"])
+        ok("Ainda abertas (o agente refaz sozinho as reprovadas): 8" in r["texto"], r["texto"])
         diario = [json.loads(l) for l in (c.PASTA / "diario.jsonl").read_text(encoding="utf-8").splitlines()]
         ok(any(e.get("item") == "s20261026-1-3" and e.get("para") == "pendente" and e["quem"].startswith("matheus") for e in diario),
            "o diário diz quem aprovou")
@@ -1208,23 +1330,15 @@ class Suite:
         reprova = type("C", (), {"criticar": lambda self, t, m: {"veredito": "reprova", "motivos": ["gancho fraco"]}})()
         pub = c.rodar(ApiFalsa(), lambda t: None, _ts(c, "2026-10-30", "11:50"), dormir=lambda x: None, critico=reprova)
         ok(pub["estado"] == "publicada" and pub["portao"].startswith("liberado por matheus"), pub)
-        # one that fails to upload is not scheduled, the others go
-        def sobe(local, chave):
-            if "/r4" in chave:
-                raise RuntimeError("proxy fora do ar")
-        r = s.aprovar("s20261026-1", [4, 5], agora=agora, subir=sobe)
-        ok(r["agendados"] == [5] and r["recusados"][0]["n"] == 4 and "não subiu" in r["recusados"][0]["motivo"], r)
-        # redo: the old message's buttons stop working; the new version proposes only for the free days
+        # an old "Refazer" button: the old message's buttons stop working; the new version proposes only for free days
         ok("propor_semana" in s.botao("matheus", "cs:matheus:s20261026-1:refazer")["conversa"], "refazer pede o que mudar")
         ok("já foi decidida" in s.botao("matheus", "cs:matheus:s20261026-1:todas")["mensagem"], "semana refeita não aprova")
-        # 28 (Reel) and 30 (carrossel) já estão na agenda, e o story do 27: a semana nova só preenche as vagas livres
         erro = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())["erro"]
-        ok("2 vaga(s) no feed" in erro, f"não empurra post para a semana seguinte: {erro}")
-        r2 = s.propor(self._feed()[:2], agora, enviar=lambda *a: "", stories=self._stories()[:6])
+        ok("1 vaga(s) no feed (dom 01/11 Reel)" in erro, f"não empurra post para a semana seguinte: {erro}")
+        r2 = s.propor(self._feed()[1:2], agora, enviar=lambda *a: "", stories=self._stories()[:1])
         ok(r2["ok"] and r2["semana"] == "s20261026-2", r2)
-        feed = [(p["data"], p["tipo"]) for p in r2["propostas"] if p["tipo"] != "STORY"]
-        ok(feed == [("2026-10-27", "CARROSSEL"), ("2026-11-01", "REELS")], f"só as vagas livres: {feed}")
-        ok([p["data"] for p in r2["propostas"] if p["tipo"] == "STORY"][0] == "2026-10-28", "stories só nos dias sem story")
+        ok([(p["data"], p["tipo"]) for p in r2["propostas"]] == [("2026-11-01", "REELS"), ("2026-10-30", "STORY")],
+           f"só as vagas livres: {r2['propostas']}")
         ok(not s.aprovar("s20261026-1", None, agora=agora, subir=lambda *a: None)["ok"], "versão velha recusa")
 
     def t_portao_bloqueia_reprova(self):
@@ -1242,9 +1356,9 @@ class Suite:
         ok(r["estado"] == "bloqueada" and api.chamadas == [], f"reprovado não chega à Meta: {r} {api.chamadas}")
         ok(vistos[0][0] == "post" and vistos[0][1]["legenda"] == ITEM["legenda"], "o Crítico vê a legenda")
         texto, botoes = avisos[0]
-        ok(texto.startswith("pendente:") and "tem emoji na capa; fala com o consumidor" in texto and "\n" not in texto,
-           f"avisa com os motivos numa linha: {texto}")
-        ok(botoes == [{"id": "cs:matheus:seg-pov:liberar", "titulo": "🔓 Publicar mesmo assim"}], botoes)
+        ok("não saiu" in texto and "tem emoji na capa; fala com o consumidor" in texto and "\n" not in texto
+           and "gestor" in texto, f"avisa com os motivos numa linha: {texto}")
+        ok(botoes is None, f"04/11: sem botão de \"Publicar mesmo assim\": {botoes}")
         it = c.carregar()["itens"][0]
         ok(it["estado"] == "bloqueada" and "reprovou" in it["bloqueio"], "fica na agenda como bloqueada")
         ok(c.devido(_ts(c, "2026-10-14", "12:30")) is None and c.rodar(api, lambda t: None, _ts(c, "2026-10-14", "12:30"),
@@ -1276,7 +1390,7 @@ class Suite:
             api, avisos = ApiFalsa(), []
             r = c.rodar(api, avisos.append, _ts(c, "2026-10-17", "11:50"), dormir=lambda x: None, critico=critico)
             ok(r["estado"] == "bloqueada" and api.chamadas == [], f"{nome}: nunca publica com o portão em erro: {r}")
-            ok(avisos and avisos[0].startswith("pendente:") and "libera o post s3-foto" in avisos[0], f"{nome}: {avisos}")
+            ok(avisos and "s3-foto" in avisos[0] and "não saiu" in avisos[0], f"{nome}: {avisos}")
 
     def t_liberar_pelo_matheus(self):
         c = _modulo()
@@ -1494,8 +1608,9 @@ class Suite:
     def t_extensao_usa_o_helper(self):
         ext = (RAIZ / "extensions" / "python" / "job_loop" / "_46_publicar_conteudo.py").read_text(encoding="utf-8")
         ok("conteudo.rodar(" in ext and "run_in_executor" in ext, "a rotina publica fora do laço principal")
-        ok("conferir_antes(refazer=_semana().refazer_item" in ext and "CONFERIR_CADA" in ext,
+        ok("conferir_antes(refazer=semana.refazer_item" in ext and "CONFERIR_CADA" in ext,
            "a conferência antecipada roda na rotina, com o refazer do agente")
+        ok("semana.passo_autonomo(avisar=_avisar_gestor)" in ext, "04/11: a semana autônoma anda a cada passada")
         ok('tipo="urgente"' in ext, "falha chega na hora (é um pendente:)")
 
     # ------------------------------------------------------------------ the Gestor (03/11)
@@ -1567,26 +1682,64 @@ class Suite:
            "o gestor vê que o story anuncia um post bloqueado")
         estado = {i["id"]: i for i in c.carregar()["itens"]}
         ok(estado["st-ter"]["estado"] == "cancelada" and estado["car-ter"]["estado"] == "bloqueada", estado["st-ter"])
+        # 04/11, Matheus: "eu não quero um agente para ficar esperando eu falar": asking him is not in the vocabulary
+        ok("fora do vocabulário: 'pedir_ao_matheus'" in r["recusadas"][0]["erro"], r["recusadas"])
         ok(len(avisos) == 1, f"uma mensagem só: {avisos}")
         texto, botoes = avisos[0]
-        ok("Cancelei st-ter" in texto and "Por quê: o story anuncia" in texto and "Publico o carrossel" in texto, texto)
-        ids = [b["id"] for b in botoes]
-        ok(ids[0] == "cs:matheus:car-ter:liberar" and len(ids) == 3 and all(len(i.encode()) <= 64 for i in ids), ids)
+        ok("Cancelei st-ter" in texto and "Por quê: o story anuncia" in texto and "Publico o carrossel" not in texto, texto)
+        ok(not botoes, f"aviso sem botão: {botoes}")
         diario = [json.loads(l) for l in (c.PASTA / "diario.jsonl").read_text(encoding="utf-8").splitlines()]
         ok(any(e.get("item") == "st-ter" and e.get("para") == "cancelada" and e["quem"].startswith("gestor:") for e in diario),
            "o cancelamento fica no diário como do gestor")
-        # a second question in the same run is refused (one message, clear buttons); a past day's item gets no "liberar"
-        r2 = g.rodar("manual", _ts(c, "2026-11-04", "09:00"), modelo=self._modelo([
-            {"acao": "pedir_ao_matheus", "item": "car-ter", "pergunta": "E o carrossel de ontem?", "opcoes": ["Cancela"],
-             "motivo": "parado"},
-            {"acao": "pedir_ao_matheus", "pergunta": "Aprovo a semana?", "opcoes": ["Sim"], "motivo": "semana vazia"}]),
+        ok(not (c.PASTA / "gestor_perguntas.json").exists(), "nenhuma pergunta guardada")
+        # an old question's button (before 04/11) still reaches the agent in his chat
+        (c.PASTA / "gestor_perguntas.json").write_text(json.dumps([{"id": "g12345678", "em": 1, "pergunta": "Como seguimos?",
+                                                                   "opcoes": ["Aprovar só o que o Crítico aprovou"]}]))
+        resp = g.semana().botao("matheus", "cs:matheus:g12345678:o1")
+        ok("Aprovar só o que o Crítico aprovou" in resp.get("conversa", ""), resp)
+        ok(r["uso"]["usd"] == 0.066, r)
+
+    def t_gestor_cria_o_que_falta(self):
+        # 04/11: "Ele tem que criar": a day without story gets one, judged by the Crítico, scheduled without asking
+        c, g = self._gestor()
+        s = g.semana()
+        s._subir_pelo_proxy = lambda local, chave: None
+        julgados = []
+
+        class Esp:
+            def criticar(self, tipo, material):
+                julgados.append((tipo, material.get("legenda")))
+                return {"veredito": "aprova", "motivos": []}
+        c.especialistas = lambda: Esp()
+
+        class StoryFalso:
+            CAMPOS = ("layout", "manchete", "destaque", "texto", "chamada", "tela", "pergunta", "itens", "imagem")
+            PASTA = RAIZ / "story"
+            validar = staticmethod(lambda campos: "" if campos.get("layout") else "layout")
+
+            @staticmethod
+            def renderizar(campos, saida):
+                Path(saida).parent.mkdir(parents=True, exist_ok=True)
+                Path(saida).write_bytes(b"\xff\xd8\xff story")
+                return saida
+        s._S["fixo"] = StoryFalso
+        dica = {"layout": "dica", "manchete": "Confira o insumo que mais subiu", "destaque": "insumo"}
+        avisos = []
+        r = g.rodar("horário 20:00", _ts(c, "2026-11-04", "20:00"), modelo=self._modelo([
+            {"acao": "criar", "data": "2026-11-05", "formato": "STORY", "story": dica, "motivo": "quinta sem story"},
+            {"acao": "criar", "data": "2026-11-05", "formato": "STORY", "story": dica, "motivo": "de novo"},
+            {"acao": "criar", "data": "2026-11-06", "formato": "CARROSSEL", "titulo": "x", "ideia": "y", "motivo": "sexta"},
+            {"acao": "criar", "data": "2026-11-04", "formato": "STORY", "story": dica, "motivo": "hoje já passou"}]),
             avisar=lambda t, b=None: avisos.append((t, b)), contexto={})
-        ok("uma pergunta por execução" in r2["recusadas"][0]["erro"], r2["recusadas"])
-        ok([b["id"] for b in avisos[-1][1]] == [avisos[-1][1][0]["id"]] and avisos[-1][1][0]["id"].endswith(":o1"),
-           f"dia que passou: sem botão de liberar ({avisos[-1][1]})")
-        resp = g.semana().botao("matheus", ids[2])
-        ok("Refaz para sexta" in resp.get("conversa", "") and "Publico o carrossel" in resp["conversa"], resp)
-        ok(not r["recusadas"] and r["uso"]["usd"] == 0.066, r)
+        novo = [i for i in c.carregar()["itens"] if i["data"] == "2026-11-05" and i["tipo"] == "STORY"]
+        ok(len(novo) == 1 and novo[0]["estado"] == "pendente" and novo[0]["origem"]["semana"].startswith("s20261104")
+           and c.tem_ficha(novo[0]), f"criado, julgado e agendado: {novo}")
+        ok(julgados and julgados[0][0] == "story", julgados)
+        erros = " | ".join(x["erro"] for x in r["recusadas"])
+        ok("2026-11-05 já tem story" in erros and "2026-11-06 já tem feed (car-sex)" in erros and "perto demais" in erros, erros)
+        ok(len(avisos) == 1 and "Criei um story para 05/11: o Crítico aprovou e está agendado" in avisos[0][0]
+           and not avisos[0][1], avisos)
+        ok("criar" in g.ACOES and "pedir_ao_matheus" not in g.ACOES, "o vocabulário cria e não pergunta")
 
     def t_gestor_reprovado_duas_vezes_refaz_ou_troca(self):
         # 03/11: the carrossel reproved twice (redo included), 3 h before its hour
@@ -1677,6 +1830,7 @@ class Suite:
             {"acao": "remarcar", "item": "car-sex", "data": "2026-11-03", "hora": "18:00", "motivo": "adiantar"},
             {"acao": "trocar", "item_a": "car-sex", "item_b": "st-ter", "motivo": "trocar com o story que já saiu"},
             {"acao": "segurar", "item": "nao-existe", "motivo": "x"},
+            {"acao": "pedir_ao_matheus", "pergunta": "Como seguimos?", "opcoes": ["Aprovar"], "motivo": "semana parada"},
             "segura tudo",
         ]
         r = g.rodar("manual", _ts(c, "2026-11-03", "09:30"), modelo=self._modelo(proibidas),
@@ -1684,7 +1838,8 @@ class Suite:
         ok(not r["aceitas"] and len(r["recusadas"]) == len(proibidas), f"todas recusadas: {[x['erro'] for x in r['recusadas']]}")
         erros = " | ".join(x["erro"] for x in r["recusadas"])
         for trecho in ("fora do vocabulário: 'publicar'", "fora do vocabulário: 'liberar'", "fora do vocabulário: 'apagar'",
-                       "st-ter está publicada", "sem motivo", "campos que não existem: legenda", "decisão #39",
+                       "st-ter está publicada", "sem motivo", "campos que não existem: legenda", "cancele e use criar",
+                       "fora do vocabulário: 'pedir_ao_matheus'",
                        "já tem feed (car-ter)", "não existe na agenda", "não é um objeto"):
             ok(trecho in erros, f"{trecho!r} em {erros}")
         ok((c.PASTA / "agenda.json").read_bytes() == antes and not avisos, "nada muda e nada vai ao celular")

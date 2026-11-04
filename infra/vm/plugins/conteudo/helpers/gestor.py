@@ -1,6 +1,11 @@
 """The Gestor de conteúdo of @raiz.connect (03/11). Matheus: "To achando que ta faltando um agente gestor tbm, pra
 tomar algumas decisões, entender o contexto, ver quando esse tipo de coisa n faz sentido, ser de fato uma
-inteligência". His decisions that day: scope "Só o Instagram"; autonomy "Age e avisa".
+inteligência". His decisions that day: scope "Só o Instagram"; autonomy "Age e avisa". 04/11, after it asked him
+"Como seguimos?" and the week sat unscheduled: "Mas eu já falei que eu não quero um agente para ficar esperando eu
+falar. Ele tem que criar, se já tem um crítico para ver o que passa e o que não passa, ele tem que decidir se posta, se
+não posta, as decisões que tem que ser tomadas, etc., sem depender de mim." So the Gestor never asks him anything:
+pedir_ao_matheus is gone, it CREATES what is missing (criar: drawn by the Designer, judged by the Crítico, scheduled
+only if approved) and he receives one notice of what it decided.
 
 It is the layer above the rules in conteudo.py: one model call (the especialistas role "gestor", Claude Opus 5.5)
 sees the whole calendar (today, the next 7 days and the last 7), states, block reasons, the Crítico's verdicts, redo
@@ -9,18 +14,19 @@ from a CLOSED vocabulary. Code, not the model, decides what is allowed:
 - segurar / remarcar / cancelar / trocar / refazer only on items that have not gone out, through the helper's own
   functions (conteudo.segurar, remarcar, cancelar, trocar_datas and semana.refazer_item), AUTOR "gestor: <motivo>",
   every step in the journal;
+- criar: a new post or story for a day without one (semana.criar), at most MAX_CRIAR per run; it goes into the agenda
+  only if the Crítico approves, otherwise the week's own redo loop (semana.passo_autonomo) redoes it or gives up;
 - never publish, never liberar() a reproved item, never delete what went out, never two of a slot on one day, never
   touch publicando/publicada/incerta/falhou, never change a caption (that only happens through a redo the Crítico
-  judges); pedir_ao_matheus is the only way to reach what is his;
+  judges), never ask Matheus (no question, no buttons);
 - an action outside the vocabulary, or one that breaks a rule, is refused and journaled;
-- one message per run, only when it did something or needs him; silence when all is well.
+- one message per run, only when it did something; silence when all is well.
 It runs at 08:30, 11:15 and 20:00 and on events (blocked, reproved, a redo that failed, a publish that failed or is
 uncertain), from the content routine of the relógio (job_loop _46), never two at once (gestor.lock)."""
 
 import copy
 import datetime as dt
 import fcntl
-import hashlib
 import importlib.util
 import json
 import re
@@ -36,6 +42,7 @@ TETO_DIA_USD = 2.00
 MAX_SAIDA = 8000  # tokens of answer (thinking included)
 MAX_ACOES = 6
 REFAZ_EXTRA = 1  # redo attempts the Gestor may add on top of conteudo.REFAZER_MAX
+MAX_CRIAR = 2  # new pieces per run (each is a Designer + Crítico round of minutes)
 FOLGA_REFAZER_MIN = 45  # a redo takes minutes (Designer + Crítico): not when the item goes out sooner than this
 DIAS = 7
 ACOES = {
@@ -44,9 +51,10 @@ ACOES = {
     "cancelar": {"item"},
     "refazer": {"item", "instrucao"},
     "trocar": {"item_a", "item_b"},
-    "pedir_ao_matheus": {"pergunta", "opcoes", "item"},
+    "criar": {"data", "formato", "titulo", "ideia", "legenda", "story"},
 }
-OPCIONAIS = {"pedir_ao_matheus": {"opcoes", "item"}}
+OPCIONAIS = {"criar": {"titulo", "ideia", "legenda", "story"}}
+FORMATOS_CRIAR = ("CARROSSEL", "REELS", "IMAGE", "STORY")
 NAO_TOCA = ("publicando", "publicada", "incerta", "falhou")
 EVENTOS = ("bloqueada", "falhou", "incerta")
 ROTINA = "🧭 Gestor de conteúdo"
@@ -227,8 +235,6 @@ def estado(agora: float | None = None, contexto: dict | None = None) -> dict:
         "buracos": _buracos(itens, hoje),
         "semana_proposta": _semana_resumo(),
         "diario_recente": _diario_recente(agora),
-        "perguntas_abertas": [{k: p[k] for k in ("pergunta", "opcoes", "item") if k in p}
-                              for p in _perguntas() if p.get("em", 0) > agora - 48 * 3600],
         "gestor_recente": [{"em": _momento(r["em"]).strftime("%d/%m %H:%M"), "fez": r.get("feitas", [])}
                            for r in _ler_jsonl(_pasta() / "gestor.jsonl", 40) if r.get("feitas") and not r.get("seco")][-8:],
         "contexto": contexto if contexto is not None else _contexto(),
@@ -281,11 +287,6 @@ def _perguntas() -> list:
         return []
 
 
-def _mesma(a: str, b: str) -> bool:
-    norm = lambda t: re.sub(r"\W+", " ", str(t).lower()).strip()  # noqa: E731
-    return norm(a) == norm(b)
-
-
 def validar(acoes, itens: list, agora: float) -> tuple[list, list]:
     """(accepted, refused) from the model's list. Each is checked against a copy of the calendar with the accepted
     ones before it applied, so two actions can never put two items on one day. Refused: {"acao", "erro"}."""
@@ -293,14 +294,13 @@ def validar(acoes, itens: list, agora: float) -> tuple[list, list]:
         return [], [{"acao": acoes, "erro": "acoes não é uma lista"}]
     sim = {i["id"]: dict(i) for i in copy.deepcopy(itens)}
     tocados, aceitas, recusadas = set(), [], []
-    abertas = [p for p in _perguntas() if p.get("em", 0) > agora - 24 * 3600]
 
     def ocupado(data, canal_, exceto):
         return next((i for i in sim.values() if i["id"] not in exceto and i["data"] == data and c().canal(i) == canal_
                      and i["estado"] not in ("cancelada", "falhou")), None)
 
     for a in acoes:
-        erro = _erro(a, sim, tocados, abertas, ocupado, agora, len(aceitas))
+        erro = _erro(a, sim, tocados, ocupado, agora, len(aceitas))
         if erro:
             recusadas.append({"acao": a, "erro": erro})
             continue
@@ -314,12 +314,16 @@ def validar(acoes, itens: list, agora: float) -> tuple[list, list]:
         elif nome == "trocar":
             x, y = sim[a["item_a"]], sim[a["item_b"]]
             (x["data"], x["hora"]), (y["data"], y["hora"]) = (y["data"], y["hora"]), (x["data"], x["hora"])
-        tocados.update(_ids(a) + (["pergunta"] if nome == "pedir_ao_matheus" else []))
+        elif nome == "criar":  # the new piece takes its slot in the simulation: a second one that day is refused
+            k = sum(1 for x in aceitas if x["acao"] == "criar")
+            sim[f"novo-{k}"] = {"id": f"novo-{k}", "data": a["data"], "tipo": str(a["formato"]).upper(),
+                                "hora": "", "estado": "pendente"}
+        tocados.update(_ids(a))
         aceitas.append({k: (v.strip() if isinstance(v, str) else v) for k, v in a.items()})
     return aceitas, recusadas
 
 
-def _erro(a, sim: dict, tocados: set, abertas: list, ocupado, agora: float, ja: int) -> str:
+def _erro(a, sim: dict, tocados: set, ocupado, agora: float, ja: int) -> str:
     if not isinstance(a, dict):
         return "ação não é um objeto"
     nome = a.get("acao")
@@ -340,17 +344,8 @@ def _erro(a, sim: dict, tocados: set, abertas: list, ocupado, agora: float, ja: 
             return f"{nome}: o item {str(a[k])[:60]!r} não existe na agenda"
     if any(i in tocados for i in _ids(a)):
         return f"{nome}: o mesmo item já tem outra ação nesta execução"
-    if nome == "pedir_ao_matheus":
-        if not isinstance(a.get("pergunta"), str) or not a["pergunta"].strip():
-            return "pedir_ao_matheus: sem pergunta"
-        opcoes = a.get("opcoes", [])
-        if not isinstance(opcoes, list) or len(opcoes) > 3 or not all(isinstance(o, str) and o.strip() for o in opcoes):
-            return "pedir_ao_matheus: opcoes é uma lista de até 3 textos"
-        if any(_mesma(p.get("pergunta"), a["pergunta"]) for p in abertas):
-            return "pedir_ao_matheus: a mesma pergunta já foi feita nas últimas 24 h"
-        if "pergunta" in tocados:
-            return "pedir_ao_matheus: uma pergunta por execução (a mensagem fica curta e os botões claros)"
-        return ""
+    if nome == "criar":
+        return _erro_criar(a, sim, ocupado, agora)
     for i in _ids(a):
         if sim[i]["estado"] in NAO_TOCA:
             return f"{nome}: {i} está {sim[i]['estado']} (o gestor não mexe no que saiu ou está saindo)"
@@ -376,7 +371,7 @@ def _erro(a, sim: dict, tocados: set, abertas: list, ocupado, agora: float, ja: 
         if not isinstance(a.get("instrucao"), str) or len(a["instrucao"].strip()) < 10:
             return "refazer: sem instrução clara do que mudar"
         if it["tipo"] == "REELS":
-            return "refazer: Reel muda a narração, que precisa do ok do Matheus (decisão #39); use pedir_ao_matheus"
+            return "refazer: Reel agendado não se refaz (o vídeo sai do zero): cancele e use criar"
         if not c().tem_ficha(it):
             return f"refazer: {it['id']} não tem ficha para ser refeito"
         if int(it.get("refeitas") or 0) >= c().REFAZER_MAX + REFAZ_EXTRA:
@@ -396,6 +391,32 @@ def _erro(a, sim: dict, tocados: set, abertas: list, ocupado, agora: float, ja: 
     return "ação sem regra"
 
 
+def _erro_criar(a: dict, sim: dict, ocupado, agora: float) -> str:
+    formato = str(a.get("formato") or "").upper()
+    if formato not in FORMATOS_CRIAR:
+        return f"criar: formato é um de {', '.join(FORMATOS_CRIAR)}"
+    try:
+        dt.date.fromisoformat(str(a["data"]))
+    except ValueError:
+        return "criar: data (AAAA-MM-DD) inválida"
+    if sum(1 for i in sim if i.startswith("novo-")) >= MAX_CRIAR:
+        return f"criar: no máximo {MAX_CRIAR} por execução"
+    hora = semana().HORA_STORY if formato == "STORY" else semana().HORA
+    if c()._quando({"data": a["data"], "hora": hora}) < agora + semana().FOLGA_AUTO_MIN * 60:
+        return f"criar: {a['data']} {hora} já passou ou está perto demais (desenhar e julgar leva minutos)"
+    canal_ = "story" if formato == "STORY" else "feed"
+    outro = ocupado(a["data"], canal_, set())
+    if outro:
+        return f"criar: {a['data']} já tem {canal_} ({outro['id']}): um por dia"
+    if formato == "STORY":
+        if not isinstance(a.get("story"), dict) or not a["story"].get("layout"):
+            return "criar: story precisa de \"story\" com os campos do kit (layout, manchete, ...)"
+        return ""
+    if not all(isinstance(a.get(k), str) and a[k].strip() for k in ("titulo", "ideia")):
+        return "criar: post precisa de titulo e ideia"
+    return ""
+
+
 # ------------------------------------------------------------------ doing it
 
 def _descrever(a: dict, itens: dict) -> str:
@@ -411,6 +432,9 @@ def _descrever(a: dict, itens: dict) -> str:
         return f"Troquei as datas de {rotulo(a['item_a'])} e {rotulo(a['item_b'])}"
     if nome == "refazer":
         return f"Mandei refazer {rotulo(a['item'])}"
+    if nome == "criar":
+        tipo = {"STORY": "story", "REELS": "Reel", "IMAGE": "foto", "CARROSSEL": "carrossel"}[str(a["formato"]).upper()]
+        return f"Criei um {tipo} para {a['data'][8:]}/{a['data'][5:7]}"
     return nome
 
 
@@ -422,7 +446,7 @@ def _critica_com_instrucao(item: dict, instrucao: str) -> dict:
     return {"veredito": "reprova", "motivos": motivos + [f"Instrução do gestor: {instrucao}"], "sugestoes": []}
 
 
-def executar(a: dict, refazer=None, agora: float | None = None) -> dict:
+def executar(a: dict, refazer=None, agora: float | None = None, criar=None) -> dict:
     """One accepted action through the helper's own functions, as "gestor: <motivo>"."""
     conteudo = c()
     antes = conteudo.AUTOR["quem"]
@@ -437,6 +461,14 @@ def executar(a: dict, refazer=None, agora: float | None = None) -> dict:
             return conteudo.remarcar(a["item"], a["data"], a["hora"], a["motivo"], agora)
         if nome == "trocar":
             return conteudo.trocar_datas(a["item_a"], a["item_b"], a["motivo"], agora)
+        if nome == "criar":
+            dados = {k: a[k] for k in ("titulo", "ideia", "legenda", "story") if a.get(k)}
+            r = (criar or semana().criar)(a["data"], a["formato"], dados, agora=agora,
+                                          quem=f"gestor: {_curto(a['motivo'], 120)}")
+            if r.get("ok") and not r.get("agendado"):
+                r["nota"] = ("o Crítico reprovou; o agente refaz sozinho e, se não passar, deixa o dia sem ele"
+                             if r.get("veredito") == "reprova" or r.get("problema") else "")
+            return r
         if nome == "refazer":
             item = next((i for i in conteudo.carregar()["itens"] if i["id"] == a["item"]), None)
             if not item or item["estado"] != "pendente":
@@ -455,34 +487,9 @@ def executar(a: dict, refazer=None, agora: float | None = None) -> dict:
         conteudo.AUTOR["quem"] = antes
 
 
-def _pergunta(a: dict, agora: float, itens: dict) -> tuple[str, list]:
-    """The question text and its buttons: "Publicar mesmo assim" for a reproved/blocked item (the existing button),
-    and one button per option that hands his choice to the agent in his chat (semana.botao, acao g<k>)."""
-    gid = "g" + hashlib.sha256(f"{a['pergunta']}{agora}".encode()).hexdigest()[:8]
-    registro = {"id": gid, "em": agora, "pergunta": a["pergunta"], "opcoes": a.get("opcoes") or [],
-                **({"item": a["item"]} if a.get("item") else {})}
-    lista = [p for p in _perguntas() if p.get("em", 0) > agora - 7 * 86400] + [registro]
-    arq = _pasta() / "gestor_perguntas.json"
-    tmp = arq.with_suffix(".tmp")
-    tmp.write_text(json.dumps(lista, ensure_ascii=False, indent=1), encoding="utf-8")
-    tmp.replace(arq)
-    login = c().LOGIN
-    botoes = []
-    it = itens.get(a.get("item") or "")
-    hoje = _momento(agora).date().isoformat()  # liberar a past day's item would publish nothing
-    if it and it["data"] >= hoje and (it["estado"] == "bloqueada" or (it.get("conferido") or {}).get("veredito") == "reprova"):
-        botoes.append({"id": f"cs:{login}:{it['id']}:liberar", "titulo": "🔓 Publicar mesmo assim"})
-    for k, o in enumerate(registro["opcoes"], 1):
-        if len(botoes) < 3:
-            botoes.append({"id": f"cs:{login}:{gid}:o{k}", "titulo": _curto(o, 30)})
-    botoes = [b for b in botoes if len(b["id"].encode()) <= 64]
-    texto = a["pergunta"].strip() + ("\n" + "\n".join(f"{k}) {o}" for k, o in enumerate(registro["opcoes"], 1))
-                                     if registro["opcoes"] else "")
-    return texto, botoes
-
-
 def resposta(gid: str, k: int) -> dict:
-    """His button on a Gestor question: the question and the option, for the agent to act on in his chat."""
+    """His button on an old Gestor question (before 04/11 it asked; now it never does): the option, for the agent to
+    act on in his chat."""
     p = next((x for x in _perguntas() if x.get("id") == gid), None)
     if not p or not 1 <= k <= len(p.get("opcoes") or []):
         return {}
@@ -493,19 +500,16 @@ def resposta(gid: str, k: int) -> dict:
                            "que ficou.")}
 
 
-def _mensagem(visto: str, feitos: list, falhas: list, perguntas: list) -> tuple[str, list]:
-    if not feitos and not perguntas:
+def _mensagem(visto: str, feitos: list, falhas: list) -> tuple[str, list]:
+    """A notice of what it decided (04/11: never a question, never a button)."""
+    if not feitos:
         return "", []
     linhas = [f"🧭 Gestor de conteúdo: {visto.strip()}" if visto.strip() else "🧭 Gestor de conteúdo"]
     for desc, motivo in feitos:
         linhas.append(f"- {desc}. Por quê: {motivo}")
     for desc, erro in falhas:
         linhas.append(f"- Tentei: {desc.lower()}, não deu ({_curto(erro, 120)}).")
-    botoes = []
-    for texto, b in perguntas:
-        linhas.append(f"Preciso de você: {texto}")
-        botoes += b
-    return "\n".join(linhas), botoes[:3]
+    return "\n".join(linhas), []
 
 
 # ------------------------------------------------------------------ when and the whole run
@@ -583,9 +587,10 @@ def _do_dia(agora: float) -> tuple[int, float]:
 
 
 def rodar(motivo: str = "manual", agora: float | None = None, seco: bool = False, modelo=None, avisar=None,
-          refazer=None, contexto: dict | None = None) -> dict:
+          refazer=None, contexto: dict | None = None, criar=None) -> dict:
     """One run. seco=True decides and shows, executing and sending nothing. modelo(tarefa) -> {"texto","erro","uso"}
-    (default: the especialistas role "gestor"); avisar(texto, botoes); refazer(item, critica) as semana.refazer_item."""
+    (default: the especialistas role "gestor"); avisar(texto, botoes); refazer(item, critica) as semana.refazer_item;
+    criar(data, formato, dados, agora=, quem=) as semana.criar."""
     agora = time.time() if agora is None else agora
     _pasta().mkdir(parents=True, exist_ok=True)
     trava = open(_pasta() / "gestor.lock", "a")
@@ -631,25 +636,19 @@ def rodar(motivo: str = "manual", agora: float | None = None, seco: bool = False
         for x in recusadas:
             c()._diario({"gestor": "recusada", "acao": _curto(json.dumps(x["acao"], ensure_ascii=False), 300),
                          "erro": x["erro"]})
-        feitos, falhas, perguntas, resultados = [], [], [], []
+        feitos, falhas, resultados = [], [], []
         for a in aceitas:
-            if a["acao"] == "pedir_ao_matheus":
-                if seco:
-                    perguntas.append((a["pergunta"] + (" | " + " / ".join(a.get("opcoes") or []) if a.get("opcoes") else ""), []))
-                else:
-                    perguntas.append(_pergunta(a, agora, itens))
-                    c()._diario({"gestor": "perguntou", "pergunta": _curto(a["pergunta"], 300), "motivo": _curto(a["motivo"], 200)})
-                resultados.append({"acao": a, "ok": True})
-                continue
             desc = _descrever(a, itens)
             if seco:
                 feitos.append((desc, a["motivo"]))
                 resultados.append({"acao": a, "ok": None})
                 continue
-            r = executar(a, refazer, agora)
+            r = executar(a, refazer, agora, criar)
             resultados.append({"acao": a, "ok": bool(r.get("ok")), **({} if r.get("ok") else {"erro": r.get("erro")})})
+            if r.get("ok") and a["acao"] == "criar":
+                desc += (": o Crítico aprovou e está agendado" if r.get("agendado") else f" ({r.get('nota') or 'aberto'})")
             (feitos.append((desc, a["motivo"])) if r.get("ok") else falhas.append((desc, str(r.get("erro")))))
-        mensagem, botoes = _mensagem(visto, feitos, falhas, perguntas)
+        mensagem, botoes = _mensagem(visto, feitos, falhas)
         avisou = ""
         if mensagem and not seco and avisar is not None:
             c()._chamar_aviso(avisar, mensagem, botoes)

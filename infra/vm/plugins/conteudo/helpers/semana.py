@@ -1,19 +1,26 @@
-"""The week of @raiz.connect posts, proposed every Monday instead of an agenda assembled by hand (20/10, approved by
-Matheus). The routine reads what did well (conteudo desempenho), the competitors (concorrentes) and the niche's
-viral videos (video), then hands 4 feed ideas and 7 stories to propor() (22/10: 2 carousels, 2 videos and a story a
-day): each feed idea is drawn by the Designer, each story here from the kit's layouts (story.py), all judged by the
-Crítico (plugins/especialistas), and Matheus gets ONE Telegram message with the 11 and three buttons (approve all, choose,
-redo). aprovar() writes the approved ones into the same agenda.json the daily job loop publishes from, through
-conteudo.agendar(), so publishing is unchanged. Rules that are code:
-- without the especialistas plugin a proposal says the review is missing; nothing is ever approved by itself;
-- "Aprovar todas" leaves out what the Crítico reproved: those go only when he picks them by number, and that
-  override is kept on the post (liberado), so the publish gate does not block what he already decided;
-- a week that was redone (new version) refuses the old message's buttons.
-State: /a0/usr/conteudo/semanas/<id>.json, written only here, under its own lock; journal: conteudo's diario.jsonl.
+"""The week of @raiz.connect posts, created every Monday instead of an agenda assembled by hand (20/10). The routine
+reads what did well (conteudo desempenho), the competitors (concorrentes) and the niche's viral videos (video), then
+hands 4 feed ideas and 7 stories to propor() (22/10: 2 carousels, 2 videos and a story a day): each feed idea is drawn
+by the Designer, each story here from the kit's layouts (story.py), all judged by the Crítico (plugins/especialistas).
 
-Videos (22/10, Matheus: "Leve"): the Designer renders a Reel from the moldes as a preview and the narration only; the
-week message tells Matheus to listen first (decision #39), and the video itself is made after he approves, in the
-background (helpers/video_fila.py, one at a time), and goes into the agenda by itself when ready (concluir_video)."""
+04/11, Matheus: "Mas eu já falei que eu não quero um agente para ficar esperando eu falar. Ele tem que criar, se já tem
+um crítico para ver o que passa e o que não passa, ele tem que decidir se posta, se não posta, as decisões que tem que
+ser tomadas, etc., sem depender de mim." So the Crítico is the gate and nobody waits for him:
+- what the Crítico approved goes into the agenda right away (_decidir -> aprovar(), as "gestor: o Crítico aprovou");
+- what he reproved is redone by the agent, one attempt per pass of the job loop (passo_autonomo), up to REFAZER_AUTO
+  times; still reproved, the agent decides by itself: one NEW idea for the same slot (through the Crítico again), and if
+  that fails too the day stays without that post. A story that calls a post that will not go out becomes a "dica";
+- Matheus gets only notices of what was decided (no buttons). The old buttons (aprovar, escolher, refazer, "Publicar
+  mesmo assim") still work if he taps one from an old message, and his explicit word still overrides (aprovar by number);
+- without the especialistas plugin (or a Crítico that gives no clear verdict) nothing is ever scheduled by itself.
+aprovar() writes into the same agenda.json the daily job loop publishes from, through conteudo.agendar(), so
+publishing is unchanged. State: /a0/usr/conteudo/semanas/<id>.json, written only here, under its own lock; journal:
+conteudo's diario.jsonl.
+
+Videos (22/10): the Designer renders a Reel from the moldes as a preview and the narration only; the Crítico judges
+that preview, and once it is approved the video itself is made in the background (helpers/video_fila.py, one at a
+time) and goes into the agenda by itself when ready (concluir_video). Decision #39 (his ear on the narration first)
+was replaced by the 04/11 decision."""
 
 import datetime as dt
 import fcntl
@@ -41,6 +48,10 @@ DIAS_SEMANA = ("seg", "ter", "qua", "qui", "sex", "sáb", "dom")
 NOME_TIPO = {"REELS": "Reel", "CARROSSEL": "Carrossel", "IMAGE": "Foto", "STORY": "Story"}
 VIDEO, IMAGEM = (".mp4",), (".jpg", ".jpeg", ".png")
 SEM_REVISAO = "sem revisão"
+REFAZER_AUTO = 2  # 04/11: redo attempts of a reproved proposal before the agent decides (new idea, then no post)
+FOLGA_AUTO_MIN = 90  # a proposal is (re)done only if it goes out later than this: Designer + Crítico take minutes
+QUEM_AUTO = "gestor: o Crítico aprovou"
+ROTINA_AVISO = "🧭 Gestor de conteúdo"
 REGRAS = ("A Raiz Connect é sistema de gestão para food service, com pedidos do iFood e da 99Food entrando sozinhos: "
           "fala também com pizzaria, hamburgueria, lanchonete e restaurante de delivery (Matheus, 22/10). Tela do sistema "
           "sempre no tema escuro e inteira, com o menu; para mostrar o sistema, vídeo com zoom e movimento. "
@@ -290,8 +301,8 @@ def refazer_item(item: dict, critica: dict, subir=None) -> dict:
     if not origem.get("semana") and not ficha:
         return {"ok": False, "erro": "não tem ficha (o que o post é e de onde vieram os arquivos), então não sei refazer"}
     if item["tipo"] == "REELS":
-        return {"ok": False, "erro": "Reel: refazer muda a narração, que precisa do seu ok antes (decisão #39)"
-                                     + (f"; a origem está em {_texto(ficha['fonte'], 120)}" if ficha else "")}
+        return {"ok": False, "erro": "Reel já agendado não é refeito aqui (o vídeo sai do zero, cerca de 1 hora): o gestor "
+                                     "cancela e cria outro" + (f"; a origem está em {_texto(ficha['fonte'], 120)}" if ficha else "")}
     if origem.get("semana"):
         sid, n = origem["semana"], origem.get("n")
         p = next((x for x in (carregar(sid) or {}).get("propostas", []) if x["n"] == n), None)
@@ -395,13 +406,15 @@ def _texto(v, limite: int = 600) -> str:
     return " ".join(str(v or "").split())[:limite]
 
 
-def _desenhar(esp, briefing: dict, p: dict) -> dict:
-    """One proposal through the Designer (who always asks the Crítico); without especialistas, the review is missing."""
+def _desenhar(esp, briefing: dict, p: dict, desenho=None) -> dict:
+    """One proposal through the Designer (who always asks the Crítico); without especialistas, the review is missing.
+    desenho() -> the Designer's raw answer, when the caller already knows which call (a revision, a new idea)."""
     if esp is None:
         return {"spec": {}, "arquivos": [str(a) for a in p.get("arquivos") or []], "falta": [],
                 "critica": {"veredito": SEM_REVISAO, "motivos": ["o Crítico ainda não está instalado"], "sugestoes": []}}
     try:  # a ready ficha (spec) is rendered and judged as it is, without the Designer
-        d = esp.julgar_ficha(briefing, p["spec"]) if isinstance(p.get("spec"), dict) and p["spec"] else esp.desenhar(briefing)
+        d = desenho() if desenho else (esp.julgar_ficha(briefing, p["spec"]) if isinstance(p.get("spec"), dict)
+                                       and p["spec"] else esp.desenhar(briefing))
     except Exception as exc:
         return {"spec": {}, "arquivos": [], "falta": [f"o Designer falhou ({type(exc).__name__}: {str(exc)[:120]})"],
                 "critica": {"veredito": SEM_REVISAO, "motivos": ["o Designer falhou antes do Crítico"], "sugestoes": []}}
@@ -418,14 +431,21 @@ def _desenhar(esp, briefing: dict, p: dict) -> dict:
             **{k: d[k] for k in ("video_pendente", "previa", "folha", "narracao") if d.get(k)}}
 
 
-def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict) -> dict:
+def _briefing(formato: str, dia: str, p: dict) -> dict:
+    return {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato,
+            "titulo": _texto(p.get("titulo"), 120), "ideia": _texto(p.get("ideia"), 1200),
+            "legenda": str(p.get("legenda") or "").strip(), "data": dia, "regras": REGRAS}
+
+
+def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict, desenho=None) -> dict:
     """One feed proposal of the week, drawn by the Designer and judged by the Crítico."""
-    briefing = {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato,
-                "titulo": _texto(p.get("titulo"), 120), "ideia": _texto(p.get("ideia"), 1200),
-                "legenda": str(p.get("legenda") or "").strip(), "data": dia, "regras": REGRAS}
-    d = _desenhar(esp, briefing, p)
+    briefing = _briefing(formato, dia, p)
+    d = _desenhar(esp, briefing, p, desenho)
     if nota:
         d["critica"]["motivos"] = [nota] + d["critica"]["motivos"]
+    if not briefing["titulo"]:  # a new idea from the Designer: its own title
+        briefing["titulo"] = _texto(d["spec"].get("titulo") or (d["spec"].get("ficha") or {}).get("titulo")
+                                    or "ideia nova do Designer", 120)
     legenda = briefing["legenda"] or str(d["spec"].get("legenda") or "").strip()
     pendente = formato == "REELS" and d.get("video_pendente")
     tipo, arquivos, capa = ("REELS", [], "") if pendente else tipo_dos_arquivos(d["arquivos"])
@@ -461,6 +481,10 @@ def _item_story(esp, sid: str, n: int, campos: dict, dia: str, itens: list, sufi
     if sem_post and d["arquivos"]:  # rewriting the story cannot make the post exist: reproved, says why
         d["critica"] = {"veredito": "reprova", "motivos": [sem_post] + [m for m in d["critica"]["motivos"]][:4],
                         "sugestoes": d["critica"].get("sugestoes") or []}
+    return _proposta_story(sid, n, campos, dia, d)
+
+
+def _proposta_story(sid: str, n: int, campos: dict, dia: str, d: dict) -> dict:
     titulo = f"{campos.get('layout', '?')}: {_texto(campos.get('manchete') or 'oferta Lucro na Mão', 100)}"
     return {"n": n, "id": f"{sid}-{n}", "data": dia, "hora": HORA_STORY, "titulo": titulo, "ideia": "",
           "formato_pedido": "STORY", "tipo": "STORY" if d["arquivos"] else "", "arquivos": d["arquivos"],
@@ -468,10 +492,12 @@ def _item_story(esp, sid: str, n: int, campos: dict, dia: str, itens: list, sufi
           "critica": d["critica"], "problema": d["problema"], "estado": "proposta"}
 
 
-def propor(propostas: list, agora: float | None = None, enviar=None, login: str = "matheus", stories=None) -> dict:
+def propor(propostas: list, agora: float | None = None, enviar=None, login: str = "matheus", stories=None,
+           subir=None) -> dict:
     """The week: 4 feed ideas from the routine [{"titulo", "formato" (2 CARROSSEL and 2 REELS), "ideia", "legenda"}]
-    and 7 stories [{"layout", "manchete", ...: helpers/story.py}] → each drawn and judged, saved as a new version,
-    and the one message with buttons sent to Matheus. Nothing goes into the agenda here."""
+    and 7 stories [{"layout", "manchete", ...: helpers/story.py}] → each drawn and judged, saved as a new version;
+    what the Crítico approved goes into the agenda now, the rest is redone by passo_autonomo, and Matheus gets one
+    notice of what happened (no buttons: 04/11, he does not want to be waited on)."""
     agora = time.time() if agora is None else agora
     try:
         if isinstance(propostas, str):
@@ -509,7 +535,7 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
         itens.append(_item_feed(esp, nota, sid, n, formato, dia, fila[formato].pop(0)))
     for n, (campos, dia) in enumerate(zip(stories, dias_story), start=len(vagas) + 1):
         itens.append(_item_story(esp, sid, n, campos, dia, itens))
-    semana = {"id": sid, "criada_em": agora, "estado": "proposta", "login": login, "propostas": itens}
+    semana = {"id": sid, "criada_em": agora, "estado": "proposta", "login": login, "propostas": itens, "autonomo": True}
     with _exclusivo():
         for antiga in _pasta().glob("s*.json"):  # an older week still open is replaced: its buttons stop working
             s = json.loads(antiga.read_text(encoding="utf-8"))
@@ -519,6 +545,8 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
         _gravar(semana)
     c()._diario({"semana": sid, "proposta": True, "dias": [i["data"] for i in itens],
                  "vereditos": [i["critica"]["veredito"] for i in itens]})
+    decidido = _decidir(sid, agora, subir)
+    semana = carregar(sid)
     texto, botoes = mensagem(semana)
     erro = (enviar or _enviar_ponte)(login, texto, botoes)
     with _exclusivo():
@@ -527,12 +555,307 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
         if erro:
             s["erro_envio"] = str(erro)[:200]
         _gravar(s)
+    por_n = {p["n"]: p for p in semana["propostas"]}
     return {"ok": True, "semana": sid, "enviada": not erro, **({"erro_envio": str(erro)[:200]} if erro else {}),
+            **decidido,
             "propostas": [{"n": i["n"], "data": i["data"], "tipo": i["tipo"] or "?", "titulo": i["titulo"],
-                           "critico": i["critica"]["veredito"], "problema": i["problema"]} for i in itens]}
+                           "critico": i["critica"]["veredito"], "problema": i["problema"],
+                           "estado": por_n[i["n"]]["estado"]} for i in itens]}
 
 
-def refazer_propostas(sid: str, feed=None, stories=None, enviar=None) -> dict:
+# ------------------------------------------------------------------ autonomy (04/11): the Crítico decides, not Matheus
+
+def assumir(sid: str, agora: float | None = None, subir=None) -> dict:
+    """A week created before 04/11 (it waited for Matheus's buttons) handed to the autonomous flow, by the operator:
+    what the Crítico approved goes into the agenda, what is already past or too close is dropped silently (its day is
+    gone), and the reproved rest is redone by passo_autonomo from the next pass on."""
+    if not str(c().AUTOR["quem"]).startswith("operador:"):
+        return {"ok": False, "erro": "só o operador entrega uma semana antiga ao fluxo autônomo (AUTOR['quem'] = 'operador: ...')"}
+    agora = time.time() if agora is None else agora
+    with _exclusivo():
+        s = carregar(sid)
+        if not s or s["estado"] not in ("proposta", "parcial"):
+            return {"ok": False, "erro": f"a semana {sid} não está aberta"}
+        s["autonomo"] = True
+        s["criada_em"] = max(float(s.get("criada_em") or 0), agora - 86400)  # inside passo_autonomo's window
+        _gravar(s)
+    c()._diario({"semana": sid, "autonoma": True, "motivo": "decisão do Matheus de 04/11: o Crítico decide"})
+    r = _decidir(sid, agora, subir)
+    return {"ok": True, "semana": sid, **r,
+            "abertas": [p["n"] for p in carregar(sid)["propostas"] if p["estado"] == "proposta"]}
+
+
+def _aprovada(p: dict) -> bool:
+    """Only a clean "aprova" with a publishable file goes by itself ("sem revisão" never does: fail closed)."""
+    return p["estado"] == "proposta" and not p["problema"] and p["critica"]["veredito"] == "aprova"
+
+
+def _sai_em(p: dict) -> float:
+    return c()._quando({"data": p["data"], "hora": p["hora"]})
+
+
+def _decidir(sid: str, agora: float, subir=None) -> dict:
+    """What the Crítico approved goes into the agenda now (aprovar, as the Gestor); an open proposal that goes out
+    too soon to be redone is dropped (its day stays free for the Gestor). The rest waits for passo_autonomo."""
+    semana = carregar(sid)
+    if not semana or semana["estado"] not in ("proposta", "parcial"):
+        return {"agendados": [], "gerando_video": [], "descartados": [], "passados": []}
+    passados = [p["n"] for p in semana["propostas"] if p["estado"] == "proposta" and _sai_em(p) < agora]
+    for n in passados:  # its hour is gone: nothing to decide, nothing to tell
+        _descartar(sid, n, "o horário dele passou antes da decisão")
+    semana = carregar(sid)
+    sim = [p["n"] for p in semana["propostas"] if _aprovada(p)]
+    r = aprovar(sid, sim, quem=QUEM_AUTO, agora=agora, subir=subir) if sim else {"agendados": [], "gerando_video": []}
+    sem_tempo = [p["n"] for p in carregar(sid)["propostas"]
+                 if p["estado"] == "proposta" and _sai_em(p) < agora + FOLGA_AUTO_MIN * 60]
+    for n in sem_tempo:
+        _descartar(sid, n, "não dá tempo de refazer antes da hora dele")
+    return {"agendados": r.get("agendados", []), "gerando_video": r.get("gerando_video", []), "descartados": sem_tempo,
+            "passados": passados}
+
+
+def _descartar(sid: str, n: int, motivo: str) -> None:
+    with _exclusivo():
+        s = carregar(sid)
+        p = next(x for x in s["propostas"] if x["n"] == n)
+        if p["estado"] != "proposta":
+            return
+        p.update(estado="descartada", decisao=motivo)
+        s["estado"] = "parcial" if any(x["estado"] == "proposta" for x in s["propostas"]) else "decidida"
+        _gravar(s)
+    c()._diario({"semana": sid, "descartada": n, "data": p["data"], "motivo": motivo[:200], "quem": QUEM_AUTO})
+
+
+def _salvar_proposta(sid: str, nova: dict) -> bool:
+    """A redone proposal replaces the open one with the same n; False when it was decided meanwhile."""
+    with _exclusivo():
+        s = carregar(sid)
+        velha = next((x for x in s["propostas"] if x["n"] == nova["n"]), None)
+        if not velha or velha["estado"] != "proposta":
+            return False
+        s["propostas"][s["propostas"].index(velha)] = nova
+        _gravar(s)
+    return True
+
+
+def _motivos(p: dict) -> list:
+    return ([p["problema"]] if p.get("problema") else []) + list(p["critica"].get("motivos") or [])
+
+
+def _vistas(p: dict) -> list:
+    """The local pictures of a proposal (its slides, or a Reel's preview), for the Designer's revision."""
+    return [str(a) for a in list(p.get("arquivos") or []) + list(p.get("previa") or [])
+            if str(a).lower().endswith(IMAGEM) and Path(str(a)).is_file()][:8]
+
+
+def _refazer_feed(esp, sid: str, p: dict, nova: bool) -> dict:
+    """One more version of a reproved feed proposal: the Designer revises it with the Crítico's reasons (a molde ficha),
+    or draws it again told what was wrong; nova=True asks for a different idea for the same slot."""
+    briefing = _briefing(p["formato_pedido"], p["data"], p)
+    motivos = "; ".join(_motivos(p))[:900]
+    spec = p.get("spec") or {}
+    if nova:
+        ideia = (f"Ideia NOVA para a vaga de {NOME_TIPO[p['formato_pedido']]} de {_rotulo_dia(p['data'])}: um assunto "
+                 f"diferente de \"{p['titulo']}\", que o Crítico reprovou ({motivos}). Plano: gestão (pedido do iFood e da "
+                 "99 entrando sozinho, estoque, comanda, financeiro) ou custo e preço, para o dono do negócio de comida. "
+                 "Ponha na ficha \"titulo\" e \"legenda\" (sem emoji nem travessão).")
+        base = dict(p, titulo="", ideia=ideia, legenda="", spec={})
+        return _item_feed(esp, "", sid, p["n"], p["formato_pedido"], p["data"], dict(base, hora=p["hora"]),
+                          desenho=lambda: esp.desenhar(dict(_briefing(p["formato_pedido"], p["data"], base))))
+    if spec.get("motor") == "molde":
+        critica = {"veredito": "reprova", "motivos": _motivos(p), "sugestoes": p["critica"].get("sugestoes") or []}
+        desenho = lambda: esp.revisar(briefing, spec, critica, _vistas(p))  # noqa: E731
+    else:
+        desenho = lambda: esp.desenhar(dict(briefing, ideia=briefing["ideia"]  # noqa: E731
+                                            + "\n\nA versão anterior foi reprovada pelo Crítico: " + motivos))
+    return _item_feed(esp, "", sid, p["n"], p["formato_pedido"], p["data"], dict(p, hora=p["hora"]), desenho=desenho)
+
+
+DICA = ("O post do dia não vai sair: troque o layout para \"dica\" (uma dica curta e útil para o dono do negócio de "
+        "comida, com manchete, destaque, texto e chamada) e não chame post nenhum.")
+
+
+def _refazer_story_semana(esp, sid: str, p: dict, itens: list, nova: bool) -> dict | None:
+    """One more version of a reproved story. A story that calls a post that will not go out (or nova=True for one
+    that calls a post) becomes a "dica"; nova=True otherwise asks for a different story with the same layout.
+    None when the Designer gave nothing usable."""
+    campos = dict(p["spec"].get("story") or {})
+    k = 1 + int((p.get("auto") or {}).get("tentativas") or 0)
+    saida = _pasta() / sid / f"story-{p['n']}-auto{k}{'-nova' if nova else ''}.jpg"
+    post, sem_post = _post_do_dia(campos, p["data"], itens)
+    chama = campos.get("layout") in CHAMA
+    if chama and (sem_post or nova):
+        motivos = [DICA] + ([sem_post] if sem_post else _motivos(p))
+        post = None
+    elif nova:
+        motivos = [f"Escreva um story NOVO para {_rotulo_dia(p['data'])}, com outro assunto: o anterior foi reprovado "
+                   f"várias vezes ({'; '.join(_motivos(p))[:400]})."]
+    else:
+        motivos = _motivos(p)
+    feito = _refazer_story(esp, campos, {"motivos": motivos}, saida, post)
+    if not feito:
+        return None
+    novo, d = feito
+    if chama and post is None and novo.get("layout") in CHAMA:  # still calls a post that will not go out
+        d["critica"] = {"veredito": "reprova", "motivos": ["continua chamando um post que não vai sair"], "sugestoes": []}
+    return _proposta_story(sid, p["n"], novo, p["data"], d)
+
+
+def _feed_aberto(semana: dict, dia: str) -> bool:
+    return any(x["estado"] == "proposta" and x["formato_pedido"] != "STORY" and x["data"] == dia for x in semana["propostas"])
+
+
+def _rotulo(p: dict) -> str:
+    nome = NOME_TIPO.get(p["formato_pedido"], p["formato_pedido"]).lower()
+    return f"o {nome} de {_rotulo_dia(p['data'])} ({_texto(p['titulo'], 70)})"
+
+
+def passo_autonomo(agora: float | None = None, avisar=None, subir=None) -> dict | None:
+    """One step of the autonomous week (the job loop calls it every pass, one Designer round at most): the first open
+    proposal of the recent weeks (feed before stories: a story that calls a post waits for its post) is redone; if the
+    new version is approved it goes into the agenda; after REFAZER_AUTO failed redos one new idea is tried; after that the
+    day stays without it. Each decision is told to Matheus in one line, without buttons. None when there is nothing
+    to do. avisar(texto) sends the notice."""
+    agora = time.time() if agora is None else agora
+    if not _pasta().exists():
+        return None
+    try:
+        esp = c().especialistas()
+    except Exception:
+        return None
+    if esp is None:  # without the Crítico nothing is ever decided by itself
+        return None
+    nomes = sorted((x.stem for x in _pasta().glob("s*.json")), key=lambda n: (n.split("-")[0], int(n.split("-")[1])))
+    for sid in nomes:
+        semana = carregar(sid)
+        if (not semana.get("autonomo") or semana["estado"] not in ("proposta", "parcial")
+                or float(semana.get("criada_em") or 0) < agora - 14 * 86400):
+            continue  # weeks from before 04/11 waited for Matheus: only assumir() hands one over
+        r = _decidir(sid, agora, subir)  # approved ones (e.g. created by the Gestor) and the ones out of time
+        semana = carregar(sid)
+        fora = [next(x for x in semana["propostas"] if x["n"] == n) for n in r["descartados"]]
+        if fora:
+            _avisar(avisar, "🧭 Conteúdo: ficou de fora, porque o Crítico não aprovou e não dava mais tempo de refazer: "
+                            + "; ".join(_rotulo(p) for p in fora) + ".")
+        abertas = sorted((x for x in semana["propostas"] if x["estado"] == "proposta"),
+                         key=lambda x: (x["formato_pedido"] == "STORY", _sai_em(x)))
+        for p in abertas:
+            if p["formato_pedido"] == "STORY" and (p["spec"].get("story") or {}).get("layout") in CHAMA \
+                    and _feed_aberto(semana, p["data"]):
+                continue  # its post is still being decided
+            return _um_passo(esp, sid, semana, p, agora, avisar, subir)
+    return None
+
+
+def _um_passo(esp, sid: str, semana: dict, p: dict, agora: float, avisar, subir) -> dict:
+    auto = dict(p.get("auto") or {})
+    tentativas, nova = int(auto.get("tentativas") or 0), False
+    if tentativas >= REFAZER_AUTO:
+        if auto.get("nova_ideia"):
+            _descartar(sid, p["n"], f"o Crítico reprovou {tentativas + 2} versões")
+            _avisar(avisar, f"🧭 Conteúdo: o Crítico reprovou todas as versões de {_rotulo(p)} "
+                            f"({c().uma_linha(_motivos(p), 140)}). Decidi deixar o dia sem ele; o gestor pode cobrir.")
+            return {"semana": sid, "n": p["n"], "decisao": "sem post"}
+        nova = True
+    try:
+        if p["formato_pedido"] == "STORY":
+            novo = _refazer_story_semana(esp, sid, p, semana["propostas"], nova)
+        else:
+            novo = _refazer_feed(esp, sid, p, nova)
+    except Exception as exc:
+        novo, erro = None, f"{type(exc).__name__}: {str(exc)[:160]}"
+    else:
+        erro = "" if novo else "o Designer não devolveu nada utilizável"
+    if novo is None:
+        novo = dict(p, problema=erro or p.get("problema") or "sem versão nova")
+    auto = {"tentativas": tentativas + (0 if nova else 1), "nova_ideia": bool(auto.get("nova_ideia") or nova),
+            "ultima": agora}
+    novo = dict(novo, auto=auto, estado="proposta", refeita=int(p.get("refeita") or 0) + 1)
+    if not _salvar_proposta(sid, novo):
+        return {"semana": sid, "n": p["n"], "decisao": "decidida enquanto refazia"}
+    c()._diario({"semana": sid, "refeita_auto": p["n"], "nova_ideia": nova, "tentativa": auto["tentativas"],
+                 "veredito": novo["critica"]["veredito"], "quem": QUEM_AUTO,
+                 **({"problema": _texto(novo["problema"], 160)} if novo.get("problema") else {})})
+    if not _aprovada(novo):
+        return {"semana": sid, "n": p["n"], "decisao": "nova ideia reprovada" if nova else "refeita, ainda reprovada"}
+    r = aprovar(sid, [p["n"]], quem=QUEM_AUTO, agora=agora, subir=subir)
+    final = next(x for x in carregar(sid)["propostas"] if x["n"] == p["n"])
+    if final["estado"] in ("agendada", "gerando_video"):
+        como = "troquei por uma ideia nova" if nova else "refiz"
+        quando = ("o vídeo está sendo feito e entra na agenda sozinho" if final["estado"] == "gerando_video"
+                  else f"agendado para {_rotulo_dia(final['data'])} às {final['hora']}")
+        _avisar(avisar, f"🧭 Conteúdo: {como} {_rotulo(final if nova else p)} e o Crítico aprovou: {quando}.")
+        return {"semana": sid, "n": p["n"], "decisao": "ideia nova agendada" if nova else "refeita e agendada"}
+    return {"semana": sid, "n": p["n"], "decisao": "aprovada, não agendou", "erro": (r.get("recusados") or [{}])[0].get("motivo")}
+
+
+def _avisar(avisar, texto: str) -> None:
+    if avisar is None:
+        _enviar_ponte("matheus", texto, [])
+        return
+    try:
+        avisar(texto)
+    except Exception as exc:
+        print(f"conteudo: aviso não saiu: {exc}", flush=True)
+
+
+def criar(data: str, formato: str, dados: dict, agora: float | None = None, subir=None, quem: str = "gestor") -> dict:
+    """The Gestor fills a hole (04/11): one new feed post {"titulo", "ideia", "legenda"} or story {"story": fields} for
+    `data`, appended to the newest week, drawn and judged like the week's; approved goes into the agenda now, reproved
+    is redone by passo_autonomo like any other. Refused when the slot is taken or too close."""
+    agora = time.time() if agora is None else agora
+    formato = str(formato or "").upper()
+    if formato not in ("CARROSSEL", "REELS", "IMAGE", "STORY"):
+        return {"ok": False, "erro": "formato: CARROSSEL, REELS, IMAGE ou STORY"}
+    try:
+        dt.date.fromisoformat(str(data))
+    except ValueError:
+        return {"ok": False, "erro": "data (AAAA-MM-DD) inválida"}
+    canal_ = "story" if formato == "STORY" else "feed"
+    hora = HORA_STORY if formato == "STORY" else HORA
+    if c()._quando({"data": data, "hora": hora}) < agora + FOLGA_AUTO_MIN * 60:
+        return {"ok": False, "erro": f"{data} {hora} já passou ou está perto demais para criar"}
+    if data in _ocupados(canal_):
+        return {"ok": False, "erro": f"{data} já tem {canal_}"}
+    if formato == "STORY" and (not isinstance(dados.get("story"), dict) or story().validar(dados["story"])):
+        return {"ok": False, "erro": "story: campos do kit (" + (story().validar(dados.get("story"))
+                                                                 if isinstance(dados.get("story"), dict) else "objeto") + ")"}
+    if formato != "STORY" and not (str(dados.get("titulo") or "").strip() and str(dados.get("ideia") or "").strip()):
+        return {"ok": False, "erro": "post: titulo e ideia"}
+    esp = c().especialistas()
+    if esp is None:
+        return {"ok": False, "erro": "sem o Crítico (plugin especialistas) nada é criado"}
+    with _exclusivo():
+        semana = ultima()
+        if not semana:
+            base = "s" + _hoje(agora).strftime("%Y%m%d")
+            semana = {"id": f"{base}-1", "criada_em": agora, "estado": "parcial", "login": "matheus", "propostas": []}
+            _gravar(semana)
+        sid, n = semana["id"], 1 + max([p["n"] for p in semana["propostas"]] or [0])
+    if formato == "STORY":
+        p = _item_story(esp, sid, n, dados["story"], data, carregar(sid)["propostas"], sufixo="-gestor")
+    else:
+        p = _item_feed(esp, "", sid, n, formato, data, {k: dados.get(k) for k in ("titulo", "ideia", "legenda")})
+    p["criada_por"] = quem
+    with _exclusivo():
+        s = carregar(sid)
+        if any(x["n"] == n for x in s["propostas"]):
+            return {"ok": False, "erro": "outra criação usou o mesmo número; tente de novo"}
+        s["propostas"].append(p)
+        s["estado"], s["autonomo"] = "parcial", True
+        s["criada_em"] = max(float(s.get("criada_em") or 0), agora)  # passo_autonomo looks at recent weeks
+        _gravar(s)
+    c()._diario({"semana": sid, "criada": n, "data": data, "formato": formato, "veredito": p["critica"]["veredito"],
+                 "quem": quem})
+    agendado = False
+    if _aprovada(p):
+        r = aprovar(sid, [n], quem=QUEM_AUTO, agora=agora, subir=subir)
+        agendado = bool(r.get("agendados") or r.get("gerando_video"))
+    return {"ok": True, "semana": sid, "n": n, "veredito": p["critica"]["veredito"], "agendado": agendado,
+            "problema": p["problema"]}
+
+
+def refazer_propostas(sid: str, feed=None, stories=None, enviar=None, agora: float | None = None, subir=None) -> dict:
     """Redoes only some proposals of a week still open (27/10, Matheus: "Pode fazer" for the reproved Reel and carousel),
     in the same days and slots, keeping the others as he saw them. `feed` = {n: {"titulo", "ideia", "legenda"}},
     `stories` = {n: story fields}. A story that calls a redone feed post is judged again with the new post (its fields
@@ -585,6 +908,8 @@ def refazer_propostas(sid: str, feed=None, stories=None, enviar=None) -> dict:
     c()._diario({"semana": sid, "refeitas": sorted(mudou), "vereditos": [mudou[n]["critica"]["veredito"] for n in sorted(mudou)]})
     if not mudou:
         return {"ok": False, "erro": "você decidiu essas propostas enquanto eu refazia; nada mudou"}
+    _decidir(sid, time.time() if agora is None else agora, subir)  # 04/11: what the Crítico approves now goes in
+    atual = carregar(sid)
     texto, botoes = mensagem(atual)
     erro = (enviar or _enviar_ponte)(atual.get("login", "matheus"), "Refiz " + ", ".join(map(str, sorted(mudou)))
                                      + ".\n\n" + texto, botoes)
@@ -604,39 +929,30 @@ def _aprovaveis(semana: dict) -> list[dict]:
             and p["critica"]["veredito"] != "reprova"]
 
 
+ESTADO_AVISO = {"agendada": "agendado", "gerando_video": "aprovado, o vídeo está sendo feito e entra na agenda sozinho",
+                "descartada": "fora", "erro": "não entrou"}
+
+
 def mensagem(semana: dict) -> tuple[str, list]:
-    """The one Telegram message: the proposals, the Crítico's word on each, and the buttons."""
+    """The notice of the week (04/11: a result, never a question): what went into the agenda, what the agent is
+    redoing by itself and what was left out. No buttons."""
     ps = semana["propostas"]
     datas = sorted(p["data"] for p in ps)
     linhas = [f"*Semana de posts da @raiz.connect* ({_rotulo_dia(datas[0])} a {_rotulo_dia(datas[-1])}): "
-              f"{sum(p['formato_pedido'] != 'STORY' for p in ps)} no feed e {sum(p['formato_pedido'] == 'STORY' for p in ps)} stories"]
+              f"{sum(p['formato_pedido'] != 'STORY' for p in ps)} no feed e {sum(p['formato_pedido'] == 'STORY' for p in ps)} "
+              "stories. O Crítico decide; o que ele reprovou eu refaço sozinho."]
     for p in ps:
         v = p["critica"]["veredito"]
-        if p["problema"]:
-            critico = f"não dá para agendar: {_texto(p['problema'], 140)}"
-        elif v == "aprova":
-            critico = "Crítico aprovou"
-        elif v == "reprova":
-            critico = "*Crítico reprovou*: " + c().uma_linha(p["critica"]["motivos"], 140)
+        if p["estado"] in ESTADO_AVISO:
+            situacao = ESTADO_AVISO[p["estado"]] + (f" ({_texto(p.get('decisao') or p.get('erro'), 120)})"
+                                                    if p.get("decisao") or p.get("erro") else "")
+        elif v == "reprova" or p["problema"]:
+            situacao = "refazendo (Crítico: " + c().uma_linha(_motivos(p), 120) + ")"
         else:
-            critico = "sem revisão do Crítico (" + c().uma_linha(p["critica"]["motivos"], 100) + ")"
-        if p["formato_pedido"] == "STORY":
-            linhas.append(f"{p['n']}. *{_rotulo_dia(p['data'])}* · Story {p['hora']} · {p['titulo']}\n   {critico}")
-        else:
-            linhas.append(f"{p['n']}. *{_rotulo_dia(p['data'])}* · {NOME_TIPO.get(p['tipo'], '?')} · {p['titulo']}\n"
-                          f"   {_texto(p['legenda'], 110)}\n   {critico}"
-                          + (f"\n   🎧 Ouça a narração antes (me peça \"mostra a {p['n']}\"): o vídeo só é feito depois que "
-                             "você aprovar" if p.get("video") else ""))
-    k = len(_aprovaveis(semana))
-    linhas.append("Para ver a arte de uma, me peça (ex.: \"mostra a 3\"). Para aprovar só algumas, toque em Escolher "
-                  "ou responda com os números (ex.: \"aprovar 1, 3 e 5\")."
-                  + (" As reprovadas pelo Crítico só entram se você escolher pelo número." if k < len(ps) else ""))
-    login, sid = semana.get("login", "matheus"), semana["id"]
-    botoes = ([{"id": f"cs:{login}:{sid}:todas", "titulo": "✅ Aprovar todas" if k == len(ps) else f"✅ Aprovar {k} de {len(ps)}"}]
-              if k else [])
-    botoes += [{"id": f"cs:{login}:{sid}:algumas", "titulo": "☑️ Escolher"},
-               {"id": f"cs:{login}:{sid}:refazer", "titulo": "🔁 Refazer"}]
-    return "\n".join(linhas), botoes
+            situacao = "sem revisão do Crítico, não sai (" + c().uma_linha(p["critica"]["motivos"], 100) + ")"
+        tipo = "Story " + p["hora"] if p["formato_pedido"] == "STORY" else NOME_TIPO.get(p["tipo"] or p["formato_pedido"], "?")
+        linhas.append(f"{p['n']}. *{_rotulo_dia(p['data'])}* · {tipo} · {p['titulo']}: {situacao}")
+    return "\n".join(linhas), []
 
 
 def _numeros(valor) -> list[int] | None:
@@ -837,7 +1153,7 @@ def texto_aprovacao(semana: dict, agendados: list, recusados: list, gerando: lis
         linhas.append("Nada para agendar: as que sobraram foram reprovadas pelo Crítico ou não têm arquivo.")
     abertas = [str(p["n"]) for p in semana["propostas"] if p["estado"] == "proposta"]
     if abertas:
-        linhas.append("Ainda esperando você: " + ", ".join(abertas) + ".")
+        linhas.append("Ainda abertas (o agente refaz sozinho as reprovadas): " + ", ".join(abertas) + ".")
     return "\n".join(linhas)
 
 

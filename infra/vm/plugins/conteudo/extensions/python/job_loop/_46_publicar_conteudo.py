@@ -85,9 +85,16 @@ def _semana():
 
 def _conferir() -> None:
     """22/10, Matheus: "Se o crítico rejeita, automáticamente deveria ser refeito, e não logo antes de postar": the
-    advance check (conteudo.conferir_antes) with the agent's redo (semana.refazer_item), in its own thread."""
+    advance check (conteudo.conferir_antes) with the agent's redo (semana.refazer_item), in its own thread. 04/11 ("sem
+    depender de mim"): first one step of the autonomous week (semana.passo_autonomo: a reproved proposal redone, a new
+    idea, or the day left without it), and only when there is none, the advance check."""
     try:
-        r = _helper().conferir_antes(refazer=_semana().refazer_item, avisar=_avisar)
+        semana = _semana()
+        r = semana.passo_autonomo(avisar=_avisar_gestor)
+        if r:
+            print(f"conteudo: semana autônoma {r}", flush=True)
+            return
+        r = _helper().conferir_antes(refazer=semana.refazer_item, avisar=_avisar)
         if r:
             print(f"conteudo: conferência antecipada {r}", flush=True)
     except Exception as exc:

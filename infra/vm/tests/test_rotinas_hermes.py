@@ -59,6 +59,14 @@ for chave, uuid in (("prospeccao:buscar", "laMIuaPt"), ("prospeccao:executar", "
         if "skill `prospeccao-instagram`" == item:
             item = "prospeccao-instagram"
         checa(item in fontes[uuid]["pedido"], f"{uuid} ({chave}): a versão do Hermes perdeu «{item}»")
+# 04/11, Matheus: "eu não quero um agente para ficar esperando eu falar ... sem depender de mim": the content routines
+# create and let the Crítico decide; the end-of-day one fills a missing day through the Gestor instead of asking
+semana_posts, fechamento = fontes["4qfNuwRX"]["pedido"], fontes["Iq73JPEP"]["pedido"]
+checa("Você cria; o Crítico decide." in semana_posts and "o Matheus aprova" not in semana_posts
+      and "pelos botões" not in semana_posts and "Nunca pergunte a ele se aprova" in semana_posts,
+      "4qfNuwRX: o agente cria e o Crítico decide, sem o ok do Matheus")
+checa('`conteudo` acao "cobrir"' in fechamento and "sessão do Claude que cuida" not in fechamento
+      and "pedir o post" not in fechamento, "Iq73JPEP: dia sem post vai ao gestor, não ao Matheus nem à sessão do Claude")
 ap = (H / "rotinas_aplicar.py").read_text()
 checa("paused=True" in ap and "jobs.update_job(job_id, campos)" in ap and '"enabled"' not in ap.split("campos =")[1].split("}")[0],
       "rotina nova nasce pausada; atualizar não liga nem desliga")
