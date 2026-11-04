@@ -725,6 +725,18 @@ def passo_autonomo(agora: float | None = None, avisar=None, subir=None) -> dict 
         return None
     if esp is None:  # without the Crítico nothing is ever decided by itself
         return None
+    with open(_pasta() / "autonomo.lock", "a") as trava:  # never two steps at once (the job loop, an operator run)
+        try:
+            fcntl.flock(trava, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            return None
+        try:
+            return _passo_autonomo(esp, agora, avisar, subir)
+        finally:
+            fcntl.flock(trava, fcntl.LOCK_UN)
+
+
+def _passo_autonomo(esp, agora: float, avisar, subir) -> dict | None:
     nomes = sorted((x.stem for x in _pasta().glob("s*.json")), key=lambda n: (n.split("-")[0], int(n.split("-")[1])))
     for sid in nomes:
         semana = carregar(sid)

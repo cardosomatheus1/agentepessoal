@@ -943,6 +943,14 @@ class Suite:
         ok(len(avisos) == 2 and all(b is None for _, b in avisos) and avisos[0][0].startswith("🧭 Conteúdo: refiz o carrossel de sex 30/10")
            and "agendado para sex 30/10 às 11:45" in avisos[0][0], f"só o aviso do resultado: {avisos}")
         ok(s.carregar("s20261026-1")["estado"] == "aprovada", "a semana fecha sozinha")
+        # never two steps at once (the job loop and an operator run)
+        c2, s2, _ = self._semana()
+        s2.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
+        import fcntl
+        with open(s2._pasta() / "autonomo.lock", "a") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            ok(s2.passo_autonomo(agora + 600, avisar=lambda t: None) is None, "outro passo rodando: este espera a vez")
+        ok(s2.passo_autonomo(agora + 600, avisar=lambda t: None)["n"] == 3, "solto, anda")
 
     def t_autonomo_depois_de_n_falhas_decide_sem_perguntar(self):
         c, s, chamadas = self._semana(reprovar=tuple([3] + list(range(5, 60))))  # the carrossel never passes
