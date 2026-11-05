@@ -35,6 +35,30 @@ def _modulo():
     return m
 
 
+POV = {"legenda_antes": "POV: eu tentando descobrir quanto custa a minha pizza de calabresa",
+       "antes": {"titulo": "Custo pizza calabresa", "linhas": ["massa ... uns 2 reais?", "mussarela 300g x ??", "= R$ ??????"]},
+       "legenda_depois": "a Raiz já sabe",
+       "depois": {"rotulo": "Ficha técnica", "titulo": "Pizza de calabresa",
+                  "linhas": [["Massa (1 disco)", "R$ 1,90"], ["Mussarela 300 g", "R$ 8,10"]],
+                  "cartoes": [["Custo", "R$ 18,06"], ["Preço", "R$ 54,90"]],
+                  "destaque": {"rotulo": "Sobra", "valor": "R$ 36,84", "nota": "67% de cada pizza"}},
+       "meme": {"busca": "nazare confusa"}}
+
+
+def _meme_real():
+    spec = importlib.util.spec_from_file_location("meme_teste", RAIZ / "helpers" / "meme.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def _story():
+    spec = importlib.util.spec_from_file_location("story_teste_meme", RAIZ / "helpers" / "story.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
 def _ts(c, data: str, hora: str) -> float:
     return dt.datetime.fromisoformat(f"{data}T{hora}:00").replace(tzinfo=c._tz()).timestamp()
 
@@ -584,13 +608,16 @@ class Suite:
 
     # ------------------------------------------------------------------ the week (helpers/semana.py) and the gate
 
-    def _semana(self, esp="falso", reprovar=(3,), quebrar=(), video_pendente=False):
-        """semana.py over a fresh conteudo, with a fake Designer/Crítico (or none) and local art files on disk."""
+    def _semana(self, esp="falso", reprovar=(3,), quebrar=(), video_pendente=False, humor=False):
+        """semana.py over a fresh conteudo, with a fake Designer/Crítico (or none) and local art files on disk.
+        humor=False: the weekly humor post (05/11) is not required, for the tests about the rest of the week."""
         c = _modulo()
         spec = importlib.util.spec_from_file_location("semana_teste", RAIZ / "helpers" / "semana.py")
         s = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(s)
         s._C["fixo"] = c
+        if not humor:
+            s.SEMANAS_COM_HUMOR = 99
         # 04/11: propor() schedules what the Crítico approved by itself: no S3 and no background render in a test
         s._subir_pelo_proxy = lambda local, chave: None
         s.iniciar_video = lambda sid, n, popen=None: None
@@ -639,6 +666,7 @@ class Suite:
             CAMPOS = ("layout", "manchete", "destaque", "texto", "chamada", "tela", "pergunta", "itens", "imagem")
             PASTA = RAIZ / "story"
             validar = staticmethod(lambda campos: "" if campos.get("layout") else "layout")
+            _chrome = staticmethod(lambda: "")
 
             @staticmethod
             def renderizar(campos, saida):
@@ -648,14 +676,31 @@ class Suite:
                 Path(saida).write_bytes(b"\xff\xd8\xff story")
                 return saida
         s._S["fixo"] = StoryFalso
+        meme = _meme_real()
+        povs = []
+
+        class MemeFalso:  # helpers/meme.py downloads from Tenor and draws with a browser; here the files are enough
+            validar = staticmethod(meme.validar)
+
+            @staticmethod
+            def montar(pov, saida, chrome="", baixar=None):
+                povs.append(pov)
+                saida = Path(saida)
+                saida.mkdir(parents=True, exist_ok=True)
+                for nome in ("pov.mp4", "quadro-1.jpg", "quadro-2.jpg", "capa.jpg"):
+                    (saida / nome).write_bytes(b"\xff\xd8\xff pov")
+                q = [str(saida / x) for x in ("quadro-1.jpg", "quadro-2.jpg", "capa.jpg")]
+                return {"video": str(saida / "pov.mp4"), "capa": q[-1], "quadros": q, "meme": "https://media.tenor.com/x/meme.mp4"}
+        s._C["meme"] = MemeFalso
+        s._povs = povs
         return c, s, chamadas
 
     @staticmethod
-    def _feed():
+    def _feed(humor=False):
         formatos = ["CARROSSEL", "REELS", "CARROSSEL", "REELS"]
         return [{"titulo": f"Post {n}", "formato": f, "ideia": f"gancho {n}",
                  "legenda": f"Quanto custa de verdade a sua marmita? Post {n}, com valores de exemplo.",
-                 **({"tom": "humor"} if n == 2 else {})}
+                 **({"tom": "humor", "pov": dict(POV)} if humor and n == 4 else {})}
                 for n, f in enumerate(formatos, start=1)]
 
     @staticmethod
@@ -663,19 +708,73 @@ class Suite:
         layouts = ["post-novo", "video-novo", "bastidor", "post-novo", "oferta", "video-novo", "dica"]
         return [{"layout": l, "manchete": f"Story {n}"} for n, l in enumerate(layouts, start=1)]
 
+    def t_meme_pov_com_o_meme_dentro(self):
+        # 05/11, Matheus: "Falei p ter o meme e etc": the humor Reel comes with the meme inside, and with sound
+        m = _meme_real()
+        ok(m.validar(POV) == "", m.validar(POV))
+        ok("meme" in m.validar(dict(POV, meme={"busca": ""})), "sem busca do meme, não")
+        ok("travessão" in m.validar(dict(POV, legenda_depois="a Raiz — já sabe")), "travessão, não")
+        ok("emoji" in m.validar(dict(POV, legenda_antes="POV: eu \U0001F602")), "emoji, não")
+        ok("linhas" in m.validar(dict(POV, antes={"titulo": "x", "linhas": ["só uma"]})), "o caderno tem de 2 a 8 linhas")
+        pagina = ('<img src="https://media.tenor.com/q07DHKhjEBQAAAAM/nazare.gif"><img src="https://media1.tenor.com/'
+                  '3-aEYf-wbZcAAAAM/x.gif"><img src="https://media.tenor.com/q07DHKhjEBQAAAAM/de-novo.gif">')
+        pedidos = []
+
+        def baixar(url, timeout=30):
+            pedidos.append(url)
+            return pagina.encode() if "search" in url else b"\x00" * 20_000
+        ok(m.opcoes_do_meme("nazare confusa!", baixar) == ["https://media.tenor.com/q07DHKhjEBQAAAPo/meme.mp4",
+                                                           "https://media.tenor.com/3-aEYf-wbZcAAAPo/meme.mp4"]
+           and pedidos[0] == "https://tenor.com/pt-BR/search/nazare-confusa-gifs",
+           f"a busca do Tenor vira os mp4 dos primeiros resultados, sem repetir: {pedidos}")
+        destino = Path(tempfile.mkdtemp()) / "m.mp4"
+        ok(m.buscar_meme("nazare confusa", destino, 1, baixar).startswith("https://media.tenor.com/3-aEYf")
+           and destino.stat().st_size == 20_000, "o índice escolhe outro meme da mesma busca (para refazer)")
+        try:
+            m.buscar_meme("nada", destino, 0, lambda url, timeout=30: b"<html>sem nada</html>")
+            ok(False, "sem resultado tinha de dar erro")
+        except ValueError as exc:
+            ok("não achou meme" in str(exc), str(exc))
+        import shutil as sh
+        import subprocess as sp
+        import wave
+        wav = m.som(Path(tempfile.mkdtemp()) / "s.wav")
+        with wave.open(str(wav)) as w:
+            ok(abs(w.getnframes() / w.getframerate() - m.DURACAO) < 0.01, "o som tem a duração do vídeo")
+        st = _story()
+        if not (st._chrome() and sh.which("ffmpeg")):
+            return  # without a browser and ffmpeg the video itself is checked on the VM
+        clipe = Path(tempfile.mkdtemp()) / "clipe.mp4"
+        sp.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=size=480x270:rate=24:duration=2",
+                "-pix_fmt", "yuv420p", str(clipe)], check=True)
+        saida = Path(tempfile.mkdtemp()) / "pov"
+        r = m.montar(POV, saida, chrome=st._chrome(),
+                     baixar=lambda url, timeout=30: pagina.encode() if "search" in url else clipe.read_bytes())
+        info = json.loads(sp.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,width,height:format=duration",
+                                  "-of", "json", r["video"]], capture_output=True, text=True, check=True).stdout)
+        tipos = {x["codec_type"]: x for x in info["streams"]}
+        ok(set(tipos) == {"video", "audio"} and tipos["video"]["width"] == 1080 and tipos["video"]["height"] == 1920
+           and abs(float(info["format"]["duration"]) - m.DURACAO) < 0.2, f"Reel 1080x1920, 11,5 s, com som: {info}")
+        from PIL import Image
+        with Image.open(r["quadros"][0]) as q1:
+            ok(q1.getpixel((m.MEME_X + 300, m.MEME_Y + 100)) != q1.getpixel((m.MEME_X + 300, m.MEME_Y + 700)),
+               "no segundo 2 o meme está por cima do caderno")
+        ok(len(r["quadros"]) == 3 and r["capa"].endswith("capa.jpg") and Path(r["capa"]).is_file(), r)
+
     def t_semana_propoe_4_no_feed_e_7_stories(self):
         # 22/10, Matheus: "4 por semana, 2 carrosseis e 2 videos e story sim todo dia"
-        c, s, chamadas = self._semana()
+        c, s, chamadas = self._semana(humor=True)
         enviados = []
         agora = _ts(c, "2026-10-26", "07:50")  # a Monday
-        r = s.propor(self._feed(), agora, enviar=lambda login, texto, botoes: enviados.append((login, texto, botoes)) or "",
+        r = s.propor(self._feed(humor=True), agora, enviar=lambda login, texto, botoes: enviados.append((login, texto, botoes)) or "",
                      stories=self._stories())
         ok(r["ok"] and r["semana"] == "s20261026-1" and r["enviada"], r)
-        ok(len(chamadas) == 4 and all(b["marca"] == "raiz" and "emoji" in b["regras"] for b in chamadas),
+        ok(all(b["marca"] == "raiz" and "emoji" in b["regras"] for b in chamadas),
            "só o feed vai ao Designer, com as regras da Raiz")
-        # 05/11, Matheus: "pelo menos 1 por semana com tom de humor": the humor post goes to the Designer as such
-        ok([b.get("tom") for b in chamadas] == [None, "humor", None, None] and "cultura pop" in chamadas[1]["regras"]
-           and "cultura pop" not in chamadas[0]["regras"], "o post de humor vai ao Designer com o jeito do humor")
+        # 05/11, Matheus: "pelo menos 1 por semana com tom de humor" / "Falei p ter o meme": the humor Reel is made here,
+        # with the meme inside, and the Designer only draws the other three
+        ok(len(chamadas) == 3 and all(b.get("tom") is None for b in chamadas), "o Designer desenha só os outros 3")
+        ok(s._povs == [POV], "o Reel de humor sai do gerador de meme com o roteiro da rotina")
         ps = s.carregar("s20261026-1")["propostas"]
         feed = [(p["data"], p["tipo"], p["hora"]) for p in ps[:4]]
         ok(feed == [("2026-10-27", "CARROSSEL", "11:45"), ("2026-10-28", "REELS", "11:45"),
@@ -698,17 +797,30 @@ class Suite:
            f"o que o Crítico aprovou foi para a agenda: {r['agendados']}")
         ok([p["estado"] for p in s.carregar("s20261026-1")["propostas"] if p["n"] in (3, 8)] == ["proposta", "proposta"],
            "as reprovadas ficam abertas para o agente refazer")
-        ok(s.carregar("s20261026-1")["propostas"][1].get("tom") == "humor", "o tom fica guardado para refazer igual")
-        c2, s2, _ = self._semana()
-        sem_humor = [{k: v for k, v in p.items() if k != "tom"} for p in self._feed()]
+        humor = s.carregar("s20261026-1")["propostas"][3]
+        # reproved: the humor Reel is redone with the next meme of the same search, still a humor Reel
+        refeito = s._refazer_feed(c.especialistas(), "s20261026-1", humor, nova=False)
+        ok(s._povs[-1]["meme"] == {"busca": "nazare confusa", "indice": 1} and refeito.get("tom") == "humor"
+           and refeito["arquivos"][0].endswith("pov.mp4"), f"refazer troca o meme e continua humor: {s._povs[-1]}")
+        ok(humor.get("tom") == "humor" and humor.get("pov") == POV and humor["tipo"] == "REELS"
+           and humor["arquivos"][0].endswith("pov.mp4") and humor["capa"].endswith("capa.jpg"),
+           f"o Reel de humor vai com o vídeo e a capa, e o roteiro fica guardado para refazer: {humor}")
+        c2, s2, _ = self._semana(humor=True)
+        sem_humor = [{k: v for k, v in p.items() if k != "tom"} for p in self._feed(humor=True)]
         erro = s2.propor(sem_humor, agora, enviar=lambda *a: "", stories=self._stories())["erro"]
         ok("1 post de humor" in erro and not s2.ultima(), f"semana sem humor é recusada e nada é gravado: {erro}")
-        ok(not s2.propor(self._feed()[:3], agora, enviar=lambda *a: "", stories=self._stories())["ok"], "menos de 4 no feed é recusado")
-        tres = [dict(p, formato="CARROSSEL") for p in self._feed()]
+        carrossel = [dict(p, tom="humor") if p["formato"] == "CARROSSEL" else p for p in sem_humor]
+        erro = s2.propor(carrossel, agora, enviar=lambda *a: "", stories=self._stories())["erro"]
+        ok("é um Reel" in erro, f"o post de humor é um Reel: {erro}")
+        sem_meme = [dict(p, pov=dict(POV, meme={})) if p.get("tom") else p for p in self._feed(humor=True)]
+        erro = s2.propor(sem_meme, agora, enviar=lambda *a: "", stories=self._stories())["erro"]
+        ok("meme" in erro, f"sem meme, a semana volta com o motivo: {erro}")
+        ok(not s2.propor(self._feed(humor=True)[:3], agora, enviar=lambda *a: "", stories=self._stories())["ok"], "menos de 4 no feed é recusado")
+        tres = [dict(p, formato="CARROSSEL") for p in self._feed(humor=True)]
         erro = s2.propor(tres, agora, enviar=lambda *a: "", stories=self._stories())["erro"]
         ok("4 vaga(s) no feed" in erro and "ter 27/10 Carrossel" in erro and "qua 28/10 Reel" in erro, f"a mistura segue as vagas: {erro}")
-        ok(not s2.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories()[:5])["ok"], "7 stories")
-        erro = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())["erro"]
+        ok(not s2.propor(self._feed(humor=True), agora, enviar=lambda *a: "", stories=self._stories()[:5])["ok"], "7 stories")
+        erro = s.propor(self._feed(humor=True), agora, enviar=lambda *a: "", stories=self._stories())["erro"]
         ok("1 vaga(s) no feed (sex 30/10 Carrossel)" in erro, f"o que já foi agendado sozinho não volta à proposta: {erro}")
 
     def t_semana_sem_critico_nao_aprova_sozinha(self):

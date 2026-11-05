@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Cav'; src: url('../story/kit/caveat-latin.woff2') format('woff2'); }
+@font-face { font-family: 'Man'; src: url('../story/kit/manrope-latin-variable.woff2') format('woff2'); font-weight: 400 800; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { width: 1080px; height: 1920px; overflow: hidden; font-family: 'Man', Arial, sans-serif; position: relative;
+  background:
+    repeating-linear-gradient(92deg, rgba(0,0,0,.035) 0 3px, transparent 3px 11px),
+    repeating-linear-gradient(88deg, rgba(255,255,255,.05) 0 2px, transparent 2px 23px),
+    linear-gradient(180deg, #a77c55 0%, #956b46 45%, #a07550 100%); }
+body::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, transparent 40%, rgba(40,22,8,.35) 100%); }
+.celular { position: absolute; left: 50%; top: 400px; width: 700px; height: 1430px; margin-left: -350px; border-radius: 96px; background: #111;
+  padding: 22px; box-shadow: 0 60px 90px rgba(30,15,5,.55), inset 0 0 0 3px #2a2a2a; z-index: 2; }
+.tela { position: relative; width: 100%; height: 100%; border-radius: 76px; overflow: hidden; background: #f5f2e9; }
+.ilha { position: absolute; top: 22px; left: 50%; width: 190px; height: 54px; margin-left: -95px; border-radius: 30px; background: #000; z-index: 5; }
+.status { position: absolute; top: 30px; left: 60px; right: 60px; display: flex; justify-content: space-between; font-size: 30px; font-weight: 700; z-index: 4; }
+.pagina { position: absolute; inset: 0; padding: 120px 44px 40px; }
+.caderno { background: #fffdf3; background-image: repeating-linear-gradient(180deg, transparent 0 66px, #c9dcef 66px 68px); }
+.caderno .t { font-size: 34px; font-weight: 800; color: #1c1c1c; margin-bottom: 30px; }
+.mao { font-family: 'Cav', cursive; color: #233a8a; font-size: 52px; line-height: 68px; }
+.mao .q { color: #c0392b; }
+.raiz { background: #f5f2e9; color: #182b23; }
+.raiz img { height: 58px; margin-bottom: 26px; }
+.rot { font-size: 22px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #58665e; }
+.raiz h2 { font-size: 50px; font-weight: 800; letter-spacing: -.02em; margin: 6px 0 24px; line-height: 1.05; }
+.ing { background: #fdfbf6; border: 2px solid #d9d5c7; border-radius: 26px; padding: 8px 26px; }
+.ing div { display: flex; justify-content: space-between; gap: 16px; font-size: 30px; padding: 17px 0; border-bottom: 1.5px solid #ece8dc; }
+.ing div:last-child { border-bottom: 0; }
+.ing span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tot { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.k { background: #fdfbf6; border: 2px solid #d9d5c7; border-radius: 22px; padding: 18px 22px; }
+.k p { font-size: 22px; font-weight: 700; color: #58665e; }
+.k b { display: block; margin-top: 6px; font-size: 42px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.dest { margin-top: 16px; background: #27613c; color: #f5f7ed; border-radius: 26px; padding: 24px 26px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.dest p { font-size: 26px; font-weight: 800; color: #c8f17a; letter-spacing: .06em; text-transform: uppercase; }
+.dest b { font-size: 58px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.dest small { display: block; font-size: 24px; color: #cfe3c5; font-weight: 600; text-align: right; }
+.exemplo { margin-top: 14px; font-size: 20px; color: #58665e; text-align: center; }
+.legenda { position: absolute; left: 70px; right: 70px; z-index: 6; text-align: center; font-size: 66px; line-height: 1.12; font-weight: 800;
+  color: #ffe14d; letter-spacing: -.01em;
+  text-shadow: -4px -4px 0 #111, 4px -4px 0 #111, -4px 4px 0 #111, 4px 4px 0 #111, 0 5px 0 #111, 0 -5px 0 #111, 5px 0 0 #111, -5px 0 0 #111; }
+</style></head>
+<body>
+<div class="celular"><div class="tela">
+  <div class="ilha"></div>
+  <div class="status"><span>19:45</span><span>5G ▮▮▮</span></div>
+  <div class="pagina caderno" id="caderno"><div class="t" id="at"></div><div class="mao" id="al"></div></div>
+  <div class="pagina raiz" id="raiz">
+    <img src="../story/kit/rc-logo-light-v26.png" alt="">
+    <div class="rot" id="dr"></div>
+    <h2 id="dt"></h2>
+    <div class="ing" id="dl"></div>
+    <div class="tot" id="dk"></div>
+    <div class="dest" id="dd"><p id="ddr"></p><div><b id="ddv"></b><small id="ddn"></small></div></div>
+    <div class="exemplo">valores de exemplo</div>
+  </div>
+</div></div>
+<div class="legenda" id="leg"></div>
+<script>
+const C = window.CAMPOS || {};
+const T = (id, s) => { document.getElementById(id).textContent = s || ''; };
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+const A = C.antes || {}, D = C.depois || {};
+T('at', A.titulo);
+for (const linha of A.linhas || []) {          // "?" in red, the rest as handwriting
+  const d = el('div');
+  for (const parte of String(linha).split(/(\?+)/)) d.appendChild(parte.startsWith('?') ? el('span', 'q', parte) : document.createTextNode(parte));
+  document.getElementById('al').appendChild(d);
+}
+T('dr', D.rotulo); T('dt', D.titulo);
+for (const [r, v] of D.linhas || []) { const d = el('div'); d.appendChild(el('span', '', r)); d.appendChild(el('span', '', v)); document.getElementById('dl').appendChild(d); }
+if (!(D.linhas || []).length) document.getElementById('dl').style.display = 'none';
+for (const [r, v] of D.cartoes || []) { const k = el('div', 'k'); k.appendChild(el('p', '', r)); k.appendChild(el('b', '', v)); document.getElementById('dk').appendChild(k); }
+if (!(D.cartoes || []).length) document.getElementById('dk').style.display = 'none';
+const X = D.destaque || {};
+if (X.valor) { T('ddr', X.rotulo); T('ddv', X.valor); T('ddn', X.nota); } else document.getElementById('dd').style.display = 'none';
+const ease = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+window.TROCA = 5.2;
+window.quadro = (t) => {
+  const cad = document.getElementById('caderno'), rz = document.getElementById('raiz'), leg = document.getElementById('leg');
+  document.querySelector('.celular').style.transform = `rotate(${-2 + Math.sin(t * 0.6) * 0.4}deg) translateY(${Math.sin(t * 0.9) * 4}px)`;
+  const p = ease((t - TROCA) / 0.45);
+  cad.style.transform = `translateX(${-p * 100}%)`;
+  rz.style.transform = `translateX(${(1 - p) * 100}%)`;
+  const antes = t < TROCA;
+  const s = ease((t - (antes ? 0.1 : TROCA + 0.2)) / 0.25);
+  leg.textContent = antes ? C.legenda_antes : C.legenda_depois;
+  leg.style.opacity = s;
+  leg.style.transform = `scale(${0.85 + 0.15 * s})`;
+  leg.style.top = antes ? '120px' : '190px';
+};
+quadro(0);
+</script>
+</body></html>

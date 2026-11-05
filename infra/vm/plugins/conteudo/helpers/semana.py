@@ -63,10 +63,10 @@ REGRAS = ("A Raiz Connect é sistema de gestão para food service, com pedidos d
 HUMOR = ("POST DE HUMOR (Matheus, 05/11): a dor séria do dono de comida (não saber o custo do prato, estoque sumindo, "
          "fim do mês sem saber o lucro) dita como piada de identificação, com uma referência da cultura pop que todo "
          "brasileiro reconhece em 1 segundo (novela, filme, Chaves, Nazaré fazendo conta, Seu Madruga, Faustão "
-         "\"errou\", BBB). Formato POV: o celular com a tela da Raiz, legenda curta em cima (\"POV: eu tentando ...\") "
-         "e a virada \"a Raiz já sabe\". O recorte do meme não vai no arquivo: deixe espaço livre na tela e diga na "
-         "ideia qual meme entra, onde e em que segundo, para o Matheus pôr no CapCut ou nas figurinhas do Instagram. "
-         "Humor leve, nunca debochando do cliente. As outras regras valem igual.")
+         "\"errou\", BBB). Formato POV: o celular com o caderno no chute e o meme por cima, a legenda \"POV: eu "
+         "tentando ...\" e a virada para a tela da Raiz com \"a Raiz já sabe\". O meme vai DENTRO do vídeo (Matheus, "
+         "05/11: \"Falei p ter o meme\"); julgue o vídeo pelos quadros. Humor leve, nunca debochando do cliente. As "
+         "outras regras valem igual.")
 SEMANAS_COM_HUMOR = 2  # with 2 or more feed slots free, at least one proposal must have "tom": "humor"
 
 _C: dict = {}
@@ -452,9 +452,35 @@ def _humor(p: dict) -> bool:
     return str(p.get("tom") or "").strip().lower() == "humor"
 
 
+def _meme():
+    if "meme" not in _C:
+        spec = importlib.util.spec_from_file_location("conteudo_meme", Path(__file__).resolve().parent / "meme.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        _C["meme"] = m
+    return _C["meme"]
+
+
+def _pov(esp, briefing: dict, pov: dict, saida: Path) -> dict:
+    """The humor Reel made here (meme.py: the meme inside the video, with sound) and judged by the Crítico by its
+    frames. A POV that cannot be made (no meme found, a rule broken) comes back reproved with the reason."""
+    try:
+        m = _meme().montar(pov, saida, chrome=story()._chrome())  # the same Chrome that draws the stories
+    except Exception as exc:
+        motivo = str(exc) if isinstance(exc, ValueError) else f"o vídeo de meme não saiu ({type(exc).__name__}: {str(exc)[:120]})"
+        return {"spec": {"pov": pov}, "arquivos": [], "falta": [motivo],
+                "critica": {"veredito": "reprova", "motivos": [motivo], "sugestoes": []}}
+    critica = esp.criticar("post", {"briefing": dict(briefing, meme=m["meme"]), "imagens": m["quadros"],
+                                    "quadros": ["2 s: o caderno no chute com o meme", "5 s: a virada para a Raiz",
+                                                "10 s: a tela da Raiz (a capa)"]})
+    return {"spec": {"pov": pov, "meme": m["meme"]}, "arquivos": [m["video"], m["capa"]], "critica": critica}
+
+
 def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict, desenho=None) -> dict:
-    """One feed proposal of the week, drawn by the Designer and judged by the Crítico."""
+    """One feed proposal of the week, drawn by the Designer and judged by the Crítico (the humor Reel: made here)."""
     briefing = _briefing(formato, dia, p)
+    if desenho is None and esp is not None and _humor(p) and isinstance(p.get("pov"), dict):
+        desenho = lambda: _pov(esp, briefing, p["pov"], _pasta() / sid / f"pov-{n}")  # noqa: E731
     d = _desenhar(esp, briefing, p, desenho)
     if nota:
         d["critica"]["motivos"] = [nota] + d["critica"]["motivos"]
@@ -472,7 +498,7 @@ def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict
         problema = c().validar_legenda(legenda)
     return {"n": n, "id": f"{sid}-{n}", "data": dia, "hora": str(p.get("hora") or HORA), "titulo": briefing["titulo"],
           "ideia": briefing["ideia"], "formato_pedido": formato, "tipo": tipo, "arquivos": arquivos,
-          **({"tom": "humor"} if _humor(p) else {}),
+          **({"tom": "humor"} if _humor(p) else {}), **({"pov": p["pov"]} if isinstance(p.get("pov"), dict) else {}),
           "capa": capa, "legenda": legenda, "spec": d["spec"], "critica": d["critica"],
           "problema": problema, "estado": "proposta",
           **({"video": {"estado": "aguardando_aprovacao", "molde": d["spec"].get("molde"),
@@ -537,6 +563,12 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
                                      f"cada (vieram {len(stories)})"}
     if not vagas and not dias_story:
         return {"ok": False, "erro": "a semana que vem já está toda agendada"}
+    for p in propostas:
+        if _humor(p):
+            erro = ("o post de humor é um Reel (formato REELS)" if str(p.get("formato") or "").upper() != "REELS"
+                    else _meme().validar(p.get("pov")))
+            if erro:
+                return {"ok": False, "erro": f"post de humor \"{_texto(p.get('titulo'), 60)}\": {erro}"}
     if len(vagas) >= SEMANAS_COM_HUMOR and not any(_humor(p) for p in propostas):
         return {"ok": False, "erro": "a semana precisa de pelo menos 1 post de humor (Matheus, 05/11): marque uma das "
                                      "propostas com \"tom\": \"humor\" (POV com meme da cultura pop, ex.: Nazaré "
@@ -674,6 +706,9 @@ def _refazer_feed(esp, sid: str, p: dict, nova: bool) -> dict:
     briefing = _briefing(p["formato_pedido"], p["data"], p)
     motivos = "; ".join(_motivos(p))[:900]
     spec = p.get("spec") or {}
+    if isinstance(p.get("pov"), dict) and not nova:  # the humor Reel again, with the next meme of the same search
+        pov = dict(p["pov"], meme=dict(p["pov"]["meme"], indice=int(p["pov"]["meme"].get("indice") or 0) + 1))
+        return _item_feed(esp, "", sid, p["n"], p["formato_pedido"], p["data"], dict(p, pov=pov, hora=p["hora"]))
     if nova:
         ideia = (f"Ideia NOVA para a vaga de {NOME_TIPO[p['formato_pedido']]} de {_rotulo_dia(p['data'])}: um assunto "
                  f"diferente de \"{p['titulo']}\", que o Crítico reprovou ({motivos}). Plano: gestão (pedido do iFood e da "
