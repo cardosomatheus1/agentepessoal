@@ -148,6 +148,29 @@ checa("§§secret(IG_SENHA)" in (cf.resultado_mascarado(tool_name="x", result="v
       "uma dica com erro não derruba a máscara")
 cf.DEPOIS.pop()
 
+# 05/11 20:19: erro DENTRO da ferramenta (o Hermes embrulha em _DownstreamExecutionError) volta como erro para o modelo,
+# sem derrubar a conversa; outra exceção (controle do Hermes) continua subindo.
+class _DownstreamExecutionError(Exception):
+    pass
+def _quebra(_a):
+    try:
+        raise AttributeError("'str' object has no attribute 'get'")
+    except AttributeError as e:
+        raise _DownstreamExecutionError(e) from e
+r = cf.executar(tool_name="memory", args={"operations": "[{...}"}, next_call=_quebra, session_id="s1")
+checa(isinstance(r, str) and "memory falhou" in r and "AttributeError" in r, f"erro da ferramenta vira resultado ({r})")
+r = cf.executar(tool_name="terminal", args={"command": "§§secret(IG_SENHA)"}, next_call=_quebra, session_id="s1")
+checa(isinstance(r, str) and "terminal falhou" in r, f"também no caminho com cofre ({r})")
+class _Interrompido(Exception):
+    pass
+def _interrompe(_a):
+    raise _Interrompido()
+try:
+    cf.executar(tool_name="memory", args={}, next_call=_interrompe, session_id="s1")
+    checa(False, "exceção de controle não pode ser engolida")
+except _Interrompido:
+    pass
+
 if falhas:
     print("test_cofre_hermes: FALHOU\n- " + "\n- ".join(falhas))
     sys.exit(1)

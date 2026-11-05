@@ -155,13 +155,31 @@ def _registrar(login: str, ferramenta: str, usados: list, sessao: str) -> None:
         log.warning("cofre: uso não registrado no livro: %s: %s", type(exc).__name__, exc)
 
 
+def _chamar(next_call, args, tool_name):
+    """A ferramenta de baixo, sem derrubar a conversa (05/11, 20:19: o modelo mandou `memory.operations` como texto
+    quebrado, a ferramenta de memória estourou `'str' object has no attribute 'get'` e o erro subiu pela cadeia de
+    middlewares até o laço da conversa, que encerrou o turno no meio — o Matheus viu o agente "todo atrapalhado").
+    Só o erro DA FERRAMENTA (`_DownstreamExecutionError` do Hermes) vira resultado de erro para o modelo corrigir e
+    tentar de novo; qualquer outra exceção (interrupção, aprovação, controle do próprio Hermes) segue subindo."""
+    try:
+        return next_call(args)
+    except Exception as exc:
+        if type(exc).__name__ != "_DownstreamExecutionError":
+            raise
+        causa = exc.__cause__ or exc
+        log.warning("ferramenta %s falhou e voltou como erro para o modelo: %s: %s", tool_name, type(causa).__name__, causa)
+        return json.dumps({"error": f"A ferramenta {tool_name} falhou: {type(causa).__name__}: {str(causa)[:300]}. "
+                                    "Confira os argumentos (listas e objetos vão como JSON de verdade, não como texto) "
+                                    "e tente de novo."}, ensure_ascii=False)
+
+
 def executar(tool_name="", args=None, next_call=None, **kw):
     """Middleware `tool_execution`."""
     if not isinstance(args, dict) or "§§secret(" not in json.dumps(args, ensure_ascii=False, default=str):
-        return _esconder(next_call(args), kw)
+        return _esconder(_chamar(next_call, args, tool_name), kw)
     c = cofre()
     if tool_name not in ACAO:
-        return _esconder(next_call(_so_nomes(args, c)), kw)
+        return _esconder(_chamar(next_call, _so_nomes(args, c), tool_name), kw)
     if not _login(kw):
         return json.dumps({"error": "Esta conversa não está ligada a uma pessoa, então não há cofre para usar aqui. "
                                     "Peça a senha pelo canal da pessoa (Telegram/WhatsApp) ou rode a tarefa na conversa dela."},
@@ -177,7 +195,7 @@ def executar(tool_name="", args=None, next_call=None, **kw):
             ensure_ascii=False)
     _registrar(_login(kw), tool_name, pedidos, str(kw.get("session_id") or kw.get("task_id") or ""))
     # o do dono primeiro, depois o de todos: juntar os dois num dict perderia o valor de outra pessoa com o mesmo nome
-    resultado = _esconder(next_call(c.trocar(args, dados)), kw)
+    resultado = _esconder(_chamar(next_call, c.trocar(args, dados), tool_name), kw)
     if isinstance(resultado, str) and pedidos:
         resultado += AVISO_USO.format(nomes=", ".join(f"{n} ({len(dados[n])} caracteres)" for n in pedidos))
     return resultado
