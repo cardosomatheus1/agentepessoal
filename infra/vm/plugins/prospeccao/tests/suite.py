@@ -2714,6 +2714,13 @@ class Suite:
         fonte = (RAIZ / "tools" / "prospeccao.py").read_text(encoding="utf-8")
         ok("_ler_direct_da_tela(self.agent.context.id)" in fonte and "p.SCRIPT_DIRECT" not in fonte.split("acao == \"direct_script\"")[1][:400],
            "sem `dados` válidos a ferramenta roda o script na aba; direct_script não manda mais copiar o JSON")
+        # 30/10-04/11 (11×): navigate na caixa -> ler_direct (o script troca Principal/Geral/Solicitações e rola a lista)
+        # -> browser_click na ref de antes: "Could not locate element with role=button name=user-profile-picture
+        # CostaFit | Comida Saudável Congelada 4 minutes ago Unread"; só a 2ª tentativa, depois de ler a tela, acertava
+        ok("browser_snapshot" in p.LISTA_REFEITA and "refs" in p.LISTA_REFEITA and "Geral" in p.LISTA_REFEITA,
+           f"o aviso diz que a lista foi refeita e manda ler a tela de novo: {p.LISTA_REFEITA}")
+        trecho = fonte.split('if acao == "ler_direct":')[1].split('if acao == "falha":')[0]
+        ok(trecho.count("p.LISTA_REFEITA") >= 2, "toda resposta do ler_direct que segue a rodada leva o aviso")
 
     def t_varredura_do_direct(self):
         p = self.p

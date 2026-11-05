@@ -772,6 +772,13 @@ SCRIPT_DIRECT = """(async () => {
 })()"""
 
 
+# 30/10-04/11: the script above switches Principal/Geral/Solicitações and scrolls each list, so Instagram rebuilds the
+# list and every ref of the screen read before it is gone; the first click on a conversation failed 11× ("Could not
+# locate element with role=button name=…") and only the retry, after reading the screen again, worked.
+LISTA_REFEITA = ("⚠️ A leitura trocou as abas da caixa (Principal, Geral, Solicitações) e rolou a lista: as refs da tela de "
+                 "antes não valem mais. Antes de clicar numa conversa, rode `browser_snapshot` e use a ref nova.")
+
+
 def json_de_caixa(dados) -> bool:
     """True when what the agent passed is the Direct list itself (a JSON object), not empty, cut or a placeholder."""
     if isinstance(dados, dict):

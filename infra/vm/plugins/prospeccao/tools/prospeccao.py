@@ -631,7 +631,7 @@ class Prospeccao(Tool):
             resumo = (f"{out['conversas']} conversas lidas na lista; respostas novas de leads: "
                       + (", ".join("@" + n["handle"] for n in out["novas"]) or "nenhuma"))
             if "abrir" not in out:  # the old API shape
-                return r(json.dumps(out, ensure_ascii=False) + f"\nUse em `caixa_lida` → direct: \"{resumo}\". Para cada resposta nova, "
+                return r(p.LISTA_REFEITA + "\n" + json.dumps(out, ensure_ascii=False) + f"\nUse em `caixa_lida` → direct: \"{resumo}\". Para cada resposta nova, "
                          "proponha a `resposta` pelo playbook (o revisor confere). O Matheus JÁ foi avisado; chame `etapa` só se a "
                          "fala pede outra etapa (lead, demo, descartado).")
             linhas = [resumo + (" (VARREDURA COMPLETA registrada: a lista mostra a última mensagem de cada conversa)" if out["varredura"] else "")]
@@ -648,6 +648,7 @@ class Prospeccao(Tool):
                 linhas.append("- Resposta automática (não é resposta; nada a fazer): " + ", ".join(x[:40] for x in out["robos"]))
             linhas.append(f"Depois, `caixa_lida` com direct: \"{resumo}\"" + (", varredura: true" if out["varredura"] else "")
                           + " e as notificações.")
+            linhas.append(p.LISTA_REFEITA)
             return r("\n".join(linhas))
         if acao == "falha":
             await asyncio.to_thread(p.registrar_falha, login, str(texto or kwargs.get("nota") or ""))
