@@ -2720,7 +2720,8 @@ class Suite:
         ok("browser_snapshot" in p.LISTA_REFEITA and "refs" in p.LISTA_REFEITA and "Geral" in p.LISTA_REFEITA,
            f"o aviso diz que a lista foi refeita e manda ler a tela de novo: {p.LISTA_REFEITA}")
         trecho = fonte.split('if acao == "ler_direct":')[1].split('if acao == "falha":')[0]
-        ok(trecho.count("p.LISTA_REFEITA") >= 2, "toda resposta do ler_direct que segue a rodada leva o aviso")
+        ok("refeita = p.LISTA_REFEITA" in trecho.split("_ler_direct_da_tela")[0] and trecho.count("refeita") >= 4,
+           "as respostas que seguem a rodada levam o aviso quando o script rodou (com `dados` válidos, não)")
 
     def t_varredura_do_direct(self):
         p = self.p
