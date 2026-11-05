@@ -452,6 +452,18 @@ def _humor(p: dict) -> bool:
     return str(p.get("tom") or "").strip().lower() == "humor"
 
 
+def _cena_da_semana_passada(hoje: dt.date) -> str:
+    """The scene of the humor Reel of the most recent week proposed before today ("" when none)."""
+    for arq in sorted(_pasta().glob("s*.json"), reverse=True):
+        if arq.stem[1:9] >= hoje.strftime("%Y%m%d"):
+            continue
+        s = json.loads(arq.read_text(encoding="utf-8"))
+        for p in s.get("propostas", []):
+            if _humor(p) and isinstance(p.get("pov"), dict):
+                return p["pov"].get("cena") or "caderno"
+    return ""
+
+
 def _meme():
     if "meme" not in _C:
         spec = importlib.util.spec_from_file_location("conteudo_meme", Path(__file__).resolve().parent / "meme.py")
@@ -569,6 +581,13 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
                     else _meme().validar(p.get("pov")))
             if erro:
                 return {"ok": False, "erro": f"post de humor \"{_texto(p.get('titulo'), 60)}\": {erro}"}
+    ultima_cena = _cena_da_semana_passada(_hoje(agora))
+    for p in propostas:
+        if _humor(p) and isinstance(p.get("pov"), dict) and (p["pov"].get("cena") or "caderno") == ultima_cena:
+            outras = ", ".join(c for c in _meme().CENAS if c != ultima_cena)
+            return {"ok": False, "erro": f"o post de humor da semana passada já foi a cena \"{ultima_cena}\" (Matheus, 05/11: "
+                                         f"\"precisa ser outro contexto totalmente diferente\"): use outra ({outras}) e "
+                                         "outro assunto"}
     if len(vagas) >= SEMANAS_COM_HUMOR and not any(_humor(p) for p in propostas):
         return {"ok": False, "erro": "a semana precisa de pelo menos 1 post de humor (Matheus, 05/11): marque uma das "
                                      "propostas com \"tom\": \"humor\" (POV com meme da cultura pop, ex.: Nazaré "

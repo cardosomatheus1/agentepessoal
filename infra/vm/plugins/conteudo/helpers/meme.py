@@ -9,7 +9,10 @@ over it), then the screen slides to the "after" (the Raiz card with the real num
 The meme is a short clip from Tenor (search page -> the first results' media ids -> the mp4 of the one chosen). The
 page is drawn by the same Chrome that draws the stories; ffmpeg lays the meme over it and adds the sound.
 
-    pov = {"legenda_antes", "antes": {"titulo", "linhas": [...]}, "legenda_depois",
+    pov = {"cena": "caderno" | "whatsapp" | "notificacoes" | "ninguem" (CENAS), "legenda_antes",
+           "antes": caderno {"titulo", "linhas"} | whatsapp {"contato", "mensagens": [["ele"|"eu", texto], ...]} |
+                    notificacoes {"itens": [[app, texto], ...], "hora", "data"} | ninguem {"topo", "linha"},
+           "legenda_depois",
            "depois": {"rotulo", "titulo", "linhas": [[rótulo, valor], ...], "cartoes": [[rótulo, valor], ...],
                       "destaque": {"rotulo", "valor", "nota"}},
            "meme": {"busca": "nazare confusa", "indice": 0}}
@@ -25,7 +28,14 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
 LARGURA, ALTURA, FPS, DURACAO, TROCA = 1080, 1920, 24, 11.5, 5.2
-MEME_LARGURA, MEME_X, MEME_Y = 640, 220, 1120  # over the lower half of the notebook, where nothing is written
+# 05/11, Matheus: "precisa ser outro contexto totalmente diferente, n adianta mostrar msm coisa com outro meme": each
+# scene is a different situation, and the week never repeats last week's scene (semana.py).
+# cena -> (x, y, width, max height) of the meme in the "before"
+CENAS = {"caderno": (220, 1120, 640, 440),        # the notebook with guessed numbers; the meme under the writing
+         "whatsapp": (220, 1200, 640, 420),       # the chat that hurts (supplier, customer, partner)
+         "notificacoes": (220, 1290, 640, 400),   # the lock screen at 23h full of notifications
+         "ninguem": (60, 620, 960, 900)}          # "Ninguém: / Dono de pizzaria às 23h:" with the meme in full
+MEME_LARGURA, MEME_X, MEME_Y = CENAS["caderno"][2], CENAS["caderno"][0], CENAS["caderno"][1]
 LEGENDA_MAX, LINHA_MAX, VALOR_MAX = 90, 40, 24
 EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿⬀-⯿←-⇿️‍⃣]")
 TRACO = re.compile("[—–]")
@@ -42,12 +52,36 @@ def validar(pov) -> str:
         return "pov precisa de antes, depois e meme (objetos)"
     if not str(m.get("busca") or "").strip():
         return "meme.busca vazio (ex.: \"nazare confusa\")"
-    for k in ("legenda_antes", "legenda_depois"):
+    cena = pov.get("cena") or "caderno"
+    if cena not in CENAS:
+        return f"cena deve ser uma de: {', '.join(CENAS)}"
+    for k in ("legenda_antes", "legenda_depois") if cena != "ninguem" else ("legenda_depois",):
         if not str(pov.get(k) or "").strip() or len(str(pov[k])) > LEGENDA_MAX:
             return f"{k}: de 1 a {LEGENDA_MAX} letras"
-    linhas = a.get("linhas")
-    if not isinstance(linhas, list) or not 2 <= len(linhas) <= 8 or any(len(str(x)) > LINHA_MAX for x in linhas):
-        return f"antes.linhas: de 2 a 8 linhas de até {LINHA_MAX} letras"
+    linhas = []
+    if cena == "caderno":
+        linhas = a.get("linhas")
+        if not isinstance(linhas, list) or not 2 <= len(linhas) <= 8 or any(len(str(x)) > LINHA_MAX for x in linhas):
+            return f"antes.linhas: de 2 a 8 linhas de até {LINHA_MAX} letras"
+    elif cena == "whatsapp":
+        ms = a.get("mensagens")
+        if not str(a.get("contato") or "").strip() or len(str(a["contato"])) > 30:
+            return "antes.contato: quem manda a mensagem (até 30 letras)"
+        if not isinstance(ms, list) or not 2 <= len(ms) <= 6 or any(
+                not (isinstance(x, list) and 2 <= len(x) <= 3 and x[0] in ("ele", "eu") and 0 < len(str(x[1])) <= 90) for x in ms):
+            return "antes.mensagens: de 2 a 6 [\"ele\" ou \"eu\", texto até 90 letras]"
+        linhas = [str(a["contato"])] + [str(x[1]) for x in ms]
+    elif cena == "notificacoes":
+        its = a.get("itens")
+        if not isinstance(its, list) or not 3 <= len(its) <= 6 or any(
+                not (isinstance(x, list) and len(x) == 2 and 0 < len(str(x[0])) <= 20 and 0 < len(str(x[1])) <= 70) for x in its):
+            return "antes.itens: de 3 a 6 [app até 20 letras, texto até 70]"
+        linhas = [str(x) for it in its for x in it]
+    else:
+        if not str(a.get("topo") or "").strip() or not str(a.get("linha") or "").strip() \
+                or len(str(a["topo"])) > 40 or len(str(a["linha"])) > 60:
+            return "antes.topo (ex.: \"Ninguém:\") até 40 letras e antes.linha (ex.: \"Dono de pizzaria às 23h:\") até 60"
+        linhas = [str(a["topo"]), str(a["linha"])]
     pares = [p for k in ("linhas", "cartoes") for p in d.get(k) or []]
     if any(not (isinstance(p, list) and len(p) == 2) for p in pares):
         return "depois.linhas e depois.cartoes: pares [rótulo, valor]"
@@ -55,7 +89,7 @@ def validar(pov) -> str:
         return "depois: até 7 linhas e 2 cartões"
     if not str(d.get("titulo") or "").strip():
         return "depois.titulo vazio"
-    textos = [str(pov.get("legenda_antes")), str(pov.get("legenda_depois")), str(a.get("titulo") or ""),
+    textos = [str(pov.get("legenda_antes") or ""), str(pov.get("legenda_depois")), str(a.get("titulo") or ""),
               str(d.get("rotulo") or ""), str(d.get("titulo"))] + [str(x) for x in linhas] + \
              [str(x) for p in pares for x in p] + [str(v) for v in (d.get("destaque") or {}).values()]
     if any(len(str(v)) > VALOR_MAX for p in pares for v in p[1:]):
@@ -192,12 +226,12 @@ def _quadros(pov: dict, pasta: Path, chrome: str) -> Path:
     return q
 
 
-def _mascaras(pasta: Path, altura: int) -> tuple[Path, Path]:
+def _mascaras(pasta: Path, largura: int, altura: int) -> tuple[Path, Path]:
     from PIL import Image, ImageDraw
-    m = Image.new("L", (MEME_LARGURA, altura), 0)
-    ImageDraw.Draw(m).rounded_rectangle((0, 0, MEME_LARGURA - 1, altura - 1), radius=34, fill=255)
-    borda = Image.new("RGBA", (MEME_LARGURA + 16, altura + 16), (0, 0, 0, 0))
-    ImageDraw.Draw(borda).rounded_rectangle((0, 0, MEME_LARGURA + 15, altura + 15), radius=42, fill=(255, 255, 255, 255))
+    m = Image.new("L", (largura, altura), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, largura - 1, altura - 1), radius=34, fill=255)
+    borda = Image.new("RGBA", (largura + 16, altura + 16), (0, 0, 0, 0))
+    ImageDraw.Draw(borda).rounded_rectangle((0, 0, largura + 15, altura + 15), radius=42, fill=(255, 255, 255, 255))
     m.save(pasta / "mascara.png")
     borda.save(pasta / "borda.png")
     return pasta / "mascara.png", pasta / "borda.png"
@@ -230,17 +264,18 @@ def _montar(pov: dict, saida: Path, chrome: str, baixar) -> dict:
         dims = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height",
                                "-of", "csv=p=0", str(meme)], capture_output=True, text=True, check=True).stdout.strip()
         w, h = (int(x) for x in dims.split(",")[:2])
-        altura = min(440, int(MEME_LARGURA * h / w) // 2 * 2)
-        mascara, borda = _mascaras(trabalho, altura)
+        mx, my, largura, maxima = CENAS[pov.get("cena") or "caderno"]
+        altura = min(maxima, int(largura * h / w) // 2 * 2)
+        mascara, borda = _mascaras(trabalho, largura, altura)
         q = _quadros(pov, trabalho, chrome)
         trilha = som(trabalho / "som.wav")
         fim = TROCA - 0.05
         video = saida / "pov.mp4"
-        filtro = (f"[1:v]scale={MEME_LARGURA}:{altura}:force_original_aspect_ratio=increase,crop={MEME_LARGURA}:{altura},"
-                  f"fps={FPS},format=rgba[n];[2:v]format=gray,scale={MEME_LARGURA}:{altura}[m];"
+        filtro = (f"[1:v]scale={largura}:{altura}:force_original_aspect_ratio=increase,crop={largura}:{altura},"
+                  f"fps={FPS},format=rgba[n];[2:v]format=gray,scale={largura}:{altura}[m];"
                   f"[n][m]alphamerge,trim=duration={DURACAO},setpts=PTS-STARTPTS[na];[3:v]format=rgba[bd];"
-                  f"[0:v][bd]overlay=x={MEME_X - 8}:y={MEME_Y - 8}:enable='between(t,0.35,{fim})'[v1];"
-                  f"[v1][na]overlay=x={MEME_X}:y={MEME_Y}:enable='between(t,0.35,{fim})'[v]")
+                  f"[0:v][bd]overlay=x={mx - 8}:y={my - 8}:enable='between(t,0.35,{fim})'[v1];"
+                  f"[v1][na]overlay=x={mx}:y={my}:enable='between(t,0.35,{fim})'[v]")
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", str(q / "f%04d.jpg"),
                         "-stream_loop", "-1", "-i", str(meme), "-loop", "1", "-i", str(mascara), "-loop", "1", "-i", str(borda),
                         "-i", str(trilha), "-filter_complex", filtro, "-map", "[v]", "-map", "4:a", "-c:v", "libx264",

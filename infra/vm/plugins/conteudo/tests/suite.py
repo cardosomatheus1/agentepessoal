@@ -45,6 +45,14 @@ POV = {"legenda_antes": "POV: eu tentando descobrir quanto custa a minha pizza d
        "meme": {"busca": "nazare confusa"}}
 
 
+POV_ZAP = dict(POV, cena="whatsapp", legenda_antes="POV: o fornecedor mandando mensagem na sexta à noite",
+               antes={"contato": "Fornecedor Queijos", "mensagens": [["ele", "Boa noite! A mussarela subiu de novo"],
+                                                                      ["ele", "Agora é 42 o quilo"], ["eu", "de novo???"]]},
+               legenda_depois="a Raiz já refez a conta", meme={"busca": "seu madruga"})
+POV_NINGUEM = dict(POV, cena="ninguem", legenda_antes="", legenda_depois="a Raiz:",
+                   antes={"topo": "Ninguém:", "linha": "Dono de pizzaria às 23h no domingo:"}, meme={"busca": "faustao errou"})
+
+
 def _meme_real():
     spec = importlib.util.spec_from_file_location("meme_teste", RAIZ / "helpers" / "meme.py")
     m = importlib.util.module_from_spec(spec)
@@ -681,6 +689,7 @@ class Suite:
 
         class MemeFalso:  # helpers/meme.py downloads from Tenor and draws with a browser; here the files are enough
             validar = staticmethod(meme.validar)
+            CENAS = meme.CENAS
 
             @staticmethod
             def montar(pov, saida, chrome="", baixar=None):
@@ -716,6 +725,15 @@ class Suite:
         ok("travessão" in m.validar(dict(POV, legenda_depois="a Raiz — já sabe")), "travessão, não")
         ok("emoji" in m.validar(dict(POV, legenda_antes="POV: eu \U0001F602")), "emoji, não")
         ok("linhas" in m.validar(dict(POV, antes={"titulo": "x", "linhas": ["só uma"]})), "o caderno tem de 2 a 8 linhas")
+        # 05/11, Matheus: "precisa ser outro contexto totalmente diferente": scenes that are other situations
+        ok(m.validar(POV_ZAP) == "" and m.validar(POV_NINGUEM) == "", (m.validar(POV_ZAP), m.validar(POV_NINGUEM)))
+        notif = dict(POV, cena="notificacoes", antes={"itens": [["iFood", "Novo pedido #4821"], ["Banco", "Boleto vence hoje"],
+                                                              ["WhatsApp", "Funcionário: faltou queijo"]]})
+        ok(m.validar(notif) == "", m.validar(notif))
+        ok("cena deve ser" in m.validar(dict(POV, cena="tiktok")), "cena desconhecida, não")
+        ok("mensagens" in m.validar(dict(POV_ZAP, antes={"contato": "X", "mensagens": [["ele", "oi"]]})), "conversa com 2 ou mais")
+        ok("itens" in m.validar(dict(notif, antes={"itens": [["iFood", "a"]]})), "3 ou mais notificações")
+        ok("topo" in m.validar(dict(POV_NINGUEM, antes={"topo": "Ninguém:"})), "o meme de texto tem as duas linhas")
         pagina = ('<img src="https://media.tenor.com/q07DHKhjEBQAAAAM/nazare.gif"><img src="https://media1.tenor.com/'
                   '3-aEYf-wbZcAAAAM/x.gif"><img src="https://media.tenor.com/q07DHKhjEBQAAAAM/de-novo.gif">')
         pedidos = []
@@ -755,11 +773,17 @@ class Suite:
         tipos = {x["codec_type"]: x for x in info["streams"]}
         ok(set(tipos) == {"video", "audio"} and tipos["video"]["width"] == 1080 and tipos["video"]["height"] == 1920
            and abs(float(info["format"]["duration"]) - m.DURACAO) < 0.2, f"Reel 1080x1920, 11,5 s, com som: {info}")
-        from PIL import Image
+        from PIL import Image, ImageChops, ImageStat
         with Image.open(r["quadros"][0]) as q1:
             ok(q1.getpixel((m.MEME_X + 300, m.MEME_Y + 100)) != q1.getpixel((m.MEME_X + 300, m.MEME_Y + 700)),
                "no segundo 2 o meme está por cima do caderno")
         ok(len(r["quadros"]) == 3 and r["capa"].endswith("capa.jpg") and Path(r["capa"]).is_file(), r)
+        r2 = m.montar(POV_ZAP, Path(tempfile.mkdtemp()) / "zap", chrome=st._chrome(),
+                      baixar=lambda url, timeout=30: pagina.encode() if "search" in url else clipe.read_bytes())
+        with Image.open(r["quadros"][0]) as a1, Image.open(r2["quadros"][0]) as z1:
+            topo = (120, 450, 960, 1000)  # the phone's screen above the meme: notebook in one, the chat in the other
+            dif = ImageStat.Stat(ImageChops.difference(a1.convert("L").crop(topo), z1.convert("L").crop(topo))).mean[0]
+            ok(dif > 15, f"a cena do WhatsApp é outra situação, não o caderno com outro meme: diferença {dif:.1f}")
         from PIL import ImageChops, ImageStat
         with Image.open(r["quadros"][0]) as q1, Image.open(r["capa"]) as capa:
             area = (260, 560, 820, 1000)  # the phone screen above the meme: notebook first, the Raiz card at the end
@@ -803,6 +827,12 @@ class Suite:
         ok([p["estado"] for p in s.carregar("s20261026-1")["propostas"] if p["n"] in (3, 8)] == ["proposta", "proposta"],
            "as reprovadas ficam abertas para o agente refazer")
         humor = s.carregar("s20261026-1")["propostas"][3]
+        # the next week cannot repeat the scene (05/11: "n adianta mostrar msm coisa com outro meme")
+        semana_que_vem = agora + 7 * 86400
+        erro = s.propor(self._feed(humor=True), semana_que_vem, enviar=lambda *a: "", stories=self._stories())
+        ok(not erro["ok"] and "cena \"caderno\"" in erro["erro"] and "whatsapp" in erro["erro"], f"cena repetida, não: {erro}")
+        outra = [dict(p, pov=dict(POV_ZAP)) if p.get("tom") else p for p in self._feed(humor=True)]
+        ok(s.propor(outra, semana_que_vem, enviar=lambda *a: "", stories=self._stories())["ok"], "outra cena, sim")
         # reproved: the humor Reel is redone with the next meme of the same search, still a humor Reel
         refeito = s._refazer_feed(c.especialistas(), "s20261026-1", humor, nova=False)
         ok(s._povs[-1]["meme"] == {"busca": "nazare confusa", "indice": 1} and refeito.get("tom") == "humor"
