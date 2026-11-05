@@ -186,7 +186,7 @@ def _quadros(pov: dict, pasta: Path, chrome: str) -> Path:
         pg.evaluate("document.fonts.ready")
         pg.wait_for_timeout(300)
         for i in range(int(DURACAO * FPS)):
-            pg.evaluate(f"quadro({i / FPS})")
+            pg.evaluate(f"document.body.dataset.t = '{i / FPS}'; document.dispatchEvent(new Event('quadro'))")
             pg.screenshot(path=str(q / f"f{i:04d}.jpg"), type="jpeg", quality=92)
         b.close()
     return q

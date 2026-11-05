@@ -760,6 +760,11 @@ class Suite:
             ok(q1.getpixel((m.MEME_X + 300, m.MEME_Y + 100)) != q1.getpixel((m.MEME_X + 300, m.MEME_Y + 700)),
                "no segundo 2 o meme está por cima do caderno")
         ok(len(r["quadros"]) == 3 and r["capa"].endswith("capa.jpg") and Path(r["capa"]).is_file(), r)
+        from PIL import ImageChops, ImageStat
+        with Image.open(r["quadros"][0]) as q1, Image.open(r["capa"]) as capa:
+            area = (260, 560, 820, 1000)  # the phone screen above the meme: notebook first, the Raiz card at the end
+            dif = ImageStat.Stat(ImageChops.difference(q1.convert("L").crop(area), capa.convert("L").crop(area))).mean[0]
+            ok(dif > 8, f"a tela vira do caderno para a Raiz (o quadro anda com o tempo): diferença {dif:.1f}")
 
     def t_semana_propoe_4_no_feed_e_7_stories(self):
         # 22/10, Matheus: "4 por semana, 2 carrosseis e 2 videos e story sim todo dia"

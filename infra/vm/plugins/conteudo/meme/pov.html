@@ -90,6 +90,9 @@ window.quadro = (t) => {
   leg.style.transform = `scale(${0.85 + 0.15 * s})`;
   leg.style.top = antes ? '120px' : '190px';
 };
+// The renderer may run in an isolated world (patchright) that cannot see window.quadro: it sets data-t on <body> and
+// fires "quadro"; the DOM is shared by both worlds and the listener runs synchronously.
+document.addEventListener('quadro', () => quadro(Number(document.body.dataset.t || 0)));
 quadro(0);
 </script>
 </body></html>
