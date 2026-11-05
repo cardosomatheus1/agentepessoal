@@ -58,6 +58,16 @@ REGRAS = ("A Raiz Connect é sistema de gestão para food service, com pedidos d
           "Fala com o dono do negócio que produz e vende comida, nunca com o consumidor; sem jargão; número sempre "
           "como \"valores de exemplo\"; legenda sem emoji e sem travessão; nunca \"aumente seu lucro\"; oferta: "
           "Lucro na Mão em 30 Dias.")
+# 05/11, Matheus: "é bom pelo menos 1 por semana com tom de humor". Formato que viraliza (POV da @trinta.app com As
+# Branquelas): a dor séria do dono dita como piada de identificação, com referência da cultura pop.
+HUMOR = ("POST DE HUMOR (Matheus, 05/11): a dor séria do dono de comida (não saber o custo do prato, estoque sumindo, "
+         "fim do mês sem saber o lucro) dita como piada de identificação, com uma referência da cultura pop que todo "
+         "brasileiro reconhece em 1 segundo (novela, filme, Chaves, Nazaré fazendo conta, Seu Madruga, Faustão "
+         "\"errou\", BBB). Formato POV: o celular com a tela da Raiz, legenda curta em cima (\"POV: eu tentando ...\") "
+         "e a virada \"a Raiz já sabe\". O recorte do meme não vai no arquivo: deixe espaço livre na tela e diga na "
+         "ideia qual meme entra, onde e em que segundo, para o Matheus pôr no CapCut ou nas figurinhas do Instagram. "
+         "Humor leve, nunca debochando do cliente. As outras regras valem igual.")
+SEMANAS_COM_HUMOR = 2  # with 2 or more feed slots free, at least one proposal must have "tom": "humor"
 
 _C: dict = {}
 
@@ -434,7 +444,12 @@ def _desenhar(esp, briefing: dict, p: dict, desenho=None) -> dict:
 def _briefing(formato: str, dia: str, p: dict) -> dict:
     return {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato,
             "titulo": _texto(p.get("titulo"), 120), "ideia": _texto(p.get("ideia"), 1200),
-            "legenda": str(p.get("legenda") or "").strip(), "data": dia, "regras": REGRAS}
+            "legenda": str(p.get("legenda") or "").strip(), "data": dia,
+            "regras": REGRAS + (" " + HUMOR if _humor(p) else ""), **({"tom": "humor"} if _humor(p) else {})}
+
+
+def _humor(p: dict) -> bool:
+    return str(p.get("tom") or "").strip().lower() == "humor"
 
 
 def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict, desenho=None) -> dict:
@@ -457,6 +472,7 @@ def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict
         problema = c().validar_legenda(legenda)
     return {"n": n, "id": f"{sid}-{n}", "data": dia, "hora": str(p.get("hora") or HORA), "titulo": briefing["titulo"],
           "ideia": briefing["ideia"], "formato_pedido": formato, "tipo": tipo, "arquivos": arquivos,
+          **({"tom": "humor"} if _humor(p) else {}),
           "capa": capa, "legenda": legenda, "spec": d["spec"], "critica": d["critica"],
           "problema": problema, "estado": "proposta",
           **({"video": {"estado": "aguardando_aprovacao", "molde": d["spec"].get("molde"),
@@ -521,6 +537,10 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
                                      f"cada (vieram {len(stories)})"}
     if not vagas and not dias_story:
         return {"ok": False, "erro": "a semana que vem já está toda agendada"}
+    if len(vagas) >= SEMANAS_COM_HUMOR and not any(_humor(p) for p in propostas):
+        return {"ok": False, "erro": "a semana precisa de pelo menos 1 post de humor (Matheus, 05/11): marque uma das "
+                                     "propostas com \"tom\": \"humor\" (POV com meme da cultura pop, ex.: Nazaré "
+                                     "fazendo conta do custo da pizza; o meme ele põe no CapCut)"}
     try:
         esp, nota = c().especialistas(), ""
     except Exception as exc:  # installed but broken: the proposals say so, and nothing is approved by itself

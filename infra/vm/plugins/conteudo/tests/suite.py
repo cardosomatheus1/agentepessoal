@@ -654,7 +654,8 @@ class Suite:
     def _feed():
         formatos = ["CARROSSEL", "REELS", "CARROSSEL", "REELS"]
         return [{"titulo": f"Post {n}", "formato": f, "ideia": f"gancho {n}",
-                 "legenda": f"Quanto custa de verdade a sua marmita? Post {n}, com valores de exemplo."}
+                 "legenda": f"Quanto custa de verdade a sua marmita? Post {n}, com valores de exemplo.",
+                 **({"tom": "humor"} if n == 2 else {})}
                 for n, f in enumerate(formatos, start=1)]
 
     @staticmethod
@@ -672,6 +673,9 @@ class Suite:
         ok(r["ok"] and r["semana"] == "s20261026-1" and r["enviada"], r)
         ok(len(chamadas) == 4 and all(b["marca"] == "raiz" and "emoji" in b["regras"] for b in chamadas),
            "só o feed vai ao Designer, com as regras da Raiz")
+        # 05/11, Matheus: "pelo menos 1 por semana com tom de humor": the humor post goes to the Designer as such
+        ok([b.get("tom") for b in chamadas] == [None, "humor", None, None] and "cultura pop" in chamadas[1]["regras"]
+           and "cultura pop" not in chamadas[0]["regras"], "o post de humor vai ao Designer com o jeito do humor")
         ps = s.carregar("s20261026-1")["propostas"]
         feed = [(p["data"], p["tipo"], p["hora"]) for p in ps[:4]]
         ok(feed == [("2026-10-27", "CARROSSEL", "11:45"), ("2026-10-28", "REELS", "11:45"),
@@ -694,7 +698,11 @@ class Suite:
            f"o que o Crítico aprovou foi para a agenda: {r['agendados']}")
         ok([p["estado"] for p in s.carregar("s20261026-1")["propostas"] if p["n"] in (3, 8)] == ["proposta", "proposta"],
            "as reprovadas ficam abertas para o agente refazer")
+        ok(s.carregar("s20261026-1")["propostas"][1].get("tom") == "humor", "o tom fica guardado para refazer igual")
         c2, s2, _ = self._semana()
+        sem_humor = [{k: v for k, v in p.items() if k != "tom"} for p in self._feed()]
+        erro = s2.propor(sem_humor, agora, enviar=lambda *a: "", stories=self._stories())["erro"]
+        ok("1 post de humor" in erro and not s2.ultima(), f"semana sem humor é recusada e nada é gravado: {erro}")
         ok(not s2.propor(self._feed()[:3], agora, enviar=lambda *a: "", stories=self._stories())["ok"], "menos de 4 no feed é recusado")
         tres = [dict(p, formato="CARROSSEL") for p in self._feed()]
         erro = s2.propor(tres, agora, enviar=lambda *a: "", stories=self._stories())["erro"]
