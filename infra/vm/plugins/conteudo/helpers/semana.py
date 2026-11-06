@@ -292,6 +292,10 @@ def _refazer_story(esp, campos: dict, critica: dict, saida: Path, post: dict | N
         return None
     if story().validar(novo):
         return None
+    # 06/11: a "dica" refeita voltou como "post-novo" ("O carrossel de hoje está no feed") e saiu às 9:00, sem post no
+    # feed e com o carrossel do dia cancelado. Story que não chamava post nunca passa a chamar ao ser refeito.
+    if novo.get("layout") in CHAMA and campos.get("layout") not in CHAMA:
+        return None
     if post and post.get("imagem") and not novo.get("imagem") and campos.get("imagem") == post["imagem"]:
         novo["imagem"] = post["imagem"]
     saida.parent.mkdir(parents=True, exist_ok=True)

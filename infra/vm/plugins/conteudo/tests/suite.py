@@ -1306,6 +1306,13 @@ class Suite:
         ok("cancela e cria outro" in s.refazer_item(reel, {"motivos": ["x"]})["erro"], "Reel agendado: o gestor cria outro")
         sem_ficha = {k: v for k, v in CARR.items() if k != "ficha"}
         ok("não tem ficha" in s.refazer_item(sem_ficha, {"motivos": ["x"]})["erro"], "post sem ficha: não sabe refazer")
+        # 06/11: a dica refeita não pode virar "post-novo" (chamaria para o feed um post que não existe)
+        chamada = {"layout": "post-novo", "manchete": "O carrossel de hoje está no feed", "chamada": "Acesse o feed"}
+        Esp.chamar = lambda self, papel, tarefa, material: {"texto": json.dumps(chamada), "erro": ""}
+        r = s.refazer_item(novo, {"motivos": ["fraco"]}, subir=lambda *a: None)
+        ok(not r["ok"] and "campos válidos" in r["erro"], f"dica não vira chamada para o feed: {r}")
+        ok(next(i for i in c.carregar()["itens"] if i["id"] == st["id"])["arquivos"] == subidos, "a dica fica como estava")
+        Esp.chamar = lambda self, papel, tarefa, material: {"texto": json.dumps({"layout": "dica", "manchete": "Confere a nota"}), "erro": ""}
         Esp.criticar = lambda self, tipo, material: {"veredito": "reprova", "motivos": ["ainda fraco"]}
         r = s.refazer_item(novo, {"motivos": ["x"]}, subir=lambda *a: None)
         ok(not r["ok"] and "também foi reprovada: ainda fraco" in r["erro"], r)
