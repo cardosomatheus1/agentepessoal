@@ -740,6 +740,9 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
     pedido = FORMATO_DO_BRIEFING.get(str(briefing.get("formato") or "").upper(), "") if isinstance(briefing, dict) else ""
     if pedido:  # 22/10: shown the whole catalog it kept answering a carousel slot with a video template
         catalogo = {i: m for i, m in catalogo.items() if pedido in m.get("formatos", [])}
+    evitar = set(briefing.get("evitar_moldes") or []) if isinstance(briefing, dict) else set()
+    if evitar and any(i not in evitar for i in catalogo):  # 08/11: the neighbouring posts' moldes are not offered
+        catalogo = {i: m for i, m in catalogo.items() if i not in evitar}
     linhas_cat = "\n".join(f"- {i} ({', '.join(m.get('formatos', []))}): {m.get('situacao', '')} Ficha: "
                            f"{json.dumps(m.get('ficha', {}), ensure_ascii=False)}" for i, m in catalogo.items())
     tarefa = (f"Transforme o briefing numa ficha para o motor de render.\n\n{KIT}\n\n"

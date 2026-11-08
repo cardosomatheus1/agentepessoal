@@ -875,6 +875,29 @@ class Suite:
         ok(chamadas[-1]["formato"] == "CARROSSEL" and "vaga de Carrossel" in chamadas[-1]["ideia"], chamadas[-1])
         ok(nova["formato_pedido"] == "CARROSSEL" and nova["tipo"] == "CARROSSEL", nova)
 
+    def t_semana_nao_repete_o_molde_dos_vizinhos(self):
+        # 08/11, Matheus: "Estao td igual os post": the briefing lists the neighbouring posts' moldes, and a piece that
+        # still comes back with one of them is reproved (the agent redoes it)
+        c, s, chamadas = self._semana(reprovar=())
+        sid = "s20261106-8"
+        with s._exclusivo():
+            s._gravar({"id": sid, "criada_em": 0, "estado": "decidida", "login": "matheus", "propostas": [
+                {"n": 1, "data": "2026-11-06", "estado": "agendada", "spec": {"motor": "molde", "molde": "passo-a-passo"}},
+                {"n": 2, "data": "2026-11-20", "estado": "agendada", "spec": {"motor": "molde", "molde": "mito"}},
+                {"n": 3, "data": "2026-11-07", "estado": "agendada", "spec": {"motor": "molde", "molde": "quiz"}}]})
+        c.carregar = lambda: {"itens": [
+            {"id": "a", "data": "2026-11-06", "tipo": "CARROSSEL", "estado": "publicada", "origem": {"semana": sid, "n": 1}},
+            {"id": "b", "data": "2026-11-20", "tipo": "CARROSSEL", "estado": "pendente", "origem": {"semana": sid, "n": 2}},
+            {"id": "x", "data": "2026-11-07", "tipo": "CARROSSEL", "estado": "cancelada", "origem": {"semana": sid, "n": 3}}]}
+        ok(s._moldes_vizinhos("2026-11-08") == ["passo-a-passo"], s._moldes_vizinhos("2026-11-08"))
+        ok(s._briefing("CARROSSEL", "2026-11-08", {})["evitar_moldes"] == ["passo-a-passo"], "o Designer recebe a lista")
+        ok("evitar_moldes" not in s._briefing("CARROSSEL", "2026-10-01", {}), "sem vizinho, nada a evitar")
+        repetido = {"spec": {"motor": "molde", "molde": "passo-a-passo"}, "arquivos": [], "falta": [],
+                    "critica": {"veredito": "aprova", "motivos": [], "sugestoes": []}}
+        p = s._item_feed(c.especialistas(), "", sid, 4, "CARROSSEL", "2026-11-08", {"titulo": "t", "ideia": "i"},
+                         desenho=lambda: repetido)
+        ok(p["critica"]["veredito"] == "reprova" and "molde passo-a-passo repetido" in p["critica"]["motivos"][0], p["critica"])
+
     def t_semana_sem_critico_nao_aprova_sozinha(self):
         c, s, _ = self._semana(esp=None)
         enviados = []

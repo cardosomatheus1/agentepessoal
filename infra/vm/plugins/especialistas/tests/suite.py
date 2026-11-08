@@ -511,6 +511,22 @@ class Suite:
         ok("a vaga da semana é 'carrossel'" in chamadas[1][1], chamadas[1][1][:200])
         eq((d["spec"]["formato"], d["falta"]), ("carrossel", []), "corrigido para carrossel")
 
+    def t_moldes_dos_posts_vizinhos_nao_sao_oferecidos(self):
+        # 08/11, Matheus: "Estao td igual os post": three carousels in a row from passo-a-passo
+        reels = self._reels()
+        m = self._e(reels=reels)
+        chamadas = []
+        m.chamar = lambda papel, tarefa, material, login="matheus": chamadas.append(tarefa) or {
+            "texto": "nada", "erro": "", "imagens": [], "sem_imagem": []}
+        (reels / "moldes" / "catalogo.json").write_text(json.dumps({"moldes": [
+            {"id": "passo-a-passo", "formatos": ["carrossel"], "situacao": "Passos", "ficha": {}},
+            {"id": "mito", "formatos": ["carrossel"], "situacao": "Mito", "ficha": {}}]}))
+        m.desenhar({"formato": "CARROSSEL", "titulo": "x", "ideia": "y", "evitar_moldes": ["passo-a-passo"]})
+        ok("- passo-a-passo" not in chamadas[0] and "- mito" in chamadas[0], "o molde dos vizinhos sai do catálogo")
+        chamadas.clear()
+        m.desenhar({"formato": "CARROSSEL", "titulo": "x", "ideia": "y", "evitar_moldes": ["passo-a-passo", "mito"]})
+        ok("- passo-a-passo" in chamadas[0] and "- mito" in chamadas[0], "sem nenhum sobrando, o catálogo fica inteiro")
+
     def t_designer_refaz_com_os_motivos_do_critico(self):
         # 22/10: the agent makes the posts by itself, so a reproved piece is redone once before it reaches Matheus
         reels = self._reels()

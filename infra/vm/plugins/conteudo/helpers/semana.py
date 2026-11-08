@@ -452,9 +452,39 @@ def _formato_feed(formato: str) -> str:
     return "CARROSSEL" if str(formato).upper() == "IMAGE" else formato
 
 
+def _moldes_vizinhos(dia: str, janela: int = 6) -> list[str]:
+    """The moldes of the feed posts within `janela` days of `dia` (the day itself left out), from the agenda and each
+    post's proposal. 08/11, Matheus: "Estao td igual os post": three carousels in a row came out of passo-a-passo (the
+    big "3"), because "duas seguidas não usam o mesmo molde" was only a line in the Designer's prompt."""
+    try:
+        d0 = dt.date.fromisoformat(str(dia))
+        itens = c().carregar().get("itens") or []
+    except Exception:
+        return []
+    semanas, usados = {}, set()
+    for i in itens:
+        o = i.get("origem") or {}
+        if i.get("tipo") == "STORY" or i.get("estado") == "cancelada" or not o.get("semana"):
+            continue
+        try:
+            d = dt.date.fromisoformat(str(i.get("data")))
+        except ValueError:
+            continue
+        if d == d0 or abs((d - d0).days) > janela:
+            continue
+        if o["semana"] not in semanas:
+            semanas[o["semana"]] = carregar(o["semana"]) or {}
+        p = next((x for x in semanas[o["semana"]].get("propostas", []) if x.get("n") == o.get("n")), None) or {}
+        molde = (p.get("spec") or {}).get("molde")
+        if molde:
+            usados.add(str(molde))
+    return sorted(usados)
+
+
 def _briefing(formato: str, dia: str, p: dict) -> dict:
     formato = _formato_feed(formato)
-    return {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato,
+    evitar = _moldes_vizinhos(dia) if formato != "STORY" else []
+    return {**({"evitar_moldes": evitar} if evitar else {}), "marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato,
             "titulo": _texto(p.get("titulo"), 120), "ideia": _texto(p.get("ideia"), 1200),
             "legenda": str(p.get("legenda") or "").strip(), "data": dia,
             "regras": REGRAS + (" " + HUMOR if _humor(p) else ""), **({"tom": "humor"} if _humor(p) else {})}
@@ -507,6 +537,11 @@ def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict
     if desenho is None and esp is not None and _humor(p) and isinstance(p.get("pov"), dict):
         desenho = lambda: _pov(esp, briefing, p["pov"], _pasta() / sid / f"pov-{n}")  # noqa: E731
     d = _desenhar(esp, briefing, p, desenho)
+    molde = (d.get("spec") or {}).get("molde")
+    if molde and molde in (briefing.get("evitar_moldes") or []):  # 08/11: never the neighbouring posts' template
+        d["critica"] = dict(d["critica"], veredito="reprova", motivos=[
+            f"molde {molde} repetido: os posts vizinhos já usam {', '.join(briefing['evitar_moldes'])}"]
+            + list(d["critica"].get("motivos") or []))
     if nota:
         d["critica"]["motivos"] = [nota] + d["critica"]["motivos"]
     if not briefing["titulo"]:  # a new idea from the Designer: its own title
