@@ -445,7 +445,15 @@ def _desenhar(esp, briefing: dict, p: dict, desenho=None) -> dict:
             **{k: d[k] for k in ("video_pendente", "previa", "folha", "narracao") if d.get(k)}}
 
 
+def _formato_feed(formato: str) -> str:
+    """The format the Designer can actually draw. 08/11: the motor has no molde for a single photo (the Designer invented
+    "molde post", nothing rendered, and eight redos of Sunday's post failed on it): a feed photo is drawn as a
+    carousel. A photo still goes out when the operator swaps the files in (conteudo.trocar_formato)."""
+    return "CARROSSEL" if str(formato).upper() == "IMAGE" else formato
+
+
 def _briefing(formato: str, dia: str, p: dict) -> dict:
+    formato = _formato_feed(formato)
     return {"marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato,
             "titulo": _texto(p.get("titulo"), 120), "ideia": _texto(p.get("ideia"), 1200),
             "legenda": str(p.get("legenda") or "").strip(), "data": dia,
@@ -494,6 +502,7 @@ def _pov(esp, briefing: dict, pov: dict, saida: Path) -> dict:
 
 def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict, desenho=None) -> dict:
     """One feed proposal of the week, drawn by the Designer and judged by the Crítico (the humor Reel: made here)."""
+    formato = _formato_feed(formato)
     briefing = _briefing(formato, dia, p)
     if desenho is None and esp is not None and _humor(p) and isinstance(p.get("pov"), dict):
         desenho = lambda: _pov(esp, briefing, p["pov"], _pasta() / sid / f"pov-{n}")  # noqa: E731
@@ -733,7 +742,7 @@ def _refazer_feed(esp, sid: str, p: dict, nova: bool) -> dict:
         pov = dict(p["pov"], meme=dict(p["pov"]["meme"], indice=int(p["pov"]["meme"].get("indice") or 0) + 1))
         return _item_feed(esp, "", sid, p["n"], p["formato_pedido"], p["data"], dict(p, pov=pov, hora=p["hora"]))
     if nova:
-        ideia = (f"Ideia NOVA para a vaga de {NOME_TIPO[p['formato_pedido']]} de {_rotulo_dia(p['data'])}: um assunto "
+        ideia = (f"Ideia NOVA para a vaga de {NOME_TIPO[_formato_feed(p['formato_pedido'])]} de {_rotulo_dia(p['data'])}: um assunto "
                  f"diferente de \"{p['titulo']}\", que o Crítico reprovou ({motivos}). Plano: gestão (pedido do iFood e da "
                  "99 entrando sozinho, estoque, comanda, financeiro) ou custo e preço, para o dono do negócio de comida. "
                  "Ponha na ficha \"titulo\" e \"legenda\" (sem emoji nem travessão).")

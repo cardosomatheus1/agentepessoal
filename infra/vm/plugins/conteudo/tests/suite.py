@@ -858,6 +858,23 @@ class Suite:
         erro = s.propor(self._feed(humor=True), agora, enviar=lambda *a: "", stories=self._stories())["erro"]
         ok("1 vaga(s) no feed (sex 30/10 Carrossel)" in erro, f"o que já foi agendado sozinho não volta à proposta: {erro}")
 
+    def t_semana_foto_vira_carrossel(self):
+        # 08/11: the Gestor created a photo (IMAGE) for Sunday; no molde draws a single photo ("molde post não existe no
+        # motor") and eight redos failed on it. The Designer is asked for a carousel, and the redo keeps the carousel.
+        c, s, chamadas = self._semana(reprovar=())
+        sid = "s20261106-9"
+        with s._exclusivo():
+            s._gravar({"id": sid, "criada_em": 0, "estado": "parcial", "login": "matheus", "propostas": []})
+        p = s._item_feed(c.especialistas(), "", sid, 1, "IMAGE", "2026-11-08",
+                         {"titulo": "Quanto vende e quanto sobra", "ideia": "tela de engenharia de cardápio",
+                          "legenda": "Compare venda e sobra por prato, com valores de exemplo."})
+        ok(chamadas[-1]["formato"] == "CARROSSEL", chamadas[-1])
+        ok(p["formato_pedido"] == "CARROSSEL" and p["tipo"] == "CARROSSEL" and len(p["arquivos"]) == 3, p)
+        velha = dict(p, formato_pedido="IMAGE", critica={"veredito": "reprova", "motivos": ["molde post não existe"]})
+        nova = s._refazer_feed(c.especialistas(), sid, velha, nova=True)
+        ok(chamadas[-1]["formato"] == "CARROSSEL" and "vaga de Carrossel" in chamadas[-1]["ideia"], chamadas[-1])
+        ok(nova["formato_pedido"] == "CARROSSEL" and nova["tipo"] == "CARROSSEL", nova)
+
     def t_semana_sem_critico_nao_aprova_sozinha(self):
         c, s, _ = self._semana(esp=None)
         enviados = []
