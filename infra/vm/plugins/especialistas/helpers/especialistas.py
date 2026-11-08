@@ -509,6 +509,37 @@ def catalogo_moldes() -> dict:
         return {}
 
 
+def _regra_curta(regra: dict) -> str:
+    """One esquema field as the Designer needs it: type, limits, optional, and the sub-fields of a list."""
+    partes = [str(regra.get("tipo", "texto"))]
+    if "min" in regra:
+        partes.append(f"min {regra['min']}")
+    if "max" in regra:
+        partes.append(f"max {regra['max']}")
+    if regra.get("obrigatorio") is False:
+        partes.append("opcional")
+    if regra.get("real"):
+        partes.append("real")
+    item = regra.get("item")
+    if isinstance(item, dict) and "tipo" in item and not isinstance(item["tipo"], dict):  # a list of plain values
+        partes.append("cada um " + _regra_curta(item))
+    elif isinstance(item, dict) and item and all(isinstance(v, dict) for v in item.values()):
+        partes.append("cada um {" + ", ".join(f"{k}: {_regra_curta(v)}" for k, v in item.items()) + "}")
+    return " ".join(partes)
+
+
+def _campos_do_molde(molde: str) -> str:
+    """The molde's real fields, from its esquema.json (what validar.py checks). 08/11: the catalog's hand-written
+    "ficha" had drifted in 25 of the 65 moldes (demonstracao had no "falas"), the Designer filled the wrong fields and
+    Sunday's Reel failed every redo. Empty when there is no esquema (the catalog's summary is used instead)."""
+    moldes = pasta_moldes()
+    try:
+        campos = json.loads((moldes / molde / "esquema.json").read_text(encoding="utf-8")).get("campos") or {}
+    except (OSError, ValueError, TypeError, AttributeError):
+        return ""
+    return "{" + "; ".join(f"{k}: {_regra_curta(v)}" for k, v in campos.items() if isinstance(v, dict)) + "}"
+
+
 def _validar_ficha(molde: str, ficha: dict) -> list[str]:
     """The moldes motor's own validator (moldes/motor/validar.py) against the molde's esquema.json."""
     moldes = pasta_moldes()
@@ -744,7 +775,8 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
     if evitar and any(i not in evitar for i in catalogo):  # 08/11: the neighbouring posts' moldes are not offered
         catalogo = {i: m for i, m in catalogo.items() if i not in evitar}
     linhas_cat = "\n".join(f"- {i} ({', '.join(m.get('formatos', []))}): {m.get('situacao', '')} Ficha: "
-                           f"{json.dumps(m.get('ficha', {}), ensure_ascii=False)}" for i, m in catalogo.items())
+                           f"{_campos_do_molde(i) or json.dumps(m.get('ficha', {}), ensure_ascii=False)}"
+                           for i, m in catalogo.items())
     tarefa = (f"Transforme o briefing numa ficha para o motor de render.\n\n{KIT}\n\n"
               f"## Cérebro da Raiz\n{ctx or '(indisponível: ' + nota + ')'}\n\n"
               + (f"## Catálogo de moldes\n{linhas_cat}\n\n" if linhas_cat else "")

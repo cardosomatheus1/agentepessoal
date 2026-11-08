@@ -527,6 +527,28 @@ class Suite:
         m.desenhar({"formato": "CARROSSEL", "titulo": "x", "ideia": "y", "evitar_moldes": ["passo-a-passo", "mito"]})
         ok("- passo-a-passo" in chamadas[0] and "- mito" in chamadas[0], "sem nenhum sobrando, o catálogo fica inteiro")
 
+    def t_designer_ve_os_campos_reais_do_molde(self):
+        # 08/11: the catalog said demonstracao had problema/resultado/telas and no falas; the esquema wants falas too.
+        # The Designer is shown the esquema's own fields, not the catalog's hand-written summary.
+        reels = self._reels()
+        m = self._e(reels=reels)
+        (reels / "moldes" / "demo").mkdir(parents=True, exist_ok=True)
+        (reels / "moldes" / "demo" / "esquema.json").write_text(json.dumps({"formatos": ["reel"], "campos": {
+            "problema": {"tipo": "texto", "min": 10, "max": 60},
+            "nota": {"tipo": "texto", "max": 40, "obrigatorio": False},
+            "falas": {"tipo": "lista", "min": 5, "max": 8, "item": {"texto": {"tipo": "texto", "max": 90}}}}}))
+        (reels / "moldes" / "catalogo.json").write_text(json.dumps({"moldes": [
+            {"id": "demo", "formatos": ["reel"], "situacao": "Demo", "ficha": {"problema": "...", "cenas": "..."}},
+            {"id": "sem-esquema", "formatos": ["reel"], "situacao": "X", "ficha": {"so_no_catalogo": "..."}}]}))
+        chamadas = []
+        m.chamar = lambda papel, tarefa, material, login="matheus": chamadas.append(tarefa) or {
+            "texto": "nada", "erro": "", "imagens": [], "sem_imagem": []}
+        m.desenhar({"formato": "REELS", "titulo": "x", "ideia": "y"})
+        linha = next(l for l in chamadas[0].splitlines() if l.startswith("- demo"))
+        ok("falas: lista min 5 max 8 cada um {texto: texto max 90}" in linha and "nota: texto max 40 opcional" in linha
+           and "cenas" not in linha, linha)
+        ok("so_no_catalogo" in chamadas[0], "molde sem esquema: fica o resumo do catálogo")
+
     def t_designer_refaz_com_os_motivos_do_critico(self):
         # 22/10: the agent makes the posts by itself, so a reproved piece is redone once before it reaches Matheus
         reels = self._reels()
