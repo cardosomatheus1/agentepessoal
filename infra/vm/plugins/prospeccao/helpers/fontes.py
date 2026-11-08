@@ -36,6 +36,11 @@ BUSCAS_DIA = 100     # search API calls per day (config "buscas_dia" in the font
 # activities (coletar), so none of them waits for the first one to run out.
 CNAES = (("5620104", "marmitaria"),      # alimentos preparados para consumo domiciliar
          ("1096100", "cozinha_producao"),  # fabricação de alimentos e pratos prontos
+         ("5611201", "restaurante"),    # restaurantes e similares, incluindo pizzarias e hamburguerias
+         ("5611202", "restaurante"),    # bares (cadastros legados)
+         ("5611204", "restaurante"),    # bares sem entretenimento
+         ("5611205", "restaurante"),    # bares com entretenimento
+         ("5611203", "restaurante"),    # lanchonetes e similares
          ("1091102", "confeitaria"),     # fabricação de produtos de padaria e confeitaria (produção própria)
          ("1099699", "fabrica"),         # outros produtos alimentícios (caldas, granolas, pastas, snacks...)
          ("1095300", "fabrica"),         # especiarias, molhos, temperos e condimentos
@@ -416,6 +421,7 @@ def _item_lead(e: dict, ig: dict, segmento_cnae: str, rx_canais: dict, rx_exclus
     detalhe = e.get("fonte_original") or (e.get("fonte", "") if e.get("cnpj") else "")
     como = {"site": "no site da empresa", "fonte": "pela fonte"}.get(ig["confianca"], f"pela busca ({ig['confianca']})")
     return {
+        **{k: e[k] for k in ("cnpj", "telefone", "whatsapp", "email", "site", "bairro", "uf") if e.get(k)},
         "handle": ig["handle"], "canal": "instagram", "nome": (e.get("nome") or ig["handle"])[:80], "segmento": segmento,
         "cidade": e.get("cidade") or "", "seguidores": ig.get("seguidores") or "",
         "canais": [c for c, rx in rx_canais.items() if re.search(rx, sinais_texto)],
@@ -529,6 +535,8 @@ DOR = re.compile(r"(n[aã]o|nunca) bate|preju[ií]zo|perco|perdendo|dif[ií]cil|
 # the big branches alternate with less common productions (Matheus, 14/10: "pensar além em negócios de produção que
 # não são tão comuns"), so the rotation reaches both in the same week
 PALAVRAS_INSTAGRAM = ("marmita fit", "geleia artesanal", "marmitaria", "molho de pimenta artesanal",
+                      "restaurante", "pizzaria", "hamburgueria", "lanchonete", "churrascaria",
+                      "cafeteria", "bar", "sorveteria", "açaí",
                       "marmitas congeladas", "chocolate artesanal", "confeitaria", "pão de fermentação natural",
                       "bolo caseiro", "sorvete artesanal", "salgados", "massa fresca artesanal", "doces gourmet",
                       "queijo artesanal", "comida congelada", "kombucha", "conservas artesanais",

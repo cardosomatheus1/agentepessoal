@@ -172,12 +172,27 @@ class Prospeccao(Tool):
         acao = {"conferido": "caixa_lida", "conferidos": "estoque_conferido"}.get(acao, acao)  # old names (one letter apart)
         r = lambda m: Response(message=m, break_loop=False)  # noqa: E731
 
+        if acao == "sincronizar_erp":
+            coordinator = _carregar("raiz_coordenacao_comercial", RAIZ / "helpers" / "coordenacao.py")
+            try:
+                rows = await asyncio.to_thread(coordinator.sincronizar, p.carregar(login)["leads"])
+                return r(json.dumps({"sincronizados": len(rows), "bloqueados": sum(bool(x.get("blocked")) for x in rows)}, ensure_ascii=False))
+            except coordinator.CoordenacaoIndisponivel as exc:
+                return r(str(exc))
         if acao == "playbook":
             return r((RAIZ / "playbook.md").read_text(encoding="utf-8"))
         if acao == "contexto":
             return r(p.resumo_contexto(login))
         if acao == "registrar":
             out = p.registrar(login, leads if isinstance(leads, list) else json.loads(leads or "[]"))
+            ids = {row["id"] for key in ("criados", "repetidos") for row in out[key]}
+            if ids:
+                coordinator = _carregar("raiz_coordenacao_comercial", RAIZ / "helpers" / "coordenacao.py")
+                try:
+                    rows = await asyncio.to_thread(coordinator.sincronizar, [lead for lead in p.carregar(login)["leads"] if lead["id"] in ids])
+                    out["erp_sincronizados"] = len(rows)
+                except coordinator.CoordenacaoIndisponivel as exc:
+                    out["erp_pendente"] = str(exc)  # retained locally; a later replay retries, and no approach bypasses the gate
             return r(json.dumps(out, ensure_ascii=False) + "\nA nota é calculada pela rubrica do playbook a partir das evidências; "
                      "recusado por nota/regra não volta. Se faltou evidência (ex.: ultimo_post), confira no perfil e registre de novo.")
         if acao == "buscar_script":

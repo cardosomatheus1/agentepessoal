@@ -331,12 +331,14 @@ RADICAIS_SEGMENTO = (  # free text from the search round -> rubric key (the best
      r"defumad|pasta de amendoim|biscoit|torrefa|caf[eé] (torrado|especial)|produ[cç][aã]o artesanal", "fabrica"),
     (r"confeit|bolo|torta", "confeitaria"),
     (r"salgad", "salgados"), (r"doce|brigadeiro|bombom|chocolat", "doces"), (r"padari|panifica|p[aã]es", "padaria"),
-    (r"restaurante|refei[cç]|almo[cç]o|comida", "restaurante"),
+    (r"restaurante|pizzaria|hamburgueria|churrascaria|lanchonete|bistr[oô]|refei[cç]|almo[cç]o|comida", "restaurante"),
     (r"lanchonete|caf[eé]|aliment|food|gastronom|outro_alimento", "outro_alimento"))
 
 
 def segmento_rubrica(texto) -> str:
     t = str(texto or "").lower()
+    if re.search(r"\b(sorveteria|acaiteria|açaiteria|a[cç]a[ií]|cafeteria|bar|bares)\b",t):
+        return "restaurante"  # atendimento: mesma rubrica, sem presumir fabricação
     achados = [k for rx, k in RADICAIS_SEGMENTO if re.search(rx, t)]
     return max(achados, key=lambda k: PONTOS_SEGMENTO[k]) if achados else ""
 
@@ -442,6 +444,9 @@ def registrar(login: str, novos: list) -> dict:
                 "cidade": str(item["cidade"])[:60], "seguidores": str(item.get("seguidores") or "")[:20],
                 "motivo": str(item["motivo"])[:300], "sinal": str(item.get("sinal") or "")[:300],
                 "etapa": "novo", "criado": agora(), "atualizado": agora(), "historico": []}
+        for field in ("cnpj", "telefone", "whatsapp", "email", "site", "bairro", "uf"):
+            if item.get(field):
+                lead[field] = str(item[field])[:300]
         if item.get("atividade_pendente") and not item.get("ultimo_post"):
             lead["conferir_atividade"] = True  # found outside Instagram: last post checked on the warm-up visit
             lead["fonte"] = str(item.get("fonte") or "")[:40]
@@ -2663,6 +2668,17 @@ def registrar_falha(login: str, texto: str) -> None:
         f.write(json.dumps({"em": agora(), "texto": texto}, ensure_ascii=False) + "\n")
 
 
+def _commercial_permit(lead):
+    path = Path(__file__).with_name("coordenacao.py")
+    spec = importlib.util.spec_from_file_location("raiz_coordenacao_comercial", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        return module.permitir(lead)
+    except module.CoordenacaoIndisponivel as exc:
+        return False, str(exc)
+
+
 RESERVA = 20 * 60  # an action handed out to a round is that round's; with no result in this time it becomes "incerta"
 
 
@@ -2742,6 +2758,11 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
                               and _hoje_local(x.get("executada_em")) == _hoje_local())
         if executadas_hoje >= limites(d)[a["tipo"]]:
             continue
+        allowed, commercial_reason = _commercial_permit(lead)
+        if not allowed:
+            # Already-approved work is rechecked here, immediately before the browser sees it.
+            salvar(login, d)
+            return None, commercial_reason
         a["em_execucao"], a["reservada_por"] = agora(), quem
         salvar(login, d)
         return {**a, "lead": lead}, ""
@@ -2828,6 +2849,9 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
     lead = _lead(d, a["lead_id"])
     if not lead or lead["etapa"] in FINAIS:
         return False, "lead encerrado: não comente"
+    allowed, reason = _commercial_permit(lead)
+    if not allowed:
+        return False, reason
     if not pode_comentar(lead):
         return False, "lead encerrado: não comente"
     t = (texto or "").strip()

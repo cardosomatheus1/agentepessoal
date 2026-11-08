@@ -66,3 +66,47 @@ quê, quando, quantas vezes e em que ordem é regra do código, nunca do modelo.
   um envio.
 - **Revisor barrando por um motivo falso** → 2ª revisão quando o motivo contradiz o texto.
 - **Agente apagando mensagem** → skill proíbe sem ordem explícita e sem ver duas iguais.
+
+
+## Coordenação comercial com parceiros (fase 1, implementação ainda não publicada)
+
+O ERP mantém a identidade e posse comercial em `ops_leads` e
+`ops_commercial_ownership`. O JSON do agente mantém apenas seu diário de execução.
+`registrar` sincroniza os registros aceitos com o ERP; falhas ficam indicadas como
+`erp_pendente` para repetição por `sincronizar_erp`. `helpers/coordenacao.py` envia
+dados públicos, fonte, evidência e nota existente
+pela ingestão central; consulta recusa e reserva, e reivindica a posse antes de
+liberar a abordagem. `proxima` verifica também ações aprovadas anteriormente;
+`comentar` verifica novamente. Falha de rede ou configuração bloqueia a ação.
+
+Configurar na VM, pelo gerenciador de segredos:
+- `RAIZ_CRM_URL`: origem HTTPS da API, sem `/api/v1`.
+- `PROSPECTING_BRIDGE_TOKEN`: mesmo segredo forte configurado na API.
+
+Antes de retomar abordagens após implantação coordenada, suspender a execução e
+rodar `prospeccao(acao="sincronizar_erp", login=...)` para importar o histórico
+existente e conferir os bloqueios. Não há credencial padrão. Não publicar o
+segredo em prompt, código ou relatório. Esta alteração não foi aplicada na VM.
+
+Testes novos: `python -m unittest discover -s infra/vm/plugins/prospeccao/tests -p test_coordenacao.py -v`.
+A suíte legada isola o transporte comercial; os testes novos verificam seu bloqueio
+inclusive para uma ação já aprovada que depois tenha sido reservada no ERP.
+
+
+## Ampliação para restaurantes — 08/11/2026
+
+Por decisão do Matheus, restaurantes, pizzarias, hamburguerias, lanchonetes,
+churrascarias e bistrôs integram as buscas. As especialidades usam a rubrica
+restaurante existente (15 pontos), sem elevar pesos ou reduzir a nota mínima.
+Fontes mantêm a rotação anterior e acrescentam CNAEs 5611201/5611203 e os termos
+dessas especialidades. Coordenação com o ERP, reservas, recusa de contato e aprovação
+continuam obrigatórias. Alterações locais ainda não foram implantadas na VM.
+
+
+A referência institucional enviada depois também inclui bares, cafeterias,
+sorveterias e açaí. Esses negócios usam a rubrica de atendimento (restaurante,
+mesmos 15 pontos). A rotação de diretório inclui CNAEs de bares e palavras desses
+ramos. Atender no salão/balcão/delivery não exige que o estabelecimento fabrique
+os alimentos: o playbook agora separa esses dois perfis de cliente. Aprovações,
+opt-out e coordenação com o CRM permanecem obrigatórios. Validação: 120 casos
+legados e 8 casos novos passaram localmente. Nada foi implantado na VM.

@@ -71,6 +71,7 @@ DM_A = ("Oi, Ana! Vi a marmita de frango com batata-doce de vocês, capricho no 
 class Suite:
     def __init__(self):
         self.p = _carregar("prospeccao_helper_teste", RAIZ / "helpers" / "prospeccao.py")  # never the live one
+        self.p._commercial_permit = lambda lead: (True, "")  # isolated transport; production never bypasses the ERP
         self.resultados = []
         self.relogio = None
 

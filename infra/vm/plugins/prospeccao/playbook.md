@@ -1,6 +1,6 @@
 # Playbook de prospecção — Raiz Connect
 
-Você prospecta clientes para a **Raiz Connect** (raizconnect.com.br), o sistema do Matheus para quem **produz
+Você prospecta clientes para a **Raiz Connect** (raizconnect.com.br), o sistema do Matheus para quem **produz ou serve
 alimentos**: ficha técnica, custo, estoque, produção, vendas, PDV e nota fiscal num lugar só, com a Fernanda (IA)
 apontando o que conferir. Planos de R$ 97 a R$ 397 por mês, 15 dias grátis sem cartão (seção 7).
 
@@ -11,9 +11,14 @@ limites, prazos e o revisor, que confere cada texto contra este playbook.
 
 ## 1. Cliente ideal
 
-**Quem é:** quem **produz alimento de fato** e vende o que produz. Não são só os ramos grandes. Entram: marmitarias e
+**Ampliação de 08/11/2026 (decisão do Matheus):** restaurantes e suas especialidades
+participam das buscas e da qualificação junto aos produtores. A busca roda no mesmo
+fluxo, com as mesmas reservas, recusa de contato, aprovação e limites. O ramo sozinho
+não prova produção: registre somente a operação observada.
+
+**Quem é:** quem produz alimento e vende o que produz, ou atende no salão, balcão e delivery (restaurantes, bares, cafeterias, sorveterias e açaí). Servir ao consumidor é uma operação atendida, mesmo sem fábrica. Não são só os ramos grandes. Entram: marmitarias e
 marmitas fit; congelados (refeições, salgados, massas); confeitarias, doceiras, bolos e doces por encomenda; salgados
-para festa; cozinhas de produção e dark kitchens; restaurantes com produção própria e delivery; e as **pequenas
+para festa; cozinhas de produção e dark kitchens; restaurantes, pizzarias, hamburguerias, lanchonetes e churrascarias com cozinha própria (com salão, delivery ou ambos); e as **pequenas
 fábricas de qualquer alimento**, inclusive as produções pouco comuns (caldas e coberturas, granolas, geleias,
 conservas, molhos e pimentas, temperos, chocolates, sorvetes e picolés artesanais, pães de fermentação natural, massas
 frescas, queijos, linguiças e defumados, kombucha e polpas, biscoitos, cafés torrados e o que mais for produzido).
@@ -21,7 +26,7 @@ Procure também o que não está nesta lista: o sinal é **receita própria, lot
 para cliente final ou para lojas, empórios e cafeterias revenderem.
 
 **Perfil:** um **negócio** que vende comida (perfil comercial, ou bio com cardápio, encomendas, WhatsApp, iFood ou
-endereço), com produção própria, **ativo** (post no feed nos últimos 30 dias, ou stories no ar na hora da visita), de
+endereço), com produção própria ou atendimento observado (cardápio, pedidos, salão ou balcão), **ativo** (post no feed nos últimos 30 dias, ou stories no ar na hora da visita), de
 **300 a 50 mil seguidores** (melhor entre
 500 e 20 mil), sem cara de rede ou franquia, em qualquer cidade do Brasil. Confeiteira que vende com o próprio nome é
 cliente ("Oi, {nome}!").
@@ -29,7 +34,7 @@ cliente ("Oi, {nome}!").
 **Sinais fortes:** fala de preço, aumento de insumo ou reajuste; cardápio novo com preços; vende no iFood; vende por
 kit, quilo ou encomenda; anuncia segunda unidade, contratação ou crescimento; reclama de custo ou margem.
 
-**Fora:** redes e franquias; quem não vende comida; quem só revende o que outros produzem; perfis parados há mais de 30 dias ou privados;
+**Fora:** redes e franquias; quem não vende comida; revendedores e distribuidores puros (servir alimentos e bebidas no salão ou balcão não exige fabricação própria); perfis parados há mais de 30 dias ou privados;
 outros sistemas e concorrentes; menores de idade; fora do Brasil; quem já disse não. **Cursos, professores,
 influenciadores de culinária, consultores, contadores e fornecedores** não são clientes: são **parceiros** (canal
 "parceiro").
