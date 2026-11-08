@@ -14,4 +14,9 @@ class RestaurantesTests(unittest.TestCase):
  def test_diretorio_e_rotacao_social_incluem_atendimento(self):
   self.assertEqual(dict(f.CNAES)['5611201'],'restaurante');self.assertEqual(dict(f.CNAES)['5611203'],'restaurante')
   for word in ['restaurante','pizzaria','hamburgueria','lanchonete','churrascaria']:self.assertIn(word,f.PALAVRAS_INSTAGRAM)
+ def test_directory_does_not_discard_food_service_by_name(self):
+  for name in ['BAR DO ZE','LANCHONETE DA ANA','PIZZARIA BOA','HAMBURGUERIA CENTRAL','BURGER DO BAIRRO','CHURRASCARIA A BRASA','PASTELARIA NOVA','BOTECO DA VILA']:
+   with self.subTest(name=name):self.assertIsNone(f.FORA.search(name))
+  for name in ['MERCADINHO CENTRAL','MERCEARIA DA ANA','DISTRIBUIDORA DE BEBIDAS']:
+   with self.subTest(name=name):self.assertIsNotNone(f.FORA.search(name))
 if __name__=='__main__':unittest.main()

@@ -2,6 +2,8 @@
 The local JSON remains the action journal; company identity, ownership and opt-out belong to ops_leads.
 """
 import json
+import importlib.util
+from pathlib import Path
 import os
 import urllib.request
 
@@ -10,9 +12,32 @@ class CoordenacaoIndisponivel(RuntimeError):
     pass
 
 
-def _pedir(path, payload):
-    origin = os.environ.get('RAIZ_CRM_URL', '').rstrip('/')
-    token = os.environ.get('PROSPECTING_BRIDGE_TOKEN', '')
+def _cofre_values(login):
+    path = Path(__file__).resolve().parents[2] / 'cofre' / 'helpers' / 'cofre.py'
+    if not path.is_file():
+        return {}
+    spec = importlib.util.spec_from_file_location('raiz_coordenacao_cofre', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.carregar(login)
+
+
+def _configuration(login):
+    # Process-wide integration belongs only to Raiz's owner. Guests never inherit it.
+    own = _cofre_values(login)
+    use_environment = login == 'matheus'
+    origin = (os.environ.get('RAIZ_CRM_URL', '') if use_environment else '') or own.get('RAIZ_CRM_URL', '')
+    token = (os.environ.get('PROSPECTING_BRIDGE_TOKEN', '') if use_environment else '') or own.get('PROSPECTING_BRIDGE_TOKEN', '')
+    return origin.rstrip('/'), token
+
+
+def _required(login):
+    # An unconfigured guest keeps their existing prospecting; only Matheus must use the Raiz bridge.
+    return login == 'matheus' or bool(_configuration(login)[0])
+
+
+def _pedir(path, payload, login='matheus'):
+    origin, token = _configuration(login)
     if not origin or len(token) < 32:
         raise CoordenacaoIndisponivel('coordenação comercial não configurada; nenhuma abordagem liberada')
     if not origin.startswith('https://') and not origin.startswith('http://127.0.0.1:'):
@@ -45,20 +70,24 @@ def registro(lead):
     return row
 
 
-def permitir(lead):
-    answer = _pedir('sync', {'leads': [registro(lead)]})
+def permitir(lead, login='matheus'):
+    if not _required(login):
+        return True, ''
+    answer = _pedir('sync', {'leads': [registro(lead)]}, login=login)
     rows = answer.get('leads') or []
     if len(rows) != 1 or rows[0].get('blocked'):
         return False, 'lead reservado, já cliente ou com pedido de não contato no ERP'
-    claim = _pedir('claim', {'leadId': rows[0]['leadId']})
+    claim = _pedir('claim', {'leadId': rows[0]['leadId']}, login=login)
     if claim.get('allowed') is not True:
         return False, 'o ERP não liberou a abordagem'
     return True, ''
 
 
-def sincronizar(leads):
+def sincronizar(leads, login='matheus'):
     """Bootstrap/replay by source ids, through the same ingestion and dedupe as all ERP sources."""
+    if not _required(login):
+        return []
     output = []
     for start in range(0, len(leads), 50):
-        output.extend(_pedir('sync', {'leads': [registro(l) for l in leads[start:start+50]]}).get('leads') or [])
+        output.extend(_pedir('sync', {'leads': [registro(l) for l in leads[start:start+50]]}, login=login).get('leads') or [])
     return output

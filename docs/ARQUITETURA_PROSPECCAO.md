@@ -110,3 +110,21 @@ ramos. Atender no salão/balcão/delivery não exige que o estabelecimento fabri
 os alimentos: o playbook agora separa esses dois perfis de cliente. Aprovações,
 opt-out e coordenação com o CRM permanecem obrigatórios. Validação: 120 casos
 legados e 8 casos novos passaram localmente. Nada foi implantado na VM.
+
+### Preparação da integração real — 08/11/2026
+
+A inspeção confirmou Hermes usando a ponte A0 e o plugin instalado em
+`/opt/a0/usr/plugins/prospeccao` (versão d9fa99c, ancestral conferido). A base de
+prospecção ativa encontrada é a do Matheus. A coordenação agora recebe o login
+real e lê a conexão no cofre dessa pessoa: Matheus é obrigado a conferir o ERP;
+convidados não herdam a conexão global da Raiz nem têm sua prospecção bloqueada
+por essa integração. Não precisa reiniciar os Hermes para atualizar o cofre.
+
+Removidos os descartes antigos de nomes de bares, pizzarias, hamburguerias,
+lanchonetes e churrascarias nas fontes; mercados e distribuidores continuam
+fora. Testes: 120/120 da suíte original em pasta temporária e 12 testes dirigidos
+passaram. Reintroduzir a herança de credenciais globais e os descartes de bares
+fez os testes novos falharem; arquivos restaurados e testes verdes.
+
+O plugin ainda não foi implantado. A API do ERP, o segredo compartilhado e o
+bootstrap da base precisam estar prontos antes de trocar a versão ao vivo.

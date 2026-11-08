@@ -68,8 +68,7 @@ CIDADES = (("BA", "salvador"), ("BA", "lauro de freitas"), ("BA", "camacari"), (
            ("SP", "ribeirao preto"), ("SP", "sorocaba"), ("SP", "santos"), ("PR", "londrina"), ("SC", "joinville"))
 # names that are clearly not a food producer: not worth a search query. Ice cream and açaí left this list on 14/10:
 # a fábrica de sorvete or de polpa produces (and the ice-cream activity is walked now); the visit decides the rest.
-FORA = re.compile(r"\b(bar|bares|boteco|lanchonete|pizzari|espetinho|mercad|mercearia|dep[oó]sito|"
-                  r"distribuidora|churrascaria|pastelaria|hamburg|burger|cervej|adega|conveni[eê]ncia)", re.I)
+FORA = re.compile(r"\b(mercad|mercearia|dep[oó]sito|distribuidora|adega|conveni[eê]ncia)", re.I)
 
 
 def _sem_acento(t: str) -> str:

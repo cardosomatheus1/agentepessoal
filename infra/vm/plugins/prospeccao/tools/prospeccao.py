@@ -175,7 +175,7 @@ class Prospeccao(Tool):
         if acao == "sincronizar_erp":
             coordinator = _carregar("raiz_coordenacao_comercial", RAIZ / "helpers" / "coordenacao.py")
             try:
-                rows = await asyncio.to_thread(coordinator.sincronizar, p.carregar(login)["leads"])
+                rows = await asyncio.to_thread(coordinator.sincronizar, p.carregar(login)["leads"], login)
                 return r(json.dumps({"sincronizados": len(rows), "bloqueados": sum(bool(x.get("blocked")) for x in rows)}, ensure_ascii=False))
             except coordinator.CoordenacaoIndisponivel as exc:
                 return r(str(exc))
@@ -189,7 +189,7 @@ class Prospeccao(Tool):
             if ids:
                 coordinator = _carregar("raiz_coordenacao_comercial", RAIZ / "helpers" / "coordenacao.py")
                 try:
-                    rows = await asyncio.to_thread(coordinator.sincronizar, [lead for lead in p.carregar(login)["leads"] if lead["id"] in ids])
+                    rows = await asyncio.to_thread(coordinator.sincronizar, [lead for lead in p.carregar(login)["leads"] if lead["id"] in ids], login)
                     out["erp_sincronizados"] = len(rows)
                 except coordinator.CoordenacaoIndisponivel as exc:
                     out["erp_pendente"] = str(exc)  # retained locally; a later replay retries, and no approach bypasses the gate

@@ -71,7 +71,7 @@ DM_A = ("Oi, Ana! Vi a marmita de frango com batata-doce de vocês, capricho no 
 class Suite:
     def __init__(self):
         self.p = _carregar("prospeccao_helper_teste", RAIZ / "helpers" / "prospeccao.py")  # never the live one
-        self.p._commercial_permit = lambda lead: (True, "")  # isolated transport; production never bypasses the ERP
+        self.p._commercial_permit = lambda lead, login="matheus": (True, "")  # isolated transport; production never bypasses the ERP
         self.resultados = []
         self.relogio = None
 
@@ -544,7 +544,7 @@ class Suite:
         cozinha = {"nome": "COZINHA DE CHEF", "razao": "CCLAY", "cnpj": "09.205.662/0001-72", "cidade": "Salvador", "uf": "BA",
                    "situacao": "Ativa", "telefone": "(71) 99922-3577", "abertura": "12/11/2007", "cnae": "5620104", "fonte": "GuiaPJ"}
         d = f.carregar(LOGIN)
-        for e in (cozinha, {**cozinha, "nome": "BAR DO TONHAO", "cnpj": "1"}, {**cozinha, "nome": "11.568.582 SONIA MARIA", "cnpj": "2"},
+        for e in (cozinha, {**cozinha, "nome": "MERCADINHO DO TONHAO", "cnpj": "1"}, {**cozinha, "nome": "11.568.582 SONIA MARIA", "cnpj": "2"},
                   {**cozinha, "nome": "PADARIA DO JOAO", "cnpj": "3", "telefone": "(71) 91111-2222"}):
             d["empresas"][f._chave(e)] = {**e, "estado": "fila"}
         f.salvar(LOGIN, d)
@@ -562,7 +562,7 @@ class Suite:
         out = f.enriquecer(LOGIN, p, 10)
         handles = {c["handle"] for c in out["criados"]}
         eq(handles, {"cozinhadechef", "docelar.ssa"}, f"leads criados: {out}")
-        eq(out["pulados"], 2, "bar e MEI com nome de pessoa pulados sem gastar busca")
+        eq(out["pulados"], 2, "mercado e MEI com nome de pessoa pulados sem gastar busca")
         eq(out["sem_instagram"], 1, "padaria sem perfil achado")
         ok(not any("docelar" in q for q in consultas), f"quem já veio com @ não gasta busca: {consultas}")
         d = p.carregar(LOGIN)
@@ -647,7 +647,7 @@ class Suite:
         ok(segs.get("5620104") == "marmitaria" and f.CNAES[0][0] == "5620104", "os ramos grandes continuam")
         for nome in ("FABRICA DE SORVETES DONA BELA", "POLPAS DE ACAI DO NORTE", "GELATO DA VILA"):
             ok(not f.FORA.search(nome), f"{nome}: quem produz sorvete ou polpa não é descartado pelo nome")
-        ok(f.FORA.search("BAR DO ZE") and f.FORA.search("MERCADINHO CENTRAL"), "bar e mercado continuam fora")
+        ok(not f.FORA.search("BAR DO ZE") and f.FORA.search("MERCADINHO CENTRAL"), "bar entra como atendimento; mercado continua fora")
         for bio in ("Caldas e coberturas para sorvete, atacado e varejo", "Granola artesanal sem açúcar",
                     "Geleias e conservas da roça", "Molho de pimenta artesanal", "Pães de fermentação natural",
                     "Queijo artesanal da serra", "Kombucha feita aqui"):

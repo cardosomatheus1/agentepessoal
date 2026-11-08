@@ -2668,13 +2668,13 @@ def registrar_falha(login: str, texto: str) -> None:
         f.write(json.dumps({"em": agora(), "texto": texto}, ensure_ascii=False) + "\n")
 
 
-def _commercial_permit(lead):
+def _commercial_permit(lead, login="matheus"):
     path = Path(__file__).with_name("coordenacao.py")
     spec = importlib.util.spec_from_file_location("raiz_coordenacao_comercial", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     try:
-        return module.permitir(lead)
+        return module.permitir(lead, login=login)
     except module.CoordenacaoIndisponivel as exc:
         return False, str(exc)
 
@@ -2758,7 +2758,7 @@ def proxima(login: str, conta_ativa: str = "", repor: bool = True, quem: str = "
                               and _hoje_local(x.get("executada_em")) == _hoje_local())
         if executadas_hoje >= limites(d)[a["tipo"]]:
             continue
-        allowed, commercial_reason = _commercial_permit(lead)
+        allowed, commercial_reason = _commercial_permit(lead, login)
         if not allowed:
             # Already-approved work is rechecked here, immediately before the browser sees it.
             salvar(login, d)
@@ -2849,7 +2849,7 @@ def comentar(login: str, aid: str, texto: str, base: str = "") -> tuple[bool, st
     lead = _lead(d, a["lead_id"])
     if not lead or lead["etapa"] in FINAIS:
         return False, "lead encerrado: não comente"
-    allowed, reason = _commercial_permit(lead)
+    allowed, reason = _commercial_permit(lead, login)
     if not allowed:
         return False, reason
     if not pode_comentar(lead):

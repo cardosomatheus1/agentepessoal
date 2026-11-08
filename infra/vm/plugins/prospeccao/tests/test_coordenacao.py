@@ -36,8 +36,22 @@ class CoordinationTests(unittest.TestCase):
    d['leads']=[{**self.lead,'historico':[],'criado':p.agora()}]
    d['acoes']=[{'id':'test_action','lead_id':self.lead['id'],'tipo':'dm_abertura','estado':'aprovada','decidida':0,'texto':'teste'}]
    p.salvar('teste_boundary',d)
-   p._commercial_permit=lambda lead:(False,'reservado por parceiro')
+   p._commercial_permit=lambda lead, login="matheus":(False,'reservado por parceiro')
    action,reason=p.proxima('teste_boundary','raiz.connect',repor=False)
    self.assertIsNone(action);self.assertIn('reservado',reason)
    self.assertFalse(p.carregar('teste_boundary')['acoes'][0].get('em_execucao'))
+ def test_guest_never_inherits_global_raiz_credentials(self):
+  with patch.dict(os.environ,{'RAIZ_CRM_URL':'https://api.raizconnect.com.br','PROSPECTING_BRIDGE_TOKEN':'fictitious-global-key-'*3}), patch.object(c,'_cofre_values',return_value={}), patch.object(c,'_pedir') as request:
+   for login in ['convidado','teste_convidado']:
+    self.assertEqual(c.permitir(self.lead,login=login),(True,''))
+    self.assertEqual(c.sincronizar([self.lead],login=login),[])
+   request.assert_not_called()
+ def test_owner_can_use_per_person_vault_without_restart(self):
+  with patch.dict(os.environ,{'RAIZ_CRM_URL':'','PROSPECTING_BRIDGE_TOKEN':''}), patch.object(c,'_cofre_values',return_value={'RAIZ_CRM_URL':'https://api.raizconnect.com.br/','PROSPECTING_BRIDGE_TOKEN':'fictitious-owner-key-'*3}) as vault:
+   origin,token=c._configuration('matheus')
+   self.assertEqual(origin,'https://api.raizconnect.com.br');self.assertGreaterEqual(len(token),32)
+   vault.assert_called_once_with('matheus')
+ def test_owner_without_configuration_remains_closed(self):
+  with patch.dict(os.environ,{'RAIZ_CRM_URL':'','PROSPECTING_BRIDGE_TOKEN':''}), patch.object(c,'_cofre_values',return_value={}):
+   with self.assertRaises(c.CoordenacaoIndisponivel):c.permitir(self.lead,login='matheus')
 if __name__=='__main__':unittest.main()
