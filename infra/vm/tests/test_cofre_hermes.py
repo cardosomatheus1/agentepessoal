@@ -143,6 +143,12 @@ r = cf.resultado_mascarado(tool_name="browser_click", result='{"error": "Unknown
 checa(r and "browser_snapshot` agora" in r and "e42" in r and "senhaForte123" not in r, f"ref que sumiu: dica e máscara ({r})")
 checa(cf.resultado_mascarado(tool_name="browser_click", result=r, session_id="s1") is None, "a dica não se repete")
 checa(cf.resultado_mascarado(tool_name="terminal", result="Unknown ref: e1", session_id="s1") is None, "só no navegador")
+# 06-07/11 (5×): o agente esperava 12-15 s DENTRO do script do console, que desiste em 10 s, e só recebia "TimeoutError: "
+r = cf.resultado_mascarado(tool_name="browser_console", result='{"success": false, "error": "TimeoutError: "}', session_id="s1")
+checa(r and "10 s" in r and "sleep" in r and "terminal" in r, f"console que estourou o tempo: diz o limite e como esperar ({r})")
+checa(cf.resultado_mascarado(tool_name="browser_console", result=r, session_id="s1") is None, "a dica do console não se repete")
+checa(cf.resultado_mascarado(tool_name="browser_console", result='{"success": true, "result": "TimeoutError na página"}',
+                             session_id="s1") is None, "texto da página que fala de TimeoutError não ganha dica")
 cf.DEPOIS.append(lambda n, t, kw: 1 / 0)
 checa("§§secret(IG_SENHA)" in (cf.resultado_mascarado(tool_name="x", result="v senhaForte123", session_id="s1") or ""),
       "uma dica com erro não derruba a máscara")
