@@ -1,5 +1,13 @@
 # Arquitetura da prospecção (Raiz Connect)
 
+**Implantado em 09/11/2026:** plugin `128b004` pelo implantador oficial, com
+121/121 testes em cópia isolada da VM e 12/12 testes novos. ERP `4d36c68`,
+migrations 0124–0127 aplicadas. Conexão no cofre exclusivo do Matheus,
+configurada pelo helper sem reiniciar Hermes nem compartilhar com convidados.
+757 registros sincronizados pela ponte canônica e 308 posses comerciais da
+Raiz conferidas; nenhum estado vivo foi editado à mão e nenhuma mensagem foi
+enviada pela implantação. As notas de preparação abaixo são históricas.
+
 ## Peças e quem é dono de quê
 
 | Peça | Onde | Dono / quem escreve |
@@ -126,5 +134,6 @@ fora. Testes: 120/120 da suíte original em pasta temporária e 12 testes dirigi
 passaram. Reintroduzir a herança de credenciais globais e os descartes de bares
 fez os testes novos falharem; arquivos restaurados e testes verdes.
 
-O plugin ainda não foi implantado. A API do ERP, o segredo compartilhado e o
-bootstrap da base precisam estar prontos antes de trocar a versão ao vivo.
+Implantação e bootstrap concluídos conforme o registro atual no início deste
+documento. A conexão autenticada com a ponte foi conferida antes da troca, e
+a base foi sincronizada pelo helper, preservando os arquivos de estado locais.
