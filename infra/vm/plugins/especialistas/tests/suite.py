@@ -557,8 +557,13 @@ class Suite:
         # confere as duas coisas antes do render, para a rodada de correção resolver.
         reels = self._reels()
         real = RAIZ.parents[2] / "reels" / "moldes" / "lanca-app" / "esquema.json"
+        esquema = json.loads(real.read_text(encoding="utf-8")) if real.exists() else {"formatos": ["reel"], "campos": {
+            "telas": {"tipo": "lista", "min": 3, "max": 5, "item": {"imagem": {"tipo": "foto"}}},
+            "falas": {"tipo": "lista", "min": 10, "max": 12, "item": {"tipo": "texto", "max": 170},
+                      "dica": "telas + 7 falas: dores, pergunta, revelação, uma por tela, benefícios, como começar, "
+                              "oferta ou para quem, chamada; 55 a 65 s no total"}}}  # the staging copy has no moldes
         (reels / "moldes" / "lanca-app").mkdir(parents=True)
-        (reels / "moldes" / "lanca-app" / "esquema.json").write_text(real.read_text(encoding="utf-8"), encoding="utf-8")
+        (reels / "moldes" / "lanca-app" / "esquema.json").write_text(json.dumps(esquema, ensure_ascii=False), encoding="utf-8")
         (reels / "moldes" / "motor" / "validar.py").write_text("def validar(esquema, ficha):\n    return []\n")
         m = self._e(reels=reels)
         campos = m._campos_do_molde("lanca-app")
