@@ -556,8 +556,9 @@ class Suite:
         # do mês', fala 5 'Na Curva ABC' e fala 6 'A DRE reúne'" sem explicação. Agora o Designer vê a regra e o código
         # confere as duas coisas antes do render, para a rodada de correção resolver.
         reels = self._reels()
-        real = RAIZ.parents[2] / "reels" / "moldes" / "lanca-app" / "esquema.json"
-        esquema = json.loads(real.read_text(encoding="utf-8")) if real.exists() else {"formatos": ["reel"], "campos": {
+        real = next((r / "reels" / "moldes" / "lanca-app" / "esquema.json" for r in RAIZ.parents
+                     if (r / "reels" / "moldes" / "lanca-app" / "esquema.json").exists()), None)
+        esquema = json.loads(real.read_text(encoding="utf-8")) if real else {"formatos": ["reel"], "campos": {
             "telas": {"tipo": "lista", "min": 3, "max": 5, "item": {"imagem": {"tipo": "foto"}}},
             "falas": {"tipo": "lista", "min": 10, "max": 12, "item": {"tipo": "texto", "max": 170},
                       "dica": "telas + 7 falas: dores, pergunta, revelação, uma por tela, benefícios, como começar, "
