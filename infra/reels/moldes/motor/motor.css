@@ -44,6 +44,7 @@ body.e-kit .tit{font-weight:800;letter-spacing:-.045em}
 /* 06/11: no kit da Raiz não há letra manuscrita (Caveat). O Crítico reprova pela identidade e o carrossel do dia
    caiu 4 vezes seguidas; o acento "à mão" dos moldes vira a Manrope da marca, em itálico leve. */
 body.e-kit .mao{font-family:M,sans-serif;font-weight:600;font-style:italic;letter-spacing:-.01em}
+.selo-exemplo{position:absolute;left:14px;bottom:14px;z-index:6;padding:6px 16px;border-radius:999px;background:rgba(8,12,10,.82);color:#f4efe4;font-family:M,sans-serif;font-weight:700;font-size:24px;line-height:1.2;letter-spacing:.01em;white-space:nowrap;pointer-events:none}
 body.e-kit .dest,body.e-kit .kit-it{font-family:S,serif;font-style:italic;font-weight:400;letter-spacing:-.01em}
 .chip{display:inline-block;padding:.32em .8em;border-radius:999px;background:var(--destaque);color:var(--sobre-destaque);font-weight:900}
 .grad{background-image:linear-gradient(100deg,var(--destaque),var(--c2));background-clip:text;-webkit-background-clip:text;color:transparent;padding-bottom:.16em}

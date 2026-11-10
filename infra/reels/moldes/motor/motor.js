@@ -114,8 +114,18 @@ const Motor = {
   // Raiz kit (14/10): the highlighted word of a headline in Instrument Serif. Each template highlights its own way
   // (a class, the last word...), so the word is found by what it shows: text in the highlight color inside a title.
   // Raiz kit, decision #85 (22/10): a screen of the system is shown whole, with the menu, never cropped to fill a box
+  // 10/11: the screens carry example numbers and the demo company's name; the Crítico wants "valores de exemplo" next
+  // to each screen, and in the moldes without a "nota" (passo-a-passo, mito, faca-nao-faca...) the Designer had no way
+  // to put it there: eight carousels fell on it from 06 to 10/11. Every screen gets its own seal.
   _telasInteiras() {
-    for (const i of $$('img')) if (/\/telas\//.test(i.getAttribute('src') || '')) { i.style.objectFit = 'contain'; i.style.background = 'var(--fundo)'; }
+    for (const i of $$('img')) if (/\/telas\//.test(i.getAttribute('src') || '')) {
+      i.style.objectFit = 'contain'; i.style.background = 'var(--fundo)';
+      const caixa = i.parentElement;
+      if (Motor.FORMATO !== 'carrossel' || !caixa || caixa.querySelector(':scope > .selo-exemplo')) continue;  // video: the molde's nota
+      if (getComputedStyle(caixa).position === 'static') caixa.style.position = 'relative';
+      const selo = document.createElement('div'); selo.className = 'selo-exemplo'; selo.textContent = 'Valores de exemplo';
+      caixa.appendChild(selo);
+    }
   },
   _serifNoDestaque() {
     const alvo = getComputedStyle(document.body).getPropertyValue('--destaque').trim();
