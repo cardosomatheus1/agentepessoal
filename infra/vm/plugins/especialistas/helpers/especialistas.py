@@ -701,6 +701,21 @@ def _jargao(texto: str) -> list[str]:
     return erros
 
 
+LEGENDA_GENERICA = re.compile(r"\b(conheça|saiba mais|solução|soluções)\b", re.I)
+
+
+def _legenda_generica(spec: dict) -> list[str]:
+    """10/11, real: the Wednesday carousel reproved for a caption ending "Conheça a solução para sua operação." The
+    rule was only in the Designer's prompt (end on the concrete step, never "saiba mais"/"conheça"); now the
+    correction round fixes it before the Crítico."""
+    legenda = str(spec.get("legenda") or "")
+    achado = LEGENDA_GENERICA.search(legenda)
+    if not achado:
+        return []
+    return [f"ficha: a legenda usa \"{achado.group(0)}\" (genérico, a marca não usa): termine no passo concreto, ex.: "
+            f"\"Toque no link da bio e veja o Lucro na Mão em 30 Dias.\""]
+
+
 def _texto_dito(ficha: dict) -> dict:
     """What the piece writes or says, for the jargon check: a screen's file and its menu label are not text of the piece
     (the Crítico's rule, 27/10)."""
@@ -739,6 +754,7 @@ def _conferir_spec(spec: dict) -> list[str]:
                 problemas.append("peça da Raiz com outra marca na ficha (_marca): o kit só vale com a marca raiz")
             if marca == "raiz":
                 problemas += _jargao(json.dumps(_texto_dito(spec["ficha"]), ensure_ascii=False))
+                problemas += _legenda_generica(spec)
             pedido = spec.get("_formato_pedido")
             if pedido and str(spec.get("formato") or "").lower() != pedido:
                 problemas.append(f"ficha: formato {spec.get('formato')!r}, mas a vaga da semana é {pedido!r}: use um molde "

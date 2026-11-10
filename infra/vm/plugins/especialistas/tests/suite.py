@@ -704,6 +704,17 @@ class Suite:
            and "- frases" not in correcao, correcao[:500])
         eq((d["spec"]["molde"], [f for f in d["falta"] if "não existe" in f]), ("conta-mudou", []), "corrigido com um molde real")
 
+    def t_legenda_generica_entra_na_correcao(self):
+        # 10/11, caso real: carrossel de quarta 11/11 reprovado só por "A legenda termina com 'Conheça a solução para
+        # sua operação.' Isso quebra a regra de voz da marca"
+        m = self._e()
+        spec = {"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel", "ficha": {"_marca": "raiz"},
+                "legenda": "Responder a mesma pergunta o dia todo cansa. Conheça a solução para sua operação."}
+        m._validar_ficha = lambda molde, ficha: []
+        ok(any("legenda usa \"Conheça\"" in f for f in m._conferir_spec(spec)), m._conferir_spec(spec))
+        spec["legenda"] = "Responder a mesma pergunta o dia todo cansa. Toque no link da bio e veja o cardápio."
+        eq([f for f in m._conferir_spec(spec) if "legenda" in f], [], "legenda com o passo concreto passa")
+
     def t_previa_mostra_tela_inteira_antes_do_zoom(self):
         # 10/11, caso real: o Reel de quarta 11/11 (lanca-app, 5 telas) reprovado por "Regra do Matheus #85: nas cenas
         # das telas, o sistema não aparece inteiro com o menu visível ... na tela da cozinha, as laterais estão
