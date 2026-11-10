@@ -817,10 +817,27 @@ def telas_do_sistema(formato: str = "") -> str:
             + " Campo \"real\" pede \"_origem\" com \"sistema\" (tela) ou \"dono\".\n\n")
 
 
-def _tarefa_correcao(spec: dict, falta: list) -> str:
+def _moldes_que_servem(formato: str, evitar=()) -> str:
+    """The catalog's moldes for the slot's format (minus the ones ruled out), for a ficha that named a molde that does
+    not exist (10/11: the Gestor said "um molde de cena ou humor", the Designer wrote "molde": "cena" three times and
+    the correction never told it which moldes exist)."""
+    cat = {i: m for i, m in catalogo_moldes().items() if not formato or formato in m.get("formatos", [])}
+    sobra = {i: m for i, m in cat.items() if i not in set(evitar or [])} or cat
+    return "\n".join(f"- {i}: {m.get('situacao', '')} Ficha: {_campos_do_molde(i) or json.dumps(m.get('ficha', {}), ensure_ascii=False)}"
+                     for i, m in sobra.items())
+
+
+def _tarefa_correcao(spec: dict, falta: list, evitar=()) -> str:
     """The second try: the template's schema, an example ficha (the Raiz's when there is one) and what failed."""
     pasta = pasta_moldes() / str(spec.get("molde") or "") if pasta_moldes() else None
     esquema = exemplo = ""
+    if pasta is not None and not (pasta / "esquema.json").exists():
+        lista = _moldes_que_servem(str(spec.get("_formato_pedido") or ""), evitar)
+        return (f"A ficha abaixo usa o molde {spec.get('molde')!r}, que não existe. Escolha UM molde desta lista (use o id "
+                f"exatamente como está), refaça a ficha com os campos dele e devolva a ficha inteira (com \"motor\": "
+                f"\"molde\").\n\n## Erros\n" + "\n".join(f"- {f}" for f in falta)
+                + f"\n\n## Moldes que servem\n{lista}\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n"
+                + telas_do_sistema(spec.get("_formato_pedido", "")) + "Responda só com o JSON.")
     if pasta and (pasta / "esquema.json").exists():
         esquema = (pasta / "esquema.json").read_text(encoding="utf-8")[:6000]
         exemplos = sorted((pasta / "exemplos").glob("*.json"))
@@ -910,6 +927,10 @@ def revisar(briefing, spec: dict, critica: dict, imagens=None, *, login: str = "
     return _volta(briefing, material, novo, r, login)
 
 
+def _evitar(material) -> list:
+    return list(material.get("evitar_moldes") or []) if isinstance(material, dict) else []
+
+
 def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes: int | None = None) -> dict:
     """One round: check the ficha (with up to CORRECOES fixes against the template's schema), render it, judge it."""
     falta, arquivos, render = [], [], ""
@@ -927,7 +948,7 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes:
         while True:
             while tentativas and spec.get("motor") == "molde" and any(f.startswith("ficha:") for f in falta):
                 tentativas -= 1
-                r2 = chamar("designer", _tarefa_correcao(spec, falta), material, login=login)
+                r2 = chamar("designer", _tarefa_correcao(spec, falta, _evitar(material)), material, login=login)
                 novo = _spec(r2, spec.get("_formato_pedido", ""))
                 if not novo:
                     falta.append(f"o designer não respondeu à correção ({r2['erro'] or 'resposta ilegível'})")
@@ -939,7 +960,7 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes:
             if not (recusa and tentativas):
                 break
             tentativas -= 1
-            r2 = chamar("designer", _tarefa_correcao(spec, recusa), material, login=login)
+            r2 = chamar("designer", _tarefa_correcao(spec, recusa, _evitar(material)), material, login=login)
             novo = _spec(r2, spec.get("_formato_pedido", ""))
             if not novo:
                 falta.append(f"o designer não respondeu à correção ({r2['erro'] or 'resposta ilegível'})")

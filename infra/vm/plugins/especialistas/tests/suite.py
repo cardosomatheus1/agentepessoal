@@ -674,6 +674,36 @@ class Suite:
         d = m.revisar("x", antiga, {"motivos": ["fraco"]})
         ok(d["critica"]["veredito"] == "reprova" and "TimeoutError" in d["falta"][0], "Designer fora: continua reprovada")
 
+    def t_molde_inexistente_a_correcao_mostra_os_que_existem(self):
+        # 10/11, caso real: o gestor orientou "use um molde de cena ou humor" e o Designer escreveu "molde": "cena";
+        # a correção não dizia quais moldes existem e o Reel de quarta caiu em "ficha: molde cena não existe no motor"
+        reels = self._reels()
+        (reels / "moldes" / "conta-mudou").mkdir(parents=True)
+        (reels / "moldes" / "conta-mudou" / "esquema.json").write_text(json.dumps({"formatos": ["reel"], "campos": {
+            "pergunta": {"tipo": "texto", "max": 20}}}))
+        (reels / "moldes" / "catalogo.json").write_text(json.dumps({"moldes": [
+            {"id": "conta-mudou", "formatos": ["reel"], "situacao": "Conta que mudou", "ficha": {}},
+            {"id": "lanca-app", "formatos": ["reel"], "situacao": "Tour de telas", "ficha": {}},
+            {"id": "frases", "formatos": ["carrossel"], "situacao": "Frases", "ficha": {}}]}))
+        m = self._e(reels=reels)
+        m._pode_renderizar = lambda: ""
+        m.renderizar_molde = lambda molde, formato, ficha, previa=False: (["p01.jpg"], "")
+        fichas = [{"marca": "raiz", "motor": "molde", "molde": "cena", "formato": "reel", "ficha": {"_marca": "raiz"}},
+                  {"marca": "raiz", "motor": "molde", "molde": "conta-mudou", "formato": "reel",
+                   "ficha": {"_marca": "raiz", "pergunta": "Quanto sobra?"}}]
+        chamadas = []
+
+        def chamar(papel, tarefa, material, login="matheus"):
+            chamadas.append((papel, tarefa))
+            return {"texto": json.dumps(fichas.pop(0)) if papel == "designer" else APROVA, "erro": "", "imagens": [],
+                    "sem_imagem": []}
+        m.chamar = chamar
+        d = m.desenhar({"formato": "REELS", "titulo": "x", "ideia": "y", "evitar_moldes": ["lanca-app"]})
+        correcao = chamadas[1][1]
+        ok("não existe" in correcao and "- conta-mudou" in correcao and "- lanca-app" not in correcao
+           and "- frases" not in correcao, correcao[:500])
+        eq((d["spec"]["molde"], [f for f in d["falta"] if "não existe" in f]), ("conta-mudou", []), "corrigido com um molde real")
+
     def t_previa_mostra_tela_inteira_antes_do_zoom(self):
         # 10/11, caso real: o Reel de quarta 11/11 (lanca-app, 5 telas) reprovado por "Regra do Matheus #85: nas cenas
         # das telas, o sistema não aparece inteiro com o menu visível ... na tela da cozinha, as laterais estão
