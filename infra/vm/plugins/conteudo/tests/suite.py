@@ -1968,6 +1968,11 @@ class Suite:
         ok("ainda está refazendo" in s.criar("2026-11-08", "STORY", {"story": dica}, agora=_ts(c, "2026-11-04", "20:10"))["erro"],
            "e a função recusa também")
 
+    def t_gestor_teto_do_dia(self):
+        # 10/11, Matheus: "Sim" para subir o teto do gestor (bateu US$ 2,07 em 9 rodadas no dia das correções)
+        c, g = self._gestor()
+        ok(g.TETO_DIA_USD == 4.00 and g.MAX_POR_DIA == 20, (g.TETO_DIA_USD, g.MAX_POR_DIA))
+
     def t_gestor_reprovado_duas_vezes_refaz_ou_troca(self):
         # 03/11: the carrossel reproved twice (redo included), 3 h before its hour
         c, g = self._gestor()

@@ -36,9 +36,9 @@ from pathlib import Path
 HORARIOS = ("08:30", "11:15", "20:00")  # before the 9h story, before the 11:45 post, and the evening review
 JANELA_HORARIO_MIN = 60  # a fixed run still happens up to this long after its hour (the VM was busy or restarting)
 INTERVALO_EVENTO_MIN = 15  # at most one run per this many minutes for events
-MAX_POR_DIA = 10  # model calls a day (fixed + events)
+MAX_POR_DIA = 20  # model calls a day (fixed + events); 10/11, Matheus: teto do dia sobe com as chamadas novas
 TETO_USD = 0.30  # per run: the prompt is trimmed until the worst case (prompt + full answer) fits
-TETO_DIA_USD = 2.00
+TETO_DIA_USD = 4.00  # 10/11, Matheus aprovou subir de US$ 2 para US$ 4 por dia
 MAX_SAIDA = 8000  # tokens of answer (thinking included)
 MAX_ACOES = 6
 REFAZ_EXTRA = 1  # redo attempts the Gestor may add on top of conteudo.REFAZER_MAX
