@@ -52,8 +52,11 @@ ACOES = {
     "refazer": {"item", "instrucao"},
     "trocar": {"item_a", "item_b"},
     "criar": {"data", "formato", "titulo", "ideia", "legenda", "story"},
+    # 10/11 (Matheus: "ele não simplesmente muda o contexto, o tipo"): on a proposal the agent is still redoing
+    "orientar": {"proposta", "instrucao", "formato", "trocar_molde", "assunto_novo"},
+    "desistir": {"proposta"},
 }
-OPCIONAIS = {"criar": {"titulo", "ideia", "legenda", "story"}}
+OPCIONAIS = {"criar": {"titulo", "ideia", "legenda", "story"}, "orientar": {"formato", "trocar_molde", "assunto_novo"}}
 FORMATOS_CRIAR = ("CARROSSEL", "REELS", "IMAGE", "STORY")
 NAO_TOCA = ("publicando", "publicada", "incerta", "falhou")
 EVENTOS = ("bloqueada", "falhou", "incerta")
@@ -229,6 +232,10 @@ def estado(agora: float | None = None, contexto: dict | None = None) -> dict:
     todos = c().carregar()["itens"]
     itens = [i for i in todos if de <= i["data"] <= ate or (i["estado"] in ("pendente", "bloqueada") and i["data"] < de)]
     itens.sort(key=lambda i: (i["data"], i["hora"]))
+    try:
+        abertas = semana().abertas_para_gestor(agora)
+    except Exception:
+        abertas = []
     return {
         "agora": momento.strftime("%Y-%m-%d %H:%M") + f" ({DIAS_SEMANA[momento.weekday()]})",
         "plano": "carrossel ter e sex, Reel qua e dom, às 11:45; 1 story por dia às 9h (seg dica; ter/sex chama o "
@@ -237,6 +244,8 @@ def estado(agora: float | None = None, contexto: dict | None = None) -> dict:
         "alertas": _alertas(itens, agora),
         "buracos": _buracos(itens, hoje),
         "semana_proposta": _semana_resumo(),
+        "em_refacao": [{k: v for k, v in x.items() if not k.startswith("_")} for x in abertas],
+        "_vistas": {x["proposta"]: x["_ultima"] for x in abertas},
         "diario_recente": _diario_recente(agora),
         "gestor_recente": [{"em": _momento(r["em"]).strftime("%d/%m %H:%M"), "fez": r.get("feitas", [])}
                            for r in _ler_jsonl(_pasta() / "gestor.jsonl", 40) if r.get("feitas") and not r.get("seco")][-8:],
@@ -246,7 +255,7 @@ def estado(agora: float | None = None, contexto: dict | None = None) -> dict:
 
 def tarefa(st: dict, motivo: str) -> str:
     ctx = st.get("contexto") or {}
-    corpo = {k: v for k, v in st.items() if k != "contexto"}
+    corpo = {k: v for k, v in st.items() if k != "contexto" and not k.startswith("_")}
     return (f"Execução: {motivo}. Agora: {st['agora']} (horário de Brasília).\n\n"
             f"## Agenda e estado (JSON)\n{json.dumps(corpo, ensure_ascii=False, indent=0)}\n\n"
             f"## Decisões do Matheus\n{ctx.get('decisoes') or '(indisponível)'}\n\n"
@@ -279,7 +288,7 @@ def tarefa_no_teto(st: dict, motivo: str) -> str:
 # ------------------------------------------------------------------ closed vocabulary
 
 def _ids(acao: dict) -> list:
-    return [acao[k] for k in ("item", "item_a", "item_b") if acao.get(k)]
+    return [acao[k] for k in ("item", "item_a", "item_b", "proposta") if acao.get(k)]
 
 
 def _perguntas() -> list:
@@ -290,16 +299,24 @@ def _perguntas() -> list:
         return []
 
 
-def validar(acoes, itens: list, agora: float) -> tuple[list, list]:
+def validar(acoes, itens: list, agora: float, abertas: list | None = None) -> tuple[list, list]:
     """(accepted, refused) from the model's list. Each is checked against a copy of the calendar with the accepted
-    ones before it applied, so two actions can never put two items on one day. Refused: {"acao", "erro"}."""
+    ones before it applied, so two actions can never put two items on one day. Refused: {"acao", "erro"}.
+    abertas: the proposals still being redoed (semana.abertas_para_gestor), for orientar/desistir."""
     if not isinstance(acoes, list):
         return [], [{"acao": acoes, "erro": "acoes não é uma lista"}]
+    if abertas is None:
+        try:
+            abertas = semana().abertas_para_gestor(agora)
+        except Exception:
+            abertas = []
     sim = {i["id"]: dict(i) for i in copy.deepcopy(itens)}
+    sim["_abertas"] = {x["proposta"]: x for x in abertas}
+    sim["_desistidas"] = set()
     tocados, aceitas, recusadas = set(), [], []
 
     def ocupado(data, canal_, exceto):
-        return next((i for i in sim.values() if i["id"] not in exceto and i["data"] == data and c().canal(i) == canal_
+        return next((i for k, i in sim.items() if not k.startswith("_") and i["id"] not in exceto and i["data"] == data and c().canal(i) == canal_
                      and i["estado"] not in ("cancelada", "falhou")), None)
 
     for a in acoes:
@@ -317,6 +334,8 @@ def validar(acoes, itens: list, agora: float) -> tuple[list, list]:
         elif nome == "trocar":
             x, y = sim[a["item_a"]], sim[a["item_b"]]
             (x["data"], x["hora"]), (y["data"], y["hora"]) = (y["data"], y["hora"]), (x["data"], x["hora"])
+        elif nome == "desistir":  # its day is free for a criar later in the same run
+            sim["_desistidas"].add(a["proposta"])
         elif nome == "criar":  # the new piece takes its slot in the simulation: a second one that day is refused
             k = sum(1 for x in aceitas if x["acao"] == "criar")
             sim[f"novo-{k}"] = {"id": f"novo-{k}", "data": a["data"], "tipo": str(a["formato"]).upper(),
@@ -343,12 +362,14 @@ def _erro(a, sim: dict, tocados: set, ocupado, agora: float, ja: int) -> str:
     if ja >= MAX_ACOES:
         return f"mais de {MAX_ACOES} ações numa execução"
     for k in ("item", "item_a", "item_b"):
-        if k in a and a[k] is not None and (not isinstance(a[k], str) or a[k] not in sim):
+        if k in a and a[k] is not None and (not isinstance(a[k], str) or a[k].startswith("_") or a[k] not in sim):
             return f"{nome}: o item {str(a[k])[:60]!r} não existe na agenda"
     if any(i in tocados for i in _ids(a)):
         return f"{nome}: o mesmo item já tem outra ação nesta execução"
     if nome == "criar":
         return _erro_criar(a, sim, ocupado, agora)
+    if nome in ("orientar", "desistir"):
+        return _erro_proposta(a, sim)
     for i in _ids(a):
         if sim[i]["estado"] in NAO_TOCA:
             return f"{nome}: {i} está {sim[i]['estado']} (o gestor não mexe no que saiu ou está saindo)"
@@ -394,6 +415,27 @@ def _erro(a, sim: dict, tocados: set, ocupado, agora: float, ja: int) -> str:
     return "ação sem regra"
 
 
+def _erro_proposta(a: dict, sim: dict) -> str:
+    nome, x = a["acao"], sim["_abertas"].get(a.get("proposta"))
+    if not x:
+        return f"{nome}: {str(a.get('proposta'))[:60]!r} não é uma proposta em refação (veja em_refacao)"
+    if nome == "desistir":
+        return ""
+    if not isinstance(a.get("instrucao"), str) or len(a["instrucao"].strip()) < 15:
+        return "orientar: sem instrução concreta do que mudar (a partir dos motivos do Crítico)"
+    if not x.get("pode_orientar"):
+        return f"orientar: {x['proposta']} já recebeu as orientações que cabem; use desistir e cubra o dia"
+    formato = str(a.get("formato") or "").upper()
+    if formato and (x["formato"] == "STORY" or formato not in ("CARROSSEL", "REELS")):
+        return "orientar: formato só CARROSSEL ou REELS, e só para post do feed"
+    for k in ("trocar_molde", "assunto_novo"):
+        if k in a and not isinstance(a[k], bool):
+            return f"orientar: {k} é true ou false"
+    if x["minutos_ate_sair"] < semana().FOLGA_AUTO_MIN:
+        return f"orientar: {x['proposta']} sai em {x['minutos_ate_sair']} min, não dá tempo de refazer"
+    return ""
+
+
 def _erro_criar(a: dict, sim: dict, ocupado, agora: float) -> str:
     formato = str(a.get("formato") or "").upper()
     if formato not in FORMATOS_CRIAR:
@@ -402,7 +444,7 @@ def _erro_criar(a: dict, sim: dict, ocupado, agora: float) -> str:
         dt.date.fromisoformat(str(a["data"]))
     except ValueError:
         return "criar: data (AAAA-MM-DD) inválida"
-    if sum(1 for i in sim if i.startswith("novo-")) >= MAX_CRIAR:
+    if sum(1 for i in sim if str(i).startswith("novo-")) >= MAX_CRIAR:
         return f"criar: no máximo {MAX_CRIAR} por execução"
     hora = semana().HORA_STORY if formato == "STORY" else semana().HORA
     if c()._quando({"data": a["data"], "hora": hora}) < agora + semana().FOLGA_AUTO_MIN * 60:
@@ -412,7 +454,7 @@ def _erro_criar(a: dict, sim: dict, ocupado, agora: float) -> str:
     if outro:
         return f"criar: {a['data']} já tem {canal_} ({outro['id']}): um por dia"
     refazendo = semana().em_refacao(a["data"], canal_, agora)
-    if refazendo:
+    if refazendo and refazendo not in sim["_desistidas"]:
         return f"criar: {a['data']} já tem {canal_} sendo refeito pelo agente ({refazendo}); espere a decisão dele"
     if formato == "STORY":
         if not isinstance(a.get("story"), dict) or not a["story"].get("layout"):
@@ -441,6 +483,12 @@ def _descrever(a: dict, itens: dict) -> str:
     if nome == "criar":
         tipo = {"STORY": "story", "REELS": "Reel", "IMAGE": "foto", "CARROSSEL": "carrossel"}[str(a["formato"]).upper()]
         return f"Criei um {tipo} para {a['data'][8:]}/{a['data'][5:7]}"
+    if nome == "orientar":
+        extra = [x for x, sim in (("outro molde", a.get("trocar_molde")), ("assunto novo", a.get("assunto_novo")),
+                                  (f"como {str(a.get('formato')).lower()}", a.get("formato"))) if sim]
+        return f"Orientei o Designer em {a['proposta']}" + (f" ({', '.join(extra)})" if extra else "")
+    if nome == "desistir":
+        return f"Desisti de {a['proposta']} e deixei o dia livre para cobrir"
     return nome
 
 
@@ -475,6 +523,12 @@ def executar(a: dict, refazer=None, agora: float | None = None, criar=None) -> d
                 r["nota"] = ("o Crítico reprovou; o agente refaz sozinho e, se não passar, deixa o dia sem ele"
                              if r.get("veredito") == "reprova" or r.get("problema") else "")
             return r
+        if nome == "orientar":
+            return semana().orientar(a["proposta"], a["instrucao"], formato=str(a.get("formato") or ""),
+                                     trocar_molde=bool(a.get("trocar_molde")), assunto_novo=bool(a.get("assunto_novo")),
+                                     quem=f"gestor: {_curto(a['motivo'], 120)}", agora=agora)
+        if nome == "desistir":
+            return semana().desistir(a["proposta"], a["motivo"])
         if nome == "refazer":
             item = next((i for i in conteudo.carregar()["itens"] if i["id"] == a["item"]), None)
             if not item or item["estado"] != "pendente":
@@ -541,7 +595,17 @@ def _eventos_novos(desde: float) -> list:
     """Journal events that call for a look (not the Gestor's own): blocked, failed, uncertain, reproved, redo failed."""
     saida = []
     for e in _ler_jsonl(_pasta() / "diario.jsonl", 300):
-        if float(e.get("em") or 0) <= desde or str(e.get("quem", "")).startswith("gestor:"):
+        if float(e.get("em") or 0) <= desde:
+            continue
+        # 10/11: the redo loop journals as "gestor: o Crítico aprovou" (semana.QUEM_AUTO), so a proposal reproved
+        # again never called the Gestor: it saw the series only after the day was dropped
+        if "refeita_auto" in e and e.get("veredito") != "aprova":
+            saida.append({"em": float(e["em"]), "texto": f"{e.get('semana')}-{e['refeita_auto']} reprovado de novo"})
+            continue
+        if "descartada" in e and not str(e.get("motivo", "")).startswith("gestor"):
+            saida.append({"em": float(e["em"]), "texto": f"{e.get('semana')}-{e['descartada']} descartado ({e.get('data')})"})
+            continue
+        if str(e.get("quem", "")).startswith("gestor:"):
             continue
         if e.get("para") in EVENTOS or e.get("conferido") == "reprova" or e.get("refazer") is False:
             tipo = e.get("para") or ("reprovado" if e.get("conferido") else "refazer falhou")
@@ -637,7 +701,7 @@ def rodar(motivo: str = "manual", agora: float | None = None, seco: bool = False
             _registrar(agora, motivo, seco, r)
             return r
         itens = {i["id"]: i for i in c().carregar()["itens"]}
-        aceitas, recusadas = validar(dados["acoes"], list(itens.values()), agora)
+        aceitas, recusadas = validar(dados["acoes"], list(itens.values()), agora, st.get("em_refacao") or [])
         visto = _curto(dados.get("visto"), 400) if isinstance(dados.get("visto"), str) else ""
         for x in recusadas:
             c()._diario({"gestor": "recusada", "acao": _curto(json.dumps(x["acao"], ensure_ascii=False), 300),
@@ -654,6 +718,11 @@ def rodar(motivo: str = "manual", agora: float | None = None, seco: bool = False
             if r.get("ok") and a["acao"] == "criar":
                 desc += (": o Crítico aprovou e está agendado" if r.get("agendado") else f" ({r.get('nota') or 'aberto'})")
             (feitos.append((desc, a["motivo"])) if r.get("ok") else falhas.append((desc, str(r.get("erro")))))
+        if not seco and st.get("_vistas"):  # seen: what it left alone goes on being redone by the agent
+            try:
+                semana().marcar_vistas(st["_vistas"])
+            except Exception as exc:
+                falhas.append(("marcar o que vi", f"{type(exc).__name__}: {exc}"))
         mensagem, botoes = _mensagem(visto, feitos, falhas)
         avisou = ""
         if mensagem and not seco and avisar is not None:

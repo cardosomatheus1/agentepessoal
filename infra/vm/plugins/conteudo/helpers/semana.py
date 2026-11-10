@@ -51,6 +51,14 @@ SEM_REVISAO = "sem revisão"
 REFAZER_AUTO = 2  # 04/11: redo attempts of a reproved proposal before the agent decides (new idea, then no post)
 FOLGA_AUTO_MIN = 90  # a proposal is (re)done only if it goes out later than this: Designer + Crítico take minutes
 QUEM_AUTO = "gestor: o Crítico aprovou"
+# 10/11, Matheus: "eu coloquei um gestor de conteúdo justamente para analisar esses desvios entre o Crítico e o
+# construtor ... ele não simplesmente muda o contexto, o tipo, etc.". The redo loop repeated the same failing molde up
+# to 4 versions (8 on Sunday 08/11) while the Gestor only saw it after the day was dropped. Now a proposal reproved
+# twice waits up to ESPERA_GESTOR_MIN for the Gestor, who sees every version's reasons and can steer it (orientar:
+# an instruction, another molde, another format, another subject) or give up early (desistir) and cover the day.
+ESPERA_GESTOR_MIN = 30
+MAX_ORIENTAR = 2  # Gestor steers per proposal
+HISTORICO = 4  # past versions kept on a proposal (reasons and molde), for the Gestor
 ROTINA_AVISO = "🧭 Gestor de conteúdo"
 REGRAS = ("A Raiz Connect é sistema de gestão para food service, com pedidos do iFood e da 99Food entrando sozinhos: "
           "fala também com pizzaria, hamburgueria, lanchonete e restaurante de delivery (Matheus, 22/10). Tela do sistema "
@@ -483,9 +491,12 @@ def _moldes_vizinhos(dia: str, janela: int = 6) -> list[str]:
 
 def _briefing(formato: str, dia: str, p: dict) -> dict:
     formato = _formato_feed(formato)
-    evitar = _moldes_vizinhos(dia) if formato != "STORY" else []
+    g = p.get("gestor") if isinstance(p.get("gestor"), dict) else {}
+    evitar = sorted(set(_moldes_vizinhos(dia)) | set(g.get("moldes_ruins") or [])) if formato != "STORY" else []
+    ideia = _texto(p.get("ideia"), 1200) + (f"\n\nInstrução do gestor de conteúdo (siga à risca): {_texto(g['instrucao'], 600)}"
+                                            if g.get("instrucao") else "")
     return {**({"evitar_moldes": evitar} if evitar else {}), "marca": "raiz", "rede": "instagram @raiz.connect", "formato": formato,
-            "titulo": _texto(p.get("titulo"), 120), "ideia": _texto(p.get("ideia"), 1200),
+            "titulo": _texto(p.get("titulo"), 120), "ideia": ideia,
             "legenda": str(p.get("legenda") or "").strip(), "data": dia,
             "regras": REGRAS + (" " + HUMOR if _humor(p) else ""), **({"tom": "humor"} if _humor(p) else {})}
 
@@ -814,6 +825,9 @@ def _refazer_story_semana(esp, sid: str, p: dict, itens: list, nova: bool) -> di
                    f"várias vezes ({'; '.join(_motivos(p))[:400]})."]
     else:
         motivos = _motivos(p)
+    g = p.get("gestor") if isinstance(p.get("gestor"), dict) else {}
+    if g.get("instrucao"):
+        motivos = list(motivos) + [f"Instrução do gestor de conteúdo (siga à risca): {_texto(g['instrucao'], 600)}"]
     feito = _refazer_story(esp, campos, {"motivos": motivos}, saida, post)
     if not feito:
         return None
@@ -877,6 +891,8 @@ def _passo_autonomo(esp, agora: float, avisar, subir) -> dict | None:
             if p["formato_pedido"] == "STORY" and (p["spec"].get("story") or {}).get("layout") in CHAMA \
                     and _feed_aberto(semana, p["data"]):
                 continue  # its post is still being decided
+            if espera_gestor(p, agora):
+                continue  # reproved twice: the Gestor looks at it before the next redo
             return _um_passo(esp, sid, semana, p, agora, avisar, subir)
     return None
 
@@ -904,7 +920,9 @@ def _um_passo(esp, sid: str, semana: dict, p: dict, agora: float, avisar, subir)
         novo = dict(p, problema=erro or p.get("problema") or "sem versão nova")
     auto = {"tentativas": tentativas + (0 if nova else 1), "nova_ideia": bool(auto.get("nova_ideia") or nova),
             "ultima": agora}
-    novo = dict(novo, auto=auto, estado="proposta", refeita=int(p.get("refeita") or 0) + 1)
+    historico = (list(p.get("historico") or []) + [_versao(p)])[-HISTORICO:]
+    novo = dict(novo, auto=auto, estado="proposta", refeita=int(p.get("refeita") or 0) + 1, historico=historico,
+                **{k: p[k] for k in ("gestor", "orientacoes") if p.get(k)})
     if not _salvar_proposta(sid, novo):
         return {"semana": sid, "n": p["n"], "decisao": "decidida enquanto refazia"}
     c()._diario({"semana": sid, "refeita_auto": p["n"], "nova_ideia": nova, "tentativa": auto["tentativas"],
@@ -921,6 +939,151 @@ def _um_passo(esp, sid: str, semana: dict, p: dict, agora: float, avisar, subir)
         _avisar(avisar, f"🧭 Conteúdo: {como} {_rotulo(final if nova else p)} e o Crítico aprovou: {quando}.")
         return {"semana": sid, "n": p["n"], "decisao": "ideia nova agendada" if nova else "refeita e agendada"}
     return {"semana": sid, "n": p["n"], "decisao": "aprovada, não agendou", "erro": (r.get("recusados") or [{}])[0].get("motivo")}
+
+
+def _versao(p: dict) -> dict:
+    """One past version of a proposal as the Gestor reads it: the Crítico's reasons (whole), the problem, the molde."""
+    return {"motivos": [_texto(m, 400) for m in _motivos(p)][:5], "molde": (p.get("spec") or {}).get("molde") or "",
+            "formato": p.get("formato_pedido"), "veredito": (p.get("critica") or {}).get("veredito")}
+
+
+def _reprovadas(p: dict) -> int:
+    """How many versions of an open proposal the Crítico reproved (the current one included)."""
+    atual = 1 if p.get("problema") or (p.get("critica") or {}).get("veredito") != "aprova" else 0
+    return sum(1 for v in p.get("historico") or [] if v.get("veredito") != "aprova") + atual
+
+
+def espera_gestor(p: dict, agora: float) -> bool:
+    """A proposal reproved in two versions waits for the Gestor (up to ESPERA_GESTOR_MIN after its last version) before
+    the agent redoes it again; never when the Gestor already saw this version, and never past the time to redo it."""
+    ultima = float((p.get("auto") or {}).get("ultima") or 0)
+    if _reprovadas(p) < 2 or not ultima or p.get("gestor_viu") == ultima:
+        return False
+    if _sai_em(p) < agora + (FOLGA_AUTO_MIN + ESPERA_GESTOR_MIN) * 60:
+        return False
+    return agora - ultima < ESPERA_GESTOR_MIN * 60
+
+
+TEMAS_DO_MOTIVO = (  # what keeps coming back in the Crítico's reasons and the render's refusals (10/11: the real ones)
+    ("número de falas do molde", r"falas: são|\bfalas\b.*(máximo|mínimo|limita)|vieram \d+"),
+    ("duração do vídeo", r"duração|55 a 65|\d+[,.]\d s"),
+    ("sigla sem explicar (CMV, DRE, curva ABC)", r"\bCMV\b|\bDRE\b|curva abc|jarg|sigla"),
+    ("\"valores de exemplo\" na tela", r"valores de exemplo|dados de (teste|exemplo)"),
+    ("nome da empresa de exemplo na tela", r"bella napoli|nome (de|do) (cliente|estabelecimento)|nome identific"),
+    ("tela não bate com a fala/o texto", r"não (corresponde|bate|combina)|tela (precisa|mostra) .*narra|narração diz"),
+    ("texto cortado ou longo demais", r"cortad|truncad|letras, o máximo"),
+    ("letra manuscrita", r"manuscrit"),
+    ("o Designer não entregou arquivo", r"não entregou|não foi renderizad|sem (o )?vídeo|falta o reel|render falhou|não devolveu"),
+    ("ideia genérica ou mole", r"genéric|ideia mole"),
+    ("informação sem origem ou cliente inventado", r"sem origem|inventad|depoimento"),
+)
+
+
+def temas(motivos: list) -> list[str]:
+    texto = " ".join(str(m) for m in motivos or []).lower()
+    return [nome for nome, padrao in TEMAS_DO_MOTIVO if re.search(padrao, texto, re.I)]
+
+
+def abertas_para_gestor(agora: float | None = None) -> list[dict]:
+    """The proposals the agent is still redoing (not in the agenda yet), each with every version's reasons and what
+    repeats across versions, for the Gestor to steer."""
+    agora = time.time() if agora is None else agora
+    if not _pasta().exists():
+        return []
+    saida = []
+    for arq in sorted(_pasta().glob("s*.json")):
+        try:
+            s = json.loads(arq.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if not s.get("autonomo") or s.get("estado") not in ("proposta", "parcial") \
+                or float(s.get("criada_em") or 0) < agora - 14 * 86400:
+            continue
+        for p in s.get("propostas") or []:
+            if p.get("estado") != "proposta":
+                continue
+            versoes = list(p.get("historico") or []) + [_versao(p)]
+            contagem: dict = {}
+            for v in versoes:
+                for t in temas(v["motivos"]):
+                    contagem[t] = contagem.get(t, 0) + 1
+            saida.append({
+                "proposta": f"{s['id']}-{p['n']}", "data": p["data"],
+                "dia": DIAS_SEMANA[dt.date.fromisoformat(p["data"]).weekday()], "formato": p["formato_pedido"],
+                "titulo": _texto(p.get("titulo"), 120), "minutos_ate_sair": int((_sai_em(p) - agora) // 60),
+                "versoes_reprovadas": _reprovadas(p), "orientacoes_do_gestor": int(p.get("orientacoes") or 0),
+                "pode_orientar": int(p.get("orientacoes") or 0) < MAX_ORIENTAR,
+                "versoes": [{"molde": v["molde"], "motivos": v["motivos"]} for v in versoes][-3:],
+                "repete": [f"{t} ({n} versões)" for t, n in sorted(contagem.items(), key=lambda x: -x[1]) if n >= 2],
+                **({"instrucao_atual": p["gestor"].get("instrucao")} if isinstance(p.get("gestor"), dict) else {}),
+                "_ultima": float((p.get("auto") or {}).get("ultima") or 0)})
+    return saida
+
+
+def _proposta(pid: str):
+    achado = re.fullmatch(r"(s\d{8}-\d{1,3})-(\d{1,3})", str(pid or ""))
+    if not achado:
+        return None, None, None
+    s = carregar(achado.group(1))
+    p = next((x for x in (s or {}).get("propostas") or [] if x.get("n") == int(achado.group(2))), None)
+    return s, p, int(achado.group(2))
+
+
+def orientar(pid: str, instrucao: str, formato: str = "", trocar_molde: bool = False, assunto_novo: bool = False,
+             quem: str = "gestor", agora: float | None = None) -> dict:
+    """The Gestor steers an open proposal before its next redo: a concrete instruction from the Crítico's reasons, and
+    optionally another molde (the current one is not offered again), another feed format (CARROSSEL/REELS) or a new
+    subject. The guided version gets REFAZER_AUTO redos of its own (then the day is left without it, as before).
+    Never approves anything: the Crítico still judges every version."""
+    agora = time.time() if agora is None else agora
+    formato = str(formato or "").upper()
+    with _exclusivo():
+        s, p, n = _proposta(pid)
+        if not p or p.get("estado") != "proposta" or s.get("estado") not in ("proposta", "parcial"):
+            return {"ok": False, "erro": f"{pid}: não é uma proposta aberta"}
+        if int(p.get("orientacoes") or 0) >= MAX_ORIENTAR:
+            return {"ok": False, "erro": f"{pid}: já recebeu {MAX_ORIENTAR} orientações do gestor"}
+        if formato and (p["formato_pedido"] == "STORY" or formato not in ("CARROSSEL", "REELS")):
+            return {"ok": False, "erro": "formato: só CARROSSEL ou REELS, e só para post do feed"}
+        molde = (p.get("spec") or {}).get("molde")
+        g = dict(p.get("gestor") or {})
+        g.update(instrucao=_texto(instrucao, 600), em=agora,
+                 moldes_ruins=sorted(set(g.get("moldes_ruins") or []) | ({molde} if trocar_molde and molde else set())))
+        p["gestor"], p["orientacoes"] = g, int(p.get("orientacoes") or 0) + 1
+        if formato and formato != p["formato_pedido"]:
+            p["formato_pedido"], p["legenda"] = formato, ""
+            p.pop("pov", None), p.pop("tom", None)
+        if assunto_novo:
+            p.update(titulo="", ideia=f"Assunto novo pedido pelo gestor de conteúdo: {_texto(instrucao, 600)}", legenda="")
+        if formato or trocar_molde or assunto_novo:
+            p["spec"] = {} if p["formato_pedido"] != "STORY" else p["spec"]  # drawn anew, not revised on the old molde
+        ultima = float((p.get("auto") or {}).get("ultima") or agora)
+        p["auto"] = {"tentativas": 0, "nova_ideia": True, "ultima": ultima}  # the guided version: its own redos
+        p["gestor_viu"] = ultima
+        _gravar(s)
+    c()._diario({"semana": s["id"], "orientada": n, "instrucao": _texto(instrucao, 200), "quem": quem,
+                 **({"formato": formato} if formato else {}), **({"trocar_molde": molde} if trocar_molde else {}),
+                 **({"assunto_novo": True} if assunto_novo else {})})
+    return {"ok": True, "proposta": pid}
+
+
+def desistir(pid: str, motivo: str, quem: str = "gestor") -> dict:
+    """The Gestor drops an open proposal now (instead of letting it fail two more versions): its day is free to cover."""
+    s, p, n = _proposta(pid)
+    if not p or p.get("estado") != "proposta":
+        return {"ok": False, "erro": f"{pid}: não é uma proposta aberta"}
+    _descartar(s["id"], n, f"{quem}: {_texto(motivo, 160)}")
+    return {"ok": True, "proposta": pid}
+
+
+def marcar_vistas(vistas: dict) -> None:
+    """{proposal id: its last version's time}: the Gestor saw them (decided or chose to leave them): the redo goes on."""
+    for pid, ultima in (vistas or {}).items():
+        with _exclusivo():
+            s, p, _ = _proposta(pid)
+            if p and p.get("estado") == "proposta" and float((p.get("auto") or {}).get("ultima") or 0) == float(ultima or 0):
+                p["gestor_viu"] = float(ultima or 0)
+                _gravar(s)
 
 
 def _avisar(avisar, texto: str) -> None:

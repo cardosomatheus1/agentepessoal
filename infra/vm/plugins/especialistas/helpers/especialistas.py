@@ -115,6 +115,10 @@ O que você faz:
 - Tela real do sistema (o print inteiro, com o menu, decisão do Matheus) não é texto da peça: rótulo do menu ou da tela
   ("CMV Real", "Curva ABC", "DRE") não é jargão a explicar. Jargão é só no que a peça escreve ou a voz fala (27/10:
   um Reel reprovado porque o menu lateral da tela mostrava "CMV").
+- As telas reais do sistema são da conta de demonstração: "Pizzaria Bella Napoli", "Vitrine Raiz" e os nomes de
+  pessoas, mesas e pedidos nelas são fictícios, não são cliente nem nome a esconder (10/11: carrosséis reprovados
+  pelo nome da empresa de exemplo, que o Designer não tem como tirar da tela). Num carrossel, cada tela do sistema
+  já sai com o selo "Valores de exemplo" ao lado; olhe se ele está lá.
 
 O que você não faz:
 - Não reescreve a peça inteira nem cria uma nova: aponta o problema e a correção mínima.
@@ -166,6 +170,14 @@ O que você procura:
 - story que anuncia um post que não vai sair (ou saiu outro assunto); story fora do assunto do dia;
 - post reprovado pelo Crítico perto da hora: refazer com uma instrução melhor (diga exatamente o que mudar, a partir
   dos motivos do Crítico), trocar a data com outro pendente já aprovado, remarcar, cancelar ou criar outro?
+- "em_refacao": posts e stories que o agente ainda está refazendo (não estão na agenda), com os motivos do Crítico de
+  cada versão e o que "repete". Seu papel principal (Matheus, 10/11: "eu coloquei um gestor de conteúdo justamente para
+  analisar esses desvios entre o Crítico e o construtor"): quando o mesmo motivo volta em 2 versões, NÃO deixe a
+  refação repetir o erro até descartar. Leia o motivo e decida a causa: regra do molde (falas, duração, tamanho),
+  coisa que o molde ou o formato não consegue mostrar, ou ideia ruim. Então oriente com uma instrução concreta (o que
+  escrever, quantas falas, que tela usar, que sigla explicar e como), troque o molde, troque o formato (um Reel que cai
+  sempre no molde pode virar carrossel naquele dia) ou troque o assunto; se não tem conserto, desista e crie outro no
+  mesmo dia, em formato ou assunto diferente;
 - dois posts seguidos do mesmo tema ou do mesmo formato fora do plano;
 - item marcado para um horário que já passou e não saiu (rotina parada ou travada);
 - peça que contradiz a oferta atual ou uma decisão do Matheus.
@@ -183,6 +195,11 @@ Seu vocabulário é FECHADO. Cada ação tem "motivo" em português simples (uma
   "tela" de /a0/usr/plugins/conteudo/story/telas/, oferta): o Designer desenha, o Crítico julga; aprovado entra na
   agenda, reprovado o agente refaz sozinho. Só em dia sem item daquele canal; no máximo 2 por execução. Story
   post-novo/video-novo só em dia que tem esse post. Legenda sem emoji, sem travessão, R$ só com "valores de exemplo".
+- {"acao": "orientar", "proposta": id de em_refacao, "instrucao": "o que o Designer muda, concreto", "formato":
+  "CARROSSEL"|"REELS" (opcional, só feed), "trocar_molde": true (opcional: o molde atual não volta), "assunto_novo":
+  true (opcional), "motivo"}: a próxima versão sai com isso, e o Crítico julga como sempre (até 2 por proposta);
+- {"acao": "desistir", "proposta": id de em_refacao, "motivo"}: o agente para de refazer e o dia fica livre; na mesma
+  execução você pode criar outro para o dia.
 
 O que você nunca faz: publicar, liberar o que o Crítico reprovou, apagar o que já saiu, pôr dois posts (ou dois
 stories) no mesmo dia, mexer em item publicando/publicada/incerta, mudar legenda, perguntar ao Matheus, gastar dinheiro
@@ -493,8 +510,9 @@ são só da sessão de operador, nunca escolha).
   "molde" (id do catálogo), "formato" (carrossel|reel|story, um dos formatos do molde), "ficha" (os campos do esquema
   do molde, com "_marca" e "_origem" para dado real; Reel narrado leva "falas", lidas pela voz Carolina).
   Tela do sistema: só as telas reais, escuras e inteiras de /a0/usr/plugins/conteudo/story/telas/ (no molde
-  lanca-app/demonstracao, a câmera dá zoom no "destaque" da tela); toda peça com tela diz "valores de exemplo" (campo
-  nota do molde, ou no texto do slide/legenda), e cada fala mostra a tela que prova o que ela diz.
+  lanca-app/demonstracao, a câmera dá zoom no "destaque" da tela); toda peça com tela diz "valores de exemplo" na
+  própria peça (campo nota do molde que tem nota; no carrossel o motor já põe o selo ao lado de cada tela), nunca só
+  na legenda, e cada fala mostra a tela que prova o que ela diz.
   Termo técnico (CMV, ficha técnica, DRE) vem explicado em palavras simples na primeira vez.
 Sempre: "marca" ("raiz" ou a pasta da outra marca), "formato" (carrossel|reel|story), "conceito", "legenda" (sem
 emoji, terminando no passo concreto da chamada)."""
@@ -537,7 +555,33 @@ def _campos_do_molde(molde: str) -> str:
         campos = json.loads((moldes / molde / "esquema.json").read_text(encoding="utf-8")).get("campos") or {}
     except (OSError, ValueError, TypeError, AttributeError):
         return ""
-    return "{" + "; ".join(f"{k}: {_regra_curta(v)}" for k, v in campos.items() if isinstance(v, dict)) + "}"
+    # 10/11: the narrated moldes count their falas from the screens ("telas + 7 falas") and want 55 to 65 s; that rule
+    # lives only in the field's "dica", which the short form dropped: 9 of Sunday's Reels came back with 10 falas
+    return "{" + "; ".join(f"{k}: {_regra_curta(v)}" + (f" (regra: {v['dica']})" if k == "falas" and v.get("dica") else "")
+                           for k, v in campos.items() if isinstance(v, dict)) + "}"
+
+
+FALAS_POR_TELA = re.compile(r"telas \+ (\d+) falas")
+
+
+def _falas_do_molde(molde: str, ficha: dict) -> list[str]:
+    """10/11: lanca-app and demonstracao refuse a ficha whose falas are not "telas + N" only inside the render (after
+    the voice is made), with a message the Designer kept getting wrong: checked here, before the render, from the
+    esquema's own rule, so the correction round fixes it with the exact count."""
+    moldes = pasta_moldes()
+    try:
+        regra = json.loads((moldes / molde / "esquema.json").read_text(encoding="utf-8"))["campos"]["falas"]
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        return []
+    achado = FALAS_POR_TELA.search(str(regra.get("dica") or ""))
+    telas, falas = ficha.get("telas"), ficha.get("falas")
+    if not achado or not isinstance(telas, list) or not isinstance(falas, list) or not telas:
+        return []
+    certo = len(telas) + int(achado.group(1))
+    if len(falas) == certo:
+        return []
+    return [f"falas: são {certo} ({len(telas)} telas + {achado.group(1)}: {regra.get('dica')}); vieram {len(falas)}. "
+            f"Uma fala por cena, na ordem das cenas; a voz Carolina lê umas 2,5 palavras por segundo"]
 
 
 def _validar_ficha(molde: str, ficha: dict) -> list[str]:
@@ -627,7 +671,17 @@ def renderizar_molde(molde: str, formato: str, ficha: dict, previa: bool = False
 # Jargon the Crítico reproved three times in a row on 22/10: a term goes with its plain explanation (the brief's rule)
 PERTO = 120
 JARGAO = {"CMV": re.compile(r"custo d[aoe]s? (mercadoria|ingrediente|insumo|produto|que (você )?vend)|o quanto (do que|da venda)"
-                            r"|quanto do faturamento|custo da comida", re.I)}
+                            r"|quanto do faturamento|custo da comida", re.I),
+          # 10/11: the Crítico reproved Sunday's and Wednesday's Reels for "DRE" and "Curva ABC" said without a word of
+          # explanation, after the CMV was fixed: the same rule ("termo técnico explicado na primeira vez") for them
+          "DRE": re.compile(r"quanto entrou|o que (sobrou|sobra)|resumo d[oe] (mês|resultado|dinheiro)|resultado do mês"
+                            r"|entrou e (quanto )?saiu|demonstrativo", re.I),
+          "curva ABC": re.compile(r"onde (vai|está|fica|se concentra) (a maior parte|o grosso|o maior)|o que mais pesa"
+                                  r"|maiores gastos|(gastos?|custos?) que mais pesam|concentra(m)? (o|os|a|as) (gasto|custo)", re.I)}
+JARGAO_CASO = {"DRE": 0, "CMV": 0, "curva ABC": re.I}  # DRE/CMV only as the acronym; curva ABC in any case
+JARGAO_EXEMPLO = {"CMV": "CMV, o custo dos ingredientes do que você vendeu",
+                  "DRE": "a DRE, o resumo do mês: quanto entrou, quanto saiu e o que sobrou",
+                  "curva ABC": "a curva ABC mostra onde vai a maior parte do dinheiro gasto"}
 
 
 def _jargao(texto: str) -> list[str]:
@@ -635,11 +689,24 @@ def _jargao(texto: str) -> list[str]:
     Crítico still reproved), within PERTO letters of it."""
     erros = []
     for termo, explica in JARGAO.items():
-        primeira = re.search(rf"\b{termo}\b", texto)
+        primeira = re.search(rf"\b{termo}\b", texto, JARGAO_CASO.get(termo, 0))
         if primeira and not explica.search(texto[max(0, primeira.start() - PERTO):primeira.end() + PERTO]):
             erros.append(f"ficha: {termo} aparece sem explicação em palavras simples logo na primeira vez (ex.: "
-                         f"\"{termo}, o custo dos ingredientes do que você vendeu\")")
+                         f"\"{JARGAO_EXEMPLO[termo]}\")")
     return erros
+
+
+def _texto_dito(ficha: dict) -> dict:
+    """What the piece writes or says, for the jargon check: a screen's file and its menu label are not text of the piece
+    (the Crítico's rule, 27/10)."""
+    def limpar(v):
+        if isinstance(v, dict):
+            fora = {"imagem", "_origem"} | ({"nome"} if "imagem" in v else set())  # a screen: its file and menu label
+            return {k: limpar(x) for k, x in v.items() if k not in fora}
+        if isinstance(v, list):
+            return [limpar(x) for x in v]
+        return "" if isinstance(v, str) and re.search(r"\.(jpe?g|png|webp)$", v, re.I) else v
+    return limpar(ficha)
 
 
 def _conferir_spec(spec: dict) -> list[str]:
@@ -666,12 +733,13 @@ def _conferir_spec(spec: dict) -> list[str]:
             if marca == "raiz" and str(spec["ficha"].get("_marca") or "raiz") != "raiz":
                 problemas.append("peça da Raiz com outra marca na ficha (_marca): o kit só vale com a marca raiz")
             if marca == "raiz":
-                problemas += _jargao(json.dumps(spec["ficha"], ensure_ascii=False))
+                problemas += _jargao(json.dumps(_texto_dito(spec["ficha"]), ensure_ascii=False))
             pedido = spec.get("_formato_pedido")
             if pedido and str(spec.get("formato") or "").lower() != pedido:
                 problemas.append(f"ficha: formato {spec.get('formato')!r}, mas a vaga da semana é {pedido!r}: use um molde "
                                  f"que faça {pedido}")
             problemas += [f"ficha: {e}" for e in _validar_ficha(str(spec.get("molde") or ""), spec["ficha"])]
+            problemas += [f"ficha: {e}" for e in _falas_do_molde(str(spec.get("molde") or ""), spec["ficha"])]
     return problemas
 
 
@@ -711,11 +779,13 @@ def _chamada_da_marca() -> str:
 TELAS = {
     "cozinha-kds.jpg": "cozinha (KDS): pedido da mesa ao lado de dois pedidos com o selo iFood, com o tempo de cada um; não mostra 99Food",
     "mapa-de-mesas.jpg": "mapa de mesas do salão: cada mesa livre ou ocupada, com tempo e valor da conta",
-    "cmv-real.jpg": "CMV do mês (quanto do faturamento virou custo), a meta e quanto escapou entre a ficha técnica e o estoque",
-    "visao-executiva.jpg": "visão executiva: quanto sobrou no mês, receita, CMV, despesas, ponto de empate, caixa e contas vencidas",
+    "cmv-real.jpg": "CMV do mês (o custo dos ingredientes do que você vendeu: quanto do faturamento virou custo), a meta e "
+                    "quanto escapou entre a ficha técnica e o estoque",
+    "visao-executiva.jpg": "visão executiva: quanto sobrou no mês, receita, custo dos ingredientes, despesas, ponto de empate, "
+                           "caixa e contas vencidas",
     "dashboard-restaurante.jpg": "dashboard do restaurante: faturamento do dia, ticket médio, pedidos, itens mais vendidos, formas de pagamento",
-    "dre.jpg": "DRE gerencial: receita, custos, despesas e resultado do período",
-    "curva-abc-custos.jpg": "curva ABC de custos: onde se concentra o gasto, por conta",
+    "dre.jpg": "DRE (o resumo do mês: quanto entrou, quanto saiu e o que sobrou): receita, custos, despesas e resultado",
+    "curva-abc-custos.jpg": "curva ABC de custos (onde vai a maior parte do dinheiro gasto), por conta",
     "engenharia-de-cardapio.jpg": "engenharia de cardápio: cada prato por quanto vende e quanto sobra (campeão, oportunidade, revisar)",
 }
 
@@ -726,13 +796,16 @@ def telas_do_sistema(formato: str = "") -> str:
     nomes = sorted(p.name for p in pasta.glob("*.jpg")) if pasta.exists() else []
     if not nomes:
         return ""
-    return ("## Telas reais do sistema (1440x900, tema escuro, inteiras com o menu; uma empresa de exemplo, valores de "
-            "exemplo). A fala só afirma o que a tela mostra:\n"
+    return ("## Telas reais do sistema (1440x900, tema escuro, inteiras com o menu; a empresa de exemplo \"Pizzaria Bella "
+            "Napoli\" é fictícia e fica na tela: não prometa esconder o nome; valores de exemplo). A fala só afirma o que a "
+            "tela mostra; sigla da tela (CMV, DRE, curva ABC) dita ou escrita vem explicada em palavras simples na hora:\n"
             + "\n".join(f"- /a0/usr/plugins/conteudo/story/telas/{n}" + (f": {TELAS[n]}" if n in TELAS else "") for n in nomes)
             + "\n" + (
                 # 22/10: told "use lanca-app to show the system", a carousel slot kept coming back as a video
                 "Num carrossel, a tela entra no campo de foto de um molde de carrossel (ex.: passo-a-passo, mito, "
-                "faca-nao-faca, pergunta-cliente), com o caminho acima; nunca use molde de vídeo."
+                "faca-nao-faca, pergunta-cliente), com o caminho acima; nunca use molde de vídeo. O motor põe o selo "
+                "\"Valores de exemplo\" ao lado de cada tela; outro número escrito no slide (fora da tela) leva \"valores "
+                "de exemplo\" no próprio texto do slide: só na legenda não vale."
                 if formato == "carrossel" else
                 "Para mostrar o sistema num vídeo use o molde lanca-app com \"aparelho\": \"computador\" (a câmera dá "
                 "zoom no \"destaque\" de cada tela, em % da tela); demonstracao é moldura de celular.")

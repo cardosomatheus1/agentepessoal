@@ -1113,9 +1113,11 @@ class Suite:
     # decisões que tem que ser tomadas, etc., sem depender de mim."
 
     def _passos(self, s, agora, avisos, maximo=12):
+        """passo_autonomo as the job loop runs it, with no Gestor answering: a proposal reproved twice waits up to
+        semana.ESPERA_GESTOR_MIN for it (10/11), so the steps here are that far apart."""
         feitos = []
         for k in range(maximo):
-            r = s.passo_autonomo(agora + 60 * k, avisar=lambda t, b=None: avisos.append((t, b)))
+            r = s.passo_autonomo(agora + (s.ESPERA_GESTOR_MIN + 1) * 60 * k, avisar=lambda t, b=None: avisos.append((t, b)))
             if r is None:
                 return feitos
             feitos.append(r)
@@ -2073,6 +2075,153 @@ class Suite:
         # and the helper itself refuses the agent (only the Gestor or the operator move things)
         ok(not c.segurar("car-ter", "x")["ok"] and not c.remarcar("car-ter", "2026-11-08", "11:45", "x")["ok"]
            and not c.trocar_datas("car-ter", "car-sex", "x")["ok"] and not c.cancelar("car-ter", "x")["ok"], "agente não")
+
+    def _serie(self):
+        """10/11, the real series: the Reel of Sunday 08/11 created by the Gestor on 07/11 08:37 fell on "MOLDE RECUSOU:
+        falas: são 12 ...; vieram 10" in every version (8 in all). A fake Designer that keeps failing a Reel the same way
+        and gets a carousel right; the Gestor wired to the same conteudo and semana."""
+        c, s, _ = self._semana()
+        spec = importlib.util.spec_from_file_location("gestor_serie", RAIZ / "helpers" / "gestor.py")
+        g = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(g)
+        g._C.update(fixo=c, semana_fixa=s)
+        s._G["fixo"] = g
+        arte = Path(tempfile.mkdtemp(prefix="serie_"))
+        briefings = []
+        falha = ("o molde recusou a ficha: MOLDE RECUSOU: falas: são 12 (dores, pergunta, revelação, uma por tela (5), "
+                 "benefícios, como começar, para quem é, chamada); vieram 10")
+        motivo = "A ficha informa que o molde recusou a peça: vieram 10 falas, mas ele exige 12."
+
+        class Esp:
+            def _um(self, briefing):
+                briefings.append(briefing)
+                if briefing["formato"] == "REELS":
+                    return {"spec": {"motor": "molde", "molde": "lanca-app", "formato": "reel", "ficha": {}}, "arquivos": [],
+                            "falta": [falha], "critica": {"veredito": "reprova", "motivos": [motivo], "sugestoes": []}}
+                nomes = [arte / f"c{len(briefings)}-{k}.jpg" for k in (1, 2, 3)]
+                for n in nomes:
+                    n.write_bytes(b"\xff\xd8\xff arte")
+                return {"spec": {"motor": "molde", "molde": "mito", "formato": "carrossel", "ficha": {},
+                                 "legenda": "Qual desses mitos do freezer você já ouviu? Comenta aqui."},
+                        "arquivos": [str(n) for n in nomes], "falta": [],
+                        "critica": {"veredito": "aprova", "motivos": [], "sugestoes": []}}
+
+            def desenhar(self, briefing):
+                return self._um(briefing)
+
+            def revisar(self, briefing, spec, critica, imagens=None):
+                return self._um(briefing)
+
+            def criticar(self, tipo, material):
+                return {"veredito": "aprova", "motivos": []}
+        c.especialistas = lambda: Esp()
+        with c._exclusivo():  # an agenda exists on the VM (the Gestor looks only when it does)
+            c._gravar(c.carregar())
+        return c, s, g, briefings
+
+    def t_gestor_ve_a_serie_e_muda_o_formato(self):
+        c, s, g, briefings = self._serie()
+        agora = _ts(c, "2026-11-07", "12:37")  # outside the Gestor's fixed hours: only the event calls it
+        g.quando_rodar(agora)  # the Gestor's state starts now (old history is not news)
+        r = s.criar("2026-11-08", "REELS", {"titulo": "O que sobra no freezer", "ideia": "estoque do freezer",
+                                            "legenda": "Veja o estoque com valores de exemplo."}, agora=agora)
+        pid = f"{r['semana']}-{r['n']}"
+        ok(r["ok"] and r["veredito"] == "reprova", r)
+        avisos = []
+        p1 = s.passo_autonomo(agora + 600, avisar=lambda t, b=None: avisos.append(t))
+        ok(p1 and p1["decisao"] == "refeita, ainda reprovada", p1)
+        # second reproved version: the agent waits for the Gestor instead of a third identical one
+        ok(s.passo_autonomo(agora + 1200, avisar=lambda t, b=None: avisos.append(t)) is None,
+           "reprovado 2 vezes: espera o gestor")
+        aberta = next(x for x in s.abertas_para_gestor(agora + 1200) if x["proposta"] == pid)
+        ok(aberta["versoes_reprovadas"] == 2 and "número de falas do molde (2 versões)" in aberta["repete"]
+           and any("vieram 10" in m for m in aberta["versoes"][-1]["motivos"]), aberta)
+        motivo = g.quando_rodar(agora + 1260)
+        ok(motivo.startswith("evento:") and f"{pid} reprovado de novo" in motivo, motivo)
+        st = g.estado(agora + 1260, {})
+        ok(any(x["proposta"] == pid for x in st["em_refacao"]) and "em_refacao" in g.tarefa(st, motivo)
+           and "_vistas" not in g.tarefa(st, motivo), "o gestor recebe a série com os motivos")
+        modelo = self._modelo([{"acao": "orientar", "proposta": pid, "formato": "CARROSSEL", "trocar_molde": True,
+                                "instrucao": "Faça um carrossel de mitos sobre o freezer, sem narração: o Reel cai sempre no número de falas",
+                                "motivo": "O Reel caiu duas vezes no número de falas do molde; no domingo sai um carrossel."}])
+        out = g.rodar(motivo, agora + 1260, modelo=modelo, avisar=lambda t, b=None: avisos.append(t), contexto={})
+        ok(len(out["aceitas"]) == 1 and out["resultados"][0]["ok"], out)
+        ok("Orientei o Designer" in out["mensagem"] and "como carrossel" in out["mensagem"], out["mensagem"])
+        p2 = s.passo_autonomo(agora + 1320, avisar=lambda t, b=None: avisos.append(t))
+        ok(p2 and p2["decisao"] == "refeita e agendada", p2)
+        ultimo = briefings[-1]
+        ok(ultimo["formato"] == "CARROSSEL" and "Instrução do gestor" in ultimo["ideia"]
+           and "lanca-app" in ultimo.get("evitar_moldes", []), ultimo)
+        item = next(i for i in c.carregar()["itens"] if i["data"] == "2026-11-08")
+        ok(item["tipo"] == "CARROSSEL" and item["estado"] == "pendente", item)
+        diario = (c.PASTA / "diario.jsonl").read_text(encoding="utf-8")
+        ok('"orientada"' in diario and "gestor: O Reel caiu" in diario, "a orientação fica no diário")
+
+    def t_gestor_sem_resposta_a_refacao_segue(self):
+        c, s, g, _ = self._serie()
+        agora = _ts(c, "2026-11-07", "08:37")
+        r = s.criar("2026-11-08", "REELS", {"titulo": "x", "ideia": "y"}, agora=agora)
+        s.passo_autonomo(agora + 600, avisar=lambda t, b=None: None)
+        ok(s.passo_autonomo(agora + 1200, avisar=lambda t, b=None: None) is None, "espera o gestor")
+        ok(s.passo_autonomo(agora + 600 + 31 * 60, avisar=lambda t, b=None: None)["n"] == r["n"],
+           "sem o gestor em 30 min, a refação segue")
+        # the Gestor saw it and chose to leave it: the redo goes on at once
+        c2, s2, g2, _ = self._serie()
+        r2 = s2.criar("2026-11-08", "REELS", {"titulo": "x", "ideia": "y"}, agora=agora)
+        s2.passo_autonomo(agora + 600, avisar=lambda t, b=None: None)
+        g2.rodar("manual", agora + 700, modelo=self._modelo([]), contexto={})
+        ok(s2.passo_autonomo(agora + 760, avisar=lambda t, b=None: None)["n"] == r2["n"], "visto pelo gestor: segue")
+
+    def t_gestor_desiste_cedo_e_cobre_o_dia(self):
+        c, s, g, briefings = self._serie()
+        agora = _ts(c, "2026-11-07", "08:37")
+        r = s.criar("2026-11-08", "REELS", {"titulo": "x", "ideia": "y"}, agora=agora)
+        pid = f"{r['semana']}-{r['n']}"
+        s.passo_autonomo(agora + 600, avisar=lambda t, b=None: None)
+        criar = {"acao": "criar", "data": "2026-11-08", "formato": "CARROSSEL", "titulo": "3 mitos do freezer",
+                 "ideia": "mitos sobre guardar comida no freezer", "legenda": "Qual você já ouviu?", "motivo": "cobrir domingo"}
+        aceitas, recusadas = g.validar([criar], c.carregar()["itens"], agora + 700)
+        ok(not aceitas and "sendo refeito pelo agente" in recusadas[0]["erro"], "sozinho, criar espera a refação")
+        aceitas, recusadas = g.validar([{"acao": "desistir", "proposta": pid, "motivo": "caiu 2 vezes nas falas"}, criar],
+                                       c.carregar()["itens"], agora + 700)
+        ok(len(aceitas) == 2 and not recusadas, recusadas)
+        out = g.rodar("manual", agora + 700, contexto={},
+                      modelo=self._modelo([{"acao": "desistir", "proposta": pid, "motivo": "caiu 2 vezes nas falas"}, criar]))
+        ok(all(x["ok"] for x in out["resultados"]), out["resultados"])
+        p = next(x for x in s.carregar(r["semana"])["propostas"] if x["n"] == r["n"])
+        ok(p["estado"] == "descartada", p["estado"])
+        ok(any(i["data"] == "2026-11-08" and i["tipo"] == "CARROSSEL" for i in c.carregar()["itens"]), "o dia foi coberto")
+        ok("descartado" not in (g.quando_rodar(agora + 2000) or ""), "o que o gestor desistiu não chama o gestor de novo")
+
+    def t_gestor_orientar_so_dentro_das_regras(self):
+        c, s, g, _ = self._serie()
+        agora = _ts(c, "2026-11-07", "08:37")
+        r = s.criar("2026-11-08", "REELS", {"titulo": "x", "ideia": "y"}, agora=agora)
+        st = s.criar("2026-11-09", "STORY", {"story": {"layout": "dica", "manchete": "Dica"}}, agora=agora)
+        pid, sid_story = f"{r['semana']}-{r['n']}", f"{st['semana']}-{st['n']}"
+        itens = c.carregar()["itens"]
+        abertas = [{"proposta": pid, "formato": "REELS", "pode_orientar": True, "minutos_ate_sair": 1600},
+                   {"proposta": sid_story, "formato": "STORY", "pode_orientar": True, "minutos_ate_sair": 1600}]
+        casos = [({"acao": "orientar", "proposta": pid, "instrucao": "mude", "motivo": "m"}, "sem instrução concreta"),
+                 ({"acao": "orientar", "proposta": sid_story, "formato": "REELS", "instrucao": "vire um vídeo de 20 s",
+                   "motivo": "m"}, "só para post do feed"),
+                 ({"acao": "orientar", "proposta": "s20261101-1-9", "instrucao": "qualquer coisa concreta aqui", "motivo": "m"},
+                  "não é uma proposta em refação"),
+                 ({"acao": "orientar", "proposta": pid, "instrucao": "qualquer coisa concreta aqui", "publicar": True,
+                   "motivo": "m"}, "campos que não existem")]
+        for acao, erro in casos:
+            aceitas, recusadas = g.validar([acao], itens, agora, abertas)
+            ok(not aceitas and erro in recusadas[0]["erro"], (acao, recusadas))
+        perto = [dict(abertas[0], minutos_ate_sair=40)]
+        _, recusadas = g.validar([{"acao": "orientar", "proposta": pid, "instrucao": "qualquer coisa concreta aqui",
+                                   "motivo": "m"}], itens, agora, perto)
+        ok("não dá tempo" in recusadas[0]["erro"], recusadas)
+        for _ in range(s.MAX_ORIENTAR):
+            ok(s.orientar(pid, "qualquer coisa concreta aqui", agora=agora)["ok"], "orienta")
+        ok("já recebeu" in s.orientar(pid, "mais uma vez, outra coisa", agora=agora)["erro"], "no máximo 2 por proposta")
+        ok(not s.orientar(pid, "x" * 20, formato="IMAGE", agora=agora)["ok"], "formato fora")
+        p = next(x for x in s.carregar(r["semana"])["propostas"] if x["n"] == r["n"])
+        ok(p["estado"] == "proposta" and p["critica"]["veredito"] != "aprova", "orientar nunca aprova nada")
 
     def t_gestor_quando_roda_trava_seco_e_teto(self):
         c, g = self._gestor()

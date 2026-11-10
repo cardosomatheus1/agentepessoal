@@ -108,6 +108,7 @@ class Suite:
         m = self._e()
         g = m.PAPEIS["gestor"]
         for termo in ('"segurar"', '"remarcar"', '"cancelar"', '"refazer"', '"trocar"', '"criar"', "FECHADO",
+                      '"orientar"', '"desistir"', "em_refacao", "desvios entre o Crítico e o construtor",
                       "nunca faz: publicar", "liberar o que o Crítico reprovou", "apagar o que já saiu", "lista vazia",
                       "perguntar ao Matheus", "sem depender de mim"):
             ok(termo in g, f"gestor cita {termo!r}")
@@ -548,6 +549,59 @@ class Suite:
         ok("falas: lista min 5 max 8 cada um {texto: texto max 90}" in linha and "nota: texto max 40 opcional" in linha
            and "cenas" not in linha, linha)
         ok("so_no_catalogo" in chamadas[0], "molde sem esquema: fica o resumo do catálogo")
+
+    def t_reel_narrado_falas_e_siglas_antes_do_render(self):
+        # 10/11, casos reais: 9 Reels de domingo 08/11 e de quarta 11/11 caíram com "falas: são 12 (... uma por tela (5)
+        # ...); vieram 10" (a regra "telas + 7 falas" só estava na dica, que o Designer não via) e com "fala 4 diz 'No CMV
+        # do mês', fala 5 'Na Curva ABC' e fala 6 'A DRE reúne'" sem explicação. Agora o Designer vê a regra e o código
+        # confere as duas coisas antes do render, para a rodada de correção resolver.
+        reels = self._reels()
+        real = RAIZ.parents[2] / "reels" / "moldes" / "lanca-app" / "esquema.json"
+        (reels / "moldes" / "lanca-app").mkdir(parents=True)
+        (reels / "moldes" / "lanca-app" / "esquema.json").write_text(real.read_text(encoding="utf-8"), encoding="utf-8")
+        (reels / "moldes" / "motor" / "validar.py").write_text("def validar(esquema, ficha):\n    return []\n")
+        m = self._e(reels=reels)
+        campos = m._campos_do_molde("lanca-app")
+        ok("falas: lista min 10 max 12" in campos and "telas + 7 falas" in campos and "55 a 65 s" in campos, campos)
+        telas = [{"imagem": f"/a0/usr/plugins/conteudo/story/telas/{n}.jpg", "nome": nome, "legenda": "veja aqui"}
+                 for n, nome in (("cmv-real", "CMV"), ("curva-abc-custos", "Curva ABC"), ("dre", "DRE"),
+                                 ("cozinha-kds", "Cozinha"), ("visao-executiva", "Visão"))]
+        spec = {"marca": "raiz", "motor": "molde", "molde": "lanca-app", "formato": "reel",
+                "ficha": {"_marca": "raiz", "telas": telas, "falas": ["Fala simples."] * 10}}
+        falta = m._conferir_spec(spec)
+        ok(any("falas: são 12 (5 telas + 7" in f and "vieram 10" in f for f in falta), falta)
+        ok(not any("CMV" in f or "DRE" in f or "curva ABC" in f for f in falta),
+           f"o rótulo e o arquivo da tela não são texto da peça: {falta}")
+        spec["ficha"]["falas"] = ["Fala simples."] * 9 + ["No CMV do mês você vê a meta.", "Na Curva ABC, as contas.",
+                                                          "A DRE reúne tudo."]
+        falta = m._conferir_spec(spec)
+        ok(not any(f.startswith("ficha: falas: são") for f in falta), falta)
+        ok(sum(f.startswith("ficha: CMV") or f.startswith("ficha: curva ABC") or f.startswith("ficha: DRE") for f in falta) == 3,
+           falta)
+        ok(any("o resumo do mês" in f for f in falta), "o erro já diz como explicar a DRE")
+        spec["ficha"]["falas"][9:] = ["No CMV, o custo dos ingredientes do que você vendeu, você vê a meta.",
+                                      "Na curva ABC, onde vai a maior parte do dinheiro gasto.",
+                                      "A DRE é o resumo do mês: quanto entrou, quanto saiu e o que sobrou."]
+        eq([f for f in m._conferir_spec(spec) if not f.startswith("ficha: falas")], [], "siglas explicadas passam")
+        # a molde without the telas rule is not touched
+        eq(m._falas_do_molde("frases", {"telas": [1], "falas": [1]}), [], "molde sem a regra")
+
+    def t_tela_do_sistema_nome_ficticio_e_selo(self):
+        # 10/11, casos reais: "Slide 6 mostra 'Pizzaria Bella Napoli', mas a ficha exige ocultar o nome" e "A legenda
+        # dizer que os números são valores de exemplo não cumpre a regra" (8 carrosséis caíram nisso de 06 a 10/11)
+        m = self._e()
+        ok("Pizzaria Bella Napoli" in m.PAPEIS["critico"] and "fictícios" in m.PAPEIS["critico"]
+           and "selo \"Valores de exemplo\"" in m.PAPEIS["critico"], "o Crítico sabe que o nome é da conta de exemplo")
+        m.PLUGINS = Path(tempfile.mkdtemp(dir=self.tmp))
+        (m.PLUGINS / "conteudo" / "story" / "telas").mkdir(parents=True)
+        for n in ("dre.jpg", "curva-abc-custos.jpg", "cmv-real.jpg"):
+            (m.PLUGINS / "conteudo" / "story" / "telas" / n).write_bytes(b"x")
+        t = m.telas_do_sistema("carrossel")
+        ok("Pizzaria Bella Napoli" in t and "não prometa esconder" in t and "só na legenda não vale" in t
+           and "selo" in t, t)
+        ok("o resumo do mês" in t and "maior parte do dinheiro" in t and "custo dos ingredientes" in t,
+           "a descrição da tela já traz a sigla explicada")
+        ok("ou no texto do slide/legenda" not in m.KIT and "nunca só" in m.KIT, "o kit não oferece mais a legenda")
 
     def t_designer_refaz_com_os_motivos_do_critico(self):
         # 22/10: the agent makes the posts by itself, so a reproved piece is redone once before it reaches Matheus
