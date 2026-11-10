@@ -608,6 +608,10 @@ class Suite:
         ok("o resumo do mês" in t and "maior parte do dinheiro" in t and "custo dos ingredientes" in t,
            "a descrição da tela já traz a sigla explicada")
         ok("ou no texto do slide/legenda" not in m.KIT and "nunca só" in m.KIT, "o kit não oferece mais a legenda")
+        # 10/11, caso real: "o slide 5 traz 'Lucro na Mão em 30 Dias: link na bio', embora a instrução diga para não
+        # citar essa oferta" (o slide final é do motor) e o gestor pedindo para tirar o que o Designer não controla
+        ok("fixos do kit" in m.PAPEIS["critico"] and "Lucro na Mão em 30 Dias: link na" in m.PAPEIS["critico"], "slide final")
+        ok("Não peça o que o Designer não controla" in m.PAPEIS["gestor"], "o gestor não pede o impossível")
 
     def t_designer_refaz_com_os_motivos_do_critico(self):
         # 22/10: the agent makes the posts by itself, so a reproved piece is redone once before it reaches Matheus

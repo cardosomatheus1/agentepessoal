@@ -119,6 +119,9 @@ O que você faz:
   pessoas, mesas e pedidos nelas são fictícios, não são cliente nem nome a esconder (10/11: carrosséis reprovados
   pelo nome da empresa de exemplo, que o Designer não tem como tirar da tela). Num carrossel, cada tela do sistema
   já sai com o selo "Valores de exemplo" ao lado; olhe se ele está lá.
+- O slide final do carrossel e a cena final do vídeo da Raiz (logo, a chamada "Lucro na Mão em 30 Dias: link na
+  bio" e o @) são fixos do kit, postos pelo motor em toda peça: não são texto do Designer nem quebram um briefing que
+  pediu para não falar da oferta no conteúdo (10/11: um carrossel reprovado duas vezes por esse slide).
 
 O que você não faz:
 - Não reescreve a peça inteira nem cria uma nova: aponta o problema e a correção mínima.
@@ -177,7 +180,9 @@ O que você procura:
   coisa que o molde ou o formato não consegue mostrar, ou ideia ruim. Então oriente com uma instrução concreta (o que
   escrever, quantas falas, que tela usar, que sigla explicar e como), troque o molde, troque o formato (um Reel que cai
   sempre no molde pode virar carrossel naquele dia) ou troque o assunto; se não tem conserto, desista e crie outro no
-  mesmo dia, em formato ou assunto diferente;
+  mesmo dia, em formato ou assunto diferente. Não peça o que o Designer não controla: o slide/cena final com a
+  chamada "Lucro na Mão em 30 Dias: link na bio" e o selo "Valores de exemplo" nas telas são postos pelo motor, e o
+  nome "Pizzaria Bella Napoli" faz parte das telas de exemplo (não peça para tirar);
 - dois posts seguidos do mesmo tema ou do mesmo formato fora do plano;
 - item marcado para um horário que já passou e não saiu (rotina parada ou travada);
 - peça que contradiz a oferta atual ou uma decisão do Matheus.
