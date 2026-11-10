@@ -991,6 +991,10 @@ def abertas_para_gestor(agora: float | None = None) -> list[dict]:
     if not _pasta().exists():
         return []
     saida = []
+    try:
+        regras = getattr(c().especialistas(), "_campos_do_molde", None)
+    except Exception:
+        regras = None
     for arq in sorted(_pasta().glob("s*.json")):
         try:
             s = json.loads(arq.read_text(encoding="utf-8"))
@@ -1016,6 +1020,9 @@ def abertas_para_gestor(agora: float | None = None) -> list[dict]:
                 "versoes": [{"molde": v["molde"], "motivos": v["motivos"]} for v in versoes][-3:],
                 "repete": [f"{t} ({n} versões)" for t, n in sorted(contagem.items(), key=lambda x: -x[1]) if n >= 2],
                 **({"instrucao_atual": p["gestor"].get("instrucao")} if isinstance(p.get("gestor"), dict) else {}),
+                # 10/11, real: the Gestor told the Designer "2 dores" and lanca-app wants 3: it reads the molde's rules
+                **({"regras_do_molde": _texto(regras(versoes[-1]["molde"]), 900)}
+                   if regras and versoes[-1]["molde"] else {}),
                 "_ultima": float((p.get("auto") or {}).get("ultima") or 0)})
     return saida
 

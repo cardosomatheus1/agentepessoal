@@ -2114,6 +2114,9 @@ class Suite:
 
             def criticar(self, tipo, material):
                 return {"veredito": "aprova", "motivos": []}
+
+            def _campos_do_molde(self, molde):
+                return "{dores: lista min 3 max 3; falas: lista min 10 max 12 (regra: telas + 7 falas)}" if molde == "lanca-app" else ""
         c.especialistas = lambda: Esp()
         with c._exclusivo():  # an agenda exists on the VM (the Gestor looks only when it does)
             c._gravar(c.carregar())
@@ -2136,6 +2139,7 @@ class Suite:
         aberta = next(x for x in s.abertas_para_gestor(agora + 1200) if x["proposta"] == pid)
         ok(aberta["versoes_reprovadas"] == 2 and "número de falas do molde (2 versões)" in aberta["repete"]
            and any("vieram 10" in m for m in aberta["versoes"][-1]["motivos"]), aberta)
+        ok("dores: lista min 3 max 3" in aberta.get("regras_do_molde", ""), "o gestor lê as regras do molde antes de orientar")
         motivo = g.quando_rodar(agora + 1260)
         ok(motivo.startswith("evento:") and f"{pid} reprovado de novo" in motivo, motivo)
         st = g.estado(agora + 1260, {})
