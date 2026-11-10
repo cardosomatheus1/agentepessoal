@@ -949,7 +949,11 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes:
     imagens = _quadros_para_o_critico(previa, folha) if previa else [a for a in arquivos if Path(a).suffix.lower() in EXT_IMAGEM]
     julgar = {"briefing": briefing, "ficha": spec or r["texto"] or "(vazia)", "problemas": falta, "imagens": imagens}
     if previa:  # 22/10: he read the zoomed frames as a cropped screen and asked for frames he was not sent
+        julgar["quadros_da_previa"] = _legendas_dos_quadros(imagens, folha)
         julgar["como_ver_a_previa"] = (
+            "Cada imagem está descrita em \"quadros_da_previa\". Tela cortada de verdade é a tela marcada INTEIRA sem o "
+            "menu ou com borda fora do quadro: isso continua reprovando. O quadro marcado ZOOM é a câmera aproximando "
+            "o destaque da mesma tela, que você vê inteira na imagem indicada: não reprove o zoom como recorte. " + 
             "É a prévia de um vídeo narrado: a primeira imagem é a folha com um quadro de cada cena, as outras são cenas "
             "inteiras, sempre a do fim entre elas. Em cada tela do sistema, a tela entra inteira (tema escuro, com o menu) "
             "e depois a câmera aproxima o destaque, como o Matheus pediu (decisão #85: vídeo com zoom e movimento); o "
@@ -967,16 +971,63 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes:
     return out
 
 
+INTEIRA = re.compile(r"(p\d+)-inteira\.(jpe?g|png)$", re.I)
+
+
+def _espalhar(lista: list, n: int) -> list:
+    if n <= 0:
+        return []
+    if len(lista) <= n:
+        return list(lista)
+    if n == 1:
+        return [lista[-1]]
+    passo = (len(lista) - 1) / (n - 1)
+    return [lista[round(i * passo)] for i in range(n)]
+
+
 def _quadros_para_o_critico(previa: list, folha: str) -> list:
     """What fits in the Crítico's MAX_IMAGENS: the contact sheet (every scene), then frames spread over the video
-    with the last one always in."""
+    with the last one always in. 10/11: a screen shown whole and then zoomed (pNN-inteira.jpg + pNN.jpg) goes as a
+    pair, so the Crítico sees the whole screen with the menu next to its zoom (up to 3 pairs; the rest in the sheet)."""
     vagas = MAX_IMAGENS - (1 if folha else 0)
+    nomes = {Path(a).name: a for a in previa}
+    pares = [(a, nomes[f"{INTEIRA.search(Path(a).name).group(1)}.{INTEIRA.search(Path(a).name).group(2)}"])
+             for a in previa if INTEIRA.search(Path(a).name)
+             and f"{INTEIRA.search(Path(a).name).group(1)}.{INTEIRA.search(Path(a).name).group(2)}" in nomes]
     if len(previa) <= vagas:
         escolhidos = list(previa)
+    elif not pares:
+        escolhidos = _espalhar(previa, vagas)
     else:
-        passo = (len(previa) - 1) / (vagas - 1)
-        escolhidos = [previa[round(i * passo)] for i in range(vagas)]
+        usados = _espalhar(pares, min(len(pares), max(0, (vagas - 3) // 2)))
+        dentro = {x for par in usados for x in par}
+        resto = [a for a in previa if a not in {x for par in pares for x in par}]
+        ultimo = [resto[-1]] if resto else []
+        outros = _espalhar(resto[:-1], vagas - len(dentro) - len(ultimo))
+        escolhidos = [a for a in previa if a in dentro or a in outros or a in ultimo]
     return ([folha] if folha else []) + escolhidos
+
+
+def _legendas_dos_quadros(imagens: list, folha: str) -> list[str]:
+    """What each image the Crítico gets is, in order: the sheet, a scene, a whole screen, or the intended zoom on it."""
+    saida, inteiras = [], {}
+    for k, a in enumerate(imagens, 1):
+        nome = Path(a).name
+        achado = INTEIRA.search(nome)
+        cena = re.match(r"p(\d+)", nome)
+        if folha and a == folha:
+            saida.append(f"imagem {k}: folha de contato (um quadro de cada cena; numa tela do sistema, a inteira e o zoom)")
+        elif achado:
+            inteiras[achado.group(1)] = k
+            saida.append(f"imagem {k}: cena {int(cena.group(1))}, a tela do sistema INTEIRA, com o menu, antes da câmera "
+                         "aproximar (é aqui que se confere tela inteira e tela cortada)")
+        elif cena and f"p{cena.group(1)}" in inteiras:
+            saida.append(f"imagem {k}: cena {int(cena.group(1))}, ZOOM intencional da câmera no destaque da mesma tela "
+                         f"mostrada inteira na imagem {inteiras[f'p{cena.group(1)}']} (decisão #85: zoom e movimento): "
+                         "não é recorte nem tela cortada")
+        else:
+            saida.append(f"imagem {k}: cena {int(cena.group(1))}" if cena else f"imagem {k}: {nome}")
+    return saida
 
 
 def _renderizar(spec: dict, falta: list) -> tuple:

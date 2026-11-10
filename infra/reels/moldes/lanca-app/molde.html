@@ -157,6 +157,9 @@ Motor.molde({
   id: 'lanca-app', formatos: ['reel', 'story'],
   // the preview's picture of a tour scene is the zoomed screen with its caption, not the pulled-back end
   foto(i) { return D && i >= 3 && i < 3 + D.n ? 0.62 : null; },
+  // 10/11: the same screen whole, with the menu, before the camera moves in (seconds after the scene starts: the
+  // screen has slid in by 0.5 s and the zoom starts at 0.5 s); the Crítico gets both and knows the zoom is intended
+  inteira(i) { return D && i >= 3 && i < 3 + D.n ? 0.47 : null; },
   montar(F, M, $m) {
     const { $, brl } = $m, n = F.telas.length;
     if (F.falas.length !== n + 7) $m.erro(`falas: são ${n + 7} (dores, pergunta, revelação, uma por tela (${n}), benefícios, como começar, ${F.oferta ? 'oferta' : 'para quem é'}, chamada); vieram ${F.falas.length}`);

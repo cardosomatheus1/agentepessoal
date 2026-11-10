@@ -674,6 +674,46 @@ class Suite:
         d = m.revisar("x", antiga, {"motivos": ["fraco"]})
         ok(d["critica"]["veredito"] == "reprova" and "TimeoutError" in d["falta"][0], "Designer fora: continua reprovada")
 
+    def t_previa_mostra_tela_inteira_antes_do_zoom(self):
+        # 10/11, caso real: o Reel de quarta 11/11 (lanca-app, 5 telas) reprovado por "Regra do Matheus #85: nas cenas
+        # das telas, o sistema não aparece inteiro com o menu visível ... na tela da cozinha, as laterais estão
+        # cortadas". O Crítico só recebia o quadro do zoom. Agora cada tela vai inteira e no zoom, cada imagem descrita.
+        reels = self._reels()
+        m = self._e(reels=reels)
+        m._pode_renderizar = lambda: ""
+        nomes = []
+        for i in range(1, 13):
+            if 4 <= i <= 8:
+                nomes.append(f"p{i:02d}-inteira.jpg")
+            nomes.append(f"p{i:02d}.jpg")
+        arquivos = [self.tmp / "z" / n for n in nomes]
+        arquivos[0].parent.mkdir(exist_ok=True)
+        for a in arquivos:
+            _png(a)
+        folha = self.tmp / "z" / "prev.jpg"
+        _png(folha)
+        m.renderizar_molde = lambda molde, formato, ficha, previa=False: (
+            [str(a) for a in arquivos] + [str(folha), str(self.tmp / "z" / "narracao.m4a")], "")
+        chamadas = self._designer(m, json.dumps({"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "reel",
+                                                 "ficha": {"_marca": "raiz", "pergunta": "Quanto sobra?"}}))
+        m.desenhar("Reel da Raiz")
+        julgar = chamadas[1][2]
+        imgs = [Path(x).name for x in julgar["imagens"]]
+        ok(len(imgs) <= m.MAX_IMAGENS and imgs[0] == "prev.jpg" and imgs[-1] == "p12.jpg", imgs)
+        pares = [n for n in imgs if n.endswith("-inteira.jpg")]
+        ok(len(pares) == 3 and all(imgs[imgs.index(n) + 1] == n.replace("-inteira", "") for n in pares),
+           f"cada tela vai inteira logo antes do zoom dela: {imgs}")
+        legendas = julgar["quadros_da_previa"]
+        eq(len(legendas), len(imgs), "uma descrição por imagem")
+        k = imgs.index(pares[0])
+        ok("INTEIRA" in legendas[k] and "tela cortada" in legendas[k]
+           and f"mostrada inteira na imagem {k + 1}" in legendas[k + 1] and "não é recorte" in legendas[k + 1], legendas)
+        ok("Tela cortada de verdade" in julgar["como_ver_a_previa"] and "continua reprovando" in julgar["como_ver_a_previa"],
+           "o critério de tela cortada de verdade continua")
+        # without whole frames (other moldes), the old spread
+        onze = [f"p{i:02d}.jpg" for i in range(1, 12)]
+        eq(m._quadros_para_o_critico(onze, "prev.jpg")[-1], "p11.jpg", "sem pares, como antes")
+
     def t_video_da_raiz_sai_so_previa_e_narracao(self):
         # decision #39: a narrated video goes to Matheus as audio first; the video is made only after he approves
         reels = self._reels()

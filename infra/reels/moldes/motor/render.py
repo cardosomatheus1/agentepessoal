@@ -259,7 +259,8 @@ def main():
             rel["erros"] = [str(e)]; (saida / "relatorio.json").write_text(json.dumps(rel, ensure_ascii=False, indent=1))
             print("MOLDE RECUSOU:\n  " + str(e)); sys.exit(2)
         info = pg.evaluate("({erros: Motor.erros, avisos: Motor.avisos, S: Motor.S, N: Motor.N, DUR: Motor.DUR, slides: Motor._slides.length, "
-                           "foto: Motor.def && Motor.def.foto ? Array.from({length: Motor.N}, (_, i) => Motor.def.foto(i)) : []})")
+                           "foto: Motor.def && Motor.def.foto ? Array.from({length: Motor.N}, (_, i) => Motor.def.foto(i)) : [], "
+                           "inteira: Motor.def && Motor.def.inteira ? Array.from({length: Motor.N}, (_, i) => Motor.def.inteira(i)) : []})")
         rel["avisos"] = info["avisos"]
         if info["erros"]:
             rel["erros"] = info["erros"]; (saida / "relatorio.json").write_text(json.dumps(rel, ensure_ascii=False, indent=1))
@@ -282,6 +283,11 @@ def main():
                 # camera had pulled back and Matheus judged screens he could not read)
                 f = (info.get("foto") or [None] * N)[i]
                 foto = round(ini + (fim - ini) * f, 3) if isinstance(f, (int, float)) and 0 < f < 1 else round(max(ini, fim - 0.08), 3)
+                # 10/11: a scene whose picture is a zoom also gets the whole screen, before the camera moves in (the
+                # Crítico saw only the zoomed screen and reproved "tela cortada, sem o menu", decision #85)
+                w = (info.get("inteira") or [None] * N)[i]
+                if isinstance(w, (int, float)) and 0 < w < fim - ini and foto != round(ini + w, 3):
+                    amostras.append((i, round(ini + w, 3), "inteira"))
                 amostras += [(i, round(ini + (fim - ini) * 0.6, 3), False), (i, foto, True)]
             antes = set()
             for i, t, foto in amostras:
@@ -290,15 +296,20 @@ def main():
                     for x in pg.evaluate("Motor.conferir()"): rel["problemas"].append({"cena": i + 1, "t": t, "msg": x})
                     # reading time (AR Board 13/10, 'como pedir': "rápido demais, nem deu pra ler"): without narration,
                     # a scene must last 0.8 s + 0.25 s per word that appeared in it (about 240 words a minute)
-                    if foto and not tempos and i < N - 1:  # the end of the scene
+                    if foto is True and not tempos and i < N - 1:  # the end of the scene
                         agora = set(pg.evaluate("Motor.textosVisiveis()"))
                         palavras = palavras_novas(agora, antes)
                         minimo = 0.8 + 0.25 * palavras
                         if S[i + 1] - S[i] < minimo - 0.05:
                             rel["problemas"].append({"cena": i + 1, "t": t, "msg": f"pouco tempo para ler: {palavras} palavras novas em {S[i + 1] - S[i]:.1f} s (mínimo {minimo:.1f} s)"})
                         antes |= agora
-                if foto:
+                if foto == "inteira":
+                    img = saida / f"p{i + 1:02d}-inteira.jpg"; pg.screenshot(path=str(img), type="jpeg", quality=80); imgs.append(img)
+                    rel.setdefault("quadros", []).append({"arquivo": img.name, "cena": i + 1, "tipo": "tela inteira"})
+                elif foto:
                     img = saida / f"p{i + 1:02d}.jpg"; pg.screenshot(path=str(img), type="jpeg", quality=80); imgs.append(img)
+                    zoom = any(q["cena"] == i + 1 for q in rel.get("quadros", []))
+                    rel.setdefault("quadros", []).append({"arquivo": img.name, "cena": i + 1, "tipo": "zoom" if zoom else "cena"})
             rel["duracao"] = info["DUR"]
         b.close()
     vistos = set(); unicos = []
