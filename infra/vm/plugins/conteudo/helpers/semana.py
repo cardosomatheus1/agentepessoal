@@ -245,7 +245,18 @@ def _abertas() -> list:
     return saida
 
 
-def stories_vizinhos(fora: str = "") -> dict:
+def _foras(fora) -> set:
+    """`fora` as a set of ids: one id, or several (a new piece and the one it replaces)."""
+    return {str(x) for x in ([fora] if isinstance(fora, str) else list(fora or [])) if x}
+
+
+def _fora_de(p: dict) -> tuple:
+    """The ids that do not count against a proposal: itself and the scheduled piece it replaces (11/11: a story made
+    to replace the one of its own day was reproved as "mais do mesmo" of the very story it replaced)."""
+    return tuple(x for x in (p.get("id"), p.get("substitui")) if x)
+
+
+def stories_vizinhos(fora="") -> dict:
     """{day: layout} of every live story: the agenda (published, pending, blocked) and the open proposals. `fora`:
     the id of the item or proposal being redone (it does not count against itself)."""
     semanas, dias = {}, {}
@@ -254,12 +265,12 @@ def stories_vizinhos(fora: str = "") -> dict:
     except Exception:
         itens = []
     for i in itens:
-        if i.get("tipo") == "STORY" and i.get("estado") not in ("cancelada", "falhou") and i.get("id") != fora:
+        if i.get("tipo") == "STORY" and i.get("estado") not in ("cancelada", "falhou") and i.get("id") not in _foras(fora):
             layout = _layout_do_item(i, semanas)
             if layout:
                 dias[str(i.get("data"))] = layout
     for _, p in _abertas():
-        if p.get("formato_pedido") == "STORY" and p.get("id") != fora and p.get("data") not in dias:
+        if p.get("formato_pedido") == "STORY" and p.get("id") not in _foras(fora) and p.get("data") not in dias:
             layout = str(((p.get("spec") or {}).get("story") or {}).get("layout") or "")
             if layout:
                 dias[p["data"]] = layout
@@ -384,7 +395,7 @@ def _molde_do_item(i: dict, semanas: dict) -> str:
     return str(spec.get("molde") or ("pov" if spec.get("pov") else ""))
 
 
-def feed_vizinho(fora: str = "", irmaos=()) -> list[dict]:
+def feed_vizinho(fora="", irmaos=()) -> list[dict]:
     """[{"data", "titulo", "molde", "tipo", "id"}] of every live feed post: the agenda (not cancelled), the open
     proposals and `irmaos` (proposals of the batch being drawn now). `fora`: the one being redone."""
     semanas, saida, vistos = {}, [], set()
@@ -393,14 +404,14 @@ def feed_vizinho(fora: str = "", irmaos=()) -> list[dict]:
     except Exception:
         itens = []
     for i in itens:
-        if i.get("tipo") == "STORY" or i.get("estado") in ("cancelada", "falhou") or i.get("id") == fora:
+        if i.get("tipo") == "STORY" or i.get("estado") in ("cancelada", "falhou") or i.get("id") in _foras(fora):
             continue
         titulo = (i.get("origem") or {}).get("titulo") or (i.get("ficha") or {}).get("titulo") or ""
         saida.append({"data": str(i.get("data")), "titulo": _texto(titulo, 120), "molde": _molde_do_item(i, semanas),
                       "tipo": i.get("tipo"), "id": i.get("id")})
         vistos.add(i.get("id"))
     for p in [x for _, x in _abertas()] + list(irmaos or []):
-        if p.get("formato_pedido") == "STORY" or p.get("id") in vistos or p.get("id") == fora:
+        if p.get("formato_pedido") == "STORY" or p.get("id") in vistos or p.get("id") in _foras(fora):
             continue
         vistos.add(p.get("id"))
         spec = p.get("spec") or {}
@@ -454,7 +465,7 @@ def titulo_repetido(titulo: str, dia: str, vizinhos: list) -> str:
     return ""
 
 
-def historico_recente(agora: float | None = None, fora: str = "") -> list[str]:
+def historico_recente(agora: float | None = None, fora="") -> list[str]:
     """What the Raiz itself put out or scheduled, HISTORICO_DIAS back and 7 ahead, one line each: the measure of
     "mais do mesmo" for the three agents."""
     agora = time.time() if agora is None else agora
@@ -463,7 +474,7 @@ def historico_recente(agora: float | None = None, fora: str = "") -> list[str]:
     stories = stories_vizinhos(fora)
     try:
         itens = sorted((i for i in c().carregar().get("itens") or [] if de <= str(i.get("data")) <= ate
-                        and i.get("estado") not in ("cancelada", "falhou") and i.get("id") != fora),
+                        and i.get("estado") not in ("cancelada", "falhou") and i.get("id") not in _foras(fora)),
                        key=lambda i: (i["data"], i.get("hora", "")))
     except Exception:
         itens = []
@@ -482,7 +493,7 @@ def historico_recente(agora: float | None = None, fora: str = "") -> list[str]:
     return linhas
 
 
-def briefing_comum(agora: float | None = None, fora: str = "") -> str:
+def briefing_comum(agora: float | None = None, fora="") -> str:
     """THE briefing: the one text the creator (routine and Designer), the Crítico and the Gestor all read (11/11). Fixed
     rules, the radar of references and the Raiz's own last 14 days."""
     agora = time.time() if agora is None else agora
@@ -824,7 +835,7 @@ def _formato_feed(formato: str) -> str:
 TOUR = ("lanca-app", "demonstracao")  # the videos that are a walk through the system's screens: one family
 
 
-def _moldes_vizinhos(dia: str, janela: int = HISTORICO_DIAS - 1, fora: str = "", irmaos=()) -> list[str]:
+def _moldes_vizinhos(dia: str, janela: int = HISTORICO_DIAS - 1, fora="", irmaos=()) -> list[str]:
     """The moldes of the feed posts within `janela` days of `dia` (the day itself left out): the agenda, the open
     proposals and the batch being drawn. 08/11, Matheus: "Estao td igual os post": three carousels in a row came out of
     passo-a-passo (the big "3"), because "duas seguidas não usam o mesmo molde" was only a line in the Designer's
@@ -851,7 +862,7 @@ def _moldes_vizinhos(dia: str, janela: int = HISTORICO_DIAS - 1, fora: str = "",
 def _briefing(formato: str, dia: str, p: dict, irmaos=()) -> dict:
     formato = _formato_feed(formato)
     g = p.get("gestor") if isinstance(p.get("gestor"), dict) else {}
-    fora = str(p.get("id") or "")
+    fora = _fora_de(p)
     evitar = sorted(set(_moldes_vizinhos(dia, fora=fora, irmaos=irmaos)) | set(g.get("moldes_ruins") or [])) if formato != "STORY" else []
     ideia = _texto(p.get("ideia"), 1200) + (f"\n\nInstrução do gestor de conteúdo (siga à risca): {_texto(g['instrucao'], 600)}"
                                             if g.get("instrucao") else "")
@@ -924,7 +935,7 @@ def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict
         briefing["titulo"] = _texto(d["spec"].get("titulo") or (d["spec"].get("ficha") or {}).get("titulo")
                                     or "ideia nova do Designer", 120)
     legenda = briefing["legenda"] or str(d["spec"].get("legenda") or "").strip()
-    repetido = titulo_repetido(briefing["titulo"], dia, feed_vizinho(f"{sid}-{n}", irmaos))
+    repetido = titulo_repetido(briefing["titulo"], dia, feed_vizinho(_fora_de(p), irmaos))
     if repetido:  # 11/11: "3 sinais", "3 passos", "3 informações", "3 mitos" in a row
         d["critica"] = dict(d["critica"], veredito="reprova", motivos=[repetido] + list(d["critica"].get("motivos") or []))
     pendente = formato == "REELS" and d.get("video_pendente")
@@ -953,13 +964,13 @@ def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict
 
 
 def _item_story(esp, sid: str, n: int, campos: dict, dia: str, itens: list, sufixo: str = "", vizinhos: dict | None = None,
-                ref: dict | None = None) -> dict:
+                ref: dict | None = None, substitui: str = "") -> dict:
     """One story of the week, drawn from the kit, judged (with the day's post it calls) and redone when reproved.
     vizinhos: {day: layout} of the other live stories, for the variety rule when a redo changes the layout."""
     post, sem_post = _post_do_dia(campos, dia, itens)
     if post and post.get("imagem") and not campos.get("imagem"):  # the post's own picture, not a text-only card
         campos = dict(campos, imagem=post["imagem"])
-    ctx = {"briefing_comum": briefing_comum(fora=f"{sid}-{n}"), **({"referencia": ref} if ref else {})}
+    ctx = {"briefing_comum": briefing_comum(fora=(f"{sid}-{n}", substitui)), **({"referencia": ref} if ref else {})}
     d = _desenhar_story(esp, campos, _pasta() / sid / f"story-{n}{sufixo}.jpg", post, ctx)
     for k in range(REFAZER_STORY if esp is not None and not sem_post else 0):  # reproved: redone before he sees it
         if d["critica"]["veredito"] != "reprova":
@@ -1268,9 +1279,9 @@ def _refazer_story_semana(esp, sid: str, p: dict, itens: list, nova: bool) -> di
     g = p.get("gestor") if isinstance(p.get("gestor"), dict) else {}
     if g.get("instrucao"):
         motivos = list(motivos) + [f"Instrução do gestor de conteúdo (siga à risca): {_texto(g['instrucao'], 600)}"]
-    ctx = {"briefing_comum": briefing_comum(fora=p["id"]), **({"referencia": p["referencia"]} if p.get("referencia") else {})}
+    ctx = {"briefing_comum": briefing_comum(fora=_fora_de(p)), **({"referencia": p["referencia"]} if p.get("referencia") else {})}
     feito = _refazer_story(esp, campos, {"motivos": motivos}, saida, post, dia=p["data"],
-                           vizinhos=stories_vizinhos(fora=p["id"]), ctx=ctx, sem_post=troca)
+                           vizinhos=stories_vizinhos(fora=_fora_de(p)), ctx=ctx, sem_post=troca)
     if not feito:
         return None
     novo, d = feito
@@ -1364,7 +1375,8 @@ def _um_passo(esp, sid: str, semana: dict, p: dict, agora: float, avisar, subir)
             "ultima": agora}
     historico = (list(p.get("historico") or []) + [_versao(p)])[-HISTORICO:]
     novo = dict(novo, auto=auto, estado="proposta", refeita=int(p.get("refeita") or 0) + 1, historico=historico,
-                **{k: p[k] for k in ("gestor", "orientacoes", "renders", "referencia") if p.get(k) and k not in novo})
+                **{k: p[k] for k in ("gestor", "orientacoes", "renders", "referencia", "substitui", "criada_por")
+                   if p.get(k) and k not in novo})
     if not _salvar_proposta(sid, novo):
         return {"semana": sid, "n": p["n"], "decisao": "decidida enquanto refazia"}
     c()._diario({"semana": sid, "refeita_auto": p["n"], "nova_ideia": nova, "tentativa": auto["tentativas"],
@@ -1623,10 +1635,12 @@ def criar(data: str, formato: str, dados: dict, agora: float | None = None, subi
         sid, n = semana["id"], 1 + max([p["n"] for p in semana["propostas"]] or [0])
     if formato == "STORY":
         p = _item_story(esp, sid, n, dados["story"], data, carregar(sid)["propostas"], sufixo="-gestor",
-                        vizinhos={d: l for d, l in stories_vizinhos(fora=substitui).items() if d != data}, ref=ref)
+                        vizinhos={d: l for d, l in stories_vizinhos(fora=substitui).items() if d != data}, ref=ref,
+                        substitui=substitui)
     else:
         p = _item_feed(esp, "", sid, n, formato, data, {**{k: dados.get(k) for k in ("titulo", "ideia", "legenda")},
-                                                        **({"referencia": ref} if ref else {})})
+                                                        **({"referencia": ref} if ref else {}),
+                                                        **({"substitui": substitui} if substitui else {})})
     p["criada_por"] = quem
     if substitui:
         p["substitui"] = substitui

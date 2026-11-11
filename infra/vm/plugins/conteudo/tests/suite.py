@@ -2489,6 +2489,27 @@ class Suite:
         ok(not r["ok"] and "dois dias seguidos não repetem o layout" in r["erro"], f"post-novo depois do de sexta, não: {r}")
         r = s.criar("2026-10-31", "STORY", {"story": {"layout": "numero", "manchete": "Número"}}, agora=agora)
         ok(r["ok"] and r["agendado"], r)
+        # 11/11, real: a story made to replace the one of its own day was reproved as "mais do mesmo" of the very story
+        # it replaced. The piece being replaced does not count against its replacement, in the rule or in the briefing
+        velho = next(i for i in c.carregar()["itens"] if i["data"] == "2026-10-29" and i["tipo"] == "STORY")
+        ok("29/10 story" in "\n".join(s.historico_recente(agora)) and
+           "29/10 story" not in "\n".join(s.historico_recente(agora, fora=("s20261026-1-99", velho["id"]))),
+           "o story substituído sai do histórico que o Crítico lê")
+        vistos = []
+        type(c.especialistas()).criticar = lambda self, tipo, material: vistos.append(material) or {"veredito": "reprova", "motivos": ["fraco"]}
+        type(c.especialistas()).chamar = lambda self, papel, tarefa, material: {"texto": "", "erro": "sem resposta"}
+        r = s.criar("2026-10-29", "STORY", {"story": {"layout": "quiz", "manchete": "Novo"}}, agora=agora, substitui=velho["id"])
+        ok(r["ok"] and "29/10 story" not in vistos[-1]["briefing_comum"] and "28/10 story" in vistos[-1]["briefing_comum"],
+           f"o Crítico julga o substituto sem o substituído na lista: {r}")
+        nova = next(x for x in s.carregar(r["semana"])["propostas"] if x["n"] == r["n"])
+        ok(s._fora_de(nova) == (nova["id"], velho["id"]) and nova["substitui"] == velho["id"], nova)
+        ok(next(i for i in c.carregar()["itens"] if i["id"] == velho["id"])["estado"] == "pendente", "o antigo fica até o novo passar")
+        type(c.especialistas()).criticar = lambda self, tipo, material: {"veredito": "aprova", "motivos": []}
+        type(c.especialistas()).chamar = lambda self, papel, tarefa, material: {"texto": json.dumps(dict(material["story"], manchete="Refeito")), "erro": ""}
+        feito = s.passo_autonomo(agora + 600, avisar=lambda t: None)
+        estados = {i["id"]: i["estado"] for i in c.carregar()["itens"]}
+        ok(feito["decisao"] == "refeita e agendada" and estados[velho["id"]] == "cancelada" and estados[nova["id"]] == "pendente",
+           f"refeito pelo agente, o substituto ainda tira o antigo da agenda: {feito} {estados}")
         # the routine's prompt no longer imposes a layout per weekday, and the rule is in the common briefing
         ok("Esquema da semana" not in s._story_regras() and "quiz" in s._story_regras() and "enquete" in s._story_regras(),
            "o Designer conhece os layouts novos, sem esquema por dia")
