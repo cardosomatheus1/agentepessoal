@@ -51,12 +51,12 @@ ACOES = {
     "cancelar": {"item"},
     "refazer": {"item", "instrucao"},
     "trocar": {"item_a", "item_b"},
-    "criar": {"data", "formato", "titulo", "ideia", "legenda", "story"},
+    "criar": {"data", "formato", "titulo", "ideia", "legenda", "story", "substitui"},
     # 10/11 (Matheus: "ele não simplesmente muda o contexto, o tipo"): on a proposal the agent is still redoing
     "orientar": {"proposta", "instrucao", "formato", "trocar_molde", "assunto_novo"},
     "desistir": {"proposta"},
 }
-OPCIONAIS = {"criar": {"titulo", "ideia", "legenda", "story"}, "orientar": {"formato", "trocar_molde", "assunto_novo"}}
+OPCIONAIS = {"criar": {"titulo", "ideia", "legenda", "story", "substitui"}, "orientar": {"formato", "trocar_molde", "assunto_novo"}}
 FORMATOS_CRIAR = ("CARROSSEL", "REELS", "IMAGE", "STORY")
 NAO_TOCA = ("publicando", "publicada", "incerta", "falhou")
 EVENTOS = ("bloqueada", "falhou", "incerta")
@@ -375,7 +375,17 @@ def _erro(a, sim: dict, tocados: set, ocupado, agora: float, ja: int) -> str:
             return f"{nome}: {i} está {sim[i]['estado']} (o gestor não mexe no que saiu ou está saindo)"
     it = sim.get(a.get("item") or a.get("item_a"))
     if nome == "cancelar":
-        return "" if it["estado"] in ("pendente", "bloqueada") else f"cancelar: {it['id']} está {it['estado']}"
+        if it["estado"] not in ("pendente", "bloqueada"):
+            return f"cancelar: {it['id']} está {it['estado']}"
+        # 11/11: the Gestor cancelled Wednesday's approved carousel (reproved a day before, on a sentence) and the day
+        # stayed empty through 9 failed replacements. The only post of a plan day leaves only through its replacement.
+        dia = dt.date.fromisoformat(it["data"])
+        if (c().canal(it) == "feed" and dia.weekday() in {d for _, d in semana().PLANO_FEED}
+                and c()._quando(it) > agora + semana().FOLGA_AUTO_MIN * 60
+                and not ocupado(it["data"], "feed", {it["id"]})):
+            return (f"cancelar: {it['id']} é o único post de {it['data']}, dia do plano: não deixe o dia vazio; use criar "
+                    f"com \"substitui\": \"{it['id']}\" (ele só sai da agenda quando o novo for aprovado)")
+        return ""
     if it["estado"] != "pendente":
         return f"{nome}: {it['id']} está {it['estado']} (só pendente)"
     if nome == "segurar":
@@ -450,9 +460,14 @@ def _erro_criar(a: dict, sim: dict, ocupado, agora: float) -> str:
     if c()._quando({"data": a["data"], "hora": hora}) < agora + semana().FOLGA_AUTO_MIN * 60:
         return f"criar: {a['data']} {hora} já passou ou está perto demais (desenhar e julgar leva minutos)"
     canal_ = "story" if formato == "STORY" else "feed"
-    outro = ocupado(a["data"], canal_, set())
+    sub = a.get("substitui")
+    if sub is not None:
+        velho = sim.get(sub) if isinstance(sub, str) and not sub.startswith("_") else None
+        if not velho or velho["data"] != a["data"] or c().canal(velho) != canal_ or velho["estado"] not in ("pendente", "bloqueada"):
+            return f"criar: substitui {str(sub)[:60]!r} não é o {canal_} pendente de {a['data']}"
+    outro = ocupado(a["data"], canal_, {sub} if sub else set())
     if outro:
-        return f"criar: {a['data']} já tem {canal_} ({outro['id']}): um por dia"
+        return f"criar: {a['data']} já tem {canal_} ({outro['id']}): um por dia (para trocar, use \"substitui\")"
     refazendo = semana().em_refacao(a["data"], canal_, agora)
     if refazendo and refazendo not in sim["_desistidas"]:
         return f"criar: {a['data']} já tem {canal_} sendo refeito pelo agente ({refazendo}); espere a decisão dele"
@@ -517,8 +532,9 @@ def executar(a: dict, refazer=None, agora: float | None = None, criar=None) -> d
             return conteudo.trocar_datas(a["item_a"], a["item_b"], a["motivo"], agora)
         if nome == "criar":
             dados = {k: a[k] for k in ("titulo", "ideia", "legenda", "story") if a.get(k)}
+            extra = {"substitui": a["substitui"]} if a.get("substitui") else {}
             r = (criar or semana().criar)(a["data"], a["formato"], dados, agora=agora,
-                                          quem=f"gestor: {_curto(a['motivo'], 120)}")
+                                          quem=f"gestor: {_curto(a['motivo'], 120)}", **extra)
             if r.get("ok") and not r.get("agendado"):
                 r["nota"] = ("o Crítico reprovou; o agente refaz sozinho e, se não passar, deixa o dia sem ele"
                              if r.get("veredito") == "reprova" or r.get("problema") else "")

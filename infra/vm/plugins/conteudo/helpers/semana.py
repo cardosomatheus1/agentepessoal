@@ -1123,7 +1123,8 @@ def em_refacao(data: str, canal_: str, agora: float | None = None) -> str:
     return ""
 
 
-def criar(data: str, formato: str, dados: dict, agora: float | None = None, subir=None, quem: str = "gestor") -> dict:
+def criar(data: str, formato: str, dados: dict, agora: float | None = None, subir=None, quem: str = "gestor",
+          substitui: str = "") -> dict:
     """The Gestor fills a hole (04/11): one new feed post {"titulo", "ideia", "legenda"} or story {"story": fields} for
     `data`, appended to the newest week, drawn and judged like the week's; approved goes into the agenda now, reproved
     is redone by passo_autonomo like any other. Refused when the slot is taken or too close."""
@@ -1139,7 +1140,15 @@ def criar(data: str, formato: str, dados: dict, agora: float | None = None, subi
     hora = HORA_STORY if formato == "STORY" else HORA
     if c()._quando({"data": data, "hora": hora}) < agora + FOLGA_AUTO_MIN * 60:
         return {"ok": False, "erro": f"{data} {hora} já passou ou está perto demais para criar"}
-    if data in _ocupados(canal_):
+    # 11/11: Wednesday's approved carousel was cancelled to make room for a new one, and the day ended with nothing.
+    # substitui: the post of that day stays in the agenda until this one is approved (then it is cancelled).
+    velho = next((i for i in c().carregar()["itens"] if i["id"] == substitui), None) if substitui else None
+    if substitui and (not velho or velho["data"] != data or c().canal(velho) != canal_
+                      or velho["estado"] not in ("pendente", "bloqueada")):
+        return {"ok": False, "erro": f"substitui: {substitui} não é o {canal_} pendente de {data}"}
+    outros = {i["data"] for i in c().carregar()["itens"] if i["estado"] not in ("cancelada", "falhou")
+              and c().canal(i) == canal_ and i["id"] != substitui}
+    if data in outros:
         return {"ok": False, "erro": f"{data} já tem {canal_}"}
     if em_refacao(data, canal_, agora):
         return {"ok": False, "erro": f"{data}: o agente ainda está refazendo {em_refacao(data, canal_, agora)} para esse dia"}
@@ -1163,6 +1172,8 @@ def criar(data: str, formato: str, dados: dict, agora: float | None = None, subi
     else:
         p = _item_feed(esp, "", sid, n, formato, data, {k: dados.get(k) for k in ("titulo", "ideia", "legenda")})
     p["criada_por"] = quem
+    if substitui:
+        p["substitui"] = substitui
     with _exclusivo():
         s = carregar(sid)
         if any(x["n"] == n for x in s["propostas"]):
@@ -1410,6 +1421,14 @@ def _agendar_item(conteudo, p: dict, sid: str, quem: str, agora: float, subir=No
         return f"o arquivo não subiu para o S3 ({str(exc)[:120]})"
     item = {"id": p["id"], "data": p["data"], "hora": p["hora"], "tipo": p["tipo"], "arquivos": arquivos,
             "legenda": p["legenda"], "origem": {"semana": sid, "n": p["n"], "titulo": p["titulo"]}}
+    if p.get("substitui"):  # 11/11: the old one leaves the agenda only now, when its replacement is approved
+        velho = next((i for i in conteudo.carregar()["itens"] if i["id"] == p["substitui"]), None)
+        if velho and velho["estado"] in ("pendente", "bloqueada"):
+            r = conteudo.cancelar(velho["id"], f"substituído por {p['id']}, que o Crítico aprovou")
+            if not r.get("ok"):
+                return f"não consegui tirar {velho['id']} da agenda: {r.get('erro')}"
+        elif velho and velho["estado"] not in ("cancelada", "falhou"):
+            return f"{velho['id']} já está {velho['estado']}: o substituto não entra"
     if capa:
         item["capa"] = capa
     if p["critica"]["veredito"] == "reprova":  # he picked it by number after seeing the reprova

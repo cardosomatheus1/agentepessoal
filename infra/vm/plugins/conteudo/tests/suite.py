@@ -2202,6 +2202,38 @@ class Suite:
         ok(any(i["data"] == "2026-11-08" and i["tipo"] == "CARROSSEL" for i in c.carregar()["itens"]), "o dia foi coberto")
         ok("descartado" not in (g.quando_rodar(agora + 2000) or ""), "o que o gestor desistiu não chama o gestor de novo")
 
+    def t_gestor_troca_post_aprovado_so_quando_o_novo_passa(self):
+        # 11/11, caso real: o carrossel aprovado de quarta (s20261109-1-13) foi reprovado na conferência antecipada
+        # um dia antes, o gestor o CANCELOU para criar outro e o dia ficou vazio depois de 9 tentativas reprovadas.
+        c, s, g, briefings = self._serie()
+        agora = _ts(c, "2026-11-10", "13:44")
+        r = s.criar("2026-11-11", "CARROSSEL", {"titulo": "Tem o quê hoje?", "ideia": "humor do cardápio"}, agora=agora)
+        velho = f"{r['semana']}-{r['n']}"
+        ok(r["agendado"], r)
+        _, recusadas = g.validar([{"acao": "cancelar", "item": velho, "motivo": "frase não confirmada"}],
+                                 c.carregar()["itens"], agora)
+        ok(recusadas and "único post" in recusadas[0]["erro"] and "substitui" in recusadas[0]["erro"], recusadas)
+        criar = {"acao": "criar", "data": "2026-11-11", "formato": "REELS", "titulo": "x", "ideia": "y", "motivo": "m"}
+        _, recusadas = g.validar([criar], c.carregar()["itens"], agora)
+        ok("use \"substitui\"" in recusadas[0]["erro"], recusadas)
+        aceitas, recusadas = g.validar([dict(criar, substitui=velho)], c.carregar()["itens"], agora)
+        ok(aceitas and not recusadas, recusadas)
+        # the replacement is reproved: the old one stays in the agenda (the hour's gate still judges it)
+        out = g.rodar("manual", agora, contexto={}, modelo=self._modelo([dict(criar, substitui=velho)]))
+        ok(out.get("resultados") and out["resultados"][0]["ok"], out)
+        estado = {i["id"]: i["estado"] for i in c.carregar()["itens"]}
+        ok(estado[velho] == "pendente", f"o aprovado continua até o novo passar: {estado}")
+        # approved replacement: now the old one leaves and the new one takes the day
+        out = g.rodar("manual", agora + 60, contexto={}, modelo=self._modelo([
+            {"acao": "desistir", "proposta": f"{r['semana']}-{r['n'] + 1}", "motivo": "o Reel caiu"},
+            dict(criar, formato="CARROSSEL", substitui=velho)]))
+        ok(len(out.get("resultados") or []) == 2 and all(x["ok"] for x in out["resultados"]), out)
+        itens = [i for i in c.carregar()["itens"] if i["data"] == "2026-11-11"]
+        ok(sorted(i["estado"] for i in itens) == ["cancelada", "pendente"]
+           and next(i for i in itens if i["id"] == velho)["estado"] == "cancelada", itens)
+        ok(not s.criar("2026-11-11", "CARROSSEL", {"titulo": "x", "ideia": "y"}, agora=agora + 120,
+                       substitui="nao-existe")["ok"], "substitui só o post daquele dia")
+
     def t_gestor_orientar_so_dentro_das_regras(self):
         c, s, g, _ = self._serie()
         agora = _ts(c, "2026-11-07", "08:37")
@@ -2259,8 +2291,8 @@ class Suite:
         antes = (c.PASTA / "agenda.json").read_bytes()
         avisos = []
         r = g.rodar("manual", _ts(c, "2026-11-03", "09:30"), seco=True, avisar=lambda t, b=None: avisos.append(t),
-                    modelo=self._modelo([{"acao": "cancelar", "item": "reel-qua", "motivo": "teste seco"}]), contexto={})
-        ok(r["aceitas"] and "Cancelei reel-qua" in r["mensagem"] and not avisos
+                    modelo=self._modelo([{"acao": "segurar", "item": "reel-qua", "motivo": "teste seco"}]), contexto={})
+        ok(r["aceitas"] and "Segurei reel-qua" in r["mensagem"] and not avisos
            and (c.PASTA / "agenda.json").read_bytes() == antes, f"seco: {r}")
         # a model answer that is not JSON: nothing happens
         r = g.rodar("manual", _ts(c, "2026-11-03", "09:31"), modelo=lambda t: {"texto": "acho que", "erro": "", "uso": {}},

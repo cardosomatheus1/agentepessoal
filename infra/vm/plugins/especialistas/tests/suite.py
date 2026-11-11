@@ -608,6 +608,11 @@ class Suite:
         ok("o resumo do mês" in t and "maior parte do dinheiro" in t and "custo dos ingredientes" in t,
            "a descrição da tela já traz a sigla explicada")
         ok("ou no texto do slide/legenda" not in m.KIT and "nunca só" in m.KIT, "o kit não oferece mais a legenda")
+        # 11/11, caso real: "calculadora-quanto-sobra.jpg" (página pública, clara, sem menu) apareceu na pasta das telas
+        # e foi oferecida como tela do sistema; o Crítico reprovou "a tela da calculadora está cortada e não mostra o menu"
+        (m.PLUGINS / "conteudo" / "story" / "telas" / "calculadora-quanto-sobra.jpg").write_bytes(b"x")
+        ok("calculadora" not in m.telas_do_sistema("carrossel") and "dre.jpg" in m.telas_do_sistema("carrossel"),
+           "só as telas do sistema conhecidas são oferecidas")
         # 10/11, caso real: "o slide 5 traz 'Lucro na Mão em 30 Dias: link na bio', embora a instrução diga para não
         # citar essa oferta" (o slide final é do motor) e o gestor pedindo para tirar o que o Designer não controla
         ok("fixos do kit" in m.PAPEIS["critico"] and "Lucro na Mão em 30 Dias: link na" in m.PAPEIS["critico"], "slide final")

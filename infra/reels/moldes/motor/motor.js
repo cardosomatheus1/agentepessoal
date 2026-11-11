@@ -117,11 +117,17 @@ const Motor = {
   // 10/11: the screens carry example numbers and the demo company's name; the Crítico wants "valores de exemplo" next
   // to each screen, and in the moldes without a "nota" (passo-a-passo, mito, faca-nao-faca...) the Designer had no way
   // to put it there: eight carousels fell on it from 06 to 10/11. Every screen gets its own seal.
+  // 11/11: only a screen shown big gets the seal; a loupe (produto-semana) or a thumbnail of the same screen does not
   _telasInteiras() {
-    for (const i of $$('img')) if (/\/telas\//.test(i.getAttribute('src') || '')) {
-      i.style.objectFit = 'contain'; i.style.background = 'var(--fundo)';
+    const telas = $$('img').filter(i => /\/telas\//.test(i.getAttribute('src') || ''));
+    for (const i of telas) { i.style.objectFit = 'contain'; i.style.background = 'var(--fundo)'; }
+    if (Motor.FORMATO !== 'carrossel') return;  // video: the molde's nota
+    const grande = new Set();
+    const medir = () => { for (const i of telas) { const r = (i.parentElement || i).getBoundingClientRect(); if (r.width >= 360 && r.height >= 200) grande.add(i); } };
+    if (Motor._slides.length) { Motor._slides.forEach((s, k) => { Motor.slide(k); medir(); }); Motor.slide(0); } else medir();
+    for (const i of grande) {
       const caixa = i.parentElement;
-      if (Motor.FORMATO !== 'carrossel' || !caixa || caixa.querySelector(':scope > .selo-exemplo')) continue;  // video: the molde's nota
+      if (!caixa || caixa.querySelector(':scope > .selo-exemplo')) continue;
       if (getComputedStyle(caixa).position === 'static') caixa.style.position = 'relative';
       const selo = document.createElement('div'); selo.className = 'selo-exemplo'; selo.textContent = 'Valores de exemplo';
       caixa.appendChild(selo);

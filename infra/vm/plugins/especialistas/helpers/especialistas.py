@@ -814,13 +814,16 @@ TELAS = {
 def telas_do_sistema(formato: str = "") -> str:
     """The real screens of the system the Designer may use (dark, whole, with the menu: decision #85), by path."""
     pasta = PLUGINS / "conteudo" / "story" / "telas"
-    nomes = sorted(p.name for p in pasta.glob("*.jpg")) if pasta.exists() else []
+    # 11/11: a public page (the calculator, light, no menu) was saved in that folder on the VM and offered as a "tela
+    # do sistema"; the Crítico reproved it as a cut screen without the menu three times and Wednesday lost its post.
+    # Only the known screens of the system (TELAS) are offered; any other file there is not.
+    nomes = sorted(p.name for p in pasta.glob("*.jpg") if p.name in TELAS) if pasta.exists() else []
     if not nomes:
         return ""
     return ("## Telas reais do sistema (1440x900, tema escuro, inteiras com o menu; a empresa de exemplo \"Pizzaria Bella "
             "Napoli\" é fictícia e fica na tela: não prometa esconder o nome; valores de exemplo). A fala só afirma o que a "
             "tela mostra; sigla da tela (CMV, DRE, curva ABC) dita ou escrita vem explicada em palavras simples na hora:\n"
-            + "\n".join(f"- /a0/usr/plugins/conteudo/story/telas/{n}" + (f": {TELAS[n]}" if n in TELAS else "") for n in nomes)
+            + "\n".join(f"- /a0/usr/plugins/conteudo/story/telas/{n}: {TELAS[n]}" for n in nomes)
             + "\n" + (
                 # 22/10: told "use lanca-app to show the system", a carousel slot kept coming back as a video
                 "Num carrossel, a tela entra no campo de foto de um molde de carrossel (ex.: passo-a-passo, mito, "

@@ -48,9 +48,22 @@ def main() -> int:
             return 0
         raise
     sem_tela = contar("fotos/cantina_marmita.jpg")
+    # 11/11: the loupes of produto-semana (zoomed copies of the screen) do not get a seal each
+    ficha = {"_marca": "raiz", "_formato": "carrossel", "nome": "A tela da cozinha", "fotos": [str(tela)],
+             "atributos": [{"texto": "Mesa e iFood juntos", "x": 42, "y": 34}, {"texto": "O tempo de cada pedido", "x": 74, "y": 34},
+                           {"texto": "Preparando e pronto", "x": 47, "y": 49}]}
+    arq = Path(tempfile.mkdtemp()) / "ficha.json"
+    arq.write_text(json.dumps(ficha, ensure_ascii=False), encoding="utf-8")
+    pasta, _e, f, marca_d, marca_dir, formato, erros = render.carregar("produto-semana", arq, "carrossel")
+    with render.sync_playwright() as pw:
+        b, pg = render.abrir(pw, pasta, render.init_script(f, marca_d, marca_dir, formato, None), formato)
+        lupa = pg.evaluate("document.querySelectorAll('#lupa .selo-exemplo, .vid .selo-exemplo').length")
+        todos = pg.evaluate("document.querySelectorAll('.selo-exemplo').length")
+        b.close()
     falhas = 0
     for nome, cond in (("cada tela do sistema ganha o selo", com_tela >= 1),
-                       ("foto comum não ganha selo", sem_tela == 0)):
+                       ("foto comum não ganha selo", sem_tela == 0),
+                       ("a lupa não ganha selo, a tela grande sim", lupa == 0 and todos >= 1)):
         print(("ok  " if cond else "FALHOU ") + nome + f" ({com_tela}, {sem_tela})")
         falhas += not cond
     return 1 if falhas else 0
