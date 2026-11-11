@@ -2617,6 +2617,10 @@ class Suite:
         ok(bastidor["referencia"]["id"] == "A1", "o Crítico vê de onde o story tirou a ideia")
         chama = next(p for p in ps if p["formato_pedido"] == "STORY" and p["spec"]["story"]["layout"] == "oferta")
         ok(chama["estado"] == "agendada", "story de oferta (e o que chama o post) não precisa de referência")
+        # the rule the three read says the same as the code: "propria" is a valid reference (11/11: the Crítico reproved
+        # a Reel because the briefing asked for a radar id and the code accepted "propria")
+        ok("\"propria\" vale" in s.REGRAS_COMUNS and s.referencia({"referencia": {"id": "propria", "o_que_muda": "o molde que a Raiz tinha e não usava"}},
+                                                                 self.RADAR["refs"])[0]["id"] == "propria", "propria vale na regra e no código")
         # with no radar (no report this week) nothing is demanded
         s._C["radar_fixo"] = lambda: {"refs": [], "texto": "", "nomes": []}
         ok(s.conferir_propostas([("2026-11-10", {"titulo": "Um título", "legenda": "x"})], [], None) == "", "sem radar, sem exigência")
