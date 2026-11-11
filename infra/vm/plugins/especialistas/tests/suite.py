@@ -568,7 +568,7 @@ class Suite:
         outra = m._spec({"erro": "", "texto": json.dumps({"marca": "doces-da-lu", "molde": "frases", "ficha": {"_marca": "doces-da-lu", "pergunta": "Oi"}})}, "carrossel")
         ok("produto" not in outra["ficha"], "outra marca não ganha a vitrine da Raiz")
         ok("POV" in m.PAPEIS["critico"] and "decisão #85) não vale para ele" in m.PAPEIS["critico"], "o POV de humor tem a exceção escrita")
-        ok("troca de molde, nunca de assunto" in m.PAPEIS["designer"] and "número ou um exemplo concreto" in m.PAPEIS["designer"],
+        ok("troca de molde, nunca de assunto" in m.PAPEIS["designer"] and "o exemplo concreto do briefing" in m.PAPEIS["designer"],
            "o Designer fica no assunto e é concreto")
 
     def t_moldes_dos_posts_vizinhos_nao_sao_oferecidos(self):
