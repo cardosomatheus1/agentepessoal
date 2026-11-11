@@ -163,12 +163,12 @@ p{font-weight:500;font-size:44px;line-height:1.36;color:var(--mut);margin-top:44
 .zm-tela img{display:block;width:100%;border-radius:18px}
 .zm-ponto{position:absolute;width:19%;aspect-ratio:1;border:5px solid var(--lima);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 2000px rgba(16,29,24,.5);clip-path:none}
 .zm-tela{overflow:hidden}
-.zm-lupa{position:absolute;top:0;width:480px;height:480px;border-radius:50%;border:12px solid var(--lima);background-color:#0b1410;
+.zm-lupa{position:absolute;top:0;width:440px;height:440px;border-radius:50%;border:12px solid var(--lima);background-color:#0b1410;
  background-repeat:no-repeat;box-shadow:0 30px 80px rgba(0,0,0,.6);z-index:4}
-.zm-mao{position:absolute;top:250px;width:380px;font-family:C;font-weight:700;font-size:70px;line-height:1;color:var(--lima);transform:rotate(-5deg);z-index:4}
+.zm-mao{position:absolute;top:226px;width:380px;font-family:C;font-weight:700;font-size:70px;line-height:1;color:var(--lima);transform:rotate(-5deg);z-index:4}
 .zm-mao svg{display:block;width:200px;height:104px;margin:12px 0 0 150px}
-.zoom .zm-baixo{position:relative;height:500px;margin-top:-210px}
-.zoom .nota{position:absolute;bottom:0;width:360px;line-height:1.3;margin:0}
+.zoom .zm-baixo{position:relative;height:450px;margin-top:-200px}
+.zoom .nota{margin-top:26px}
 
 /* foto: a foto em tela cheia, o texto sobre o degradê de baixo */
 .st.foto{background:#000}
@@ -178,7 +178,7 @@ p{font-weight:500;font-size:44px;line-height:1.36;color:var(--mut);margin-top:44
 .foto h1{font-size:96px}
 .foto p{color:#dfe6dc;margin-top:30px;font-size:42px}
 .foto .rodape{margin-top:40px;color:var(--txt)}
-.ft-ilu{position:absolute;right:var(--m);top:372px;font-weight:600;font-size:22px;letter-spacing:.06em;color:rgba(255,255,255,.75);z-index:3}
+.ft-ilu{position:absolute;left:var(--m);top:366px;font-weight:600;font-size:22px;letter-spacing:.06em;color:rgba(255,255,255,.75);z-index:3}
 
 /* caixinha: a pergunta na caixinha do Instagram, a resposta embaixo */
 .st.cx{background:linear-gradient(160deg,#dcebc9 0,var(--tint) 46%,#f5f2e9 100%);color:var(--ink)}
@@ -285,7 +285,7 @@ if (L === 'dica') {
 } else if (L === 'tela-zoom') {
   st.classList.add('zoom', 'halo');
   // the magnifier sits over the lower corner of the screen that is away from the point it enlarges
-  const f = C.foco || {}, x = Number(f.x ?? 50), y = Number(f.y ?? 50), z = 2.5, d = 456, w = 888 * z, hh = w / 1.6;
+  const f = C.foco || {}, x = Number(f.x ?? 50), y = Number(f.y ?? 50), z = 2.5, d = 416, w = 888 * z, hh = w / 1.6;
   const lado = x > 50 ? 'left' : 'right', outro = x > 50 ? 'right' : 'left';
   corpo = `<h1 class="${tam(C.manchete, 40, 64)}">${manchete(C.manchete, C.destaque)}</h1>` +
     `<div class="zm-tela"><img src="${esc(C.tela)}"><div class="zm-ponto" style="left:${x}%;top:${y}%"></div></div>` +
@@ -293,7 +293,7 @@ if (L === 'dica') {
     `background-position:${d / 2 - w * x / 100}px ${d / 2 - hh * y / 100}px"></div>` +
     `<div class="zm-mao" style="${outro}:0;${x > 50 ? 'text-align:right' : ''}">${esc(C.seta || 'olha aqui')}` +
     `<svg viewBox="0 0 210 110" fill="none" stroke="#c8f17a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" style="${x > 50 ? 'transform:scaleX(-1);margin-left:30px' : ''}"><path d="M6 14c40 70 100 86 190 62"/><path d="M160 48l38 28-44 22"/></svg></div>` +
-    `<div class="nota" style="${outro}:0">${esc(C.nota || 'tela real do Raiz Connect · valores de exemplo')}</div></div>`;
+    `</div><div class="nota">${esc(C.nota || 'tela real do Raiz Connect · valores de exemplo')}</div>`;
 } else if (L === 'foto') {
   st.classList.add('foto');
   fora = `<div class="ft-img" style="background-image:url('${esc(C.imagem)}')"></div><div class="ft-sombra"></div><div class="ft-ilu">imagem ilustrativa</div>`;

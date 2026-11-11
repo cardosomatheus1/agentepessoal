@@ -16,6 +16,15 @@ def test_nota_entra_com_o_preco():
     assert not re.search(r"t\s*>=?\s*ini\(1\)", linha), f"custo-escondido: a nota entra no gancho, que mostra o preço: {linha.strip()}"
 
 
+def test_duvida_de_dono_nao_finge_cliente():
+    # 11/11: for the Raiz the question card is a common doubt, never "Pergunta de cliente comentou no post"
+    molde = (MOLDES / "pergunta-cliente" / "molde.html").read_text(encoding="utf-8")
+    assert "F._marca === 'raiz'" in molde and "DÚVIDA DE DONO" in molde and "de quem vende comida" in molde
+    import json
+    assert "duvida" in json.loads((MOLDES / "pergunta-cliente" / "esquema.json").read_text(encoding="utf-8"))["campos"]["canal"]["opcoes"]
+
+
 if __name__ == "__main__":
     test_nota_entra_com_o_preco()
+    test_duvida_de_dono_nao_finge_cliente()
     print("test_nota_desde_o_preco: ok")

@@ -37,6 +37,8 @@ body::after { content: ''; position: absolute; inset: 0; background: radial-grad
 .dest b { font-size: 58px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .dest small { display: block; font-size: 24px; color: #cfe3c5; font-weight: 600; text-align: right; }
 .exemplo { margin-top: 14px; font-size: 20px; color: #58665e; text-align: center; }
+.selo-pov { position: absolute; left: 0; right: 0; top: 354px; z-index: 7; text-align: center; font-size: 24px; font-weight: 700;
+  color: rgba(255,255,255,.92); letter-spacing: .04em; text-shadow: 0 2px 6px rgba(0,0,0,.85), 0 0 2px #000; }
 .legenda { position: absolute; left: 70px; right: 70px; z-index: 6; text-align: center; font-size: 66px; line-height: 1.12; font-weight: 800;
   color: #ffe14d; letter-spacing: -.01em;
   text-shadow: -4px -4px 0 #111, 4px -4px 0 #111, -4px 4px 0 #111, 4px 4px 0 #111, 0 5px 0 #111, 0 -5px 0 #111, 5px 0 0 #111, -5px 0 0 #111; }
@@ -75,11 +77,13 @@ body::after { content: ''; position: absolute; inset: 0; background: radial-grad
     <div class="ing" id="dl"></div>
     <div class="tot" id="dk"></div>
     <div class="dest" id="dd"><p id="ddr"></p><div><b id="ddv"></b><small id="ddn"></small></div></div>
-    <div class="exemplo">valores de exemplo</div>
+    <div class="exemplo">ilustração · valores de exemplo</div>
   </div>
 </div></div>
 <div class="ninguem" id="ning"><p id="n1"></p><p id="n2"></p></div>
 <div class="legenda" id="leg"></div>
+<!-- 11/11: on screen the whole video, so no number of the joke goes without it (the Crítico reproved "R$ 8" in the chat) -->
+<div class="selo-pov">cena de humor · valores de exemplo</div>
 <script>
 const C = window.CAMPOS || {};
 const T = (id, s) => { document.getElementById(id).textContent = s || ''; };

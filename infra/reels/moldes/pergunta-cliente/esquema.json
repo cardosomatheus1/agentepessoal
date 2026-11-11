@@ -18,9 +18,11 @@
    "tipo": "escolha",
    "opcoes": [
     "comentario",
-    "mensagem"
+    "mensagem",
+    "duvida"
    ],
-   "obrigatorio": false
+   "obrigatorio": false,
+   "dica": "duvida = dúvida comum do público, sem fingir comentário de cliente (é o que a marca raiz usa sempre)"
   },
   "resposta": {
    "tipo": "texto",

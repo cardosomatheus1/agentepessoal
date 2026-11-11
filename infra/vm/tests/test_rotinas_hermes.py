@@ -75,6 +75,8 @@ checa('`conteudo` acao "briefing"' in semana_posts and '`concorrentes` acao "rad
       "4qfNuwRX: cria pelo briefing comum e pelo radar de referências, e cada proposta declara a referência")
 checa("em_producao" in semana_posts and "NÃO chame de novo" in semana_posts and "se ela disse enviada" not in semana_posts,
       "4qfNuwRX: a semana é produzida em segundo plano; a rotina não chama de novo nem espera")
+checa("nunca um salgado a R$ 0,80" in semana_posts and "com a conta fechando" in semana_posts and "nunca para um total em R$" in semana_posts,
+      "4qfNuwRX: números concretos e plausíveis em cada cena, e a lupa fora dos totais da conta de exemplo")
 checa("SEM NOVIDADE: nada a criar" in semana_posts, "4qfNuwRX: semana cheia fica registrada como nada a criar, não só SEM NOVIDADE")
 checa('`conteudo` acao "cobrir"' in fechamento and "sessão do Claude que cuida" not in fechamento
       and "pedir o post" not in fechamento, "Iq73JPEP: dia sem post vai ao gestor, não ao Matheus nem à sessão do Claude")

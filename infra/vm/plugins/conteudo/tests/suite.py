@@ -827,11 +827,14 @@ class Suite:
                     ("2026-10-30", "CARROSSEL", "11:45"), ("2026-11-01", "REELS", "11:45")], f"ter/sex carrossel, qua/dom vídeo: {feed}")
         st = ps[4:]
         ok([p["data"] for p in st] == [f"2026-10-{d}" for d in range(27, 32)] + ["2026-11-01", "2026-11-02"]
-           and all(p["tipo"] == "STORY" and p["hora"] == "09:00" and p["arquivos"] for p in st), "um story por dia às 9h")
+           and all(p["hora"] == "09:00" and (p["n"] == 8 or (p["tipo"] == "STORY" and p["arquivos"])) for p in st), "um story por dia às 9h")
         ok(ps[2]["critica"]["veredito"] == "reprova" and all(p["critica"]["veredito"] == "aprova" for p in st if p["n"] != 8),
            "a crítica vem junto de cada um, stories incluídos")
-        ok(ps[7]["critica"]["veredito"] == "reprova" and "não ficou pronto" in ps[7]["critica"]["motivos"][0],
-           f"o story de sex 30/10 chama o carrossel reprovado desse dia: {ps[7]['critica']}")
+        # 11/11: the story that calls a post that is not ready waits: not drawn, not judged, not a reproval
+        ok(ps[7].get("espera_post") and not ps[7]["arquivos"] and ps[7]["critica"]["veredito"] == "sem revisão"
+           and "não ficou pronto" in ps[7]["critica"]["motivos"][0] and s._reprovadas(ps[7]) == 0,
+           f"o story de sex 30/10 chama o carrossel reprovado desse dia e espera por ele: {ps[7]['critica']}")
+        ok("espera o post do dia ficar pronto" in enviados[0][1], "o aviso diz que ele espera")
         ok(ps[1]["capa"].endswith("r2-capa.jpg"), "a imagem junto do vídeo vira a capa do Reel")
         ok(len(enviados) == 1, "uma mensagem só")
         login, texto, botoes = enviados[0]
@@ -907,7 +910,7 @@ class Suite:
             {"id": "b", "data": "2026-11-25", "tipo": "CARROSSEL", "estado": "pendente", "origem": {"semana": sid, "n": 2}},
             {"id": "x", "data": "2026-11-07", "tipo": "CARROSSEL", "estado": "cancelada", "origem": {"semana": sid, "n": 3}}]}
         # 11/11: a molde whose cover is a count ("3 passos", "3 erros que custam caro") takes the others like it along
-        numeradas = ["faca-nao-faca", "frases", "mito", "passo-a-passo", "tipos-cliente"]
+        numeradas = ["faca-nao-faca", "passo-a-passo", "tipos-cliente"]
         ok(s._moldes_vizinhos("2026-11-08") == numeradas, s._moldes_vizinhos("2026-11-08"))
         ok(s._briefing("CARROSSEL", "2026-11-08", {})["evitar_moldes"] == numeradas, "o Designer recebe a lista")
         ok("evitar_moldes" not in s._briefing("CARROSSEL", "2026-10-01", {}), "sem vizinho, nada a evitar")
@@ -925,7 +928,8 @@ class Suite:
                      stories=self._stories())
         ok(r["ok"] and all(p["critico"] == "sem revisão" for p in r["propostas"]), r)
         texto, botoes = enviados[0]
-        ok(texto.count("sem revisão do Crítico, não sai") == 11 and "não está instalado" in texto and botoes == [], texto)
+        ok(texto.count("sem revisão do Crítico, não sai") == 7 and texto.count("espera o post do dia") == 4
+           and "não está instalado" in texto and botoes == [], texto)
         ok(c.carregar()["itens"] == [] and s.carregar(r["semana"])["estado"] == "proposta", "nada aprovado sozinho")
         ok(s.passo_autonomo(_ts(c, "2026-10-26", "08:00"), avisar=enviados.append) is None and len(enviados) == 1,
            "sem o Crítico, o agente também não decide nada sozinho")
@@ -987,7 +991,7 @@ class Suite:
         r = s.propor(self._feed(), _ts(c, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=self._stories())
         sid = r["semana"]
         antes = {p["n"]: p for p in s.carregar(sid)["propostas"]}
-        ok(antes[6]["critica"]["veredito"] == "reprova", "o story de qua chama o Reel reprovado")
+        ok(antes[6].get("espera_post") and antes[6]["critica"]["veredito"] == "sem revisão", "o story de qua chama o Reel reprovado e espera")
         enviados = []
         agora = _ts(c, "2026-10-26", "08:30")
         with s._exclusivo():  # what the proposal carries besides its content (11/11)
@@ -1067,8 +1071,9 @@ class Suite:
         r = s.propor(self._feed(), _ts(c, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=st)
         ps = {p["data"] + p["formato_pedido"]: p for p in s.carregar(r["semana"])["propostas"]}
         qua = ps["2026-10-28STORY"]
-        ok(qua["critica"]["veredito"] == "reprova" and qua["critica"]["motivos"][0].startswith("chama o Reel de qua 28/10, que "
-           "não ficou pronto (o Designer não entregou"), f"o vídeo de hoje que não existe não vai sozinho: {qua['critica']}")
+        ok(qua.get("espera_post") and not qua["arquivos"] and qua["critica"]["motivos"][0].startswith(
+            "espera o post do dia: chama o Reel de qua 28/10, que não ficou pronto (o Designer não entregou"),
+           f"o vídeo de hoje que não existe não vai sozinho: {qua['critica']}")
         ok(not refeitos, "reescrever o story não faz o Reel existir: não pede ao Designer")
         dom = ps["2026-11-01STORY"]
         ok(dom["critica"]["veredito"] == "aprova" and dom["spec"]["story"]["imagem"].endswith("r4-capa.jpg"),
@@ -1090,9 +1095,14 @@ class Suite:
         st2[1], st2[5] = {"layout": "numero", "manchete": "Story 2"}, {"layout": "quiz", "manchete": "Story 6"}  # variety
         r2 = s2.propor(self._feed(), _ts(c2, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=st2)
         p2 = {p["data"] + p["formato_pedido"]: p for p in s2.carregar(r2["semana"])["propostas"]}
-        ok(p2["2026-10-29STORY"]["critica"]["motivos"][0] == "chama o post do dia, mas qui 29/10 não tem Reel no feed",
+        ok(p2["2026-10-29STORY"]["critica"]["motivos"][0] == "espera o post do dia: chama o post do dia, mas qui 29/10 não tem Reel no feed",
            p2["2026-10-29STORY"]["critica"])
-        ok(p2["2026-11-02STORY"]["critica"]["veredito"] == "aprova", "o Reel que já estava na agenda vale")
+        # the Reel that was already in the agenda counts as the day's post; with no cover to show (its video is not on
+        # this machine) the story waits instead of going out with half the art empty (11/11)
+        ok(p2["2026-11-02STORY"].get("espera_post") and "ainda não tem capa" in p2["2026-11-02STORY"]["critica"]["motivos"][0],
+           p2["2026-11-02STORY"]["critica"])
+        post, falta = s2._post_do_dia({"layout": "video-novo"}, "2026-11-02", [])
+        ok(post and post["tipo"] == "REELS" and not falta, "o Reel que já estava na agenda vale")
 
     # ---- 22/10, Matheus: "Se o crítico rejeita, automáticamente deveria ser refeito, e não logo antes de postar,
     # durante a etapa de criação"
@@ -2415,6 +2425,9 @@ class Suite:
         novos = {"enquete", "quiz", "numero", "antes-depois", "conversa", "checklist", "tela-zoom", "foto", "caixinha"}
         ok(novos <= set(st.LAYOUTS) and set(st.VISUAL) == set(st.LAYOUTS) == set(st.COMO), "cada layout tem visual e instrução")
         ok(len(set(st.VISUAL.values())) >= 11, f"famílias visuais diferentes: {sorted(set(st.VISUAL.values()))}")
+        ok("cena de humor · valores de exemplo" in (RAIZ / "meme" / "pov.html").read_text(encoding="utf-8")
+           and "ilustração · valores de exemplo" in (RAIZ / "meme" / "pov.html").read_text(encoding="utf-8"),
+           "o POV de humor leva o selo o vídeo inteiro, e o cartão do depois diz que é ilustração")
         ok("conversa encenada" in (RAIZ / "story" / "story.html").read_text(encoding="utf-8") and "conversa encenada" in st.COMO["conversa"],
            "a conversa de WhatsApp sai marcada como encenada (não é depoimento)")
         ok(st.VISUAL["dica"] == st.VISUAL["oferta"] and st.VISUAL["bastidor"] == st.VISUAL["tela-zoom"],
@@ -2581,13 +2594,17 @@ class Suite:
         c.carregar = lambda: {"itens": [
             {"id": "a", "data": "2026-11-01", "tipo": "CARROSSEL", "estado": "publicada", "origem": {"semana": sid, "n": 1}},
             {"id": "b", "data": "2026-11-04", "tipo": "REELS", "estado": "publicada", "origem": {"semana": sid, "n": 2}}]}
-        ok(s._moldes_vizinhos("2026-11-13") == ["demonstracao", "faca-nao-faca", "frases", "lanca-app", "mito", "passo-a-passo",
-                                                 "tipos-cliente"], s._moldes_vizinhos("2026-11-13"))
-        ok(s._moldes_vizinhos("2026-11-16") == ["demonstracao", "lanca-app"], "a capa volta só depois de 14 dias")
+        ok(s._moldes_vizinhos("2026-11-09") == ["demonstracao", "faca-nao-faca", "lanca-app", "passo-a-passo", "tipos-cliente"],
+           s._moldes_vizinhos("2026-11-09"))
+        ok(s._moldes_vizinhos("2026-11-13") == ["demonstracao", "faca-nao-faca", "lanca-app", "passo-a-passo", "tipos-cliente"],
+           f"a capa com contagem não volta em 14 dias; o passeio pelas telas, em 9: {s._moldes_vizinhos('2026-11-13')}")
+        ok(s._moldes_vizinhos("2026-11-16") == [], "depois disso, voltam")
+        ok(s.capa_numerada({"ficha": {"tema": "3 mitos sobre a tela da cozinha"}}) and not s.capa_numerada({"ficha": {"tema": "O preço e o custo"}}),
+           "a contagem escrita na capa pela ficha também é vista")
         irmao = {"id": "x-1", "data": "2026-11-17", "formato_pedido": "CARROSSEL", "titulo": "t", "spec": {"molde": "mito"}}
         ok("mito" in s._moldes_vizinhos("2026-11-20", irmaos=[irmao]), "os posts da mesma leva também contam")
         titulo = {"id": "x-2", "data": "2026-11-21", "formato_pedido": "CARROSSEL", "titulo": "3 sinais de que o preço ficou para trás", "spec": {"molde": "quiz"}}
-        ok({"faca-nao-faca", "passo-a-passo"} <= set(s._moldes_vizinhos("2026-11-25", irmaos=[titulo])),
+        ok({"faca-nao-faca", "passo-a-passo"} <= set(s._moldes_vizinhos("2026-11-30", irmaos=[titulo])),
            "com um título em lista numerada por perto, os moldes de capa com contagem também ficam de fora")
 
     def t_referencia_declarada_e_nunca_citada(self):

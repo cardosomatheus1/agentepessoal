@@ -433,6 +433,12 @@ REGRAS_COMUNS = (
     "(\"3 sinais\", \"3 passos\") ou capa com contagem (\"3 erros que custam caro\") só um a cada 14 dias; o título não "
     "começa como o de um post recente. Vídeo não é só "
     "passeio pelas telas: no máximo um vídeo de telas a cada 14 dias.\n"
+    "- Concreto e plausível: cada cena de vídeo e cada slide traz um número ou um exemplo concreto (o produto, a "
+    "quantidade, a conta), nunca frase que serve para qualquer negócio. Valores de exemplo do tamanho de um pequeno "
+    "negócio de comida (salgado de R$ 5 a 9, marmita de R$ 18 a 30, pizza de R$ 40 a 70) e conta que fecha. Na tela real, "
+    "aponte um percentual, um rótulo ou um gráfico, não um total em R$ da conta de exemplo (são totais de empresa grande).\n"
+    "- Story que chama o post do dia (post-novo, video-novo) só existe com a capa do post: no máximo um de cada na "
+    "semana, e os outros stories valem por si.\n"
     "- Referência: cada proposta diz em qual referência do radar se inspirou (o id) e o que muda; \"propria\" vale "
     "quando a ideia vem da própria Raiz (o que rendeu, um formato dela) e a proposta diz qual. Inspirar não é "
     "copiar: outro texto, outro exemplo, a cara da Raiz. Nunca citar concorrente nem criador em público.\n"
@@ -649,8 +655,19 @@ def _post_do_dia(campos: dict, dia: str, itens: list) -> tuple[dict | None, str]
         na_agenda = next((i for i in c().carregar()["itens"] if i["data"] == dia and i["tipo"] in tipos
                           and i["estado"] not in ("cancelada", "falhou")), None)
         if na_agenda:
-            return {"tipo": na_agenda["tipo"], "titulo": _texto(na_agenda.get("legenda"), 120),
-                    "legenda": _texto(na_agenda.get("legenda"), 300)}, ""
+            cache = c().PASTA / "cache" / na_agenda["id"]
+            capa = next((str(cache / k.rsplit("/", 1)[-1]) for k in [na_agenda.get("capa") or ""] + list(na_agenda.get("arquivos") or [])
+                         if str(k).lower().endswith(IMAGEM) and (cache / k.rsplit("/", 1)[-1]).is_file()), "")
+            video = next((cache / k.rsplit("/", 1)[-1] for k in na_agenda.get("arquivos") or [] if str(k).lower().endswith(VIDEO)), None)
+            if not capa and video and video.is_file():  # a Reel with no cover file: a frame of the video itself
+                try:
+                    quadro = cache / "capa-do-story.jpg"
+                    c()._rodar(["ffmpeg", "-y", "-loglevel", "error", "-ss", "2.5", "-i", str(video), "-frames:v", "1", "-q:v", "3", str(quadro)])
+                    capa = str(quadro) if quadro.is_file() else ""
+                except Exception:
+                    capa = ""
+            return {"tipo": na_agenda["tipo"], "titulo": _texto((na_agenda.get("origem") or {}).get("titulo") or na_agenda.get("legenda"), 120),
+                    "legenda": _texto(na_agenda.get("legenda"), 300), **({"imagem": capa} if capa else {})}, ""
         return None, f"chama o post do dia, mas {_rotulo_dia(dia)} não tem {nome} no feed"
     if alvo["problema"] or alvo["critica"]["veredito"] == "reprova":
         return None, (f"chama o {NOME_TIPO[alvo['formato_pedido']]} de {_rotulo_dia(dia)}, que não ficou pronto ("
@@ -662,7 +679,8 @@ def _post_do_dia(campos: dict, dia: str, itens: list) -> tuple[dict | None, str]
 def _imagem_do_post(alvo: dict) -> str:
     """A picture of the post for the story's cover: the Reel's cover or first screen, the carousel's first slide."""
     tela = ((((alvo.get("spec") or {}).get("ficha") or {}).get("telas") or [{}])[0] or {}).get("imagem") or ""
-    for a in [alvo.get("capa") or ""] + [x for x in alvo.get("arquivos") or [] if str(x).lower().endswith(IMAGEM)] + [tela]:
+    previa = [x for x in alvo.get("previa") or [] if str(x).lower().endswith(IMAGEM)]  # a Reel still being rendered
+    for a in [alvo.get("capa") or ""] + [x for x in alvo.get("arquivos") or [] if str(x).lower().endswith(IMAGEM)] + previa[:1] + [tela]:
         a = str(a).removeprefix("file://")
         if a and Path(a).is_file():
             return a
@@ -928,10 +946,14 @@ TOUR = ("lanca-app", "demonstracao")  # the videos that are a walk through the s
 # the moldes whose cover is a count written by the template itself ("3 erros que custam caro", "3 passos", "4 tipos de
 # cliente"): whatever the title says, the post reads as one more numbered list (11/11: asked for a question-and-answer
 # carousel, the Designer delivered faca-nao-faca and the cover came out "3 erros que custam caro")
-CAPA_NUMERADA = ("passo-a-passo", "faca-nao-faca", "tipos-cliente", "frases", "mito")
+# 11/11, the simulation: with frases and mito in this group and a 13-day window, a Friday carousel was left with no
+# molde that fits the Raiz and none of the 4 feed posts passed. Only the moldes whose TEMPLATE writes the count are
+# here; in the others the number comes from the title, which titulo_repetido and capa_numerada() check.
+CAPA_NUMERADA = ("passo-a-passo", "faca-nao-faca", "tipos-cliente")
+JANELA_MOLDE = 9  # days: a molde does not come back in the next two posts of its kind (it was 6, then 13)
 
 
-def _moldes_vizinhos(dia: str, janela: int = HISTORICO_DIAS - 1, fora="", irmaos=()) -> list[str]:
+def _moldes_vizinhos(dia: str, janela: int = JANELA_MOLDE, fora="", irmaos=()) -> list[str]:
     """The moldes of the feed posts within `janela` days of `dia` (the day itself left out): the agenda, the open
     proposals and the batch being drawn. 08/11, Matheus: "Estao td igual os post": three carousels in a row came out of
     passo-a-passo (the big "3"), because "duas seguidas não usam o mesmo molde" was only a line in the Designer's
@@ -947,16 +969,29 @@ def _moldes_vizinhos(dia: str, janela: int = HISTORICO_DIAS - 1, fora="", irmaos
             d = dt.date.fromisoformat(str(v.get("data")))
         except ValueError:
             continue
-        if d == d0 or abs((d - d0).days) > janela:
+        longe = abs((d - d0).days)
+        if d == d0 or longe >= HISTORICO_DIAS:
             continue
-        numerada = numerada or estrutura(v.get("titulo"))[0] == "lista numerada"
-        if v.get("molde"):
+        # the numbered list, in the title or on the cover, counts for 14 days; the molde itself for JANELA_MOLDE
+        numerada = numerada or estrutura(v.get("titulo"))[0] == "lista numerada" or v.get("molde") in CAPA_NUMERADA
+        if v.get("molde") and longe <= janela:
             usados.add(v["molde"])
     if usados & set(TOUR):
         usados |= set(TOUR)
-    if numerada or usados & set(CAPA_NUMERADA):  # one numbered list in 14 days, in the title or on the cover
+    if numerada:  # one numbered list in 14 days, in the title or on the cover
         usados |= set(CAPA_NUMERADA)
     return sorted(usados)
+
+
+def capa_numerada(spec: dict) -> str:
+    """The cover text of a ficha that reads as a numbered list ("3 mitos sobre...", "5 detalhes...") or "": the short
+    texts a molde puts on its first slide."""
+    ficha = (spec or {}).get("ficha") if isinstance((spec or {}).get("ficha"), dict) else {}
+    for campo in ("tema", "titulo", "objetivo", "gancho", "capa", "chamada"):
+        texto = ficha.get(campo)
+        if isinstance(texto, str) and estrutura(texto)[0] == "lista numerada":
+            return texto
+    return ""
 
 
 def _briefing(formato: str, dia: str, p: dict, irmaos=()) -> dict:
@@ -1036,6 +1071,9 @@ def _item_feed(esp, nota: str, sid: str, n: int, formato: str, dia: str, p: dict
                                     or "ideia nova do Designer", 120)
     legenda = briefing["legenda"] or str(d["spec"].get("legenda") or "").strip()
     repetido = titulo_repetido(briefing["titulo"], dia, feed_vizinho(_fora_de(p), irmaos))
+    capa = capa_numerada(d.get("spec") or {})
+    if not repetido and capa and estrutura(briefing["titulo"])[0] != "lista numerada":
+        repetido = titulo_repetido(capa, dia, feed_vizinho(_fora_de(p), irmaos))  # the number on the cover counts too
     if repetido:  # 11/11: "3 sinais", "3 passos", "3 informações", "3 mitos" in a row
         d["critica"] = dict(d["critica"], veredito="reprova", motivos=[repetido] + list(d["critica"].get("motivos") or []))
     pendente = formato == "REELS" and d.get("video_pendente")
@@ -1070,9 +1108,19 @@ def _item_story(esp, sid: str, n: int, campos: dict, dia: str, itens: list, sufi
     post, sem_post = _post_do_dia(campos, dia, itens)
     if post and post.get("imagem") and not campos.get("imagem"):  # the post's own picture, not a text-only card
         campos = dict(campos, imagem=post["imagem"])
+    if campos.get("layout") in CHAMA and (sem_post or not campos.get("imagem")):
+        # 11/11, the simulation: the stories that call the day's post were drawn and judged before their post was
+        # ready, and came out reproved (or with half the art empty: the cover is the post's). They wait: nothing is
+        # drawn nor judged, and it does not count as a reproval. passo_autonomo draws them when the post is approved,
+        # or swaps the layout when the post will not go out.
+        motivo = sem_post or f"o {NOME_TIPO.get((post or {}).get('tipo'), 'post')} do dia ainda não tem capa para mostrar"
+        return dict(_proposta_story(sid, n, {k: v for k, v in campos.items() if k != "imagem"}, dia,
+                                    {"arquivos": [], "problema": "espera o post do dia", "critica": {
+                                        "veredito": SEM_REVISAO, "motivos": ["espera o post do dia: " + motivo], "sugestoes": []}}, ref),
+                    espera_post=True)
     ctx = {"briefing_comum": briefing_comum(fora=(f"{sid}-{n}", substitui)), **({"referencia": ref} if ref else {})}
     d = _desenhar_story(esp, campos, _pasta() / sid / f"story-{n}{sufixo}.jpg", post, ctx)
-    for k in range(REFAZER_STORY if esp is not None and not sem_post else 0):  # reproved: redone before he sees it
+    for k in range(REFAZER_STORY if esp is not None else 0):  # reproved: redone before he sees it
         if d["critica"]["veredito"] != "reprova":
             break
         feito = _refazer_story(esp, campos, d["critica"], _pasta() / sid / f"story-{n}{sufixo}-r{k + 1}.jpg", post,
@@ -1080,9 +1128,6 @@ def _item_story(esp, sid: str, n: int, campos: dict, dia: str, itens: list, sufi
         if not feito:
             break
         campos, d = feito
-    if sem_post and d["arquivos"]:  # rewriting the story cannot make the post exist: reproved, says why
-        d["critica"] = {"veredito": "reprova", "motivos": [sem_post] + [m for m in d["critica"]["motivos"]][:4],
-                        "sugestoes": d["critica"].get("sugestoes") or []}
     return _proposta_story(sid, n, campos, dia, d, ref)
 
 
@@ -1527,8 +1572,15 @@ def _um_passo(esp, sid: str, semana: dict, p: dict, agora: float, avisar, subir)
                             f"({c().uma_linha(_motivos(p), 140)}). Decidi deixar o dia sem ele; o gestor pode cobrir.")
             return {"semana": sid, "n": p["n"], "decisao": "sem post"}
         nova = True
+    espera = bool(p.get("espera_post"))
     try:
-        if p["formato_pedido"] == "STORY":
+        if espera and _post_do_dia(p["spec"]["story"], p["data"], semana["propostas"])[0]:
+            # its post is ready now: drawn and judged for the first time (not a redo, no attempt counted)
+            novo = _item_story(esp, sid, p["n"], p["spec"]["story"], p["data"], semana["propostas"], sufixo="-post",
+                               vizinhos=stories_vizinhos(fora=_fora_de(p)), ref=p.get("referencia"))
+            if novo.get("espera_post"):  # the post has no cover to show after all: another layout
+                novo = _refazer_story_semana(esp, sid, p, semana["propostas"], True)
+        elif p["formato_pedido"] == "STORY":
             novo = _refazer_story_semana(esp, sid, p, semana["propostas"], nova)
         else:
             novo = _refazer_feed(esp, sid, p, nova)
@@ -1538,7 +1590,7 @@ def _um_passo(esp, sid: str, semana: dict, p: dict, agora: float, avisar, subir)
         erro = "" if novo else "o Designer não devolveu nada utilizável"
     if novo is None:
         novo = dict(p, problema=erro or p.get("problema") or "sem versão nova")
-    auto = {"tentativas": tentativas + (0 if nova else 1), "nova_ideia": bool(auto.get("nova_ideia") or nova),
+    auto = {"tentativas": tentativas + (0 if nova or espera else 1), "nova_ideia": bool(auto.get("nova_ideia") or nova),
             "ultima": agora}
     historico = (list(p.get("historico") or []) + [_versao(p)])[-HISTORICO:]
     novo = dict(novo, auto=auto, estado="proposta", refeita=int(p.get("refeita") or 0) + 1, historico=historico,
@@ -1570,7 +1622,7 @@ def _versao(p: dict) -> dict:
 
 def _reprovadas(p: dict) -> int:
     """How many versions of an open proposal the Crítico reproved (the current one included)."""
-    atual = 1 if p.get("problema") or (p.get("critica") or {}).get("veredito") != "aprova" else 0
+    atual = 1 if (p.get("problema") or (p.get("critica") or {}).get("veredito") != "aprova") and not p.get("espera_post") else 0
     return sum(1 for v in p.get("historico") or [] if v.get("veredito") != "aprova") + atual
 
 
@@ -1923,6 +1975,8 @@ def mensagem(semana: dict) -> tuple[str, list]:
         if p["estado"] in ESTADO_AVISO:
             situacao = ESTADO_AVISO[p["estado"]] + (f" ({_texto(p.get('decisao') or p.get('erro'), 120)})"
                                                     if p.get("decisao") or p.get("erro") else "")
+        elif p.get("espera_post"):
+            situacao = "espera o post do dia ficar pronto para ser desenhado"
         elif v == "reprova" or p["problema"]:
             situacao = "refazendo (Crítico: " + c().uma_linha(_motivos(p), 120) + ")"
         else:

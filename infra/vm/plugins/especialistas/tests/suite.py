@@ -529,8 +529,27 @@ class Suite:
         ok("lanca-app" not in m.telas_do_sistema("carrossel") and "campo de foto" in m.telas_do_sistema("carrossel"),
            "no carrossel a tela vai num molde de carrossel")
         ok("lanca-app" in m.telas_do_sistema("reel"), "no vídeo, o tour com zoom")
-        ok("a vaga da semana é 'carrossel'" in chamadas[1][1], chamadas[1][1][:200])
-        eq((d["spec"]["formato"], d["falta"]), ("carrossel", []), "corrigido para carrossel")
+        # 11/11: the slot's format is imposed at once (the molde makes carousels): no correction round is spent on it
+        eq([papel for papel, _ in chamadas], ["designer", "critico"], "o formato da vaga é imposto, sem rodada de correção")
+        eq((d["spec"]["formato"], d["falta"]), ("carrossel", []), "sai como carrossel")
+        # a molde that cannot make the slot's format: the correction names the moldes that can
+        fichas[:] = [{"marca": "raiz", "motor": "molde", "molde": "so-video", "formato": "reel", "ficha": {"_marca": "raiz"}},
+                     {"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel", "ficha": {"_marca": "raiz", "pergunta": "Oi"}}]
+        (reels / "moldes" / "so-video").mkdir(exist_ok=True)
+        (reels / "moldes" / "so-video" / "esquema.json").write_text(json.dumps({"formatos": ["reel"], "campos": {}}))
+        chamadas.clear()
+        d = m.desenhar({"formato": "CARROSSEL", "titulo": "x", "ideia": "y"})
+        ok("não faz carrossel" in chamadas[1][1] and "- frases" in chamadas[1][1] and "sem trocar o assunto" in chamadas[1][1],
+           chamadas[1][1][:300])
+        eq((d["spec"]["molde"], d["spec"]["formato"], d["falta"]), ("frases", "carrossel", []), "corrigido para um molde de carrossel")
+        # for the Raiz only the moldes that fit a brand that teaches owners are offered
+        cat = {i: {"formatos": ["carrossel"]} for i in ("mito", "combo", "cardapio", "time")}
+        eq(sorted(m.moldes_da_marca(cat, "raiz", "carrossel")), ["mito", "time"], "molde de cardápio e combo não é da Raiz")
+        eq(sorted(m.moldes_da_marca(cat, "doces-da-lu", "carrossel")), sorted(cat), "outra marca vê o catálogo inteiro")
+        eq(sorted(m.moldes_da_marca({"so-teste": {}}, "raiz", "carrossel")), ["so-teste"], "sem nenhum que sirva, o catálogo fica")
+        ok("POV" in m.PAPEIS["critico"] and "decisão #85) não vale para ele" in m.PAPEIS["critico"], "o POV de humor tem a exceção escrita")
+        ok("troca de molde, nunca de assunto" in m.PAPEIS["designer"] and "número ou um exemplo concreto" in m.PAPEIS["designer"],
+           "o Designer fica no assunto e é concreto")
 
     def t_moldes_dos_posts_vizinhos_nao_sao_oferecidos(self):
         # 08/11, Matheus: "Estao td igual os post": three carousels in a row from passo-a-passo

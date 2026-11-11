@@ -104,9 +104,13 @@ function checar(F, $m) {
 // fills question card, reply card and the header chip inside `raiz`
 function encher(F, M, $m, raiz) {
   const q = s => raiz.querySelector(s);
-  if (q('#k0')) { q('#k0').innerHTML = $m.icone('balao') + ' '; q('#k0').append('PERGUNTA DE CLIENTE'); }
+  // 11/11: a brand that speaks to owners (the Raiz) has no customer's comment to show: the card says it is a common
+  // doubt, never "comentou no post" (the Crítico reproved it as an invented customer)
+  const duvida = F.canal === 'duvida' || F._marca === 'raiz';
+  if (q('#k0')) { q('#k0').innerHTML = $m.icone('balao') + ' '; q('#k0').append(duvida ? 'DÚVIDA DE DONO' : 'PERGUNTA DE CLIENTE'); }
+  if (duvida) raiz.querySelectorAll('.cm .q').forEach(e => { e.textContent = 'Dúvida comum'; });
   raiz.querySelectorAll('.av.cli').forEach(a => { a.insertAdjacentHTML('afterbegin', $m.icone('pessoa')); });
-  raiz.querySelectorAll('.cm .w').forEach(w => { w.textContent = F.canal === 'mensagem' ? 'perguntou por mensagem' : 'comentou no post'; });
+  raiz.querySelectorAll('.cm .w').forEach(w => { w.textContent = duvida ? 'de quem vende comida' : F.canal === 'mensagem' ? 'perguntou por mensagem' : 'comentou no post'; });
   raiz.querySelectorAll('.cm .co').forEach(c => { c.innerHTML = $m.icone('coracao'); });
   raiz.querySelectorAll('.cm .pq').forEach(p => { p.textContent = F.pergunta; });
   const rp = q('.rp');

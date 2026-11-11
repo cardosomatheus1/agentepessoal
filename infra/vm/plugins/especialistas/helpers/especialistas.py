@@ -139,6 +139,12 @@ O que você faz:
   mostra o que a fala diz; "poderia ressalvar os outros custos" ou "poderia vir como pergunta" vai em sugestões
   (11/11: os mesmos dois Reels foram aprovados e, vinte minutos depois, reprovados por "O óleo subiu" sem fonte e por
   "sobram oito" sem ressalva; o Matheus: "não se entendem").
+- O Reel de humor em formato POV (o meme por cima do caderno, do WhatsApp ou das notificações e a virada "a Raiz já
+  sabe") é um formato aprovado pelo Matheus (05/11: "Falei p ter o meme"). O cartão claro do "depois" (ficha técnica,
+  conta do prato) é uma ilustração encenada, marcada "ilustração · valores de exemplo", não um print do sistema: a
+  regra da tela real, escura e inteira com o menu (decisão #85) não vale para ele, e a conversa ou o caderno do
+  "antes" são cena de humor, não depoimento (11/11: todo POV morria nessa regra). Julgue se a piada é de
+  identificação, se a conta fecha e se nada debocha do cliente.
 - A enquete e a caixinha de pergunta do story são desenhadas na arte (a API não leva o sticker): a resposta vem pelo
   direct. Não reprove por "não tem como votar".
 
@@ -172,6 +178,13 @@ O que você faz:
 - Vídeo não é só passeio pelas telas do sistema (11/11: todos os Reels eram o molde lanca-app e morriam nas regras
   dele): a maioria dos vídeos ensina o dono sem tela nenhuma (a conta que mudou, o custo escondido, mito ou verdade,
   conversa encenada, expectativa e realidade, quiz, passo a passo). Tela só quando a ideia É a tela, e só as que existem.
+- Fica no assunto do briefing: o título e a ideia pedidos são a peça. Se o molde escolhido não consegue mostrar essa
+  ideia, troca de molde, nunca de assunto (11/11: um carrossel pedido sobre "quando o dinheiro do app entra" voltou
+  como um passeio pela tela do mês).
+- Em vídeo e carrossel, cada cena ou slide traz um número ou um exemplo concreto do briefing (o produto, a quantidade,
+  o valor de exemplo: "a receita rende 30, saem 26"), nunca uma frase que serve para qualquer negócio ("menos
+  unidades, maior custo"). Valores de exemplo plausíveis para um pequeno negócio de comida (salgado de R$ 5 a 9,
+  marmita de R$ 18 a 30, pizza de R$ 40 a 70), e a conta fecha.
 - Antes de responder, confere a própria ficha (o Crítico reprovou por isto em 22/10): o título promete exatamente o
   que os itens ou as falas entregam (se diz "3 sinais", são 3 sinais claros); cada fala mostra, na mesma cena, a tela
   que prova o que ela diz; a quantidade de itens e falas está dentro do mínimo e do máximo do molde.
@@ -587,6 +600,26 @@ Sempre: "marca" ("raiz" ou a pasta da outra marca), "formato" (carrossel|reel|st
 emoji, terminando no passo concreto da chamada)."""
 
 
+# The catalog was made for every kind of small business; most moldes speak to the CONSUMER of a shop (menu, combo, real
+# customer's words, opening hours, a product photo of the shop's own). The Raiz speaks to the owner and has no shop
+# photos nor real customers to quote: offered those, the Designer filled a "pergunta de cliente" with an invented
+# comment and a "produto da semana" with a tour of a screen (11/11, the simulation: 0 of 4 feed posts passed). For the
+# Raiz the Designer is offered only the moldes that fit a brand that teaches owners.
+MOLDES_DA_RAIZ = {
+    "carrossel": ("mito", "quiz", "time", "frases", "passo-a-passo", "faca-nao-faca", "pergunta-cliente", "antes-depois"),
+    "reel": ("conta-mudou", "custo-escondido", "mito", "quiz", "chat", "expectativa", "frases", "passo-a-passo",
+             "faca-nao-faca", "explica", "glossario", "sabia-que", "lista-cinco", "piramide", "comparativo", "funil",
+             "pergunta-cliente", "time", "lanca-app", "demonstracao", "oferta-completa"),
+}
+
+
+def moldes_da_marca(catalogo: dict, marca: str, formato: str) -> dict:
+    """The catalog cut to what fits the brand and the slot's format (the whole catalog for any other brand)."""
+    servem = MOLDES_DA_RAIZ.get(formato) if str(marca or "raiz").lower() == "raiz" else None
+    corte = {i: m for i, m in catalogo.items() if i in servem} if servem else {}
+    return corte or catalogo
+
+
 def catalogo_moldes() -> dict:
     moldes = pasta_moldes()
     arq = moldes / "catalogo.json" if moldes else None
@@ -857,6 +890,12 @@ def _spec(r: dict, pedido: str = "") -> dict:
         spec["motor"] = "molde"
     if spec and pedido:
         spec["_formato_pedido"] = pedido
+        # 11/11: the slot's format is imposed, not discovered later. A molde that makes the slot's format comes out in
+        # it whatever the ficha says ("formato": "reel" on a carousel slot killed Friday's carousel three times)
+        if pedido in (catalogo_moldes().get(str(spec.get("molde") or "")) or {}).get("formatos", []):
+            spec["formato"] = pedido
+            if isinstance(spec.get("ficha"), dict) and spec["ficha"].get("_formato"):
+                spec["ficha"]["_formato"] = pedido
     return spec
 
 
@@ -920,6 +959,7 @@ def _moldes_que_servem(formato: str, evitar=()) -> str:
     not exist (10/11: the Gestor said "um molde de cena ou humor", the Designer wrote "molde": "cena" three times and
     the correction never told it which moldes exist)."""
     cat = {i: m for i, m in catalogo_moldes().items() if not formato or formato in m.get("formatos", [])}
+    cat = moldes_da_marca(cat, "raiz", formato)
     sobra = {i: m for i, m in cat.items() if i not in set(evitar or [])} or cat
     return "\n".join(f"- {i}: {m.get('situacao', '')} Ficha: {_campos_do_molde(i) or json.dumps(m.get('ficha', {}), ensure_ascii=False)}"
                      for i, m in sobra.items())
@@ -929,11 +969,15 @@ def _tarefa_correcao(spec: dict, falta: list, evitar=()) -> str:
     """The second try: the template's schema, an example ficha (the Raiz's when there is one) and what failed."""
     pasta = pasta_moldes() / str(spec.get("molde") or "") if pasta_moldes() else None
     esquema = exemplo = ""
-    if pasta is not None and not (pasta / "esquema.json").exists():
-        lista = _moldes_que_servem(str(spec.get("_formato_pedido") or ""), evitar)
-        return (f"A ficha abaixo usa o molde {spec.get('molde')!r}, que não existe. Escolha UM molde desta lista (use o id "
+    pedido = str(spec.get("_formato_pedido") or "")
+    nao_faz = bool(pedido) and pedido not in (catalogo_moldes().get(str(spec.get("molde") or "")) or {}).get("formatos", [pedido])
+    if pasta is not None and (nao_faz or not (pasta / "esquema.json").exists()):
+        lista = _moldes_que_servem(pedido, evitar)
+        return (f"A ficha abaixo usa o molde {spec.get('molde')!r}, que "
+                + (f"não faz {pedido} (a vaga é de {pedido})" if nao_faz and (pasta / "esquema.json").exists() else "não existe")
+                + ". Escolha UM molde desta lista (use o id "
                 f"exatamente como está), refaça a ficha com os campos dele e devolva a ficha inteira (com \"motor\": "
-                f"\"molde\").\n\n## Erros\n" + "\n".join(f"- {f}" for f in falta)
+                f"\"molde\"), sem trocar o assunto do briefing.\n\n## Erros\n" + "\n".join(f"- {f}" for f in falta)
                 + f"\n\n## Moldes que servem\n{lista}\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n"
                 + telas_do_sistema(spec.get("_formato_pedido", "")) + "Responda só com o JSON.")
     if pasta and (pasta / "esquema.json").exists():
@@ -964,6 +1008,8 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
     pedido = FORMATO_DO_BRIEFING.get(str(briefing.get("formato") or "").upper(), "") if isinstance(briefing, dict) else ""
     if pedido:  # 22/10: shown the whole catalog it kept answering a carousel slot with a video template
         catalogo = {i: m for i, m in catalogo.items() if pedido in m.get("formatos", [])}
+        marca = str(briefing.get("marca") or "raiz") if isinstance(briefing, dict) else "raiz"
+        catalogo = moldes_da_marca(catalogo, marca, pedido)
     evitar = set(briefing.get("evitar_moldes") or []) if isinstance(briefing, dict) else set()
     if evitar and any(i not in evitar for i in catalogo):  # 08/11: the neighbouring posts' moldes are not offered
         catalogo = {i: m for i, m in catalogo.items() if i not in evitar}
