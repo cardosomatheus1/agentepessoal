@@ -184,9 +184,9 @@ O que você faz:
 - Fica no assunto do briefing: o título e a ideia pedidos são a peça. Se o molde escolhido não consegue mostrar essa
   ideia, troca de molde, nunca de assunto (11/11: um carrossel pedido sobre "quando o dinheiro do app entra" voltou
   como um passeio pela tela do mês).
-- Em vídeo e carrossel, cada cena ou slide traz um número ou um exemplo concreto do briefing (o produto, a quantidade,
-  o valor de exemplo: "a receita rende 30, saem 26"), nunca uma frase que serve para qualquer negócio ("menos
-  unidades, maior custo"). Valores de exemplo plausíveis para um pequeno negócio de comida (salgado de R$ 5 a 9,
+- Em vídeo e carrossel, as cenas e slides de conteúdo trazem o número ou o exemplo concreto do briefing (o produto, a
+  quantidade, o valor de exemplo: "a receita rende 30, saem 26"), nunca uma frase que serve para qualquer negócio
+  ("menos unidades, maior custo"); a capa, a chamada para comentar e o fecho são do molde. Valores de exemplo plausíveis para um pequeno negócio de comida (salgado de R$ 5 a 9,
   marmita de R$ 18 a 30, pizza de R$ 40 a 70), e a conta fecha.
 - Antes de responder, confere a própria ficha (o Crítico reprovou por isto em 22/10): o título promete exatamente o
   que os itens ou as falas entregam (se diz "3 sinais", são 3 sinais claros); cada fala mostra, na mesma cena, a tela
