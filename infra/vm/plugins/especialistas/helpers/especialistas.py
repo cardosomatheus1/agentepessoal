@@ -127,6 +127,15 @@ O que você faz:
   bio" e o @) são fixos do kit, postos pelo motor em toda peça: não são texto do Designer nem quebram um briefing que
   pediu para não falar da oferta no conteúdo (10/11: um carrossel reprovado duas vezes por esse slide).
 
+- Quando a tarefa traz o "Briefing comum", ele é a mesma régua que o criador e o Gestor leram (Matheus, 11/11: os
+  três "não se entendem"): julgue por ele e não exija o que ele não pede. Ele traz o radar de referências e o que a
+  Raiz publicou e agendou nos últimos 14 dias. Reprove por "mais do mesmo" (Matheus, 11/11: "storys e feed sem graça,
+  repetidos") quando a peça repete o gancho, o formato e a cara de algo dessa lista, e diga com qual item ela se
+  parece; assunto parecido com outro ângulo e outro formato passa. A peça diz em "referencia" de onde tirou a ideia e
+  o que muda: cópia do texto da referência reprova, e nome de concorrente ou criador em texto público reprova.
+- A enquete e a caixinha de pergunta do story são desenhadas na arte (a API não leva o sticker): a resposta vem pelo
+  direct. Não reprove por "não tem como votar".
+
 O que você não faz:
 - Não reescreve a peça inteira nem cria uma nova: aponta o problema e a correção mínima.
 - Não aprova por educação nem por falta de tempo; falta de material para julgar (arte que não veio, número sem
@@ -150,6 +159,13 @@ O que você faz:
 - Usa material real: tela real do produto, foto real ou gerada marcada "imagem ilustrativa"; nunca comida desenhada
   em código.
 - Preenche a ficha inteira, com textos que cabem (respeita os limites de letras).
+- Lê o "Briefing comum" quando ele vem (é o mesmo que o Crítico e o Gestor leem): as regras, o radar de referências
+  (anúncios dos concorrentes há mais tempo no ar, posts que mais renderam, vídeos em alta) e o que a Raiz já publicou.
+  Aproveita o formato e o gancho da referência indicada no briefing ("referencia"), com outro texto e a cara da Raiz;
+  não repete o que a Raiz fez nos últimos 14 dias; nunca cita concorrente.
+- Vídeo não é só passeio pelas telas do sistema (11/11: todos os Reels eram o molde lanca-app e morriam nas regras
+  dele): a maioria dos vídeos ensina o dono sem tela nenhuma (a conta que mudou, o custo escondido, mito ou verdade,
+  conversa encenada, expectativa e realidade, quiz, passo a passo). Tela só quando a ideia É a tela, e só as que existem.
 - Antes de responder, confere a própria ficha (o Crítico reprovou por isto em 22/10): o título promete exatamente o
   que os itens ou as falas entregam (se diz "3 sinais", são 3 sinais claros); cada fala mostra, na mesma cena, a tela
   que prova o que ela diz; a quantidade de itens e falas está dentro do mínimo e do máximo do molde.
@@ -174,6 +190,11 @@ Então você nunca pergunta nada a ele: o Crítico é o portão e você decide. 
 
 O que você procura:
 - dia sem post (dia do plano) ou sem story nos próximos dias: crie (ação criar) seguindo o plano e a oferta atual;
+- o "Briefing comum" da tarefa é a mesma régua que o criador e o Crítico leem (Matheus, 11/11: os três "não se
+  entendem"): decida por ele. Não existe mais layout de story por dia da semana: NUNCA cancele ou troque um story
+  porque "pelo plano o story de quarta chama o Reel"; o story certo é o que varia (layout e visual diferentes do dia
+  anterior e do seguinte) e fala de algo útil. Mais do mesmo (o mesmo gancho, formato e cara de algo dos últimos 14
+  dias) é motivo para orientar ou trocar; ao criar, diga a "referencia" do radar em que a peça se inspira;
 - story que anuncia um post que não vai sair (ou saiu outro assunto); story fora do assunto do dia;
 - post reprovado pelo Crítico perto da hora: refazer com uma instrução melhor (diga exatamente o que mudar, a partir
   dos motivos do Crítico), trocar a data com outro pendente já aprovado, remarcar, cancelar ou criar outro?
@@ -199,11 +220,13 @@ Seu vocabulário é FECHADO. Cada ação tem "motivo" em português simples (uma
   (não serve para Reel já agendado: cancele e crie outro);
 - {"acao": "trocar", "item_a": id, "item_b": id, "motivo"}: troca dia e hora de dois pendentes do mesmo canal;
 - {"acao": "criar", "data": "AAAA-MM-DD", "formato": "CARROSSEL"|"REELS"|"IMAGE"|"STORY", "titulo", "ideia",
-  "legenda", "motivo"} para o feed, ou {"acao": "criar", "data", "formato": "STORY", "story": {"layout", "manchete",
-  "destaque", "texto", "chamada", ...}, "motivo"} para um story (layouts: dica, post-novo, video-novo, bastidor com
-  "tela" de /a0/usr/plugins/conteudo/story/telas/, oferta): o Designer desenha, o Crítico julga; aprovado entra na
-  agenda, reprovado o agente refaz sozinho. Só em dia sem item daquele canal; no máximo 2 por execução. Story
-  post-novo/video-novo só em dia que tem esse post. Legenda sem emoji, sem travessão, R$ só com "valores de exemplo".
+  "legenda", "referencia": {"id": id do radar ou "propria", "o_que_muda": uma frase}, "motivo"} para o feed, ou
+  {"acao": "criar", "data", "formato": "STORY", "story": {"layout", "manchete", ...os campos do layout}, "referencia",
+  "motivo"} para um story (os layouts e os campos de cada um estão no Briefing comum; o código recusa o layout que
+  repete o do dia vizinho ou que já saiu 2 vezes em 7 dias e diz quais servem): o Designer desenha, o Crítico julga;
+  aprovado entra na agenda, reprovado o agente refaz sozinho. Só em dia sem item daquele canal; no máximo 2 por
+  execução. Story post-novo/video-novo só em dia que tem esse post. Legenda sem emoji, sem travessão, R$ só com
+  "valores de exemplo".
 - {"acao": "orientar", "proposta": id de em_refacao, "instrucao": "o que o Designer muda, concreto", "formato":
   "CARROSSEL"|"REELS" (opcional, só feed), "trocar_molde": true (opcional: o molde atual não volta), "assunto_novo":
   true (opcional), "motivo"}: a próxima versão sai com isso, e o Crítico julga como sempre (até 2 por proposta);
@@ -265,11 +288,36 @@ def _enviar(body: dict, login: str, tempo: int = TEMPO) -> dict:
         return json.loads(r.read())
 
 
+BRIEFING_COMUM = "## Briefing comum (o mesmo texto que o criador, o Crítico e o Gestor leem)"
+
+
+def tirar_briefing(material) -> tuple:
+    """(the material without the common briefing, the briefing). 11/11: the content plugin sends ONE briefing (fixed
+    rules, the radar of references, the Raiz's last 14 days) to the Designer, the Crítico and the Gestor; it travels in
+    the material ("briefing_comum", at the top or inside "briefing") and is shown once, whole, as its own section,
+    never cut with the rest of the material."""
+    if not isinstance(material, dict):
+        return material, ""
+    comum = material.get("briefing_comum")
+    interno = material.get("briefing") if isinstance(material.get("briefing"), dict) else None
+    if not comum and interno:
+        comum = interno.get("briefing_comum")
+    if not comum:
+        return material, ""
+    limpo = {k: v for k, v in material.items() if k != "briefing_comum"}
+    if interno:
+        limpo["briefing"] = {k: v for k, v in interno.items() if k != "briefing_comum"}
+    return limpo, str(comum)
+
+
 def chamar(papel: str, tarefa: str, material, login: str = "matheus") -> dict:
     """One model call as `papel`: the SOUL as instructions, the task and the material as input (images included).
     Returns {"texto", "erro", "imagens", "sem_imagem"}; never raises."""
     if papel not in PAPEIS:
         return {"texto": "", "erro": f"papel desconhecido: {papel}", "imagens": [], "sem_imagem": []}
+    material, comum = tirar_briefing(material)
+    if comum:
+        tarefa = f"{tarefa}\n\n{BRIEFING_COMUM}\n{comum}"
     texto, caminhos = _texto_material(material)
     content = [{"type": "input_text", "text": f"{tarefa}\n\n## Material\n{texto}".strip()}]
     enviadas, sem = [], []
@@ -515,7 +563,8 @@ def criticar(tipo: str, material, *, login: str = "matheus") -> dict:
 KIT = """Motor de render: sempre "motor": "molde" (é o único que roda aqui; o carrossel e o vídeo "do kit" feitos à mão
 são só da sessão de operador, nunca escolha).
 - "molde": o que o agente renderiza sozinho, para a Raiz e para outras marcas (22/10). Para a Raiz, "_marca": "raiz"
-  na ficha aplica o fixo do kit; o conceito muda de peça para peça (duas seguidas não usam o mesmo molde). Campos:
+  na ficha aplica o fixo do kit; o conceito muda de peça para peça (o molde de um post dos últimos 14 dias não
+  volta: a lista de moldes abaixo já vem sem eles). Campos:
   "molde" (id do catálogo), "formato" (carrossel|reel|story, um dos formatos do molde), "ficha" (os campos do esquema
   do molde, com "_marca" e "_origem" para dado real; Reel narrado leva "falas", lidas pela voz Carolina).
   Tela do sistema: só as telas reais, escuras e inteiras de /a0/usr/plugins/conteudo/story/telas/ (no molde
@@ -847,8 +896,11 @@ def telas_do_sistema(formato: str = "") -> str:
                 "\"Valores de exemplo\" ao lado de cada tela; outro número escrito no slide (fora da tela) leva \"valores "
                 "de exemplo\" no próprio texto do slide: só na legenda não vale."
                 if formato == "carrossel" else
-                "Para mostrar o sistema num vídeo use o molde lanca-app com \"aparelho\": \"computador\" (a câmera dá "
-                "zoom no \"destaque\" de cada tela, em % da tela); demonstracao é moldura de celular.")
+                "Um vídeo não precisa mostrar o sistema: a maioria ensina o dono sem tela nenhuma (conta-mudou, "
+                "custo-escondido, mito, quiz, chat, expectativa, frases, passo-a-passo, explica). Só quando a ideia É a "
+                "tela use o molde lanca-app com \"aparelho\": \"computador\" (a câmera dá zoom no \"destaque\" de cada "
+                "tela, em % da tela; demonstracao é moldura de celular), e só com as telas desta lista: não existe tela de "
+                "comanda, de divisão de conta, de cardápio digital nem de estoque.")
             + " Campo \"real\" pede \"_origem\" com \"sistema\" (tela) ou \"dono\".\n\n")
 
 

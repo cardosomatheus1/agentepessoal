@@ -1062,9 +1062,9 @@ def aprovado_na_criacao(item: dict) -> str:
     by the Crítico when it was made, was reproved the next day by another draw of the same Crítico on the same files
     and the day lost its post. A post the Crítico approved when it was made and that did not change since (same
     caption, the same files of that version) is not judged again: the reason ("" when it must be judged). A Reel is
-    judged once more: the video is rendered after the preview was approved, so it is new material."""
+    rendered after its preview was approved, so what counts for it is the judgement of the finished video."""
     o = item.get("origem") or {}
-    if item.get("tipo") == "REELS" or not o.get("semana") or not re.fullmatch(r"s\d{8}-\d{1,3}", str(o["semana"])):
+    if not o.get("semana") or not re.fullmatch(r"s\d{8}-\d{1,3}", str(o["semana"])):
         return ""
     try:
         s = json.loads((PASTA / "semanas" / f"{o['semana']}.json").read_text(encoding="utf-8"))
@@ -1075,6 +1075,14 @@ def aprovado_na_criacao(item: dict) -> str:
         return ""
     if str(p.get("legenda") or "").strip() != str(item.get("legenda") or "").strip():
         return ""
+    if item.get("tipo") == "REELS":
+        # 11/11: three finished Reels were scheduled on the preview's approval and reproved at the advance check, with
+        # no time to redo. The finished video is judged when the render ends (semana.julgar_video): the one approved
+        # there, unchanged, is not judged again. A Reel that was not judged finished still is.
+        visto = (p.get("video") or {}).get("julgado") or {}
+        video = next((Path(str(a)).name for a in item.get("arquivos") or [] if str(a).lower().endswith(".mp4")), "")
+        return ("o Crítico aprovou o vídeo pronto e a peça não mudou"
+                if visto.get("veredito") == "aprova" and visto.get("arquivo") and video.endswith(visto["arquivo"]) else "")
     feitos = [Path(str(a)).stem for a in p.get("arquivos") or []]
     chaves = [Path(str(a)).stem for a in item.get("arquivos") or []]
     if not feitos or len(feitos) != len(chaves) or not all(k.endswith(f) for k, f in zip(chaves, feitos)):

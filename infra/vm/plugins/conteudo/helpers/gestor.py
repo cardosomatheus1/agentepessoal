@@ -51,12 +51,12 @@ ACOES = {
     "cancelar": {"item"},
     "refazer": {"item", "instrucao"},
     "trocar": {"item_a", "item_b"},
-    "criar": {"data", "formato", "titulo", "ideia", "legenda", "story", "substitui"},
+    "criar": {"data", "formato", "titulo", "ideia", "legenda", "story", "substitui", "referencia"},
     # 10/11 (Matheus: "ele não simplesmente muda o contexto, o tipo"): on a proposal the agent is still redoing
     "orientar": {"proposta", "instrucao", "formato", "trocar_molde", "assunto_novo"},
     "desistir": {"proposta"},
 }
-OPCIONAIS = {"criar": {"titulo", "ideia", "legenda", "story", "substitui"}, "orientar": {"formato", "trocar_molde", "assunto_novo"}}
+OPCIONAIS = {"criar": {"titulo", "ideia", "legenda", "story", "substitui", "referencia"}, "orientar": {"formato", "trocar_molde", "assunto_novo"}}
 FORMATOS_CRIAR = ("CARROSSEL", "REELS", "IMAGE", "STORY")
 NAO_TOCA = ("publicando", "publicada", "incerta", "falhou")
 EVENTOS = ("bloqueada", "falhou", "incerta")
@@ -238,8 +238,11 @@ def estado(agora: float | None = None, contexto: dict | None = None) -> dict:
         abertas = []
     return {
         "agora": momento.strftime("%Y-%m-%d %H:%M") + f" ({DIAS_SEMANA[momento.weekday()]})",
-        "plano": "carrossel ter e sex, Reel qua e dom, às 11:45; 1 story por dia às 9h (seg dica; ter/sex chama o "
-                 "carrossel; qua/dom chama o Reel; qui bastidor; sáb oferta). Um post e um story por dia, no máximo.",
+        # 11/11: the layout per weekday is gone (the Gestor cancelled stories "porque pelo plano o story de quarta
+        # chama o Reel" and everything became a "dica"); the story follows the variety rule of the common briefing
+        "plano": "carrossel ter e sex, Reel qua e dom, às 11:45; 1 story por dia às 9h, com o layout escolhido pelo "
+                 "assunto e pela regra de variedade do Briefing comum (não há layout fixo por dia da semana). Um post e "
+                 "um story por dia, no máximo.",
         "itens": [_item(i, agora) for i in itens],
         "alertas": _alertas(itens, agora),
         "buracos": _buracos(itens, hoje),
@@ -250,13 +253,26 @@ def estado(agora: float | None = None, contexto: dict | None = None) -> dict:
         "gestor_recente": [{"em": _momento(r["em"]).strftime("%d/%m %H:%M"), "fez": r.get("feitas", [])}
                            for r in _ler_jsonl(_pasta() / "gestor.jsonl", 40) if r.get("feitas") and not r.get("seco")][-8:],
         "contexto": contexto if contexto is not None else _contexto(),
+        "briefing": _briefing(agora),
     }
+
+
+def _briefing(agora: float) -> str:
+    """The common briefing (semana.briefing_comum): the same text the creator and the Crítico read (11/11)."""
+    try:
+        return semana().briefing_comum(agora)
+    except Exception as exc:
+        return f"(briefing comum indisponível: {type(exc).__name__})"
+
+
+BRIEFING_COMUM = "## Briefing comum (o mesmo texto que o criador, o Crítico e o Gestor leem)"
 
 
 def tarefa(st: dict, motivo: str) -> str:
     ctx = st.get("contexto") or {}
-    corpo = {k: v for k, v in st.items() if k != "contexto" and not k.startswith("_")}
+    corpo = {k: v for k, v in st.items() if k not in ("contexto", "briefing") and not k.startswith("_")}
     return (f"Execução: {motivo}. Agora: {st['agora']} (horário de Brasília).\n\n"
+            f"{BRIEFING_COMUM}\n{st.get('briefing') or '(indisponível)'}\n\n"
             f"## Agenda e estado (JSON)\n{json.dumps(corpo, ensure_ascii=False, indent=0)}\n\n"
             f"## Decisões do Matheus\n{ctx.get('decisoes') or '(indisponível)'}\n\n"
             f"## Cérebro da Raiz (oferta atual, cliente, marca)\n{ctx.get('raiz') or '(indisponível)'}\n\n"
@@ -531,7 +547,7 @@ def executar(a: dict, refazer=None, agora: float | None = None, criar=None) -> d
         if nome == "trocar":
             return conteudo.trocar_datas(a["item_a"], a["item_b"], a["motivo"], agora)
         if nome == "criar":
-            dados = {k: a[k] for k in ("titulo", "ideia", "legenda", "story") if a.get(k)}
+            dados = {k: a[k] for k in ("titulo", "ideia", "legenda", "story", "referencia") if a.get(k)}
             extra = {"substitui": a["substitui"]} if a.get("substitui") else {}
             r = (criar or semana().criar)(a["data"], a["formato"], dados, agora=agora,
                                           quem=f"gestor: {_curto(a['motivo'], 120)}", **extra)

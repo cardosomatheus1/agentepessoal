@@ -642,7 +642,7 @@ class Suite:
                 if briefing["formato"] == "REELS" and video_pendente:  # the moldes: preview and narration only
                     for nome in (f"p{n}-1.jpg", f"narracao{n}.m4a"):
                         (arte / nome).write_bytes(b"\xff\xd8\xff previa")
-                    return {"spec": {"motor": "molde", "molde": "lanca-app", "formato": "reel",
+                    return {"spec": {"motor": "molde", "molde": "lanca-app" if n == 2 else "conta-mudou", "formato": "reel",
                                      "ficha": {"_marca": "raiz", "falas": ["Oi"]}},
                             "arquivos": [], "falta": [], "render": "ok", "video_pendente": True,
                             "previa": [str(arte / f"p{n}-1.jpg")], "narracao": str(arte / f"narracao{n}.m4a"),
@@ -665,14 +665,16 @@ class Suite:
 
             def chamar(self, papel, tarefa, material):  # the Designer rewriting a story (a "dica" when told so)
                 campos = dict(material.get("story") or {})
-                if 'troque o layout para "dica"' in tarefa:
-                    campos = {"layout": "dica", "manchete": "Dica no lugar do post"}
+                if "TROQUE o layout" in tarefa:  # 11/11: one of the layouts the variety rule leaves free that day
+                    livres = re.search(r"Escolha um destes[^:]*: ([^;]+);", tarefa).group(1).split(", ")
+                    campos = {"layout": livres[0], "manchete": "Outro story no lugar do post"}
                 return {"texto": json.dumps(dict(campos, manchete=campos.get("manchete", "") + " refeito")), "erro": ""}
         c.especialistas = (lambda: Esp()) if esp == "falso" else (lambda: None)
 
         class StoryFalso:  # helpers/story.py draws with a browser; here a file is enough
             CAMPOS = ("layout", "manchete", "destaque", "texto", "chamada", "tela", "pergunta", "itens", "imagem")
             PASTA = RAIZ / "story"
+            VISUAL, LAYOUTS, COMO, FOTOS = _story().VISUAL, _story().LAYOUTS, _story().COMO, _story().FOTOS
             validar = staticmethod(lambda campos: "" if campos.get("layout") else "layout")
             _chrome = staticmethod(lambda: "")
 
@@ -883,11 +885,11 @@ class Suite:
         with s._exclusivo():
             s._gravar({"id": sid, "criada_em": 0, "estado": "decidida", "login": "matheus", "propostas": [
                 {"n": 1, "data": "2026-11-06", "estado": "agendada", "spec": {"motor": "molde", "molde": "passo-a-passo"}},
-                {"n": 2, "data": "2026-11-20", "estado": "agendada", "spec": {"motor": "molde", "molde": "mito"}},
+                {"n": 2, "data": "2026-11-25", "estado": "agendada", "spec": {"motor": "molde", "molde": "mito"}},
                 {"n": 3, "data": "2026-11-07", "estado": "agendada", "spec": {"motor": "molde", "molde": "quiz"}}]})
         c.carregar = lambda: {"itens": [
             {"id": "a", "data": "2026-11-06", "tipo": "CARROSSEL", "estado": "publicada", "origem": {"semana": sid, "n": 1}},
-            {"id": "b", "data": "2026-11-20", "tipo": "CARROSSEL", "estado": "pendente", "origem": {"semana": sid, "n": 2}},
+            {"id": "b", "data": "2026-11-25", "tipo": "CARROSSEL", "estado": "pendente", "origem": {"semana": sid, "n": 2}},
             {"id": "x", "data": "2026-11-07", "tipo": "CARROSSEL", "estado": "cancelada", "origem": {"semana": sid, "n": 3}}]}
         ok(s._moldes_vizinhos("2026-11-08") == ["passo-a-passo"], s._moldes_vizinhos("2026-11-08"))
         ok(s._briefing("CARROSSEL", "2026-11-08", {})["evitar_moldes"] == ["passo-a-passo"], "o Designer recebe a lista")
@@ -1062,6 +1064,7 @@ class Suite:
         ok(c2.agendar([dict(ITEM, id="ja", data="2026-11-02", hora="11:45", tipo="REELS", arquivos=["conteudo/x/v.mp4"],
                             legenda="Reel que já estava")], _ts(c2, "2026-10-26", "07:00"))["ok"], "Reel de seg na agenda")
         st2[6] = {"layout": "video-novo", "manchete": "Story 7"}
+        st2[1], st2[5] = {"layout": "numero", "manchete": "Story 2"}, {"layout": "quiz", "manchete": "Story 6"}  # variety
         r2 = s2.propor(self._feed(), _ts(c2, "2026-10-26", "07:50"), enviar=lambda *a: "", stories=st2)
         p2 = {p["data"] + p["formato_pedido"]: p for p in s2.carregar(r2["semana"])["propostas"]}
         ok(p2["2026-10-29STORY"]["critica"]["motivos"][0] == "chama o post do dia, mas qui 29/10 não tem Reel no feed",
@@ -1162,8 +1165,11 @@ class Suite:
            and "diferente de \"Post 3\"" in chamadas[-1]["ideia"] and not chamadas[-1]["legenda"], chamadas[-1])
         p3, p8 = [p for p in s.carregar("s20261026-1")["propostas"] if p["n"] in (3, 8)]
         ok(p3["estado"] == "descartada" and "reprovou" in p3["decisao"], p3)
-        ok(p8["estado"] == "agendada" and p8["spec"]["story"]["layout"] == "dica",
-           f"o story que chamava o carrossel vira dica, não anuncia post que não existe: {p8['spec']}")
+        # 11/11: it no longer becomes a "dica" every time: a layout that calls no post and that the variety rule
+        # leaves free that day (qui is bastidor, sáb is oferta: neither their layout nor their look)
+        novo = p8["spec"]["story"]["layout"]
+        ok(p8["estado"] == "agendada" and novo not in s.CHAMA and novo not in ("bastidor", "oferta", "dica", "tela-zoom"),
+           f"o story que chamava o carrossel troca de layout, não anuncia post que não existe: {p8['spec']}")
         ok(not any(i["data"] == "2026-10-30" and i["tipo"] == "CARROSSEL" for i in c.carregar()["itens"]), "o dia fica sem post")
         textos = [t for t, _ in avisos]
         ok(any("Decidi deixar o dia sem ele" in t and "sex 30/10" in t for t in textos), textos)
@@ -1535,7 +1541,15 @@ class Suite:
         ok(item["tipo"] == "REELS" and item["arquivos"][0].endswith("video.mp4") and c._validar_item(item) == "", item)
         ok("ficou pronto" in enviados[-1] and "qua 28/10" in enviados[-1], enviados[-1])
         # a failed render is kept and told, never scheduled
-        r = vf.gerar("s20261026-1", 4, semana=s, esp=type("M", (), {"renderizar_molde": lambda self, *a, **k: ([], "o render falhou (código 1)")})())
+        quebrado = type("M", (), {"renderizar_molde": lambda self, *a, **k: ([], "o render falhou (código 1)")})
+        relancados = []
+        s.iniciar_video = lambda sid, n: relancados.append(n)
+        r = vf.gerar("s20261026-1", 4, semana=s, esp=quebrado())
+        p4 = s.carregar("s20261026-1")["propostas"][3]
+        # 11/11: a render that fails (voice, timeout) is tried once more before the day loses its video
+        ok(not r["ok"] and r.get("render_de_novo") and relancados == [4] and p4["estado"] == "gerando_video"
+           and p4["video"]["estado"] == "na_fila", f"a primeira falha do render tenta de novo: {r} {p4['video']}")
+        r = vf.gerar("s20261026-1", 4, semana=s, esp=quebrado())
         p4 = s.carregar("s20261026-1")["propostas"][3]
         ok(not r["ok"] and p4["estado"] == "erro" and "render falhou" in p4["erro"] and "não entrou na agenda" in enviados[-1], p4)
         ok(not vf.gerar("s20261026-1", 2, semana=s, esp=Motor())["ok"], "um vídeo já agendado não é refeito")
@@ -1954,6 +1968,7 @@ class Suite:
         class StoryFalso:
             CAMPOS = ("layout", "manchete", "destaque", "texto", "chamada", "tela", "pergunta", "itens", "imagem")
             PASTA = RAIZ / "story"
+            VISUAL, LAYOUTS, COMO, FOTOS = _story().VISUAL, _story().LAYOUTS, _story().COMO, _story().FOTOS
             validar = staticmethod(lambda campos: "" if campos.get("layout") else "layout")
 
             @staticmethod
@@ -2358,6 +2373,325 @@ class Suite:
                     modelo=lambda t: esp.chamar_claude("gestor", t, max_saida=g.MAX_SAIDA))
         ok("erro" not in r and r["uso"].get("usd", 1) <= g.TETO_USD, r)
         ok(not any(x["acao"].get("acao") in ("publicar", "liberar") for x in r["recusadas"] if isinstance(x["acao"], dict)), r)
+
+    # ------------------------------------------------------------------ 11/11: variety, references, one briefing, videos
+
+    RADAR = {"refs": [
+        {"id": "A1", "tipo": "anúncio", "de": "Saipos", "formato": "imagem", "sinal": "69 dias no ar", "cta": "See details",
+         "gancho": "Você abre quantos sistemas até fechar o caixa do dia?"},
+        {"id": "P1", "tipo": "post", "de": "Chef Claudia Salgados", "formato": "Reel", "sinal": "3,5x a média do perfil", "cta": "",
+         "gancho": "Você sabe quanto cobrar pelo seu salgado? A conta é simples"}],
+        "texto": "- A1 (anúncio de Saipos, imagem, 69 dias no ar): «Você abre quantos sistemas até fechar o caixa do dia?»\n"
+                 "- P1 (post de Chef Claudia Salgados, Reel, 3,5x a média do perfil): «Você sabe quanto cobrar pelo seu salgado?»",
+        "nomes": ["Saipos", "Chef Claudia Salgados"]}
+
+    def t_story_layouts_novos_tem_caras_diferentes(self):
+        # 11/11, Matheus: "Esses storys iguais só com texto diferente ... estão péssimos, zero criatividade": the kit had 5
+        # layouts with one composition; now each layout has its own, and VISUAL says which ones look alike
+        st = _story()
+        novos = {"enquete", "quiz", "numero", "antes-depois", "conversa", "checklist", "tela-zoom", "foto", "caixinha"}
+        ok(novos <= set(st.LAYOUTS) and set(st.VISUAL) == set(st.LAYOUTS) == set(st.COMO), "cada layout tem visual e instrução")
+        ok(len(set(st.VISUAL.values())) >= 11, f"famílias visuais diferentes: {sorted(set(st.VISUAL.values()))}")
+        ok(st.VISUAL["dica"] == st.VISUAL["oferta"] and st.VISUAL["bastidor"] == st.VISUAL["tela-zoom"],
+           "os que têm a mesma cara são da mesma família (não saem em dias seguidos)")
+        tela = str(RAIZ / "story" / "telas" / "cmv-real.jpg")
+        foto = next((str(f / "cantina_marmita.jpg") for f in st.FOTOS if (f / "cantina_marmita.jpg").exists()), "")
+        bons = {
+            "enquete": {"manchete": "A mussarela subiu. O que você faz primeiro?", "opcoes": ["Sobe o preço", "Refaz a conta"]},
+            "quiz": {"manchete": "Prato que mais vende é o que mais dá dinheiro.", "resposta": "mito", "texto": "O que paga a conta é a sobra."},
+            "numero": {"numero": "32%", "manchete": "do que entrou virou ingrediente.", "nota": "valores de exemplo"},
+            "antes-depois": {"manchete": "Chute não fecha o mês.", "antes": ["calabresa: uns 9?", "custo = ???"],
+                             "depois": ["Ficha técnica com o custo", "O custo muda sozinho"]},
+            "conversa": {"manchete": "Quem tem a conta responde na hora.", "contato": "Fornecedor",
+                         "mensagens": [["ele", "A mussarela subiu de novo"], ["eu", "Quanto muda na pizza?"]]},
+            "checklist": {"manchete": "Antes de fechar o caixa", "itens": ["Conferi os pagamentos", "Anotei as sobras", "Vi o estoque"]},
+            "tela-zoom": {"manchete": "Onde o dinheiro some.", "tela": tela, "foco": {"x": 30, "y": 34}, "seta": "o que escapou"},
+            "caixinha": {"manchete": "Vender muito não é sobrar muito.", "pergunta": "Vendo bem e não sobra. Por quê?"},
+        }
+        if foto:
+            bons["foto"] = {"manchete": "Quanto custa de verdade essa marmita?", "imagem": foto}
+        for layout, campos in bons.items():
+            ok(st.validar(dict(campos, layout=layout)) == "", f"{layout}: {st.validar(dict(campos, layout=layout))}")
+        for layout, campos, esperado in (
+                ("enquete", {"manchete": "x", "opcoes": ["só uma"]}, "opcoes"),
+                ("quiz", {"manchete": "x", "resposta": "talvez", "texto": "y"}, "resposta"),
+                ("numero", {"manchete": "x", "numero": "muito"}, "numero"),
+                ("antes-depois", {"manchete": "x", "antes": ["a"], "depois": ["b", "c"]}, "antes"),
+                ("conversa", {"manchete": "x", "contato": "F", "mensagens": [["ele", "oi"]]}, "mensagens"),
+                ("checklist", {"manchete": "x", "itens": ["a", "b"]}, "itens"),
+                ("tela-zoom", {"manchete": "x", "tela": tela, "foco": {"x": 200, "y": 5}}, "foco"),
+                ("foto", {"manchete": "x", "imagem": tela}, "banco de fotos"),
+                ("caixinha", {"manchete": "x"}, "pergunta"),
+                ("checklist", {"manchete": "x" * 51, "itens": ["a", "b", "c"]}, "50 letras"),
+                ("enquete", {"manchete": "x", "opcoes": ["Sobe 😅", "Não sobe"]}, "emoji"),
+                ("conversa", {"manchete": "x", "contato": "F", "mensagens": [["ele", "pizza a R$ 40"], ["eu", "ok"]]}, "valores de exemplo")):
+            ok(esperado in st.validar(dict(campos, layout=layout)), f"{layout}: recusa ({esperado}): {st.validar(dict(campos, layout=layout))}")
+        if not st._chrome():
+            return  # without a browser the drawing is checked on the VM
+        from PIL import Image, ImageChops, ImageStat
+        pasta, artes = Path(tempfile.mkdtemp()), {}
+        for layout, campos in bons.items():
+            saida = pasta / f"{layout}.jpg"
+            st.renderizar(dict(campos, layout=layout), str(saida))
+            with Image.open(saida) as im:
+                ok(im.size == (1080, 1920), f"{layout}: 1080x1920")
+                artes[layout] = im.convert("L").resize((108, 192))
+        st.renderizar({"layout": "dica", "manchete": "Pese a porção de queijo por uma semana.", "texto": "A balança mostra."}, str(pasta / "dica.jpg"))
+        with Image.open(pasta / "dica.jpg") as im:
+            dica = im.convert("L").resize((108, 192))
+        for layout, arte in artes.items():  # not "the same art with another text": far from the old dark card
+            dif = ImageStat.Stat(ImageChops.difference(arte, dica)).mean[0]
+            ok(dif > 12, f"{layout} tem outra cara que a dica antiga: diferença {dif:.1f}")
+        nomes = sorted(artes)
+        for i, a in enumerate(nomes):
+            for b in nomes[i + 1:]:
+                if st.VISUAL[a] != st.VISUAL[b]:
+                    dif = ImageStat.Stat(ImageChops.difference(artes[a], artes[b])).mean[0]
+                    ok(dif > 12, f"{a} e {b} são artes diferentes: diferença {dif:.1f}")
+
+    def t_story_variedade_e_regra_de_codigo(self):
+        # 11/11: the last 9 stories were one art, 6 of them the "dica". No layout nor visual on two days in a row, and
+        # no layout more than twice in 7 days, counting what was published, what is scheduled and what is being redone
+        c, s, _ = self._semana(reprovar=())
+        v = {"2026-11-10": "dica", "2026-11-12": "quiz"}
+        ok("dois dias seguidos não repetem o layout" in s.variedade("dica", "2026-11-11", v), s.variedade("dica", "2026-11-11", v))
+        ok("mesma cara" in s.variedade("oferta", "2026-11-11", v), "dica e oferta têm a mesma cara: não em dias seguidos")
+        ok(s.variedade("numero", "2026-11-11", v) == "", "outro layout de outra cara passa")
+        v2 = {"2026-11-08": "numero", "2026-11-11": "numero"}
+        ok("2 vezes em 7 dias" in s.variedade("numero", "2026-11-13", v2) and s.variedade("numero", "2026-11-16", v2) == "",
+           "no máximo 2 do mesmo layout em qualquer janela de 7 dias")
+        v3 = {"2026-11-08": "dica", "2026-11-10": "oferta", "2026-11-12": "dica"}
+        ok("3 vezes em 7 dias" in s.variedade("oferta", "2026-11-14", v3), "nem a mesma família visual mais de 3 vezes em 7 dias")
+        livres = s.layouts_livres("2026-11-11", v, chamam=False)
+        ok("dica" not in livres and "oferta" not in livres and "quiz" not in livres and "post-novo" not in livres
+           and {"numero", "enquete", "conversa"} <= set(livres), f"os layouts que servem ao dia: {livres}")
+        # the week: a batch that repeats is refused before anything is drawn, saying which layouts fit
+        agora = _ts(c, "2026-10-26", "07:50")
+        ruim = self._stories()
+        ruim[2] = {"layout": "video-novo", "manchete": "Story 3"}  # qui, after the video-novo of qua
+        r = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=ruim)
+        ok(not r["ok"] and "qui 29/10" in r["erro"] and "dois dias seguidos" in r["erro"] and "Layouts que servem" in r["erro"], r)
+        so_dica = [{"layout": "dica", "manchete": f"Dica {n}"} for n in range(7)]
+        ok(not s.propor(self._feed(), agora, enviar=lambda *a: "", stories=so_dica)["ok"], "sete dicas, não")
+        ok(not (s._pasta().exists() and list(s._pasta().glob("s*.json"))), "nada foi desenhado nem gravado")
+        r = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
+        ok(r["ok"], r)
+        # what is in the agenda counts for the next piece: the Gestor cannot create a layout that repeats its neighbour
+        viz = s.stories_vizinhos()
+        ok(viz["2026-10-29"] == "bastidor" and viz["2026-10-31"] == "oferta", viz)
+        ok(viz["2026-10-30"] == "post-novo", "o story que o agente ainda está refazendo (sexta) também conta")
+        c.AUTOR["quem"] = "operador: teste"
+        ok(c.cancelar("s20261026-1-9", "teste: abre o sábado")["ok"], "sábado livre")
+        c.AUTOR["quem"] = "agente"
+        r = s.criar("2026-10-31", "STORY", {"story": {"layout": "post-novo", "manchete": "x"}}, agora=agora)
+        ok(not r["ok"] and "dois dias seguidos não repetem o layout" in r["erro"], f"post-novo depois do de sexta, não: {r}")
+        r = s.criar("2026-10-31", "STORY", {"story": {"layout": "numero", "manchete": "Número"}}, agora=agora)
+        ok(r["ok"] and r["agendado"], r)
+        # the routine's prompt no longer imposes a layout per weekday, and the rule is in the common briefing
+        ok("Esquema da semana" not in s._story_regras() and "quiz" in s._story_regras() and "enquete" in s._story_regras(),
+           "o Designer conhece os layouts novos, sem esquema por dia")
+        rotina = next((r_ / "hermes" / "rotinas" / "4qfNuwRX.json" for r_ in RAIZ.parents
+                       if (r_ / "hermes" / "rotinas" / "4qfNuwRX.json").exists()), None)
+        if rotina:  # the repository (a staging copy of the plugin alone has no routines)
+            pedido = json.loads(rotina.read_text(encoding="utf-8"))["pedido"]
+            ok("seg \"dica\"" not in pedido and "no esquema" not in pedido, "a rotina não impõe layout por dia da semana")
+            ok("acao \"briefing\"" in pedido and "acao \"radar\"" in pedido and "referencia" in pedido,
+               "a rotina lê o briefing comum e o radar, e cada proposta declara a referência")
+
+    def t_feed_nao_repete_o_gancho_nem_a_capa(self):
+        # 11/11 ("feed sem graça, repetidos"): "3 sinais", "3 informações", "3 mitos", "3 passos" in a row
+        c, s, chamadas = self._semana(reprovar=())
+        ok(s.estrutura("3 sinais de que o estoque está pesando")[0] == "lista numerada"
+           and s.estrutura("iFood, 99 e balcão: 3 tropeços da sexta")[0] == "lista numerada"
+           and s.estrutura("Cinco trabalhos num dia só")[0] == "lista numerada"
+           and s.estrutura("Quanto sobrou de verdade no fim do mês?")[0] == "", "reconhece o título em lista numerada")
+        viz = [{"data": "2026-11-03", "titulo": "3 sinais de que o seu preço ficou para trás"}]
+        ok("lista numerada de novo" in s.titulo_repetido("3 passos para ver o custo do prato", "2026-11-13", viz),
+           "outro '3 alguma coisa' em menos de 14 dias, não")
+        ok(s.titulo_repetido("3 passos para ver o custo do prato", "2026-11-18", viz) == "", "depois de 14 dias, pode")
+        ok(s.titulo_repetido("O custo que ninguém põe no preço", "2026-11-05", viz) == "", "outro gancho passa")
+        ok("começa igual" in s.titulo_repetido("Quanto sobrou de verdade na pizza?", "2026-11-10",
+                                               [{"data": "2026-11-04", "titulo": "Quanto sobrou de verdade no fim do mês?"}]),
+           "o mesmo começo de título, não")
+        agora = _ts(c, "2026-10-26", "07:50")
+        feed = self._feed()
+        feed[0]["titulo"], feed[2]["titulo"] = "3 sinais de que o preço ficou para trás", "3 passos para ver o custo"
+        r = s.propor(feed, agora, enviar=lambda *a: "", stories=self._stories())
+        ok(not r["ok"] and "lista numerada de novo" in r["erro"] and not chamadas, f"recusado antes de chamar o Designer: {r}")
+        # the cover (the molde) of a post of the last 14 days does not come back, and the tour of screens is one family
+        sid = "s20261106-9"
+        with s._exclusivo():
+            s._gravar({"id": sid, "criada_em": 0, "estado": "decidida", "login": "matheus", "propostas": [
+                {"n": 1, "data": "2026-11-01", "estado": "agendada", "spec": {"motor": "molde", "molde": "passo-a-passo"}},
+                {"n": 2, "data": "2026-11-04", "estado": "agendada", "spec": {"motor": "molde", "molde": "lanca-app"}}]})
+        c.carregar = lambda: {"itens": [
+            {"id": "a", "data": "2026-11-01", "tipo": "CARROSSEL", "estado": "publicada", "origem": {"semana": sid, "n": 1}},
+            {"id": "b", "data": "2026-11-04", "tipo": "REELS", "estado": "publicada", "origem": {"semana": sid, "n": 2}}]}
+        ok(s._moldes_vizinhos("2026-11-13") == ["demonstracao", "lanca-app", "passo-a-passo"], s._moldes_vizinhos("2026-11-13"))
+        ok(s._moldes_vizinhos("2026-11-16") == ["demonstracao", "lanca-app"], "a capa volta só depois de 14 dias")
+        irmao = {"id": "x-1", "data": "2026-11-17", "formato_pedido": "CARROSSEL", "titulo": "t", "spec": {"molde": "mito"}}
+        ok("mito" in s._moldes_vizinhos("2026-11-20", irmaos=[irmao]), "os posts da mesma leva também contam")
+
+    def t_referencia_declarada_e_nunca_citada(self):
+        # 11/11: "não buscam tendências de outros concorrentes ... nada disso é aproveitado": each proposal says which
+        # reference of the radar it took from and what changes; it inspires, it is never copied nor named in public
+        c, s, chamadas = self._semana(reprovar=())
+        s._C["radar_fixo"] = lambda: self.RADAR
+        agora = _ts(c, "2026-10-26", "07:50")
+        r = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
+        ok(not r["ok"] and "falta \"referencia\"" in r["erro"] and "A1" in r["erro"], f"sem referência, não: {r}")
+        ref = {"id": "A1", "o_que_muda": "em vez de anúncio, um story de enquete com a pergunta do caixa"}
+        feed = [dict(p, referencia=ref) for p in self._feed()]
+        stories = [dict(x, referencia=ref) for x in self._stories()]
+        ok("não está no radar" in s.propor([dict(feed[0], referencia={"id": "Z9", "o_que_muda": "qualquer coisa aqui"})] + feed[1:],
+                                           agora, enviar=lambda *a: "", stories=stories)["erro"], "id que não existe, não")
+        ok("o_que_muda" in s.propor([dict(feed[0], referencia={"id": "A1", "o_que_muda": "nada"})] + feed[1:],
+                                    agora, enviar=lambda *a: "", stories=stories)["erro"], "tem de dizer o que muda")
+        copia = dict(feed[0], legenda="Você abre quantos sistemas até fechar o caixa do dia? Com valores de exemplo.")
+        ok("cópia da referência A1" in s.propor([copia] + feed[1:], agora, enviar=lambda *a: "", stories=stories)["erro"],
+           "repetir o gancho da referência é cópia")
+        cita = dict(feed[0], legenda="Melhor que a Saipos, com valores de exemplo.")
+        ok("cita Saipos" in s.propor([cita] + feed[1:], agora, enviar=lambda *a: "", stories=stories)["erro"], "concorrente em público, não")
+        st_cita = [dict(stories[0], manchete="O que a Saipos não mostra")] + stories[1:]
+        ok("cita Saipos" in s.propor(feed, agora, enviar=lambda *a: "", stories=st_cita)["erro"], "nem no story")
+        ok(not chamadas, "tudo recusado antes de desenhar")
+        julgados = []
+        type(c.especialistas()).criticar = lambda self, tipo, material: julgados.append((tipo, material)) or {"veredito": "aprova", "motivos": []}
+        r = s.propor(feed, agora, enviar=lambda *a: "", stories=stories)
+        ok(r["ok"], r)
+        ps = s.carregar(r["semana"])["propostas"]
+        ok(ps[0]["referencia"]["id"] == "A1" and ps[0]["referencia"]["gancho"].startswith("Você abre quantos")
+           and ps[0]["referencia"]["o_que_muda"].startswith("em vez de anúncio"), f"a proposta guarda a referência: {ps[0].get('referencia')}")
+        ok(chamadas[0]["referencia"]["sinal"] == "69 dias no ar", "o Designer recebe a referência com o sinal de que funciona")
+        bastidor = next(m for t, m in julgados if t == "story" and m.get("layout") == "bastidor")
+        ok(bastidor["referencia"]["id"] == "A1", "o Crítico vê de onde o story tirou a ideia")
+        chama = next(p for p in ps if p["formato_pedido"] == "STORY" and p["spec"]["story"]["layout"] == "oferta")
+        ok(chama["estado"] == "agendada", "story de oferta (e o que chama o post) não precisa de referência")
+        # with no radar (no report this week) nothing is demanded
+        s._C["radar_fixo"] = lambda: {"refs": [], "texto": "", "nomes": []}
+        ok(s.conferir_propostas([("2026-11-10", {"titulo": "Um título", "legenda": "x"})], [], None) == "", "sem radar, sem exigência")
+
+    def t_os_tres_agentes_leem_o_mesmo_briefing(self):
+        # 11/11, Matheus: "esse grupo desses 3 agentes, um construtor, crítico e gerenciador, estão horríveis, não se
+        # entendem": each read different rules. One function writes the briefing and the three get the same text
+        c, g = self._gestor()
+        s = g.semana()
+        s._C["radar_fixo"] = lambda: self.RADAR
+        s._enviar_ponte = lambda login, texto, botoes: ""
+        s._subir_pelo_proxy = lambda local, chave: None
+        spec = importlib.util.spec_from_file_location("esp_briefing", RAIZ.parent / "especialistas" / "helpers" / "especialistas.py")
+        if not spec or not Path(spec.origin).exists():
+            return  # a staging copy of this plugin alone
+        esp = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(esp)
+        recebidos = {"designer": [], "critico": []}
+
+        def enviar(body, login, tempo=0):
+            papel = "critico" if body["instructions"] == esp.PAPEIS["critico"] else "designer"
+            recebidos[papel].append(body["input"][0]["content"][0]["text"])
+            texto = '{"veredito": "aprova", "motivos": []}' if papel == "critico" else '{"motor": "molde", "conceito": "x"}'
+            return {"output": [{"type": "message", "content": [{"type": "output_text", "text": texto}]}]}
+        esp._enviar = enviar
+        c.especialistas = lambda: esp
+        agora = _ts(c, "2026-11-03", "08:40")
+        from unittest import mock
+        with mock.patch("time.time", return_value=agora):
+            briefing = s.briefing_comum(agora)
+            # the creator: the Designer draws a feed post; the Crítico judges it; and a story goes to the Crítico
+            s._item_feed(esp, "", "s20261103-1", 1, "CARROSSEL", "2026-11-10",
+                         {"titulo": "O caixa em uma tela só", "ideia": "gancho", "legenda": "Tudo num lugar, com valores de exemplo."})
+
+            class StoryFalso:
+                CAMPOS, PASTA = _story().CAMPOS, RAIZ / "story"
+                VISUAL, LAYOUTS, COMO, FOTOS = _story().VISUAL, _story().LAYOUTS, _story().COMO, _story().FOTOS
+                validar = staticmethod(_story().validar)
+                renderizar = staticmethod(lambda campos, saida: (Path(saida).parent.mkdir(parents=True, exist_ok=True),
+                                                                 Path(saida).write_bytes(b"\xff\xd8\xff story"), saida)[-1])
+            s._S["fixo"] = StoryFalso
+            s._item_story(esp, "s20261103-1", 2, {"layout": "numero", "numero": "32%", "manchete": "do que entrou virou ingrediente."},
+                          "2026-11-10", [])
+            modelo = self._modelo([])
+            g.rodar("manual", agora, seco=True, contexto={}, modelo=modelo)
+        ok("Radar de referências" in briefing and "A1 (anúncio de Saipos, imagem, 69 dias no ar)" in briefing
+           and "O que a Raiz publicou ou agendou" in briefing and "03/11 carrossel (agendado)" in briefing
+           and "3 sinais de que o seu preço ficou para trás" in briefing and "layout" in briefing
+           and "não se repetem em dias seguidos" in briefing and "Mais do mesmo reprova" in briefing,
+           f"regras fixas + radar + histórico recente: {briefing[:3000]}")
+        ok(len(briefing) < 9000, f"cabe no teto do gestor: {len(briefing)} letras")
+        ok(recebidos["designer"] and recebidos["critico"] and modelo.pedidos, "os três foram chamados")
+        cabecalho = esp.BRIEFING_COMUM
+        ok(cabecalho == g.BRIEFING_COMUM, "o mesmo título de seção nos três")
+        for quem, textos in (("o criador (Designer)", recebidos["designer"]), ("o Crítico", recebidos["critico"]),
+                             ("o Gestor", modelo.pedidos)):
+            for texto in textos:
+                ok(f"{cabecalho}\n{briefing}" in texto, f"{quem} recebe o briefing comum, o mesmo texto, inteiro: {texto[:600]}")
+        ok(len(recebidos["critico"]) == 2, "o Crítico julgou o post e o story com a mesma régua")
+        ok(all(t.count(briefing) == 1 for t in recebidos["designer"] + recebidos["critico"]),
+           "uma vez só, na seção dele (não repetido nem cortado dentro do material)")
+        # the routine (the creator that writes the ideas) reads the same text through the tool
+        tool = (RAIZ / "tools" / "conteudo.py").read_text(encoding="utf-8")
+        ok('acao == "briefing"' in tool and "briefing_comum" in tool, "a ferramenta entrega o briefing comum à rotina")
+        ok("seg dica" not in g.estado(agora, contexto={})["plano"], "o gestor não lê mais o esquema fixo por dia da semana")
+        # the Gestor creates under the same rule: its story carries the reference too
+        ok("referencia" in g.ACOES["criar"], "a ação criar leva a referência")
+
+    def t_video_pronto_e_julgado_antes_de_entrar_na_agenda(self):
+        # 11/11, Matheus: "tem videos tbm que não tenho visto sendo feito". The three Reels rendered since 01/11 were
+        # scheduled on the preview's approval, reproved as finished videos at the advance check and cancelled
+        c, s, _ = self._semana(video_pendente=True)
+        agora = _ts(c, "2026-10-26", "07:50")
+        lancados, enviados = [], []
+        s.iniciar_video = lambda sid, n: lancados.append(n)
+        s._enviar_ponte = lambda login, texto, botoes: enviados.append(texto) or ""
+        r = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
+        ok(r["gerando_video"] == [2, 4], r)
+        sid = r["semana"]
+        video = Path(tempfile.mkdtemp()) / "video.mp4"
+        video.write_bytes(b"video")
+        # reproved finished: back to the redo loop with the reasons (not scheduled, not lost)
+        ruim = lambda p, v: {"veredito": "reprova", "motivos": ["no quadro 4 a tela não mostra o que a fala diz"], "sugestoes": []}  # noqa: E731
+        r2 = s.concluir_video(sid, 2, video=str(video), agora=agora, julgar=ruim)
+        p2 = s.carregar(sid)["propostas"][1]
+        ok(not r2["ok"] and r2.get("volta_a_refazer") and p2["estado"] == "proposta" and p2["critica"]["veredito"] == "reprova"
+           and p2["critica"]["motivos"][0].startswith("no vídeo pronto: no quadro 4") and p2["renders"] == 1, f"{r2} {p2['critica']}")
+        ok(not any(i["tipo"] == "REELS" for i in c.carregar()["itens"]), "reprovado pronto não entra na agenda")
+        ok(not enviados, "ainda há o que fazer: nenhum aviso de desistência")
+        # the loop redoes it (the Designer revises, the Crítico approves the preview) and it is rendered again
+        arte = Path(tempfile.mkdtemp())
+        (arte / "p.jpg").write_bytes(b"\xff\xd8\xff previa")
+        type(c.especialistas()).revisar = lambda self, briefing, spec, critica, vistas: {
+            "spec": {"motor": "molde", "molde": "mito", "formato": "reel", "ficha": {"_marca": "raiz", "falas": ["Oi"]}},
+            "arquivos": [], "falta": [], "render": "ok", "video_pendente": True, "previa": [str(arte / "p.jpg")],
+            "narracao": "", "critica": {"veredito": "aprova", "motivos": [], "sugestoes": []}}
+        feito = s.passo_autonomo(agora + 600, avisar=lambda t: None)
+        p2 = s.carregar(sid)["propostas"][1]
+        ok(feito["n"] == 2 and p2["estado"] == "gerando_video" and p2["renders"] == 1 and lancados[-1] == 2, f"{feito} {p2['estado']}")
+        # approved finished, with a caption fixed without rendering again
+        bom = lambda p, v: {"veredito": "aprova", "motivos": [], "sugestoes": [], "legenda": "Legenda que diz só o que o vídeo mostra."}  # noqa: E731
+        r3 = s.concluir_video(sid, 2, video=str(video), agora=agora + 900, julgar=bom)
+        p2 = s.carregar(sid)["propostas"][1]
+        item = next(i for i in c.carregar()["itens"] if i["id"] == f"{sid}-2")
+        ok(r3["ok"] and p2["estado"] == "agendada" and item["legenda"] == "Legenda que diz só o que o vídeo mostra."
+           and p2["video"]["julgado"]["veredito"] == "aprova", f"{r3} {p2['video']}")
+        ok("ficou pronto" in enviados[-1], enviados)
+        # ...and that video is not judged again by another draw at the advance check
+        ok(c.aprovado_na_criacao(item) == "o Crítico aprovou o vídeo pronto e a peça não mudou", c.aprovado_na_criacao(item))
+        ok(c.aprovado_na_criacao(dict(item, legenda="outra legenda")) == "", "mudou a legenda: julga de novo")
+        # a second finished video reproved: no third render, the day is told as lost
+        r4 = s.concluir_video(sid, 4, video=str(video), agora=agora, julgar=ruim)
+        ok(r4.get("volta_a_refazer"), r4)
+        with s._exclusivo():
+            d = s.carregar(sid)
+            d["propostas"][3].update(estado="gerando_video")
+            s._gravar(d)
+        r5 = s.concluir_video(sid, 4, video=str(video), agora=agora, julgar=ruim)
+        p4 = s.carregar(sid)["propostas"][3]
+        ok(not r5["ok"] and not r5.get("volta_a_refazer") and p4["estado"] == "erro" and "reprovou o vídeo pronto" in p4["erro"]
+           and "não entrou na agenda" in enviados[-1], f"{r5} {p4.get('erro')}")
+        # a Reel whose finished video nobody judged is still judged at the advance check
+        ok(c.aprovado_na_criacao(dict(item, origem={"semana": sid, "n": 4})) == "", "sem julgamento do vídeo pronto, julga")
+        # julgar_video: no Crítico or a video that does not open -> None (the advance check judges, as before)
+        ok(s.julgar_video(p2, str(video)) is None, "vídeo que não abre: não inventa veredito")
 
     async def rodar(self, so: str = "") -> dict:
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):

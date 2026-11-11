@@ -35,7 +35,7 @@ da gestão e 2 de custo e preço.
 - Tipo `STORY` (um .jpg ou um .mp4, 1080x1920): vai à Meta com `media_type=STORIES` e `image_url`/`video_url`, sem
   legenda (a API não leva legenda, enquete, link nem música). O story tem a vaga dele: um post e um story por dia
   (`canal()`); `devido()` olha cada vaga.
-- Arte do story: `helpers/story.py` desenha a partir de 5 layouts fixos do kit (`story/story.html`: dica, post-novo,
+- Arte do story: `helpers/story.py` desenha a partir dos layouts do kit (`story/story.html`; eram 5 até 11/11: dica, post-novo,
   video-novo, bastidor, oferta), com o navegador do container; o agente faz sozinho; desde 22/10 também o carrossel e o
   Reel, pelos moldes (`/a0/usr/moldes`, implantados com `implantar.py --moldes`; a marca raiz aplica o kit). Telas reais do sistema para o bastidor em
   `story/telas/` (telas escuras e inteiras, com o menu, de uma empresa de exemplo na cópia de teste). Regras em código: sem emoji, sem travessão, R$ só com "valores de exemplo", imagem só de arquivo local.
@@ -74,3 +74,34 @@ para frente), o Crítico, o diário, a semana proposta, as decisões e a oferta,
   mudar legenda. Ação fora disso é recusada pelo código e vai ao diário.
 - Uma mensagem por execução, só quando agiu (aviso, sem botão). Teto: US$ 0,30 por execução, 10 execuções e US$ 2 por dia
   (`gestor.jsonl` guarda o custo). Modo seco: `gestor.rodar(seco=True)` decide e mostra, sem executar.
+
+## Variedade, referências e um briefing só (11/11)
+
+Matheus, 11/11: "Esses storys iguais só com texto diferente postados diariamente estão péssimos, zero criatividade, esse
+grupo desses 3 agentes, um construtor, crítico e gerenciador, estão horríveis, não se entendem, não têm criatividade, não
+buscam tendências de outros concorrentes, o próprio facebook mostra os anúncios dos concorrentes e dá pra ver o que tá
+dando certo e nada disso é aproveitado, storys e feed sem graça, repetidos". Medido: 9 stories seguidos com a mesma arte
+(6 eram "dica"); a rotina impunha um layout por dia da semana; story cujo post não saía virava "dica"; o Gestor
+cancelava story "porque pelo plano o story de quarta chama o Reel".
+- **Stories:** 14 layouts em `story/story.html`, cada um com a sua composição e o seu fundo (`story.VISUAL` diz a
+  família): enquete, quiz, numero, antes-depois, conversa, checklist, tela-zoom, foto, caixinha, mais dica, post-novo,
+  video-novo, bastidor e oferta. Regra em código (`semana.variedade`): layout e visual não se repetem em dias seguidos;
+  em 7 dias, nenhum layout mais de 2 vezes e nenhuma família mais de 3. Conta o que saiu, o que está agendado e o que
+  está sendo refeito. Vale em `propor`, `criar`, no refazer (o Designer recebe os layouts que servem ao dia) e na troca
+  do story cujo post não sai (`TROCA`: um layout livre que não chama post, não mais "dica").
+- **Feed:** o molde de um post dos últimos 14 dias não volta (`_moldes_vizinhos`, com os posts da mesma leva; o passeio
+  pelas telas, `TOUR`, conta como um molde só); título em lista numerada ("3 sinais") só um a cada 14 dias e nenhum
+  título começa como um recente (`titulo_repetido`).
+- **Referências:** `concorrentes/helpers/referencias.py` monta o radar com o que a rodada semanal já guarda (anúncios
+  há mais tempo no ar, posts acima da média do perfil, vídeos em alta), cada um com um id. Cada proposta declara
+  `referencia` {id, o_que_muda}; cópia do gancho e nome de concorrente em texto público são recusados em código.
+- **Um briefing:** `semana.briefing_comum()` (regras + radar + os últimos 14 dias da Raiz) é o texto que a rotina
+  (`conteudo` acao "briefing"), o Designer, o Crítico e o Gestor recebem igual (teste
+  `t_os_tres_agentes_leem_o_mesmo_briefing`).
+- **Vídeos:** desde 01/11 nenhum Reel saía. Na criação, todo Reel caía no molde `lanca-app` (passeio pelas telas) e
+  morria nas regras dele ou em tela que não existe; os 3 que ficaram prontos entraram na agenda pela aprovação da
+  PRÉVIA e foram reprovados como vídeo pronto na conferência antecipada, sem tempo de refazer. Agora o vídeo pronto é
+  julgado quando o render termina (`semana.julgar_video`): legenda que promete demais é reescrita sem renderizar de
+  novo; problema no vídeo devolve a proposta ao refazer (até `MAX_RENDERS`); render que falha tenta mais uma vez; e o
+  vídeo aprovado pronto não é rejulgado (`conteudo.aprovado_na_criacao`).
+

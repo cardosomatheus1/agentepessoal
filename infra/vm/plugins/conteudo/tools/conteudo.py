@@ -73,6 +73,8 @@ class Conteudo(Tool):
             g = _gestor()
             r = await rodar(None, lambda: g.rodar(motivo, avisar=None, refazer=_semana().refazer_item))
             r = {k: r.get(k) for k in ("pulou", "erro", "visto", "mensagem", "recusadas") if r.get(k)}
+        elif acao == "briefing":  # 11/11: the one text the creator, the Crítico and the Gestor read
+            r = {"briefing": await rodar(None, _semana().briefing_comum)}
         elif acao == "semana":
             r = _semana().ver(str(kwargs.get("semana") or ""))
         elif acao == "historico":

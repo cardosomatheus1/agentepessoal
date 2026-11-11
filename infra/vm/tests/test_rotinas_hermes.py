@@ -65,6 +65,14 @@ semana_posts, fechamento = fontes["4qfNuwRX"]["pedido"], fontes["Iq73JPEP"]["ped
 checa("Você cria; o Crítico decide." in semana_posts and "o Matheus aprova" not in semana_posts
       and "pelos botões" not in semana_posts and "Nunca pergunte a ele se aprova" in semana_posts,
       "4qfNuwRX: o agente cria e o Crítico decide, sem o ok do Matheus")
+# 11/11, Matheus: "Esses storys iguais só com texto diferente ... zero criatividade ... não buscam tendências de outros
+# concorrentes": no layout per weekday; the routine reads the common briefing and the radar, and declares a reference
+checa('seg "dica"' not in semana_posts and "no esquema" not in semana_posts
+      and "NÃO existe mais layout fixo por dia da semana" in semana_posts,
+      "4qfNuwRX: o story não tem mais layout fixo por dia da semana")
+checa('`conteudo` acao "briefing"' in semana_posts and '`concorrentes` acao "radar"' in semana_posts
+      and '"referencia"' in semana_posts and "nunca cite concorrente" in semana_posts,
+      "4qfNuwRX: cria pelo briefing comum e pelo radar de referências, e cada proposta declara a referência")
 checa('`conteudo` acao "cobrir"' in fechamento and "sessão do Claude que cuida" not in fechamento
       and "pedir o post" not in fechamento, "Iq73JPEP: dia sem post vai ao gestor, não ao Matheus nem à sessão do Claude")
 ap = (H / "rotinas_aplicar.py").read_text()
