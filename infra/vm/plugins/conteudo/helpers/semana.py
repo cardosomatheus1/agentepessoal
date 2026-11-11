@@ -1420,12 +1420,19 @@ def _descartar(sid: str, n: int, motivo: str) -> None:
     c()._diario({"semana": sid, "descartada": n, "data": p["data"], "motivo": motivo[:200], "quem": QUEM_AUTO})
 
 
-def _salvar_proposta(sid: str, nova: dict) -> bool:
-    """A redone proposal replaces the open one with the same n; False when it was decided meanwhile."""
+def _marca_da_versao(p: dict) -> tuple:
+    return (p.get("refeita"), (p.get("auto") or {}).get("ultima"), p.get("renders"), (p.get("spec") or {}).get("molde"),
+            _texto(p.get("titulo"), 80))
+
+
+def _salvar_proposta(sid: str, nova: dict, base: dict | None = None) -> bool:
+    """A redone proposal replaces the open one with the same n; False when it was decided meanwhile, or (with `base`,
+    the version the redo started from) when it CHANGED meanwhile. 11/11: a redo that took ten minutes came back and
+    wrote over a version that had been judged again, rendered and sent back in between; the newer one was lost."""
     with _exclusivo():
         s = carregar(sid)
         velha = next((x for x in s["propostas"] if x["n"] == nova["n"]), None)
-        if not velha or velha["estado"] != "proposta":
+        if not velha or velha["estado"] != "proposta" or (base is not None and _marca_da_versao(velha) != _marca_da_versao(base)):
             return False
         s["propostas"][s["propostas"].index(velha)] = nova
         _gravar(s)
@@ -1599,7 +1606,7 @@ def _um_passo(esp, sid: str, semana: dict, p: dict, agora: float, avisar, subir)
     novo = dict(novo, auto=auto, estado="proposta", refeita=int(p.get("refeita") or 0) + 1, historico=historico,
                 **{k: p[k] for k in ("gestor", "orientacoes", "renders", "referencia", "substitui", "criada_por")
                    if p.get(k) and k not in novo})
-    if not _salvar_proposta(sid, novo):
+    if not _salvar_proposta(sid, novo, base=p):
         return {"semana": sid, "n": p["n"], "decisao": "decidida enquanto refazia"}
     c()._diario({"semana": sid, "refeita_auto": p["n"], "nova_ideia": nova, "tentativa": auto["tentativas"],
                  "veredito": novo["critica"]["veredito"], "quem": QUEM_AUTO,

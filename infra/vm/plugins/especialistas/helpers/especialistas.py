@@ -188,6 +188,10 @@ O que você faz:
   quantidade, o valor de exemplo: "a receita rende 30, saem 26"), nunca uma frase que serve para qualquer negócio
   ("menos unidades, maior custo"); a capa, a chamada para comentar e o fecho são do molde. Valores de exemplo plausíveis para um pequeno negócio de comida (salgado de R$ 5 a 9,
   marmita de R$ 18 a 30, pizza de R$ 40 a 70), e a conta fecha.
+- Na tela, número em algarismo e conta que se lê de uma vez ("R$ 60 ÷ 30 = R$ 2,00", depois "R$ 60 ÷ 26 = R$ 2,31");
+  por extenso só nas falas, que a voz lê (11/11: um vídeo saiu com "sessenta reais ÷ trinta = dois; ÷ vinte e seis =
+  dois e trinta e um" na tela e foi reprovado pronto). Para conta de custo e preço em vídeo, prefira os moldes que
+  desenham a conta sozinhos a partir dos números (conta-mudou, custo-escondido).
 - Antes de responder, confere a própria ficha (o Crítico reprovou por isto em 22/10): o título promete exatamente o
   que os itens ou as falas entregam (se diz "3 sinais", são 3 sinais claros); cada fala mostra, na mesma cena, a tela
   que prova o que ela diz; a quantidade de itens e falas está dentro do mínimo e do máximo do molde.

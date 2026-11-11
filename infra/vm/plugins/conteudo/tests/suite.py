@@ -1185,6 +1185,22 @@ class Suite:
             ok(s2.passo_autonomo(agora + 600, avisar=lambda t: None) is None, "outro passo rodando: este espera a vez")
         ok(s2.passo_autonomo(agora + 600, avisar=lambda t: None)["n"] == 3, "solto, anda")
 
+    def t_refacao_lenta_nao_escreve_por_cima_de_versao_mais_nova(self):
+        # 11/11: a redo that took ten minutes wrote over a version judged again and rendered in between
+        c, s, _ = self._semana()
+        agora = _ts(c, "2026-10-26", "07:50")
+        s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
+        sid = "s20261026-1"
+        p = next(x for x in s.carregar(sid)["propostas"] if x["n"] == 3)
+        with s._exclusivo():  # meanwhile somebody else redid it
+            d = s.carregar(sid)
+            d["propostas"][2].update(refeita=7, titulo="Versão mais nova")
+            s._gravar(d)
+        ok(not s._salvar_proposta(sid, dict(p, titulo="Versão atrasada"), base=p), "a versão atrasada não entra")
+        ok(s.carregar(sid)["propostas"][2]["titulo"] == "Versão mais nova", "a mais nova fica")
+        atual = s.carregar(sid)["propostas"][2]
+        ok(s._salvar_proposta(sid, dict(atual, titulo="Refeita em cima da atual"), base=atual), "em cima da versão atual, entra")
+
     def t_autonomo_depois_de_n_falhas_decide_sem_perguntar(self):
         c, s, chamadas = self._semana(reprovar=tuple([3] + list(range(5, 60))))  # the carrossel never passes
         agora = _ts(c, "2026-10-26", "07:50")
