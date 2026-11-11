@@ -891,8 +891,10 @@ class Suite:
             {"id": "a", "data": "2026-11-06", "tipo": "CARROSSEL", "estado": "publicada", "origem": {"semana": sid, "n": 1}},
             {"id": "b", "data": "2026-11-25", "tipo": "CARROSSEL", "estado": "pendente", "origem": {"semana": sid, "n": 2}},
             {"id": "x", "data": "2026-11-07", "tipo": "CARROSSEL", "estado": "cancelada", "origem": {"semana": sid, "n": 3}}]}
-        ok(s._moldes_vizinhos("2026-11-08") == ["passo-a-passo"], s._moldes_vizinhos("2026-11-08"))
-        ok(s._briefing("CARROSSEL", "2026-11-08", {})["evitar_moldes"] == ["passo-a-passo"], "o Designer recebe a lista")
+        # 11/11: a molde whose cover is a count ("3 passos", "3 erros que custam caro") takes the others like it along
+        numeradas = ["faca-nao-faca", "frases", "mito", "passo-a-passo", "tipos-cliente"]
+        ok(s._moldes_vizinhos("2026-11-08") == numeradas, s._moldes_vizinhos("2026-11-08"))
+        ok(s._briefing("CARROSSEL", "2026-11-08", {})["evitar_moldes"] == numeradas, "o Designer recebe a lista")
         ok("evitar_moldes" not in s._briefing("CARROSSEL", "2026-10-01", {}), "sem vizinho, nada a evitar")
         repetido = {"spec": {"motor": "molde", "molde": "passo-a-passo"}, "arquivos": [], "falta": [],
                     "critica": {"veredito": "aprova", "motivos": [], "sugestoes": []}}
@@ -2556,10 +2558,14 @@ class Suite:
         c.carregar = lambda: {"itens": [
             {"id": "a", "data": "2026-11-01", "tipo": "CARROSSEL", "estado": "publicada", "origem": {"semana": sid, "n": 1}},
             {"id": "b", "data": "2026-11-04", "tipo": "REELS", "estado": "publicada", "origem": {"semana": sid, "n": 2}}]}
-        ok(s._moldes_vizinhos("2026-11-13") == ["demonstracao", "lanca-app", "passo-a-passo"], s._moldes_vizinhos("2026-11-13"))
+        ok(s._moldes_vizinhos("2026-11-13") == ["demonstracao", "faca-nao-faca", "frases", "lanca-app", "mito", "passo-a-passo",
+                                                 "tipos-cliente"], s._moldes_vizinhos("2026-11-13"))
         ok(s._moldes_vizinhos("2026-11-16") == ["demonstracao", "lanca-app"], "a capa volta só depois de 14 dias")
         irmao = {"id": "x-1", "data": "2026-11-17", "formato_pedido": "CARROSSEL", "titulo": "t", "spec": {"molde": "mito"}}
         ok("mito" in s._moldes_vizinhos("2026-11-20", irmaos=[irmao]), "os posts da mesma leva também contam")
+        titulo = {"id": "x-2", "data": "2026-11-21", "formato_pedido": "CARROSSEL", "titulo": "3 sinais de que o preço ficou para trás", "spec": {"molde": "quiz"}}
+        ok({"faca-nao-faca", "passo-a-passo"} <= set(s._moldes_vizinhos("2026-11-25", irmaos=[titulo])),
+           "com um título em lista numerada por perto, os moldes de capa com contagem também ficam de fora")
 
     def t_referencia_declarada_e_nunca_citada(self):
         # 11/11: "não buscam tendências de outros concorrentes ... nada disso é aproveitado": each proposal says which

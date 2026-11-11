@@ -339,7 +339,8 @@ REGRAS_COMUNS = (
     "- Variedade no story: o layout e o visual não se repetem em dias seguidos, e em 7 dias nenhum layout aparece mais "
     f"de {MAX_LAYOUT} vezes. Quem cria escolhe o layout pelo assunto, não pelo dia da semana.\n"
     "- Variedade no feed: o molde (a capa) não repete o de nenhum post dos últimos 14 dias; título em lista numerada "
-    "(\"3 sinais\", \"3 passos\") só um a cada 14 dias; o título não começa como o de um post recente. Vídeo não é só "
+    "(\"3 sinais\", \"3 passos\") ou capa com contagem (\"3 erros que custam caro\") só um a cada 14 dias; o título não "
+    "começa como o de um post recente. Vídeo não é só "
     "passeio pelas telas: no máximo um vídeo de telas a cada 14 dias.\n"
     "- Referência: cada proposta diz em qual referência do radar se inspirou (o id) e o que muda. Inspirar não é "
     "copiar: outro texto, outro exemplo, a cara da Raiz. Nunca citar concorrente nem criador em público.\n"
@@ -833,6 +834,10 @@ def _formato_feed(formato: str) -> str:
 
 
 TOUR = ("lanca-app", "demonstracao")  # the videos that are a walk through the system's screens: one family
+# the moldes whose cover is a count written by the template itself ("3 erros que custam caro", "3 passos", "4 tipos de
+# cliente"): whatever the title says, the post reads as one more numbered list (11/11: asked for a question-and-answer
+# carousel, the Designer delivered faca-nao-faca and the cover came out "3 erros que custam caro")
+CAPA_NUMERADA = ("passo-a-passo", "faca-nao-faca", "tipos-cliente", "frases", "mito")
 
 
 def _moldes_vizinhos(dia: str, janela: int = HISTORICO_DIAS - 1, fora="", irmaos=()) -> list[str]:
@@ -845,17 +850,21 @@ def _moldes_vizinhos(dia: str, janela: int = HISTORICO_DIAS - 1, fora="", irmaos
         d0 = dt.date.fromisoformat(str(dia))
     except ValueError:
         return []
-    usados = set()
+    usados, numerada = set(), False
     for v in feed_vizinho(fora, irmaos):
         try:
             d = dt.date.fromisoformat(str(v.get("data")))
         except ValueError:
             continue
-        if d == d0 or abs((d - d0).days) > janela or not v.get("molde"):
+        if d == d0 or abs((d - d0).days) > janela:
             continue
-        usados.add(v["molde"])
+        numerada = numerada or estrutura(v.get("titulo"))[0] == "lista numerada"
+        if v.get("molde"):
+            usados.add(v["molde"])
     if usados & set(TOUR):
         usados |= set(TOUR)
+    if numerada or usados & set(CAPA_NUMERADA):  # one numbered list in 14 days, in the title or on the cover
+        usados |= set(CAPA_NUMERADA)
     return sorted(usados)
 
 
