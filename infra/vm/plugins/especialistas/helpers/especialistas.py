@@ -497,7 +497,12 @@ def regras_fixas(tipo: str, material) -> list[str]:
     """Rules checked by code, not by the model: they reprove whatever the model says. Only the piece's own text: the
     post a story calls (post_do_dia) is context, its caption may say "salva" or carry the offer's price."""
     if isinstance(material, dict):
-        material = {k: v for k, v in material.items() if k != "post_do_dia"}
+        # 11/11: the common briefing and the declared reference are context too: the radar quotes third parties (their
+        # emoji, their "salve") and the rules name the forbidden words; five good stories were reproved by them
+        material, _ = tirar_briefing(material)
+        material = {k: v for k, v in material.items() if k not in ("post_do_dia", "referencia")}
+        if isinstance(material.get("briefing"), dict):
+            material["briefing"] = {k: v for k, v in material["briefing"].items() if k != "referencia"}
     texto, _ = _texto_material(material)
     motivos = []
     if EMOJI.search(texto):

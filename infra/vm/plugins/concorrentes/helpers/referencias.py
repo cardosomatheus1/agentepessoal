@@ -34,8 +34,13 @@ FORMATO = {"image": "imagem", "video": "vídeo", "dco": "anúncio dinâmico", "c
            "reels": "Reel", "foto": "foto", "carrossel": "carrossel"}
 
 
+EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿⬀-⯿️‍⃣]")
+
+
 def _limpo(texto, limite: int = GANCHO) -> str:
-    t = re.sub(r"[«»]", "", " ".join(str(texto or "").split()))
+    """Third-party text as data: one line, without «», and without emoji (the Raiz never uses them, and the briefing
+    that carries this text is read next to pieces the fixed rules check for emoji)."""
+    t = re.sub(r"[«»]", "", " ".join(EMOJI.sub(" ", str(texto or "")).split()))
     return t if len(t) <= limite else t[:limite - 1].rstrip() + "…"
 
 

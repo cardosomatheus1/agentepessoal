@@ -285,6 +285,18 @@ class Suite:
         m.criticar("story", {"legenda": "Dica"})
         ok("Story que chama o post do dia" not in chamadas[-1][1], "só quando chama")
         eq(m.criticar("reel", {"falas": ["O prato custa R$ 12,40"]})["veredito"], "reprova", "reel também (22/10)")
+        # 11/11: the common briefing (it quotes competitors' ads, emoji and all, and names the forbidden words) and the
+        # declared reference are context, never the piece: five good stories were reproved for "emoji" and "salve"
+        comum = "Regras: nunca \"salve\" em story. Radar: A1 «ANOTA AÍ \U0001F4DD — custo R$ 12»"
+        ref = {"id": "A1", "gancho": "Salve este post \U0001F680", "o_que_muda": "vira enquete"}
+        c = m.criticar("story", {"legenda": "Mesmo preço no app?", "briefing_comum": comum, "referencia": ref})
+        eq(c["veredito"], "aprova", f"o briefing comum e a referência não são texto da peça: {c}")
+        c = m.criticar("carrossel", {"briefing": {"titulo": "x", "briefing_comum": comum, "referencia": ref}, "ficha": {"slides": ["ok"]}})
+        eq(c["veredito"], "aprova", f"nem dentro do briefing do Designer: {c}")
+        c = m.criticar("story", {"legenda": "Salve para depois", "briefing_comum": comum})
+        eq(c["veredito"], "reprova", "a peça continua conferida")
+        limpo, tirado = m.tirar_briefing({"briefing": {"titulo": "x", "briefing_comum": comum}, "ficha": {}})
+        ok(tirado == comum and "briefing_comum" not in limpo["briefing"] and limpo["briefing"]["titulo"] == "x", limpo)
 
     def t_critico_le_o_cerebro_inteiro(self):
         # 22/10: the offer was cut at 6000 letters and he reproved numbers that were in it

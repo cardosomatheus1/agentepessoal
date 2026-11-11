@@ -606,6 +606,8 @@ class Suite:
             ok(r["refs"][2]["gancho"].startswith("Você abre quantos sistemas até fechar o caixa do dia?")
                and len(r["refs"][2]["gancho"]) < 60, f"o gancho é a primeira frase, sem emoji na frente: {r['refs'][2]}")
             ok(not any(x["dias_no_ar"] == 51 for x in r["refs"][:3]), "no máximo 2 por concorrente")
+            eq(ref._gancho("ANOTA AÍ as medidas 📝 20g de sal · 20g de alho"), "ANOTA AÍ as medidas 20g de sal · 20g de alho",
+               "o texto de terceiros entra sem emoji")
             eq([x["id"] for x in r["refs"] if x["de"] == "Chef Claudia Salgados"], ["P1", "P2"], "no máximo 2 por perfil")
             eq(r["refs"][-1]["tipo"], "vídeo em alta", "os vídeos em alta do nicho entram")
             t = ref.texto(r)

@@ -2382,7 +2382,7 @@ class Suite:
         {"id": "P1", "tipo": "post", "de": "Chef Claudia Salgados", "formato": "Reel", "sinal": "3,5x a média do perfil", "cta": "",
          "gancho": "Você sabe quanto cobrar pelo seu salgado? A conta é simples"}],
         "texto": "- A1 (anúncio de Saipos, imagem, 69 dias no ar): «Você abre quantos sistemas até fechar o caixa do dia?»\n"
-                 "- P1 (post de Chef Claudia Salgados, Reel, 3,5x a média do perfil): «Você sabe quanto cobrar pelo seu salgado?»",
+                 "- P1 (post de Chef Claudia Salgados, Reel, 3,5x a média do perfil): «Você sabe quanto cobrar pelo seu salgado? \U0001F4DD»",
         "nomes": ["Saipos", "Chef Claudia Salgados"]}
 
     def t_story_layouts_novos_tem_caras_diferentes(self):
@@ -2608,8 +2608,11 @@ class Suite:
                 renderizar = staticmethod(lambda campos, saida: (Path(saida).parent.mkdir(parents=True, exist_ok=True),
                                                                  Path(saida).write_bytes(b"\xff\xd8\xff story"), saida)[-1])
             s._S["fixo"] = StoryFalso
-            s._item_story(esp, "s20261103-1", 2, {"layout": "numero", "numero": "32%", "manchete": "do que entrou virou ingrediente."},
-                          "2026-11-10", [])
+            st2 = s._item_story(esp, "s20261103-1", 2, {"layout": "numero", "numero": "32%", "manchete": "do que entrou virou ingrediente."},
+                                "2026-11-10", [], ref={"id": "P1", "gancho": "Salve \U0001F4DD", "o_que_muda": "vira um número"})
+            # 11/11, real: the briefing quotes third parties (emoji, "salve") and the fixed rules took it for the piece's
+            # own text: five good stories reproved. The briefing and the reference are context
+            ok(st2["critica"]["veredito"] == "aprova", f"o briefing e a referência não reprovam a peça: {st2['critica']}")
             modelo = self._modelo([])
             g.rodar("manual", agora, seco=True, contexto={}, modelo=modelo)
         ok("Radar de referências" in briefing and "A1 (anúncio de Saipos, imagem, 69 dias no ar)" in briefing
