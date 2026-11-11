@@ -189,7 +189,8 @@ Motor.molde({
     $m.revela('#h0c', t, Math.max(1.2, ini(1) - 1.5), 0.08); $m.marcador('#mk0', t, Math.max(1.6, ini(1) - 1.0));
     if (D.modo === 'rosca') quadroRosca(t, F, $m); else quadroIceberg(t, F, $m);
     $m.cena('#pd', t, D.n + 4); vitrineQuadro(D.v, F, $m, t, ini(D.n + 4));
-    $('#nota').style.opacity = F.nota && t > ini(1) && t < ini(D.n + 4) ? 1 : 0;
+    // 11/11: the note is on screen from the hook, which already shows the price
+    $('#nota').style.opacity = F.nota && t < ini(D.n + 4) ? 1 : 0;
   },
 });
 

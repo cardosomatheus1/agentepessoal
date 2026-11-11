@@ -231,7 +231,8 @@ Motor.molde({
     $m.cena('#pd', t, 7); vitrineQuadro(D.v, F, $m, t, S(7));
     $m.cena('#c6', t, 6); $m.revela('#c6a', t, S(6) + 0.1, 0.09);
     const m6 = eo5(p(t, S(6) + 1.15, 0.5)); $('#c6b').style.opacity = cl(m6 * 3); $('#c6b').style.transform = `scale(${1.6 - 0.6 * m6})`; $m.marcador('#mk6', t, S(6) + 1.4);
-    $('#nota').style.opacity = (t > S(2) && t < S(7)) ? 1 : 0;
+    // 11/11: the note comes in with the first number on screen (the price, scene 2), not one scene later
+    $('#nota').style.opacity = (t >= S(1) && t < S(7)) ? 1 : 0;
   },
 });
 </script></body></html>
