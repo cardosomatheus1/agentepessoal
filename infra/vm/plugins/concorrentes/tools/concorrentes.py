@@ -62,6 +62,25 @@ def texto_ideias(c, e) -> str:
     return "\n".join(out)
 
 
+def _referencias():
+    caminho = RAIZ / "helpers" / "referencias.py"
+    antigo, mtime = sys.modules.get("concorrentes_referencias"), caminho.stat().st_mtime
+    if antigo is None or getattr(antigo, "_mtime", None) != mtime:
+        spec = importlib.util.spec_from_file_location("concorrentes_referencias", caminho)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        m._mtime = mtime
+        sys.modules["concorrentes_referencias"] = m
+    return sys.modules["concorrentes_referencias"]
+
+
+def texto_radar(c) -> str:
+    """11/11: the references themselves (ads longest on air, best posts, videos on the rise), each with its id."""
+    ref = _referencias()
+    return ref.texto(ref.radar(c)) or ("Sem radar nesta semana (o relatório semanal dos concorrentes ainda não rodou ou "
+                                      "está velho): rode `concorrentes` acao \"semanal\".")
+
+
 def _fontes(valor) -> list:
     if isinstance(valor, str):
         try:
@@ -102,11 +121,13 @@ def executar(c, acao: str, kwargs: dict) -> str:
         return f"{x['nome']} saiu da vigia (fica guardado em 'removidos')."
     if acao == "ideias":
         return texto_ideias(c, _estrategia())
+    if acao == "radar":
+        return texto_radar(c)
     if acao == "ultima":
         r = c.ultima()
         return c.texto(r) if r else "Ainda não houve coleta."
     raise ValueError(f"acao '{acao}' não existe (lista, adicionar, fonte, tirar_fonte, grupo, remover, coletar, ultima, "
-                     "instagram, semanal, ideias)")
+                     "instagram, semanal, ideias, radar)")
 
 
 class Concorrentes(Tool):

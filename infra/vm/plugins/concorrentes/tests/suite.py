@@ -566,6 +566,58 @@ class Suite:
         finally:
             shutil.rmtree(self.tmp, ignore_errors=True)
 
+    def t_radar_de_referencias_para_o_conteudo(self):
+        # 11/11, Matheus: "o próprio facebook mostra os anúncios dos concorrentes e dá pra ver o que tá dando certo e
+        # nada disso é aproveitado": the ads longest on air, the best posts and the videos on the rise, each with an id
+        c, _ = self._ig({}, {"Saipos": ("gestao", "usesaipos"), "Cardápio Web": ("gestao", "cardapioweb"),
+                             "Chef Claudia Salgados": ("conteudo", "chefclaudia")})
+        ref = _carregar("concorrentes_referencias_teste", RAIZ / "helpers" / "referencias.py")
+        tool = (RAIZ / "tools" / "concorrentes.py").read_text(encoding="utf-8")
+        ok('acao == "radar"' in tool and "texto_radar" in tool, "a ferramenta oferece o radar")
+        try:
+            eq(ref.radar(c, AGORA)["refs"], [], "sem relatório semanal, radar vazio (nunca erro)")
+            anuncio = lambda dias, texto, fmt="image", cta="Learn more": {"id": str(dias), "dias_no_ar": dias, "formato": fmt,  # noqa: E731
+                                                                       "texto": texto, "titulo": "", "cta": cta, "link": f"https://fb/{dias}"}
+            rel = {"em": AGORA - 3600, "semana": "09/11/2026", "concorrentes": [
+                {"nome": "Saipos", "grupo": "gestao", "anuncios": [
+                    anuncio(75, "Reduza o CMV do seu restaurante com estratégias eficazes: controle de estoque."),
+                    anuncio(69, "😅 Você abre quantos sistemas até fechar o caixa do dia? Cada tela separada é mais uma chance de erro."),
+                    anuncio(51, "Restaurante cheio não garante lucro no bolso.", "video")]},
+                {"nome": "Cardápio Web", "grupo": "gestao", "anuncios": [
+                    anuncio(141, "Todo mês, o dinheiro cai na sua conta. Seja um representante e tenha renda recorrente."),
+                    anuncio(87, "O horário que você mais vende é o mesmo que mais te faz perder pedidos. Equipe ocupada.")]}],
+                "criadores": [{"perfil": "Chef Claudia Salgados", "formato": "reels", "views": 20233, "link": "https://ig/1",
+                               "gancho": "«Você sabe quanto cobrar pelo seu salgado? A conta é simples»", "vezes_a_media_do_perfil": 3.5},
+                              {"perfil": "Chef Claudia Salgados", "formato": "reels", "views": 9, "link": "https://ig/2",
+                               "gancho": "«Outro»", "vezes_a_media_do_perfil": 1.3},
+                              {"perfil": "Chef Claudia Salgados", "formato": "foto", "link": "https://ig/3",
+                               "gancho": "«Terceiro do mesmo perfil»", "vezes_a_media_do_perfil": 1.2}]}
+            with open(c.PASTA / "relatorios.jsonl", "a", encoding="utf-8") as fh:
+                fh.write(json.dumps(rel, ensure_ascii=False) + "\n")
+            videos = c.PASTA / "em_alta.json"
+            videos.write_text(json.dumps({"em": AGORA - 86400, "videos": [
+                {"titulo": "Como calcular o custo da marmita", "canal": "Canal X", "views": 50000, "link": "https://yt/1"}]}))
+            r = ref.radar(c, AGORA, videos=videos)
+            ids = [x["id"] for x in r["refs"]]
+            eq(ids, ["A1", "A2", "A3", "P1", "P2", "V1"], "anúncios, posts e vídeos, cada um com o seu id")
+            a1, a2 = r["refs"][0], r["refs"][1]
+            eq((a1["de"], a1["dias_no_ar"]), ("Cardápio Web", 87), "o anúncio há mais tempo no ar vem primeiro; o de representante fica fora")
+            eq((a2["dias_no_ar"], a2["formato"], a2["cta"]), (75, "imagem", "Learn more"), "com formato e CTA")
+            ok(r["refs"][2]["gancho"].startswith("Você abre quantos sistemas até fechar o caixa do dia?")
+               and len(r["refs"][2]["gancho"]) < 60, f"o gancho é a primeira frase, sem emoji na frente: {r['refs'][2]}")
+            ok(not any(x["dias_no_ar"] == 51 for x in r["refs"][:3]), "no máximo 2 por concorrente")
+            eq([x["id"] for x in r["refs"] if x["de"] == "Chef Claudia Salgados"], ["P1", "P2"], "no máximo 2 por perfil")
+            eq(r["refs"][-1]["tipo"], "vídeo em alta", "os vídeos em alta do nicho entram")
+            t = ref.texto(r)
+            ok("A1 (anúncio de Cardápio Web, imagem, 87 dias no ar): «O horário que você mais vende" in t
+               and "CTA «Learn more»" in t and "nunca cite" in t, t)
+            ok("Saipos" in r["nomes"] and "Chef Claudia Salgados" in r["nomes"] and "usesaipos" in r["nomes"],
+               f"os nomes e arrobas que não aparecem em público: {r['nomes']}")
+            # an old report is not "what works now"
+            eq(ref.radar(c, AGORA + 11 * 86400, videos=videos)["refs"], [], "relatório velho: radar vazio")
+        finally:
+            shutil.rmtree(self.tmp, ignore_errors=True)
+
     def t_anuncios_respeitam_a_verba_do_apify(self):
         c, _ = self._ig({}, {"Saipos": ("gestao", "usesaipos")})
         e = self._estrategia()

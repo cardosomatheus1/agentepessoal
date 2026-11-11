@@ -107,6 +107,20 @@ def assistir(vid: str, tema: str, duracao_lista: float) -> tuple[str, str]:
     return v._pelas_legendas(falas, pergunta, ""), "lido pelas legendas"
 
 
+def guardar_em_alta(tema: str, finais: list, arquivo=None) -> None:
+    """The last search kept on disk (11/11): the content's radar of references (plugins/concorrentes referencias.py)
+    reads the niche's videos on the rise from here, so the Crítico and the Gestor see what the creator saw."""
+    try:
+        arq = arquivo or (_video().PASTA / "em_alta.json")
+        arq.parent.mkdir(parents=True, exist_ok=True)
+        arq.write_text(json.dumps({"em": time.time(), "tema": tema, "videos": [
+            {"titulo": f.get("titulo"), "canal": f.get("canal"), "views": f.get("views"), "curtidas": f.get("curtidas"),
+             "duracao": f.get("duracao"), "link": f"https://www.youtube.com/watch?v={f.get('id')}"} for f in finais]},
+            ensure_ascii=False), encoding="utf-8")
+    except Exception as exc:  # never in the way of the search itself
+        print(f"video: em_alta.json não foi gravado: {exc}", flush=True)
+
+
 async def em_alta(tema: str, consultas: list[str], quantidade: int, horas: int, assistir_videos: bool) -> str:
     inicio = time.time()
     listas = await asyncio.gather(*[asyncio.to_thread(buscar, c, f) for c in consultas for f in FILTROS])
@@ -139,6 +153,7 @@ async def em_alta(tema: str, consultas: list[str], quantidade: int, horas: int, 
     # most watched and best received first: views, then likes
     finais.sort(key=lambda f: (f.get("views") or 0) + 20 * (f.get("curtidas") or 0), reverse=True)
     finais = finais[:quantidade]
+    guardar_em_alta(tema, finais)
     resumos, como = [""] * len(finais), [""] * len(finais)
     if assistir_videos and finais:
         sem = asyncio.Semaphore(PARALELO)
