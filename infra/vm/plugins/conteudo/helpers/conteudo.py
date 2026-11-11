@@ -761,6 +761,24 @@ def falas_da_ficha(item: dict) -> str:
     return "\n".join(f"[{float(f['inicio']):.1f}s a {float(f['fim']):.1f}s] {str(f['texto']).strip()}" for f in falas)
 
 
+MAX_QUADROS = 8
+FOLGA_FALA = 0.25  # the frame is taken this long before the fala ends (after it, the scene may already be changing)
+
+
+def fim_das_falas(narracao: str, duracao: float) -> list[tuple[float, str]]:
+    """[(second, what was said)] at the end of each fala measured on the audio ("[1.0s a 3.2s] frase"), at most
+    MAX_QUADROS spread over the video; [] when the narration has no measured times."""
+    if not str(narracao).startswith("tempos medidos"):
+        return []
+    achados = re.findall(r"\[(\d+(?:\.\d+)?)s a (\d+(?:\.\d+)?)s\] ([^\n]+)", narracao)
+    falas = [(round(max(0.0, min(float(fim), duracao) - FOLGA_FALA), 1), " ".join(texto.split())[:80])
+             for _, fim, texto in achados if float(fim) - FOLGA_FALA < duracao - FIM_S]
+    if len(falas) > MAX_QUADROS:
+        passo = (len(falas) - 1) / (MAX_QUADROS - 1)
+        falas = [falas[round(k * passo)] for k in range(MAX_QUADROS)]
+    return falas
+
+
 def narracao_do_video(item: dict, audio: Path) -> str:
     """The narration with its times, for the Crítico's fala × tela check: measured on the audio first."""
     falha = ""
@@ -830,6 +848,14 @@ def material_do_video(item: dict, imagens: list | None = None, baixar=None) -> d
     pasta.mkdir(exist_ok=True)
     duracao = float(_rodar(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(video)]))
     tempos = [round(duracao * f, 1) for f in QUADROS] + [round(max(0.0, duracao - FIM_S), 1)]
+    narracao = narracao_do_video(item, pasta.parent / "narracao.mp3")
+    # 11/11: both new Reels were reproved finished for a frame caught in the middle of an animation ("o texto
+    # 'custando' está cortado"; "a conta na tela está incompleta: R$30 - R$11 -"): frames at fixed fractions of the
+    # video fall while a text is still coming in. With the falas measured on the audio, each frame is taken at the END
+    # of a fala, when the scene has shown everything the voice said.
+    falas = fim_das_falas(narracao, duracao)
+    if falas:
+        tempos = [t for t, _ in falas] + [round(max(0.0, duracao - FIM_S), 1)]
     quadros = []
     for n, t in enumerate(tempos, 1):
         destino = pasta / f"q{n}_{t:.1f}s.jpg"
@@ -837,9 +863,9 @@ def material_do_video(item: dict, imagens: list | None = None, baixar=None) -> d
             _rodar(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t}", "-i", str(video), "-frames:v", "1", "-q:v", "3",
                     "-vf", "scale=720:-2", str(destino)])
         quadros.append(str(destino))
-    narracao = narracao_do_video(item, pasta.parent / "narracao.mp3")
     capa = [i for i in (imagens or []) if i not in quadros][:1]
-    ordem = (["capa"] if capa else []) + [f"segundo {t:.1f}" for t in tempos]
+    ditas = [f" (fim da fala «{fala}»)" for _, fala in falas] + [" (o fim do vídeo)"] if falas else [""] * len(tempos)
+    ordem = (["capa"] if capa else []) + [f"segundo {t:.1f}{d}" for t, d in zip(tempos, ditas)]
     return {"imagens": capa + quadros, "duracao_s": round(duracao, 1),
             "quadros": "ordem das imagens: " + "; ".join(f"{n} = {o}" for n, o in enumerate(ordem, 1))
                         # 22/10: the same Reel passed and then failed for a voice 0.4 s ahead of a scene change

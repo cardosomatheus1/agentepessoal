@@ -1968,6 +1968,14 @@ def julgar_video(p: dict, video: str) -> dict | None:
         _, material = c().material_do_post(item)
         if material.get("video") or not material.get("imagens"):
             return None
+        if isinstance(ficha.get("falas"), list):
+            # 11/11: the transcription heard "caiu de R$ 9,50" where the voice says "nove reais pra sete e cinquenta",
+            # and the Crítico reproved the video for a wrong sum. The falas are what the voice was made to say (the
+            # render checks each one by ear); the transcription gives the times
+            material["falas_exatas"] = [str(f) for f in ficha["falas"]]
+            material["como_ler_a_narracao"] = ("\"falas_exatas\" é o texto que a voz leu, conferido fala por fala no "
+                                               "render: vale para as palavras e os números. \"narracao\" é a transcrição "
+                                               "automática do áudio e vale para os tempos; ela pode errar um número.")
         r = _critica(esp.criticar("reel", material))
         if r["veredito"] == SEM_REVISAO:
             return None

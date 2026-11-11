@@ -139,6 +139,21 @@ class Suite:
            "transcrição que falha vira aviso, não erro")
         com_roteiro = c.material_do_video(dict(reel, roteiro="Pediu pelo iFood? Chegou no Raiz Connect!"), [])
         ok(com_roteiro["narracao"] == "Pediu pelo iFood? Chegou no Raiz Connect!", "roteiro do post vale sem transcrever")
+        # 11/11: with the falas measured on the audio, each frame is taken at the end of a fala (the scene has shown
+        # everything the voice said), not at fixed fractions that fall in the middle of an animation
+        ok(c.fim_das_falas("tempos medidos no áudio do vídeo:\n[0.0s a 1.5s] Oi\n[1.5s a 3.0s] Tchau\n[3.0s a 3.9s] Fim", 4.0)
+           == [(1.2, "Oi"), (2.8, "Tchau")], "o fim de cada fala, menos a que acaba no fim do vídeo")
+        ok(c.fim_das_falas("(tempos aproximados...)\n[0.6s] Oi", 4.0) == [], "sem tempos medidos, os quadros de sempre")
+        ok(len(c.fim_das_falas("tempos medidos:\n" + "\n".join(f"[{k}.0s a {k}.9s] fala {k}" for k in range(20)), 60.0)) == c.MAX_QUADROS,
+           "no máximo 8 quadros, espalhados")
+        c._TRANSCREVER = lambda caminho: "[0.0s a 1.5s] Pediu pelo iFood?\n[1.5s a 3.0s] Experimente grátis."
+        (c.PASTA / "cache" / "reel-critico" / "narracao.mp3").unlink(missing_ok=True)
+        import shutil as sh2
+        sh2.rmtree(c.PASTA / "cache" / "reel-critico" / "quadros", ignore_errors=True)
+        m3 = c.material_do_video(reel, [])
+        ok(len(m3["imagens"]) == 3 and "1 = segundo 1.2 (fim da fala «Pediu pelo iFood?»)" in m3["quadros"]
+           and "3 = segundo 3.4 (o fim do vídeo)" in m3["quadros"], f"um quadro no fim de cada fala e o do fim: {m3['quadros']}")
+        c._TRANSCREVER = lambda caminho: 1 / 0
         tipo, mat = c.material_do_post(dict(ITEM, id="reel-sem-arquivo"))
         ok("video" in mat and "não pôde ser aberto" in mat["video"], "vídeo que não baixa: o Crítico é avisado")
 
