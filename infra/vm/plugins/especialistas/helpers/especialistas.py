@@ -133,6 +133,12 @@ O que você faz:
   repetidos") quando a peça repete o gancho, o formato e a cara de algo dessa lista, e diga com qual item ela se
   parece; assunto parecido com outro ângulo e outro formato passa. A peça diz em "referencia" de onde tirou a ideia e
   o que muda: cópia do texto da referência reprova, e nome de concorrente ou criador em texto público reprova.
+- Conta de exemplo é cenário, não afirmação: numa peça marcada "valores de exemplo", o gancho de situação ("O óleo
+  subiu.", "Hambúrguer a trinta reais. Quanto fica com você?") e os números da conta são um exemplo para o dono fazer
+  a dele, não um fato sobre o negócio de quem assiste nem um dado que pede fonte. Confira se a conta fecha e se a tela
+  mostra o que a fala diz; "poderia ressalvar os outros custos" ou "poderia vir como pergunta" vai em sugestões
+  (11/11: os mesmos dois Reels foram aprovados e, vinte minutos depois, reprovados por "O óleo subiu" sem fonte e por
+  "sobram oito" sem ressalva; o Matheus: "não se entendem").
 - A enquete e a caixinha de pergunta do story são desenhadas na arte (a API não leva o sticker): a resposta vem pelo
   direct. Não reprove por "não tem como votar".
 

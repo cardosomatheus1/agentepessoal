@@ -298,6 +298,14 @@ class Suite:
         limpo, tirado = m.tirar_briefing({"briefing": {"titulo": "x", "briefing_comum": comum}, "ficha": {}})
         ok(tirado == comum and "briefing_comum" not in limpo["briefing"] and limpo["briefing"]["titulo"] == "x", limpo)
 
+    def t_critico_conta_de_exemplo_e_cenario(self):
+        # 11/11: the same two Reels were approved and, twenty minutes later, reproved for "O óleo subiu" without a
+        # source and "sobram oito" without a caveat. A sum marked "valores de exemplo" is a scenario, not a claim
+        m = self._e()
+        papel = m.PAPEIS["critico"]
+        ok("Conta de exemplo é cenário, não afirmação" in papel and "vai em sugestões" in papel
+           and "mesma régua que o criador e o Gestor" in papel, "o Crítico sabe ler a conta de exemplo e o briefing comum")
+
     def t_critico_le_o_cerebro_inteiro(self):
         # 22/10: the offer was cut at 6000 letters and he reproved numbers that were in it
         m = self._e(com_raiz="x" * 15000 + " 5 implementações por semana")
