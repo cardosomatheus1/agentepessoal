@@ -73,6 +73,7 @@ checa('seg "dica"' not in semana_posts and "no esquema" not in semana_posts
 checa('`conteudo` acao "briefing"' in semana_posts and '`concorrentes` acao "radar"' in semana_posts
       and '"referencia"' in semana_posts and "nunca cite concorrente" in semana_posts,
       "4qfNuwRX: cria pelo briefing comum e pelo radar de referências, e cada proposta declara a referência")
+checa("SEM NOVIDADE: nada a criar" in semana_posts, "4qfNuwRX: semana cheia fica registrada como nada a criar, não só SEM NOVIDADE")
 checa('`conteudo` acao "cobrir"' in fechamento and "sessão do Claude que cuida" not in fechamento
       and "pedir o post" not in fechamento, "Iq73JPEP: dia sem post vai ao gestor, não ao Matheus nem à sessão do Claude")
 ap = (H / "rotinas_aplicar.py").read_text()

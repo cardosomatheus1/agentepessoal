@@ -136,6 +136,97 @@ def ultima() -> dict | None:
     return carregar(nomes[-1]) if nomes else None
 
 
+# ------------------------------------------------------------------ rehearsal with a simulated date (11/11)
+# Matheus, 11/11: "Bom simular ele fazer só e você checar a qualidade". The weekly routine only plans tomorrow + 6 days;
+# run by hand when that week is full it answers "nada a criar" and proves nothing. The OPERATOR can turn on a
+# simulated "now" for the PLANNING (which week propor() fills, what the briefing and the agenda show as the coming
+# days): everything else keeps the real clock (the redo loop, the Crítico, the video queue, the publishing). Rules:
+# - only ligar_ensaio()/desligar_ensaio(), with AUTOR "operador: ..."; no tool action, no parameter, nothing the agent
+#   or a third party's text can set; a file not written by them (who, times, cap) is ignored;
+# - it expires by itself (at most ENSAIO_MAX_MIN), and every use says so: the week is marked, the tool's answer and
+#   the journal say "ENSAIO"; what the Crítico approves is scheduled for real, on the real future days.
+ENSAIO_MAX_MIN = 240
+ENSAIO_MAX_DIAS = 21
+
+
+def _arq_ensaio() -> Path:
+    return c().PASTA / "ensaio_data.json"
+
+
+def ligar_ensaio(quando: str, minutos: int = 120, motivo: str = "", real: float | None = None) -> dict:
+    """The operator turns the simulated planning date on: `quando` "AAAA-MM-DDTHH:MM" (the agent's time zone), in the
+    future and at most ENSAIO_MAX_DIAS ahead, for `minutos` (at most ENSAIO_MAX_MIN); the simulated clock runs from it."""
+    quem = str(c().AUTOR["quem"])
+    if not quem.startswith("operador:"):
+        return {"ok": False, "erro": "só o operador liga a data simulada (AUTOR['quem'] = 'operador: ...')"}
+    real = time.time() if real is None else real
+    try:
+        simulado = dt.datetime.fromisoformat(str(quando)).replace(tzinfo=c()._tz()).timestamp()
+        minutos = int(minutos)
+    except (ValueError, TypeError):
+        return {"ok": False, "erro": "quando: AAAA-MM-DDTHH:MM; minutos: número"}
+    if not real < simulado <= real + ENSAIO_MAX_DIAS * 86400:
+        return {"ok": False, "erro": f"a data simulada fica no futuro, até {ENSAIO_MAX_DIAS} dias à frente"}
+    if not 1 <= minutos <= ENSAIO_MAX_MIN:
+        return {"ok": False, "erro": f"minutos: de 1 a {ENSAIO_MAX_MIN} (ela desliga sozinha)"}
+    d = {"simulado": simulado, "ligado_em": real, "ate": real + minutos * 60, "por": quem, "motivo": _texto(motivo, 200)}
+    arq = _arq_ensaio()
+    arq.parent.mkdir(parents=True, exist_ok=True)
+    arq.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    c()._diario({"ensaio_data": "ligado", "simulado": quando, "minutos": minutos, "motivo": d["motivo"]})
+    return {"ok": True, "simulado": quando, "desliga_sozinho_em_min": minutos}
+
+
+def desligar_ensaio(motivo: str = "") -> dict:
+    """The operator turns it off (it also turns itself off when it expires)."""
+    if not str(c().AUTOR["quem"]).startswith("operador:"):
+        return {"ok": False, "erro": "só o operador desliga a data simulada (ou ela expira sozinha)"}
+    estava = _arq_ensaio().exists()
+    _arq_ensaio().unlink(missing_ok=True)
+    if estava:
+        c()._diario({"ensaio_data": "desligado", "motivo": _texto(motivo, 200)})
+    return {"ok": True, "estava_ligado": estava, "ligado": _arq_ensaio().exists()}
+
+
+def ensaio(real: float | None = None) -> dict | None:
+    """The simulated date in force ({"simulado", "ligado_em", "ate", "por", "agora": the simulated now}) or None. An
+    expired one removes itself; a file nobody wrote through ligar_ensaio() (no operator, a longer life than the cap, a
+    date out of range) is ignored and removed."""
+    real = time.time() if real is None else real
+    arq = _arq_ensaio()
+    if not arq.exists():
+        return None
+    try:
+        d = json.loads(arq.read_text(encoding="utf-8"))
+        valido = (str(d["por"]).startswith("operador:") and float(d["ligado_em"]) <= real + 60
+                  and float(d["ate"]) - float(d["ligado_em"]) <= ENSAIO_MAX_MIN * 60 + 1
+                  and float(d["ligado_em"]) < float(d["simulado"]) <= float(d["ligado_em"]) + ENSAIO_MAX_DIAS * 86400)
+    except (ValueError, KeyError, TypeError, OSError):
+        d, valido = {}, False
+    if not valido or real >= float(d["ate"]):
+        try:
+            arq.unlink(missing_ok=True)
+            c()._diario({"ensaio_data": "expirou" if valido else "ignorado (arquivo que o operador não escreveu)"})
+        except Exception:
+            pass
+        return None
+    return dict(d, agora=float(d["simulado"]) + (real - float(d["ligado_em"])))
+
+
+def agora_planejamento(real: float | None = None) -> float:
+    """The "now" the planning uses: the real clock, or the operator's simulated one while it is on."""
+    real = time.time() if real is None else real
+    try:
+        e = ensaio(real)
+    except Exception:
+        e = None
+    if e:
+        print(f"conteudo: ENSAIO, data simulada ligada por {e['por']} (planejando como se fosse "
+              f"{dt.datetime.fromtimestamp(e['agora'], c()._tz()):%d/%m/%Y %H:%M})", flush=True)
+        return e["agora"]
+    return real
+
+
 def _hoje(agora: float) -> dt.date:
     return dt.datetime.fromtimestamp(agora, c()._tz()).date()
 
@@ -378,7 +469,7 @@ def radar(agora: float | None = None) -> dict:
         mods = _concorrentes()
         if mods is None:
             return {"refs": [], "texto": "", "nomes": []}
-        r = mods[1].radar(mods[0], agora)
+        r = mods[1].radar(mods[0], None)  # always the real clock: what works NOW (a rehearsal date does not age it)
         return {"refs": r.get("refs") or [], "texto": mods[1].texto(r), "nomes": r.get("nomes") or []}
     except Exception as exc:
         print(f"conteudo: radar de referências indisponível: {type(exc).__name__}: {exc}", flush=True)
@@ -470,7 +561,7 @@ def titulo_repetido(titulo: str, dia: str, vizinhos: list) -> str:
 def historico_recente(agora: float | None = None, fora="") -> list[str]:
     """What the Raiz itself put out or scheduled, HISTORICO_DIAS back and 7 ahead, one line each: the measure of
     "mais do mesmo" for the three agents."""
-    agora = time.time() if agora is None else agora
+    agora = agora_planejamento() if agora is None else agora
     hoje = _hoje(agora)
     de, ate = (hoje - dt.timedelta(days=HISTORICO_DIAS)).isoformat(), (hoje + dt.timedelta(days=7)).isoformat()
     stories = stories_vizinhos(fora)
@@ -498,7 +589,6 @@ def historico_recente(agora: float | None = None, fora="") -> list[str]:
 def briefing_comum(agora: float | None = None, fora="") -> str:
     """THE briefing: the one text the creator (routine and Designer), the Crítico and the Gestor all read (11/11). Fixed
     rules, the radar of references and the Raiz's own last 14 days."""
-    agora = time.time() if agora is None else agora
     r = radar(agora)
     hist = historico_recente(agora, fora)
     layouts = getattr(story(), "COMO", {})
@@ -1057,7 +1147,8 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
     and 7 stories [{"layout", "manchete", ...: helpers/story.py}] → each drawn and judged, saved as a new version;
     what the Crítico approved goes into the agenda now, the rest is redone by passo_autonomo, and Matheus gets one
     notice of what happened (no buttons: 04/11, he does not want to be waited on)."""
-    agora = time.time() if agora is None else agora
+    simulada = ensaio() if agora is None else None  # 11/11: the operator's rehearsal plans another week
+    agora = agora_planejamento() if agora is None else agora
     try:
         if isinstance(propostas, str):
             propostas = json.loads(propostas)
@@ -1069,6 +1160,8 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
     stories = [x for x in stories or [] if isinstance(x, dict)]
     vagas = dias_do_feed(agora)
     dias_story = dias_livres(agora, STORIES, "story")
+    if not vagas and not dias_story:  # said first and plainly: nothing was created (11/11: it read as "SEM NOVIDADE")
+        return {"ok": False, "erro": "a semana que vem já está toda agendada: não há nada a criar", "nada_a_criar": True}
     pedidos = sorted(str(p.get("formato") or "").upper() for p in propostas)
     if pedidos != sorted(f for f, _ in vagas):
         livres = ", ".join(f"{_rotulo_dia(d)} {NOME_TIPO[f]}" for f, d in vagas) or "nenhuma"
@@ -1078,8 +1171,6 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
         livres = ", ".join(_rotulo_dia(d) for d in dias_story) or "nenhum"
         return {"ok": False, "erro": f"a semana tem {len(dias_story)} dia(s) sem story ({livres}): mande um story para "
                                      f"cada (vieram {len(stories)})"}
-    if not vagas and not dias_story:
-        return {"ok": False, "erro": "a semana que vem já está toda agendada"}
     for p in propostas:
         if _humor(p):
             erro = ("o post de humor é um Reel (formato REELS)" if str(p.get("formato") or "").upper() != "REELS"
@@ -1124,7 +1215,8 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
         item = _item_story(esp, sid, n, campos, dia, itens, vizinhos={d: l for d, l in plano.items() if d != dia}, ref=ref)
         plano[dia] = str(item["spec"]["story"].get("layout") or plano[dia])  # a redo may have changed the layout
         itens.append(item)
-    semana = {"id": sid, "criada_em": agora, "estado": "proposta", "login": login, "propostas": itens, "autonomo": True}
+    semana = {"id": sid, "criada_em": agora, "estado": "proposta", "login": login, "propostas": itens, "autonomo": True,
+              **({"ensaio": {"por": simulada["por"], "motivo": simulada.get("motivo", ""), "feito_em": time.time()}} if simulada else {})}
     with _exclusivo():
         for antiga in _pasta().glob("s*.json"):  # an older week still open is replaced: its buttons stop working
             s = json.loads(antiga.read_text(encoding="utf-8"))
@@ -1147,6 +1239,7 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
     por_n = {p["n"]: p for p in semana["propostas"]}
     return {"ok": True, "semana": sid, "enviada": not erro, **({"erro_envio": str(erro)[:200]} if erro else {}),
             **decidido,
+            **({"ensaio": f"ENSAIO do operador: semana planejada com a data simulada de {_hoje(agora):%d/%m/%Y}"} if simulada else {}),
             "propostas": [{"n": i["n"], "data": i["data"], "tipo": i["tipo"] or "?", "titulo": i["titulo"],
                            "critico": i["critica"]["veredito"], "problema": i["problema"],
                            "estado": por_n[i["n"]]["estado"]} for i in itens]}

@@ -104,4 +104,8 @@ cancelava story "porque pelo plano o story de quarta chama o Reel".
   julgado quando o render termina (`semana.julgar_video`): legenda que promete demais é reescrita sem renderizar de
   novo; problema no vídeo devolve a proposta ao refazer (até `MAX_RENDERS`); render que falha tenta mais uma vez; e o
   vídeo aprovado pronto não é rejulgado (`conteudo.aprovado_na_criacao`).
-
+- **Ensaio com data simulada:** `semana.ligar_ensaio()` / `desligar_ensaio()` (só com AUTOR "operador: ...";
+  `infra/operador/ensaio_conteudo.py`) deslocam o "agora" do PLANEJAMENTO (a semana que `propor` preenche, o briefing e
+  a agenda que a rotina lê) por no máximo 240 min; o refazer, o Crítico, os vídeos e a publicação seguem o relógio
+  real, e o aprovado entra na agenda de verdade. Não há ação nem parâmetro na ferramenta; arquivo forjado é ignorado; a
+  semana fica marcada com `ensaio`.

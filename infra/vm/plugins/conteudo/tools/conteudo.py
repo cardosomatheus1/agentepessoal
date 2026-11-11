@@ -83,6 +83,6 @@ class Conteudo(Tool):
             r = c.antecipar(str(kwargs.get("id") or ""), str(kwargs.get("motivo") or ""), quem="matheus (pela conversa)")
         elif acao == "liberar_post":
             r = c.liberar(str(kwargs.get("id") or ""), str(kwargs.get("motivo") or ""), quem="matheus (pela conversa)")
-        else:
-            r = c.agenda_proxima(_dias(dias, 7))
+        else:  # the planning's "now": the real clock, or the operator's rehearsal date while it is on (semana.ensaio)
+            r = c.agenda_proxima(_dias(dias, 7), agora=_semana().agora_planejamento())
         return Response(message=json.dumps(r, ensure_ascii=False), break_loop=False)

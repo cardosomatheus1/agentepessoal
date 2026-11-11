@@ -2750,6 +2750,60 @@ class Suite:
         # julgar_video: no Crítico or a video that does not open -> None (the advance check judges, as before)
         ok(s.julgar_video(p2, str(video)) is None, "vídeo que não abre: não inventa veredito")
 
+    def t_ensaio_com_data_simulada_so_do_operador(self):
+        # 11/11, Matheus: "Bom simular ele fazer só e você checar a qualidade": the weekly routine run by hand found
+        # the coming week full and created nothing. The operator can simulate the planning date; nobody else can
+        c, s, _ = self._semana(reprovar=())
+        real = _ts(c, "2026-10-26", "07:50")
+        from unittest import mock
+        with mock.patch("time.time", return_value=real):
+            r = s.propor(self._feed(), enviar=lambda *a: "", stories=self._stories())
+            ok(r["ok"] and r["semana"] == "s20261026-1" and "ensaio" not in r, r)
+            cheio = s.propor(self._feed(), enviar=lambda *a: "", stories=self._stories())
+            ok(not cheio["ok"] and cheio.get("nada_a_criar") and "não há nada a criar" in cheio["erro"],
+               f"semana cheia: a ferramenta diz que não criou nada: {cheio}")
+            ok(not s.ligar_ensaio("2026-11-02T07:47", 60)["ok"], "o agente não liga a data simulada")
+            c.AUTOR["quem"] = "operador: simular a semana seguinte"
+            ok(not s.ligar_ensaio("2026-10-20T07:47", 60)["ok"], "nunca uma data no passado")
+            ok(not s.ligar_ensaio("2026-12-25T07:47", 60)["ok"], "nem longe demais")
+            ok(not s.ligar_ensaio("2026-11-02T07:47", s.ENSAIO_MAX_MIN + 1)["ok"], "nem sem prazo para desligar")
+            ligou = s.ligar_ensaio("2026-11-02T07:47", 60, motivo="teste")
+            ok(ligou["ok"] and s.ensaio()["por"].startswith("operador:"), ligou)
+            c.AUTOR["quem"] = "agente"
+            ok(s._hoje(s.agora_planejamento()).isoformat() == "2026-11-02", "o planejamento vê a data simulada")
+            ok(not s.desligar_ensaio()["ok"] and s.ensaio(), "o agente também não desliga")
+            r2 = s.propor(self._feed(), enviar=lambda *a: "", stories=self._stories())
+            ok(r2["ok"] and r2["semana"] == "s20261102-1" and "ENSAIO do operador" in r2["ensaio"], f"planeja a semana seguinte e diz que é ensaio: {r2}")
+            p2 = s.carregar("s20261102-1")
+            ok(p2["ensaio"]["por"].startswith("operador:") and [x["data"] for x in p2["propostas"][:4]]
+               == ["2026-11-03", "2026-11-04", "2026-11-06", "2026-11-08"], "a semana fica marcada, nos dias da semana simulada")
+            ok(any(i["data"] == "2026-11-03" and i["estado"] == "pendente" for i in c.carregar()["itens"]),
+               "o que o Crítico aprovou entra na agenda de verdade, nos dias reais do futuro")
+            ok("03/11" in s.briefing_comum() and "03/11" not in s.briefing_comum(real), "o briefing do planejamento acompanha")
+        # it turns itself off, and the clock ran meanwhile
+        with mock.patch("time.time", return_value=real + 30 * 60):
+            ok(abs(s.agora_planejamento() - _ts(c, "2026-11-02", "08:17")) < 1, "o relógio simulado anda")
+        with mock.patch("time.time", return_value=real + 61 * 60):
+            ok(s.ensaio() is None and not s._arq_ensaio().exists() and s.agora_planejamento() == real + 61 * 60,
+               "expira sozinha e some")
+        ok('"ensaio_data": "expirou"' in (c.PASTA / "diario.jsonl").read_text(encoding="utf-8"), "no diário")
+        # a file nobody wrote through the operator's function is ignored: not the agent's, not one that never expires
+        for falso in ({"simulado": real + 86400, "ligado_em": real, "ate": real + 3600, "por": "agente"},
+                      {"simulado": real + 86400, "ligado_em": real, "ate": real + 10 ** 7, "por": "operador: x"},
+                      {"simulado": real + 90 * 86400, "ligado_em": real, "ate": real + 3600, "por": "operador: x"}):
+            s._arq_ensaio().write_text(json.dumps(falso))
+            ok(s.ensaio(real + 60) is None and not s._arq_ensaio().exists(), f"arquivo forjado é ignorado: {falso}")
+        c.AUTOR["quem"] = "operador: fim"
+        with mock.patch("time.time", return_value=real):
+            s.ligar_ensaio("2026-11-02T07:47", 60)
+            d = s.desligar_ensaio("fim do teste")
+        ok(d["ok"] and d["estava_ligado"] and not d["ligado"], d)
+        c.AUTOR["quem"] = "agente"
+        # nothing in the tool turns it on: not an action, not a parameter
+        tool = (RAIZ / "tools" / "conteudo.py").read_text(encoding="utf-8")
+        ok("ligar_ensaio" not in tool and "desligar_ensaio" not in tool and "agora_planejamento" in tool,
+           "a ferramenta só lê a data do planejamento, nunca liga o ensaio")
+
     async def rodar(self, so: str = "") -> dict:
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:
