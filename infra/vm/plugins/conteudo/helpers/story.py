@@ -55,7 +55,7 @@ COMO = {
     "quiz": "mito ou verdade: manchete = a afirmação (até 80 letras), resposta (\"mito\" ou \"verdade\"), texto = o porquê (até 150)",
     "numero": "número do dia: numero (até 8 letras, ex.: \"32%\", \"7 dias\"), manchete = o que ele quer dizer (até 70), texto (até 140), nota",
     "antes-depois": "antes = 2 a 4 linhas do caderno (até 26 letras cada, no chute), depois = 2 a 3 linhas do sistema (até 40), manchete (até 60)",
-    "conversa": "print de WhatsApp com a dor do dono: contato (ex.: \"Fornecedor Queijos\"), mensagens = 2 a 4 [[\"ele\" ou \"eu\", texto até 70]], manchete = a virada (até 60)",
+    "conversa": "print de WhatsApp com a dor do dono: contato (ex.: \"Fornecedor Queijos\"), mensagens = 2 a 4 [[\"ele\" ou \"eu\", texto até 70]], manchete = a virada (até 60); a arte já traz o selo \"conversa encenada · valores de exemplo\" (não é depoimento: não ponha \"exemplo\" nas falas nem no contato)",
     "checklist": "para printar: manchete (até 50), itens = 3 a 5 (até 52 letras cada), chamada",
     "tela-zoom": "tela (caminho de uma tela real), foco = {\"x\", \"y\"} em % da tela (o ponto que a lupa aumenta), seta = anotação à mão (até 22), manchete (até 64)",
     "foto": "imagem = caminho de uma foto real de comida/cozinha de /a0/usr/moldes/midia/fotos/, manchete (até 70), texto (até 120), chamada",

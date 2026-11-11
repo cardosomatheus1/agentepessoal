@@ -2392,6 +2392,8 @@ class Suite:
         novos = {"enquete", "quiz", "numero", "antes-depois", "conversa", "checklist", "tela-zoom", "foto", "caixinha"}
         ok(novos <= set(st.LAYOUTS) and set(st.VISUAL) == set(st.LAYOUTS) == set(st.COMO), "cada layout tem visual e instrução")
         ok(len(set(st.VISUAL.values())) >= 11, f"famílias visuais diferentes: {sorted(set(st.VISUAL.values()))}")
+        ok("conversa encenada" in (RAIZ / "story" / "story.html").read_text(encoding="utf-8") and "conversa encenada" in st.COMO["conversa"],
+           "a conversa de WhatsApp sai marcada como encenada (não é depoimento)")
         ok(st.VISUAL["dica"] == st.VISUAL["oferta"] and st.VISUAL["bastidor"] == st.VISUAL["tela-zoom"],
            "os que têm a mesma cara são da mesma família (não saem em dias seguidos)")
         tela = str(RAIZ / "story" / "telas" / "cmv-real.jpg")

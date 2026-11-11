@@ -129,7 +129,8 @@ p{font-weight:500;font-size:44px;line-height:1.36;color:var(--mut);margin-top:44
 .zap-av{width:108px;height:108px;border-radius:50%;background:var(--tint);color:var(--forest);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:52px}
 .zap-nome{font-weight:700;font-size:46px;letter-spacing:-.01em}
 .zap-nome small{display:block;font-weight:500;font-size:30px;opacity:.8;margin-top:4px}
-.zap-msgs{position:absolute;left:56px;right:56px;top:452px;display:flex;flex-direction:column;gap:20px;z-index:2}
+.zap-msgs{position:absolute;left:56px;right:56px;top:436px;display:flex;flex-direction:column;gap:20px;z-index:2}
+.zap-selo{align-self:center;background:#fdf6d8;color:#5d5a48;border-radius:14px;padding:10px 26px;font-weight:600;font-size:26px;box-shadow:0 1px 2px rgba(0,0,0,.12);margin-bottom:6px}
 .zap-b{max-width:80%;padding:24px 30px 20px;border-radius:26px;font-weight:500;font-size:44px;line-height:1.26;box-shadow:0 2px 3px rgba(0,0,0,.14);position:relative}
 .zap-b small{display:block;text-align:right;font-size:24px;color:#7b8a84;margin-top:6px}
 .zap-b.ele{align-self:flex-start;background:#fff;border-top-left-radius:6px}
@@ -272,7 +273,7 @@ if (L === 'dica') {
   const nome = String(C.contato || 'Fornecedor');
   const hora = k => `22:${String(41 + k).padStart(2, '0')}`;
   fora = `<div class="zap-topo"><div class="zap-av">${esc(nome.trim()[0] || 'F').toUpperCase()}</div><div class="zap-nome">${esc(nome)}<small>online</small></div></div>` +
-    `<div class="zap-msgs">${(C.mensagens || []).map((m, k) => `<div class="zap-b ${m[0] === 'eu' ? 'eu' : 'ele'}">${esc(m[1])}<small>${hora(k)}</small></div>`).join('')}</div>` +
+    `<div class="zap-msgs"><div class="zap-selo">${esc(C.nota || 'conversa encenada · valores de exemplo')}</div>${(C.mensagens || []).map((m, k) => `<div class="zap-b ${m[0] === 'eu' ? 'eu' : 'ele'}">${esc(m[1])}<small>${hora(k)}</small></div>`).join('')}</div>` +
     `<div class="zap-pe"><h1>${manchete(C.manchete, C.destaque)}</h1>${rodape(C.chamada || 'Já recebeu uma dessas? Conta aqui', logoEscuro)}</div>`;
   topo = false;
 } else if (L === 'checklist') {
