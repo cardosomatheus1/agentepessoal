@@ -1057,6 +1057,50 @@ def anotar_ficha(item_id: str, ficha: dict, motivo: str) -> dict:
     return {"ok": True, "id": item_id, "estado": alvo["estado"], "julga_de_novo": bool(julgado)}
 
 
+def aprovado_na_criacao(item: dict) -> str:
+    """11/11 (Matheus: "você faz milhões de correções mas nunca resolve a causa raiz"): Wednesday's carousel, approved
+    by the Crítico when it was made, was reproved the next day by another draw of the same Crítico on the same files
+    and the day lost its post. A post the Crítico approved when it was made and that did not change since (same
+    caption, the same files of that version) is not judged again: the reason ("" when it must be judged). A Reel is
+    judged once more: the video is rendered after the preview was approved, so it is new material."""
+    o = item.get("origem") or {}
+    if item.get("tipo") == "REELS" or not o.get("semana") or not re.fullmatch(r"s\d{8}-\d{1,3}", str(o["semana"])):
+        return ""
+    try:
+        s = json.loads((PASTA / "semanas" / f"{o['semana']}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    p = next((x for x in s.get("propostas") or [] if x.get("n") == o.get("n")), None)
+    if not p or p.get("estado") != "agendada" or (p.get("critica") or {}).get("veredito") != "aprova" or p.get("liberado"):
+        return ""
+    if str(p.get("legenda") or "").strip() != str(item.get("legenda") or "").strip():
+        return ""
+    feitos = [Path(str(a)).stem for a in p.get("arquivos") or []]
+    chaves = [Path(str(a)).stem for a in item.get("arquivos") or []]
+    if not feitos or len(feitos) != len(chaves) or not all(k.endswith(f) for k, f in zip(chaves, feitos)):
+        return ""
+    return "o Crítico aprovou na criação e a peça não mudou"
+
+
+def regras_fixas_do_post(item: dict) -> str:
+    """The deterministic checks at the advance check: what code can say without a model ("" when fine)."""
+    erro = validar_legenda(item.get("legenda"))
+    if erro:
+        return erro
+    esp = especialistas()
+    for nome in ("regras_fixas", "_legenda_generica"):
+        f = getattr(esp, nome, None) if esp is not None else None
+        if f is None:
+            continue
+        try:
+            r = f("post", {"legenda": item.get("legenda")}) if nome == "regras_fixas" else f({"legenda": item.get("legenda")})
+        except Exception:
+            continue
+        if r:
+            return "; ".join(str(x) for x in r)
+    return ""
+
+
 def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, avisar=lambda texto: None,
                    url=None, baixar=None) -> dict | None:
     """One pass of the advance check: the next pending post (within CONFERIR_HORAS, not released by Matheus) whose
@@ -1074,7 +1118,13 @@ def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, av
         marca = impressao(item)
         if not marca or (item.get("conferido") or {}).get("impressao") == marca:
             continue
-        gate = portao(item, critico)
+        estavel = aprovado_na_criacao(item)
+        if estavel:  # approved when made and unchanged: only what code can check, never another draw of the Crítico
+            fixa = regras_fixas_do_post(item)
+            gate = ({"publicar": False, "motivo": f"regra fixa: {fixa}", "critica": {"veredito": "reprova", "motivos": [fixa]}}
+                    if fixa else {"publicar": True, "motivo": estavel})
+        else:
+            gate = portao(item, critico)
         if gate["publicar"]:
             _anotar(item["id"], {"conferido": "aprova"},
                     conferido={"impressao": marca, "em": agora, "veredito": "aprova", "motivo": gate["motivo"]})
@@ -1119,6 +1169,8 @@ def rodar(api, avisar=lambda texto: None, agora: float | None = None, dormir=tim
     if (not previsto.get("liberado") and conf.get("veredito") == "aprova" and conf.get("impressao")
             and conf["impressao"] == impressao(previsto)):  # the same files and caption the Crítico approved before
         gate = {"publicar": True, "motivo": "o Crítico aprovou na conferência antecipada"}
+    elif not previsto.get("liberado") and aprovado_na_criacao(previsto) and not regras_fixas_do_post(previsto):
+        gate = {"publicar": True, "motivo": aprovado_na_criacao(previsto)}  # 11/11: no second draw at the hour either
     else:
         gate = portao(previsto, critico)  # outside the lock: it may call a model
     if not gate["publicar"]:

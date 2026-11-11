@@ -1211,6 +1211,8 @@ class Suite:
         s.propor(self._feed(), agora, enviar=lambda l, t, b: mensagens.append((t, b)) or "", stories=self._stories())
         self._passos(s, agora + 600, mensagens)
         reprova = type("C", (), {"criticar": lambda self, t, m: {"veredito": "reprova", "motivos": ["tela cortada"]}})()
+        # the post changed after it was approved (11/11: only then the Crítico judges it again at the hour)
+        self._mexer(c, "s20261026-1-1", None, legenda="Legenda trocada depois da aprovação, com valores de exemplo.")
         c.rodar(ApiFalsa(), lambda t, b=None: mensagens.append((t, b)), _ts(c, "2026-10-27", "11:50"),
                 dormir=lambda x: None, critico=reprova)
         ok(next(i for i in c.carregar()["itens"] if i["id"] == "s20261026-1-1")["estado"] == "bloqueada", "o Crítico segurou")
@@ -1222,6 +1224,31 @@ class Suite:
             fonte = (RAIZ / "helpers" / nome).read_text(encoding="utf-8")
             ok('"titulo": "🔓 Publicar mesmo assim"' not in fonte and '"titulo": "✅ Aprovar' not in fonte
                and "pedir_ao_matheus\": {" not in fonte, f"{nome}: nenhum botão de aprovação no código")
+
+    def t_aprovado_na_criacao_nao_e_rejulgado(self):
+        # 11/11, caso real: o carrossel de quarta (s20261109-1-13) foi aprovado pelo Crítico ao ser criado e, no dia
+        # seguinte, a conferência antecipada o reprovou com a mesma régua ("o Cérebro não confirma") e o dia ficou
+        # sem post. Aprovado e sem mudança: só as regras fixas; nunca outro sorteio do Crítico.
+        c, s, chamadas = self._semana(reprovar=())
+        agora = _ts(c, "2026-10-26", "07:50")
+        s.propor(self._feed(), agora, enviar=lambda *a: "", stories=self._stories())
+        julgou = []
+        reprova = type("C", (), {"criticar": lambda self, t, m: julgou.append(t) or {
+            "veredito": "reprova", "motivos": ["A legenda afirma algo que o Cérebro não confirma"]}})()
+        c.especialistas = lambda: None
+        item = next(i for i in c.carregar()["itens"] if i["id"] == "s20261026-1-3")
+        ok(c.aprovado_na_criacao(item), "aprovado na criação e sem mudança")
+        r = None
+        for _ in range(12):  # the advance check over the pending posts
+            r = c.conferir_antes(_ts(c, "2026-10-29", "08:00"), critico=reprova, baixar=lambda l, d: Path(d).write_bytes(b"x"))
+            if r and r["id"] == "s20261026-1-3":
+                break
+        ok(r and r["veredito"] == "aprova" and not julgou, f"não chamou o Crítico de novo: {r} {julgou}")
+        item = next(i for i in c.carregar()["itens"] if i["id"] == "s20261026-1-3")
+        ok(item["conferido"]["veredito"] == "aprova" and "não mudou" in item["conferido"]["motivo"], item["conferido"])
+        # a fixed rule still holds: a caption that breaks it is reproved by code
+        mudou = dict(next(i for i in c.carregar()["itens"] if i["id"] == "s20261026-1-1"), legenda="outra legenda")
+        ok(not c.aprovado_na_criacao(mudou), "legenda trocada depois da aprovação: julga de novo")
 
     def _arquivo_falso(self):
         return {"url": lambda chave: "https://s3/" + chave,
