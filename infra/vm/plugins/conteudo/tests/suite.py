@@ -973,10 +973,16 @@ class Suite:
         ok(antes[6]["critica"]["veredito"] == "reprova", "o story de qua chama o Reel reprovado")
         enviados = []
         agora = _ts(c, "2026-10-26", "08:30")
+        with s._exclusivo():  # what the proposal carries besides its content (11/11)
+            d = s.carregar(sid)
+            d["propostas"][1].update(criada_por="operador: teste", referencia={"id": "propria", "o_que_muda": "x"})
+            s._gravar(d)
         r = s.refazer_propostas(sid, feed={"2": {"titulo": "Reel novo", "ideia": "gancho melhor", "legenda": "Legenda nova."}},
                                 enviar=lambda login, texto, botoes: enviados.append((texto, botoes)) or "", agora=agora)
         ok(r["ok"] and sorted(x["n"] for x in r["refeitas"]) == [2, 6], r)
         depois = {p["n"]: p for p in s.carregar(sid)["propostas"]}
+        ok(depois[2]["criada_por"] == "operador: teste" and depois[2]["referencia"]["id"] == "propria",
+           "a proposta refeita à mão mantém quem criou, a referência e o que ela substitui")
         ok(chamadas[-1]["titulo"] == "Reel novo" and chamadas[-1]["data"] == "2026-10-28" and len(chamadas) == 5,
            "só o Reel volta ao Designer, no mesmo dia")
         ok(depois[2]["titulo"] == "Reel novo" and depois[2]["critica"]["veredito"] == "aprova" and depois[2]["hora"] == "11:45", depois[2])

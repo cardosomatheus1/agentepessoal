@@ -1692,8 +1692,11 @@ def refazer_propostas(sid: str, feed=None, stories=None, enviar=None, agora: flo
     capas_velhas = {_imagem_do_post(por_n[n]) for n in feed} - {""}
     for n, novo in feed.items():
         velho = por_n[n]
-        item = _item_feed(esp, "", sid, n, velho["formato_pedido"], velho["data"], dict(novo, hora=velho["hora"]))
-        itens[itens.index(velho)] = por_n[n] = dict(item, refeita=rodada)
+        # what the proposal carries besides its content stays with the new version (11/11: redone by hand, a piece made
+        # to replace a scheduled one lost its "substitui" and could not enter the agenda)
+        fica = {k: velho[k] for k in ("substitui", "criada_por", "referencia", "renders") if velho.get(k)}
+        item = _item_feed(esp, "", sid, n, velho["formato_pedido"], velho["data"], dict(fica, **novo, hora=velho["hora"]))
+        itens[itens.index(velho)] = por_n[n] = dict(fica, **item, refeita=rodada)
     dias = {por_n[n]["data"] for n in feed}
     for p in list(itens):
         if p["formato_pedido"] == "STORY" and p["estado"] == "proposta" and (
