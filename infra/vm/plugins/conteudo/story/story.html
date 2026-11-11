@@ -1,19 +1,24 @@
 <!doctype html><html><head><meta charset="utf-8">
 <!-- Stories da Raiz (1080x1920) na identidade do kit (infra/reels/base/raiz-carrossel.css): night/creme, lima só para o
-     que sobra, Manrope + Instrument Serif itálico. O Instagram cobre ~250 px no topo (barra do perfil) e ~340 px embaixo
-     (caixa de resposta): nada importante nessas faixas. Os campos chegam em window.CAMPOS (helpers/story.py). -->
+     que sobra, Manrope + Instrument Serif itálico (+ Caveat para o que é escrito à mão). O Instagram cobre ~250 px no
+     topo (barra do perfil) e ~340 px embaixo (caixa de resposta): nada importante nessas faixas. Os campos chegam em
+     window.CAMPOS (helpers/story.py).
+     11/11, Matheus: "Esses storys iguais só com texto diferente ... estão péssimos, zero criatividade". Cada layout
+     tem a sua composição e o seu fundo (helpers/story.py VISUAL diz a família de cada um): não é a mesma arte com
+     outro texto. -->
 <style>
 @font-face{font-family:M;src:url(kit/manrope-latin-variable.woff2) format('woff2');font-weight:200 800}
 @font-face{font-family:S;src:url(kit/instrument-serif-italic-latin.woff2) format('woff2');font-style:italic}
+@font-face{font-family:C;src:url(kit/caveat-latin.woff2) format('woff2');font-weight:400 700}
 :root{--night:#101d18;--card:#1b3026;--fio:#3b5043;--txt:#f5f7ed;--mut:#b5c2b6;--lima:#c8f17a;--lima-b:#9bbb60;
  --btn:#245d38;--forest:#27613c;--tint:#e9f1df;--bg:#f5f2e9;--borda:#d9d5c7;--ink:#182b23;--mutc:#58665e;--m:96px}
 *{margin:0;padding:0;box-sizing:border-box}
 body{width:1080px;height:1920px;overflow:hidden;font-family:M,sans-serif;background:var(--night);color:var(--txt);-webkit-font-smoothing:antialiased}
 .st{position:absolute;inset:0;overflow:hidden;background:var(--night)}
 .st.claro{background:var(--bg);color:var(--ink)}
-.st:before{content:'';position:absolute;width:1700px;height:1700px;left:-560px;top:-620px;border-radius:50%;
+.st.halo:before{content:'';position:absolute;width:1700px;height:1700px;left:-560px;top:-620px;border-radius:50%;
  background:radial-gradient(circle,rgba(39,97,60,.6),rgba(16,29,24,0) 62%)}
-.st.claro:before{background:radial-gradient(circle,rgba(233,241,223,.95),rgba(245,242,233,0) 62%)}
+.st.halo.claro:before{background:radial-gradient(circle,rgba(233,241,223,.95),rgba(245,242,233,0) 62%)}
 .topo{position:absolute;left:var(--m);right:var(--m);top:270px;display:flex;justify-content:space-between;align-items:center;z-index:3}
 .topo img{height:76px}
 .etq{font-weight:800;font-size:28px;letter-spacing:.16em;text-transform:uppercase;color:var(--lima)}
@@ -21,37 +26,169 @@ body{width:1080px;height:1920px;overflow:hidden;font-family:M,sans-serif;backgro
 .area{position:absolute;left:var(--m);right:var(--m);top:420px;bottom:400px;display:flex;flex-direction:column;z-index:2}
 h1{font-weight:800;letter-spacing:-.045em;font-size:112px;line-height:1;text-wrap:balance}
 h1.menor{font-size:92px}
+h1.media{font-size:76px;line-height:1.04}
 .it{font-family:S;font-style:italic;font-weight:400;letter-spacing:-.01em;color:var(--lima);padding-right:0}
 .claro .it{color:var(--forest)}
 p{font-weight:500;font-size:44px;line-height:1.36;color:var(--mut);margin-top:44px}
 .claro p{color:var(--mutc)}
-p b{color:var(--txt);font-weight:700}.claro p b{color:var(--ink)}
 .esp{flex:1}
 .botao{display:flex;align-items:center;justify-content:space-between;background:var(--btn);color:#fff;border-radius:20px;
  padding:38px 48px;font-weight:800;font-size:44px;letter-spacing:-.02em}
 .botao small{display:block;font-weight:600;font-size:28px;letter-spacing:0;color:#cfe3d3;margin-top:8px}
 .botao .seta{font-size:64px;font-weight:600}
 .lima-fundo{background:var(--lima);color:var(--night)}.lima-fundo small{color:#2b4433}
-.capa{flex:none;margin-top:56px;align-self:center;border-radius:28px;overflow:hidden;border:10px solid #0b1410;
- box-shadow:0 40px 90px rgba(0,0,0,.5);transform:rotate(-2deg);position:relative}
-.capa img{display:block;height:640px;width:auto;max-width:760px}
-.capa.video:after{content:'';position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;
- background:rgba(16,29,24,.75) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5v14l11-7z' fill='%23c8f17a'/%3E%3C/svg%3E") center/70px no-repeat}
+.rodape{font-weight:700;font-size:34px;letter-spacing:-.01em;display:flex;justify-content:space-between;align-items:center}
+.rodape span:last-child{opacity:.7;font-weight:600}
+.nota{font-weight:600;font-size:26px;color:var(--mut);margin-top:18px;letter-spacing:.02em}
+.claro .nota{color:var(--mutc)}
+
+/* post-novo: fundo creme, a capa do carrossel em leque (as páginas atrás) */
+.leque{flex:1;min-height:0;max-height:720px;aspect-ratio:4/5;margin:56px auto 48px;position:relative}
+.leque i{position:absolute;inset:0;border-radius:28px;background:#fff;border:2px solid var(--borda);box-shadow:0 24px 60px rgba(24,43,35,.16)}
+.leque i:nth-child(1){transform:rotate(7deg) translate(46px,10px);background:var(--tint)}
+.leque i:nth-child(2){transform:rotate(3deg) translate(22px,4px)}
+.leque .f{position:absolute;inset:0;border-radius:28px;overflow:hidden;transform:rotate(-2deg);box-shadow:0 30px 70px rgba(24,43,35,.28);background:var(--night)}
+.leque .f img{width:100%;height:100%;object-fit:cover;display:block}
+/* video-novo: a capa do vídeo em tela cheia, desfocada ao fundo, com o play; a manchete embaixo */
+.fundo-capa{position:absolute;inset:-60px;background-size:cover;background-position:center;filter:blur(38px) brightness(.42) saturate(1.1)}
+.capa{flex:none;align-self:center;border-radius:32px;overflow:hidden;border:6px solid rgba(245,247,237,.9);
+ box-shadow:0 40px 90px rgba(0,0,0,.55);position:relative}
+.capa img{display:block;height:660px;width:auto;max-width:800px}
+.capa:after{content:'';position:absolute;left:50%;top:50%;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;
+ background:var(--lima) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 5.5v13l10.5-6.5z' fill='%23101d18'/%3E%3C/svg%3E") center/84px no-repeat}
+/* bastidor */
 .tela{flex:none;margin-top:52px;border-radius:24px;overflow:hidden;border:2px solid var(--fio);box-shadow:0 40px 90px rgba(0,0,0,.45);
  background:#fff;max-height:640px}
 .tela img{display:block;width:100%}
-.nota{font-weight:600;font-size:26px;color:var(--mut);margin-top:18px;letter-spacing:.02em}
-.claro .nota{color:var(--mutc)}
 .pergunta{margin-top:40px;border:2px dashed var(--lima-b);border-radius:20px;padding:30px 36px;font-weight:700;font-size:40px;line-height:1.3}
+/* oferta */
 .lista{list-style:none;display:flex;flex-direction:column;gap:30px;margin-top:52px}
 .lista li{font-size:44px;font-weight:700;line-height:1.2;display:flex;gap:20px}
 .lista li:before{content:'✓';color:var(--lima-b)}
-.lista li small{display:block;font-size:30px;font-weight:500;color:var(--mut);margin-top:8px}
 .preco{margin-top:56px;display:flex;align-items:baseline;gap:20px}
 .preco b{font-size:120px;font-weight:800;letter-spacing:-.05em;color:var(--lima)}
 .preco span{font-size:40px;font-weight:600;color:var(--mut)}
-.selo{display:inline-block;margin-top:28px;background:var(--card);border:2px solid var(--fio);border-radius:999px;padding:16px 30px;
- font-weight:700;font-size:30px;color:var(--txt)}
+
+/* enquete: a tela em duas metades, lima em cima e night embaixo, com o "ou" no meio */
+.st.enquete{background:var(--night)}
+.enq-a,.enq-b{position:absolute;left:0;right:0;display:flex;flex-direction:column;justify-content:center;padding:0 var(--m)}
+.enq-a{top:0;height:1010px;background:var(--lima);color:var(--night);padding-top:560px;justify-content:flex-start}
+.enq-b{top:1010px;bottom:0;background:var(--night);color:var(--txt);padding-bottom:420px;justify-content:center}
+.enq-letra{font-weight:800;font-size:30px;letter-spacing:.18em;text-transform:uppercase;opacity:.65;margin-bottom:14px}
+.enq-op{font-weight:800;font-size:88px;line-height:1.02;letter-spacing:-.04em;text-wrap:balance}
+.enq-ou{position:absolute;left:50%;top:1010px;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;background:var(--bg);
+ color:var(--ink);display:flex;align-items:center;justify-content:center;font-family:S;font-style:italic;font-size:84px;z-index:4;
+ box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.enq-q{position:absolute;left:var(--m);right:var(--m);top:380px;font-weight:700;font-size:46px;line-height:1.2;color:var(--night);z-index:3;text-wrap:balance}
+.enq-pe{position:absolute;left:var(--m);right:var(--m);bottom:372px;z-index:3;color:var(--txt)}
+.enquete .etq{color:var(--forest)}
+
+/* quiz: papel creme, a afirmação em serif grande entre aspas e os dois carimbos */
+.st.quiz{background:var(--bg);color:var(--ink)}
+.quiz .area{top:400px}
+.qz-t{font-weight:800;font-size:34px;letter-spacing:.2em;text-transform:uppercase;color:var(--forest)}
+.qz-f{font-family:S;font-style:italic;font-size:104px;line-height:1.04;letter-spacing:-.015em;margin-top:36px;text-wrap:balance;position:relative}
+.qz-f.menor{font-size:84px}
+.qz-f:before{content:'“';display:block;font-size:220px;line-height:.62;color:var(--lima-b);height:96px}
+.qz-c{display:flex;gap:28px;margin-top:64px;align-items:center}
+.qz-c span{font-weight:800;font-size:48px;letter-spacing:.12em;text-transform:uppercase;padding:20px 36px;border-radius:16px;
+ border:6px solid var(--borda);color:#a9a595}
+.qz-c span.sim{border-color:var(--forest);color:var(--forest);background:var(--tint);transform:rotate(-4deg);box-shadow:0 10px 0 rgba(39,97,60,.12)}
+.qz-p{font-weight:600;font-size:42px;line-height:1.34;color:var(--ink);margin-top:52px;border-left:8px solid var(--lima-b);padding-left:32px}
+
+/* numero: fundo lima inteiro, o número gigante */
+.st.numero{background:var(--lima);color:var(--night)}
+.numero .etq{color:var(--forest)}
+.numero .area{top:440px}
+.num{font-weight:800;font-size:400px;line-height:.86;letter-spacing:-.07em;margin-left:-14px;white-space:nowrap}
+.num.m{font-size:300px}.num.p{font-size:220px}
+.num-m{font-weight:800;font-size:76px;line-height:1.04;letter-spacing:-.04em;margin-top:44px;text-wrap:balance}
+.num-m .it{color:var(--forest)}
+.numero p{color:#2c4a36;font-weight:600;margin-top:36px}
+.numero .nota{color:#3d5a45}
+.numero .rodape{border-top:4px solid var(--night);padding-top:28px}
+
+/* antes-depois: a folha de caderno torta em cima, o cartão do sistema embaixo */
+.st.ad{background:var(--bg);color:var(--ink)}
+.ad .area{top:390px;bottom:390px}
+.ad-rot{font-weight:800;font-size:28px;letter-spacing:.2em;text-transform:uppercase;color:var(--mutc);margin-bottom:16px}
+.ad-papel{background:#fffdf4 repeating-linear-gradient(transparent 0 71px,#c9d6e6 71px 74px);border:2px solid var(--borda);
+ border-radius:10px;padding:22px 44px 26px 96px;transform:rotate(-2.2deg);box-shadow:0 22px 50px rgba(24,43,35,.14);position:relative;margin-right:40px}
+.ad-papel:before{content:'';position:absolute;left:66px;top:0;bottom:0;width:3px;background:#e6a6a0}
+.ad-papel div{font-family:C;font-size:62px;line-height:74px;color:#27364a;white-space:nowrap;overflow:hidden}
+.ad-seta{align-self:center;font-family:C;font-size:60px;color:var(--forest);margin:26px 0 10px;transform:rotate(-3deg)}
+.ad-cartao{background:var(--night);color:var(--txt);border-radius:28px;padding:16px 44px;box-shadow:0 30px 70px rgba(16,29,24,.3);margin-left:40px}
+.ad-cartao div{display:flex;gap:22px;align-items:center;font-weight:700;font-size:40px;line-height:1.2;padding:22px 0;border-bottom:2px solid var(--fio)}
+.ad-cartao div:last-child{border-bottom:0}
+.ad-cartao div:before{content:'';flex:none;width:38px;height:38px;border-radius:50%;background:var(--lima) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' stroke='%23101d18' stroke-width='3.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/26px no-repeat}
+.ad h1{margin-top:44px}
+
+/* conversa: print de WhatsApp (a dor do dono), com a manchete embaixo */
+.st.zap{background:#e9e2d6;color:var(--ink)}
+.zap-topo{position:absolute;left:0;right:0;top:0;height:400px;background:var(--forest);color:#fff;display:flex;align-items:flex-end;padding:0 64px 40px;gap:30px;z-index:3}
+.zap-av{width:108px;height:108px;border-radius:50%;background:var(--tint);color:var(--forest);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:52px}
+.zap-nome{font-weight:700;font-size:46px;letter-spacing:-.01em}
+.zap-nome small{display:block;font-weight:500;font-size:30px;opacity:.8;margin-top:4px}
+.zap-msgs{position:absolute;left:56px;right:56px;top:452px;display:flex;flex-direction:column;gap:20px;z-index:2}
+.zap-b{max-width:80%;padding:24px 30px 20px;border-radius:26px;font-weight:500;font-size:44px;line-height:1.26;box-shadow:0 2px 3px rgba(0,0,0,.14);position:relative}
+.zap-b small{display:block;text-align:right;font-size:24px;color:#7b8a84;margin-top:6px}
+.zap-b.ele{align-self:flex-start;background:#fff;border-top-left-radius:6px}
+.zap-b.eu{align-self:flex-end;background:#d9f7c8;border-top-right-radius:6px}
+.zap-pe{position:absolute;left:0;right:0;bottom:0;background:var(--night);color:var(--txt);padding:60px var(--m) 380px;z-index:3;border-radius:44px 44px 0 0}
+.zap-pe h1{font-size:76px;line-height:1.04}
+.zap-pe .rodape{margin-top:36px;color:var(--mut)}
+.zap-pe .rodape img{height:52px}
+
+/* checklist: a folha branca presa na prancheta, para printar */
+.st.chk{background:var(--forest);color:var(--ink)}
+.chk-folha{position:absolute;left:70px;right:70px;top:330px;bottom:400px;background:#fffef9;border-radius:22px;transform:rotate(-1.4deg);
+ box-shadow:0 40px 90px rgba(0,0,0,.4);padding:112px 64px 48px;display:flex;flex-direction:column;z-index:2}
+.chk-clipe{position:absolute;left:50%;top:-44px;width:300px;height:110px;margin-left:-150px;border-radius:22px 22px 14px 14px;background:var(--night);
+ box-shadow:0 8px 18px rgba(0,0,0,.3)}
+.chk-clipe:after{content:'';position:absolute;left:50%;top:22px;width:92px;height:36px;margin-left:-46px;border-radius:18px;background:var(--forest)}
+.chk-t{font-weight:800;font-size:26px;letter-spacing:.2em;text-transform:uppercase;color:var(--forest)}
+.chk h1{font-size:74px;line-height:1.03;margin-top:18px;color:var(--ink)}
+.chk h1 .it{color:var(--forest)}
+.chk ul{list-style:none;margin-top:34px;display:flex;flex-direction:column;flex:1;justify-content:space-evenly}
+.chk li{display:flex;gap:28px;align-items:flex-start;font-weight:600;font-size:40px;line-height:1.22;padding:16px 0;border-bottom:2px solid #ece8da}
+.chk li:last-child{border-bottom:0}
+.chk li:before{content:'';flex:none;width:50px;height:50px;border:5px solid var(--ink);border-radius:10px;margin-top:0}
+.chk-pe{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:30px;color:var(--mutc);padding-top:22px;border-top:3px solid var(--ink)}
+.chk-pe img{height:50px}
+
+/* tela-zoom: a lupa grande num ponto da tela real, com a anotação à mão */
+.st.zoom .area{top:400px}
+.zm-tela{position:relative;margin-top:44px;border-radius:20px;border:2px solid var(--fio);box-shadow:0 30px 70px rgba(0,0,0,.5)}
+.zm-tela img{display:block;width:100%;border-radius:18px}
+.zm-ponto{position:absolute;width:19%;aspect-ratio:1;border:5px solid var(--lima);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 2000px rgba(16,29,24,.5);clip-path:none}
+.zm-tela{overflow:hidden}
+.zm-lupa{position:absolute;top:0;width:480px;height:480px;border-radius:50%;border:12px solid var(--lima);background-color:#0b1410;
+ background-repeat:no-repeat;box-shadow:0 30px 80px rgba(0,0,0,.6);z-index:4}
+.zm-mao{position:absolute;top:250px;width:380px;font-family:C;font-weight:700;font-size:70px;line-height:1;color:var(--lima);transform:rotate(-5deg);z-index:4}
+.zm-mao svg{display:block;width:200px;height:104px;margin:12px 0 0 150px}
+.zoom .zm-baixo{position:relative;height:500px;margin-top:-210px}
+.zoom .nota{position:absolute;bottom:0;width:360px;line-height:1.3;margin:0}
+
+/* foto: a foto em tela cheia, o texto sobre o degradê de baixo */
+.st.foto{background:#000}
+.ft-img{position:absolute;inset:0;background-size:cover;background-position:center}
+.ft-sombra{position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,29,24,.62) 0,rgba(16,29,24,0) 26%,rgba(16,29,24,0) 40%,rgba(16,29,24,.9) 68%,var(--night) 86%)}
+.foto .area{justify-content:flex-end}
+.foto h1{font-size:96px}
+.foto p{color:#dfe6dc;margin-top:30px;font-size:42px}
+.foto .rodape{margin-top:40px;color:var(--txt)}
+.ft-ilu{position:absolute;right:var(--m);top:372px;font-weight:600;font-size:22px;letter-spacing:.06em;color:rgba(255,255,255,.75);z-index:3}
+
+/* caixinha: a pergunta na caixinha do Instagram, a resposta embaixo */
+.st.cx{background:linear-gradient(160deg,#dcebc9 0,var(--tint) 46%,#f5f2e9 100%);color:var(--ink)}
+.cx .etq{color:var(--forest)}
+.cx .area{top:410px}
+.cx-caixa{background:#fff;border-radius:40px;box-shadow:0 30px 70px rgba(24,43,35,.18);overflow:hidden;transform:rotate(-1.5deg);margin:0 20px}
+.cx-caixa b{display:block;background:var(--forest);color:#fff;font-weight:700;font-size:34px;text-align:center;padding:26px 30px}
+.cx-caixa div{font-weight:700;font-size:56px;line-height:1.18;letter-spacing:-.02em;text-align:center;padding:48px 48px 56px;text-wrap:balance}
+.cx-resp{font-family:C;font-weight:700;font-size:64px;color:var(--forest);margin:54px 0 6px;transform:rotate(-2deg)}
+.cx h1{font-size:84px;line-height:1.02}
+.cx p{margin-top:30px;font-size:42px;color:var(--mutc)}
 </style></head><body>
 <div id="st" class="st"></div>
 <script>
@@ -63,31 +200,113 @@ function manchete(m, d) {
   return d && m.includes(d) ? m.replace(d, `<span class="it">${d}</span>`) : m;
 }
 const L = C.layout || 'dica';
-const claro = L === 'dica' && C.claro;
+const CLAROS = ['post-novo', 'quiz', 'antes-depois', 'conversa', 'caixinha', 'numero', 'enquete'];
+const claro = (L === 'dica' && C.claro) || CLAROS.includes(L);
 const st = document.getElementById('st');
-if (claro) st.classList.add('claro');
-const logo = `kit/${claro ? 'rc-logo-light-v26.png' : 'rc-logo-dark-v26.png'}`;
+if (CLAROS.includes(L) && L !== 'conversa') st.classList.add('claro');
+const logoClaro = 'kit/rc-logo-light-v26.png', logoEscuro = 'kit/rc-logo-dark-v26.png';
+const logo = claro ? logoClaro : logoEscuro;
 const etiqueta = {dica: 'Dica da semana', 'post-novo': 'Post novo no feed', 'video-novo': 'Vídeo novo no feed',
-                  bastidor: 'Bastidor do sistema', oferta: 'Lucro na Mão em 30 Dias'}[L] || '';
-let corpo = '';
-const h = `<h1 class="${(C.manchete || '').length > 70 ? 'menor' : ''}">${manchete(C.manchete, C.destaque)}</h1>`;
+                  bastidor: 'Bastidor do sistema', oferta: 'Lucro na Mão em 30 Dias', enquete: 'Isso ou aquilo',
+                  quiz: '', numero: 'Número do dia', 'antes-depois': 'Antes e depois', checklist: '',
+                  'tela-zoom': 'Por dentro do sistema', foto: 'Vida de cozinha', caixinha: 'Pergunta de dono'}[L] || '';
+const tam = (t, a, b) => (t || '').length > b ? 'media' : (t || '').length > a ? 'menor' : '';
+const h = `<h1 class="${tam(C.manchete, 70, 999)}">${manchete(C.manchete, C.destaque)}</h1>`;
+const rodape = (t, img) => `<div class="rodape"><span>${esc(t)}</span>${img ? `<img src="${img}">` : '<span>@raiz.connect</span>'}</div>`;
+let corpo = '', fora = '', topo = true;
 if (L === 'dica') {
+  st.classList.add('halo'); if (claro) st.classList.add('claro');
   corpo = h + (C.texto ? `<p>${esc(C.texto)}</p>` : '') + `<div class="esp"></div>` +
     `<div class="botao"><div>${esc(C.chamada || 'Tira print pra usar depois')}<small>@raiz.connect</small></div><span class="seta">↗</span></div>`;
-} else if (L === 'post-novo' || L === 'video-novo') {
-  corpo = h + (C.imagem ? `<div class="capa ${L === 'video-novo' ? 'video' : ''}"><img src="${esc(C.imagem)}"></div>` : '') +
-    `<div class="esp"></div><div class="botao lima-fundo"><div>${esc(C.chamada || (L === 'video-novo' ? 'Assiste no perfil' : 'Arrasta no perfil'))}` +
-    `<small>toca em @raiz.connect</small></div><span class="seta">→</span></div>`;
+} else if (L === 'post-novo') {
+  st.classList.add('halo', 'claro');
+  corpo = `<h1 class="${tam(C.manchete, 30, 52)}">${manchete(C.manchete, C.destaque)}</h1>` +
+    (C.imagem ? `<div class="leque"><i></i><i></i><div class="f"><img src="${esc(C.imagem)}"></div></div>` : '<div class="esp"></div>') +
+    `<div class="botao"><div>${esc(C.chamada || 'Arrasta no perfil')}<small>toca em @raiz.connect</small></div><span class="seta">→</span></div>`;
+} else if (L === 'video-novo') {
+  if (C.imagem) fora = `<div class="fundo-capa" style="background-image:url('${esc(C.imagem)}')"></div>`; else st.classList.add('halo');
+  corpo = (C.imagem ? `<div class="capa"><img src="${esc(C.imagem)}"></div><div class="esp"></div>` : '') +
+    `<h1 class="${tam(C.manchete, 40, 70)}" style="margin-top:40px">${manchete(C.manchete, C.destaque)}</h1>` + (C.imagem ? '' : '<div class="esp"></div>') +
+    `<div class="botao lima-fundo" style="margin-top:48px"><div>${esc(C.chamada || 'Assiste no perfil')}<small>toca em @raiz.connect</small></div><span class="seta">→</span></div>`;
 } else if (L === 'bastidor') {
+  st.classList.add('halo');
   corpo = h + (C.tela ? `<div class="tela"><img src="${esc(C.tela)}"></div><div class="nota">${esc(C.nota || 'tela real do Raiz Connect · valores de exemplo')}</div>` : '') +
     `<div class="esp"></div><div class="pergunta">${esc(C.pergunta || 'Responde aqui no direct:')}</div>`;
 } else if (L === 'oferta') {
+  st.classList.add('halo');
   corpo = `<h1 class="menor">${manchete(C.manchete || 'Em 30 dias você sabe quanto sobra em cada produto.', C.destaque || 'quanto sobra')}</h1>` +
     `<ul class="lista">${(C.itens || ['A gente cadastra seus 10 principais produtos', 'Raio-X do negócio no primeiro mês', 'Se em 30 dias o Raio-X não achar pelo menos um lugar onde o seu dinheiro escapa, a gente não cobra a próxima mensalidade'])
       .map(i => `<li><span>${esc(i)}</span></li>`).join('')}</ul>` +
     (C.preco ? `<div class="preco"><b>${esc(C.preco)}</b><span>${esc(C.preco_nota || '')}</span></div>` : '') +
     `<div class="esp"></div><div class="botao lima-fundo"><div>${esc(C.chamada || 'Link na bio')}<small>@raiz.connect</small></div><span class="seta">↗</span></div>`;
+} else if (L === 'enquete') {
+  st.classList.add('enquete');
+  const o = C.opcoes || ['', ''];
+  const t = x => (x || '').length > 26 ? 'style="font-size:70px"' : '';
+  fora = `<div class="enq-a"><div class="enq-letra">A</div><div class="enq-op" ${t(o[0])}>${esc(o[0])}</div></div>` +
+    `<div class="enq-b"><div class="enq-letra">B</div><div class="enq-op" ${t(o[1])}>${esc(o[1])}</div></div>` +
+    `<div class="enq-ou">ou</div><div class="enq-q">${manchete(C.manchete, C.destaque)}</div>` +
+    `<div class="enq-pe">${rodape(C.chamada || 'Responde A ou B aqui no direct')}</div>`;
+} else if (L === 'quiz') {
+  st.classList.add('quiz');
+  const v = String(C.resposta || '').toLowerCase() === 'verdade';
+  corpo = `<div class="qz-t">Mito ou verdade?</div><div class="qz-f ${(C.manchete || '').length > 60 ? 'menor' : ''}">${esc(C.manchete)}</div>` +
+    `<div class="qz-c"><span class="${v ? '' : 'sim'}">Mito</span><span class="${v ? 'sim' : ''}">Verdade</span></div>` +
+    (C.texto ? `<div class="qz-p">${esc(C.texto)}</div>` : '') + `<div class="esp"></div>` + rodape(C.chamada || 'Você acertou? Responde aqui');
+  topo = 'so-logo';
+} else if (L === 'numero') {
+  st.classList.add('numero');
+  const n = String(C.numero || '');
+  corpo = `<div class="num ${n.length > 6 ? 'p' : n.length > 4 ? 'm' : ''}">${esc(n)}</div><div class="num-m">${manchete(C.manchete, C.destaque)}</div>` +
+    (C.texto ? `<p>${esc(C.texto)}</p>` : '') + (C.nota ? `<div class="nota">${esc(C.nota)}</div>` : '') +
+    `<div class="esp"></div>` + rodape(C.chamada || 'Qual é o seu? Responde aqui');
+} else if (L === 'antes-depois') {
+  st.classList.add('ad');
+  corpo = `<div class="ad-rot">Antes</div><div class="ad-papel">${(C.antes || []).map(x => `<div>${esc(x)}</div>`).join('')}</div>` +
+    `<div class="ad-seta">depois, com o sistema ↓</div>` +
+    `<div class="ad-cartao">${(C.depois || []).map(x => `<div><span>${esc(x)}</span></div>`).join('')}</div>` +
+    `<h1 class="media">${manchete(C.manchete, C.destaque)}</h1><div class="esp"></div>` + rodape(C.chamada || 'Qual dos dois é você hoje?');
+  topo = 'so-logo';
+} else if (L === 'conversa') {
+  st.classList.add('zap');
+  const nome = String(C.contato || 'Fornecedor');
+  const hora = k => `22:${String(41 + k).padStart(2, '0')}`;
+  fora = `<div class="zap-topo"><div class="zap-av">${esc(nome.trim()[0] || 'F').toUpperCase()}</div><div class="zap-nome">${esc(nome)}<small>online</small></div></div>` +
+    `<div class="zap-msgs">${(C.mensagens || []).map((m, k) => `<div class="zap-b ${m[0] === 'eu' ? 'eu' : 'ele'}">${esc(m[1])}<small>${hora(k)}</small></div>`).join('')}</div>` +
+    `<div class="zap-pe"><h1>${manchete(C.manchete, C.destaque)}</h1>${rodape(C.chamada || 'Já recebeu uma dessas? Conta aqui', logoEscuro)}</div>`;
+  topo = false;
+} else if (L === 'checklist') {
+  st.classList.add('chk');
+  fora = `<div class="chk-folha"><div class="chk-clipe"></div><div class="chk-t">${esc(C.etiqueta || 'Checklist para printar')}</div>` +
+    `<h1>${manchete(C.manchete, C.destaque)}</h1><ul>${(C.itens || []).map(i => `<li><span>${esc(i)}</span></li>`).join('')}</ul>` +
+    `<div class="chk-pe"><span>${esc(C.chamada || 'Tira print e confere hoje')}</span><img src="${logoClaro}"></div></div>`;
+  topo = false;
+} else if (L === 'tela-zoom') {
+  st.classList.add('zoom', 'halo');
+  // the magnifier sits over the lower corner of the screen that is away from the point it enlarges
+  const f = C.foco || {}, x = Number(f.x ?? 50), y = Number(f.y ?? 50), z = 2.5, d = 456, w = 888 * z, hh = w / 1.6;
+  const lado = x > 50 ? 'left' : 'right', outro = x > 50 ? 'right' : 'left';
+  corpo = `<h1 class="${tam(C.manchete, 40, 64)}">${manchete(C.manchete, C.destaque)}</h1>` +
+    `<div class="zm-tela"><img src="${esc(C.tela)}"><div class="zm-ponto" style="left:${x}%;top:${y}%"></div></div>` +
+    `<div class="zm-baixo"><div class="zm-lupa" style="${lado}:-6px;background-image:url('${esc(C.tela)}');background-size:${w}px ${hh}px;` +
+    `background-position:${d / 2 - w * x / 100}px ${d / 2 - hh * y / 100}px"></div>` +
+    `<div class="zm-mao" style="${outro}:0;${x > 50 ? 'text-align:right' : ''}">${esc(C.seta || 'olha aqui')}` +
+    `<svg viewBox="0 0 210 110" fill="none" stroke="#c8f17a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" style="${x > 50 ? 'transform:scaleX(-1);margin-left:30px' : ''}"><path d="M6 14c40 70 100 86 190 62"/><path d="M160 48l38 28-44 22"/></svg></div>` +
+    `<div class="nota" style="${outro}:0">${esc(C.nota || 'tela real do Raiz Connect · valores de exemplo')}</div></div>`;
+} else if (L === 'foto') {
+  st.classList.add('foto');
+  fora = `<div class="ft-img" style="background-image:url('${esc(C.imagem)}')"></div><div class="ft-sombra"></div><div class="ft-ilu">imagem ilustrativa</div>`;
+  corpo = `<h1 class="${tam(C.manchete, 48, 999)}">${manchete(C.manchete, C.destaque)}</h1>` + (C.texto ? `<p>${esc(C.texto)}</p>` : '') +
+    rodape(C.chamada || 'Responde aqui no direct');
+} else if (L === 'caixinha') {
+  st.classList.add('cx');
+  corpo = `<div class="cx-caixa"><b>${esc(C.etiqueta || 'Pergunta que todo dono faz')}</b><div>${esc(C.pergunta)}</div></div>` +
+    `<div class="cx-resp">a resposta:</div><h1 class="${tam(C.manchete, 52, 999)}">${manchete(C.manchete, C.destaque)}</h1>` +
+    (C.texto ? `<p>${esc(C.texto)}</p>` : '') + `<div class="esp"></div>` + rodape(C.chamada || 'Manda a sua pergunta aqui');
+  topo = 'so-logo';
 }
-st.innerHTML = `<div class="topo"><img src="${logo}"><span class="etq">${esc(C.etiqueta || etiqueta)}</span></div><div class="area">${corpo}</div>`;
+const etq = L === 'checklist' || L === 'caixinha' ? '' : (C.etiqueta || etiqueta);
+st.innerHTML = fora + (topo ? `<div class="topo"><img src="${logo}">${topo === true ? `<span class="etq">${esc(etq)}</span>` : ''}</div>` : '') +
+  (corpo ? `<div class="area">${corpo}</div>` : '');
 </script>
 </body></html>
