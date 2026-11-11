@@ -559,6 +559,12 @@ class Suite:
             "_marca": "raiz", "pergunta": "Oi", "produto": {"nome": "Raiz Connect"}}})}, "carrossel")
         eq((com["ficha"]["produto"]["nome"], com["ficha"]["produto"]["foto"]), ("Raiz Connect", "fotos/raiz_calculadora.jpg"),
            "o que o Designer escreveu fica; só o que falta é preenchido")
+        # an example sum of the Raiz gets the origin the molde asks for ("conta[1].valor: dado real sem origem", 11/11)
+        m._validar_ficha = lambda molde, ficha: [] if (ficha.get("_origem") or {}).get("conta") else ["conta[1].valor: dado real sem origem (_origem: dono ou sistema)"]
+        conta = m._spec({"erro": "", "texto": json.dumps({"marca": "raiz", "molde": "frases", "ficha": {
+            "_marca": "raiz", "pergunta": "Oi", "conta": [{"valor": 5}, {"valor": 6}], "_origem": {"produto": "sistema"}}})}, "carrossel")
+        eq(conta["ficha"]["_origem"], {"conta": "dono", "produto": "sistema"}, "a origem que falta é preenchida; a que veio fica")
+        ok("Cena ou slide tipográfico" in m.PAPEIS["critico"], "o Crítico não exige foto do produto em cena de texto")
         outra = m._spec({"erro": "", "texto": json.dumps({"marca": "doces-da-lu", "molde": "frases", "ficha": {"_marca": "doces-da-lu", "pergunta": "Oi"}})}, "carrossel")
         ok("produto" not in outra["ficha"], "outra marca não ganha a vitrine da Raiz")
         ok("POV" in m.PAPEIS["critico"] and "decisão #85) não vale para ele" in m.PAPEIS["critico"], "o POV de humor tem a exceção escrita")

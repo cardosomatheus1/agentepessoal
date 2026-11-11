@@ -145,6 +145,9 @@ O que você faz:
   regra da tela real, escura e inteira com o menu (decisão #85) não vale para ele, e a conversa ou o caderno do
   "antes" são cena de humor, não depoimento (11/11: todo POV morria nessa regra). Julgue se a piada é de
   identificação, se a conta fecha e se nada debocha do cliente.
+- "A imagem mostra o que o texto fala" vale para foto e para tela do sistema. Cena ou slide tipográfico (texto, conta,
+  gráfico, cartão) é imagem válida e não precisa de foto do produto; a foto do fecho é a vitrine da marca, igual em
+  todas as peças (11/11: um Reel que explicava uma conta foi reprovado duas vezes por "não ter coxinhas nas cenas").
 - A enquete e a caixinha de pergunta do story são desenhadas na arte (a API não leva o sticker): a resposta vem pelo
   direct. Não reprove por "não tem como votar".
 
@@ -928,6 +931,17 @@ def _padroes_da_raiz(spec: dict) -> dict:
                 ficha[nome]["foto"] = VITRINE_DA_RAIZ["foto"]
         elif regra.get("tipo") == "foto" and "produto" in nome and not ficha.get(nome):
             ficha[nome] = VITRINE_DA_RAIZ["foto"]
+    # A number of the Raiz's teaching pieces is an example sum (the piece says "valores de exemplo"), not a client's
+    # datum: the origin the moldes ask for every "real" field is "dono" (as in the Raiz's own example fichas). 11/11:
+    # "conta[1].valor: dado real sem origem" killed the same carousel a third time.
+    try:
+        sem_origem = {m.group(1).split("[")[0].split(".")[0] for m in (
+            re.match(r"(.+?): dado real sem origem", e) for e in _validar_ficha(str(spec.get("molde") or ""), ficha)) if m}
+    except Exception:
+        sem_origem = set()
+    if sem_origem:
+        origem = ficha.get("_origem") if isinstance(ficha.get("_origem"), dict) else {}
+        ficha["_origem"] = {**{k: "dono" for k in sem_origem}, **origem}
     return spec
 
 
