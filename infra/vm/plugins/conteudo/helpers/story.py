@@ -58,7 +58,7 @@ COMO = {
     "conversa": "print de WhatsApp com a dor do dono: contato (ex.: \"Fornecedor Queijos\"), mensagens = 2 a 4 [[\"ele\" ou \"eu\", texto até 70]], manchete = a virada (até 60); a arte já traz o selo \"conversa encenada · valores de exemplo\" (não é depoimento: não ponha \"exemplo\" nas falas nem no contato)",
     "checklist": "para printar: manchete (até 50), itens = 3 a 5 (até 52 letras cada), chamada",
     "tela-zoom": "tela (caminho de uma tela real), foco = {\"x\", \"y\"} em % da tela (o ponto que a lupa aumenta: um percentual, um rótulo ou um gráfico, nunca um total em R$ da conta de exemplo), seta = anotação à mão (até 22), manchete (até 64)",
-    "foto": "imagem = caminho de uma foto real de comida/cozinha de /a0/usr/moldes/midia/fotos/, manchete (até 70), texto (até 120), chamada",
+    "foto": "imagem = caminho de uma foto real de comida/cozinha de /a0/usr/moldes/midia/fotos/, manchete (até 70), texto (até 120); chamada é opcional (sem ela sai \"Responde aqui no direct\")",
     "caixinha": "pergunta = a dúvida do dono, como ele fala (até 90), manchete = a resposta (até 70), texto (até 150)",
 }
 LIMITES = {  # layout -> {field: max letters}; a text over it would be cut or pushed out of the safe area
