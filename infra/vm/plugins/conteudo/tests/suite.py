@@ -2804,6 +2804,46 @@ class Suite:
         ok("ligar_ensaio" not in tool and "desligar_ensaio" not in tool and "agora_planejamento" in tool,
            "a ferramenta só lê a data do planejamento, nunca liga o ensaio")
 
+    def t_semana_e_produzida_em_segundo_plano(self):
+        # 11/11, the simulation: propor_semana died three times at the agent's 20-minute tool limit, nothing was saved
+        # and the same week was sent again on top. The tool checks at once and the week is made in its own process
+        c, s, chamadas = self._semana(reprovar=())
+        from unittest import mock
+        real = _ts(c, "2026-10-26", "07:50")
+        lancados = []
+
+        class Proc:
+            pid = os.getpid()  # a live process
+
+        def popen(cmd, **k):
+            lancados.append(cmd)
+            return Proc()
+        with mock.patch("time.time", return_value=real):
+            ruim = self._stories()
+            ruim[2] = {"layout": "video-novo", "manchete": "Story 3"}
+            r = s.propor_em_segundo_plano(self._feed(), ruim, popen=popen)
+            ok(not r["ok"] and "dois dias seguidos" in r["erro"] and not lancados, f"o que o código recusa volta na hora: {r}")
+            r = s.propor_em_segundo_plano(json.dumps(self._feed()), json.dumps(self._stories()), popen=popen)
+            ok(r["ok"] and r["em_producao"] and r["feed"] == 4 and r["stories"] == 7 and not chamadas, f"aceito, nada desenhado ainda: {r}")
+            ok(len(lancados) == 1 and lancados[0][1].endswith("semana_fila.py") and Path(lancados[0][2]).exists(), lancados)
+            de_novo = s.propor_em_segundo_plano(self._feed(), self._stories(), popen=popen)
+            ok(not de_novo["ok"] and "já há uma semana em produção" in de_novo["erro"] and len(lancados) == 1,
+               f"uma semana por vez: o mesmo pedido de novo não entra por cima: {de_novo}")
+            spec = importlib.util.spec_from_file_location("semana_fila_teste", RAIZ / "helpers" / "semana_fila.py")
+            fila = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(fila)
+            feito = fila.produzir(lancados[0][2], semana=s, enviar=lambda *a: "")
+            ok(feito["ok"] and feito["semana"] == "s20261026-1" and len(chamadas) == 4, f"a fila desenha e agenda: {feito}")
+            ok(s.em_producao() is None and json.loads(Path(lancados[0][2]).read_text())["resultado"]["ok"],
+               "terminou: a marca sai e o resultado fica no pedido")
+        # a dead or forgotten production does not hold the next week forever
+        s._marca_producao().write_text(json.dumps({"pid": 2 ** 22 + 12345, "em": real, "pedido": "x"}))
+        ok(s.em_producao(real + 60) is None, "processo morto: a marca some")
+        s._marca_producao().write_text(json.dumps({"pid": os.getpid(), "em": real, "pedido": "x"}))
+        ok(s.em_producao(real + 60) and s.em_producao(real + (s.PRODUCAO_MAX_MIN + 1) * 60) is None, "nem passa de 90 minutos")
+        tool = (RAIZ / "tools" / "conteudo.py").read_text(encoding="utf-8")
+        ok("propor_em_segundo_plano" in tool and "_semana().propor(" not in tool, "a ferramenta não desenha dentro da chamada")
+
     async def rodar(self, so: str = "") -> dict:
         for nome in sorted(n for n in dir(self) if n.startswith("t_") and (not so or so in n)):
             try:

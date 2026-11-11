@@ -61,7 +61,8 @@ class Conteudo(Tool):
         elif acao == "arquivos":
             r = await rodar(None, c.baixar_post, str(kwargs.get("data") or ""))
         elif acao == "propor_semana":  # the Designer and the Crítico take a while per post: off the loop
-            r = await rodar(None, lambda: _semana().propor(kwargs.get("propostas"), stories=kwargs.get("stories")))
+            # 11/11: checked now, produced in a process of its own (it takes longer than a tool call may last)
+            r = await rodar(None, lambda: _semana().propor_em_segundo_plano(kwargs.get("propostas"), kwargs.get("stories")))
         elif acao == "refazer_propostas":
             r = await rodar(None, lambda: _semana().refazer_propostas(str(kwargs.get("semana") or ""), kwargs.get("feed"),
                                                                        kwargs.get("stories")))

@@ -1142,7 +1142,7 @@ def conferir_propostas(feed: list, stories: list, refs: list | None = None, fora
 
 
 def propor(propostas: list, agora: float | None = None, enviar=None, login: str = "matheus", stories=None,
-           subir=None) -> dict:
+           subir=None, so_conferir: bool = False) -> dict:
     """The week: 4 feed ideas from the routine [{"titulo", "formato" (2 CARROSSEL and 2 REELS), "ideia", "legenda"}]
     and 7 stories [{"layout", "manchete", ...: helpers/story.py}] → each drawn and judged, saved as a new version;
     what the Crítico approved goes into the agenda now, the rest is redone by passo_autonomo, and Matheus gets one
@@ -1193,6 +1193,8 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
         return {"ok": False, "erro": "a semana precisa de pelo menos 1 post de humor (Matheus, 05/11): marque uma das "
                                      "propostas com \"tom\": \"humor\" (POV com meme da cultura pop, ex.: Nazaré "
                                      "fazendo conta do custo da pizza; o meme ele põe no CapCut)"}
+    if so_conferir:  # everything code can refuse was checked; nothing was drawn (propor_em_segundo_plano)
+        return {"ok": True, "conferido": True, "feed": len(vagas), "stories": len(dias_story)}
     try:
         esp, nota = c().especialistas(), ""
     except Exception as exc:  # installed but broken: the proposals say so, and nothing is approved by itself
@@ -1243,6 +1245,63 @@ def propor(propostas: list, agora: float | None = None, enviar=None, login: str 
             "propostas": [{"n": i["n"], "data": i["data"], "tipo": i["tipo"] or "?", "titulo": i["titulo"],
                            "critico": i["critica"]["veredito"], "problema": i["problema"],
                            "estado": por_n[i["n"]]["estado"]} for i in itens]}
+
+
+# ------------------------------------------------------------------ the week made in the background (11/11)
+# The simulation of 11/11 (Matheus: "Bom simular ele fazer só"): the routine called propor_semana three times and each
+# call died at the agent's tool limit (20 min in the Hermes): drawing 4 posts (the humor Reel alone renders for many
+# minutes) and 7 stories, each through the Designer and the Crítico, does not fit one tool call. Nothing was saved and
+# the agent sent the same week again on top. Now the tool checks the request at once (what code refuses comes back
+# immediately, so the routine can fix it), starts the production in a process of its own and answers "em_producao";
+# only one week is produced at a time, and the notice goes out by itself when it is done.
+PRODUCAO_MAX_MIN = 90
+
+
+def _marca_producao() -> Path:
+    return _pasta() / "em_producao.json"
+
+
+def em_producao(agora: float | None = None) -> dict | None:
+    """The week being produced in the background ({"pid", "em", "pedido"}) or None; a dead or too old one is cleared."""
+    agora = time.time() if agora is None else agora
+    try:
+        d = json.loads(_marca_producao().read_text(encoding="utf-8"))
+        os.kill(int(d["pid"]), 0)
+        if agora - float(d["em"]) > PRODUCAO_MAX_MIN * 60:
+            raise ProcessLookupError
+        return d
+    except (OSError, ValueError, KeyError, TypeError):
+        _marca_producao().unlink(missing_ok=True)
+        return None
+
+
+def propor_em_segundo_plano(propostas, stories=None, popen=None) -> dict:
+    """What the tool calls: the request is checked now (the same checks as propor), then the week is drawn, judged
+    and scheduled by helpers/semana_fila.py in its own process. {"ok": True, "em_producao": True} or the error."""
+    r = propor(propostas, stories=stories, so_conferir=True)
+    if not r.get("ok"):
+        return r
+    atual = em_producao()
+    if atual:
+        return {"ok": False, "em_producao": True,
+                "erro": f"já há uma semana em produção (começou há {int((time.time() - float(atual['em'])) // 60)} min): não mande "
+                        "de novo; o aviso sai sozinho quando ela terminar"}
+    import subprocess
+    pasta = _pasta() / "pedidos"
+    pasta.mkdir(parents=True, exist_ok=True)
+    pedido = pasta / f"pedido-{time.time_ns()}.json"
+    pedido.write_text(json.dumps({"em": time.time(), "propostas": json.loads(propostas) if isinstance(propostas, str) else propostas,
+                                  "stories": json.loads(stories) if isinstance(stories, str) else stories},
+                                 ensure_ascii=False), encoding="utf-8")
+    with open(pedido.with_suffix(".log"), "a") as log:
+        proc = (popen or subprocess.Popen)([sys.executable, str(Path(__file__).resolve().parent / "semana_fila.py"), str(pedido)],
+                                           stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+    _marca_producao().write_text(json.dumps({"pid": getattr(proc, "pid", 0), "em": time.time(), "pedido": str(pedido)}),
+                                 encoding="utf-8")
+    c()._diario({"semana_em_producao": pedido.name, "feed": r["feed"], "stories": r["stories"]})
+    return {"ok": True, "em_producao": True, "feed": r["feed"], "stories": r["stories"],
+            "aviso": "pedido aceito: a semana está sendo desenhada e julgada em segundo plano (20 a 40 minutos); o que o "
+                     "Crítico aprovar entra na agenda e o aviso sai sozinho. Não chame de novo nem espere."}
 
 
 # ------------------------------------------------------------------ autonomy (04/11): the Crítico decides, not Matheus
