@@ -133,6 +133,15 @@ const Motor = {
       caixa.appendChild(selo);
     }
   },
+  // 11/11: most video moldes have no "nota" field (explica, mito, quiz, chat...), so a Raiz Reel with numbers had no
+  // way to say "valores de exemplo" on screen and the Crítico reproved it (the Reel of the 26 coxinhas). In a video of
+  // the Raiz whose molde shows no note of its own, the kit puts one, small, in the lower left corner of the safe area.
+  _notaDeExemplo() {
+    if (Motor.FORMATO === 'carrossel' || (Motor.F || {})._marca !== 'raiz') return;
+    if (!/\d/.test(JSON.stringify(Motor.F || {})) || document.querySelector('.nota, #nota')) return;
+    const n = document.createElement('div'); n.className = 'nota-kit'; n.textContent = 'valores de exemplo';
+    document.body.appendChild(n);
+  },
   _serifNoDestaque() {
     const alvo = getComputedStyle(document.body).getPropertyValue('--destaque').trim();
     const sonda = document.createElement('i'); sonda.style.color = alvo; document.body.appendChild(sonda);
@@ -183,7 +192,7 @@ const Motor = {
       await Promise.all([...document.fonts].map(f => f.load().catch(() => {})));
       await Promise.all($$('img').map(i => i.complete ? (i.decode ? i.decode().catch(() => {}) : 0) : new Promise(ok => { i.onload = i.onerror = ok; })));
       $$('.rv').forEach(Motor.palavras);
-      if (Motor.ESTILO === 'kit') { Motor._serifNoDestaque(); Motor._telasInteiras(); }
+      if (Motor.ESTILO === 'kit') { Motor._serifNoDestaque(); Motor._telasInteiras(); Motor._notaDeExemplo(); }
       Motor._caberTudo();
       if (Motor.FORMATO !== 'carrossel') await window.render(0);
       // a photo of the ficha that did not load (wrong path) refuses the template instead of rendering a hole

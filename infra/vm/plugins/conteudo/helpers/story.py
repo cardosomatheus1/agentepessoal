@@ -51,7 +51,7 @@ COMO = {
     "video-novo": "chama o Reel do dia: manchete (até 70 letras, do MESMO assunto do vídeo), destaque, chamada; a capa entra sozinha",
     "bastidor": "tela (caminho de uma tela real do sistema), manchete, pergunta \"Responde aqui no direct: ...\"",
     "oferta": "Lucro na Mão em 30 Dias: manchete, destaque, itens (1 a 4), chamada",
-    "enquete": "isso ou aquilo: manchete = a pergunta (até 70 letras), opcoes = [A, B] (até 34 letras cada); a resposta vem pelo direct",
+    "enquete": "isso ou aquilo: manchete = a pergunta (até 70 letras), opcoes = [A, B] (até 34 letras cada), duas escolhas opostas de verdade, nunca a mesma coisa dita de dois jeitos; a resposta vem pelo direct",
     "quiz": "mito ou verdade: manchete = a afirmação (até 80 letras), resposta (\"mito\" ou \"verdade\"), texto = o porquê (até 150)",
     "numero": "número do dia: numero (até 8 letras, ex.: \"32%\", \"7 dias\"), manchete = o que ele quer dizer (até 70), texto (até 140), nota",
     "antes-depois": "antes = 2 a 4 linhas do caderno (até 26 letras cada, no chute), depois = 2 a 3 linhas do sistema (até 40), manchete (até 60)",

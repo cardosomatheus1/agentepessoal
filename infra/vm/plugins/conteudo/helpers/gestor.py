@@ -779,6 +779,9 @@ def _registrar(agora: float, motivo: str, seco: bool, r: dict) -> None:
     with open(_pasta() / "gestor.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(linha, ensure_ascii=False) + "\n")
     if not seco:
-        c()._diario({"gestor": "rodou", "motivo": _curto(motivo, 160), "acoes": len(linha.get("feitas") or []),
+        # 11/11: a run skipped at the day's ceiling was journaled as "rodou, 0 ações" and read as a Gestor that saw the
+        # repeated reprovals and did nothing; it never ran
+        c()._diario({"gestor": "não rodou: " + _curto(r["pulou"], 80) if r.get("pulou") else "rodou",
+                     "motivo": _curto(motivo, 160), "acoes": len(linha.get("feitas") or []),
                      "recusadas": len(linha.get("recusadas") or []),
                      "usd": (r.get("uso") or {}).get("usd"), **({"erro": _curto(r["erro"], 200)} if r.get("erro") else {})})

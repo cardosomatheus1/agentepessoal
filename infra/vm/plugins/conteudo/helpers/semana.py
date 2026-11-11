@@ -437,6 +437,8 @@ REGRAS_COMUNS = (
     "quantidade, a conta), nunca frase que serve para qualquer negócio. Valores de exemplo do tamanho de um pequeno "
     "negócio de comida (salgado de R$ 5 a 9, marmita de R$ 18 a 30, pizza de R$ 40 a 70) e conta que fecha. Na tela real, "
     "aponte um percentual, um rótulo ou um gráfico, não um total em R$ da conta de exemplo (são totais de empresa grande).\n"
+    "- Enquete: as duas opções são escolhas de verdade opostas, uma exclui a outra (\"mesmo preço do balcão\" x \"preço "
+    "próprio para o app\"), nunca duas formas de dizer a mesma coisa.\n"
     "- Story que chama o post do dia (post-novo, video-novo) só existe com a capa do post: no máximo um de cada na "
     "semana, e os outros stories valem por si.\n"
     "- Referência: cada proposta diz em qual referência do radar se inspirou (o id) e o que muda; \"propria\" vale "

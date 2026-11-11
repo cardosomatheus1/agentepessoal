@@ -547,6 +547,20 @@ class Suite:
         eq(sorted(m.moldes_da_marca(cat, "raiz", "carrossel")), ["mito", "time"], "molde de cardápio e combo não é da Raiz")
         eq(sorted(m.moldes_da_marca(cat, "doces-da-lu", "carrossel")), sorted(cat), "outra marca vê o catálogo inteiro")
         eq(sorted(m.moldes_da_marca({"so-teste": {}}, "raiz", "carrossel")), ["so-teste"], "sem nenhum que sirva, o catálogo fica")
+        # 11/11: "ficha: produto: falta" killed a carousel twice (the Designer left the closing field out and the
+        # correction came back unreadable). For the Raiz the vitrine has a default; what the Designer wrote stays
+        (reels / "moldes" / "frases" / "esquema.json").write_text(json.dumps({"formatos": ["carrossel"], "campos": {
+            "pergunta": {"tipo": "texto", "max": 20},
+            "produto": {"tipo": "objeto", "campos": {"foto": {"tipo": "foto"}, "nome": {"tipo": "texto"}, "detalhe": {"tipo": "texto", "obrigatorio": False}}}}}))
+        sem = m._spec({"erro": "", "texto": json.dumps({"marca": "raiz", "molde": "frases", "ficha": {"_marca": "raiz", "pergunta": "Oi"}})}, "carrossel")
+        eq(sem["ficha"]["produto"], {"foto": "fotos/raiz_calculadora.jpg", "nome": "Lucro na Mão em 30 Dias",
+                                     "detalhe": "Veja quanto sobra em cada produto"}, "a vitrine da Raiz entra quando falta")
+        com = m._spec({"erro": "", "texto": json.dumps({"marca": "raiz", "molde": "frases", "ficha": {
+            "_marca": "raiz", "pergunta": "Oi", "produto": {"nome": "Raiz Connect"}}})}, "carrossel")
+        eq((com["ficha"]["produto"]["nome"], com["ficha"]["produto"]["foto"]), ("Raiz Connect", "fotos/raiz_calculadora.jpg"),
+           "o que o Designer escreveu fica; só o que falta é preenchido")
+        outra = m._spec({"erro": "", "texto": json.dumps({"marca": "doces-da-lu", "molde": "frases", "ficha": {"_marca": "doces-da-lu", "pergunta": "Oi"}})}, "carrossel")
+        ok("produto" not in outra["ficha"], "outra marca não ganha a vitrine da Raiz")
         ok("POV" in m.PAPEIS["critico"] and "decisão #85) não vale para ele" in m.PAPEIS["critico"], "o POV de humor tem a exceção escrita")
         ok("troca de molde, nunca de assunto" in m.PAPEIS["designer"] and "número ou um exemplo concreto" in m.PAPEIS["designer"],
            "o Designer fica no assunto e é concreto")

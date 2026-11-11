@@ -24,7 +24,15 @@ def test_duvida_de_dono_nao_finge_cliente():
     assert "duvida" in json.loads((MOLDES / "pergunta-cliente" / "esquema.json").read_text(encoding="utf-8"))["campos"]["canal"]["opcoes"]
 
 
+def test_video_da_raiz_sem_nota_propria_ganha_a_do_kit():
+    # 11/11: explica, mito, quiz, chat... have no "nota" field: a Raiz Reel with numbers could not say "valores de exemplo"
+    js = (MOLDES / "motor" / "motor.js").read_text(encoding="utf-8")
+    assert "_notaDeExemplo()" in js and js.count("Motor._notaDeExemplo();") == 1 and "nota-kit" in js
+    assert ".nota-kit{" in (MOLDES / "motor" / "motor.css").read_text(encoding="utf-8")
+
+
 if __name__ == "__main__":
     test_nota_entra_com_o_preco()
     test_duvida_de_dono_nao_finge_cliente()
+    test_video_da_raiz_sem_nota_propria_ganha_a_do_kit()
     print("test_nota_desde_o_preco: ok")

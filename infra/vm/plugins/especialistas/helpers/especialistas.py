@@ -896,6 +896,38 @@ def _spec(r: dict, pedido: str = "") -> dict:
             spec["formato"] = pedido
             if isinstance(spec.get("ficha"), dict) and spec["ficha"].get("_formato"):
                 spec["ficha"]["_formato"] = pedido
+    return _padroes_da_raiz(spec)
+
+
+# The closing slide/scene of most moldes is a "produto" (or "oferta"): a real photo of what the post sells plus its
+# name. The Raiz sells one thing and has one picture for it; the Designer left the field out and the correction came
+# back unreadable, twice in a row (11/11, the carousel of 24/11: "ficha: produto: falta"). For the Raiz the field has a
+# default: what is missing is filled, what the Designer wrote stays.
+VITRINE_DA_RAIZ = {"foto": "fotos/raiz_calculadora.jpg", "nome": "Lucro na Mão em 30 Dias",
+                   "detalhe": "Veja quanto sobra em cada produto", "convite": "toque no link da bio"}
+
+
+def _padroes_da_raiz(spec: dict) -> dict:
+    ficha = spec.get("ficha") if isinstance(spec, dict) else None
+    if not isinstance(ficha, dict) or str(spec.get("marca") or ficha.get("_marca") or "raiz").lower() != "raiz":
+        return spec
+    moldes = pasta_moldes()
+    try:
+        campos = json.loads((moldes / str(spec.get("molde") or "") / "esquema.json").read_text(encoding="utf-8"))["campos"]
+    except Exception:
+        return spec
+    for nome, regra in campos.items():
+        if not isinstance(regra, dict) or regra.get("obrigatorio") is False:
+            continue
+        sub = regra.get("campos") if regra.get("tipo") == "objeto" and isinstance(regra.get("campos"), dict) else None
+        if sub and {"foto", "nome"} <= set(sub):  # the vitrine object (produto, oferta)
+            atual = ficha.get(nome) if isinstance(ficha.get(nome), dict) else {}
+            ficha[nome] = {**{k: v for k, v in VITRINE_DA_RAIZ.items() if k in sub}, **{k: v for k, v in atual.items() if v}}
+            # in a video the motor puts no "Valores de exemplo" seal next to a screen: the closing picture is the photo
+            if str(spec.get("formato") or "").lower() == "reel" and "/telas/" in str(ficha[nome].get("foto") or ""):
+                ficha[nome]["foto"] = VITRINE_DA_RAIZ["foto"]
+        elif regra.get("tipo") == "foto" and "produto" in nome and not ficha.get(nome):
+            ficha[nome] = VITRINE_DA_RAIZ["foto"]
     return spec
 
 

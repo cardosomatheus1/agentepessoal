@@ -2699,7 +2699,8 @@ class Suite:
            and "3 sinais de que o seu preço ficou para trás" in briefing and "layout" in briefing
            and "não se repetem em dias seguidos" in briefing and "Mais do mesmo reprova" in briefing,
            f"regras fixas + radar + histórico recente: {briefing[:3000]}")
-        ok(len(briefing) < 9000, f"cabe no teto do gestor: {len(briefing)} letras")
+        ok(len(briefing) < 10500, f"cabe no teto do gestor: {len(briefing)} letras")
+        ok("duas opções são escolhas de verdade opostas" in briefing and "Concreto e plausível" in briefing, "enquete de verdade e números plausíveis na régua comum")
         ok(recebidos["designer"] and recebidos["critico"] and modelo.pedidos, "os três foram chamados")
         cabecalho = esp.BRIEFING_COMUM
         ok(cabecalho == g.BRIEFING_COMUM, "o mesmo título de seção nos três")
