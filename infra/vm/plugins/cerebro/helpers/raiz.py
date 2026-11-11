@@ -33,6 +33,23 @@ _AQUI = Path(__file__).resolve().parents[1]
 PLUGINS = _AQUI.parent if (_AQUI.parent / "prospeccao" / "playbook.md").exists() else Path("/a0/usr/plugins")  # a staging copy in /tmp may sit next to a partial one
 LINHA_MAPA = "| Raiz/ | Cérebro da Raiz: mapa, oferta, cliente ideal, marca, concorrentes, playbook (leia `mapa.md`) |"
 
+# 11/11: the Crítico reproved a true sentence ("o pedido do cardápio digital cai no mesmo sistema do iFood, da 99Food
+# e do balcão") because the Cérebro did not say it. The product facts, checked in the erp-saas code, live in the map.
+FATOS_PRODUTO = """## O que o sistema faz (fatos do produto, conferidos no código do erp-saas em 11/11)
+- **Todos os canais de pedido caem no mesmo lugar:** cada pedido do iFood, da 99Food, do cardápio digital (QR na mesa e
+  pedido pelo link do delivery próprio), do balcão e do garçom vira uma comanda no mesmo restaurante (mesmo PDV), vai
+  para a mesma cozinha (KDS, com a estação de cada item e o ticket impresso) e fecha no mesmo caixa, virando venda com
+  baixa de estoque. Pode afirmar: "o pedido do cardápio digital cai no mesmo sistema do iFood, da 99Food e do balcão".
+- iFood e 99Food: os pedidos entram sozinhos, sem digitar.
+- Cardápio digital por QR, sem login (só consulta ou pedido pelo QR); delivery próprio com link público, taxa por
+  bairro, entregadores e rotas.
+- Cozinha (KDS): estações, tempo de cada pedido, atrasados. Salão: mapa de mesas, comandas, divisão da conta, PIX,
+  reservas pelo link.
+- Custo: ficha técnica, CMV teórico e real, estoque com lotes e validade.
+- Fonte: erp-saas, `modules/restaurant` (ifood-comanda, food99-comanda, menu-public-order, delivery-publico) e
+  `DESCRITIVO_SISTEMA.md` seção 8.
+"""
+
 MAPA = """# Mapa da Raiz
 
 A **Raiz Connect** é a empresa do Matheus que faz o sistema de custo, preço e estoque para quem produz comida (ficha
@@ -41,6 +58,7 @@ técnica, custo, CMV, estoque, vendas, nota fiscal e a assistente Fernanda). A p
 implementação feita pela Raiz e o Raiz Connect como ferramenta. Esta pasta é o **Cérebro da Raiz**: só a empresa Raiz, lida pela prospecção,
 pelos posts e pelos especialistas. O resto da vida do Matheus está no restante da Pasta.
 
+""" + FATOS_PRODUTO + """
 ## Onde mora cada coisa
 | Arquivo | O que tem | Quem usa |
 |---|---|---|
@@ -210,6 +228,16 @@ def gravar(nome: str, conteudo: str, aprovado_por: str) -> str:
                + corpo.rstrip() + "\n")
     p.versionar(f"raiz: {PASTA}/{nome} (com o ok dele)")
     return f"{PASTA}/{nome}"
+
+
+def garantir_fatos_produto(aprovado_por: str) -> str:
+    """The product facts in the live map (a VM seeded before 11/11 lacks them), through gravar: "" when already there."""
+    atual = ler("mapa")
+    if "## O que o sistema faz" in atual:
+        return ""
+    marca = "\n## Onde mora cada coisa"
+    novo = atual.replace(marca, "\n" + FATOS_PRODUTO + marca, 1) if marca in atual else atual.rstrip() + "\n\n" + FATOS_PRODUTO
+    return gravar("mapa.md", novo, aprovado_por)
 
 
 def _secoes(texto: str) -> dict:

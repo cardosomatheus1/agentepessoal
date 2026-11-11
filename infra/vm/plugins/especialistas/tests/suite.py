@@ -720,6 +720,42 @@ class Suite:
         spec["legenda"] = "Responder a mesma pergunta o dia todo cansa. Toque no link da bio e veja o cardápio."
         eq([f for f in m._conferir_spec(spec) if "legenda" in f], [], "legenda com o passo concreto passa")
 
+    def t_regras_duras_voltam_ao_designer(self):
+        # 11/11, casos reais: "a tela da calculadora está cortada e não mostra o menu" (calculadora não é tela do
+        # sistema), texto cortado no slide (o render já via), legenda sem a chamada do slide final
+        m = self._e()
+        m._validar_ficha = lambda molde, ficha: []
+        base = {"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel",
+                "legenda": "Qual time é você? Comenta aqui. Toque no link da bio e veja o Lucro na Mão em 30 Dias."}
+        spec = dict(base, ficha={"_marca": "raiz", "foto": "/a0/usr/plugins/conteudo/story/telas/calculadora-quanto-sobra.jpg"})
+        ok(any("calculadora-quanto-sobra.jpg não é tela do sistema" in f for f in m._conferir_spec(spec)), m._conferir_spec(spec))
+        spec = dict(base, ficha={"_marca": "raiz", "foto": "/a0/usr/plugins/conteudo/story/telas/cozinha-kds.jpg"})
+        eq(m._conferir_spec(spec), [], "tela conhecida e legenda com a chamada passam")
+        spec = dict(spec, legenda="Qual time é você? Comenta aqui.")
+        ok(any("link da bio" in f for f in m._conferir_spec(spec)), "legenda sem a chamada do slide final")
+        # the render's own check goes back to the Designer, not to the Crítico
+        reels = self._reels()
+        m = self._e(reels=reels)
+        m._pode_renderizar = lambda: ""
+        renders = []
+
+        def render(molde, formato, ficha):
+            renders.append(ficha["pergunta"])
+            return (["s1.jpg"], "a conferência do render achou problemas: slide 2: texto cortado") if len(renders) == 1 \
+                else (["s1.jpg"], "")
+        m.renderizar_molde = render
+        fichas = [{"marca": "raiz", "motor": "molde", "molde": "frases", "formato": "carrossel",
+                   "ficha": {"_marca": "raiz", "pergunta": q}} for q in ("Longa", "Curta")]
+        chamadas = []
+
+        def chamar(papel, tarefa, material, login="matheus"):
+            chamadas.append((papel, tarefa))
+            return {"texto": json.dumps(fichas.pop(0)) if papel == "designer" else APROVA, "erro": "", "imagens": [],
+                    "sem_imagem": []}
+        m.chamar = chamar
+        d = m.desenhar("Carrossel da Raiz")
+        ok(renders == ["Longa", "Curta"] and "texto cortado" in chamadas[1][1] and d["falta"] == [], (renders, d["falta"]))
+
     def t_previa_mostra_tela_inteira_antes_do_zoom(self):
         # 10/11, caso real: o Reel de quarta 11/11 (lanca-app, 5 telas) reprovado por "Regra do Matheus #85: nas cenas
         # das telas, o sistema não aparece inteiro com o menu visível ... na tela da cozinha, as laterais estão

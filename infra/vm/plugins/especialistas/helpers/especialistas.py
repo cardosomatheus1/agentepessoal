@@ -119,6 +119,10 @@ O que você faz:
   pessoas, mesas e pedidos nelas são fictícios, não são cliente nem nome a esconder (10/11: carrosséis reprovados
   pelo nome da empresa de exemplo, que o Designer não tem como tirar da tela). Num carrossel, cada tela do sistema
   já sai com o selo "Valores de exemplo" ao lado; olhe se ele está lá.
+- O código já conferiu antes de você (e devolveu ao Designer): emoji, travessão, R$ sem "valores de exemplo", "conheça"
+  e "solução" na legenda, legenda terminando no link da bio, sigla (CMV, DRE, curva ABC) sem explicar, número de falas
+  e duração do molde, limites de letras, texto cortado ou fora da área, só telas reais do sistema e o selo nelas. Seu
+  trabalho é o julgamento: a ideia, a clareza, a força, a verdade do que se afirma e a imagem mostrar o que o texto diz.
 - O slide final do carrossel e a cena final do vídeo da Raiz (logo, a chamada "Lucro na Mão em 30 Dias: link na
   bio" e o @) são fixos do kit, postos pelo motor em toda peça: não são texto do Designer nem quebram um briefing que
   pediu para não falar da oferta no conteúdo (10/11: um carrossel reprovado duas vezes por esse slide).
@@ -707,13 +711,24 @@ LEGENDA_GENERICA = re.compile(r"\b(conheça|saiba mais|solução|soluções)\b",
 def _legenda_generica(spec: dict) -> list[str]:
     """10/11, real: the Wednesday carousel reproved for a caption ending "Conheça a solução para sua operação." The
     rule was only in the Designer's prompt (end on the concrete step, never "saiba mais"/"conheça"); now the
-    correction round fixes it before the Crítico."""
+    correction round fixes it before the Crítico. 11/11: the caption also ends on the same call as the final slide
+    (the link in the bio), which the motor puts on every Raiz piece."""
     legenda = str(spec.get("legenda") or "")
+    erros = []
     achado = LEGENDA_GENERICA.search(legenda)
-    if not achado:
-        return []
-    return [f"ficha: a legenda usa \"{achado.group(0)}\" (genérico, a marca não usa): termine no passo concreto, ex.: "
-            f"\"Toque no link da bio e veja o Lucro na Mão em 30 Dias.\""]
+    if achado:
+        erros.append(f"ficha: a legenda usa \"{achado.group(0)}\" (genérico, a marca não usa): termine no passo concreto, "
+                     "ex.: \"Toque no link da bio e veja o Lucro na Mão em 30 Dias.\"")
+    if legenda.strip() and not re.search(r"link (da|na) bio", legenda, re.I):
+        erros.append("ficha: a legenda não termina na chamada do slide final (toque no link da bio)")
+    return erros
+
+
+def _telas_desconhecidas(ficha) -> list[str]:
+    """11/11, real: the calculator (a public page, light, no menu) saved in the screens folder went into a carousel as
+    a "tela do sistema" and the Crítico reproved it three times. Only the known screens (TELAS) may be used."""
+    achados = set(re.findall(r"/story/telas/([^\s\"']+)", json.dumps(ficha, ensure_ascii=False)))
+    return [f"ficha: {n} não é tela do sistema (use só: {', '.join(sorted(TELAS))})" for n in sorted(achados) if n not in TELAS]
 
 
 def _texto_dito(ficha: dict) -> dict:
@@ -755,6 +770,7 @@ def _conferir_spec(spec: dict) -> list[str]:
             if marca == "raiz":
                 problemas += _jargao(json.dumps(_texto_dito(spec["ficha"]), ensure_ascii=False))
                 problemas += _legenda_generica(spec)
+                problemas += _telas_desconhecidas(spec["ficha"])
             pedido = spec.get("_formato_pedido")
             if pedido and str(spec.get("formato") or "").lower() != pedido:
                 problemas.append(f"ficha: formato {spec.get('formato')!r}, mas a vaga da semana é {pedido!r}: use um molde "
@@ -975,7 +991,9 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes:
                     break
                 spec, falta = novo, _conferir_spec(novo)
             arquivos, render, previa, narracao, folha, falta = _renderizar(spec, falta)
-            recusa = [f for f in falta if f.startswith("o molde recusou a ficha")]
+            # 11/11: the render's own check (cut text, text outside the Instagram area) goes back to the Designer
+            # too, not to the Crítico as a reason to reprove
+            recusa = [f for f in falta if f.startswith(("o molde recusou a ficha", "a conferência do render achou problemas"))]
             if not (recusa and tentativas):
                 break
             tentativas -= 1

@@ -704,6 +704,23 @@ class Suite:
         rz._concorrentes().PASTA = self.tmp / "concorrentes"  # no lista.json: the plugin's starting list
         return rz
 
+    def t_raiz_tem_os_fatos_do_produto(self):
+        # 11/11, caso real: o Crítico reprovou "o pedido do cardápio digital cai no mesmo sistema do iFood, da 99Food e
+        # do balcão" porque "o Cérebro não confirma" (é verdade no erp-saas: cada canal vira comanda no mesmo PDV)
+        self.preparar()
+        try:
+            p, rz = self.p, self._raiz()
+            rz.estrutura()
+            ok("Todos os canais de pedido caem no mesmo lugar" in rz.contexto(limite=14000), "o mapa novo já traz os fatos")
+            mapa = p.RAIZ / "Raiz" / "mapa.md"
+            mapa.write_text(mapa.read_text().replace(rz.FATOS_PRODUTO, ""))  # a Pasta seeded before 11/11
+            ok("Todos os canais" not in rz.contexto(limite=14000), "sem os fatos")
+            ok(rz.garantir_fatos_produto("Matheus, 11/11: fatos do produto") == "Raiz/mapa.md", "grava pelo caminho oficial")
+            ok("cardápio digital cai no mesmo sistema do iFood" in rz.contexto(limite=14000), "e o Crítico lê")
+            eq(rz.garantir_fatos_produto("de novo"), "", "não repete")
+        finally:
+            self.limpar()
+
     def t_raiz_estrutura_nunca_sobrescreve(self):
         self.preparar()
         try:

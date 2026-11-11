@@ -1088,17 +1088,17 @@ def regras_fixas_do_post(item: dict) -> str:
     if erro:
         return erro
     esp = especialistas()
-    for nome in ("regras_fixas", "_legenda_generica"):
-        f = getattr(esp, nome, None) if esp is not None else None
-        if f is None:
-            continue
-        try:
-            r = f("post", {"legenda": item.get("legenda")}) if nome == "regras_fixas" else f({"legenda": item.get("legenda")})
-        except Exception:
-            continue
-        if r:
-            return "; ".join(str(x) for x in r)
-    return ""
+    if esp is None:
+        return ""
+    try:
+        r = list(esp.regras_fixas("post", {"legenda": item.get("legenda")}) or [])
+        proibida = getattr(esp, "LEGENDA_GENERICA", None)
+        achado = proibida.search(str(item.get("legenda") or "")) if proibida is not None else None
+        if achado:
+            r.append(f"a legenda usa \"{achado.group(0)}\" (genérico, a marca não usa)")
+    except Exception:
+        return ""
+    return "; ".join(str(x) for x in r)
 
 
 def conferir_antes(agora: float | None = None, critico=_PADRAO, refazer=None, avisar=lambda texto: None,
