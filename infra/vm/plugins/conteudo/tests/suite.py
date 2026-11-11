@@ -2496,6 +2496,14 @@ class Suite:
         ruim[2] = {"layout": "video-novo", "manchete": "Story 3"}  # qui, after the video-novo of qua
         r = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=ruim)
         ok(not r["ok"] and "qui 29/10" in r["erro"] and "dois dias seguidos" in r["erro"] and "Layouts que servem" in r["erro"], r)
+        # the kit's own rules come back at once too (11/11: an enquete with a third option, a dash, was only refused when drawn)
+        s._S["fixo"].validar = staticmethod(_story().validar)
+        torto = [dict(x, manchete=f"Manchete do story {k}") for k, x in enumerate(self._stories())]
+        torto[6] = {"layout": "enquete", "manchete": "Você confere o que sobrou?", "opcoes": ["Sim", "Não", "— "]}
+        torto[2] = {"layout": "numero", "numero": "32%", "manchete": "do que entrou virou ingrediente."}
+        r = s.propor(self._feed(), agora, enviar=lambda *a: "", stories=torto)
+        ok(not r["ok"] and "(enquete)" in r["erro"] and "travessão" in r["erro"], f"campos do layout conferidos antes de desenhar: {r}")
+        s._S["fixo"].validar = staticmethod(lambda campos: "" if campos.get("layout") else "layout")
         so_dica = [{"layout": "dica", "manchete": f"Dica {n}"} for n in range(7)]
         ok(not s.propor(self._feed(), agora, enviar=lambda *a: "", stories=so_dica)["ok"], "sete dicas, não")
         ok(not (s._pasta().exists() and list(s._pasta().glob("s*.json"))), "nada foi desenhado nem gravado")

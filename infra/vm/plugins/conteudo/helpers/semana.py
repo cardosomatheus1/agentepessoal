@@ -1116,6 +1116,11 @@ def conferir_propostas(feed: list, stories: list, refs: list | None = None, fora
         if motivo:
             return (f"story de {_rotulo_dia(dia)}: {motivo}. Layouts que servem nesse dia: "
                     f"{', '.join(layouts_livres(dia, outros)) or 'nenhum'}")
+        # 11/11, the simulation: an "enquete" went in with three options, one of them a dash, and was only refused when
+        # drawn, twenty minutes later. The kit's own rules are checked now (the post's cover comes in later by itself)
+        invalido = story().validar({k: v for k, v in campos.items() if k != "imagem" or campos.get("layout") not in CHAMA})
+        if invalido:
+            return f"story de {_rotulo_dia(dia)} ({campos.get('layout')}): {invalido}"
         publico = json.dumps(campos, ensure_ascii=False)
         citado = cita_concorrente(publico)
         if citado:
