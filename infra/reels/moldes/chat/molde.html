@@ -29,7 +29,7 @@ body.e-pop #tela{background:var(--fundo2)}
 .bb.dig i{width:18px;height:18px;border-radius:50%;background:currentColor;opacity:.6}
 .bb .fm{display:block;width:480px;height:360px;object-fit:cover;border-radius:26px;margin:-8px -14px 16px}
 .lin.virada .bb{font-size:60px;font-weight:900;font-family:var(--ft);max-width:640px;line-height:1.08;padding:28px 38px}
-#veu{position:absolute;inset:0;background:color-mix(in srgb,var(--fundo) 70%,transparent);opacity:0;pointer-events:none}
+#veu{position:absolute;inset:0;background:color-mix(in srgb,var(--fundo) 40%,transparent);opacity:0;pointer-events:none}
 #estouro{position:absolute;width:600px;height:600px;opacity:0;pointer-events:none}
 #barraIn{position:absolute;left:26px;right:26px;bottom:0;top:1090px;display:flex;align-items:flex-start;gap:16px;padding-top:14px}
 #barraIn .in{flex:1;height:86px;border-radius:43px;background:color-mix(in srgb,var(--texto) 8%,transparent);font-size:34px;line-height:86px;padding:0 34px}
@@ -48,6 +48,9 @@ body.e-pop #tela{background:var(--fundo2)}
 </div>
 <script src="../motor/motor.js"></script>
 <script>
+// 12/11: at the turn the earlier messages went to 25% under a 70% veil; the frame the Crítico sees (the end of the
+// scene) read as illegible text in the Raiz's dark kit and the Reel of 09/12 fell on it. They stay readable.
+const DIM = 0.4;
 // "Conversa no celular": a staged conversation inside a generic phone (brand colors, "cena encenada" seal, no
 // messaging-app look). Messages arrive after "digitando…", the list scrolls, and the turn lands big: the rest dims,
 // the phone jolts and a burst marks the punchline. Music only.
@@ -108,7 +111,7 @@ Motor.molde({
     const v = D.m[D.m.length - 1], tv = v.d1;
     const vi = t >= tv ? eo(p(t, tv + 0.05, 0.3)) : 0;
     $('#veu').style.opacity = vi;
-    D.m.forEach(m => { if (m.foto) { m.lin.style.position = 'relative'; m.lin.style.zIndex = 2; } m.lin.style.opacity = m.sai * (m.foto || m === v ? 1 : 1 - 0.75 * vi); });
+    D.m.forEach(m => { if (m.foto) { m.lin.style.position = 'relative'; m.lin.style.zIndex = 2; } m.lin.style.opacity = m.sai * (m.foto || m === v ? 1 : 1 - DIM * vi); });
     v.lin.style.position = 'relative'; v.lin.style.zIndex = 2;
     const sh = t >= tv ? Math.exp(-(t - tv - 0.25) * 5) * (t > tv + 0.25 ? 1 : 0) : 0;
     const zz = t >= tv ? 0.05 * eo5(p(t, tv, 0.5)) : 0;

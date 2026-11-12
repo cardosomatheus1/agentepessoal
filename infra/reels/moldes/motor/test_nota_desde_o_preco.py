@@ -38,9 +38,18 @@ def test_slide_da_raiz_com_preco_ganha_a_nota_no_pe():
     assert ".nota-slide{" in (MOLDES / "motor" / "motor.css").read_text(encoding="utf-8")
 
 
+def test_chat_deixa_as_mensagens_legiveis_na_virada():
+    # 12/11: earlier messages at 25% under a 70% veil read as illegible in the frame the Crítico judges
+    chat = (MOLDES / "chat" / "molde.html").read_text(encoding="utf-8")
+    dim = float(re.search(r"const DIM = ([0-9.]+);", chat).group(1))
+    veu = int(re.search(r"#veu\{[^}]*var\(--fundo\) (\d+)%", chat).group(1))
+    assert dim <= 0.5 and veu <= 50, (dim, veu)
+
+
 if __name__ == "__main__":
     test_nota_entra_com_o_preco()
     test_duvida_de_dono_nao_finge_cliente()
     test_video_da_raiz_sem_nota_propria_ganha_a_do_kit()
     test_slide_da_raiz_com_preco_ganha_a_nota_no_pe()
+    test_chat_deixa_as_mensagens_legiveis_na_virada()
     print("test_nota_desde_o_preco: ok")
