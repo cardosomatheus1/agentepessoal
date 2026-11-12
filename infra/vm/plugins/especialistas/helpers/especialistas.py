@@ -647,8 +647,10 @@ emoji, terminando no passo concreto da chamada)."""
 # photos nor real customers to quote: offered those, the Designer filled a "pergunta de cliente" with an invented
 # comment and a "produto da semana" with a tour of a screen (11/11, the simulation: 0 of 4 feed posts passed). For the
 # Raiz the Designer is offered only the moldes that fit a brand that teaches owners.
+# 12/11: "pergunta-cliente" left the Raiz's carousels: one question and one answer of 160 letters made 4 thin slides
+# (20/11, "quando o dinheiro do app entra": a non-answer; 04/12: a six-slide plan reduced to "14 x 1,5 min = 21 min").
 MOLDES_DA_RAIZ = {
-    "carrossel": ("mito", "quiz", "time", "frases", "passo-a-passo", "faca-nao-faca", "pergunta-cliente", "antes-depois"),
+    "carrossel": ("mito", "quiz", "time", "frases", "passo-a-passo", "faca-nao-faca", "antes-depois"),
     "reel": ("conta-mudou", "custo-escondido", "mito", "quiz", "chat", "expectativa", "frases", "passo-a-passo",
              "faca-nao-faca", "explica", "glossario", "sabia-que", "lista-cinco", "piramide", "comparativo", "funil",
              "pergunta-cliente", "time", "lanca-app", "demonstracao", "oferta-completa"),
@@ -1086,7 +1088,7 @@ def telas_do_sistema(formato: str = "") -> str:
             + "\n" + (
                 # 22/10: told "use lanca-app to show the system", a carousel slot kept coming back as a video
                 "Num carrossel, a tela entra no campo de foto de um molde de carrossel (ex.: passo-a-passo, mito, "
-                "faca-nao-faca, pergunta-cliente), com o caminho acima; nunca use molde de vídeo. O motor põe o selo "
+                "faca-nao-faca, antes-depois), com o caminho acima; nunca use molde de vídeo. O motor põe o selo "
                 "\"Valores de exemplo\" ao lado de cada tela e \"valores de exemplo\" pequeno no pé de todo slide que "
                 "mostra R$ (12/11): não repita isso no texto dos slides; na legenda, uma vez."
                 if formato == "carrossel" else

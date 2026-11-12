@@ -446,6 +446,14 @@ class Suite:
             {"moldes": [{"id": "frases", "formatos": ["carrossel"], "situacao": "Frases", "ficha": {"pergunta": "até 20"}}]}))
         return reels
 
+    def t_carrossel_da_raiz_sem_pergunta_cliente(self):
+        # 12/11: one question + one 160-letter answer made thin carousels twice in the week's plan
+        m = self._e()
+        cat = {i: {"id": i, "formatos": ["carrossel", "reel"]} for i in ("mito", "pergunta-cliente", "cardapio")}
+        ok("pergunta-cliente" not in m.moldes_da_marca(cat, "raiz", "carrossel") and "mito" in m.moldes_da_marca(cat, "raiz", "carrossel"),
+           "carrossel da Raiz sem pergunta-cliente")
+        ok("pergunta-cliente" in m.moldes_da_marca(cat, "doces-da-lu", "carrossel"), "outra marca segue com ele")
+
     def t_valores_de_exemplo_nao_se_repete_no_texto(self):
         # 12/11: four "(valores de exemplo)" in the four steps of a Reel; the motor puts the note on screen
         m = self._e()
