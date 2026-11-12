@@ -24,6 +24,7 @@ body.e-pop .op .le{border:5px solid var(--texto)}
 .pph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .ptx{flex:none;font-size:62px;line-height:1.08}
 .pdd{flex:none;padding:20px 34px}
+.pnt{flex:none;height:40px;margin-top:-14px;font-size:28px;font-weight:600;color:var(--texto2)}
 .pl{display:flex;justify-content:space-between;align-items:center;gap:20px;height:70px;border-bottom:3px dashed var(--borda)}
 .pl:last-child{border-bottom:0}
 .pl .a{flex:1;height:50px;font-size:40px;font-weight:800;white-space:nowrap}
@@ -202,6 +203,10 @@ function checar(F, $m) {
   if (['saude', 'estetica', 'alimento'].includes(F.assunto) && !F.fonte) $m.erro('assunto de saúde, estética ou alimento precisa de fonte');
   if (F.fonte && !['dono', 'sistema'].includes((F._origem || {}).fonte)) $m.erro('fonte: dado real sem origem (_origem: dono ou sistema)');
   if (new Set(F.opcoes.map(o => o.trim().toLowerCase())).size < 3) $m.erro('as três opções precisam ser diferentes');
+  // 12/11: a Raiz carousel had a cover with only two lines of text at the top ("Valores de exemplo: aluguel R$ 1.800...")
+  // and 70% empty: the clue's numbers go in "conta" (a card the code sums) and the carousel cover needs a photo
+  if (/R\$\s*\d/.test(F.pista)) $m.erro('pista: sem "R$" no texto (vira um parágrafo de números); os valores vão em "conta", que aparece num cartão e o código soma');
+  if ($m.FORMATO === 'carrossel' && !F.midia) $m.erro('carrossel: a capa (pista) precisa de foto em "midia" (fotos/... do assunto da pergunta); sem ela a capa fica com metade vazia');
   let total = null, dec = 0;
   if (F.conta) {
     total = Math.round(F.conta.reduce((s, l) => s + l.valor * (l.vezes ?? 1), 0) * 100) / 100;
@@ -231,7 +236,8 @@ function pista(F, $m, pai) {
   if (F.midia) { const hp = Math.max(240, Math.min(car ? 560 : 520, alto - ht - hd - 60)); const ph = mk('div', 'pph', null, col); ph.style.height = hp + 'px'; $m.filmagem(mk('img', null, null, ph), F.midia, 0); }
   const tx = mk('div', 'ptx tit t seg' + (car ? '' : ' rv'), F.pista, col); tx.style.height = ht + 'px';
   if (n) { const dd = mk('div', 'pdd cartao', null, col); F.conta.forEach(l => { const li = mk('div', 'pl', null, dd); mk('div', 'a t', l.rotulo, li);
-    mk('div', 'b tit t seg', l.vezes != null && l.vezes !== 1 ? `${$m.num(l.vezes, Number.isInteger(l.vezes) ? 0 : 1)}${l.unidade ? ' ' + l.unidade : 'x'} × ${$m.brl(l.valor, Number.isInteger(l.valor) ? 0 : 2)}` : $m.brl(l.valor, Number.isInteger(l.valor) ? 0 : 2), li); }); }
+    mk('div', 'b tit t seg', l.vezes != null && l.vezes !== 1 ? `${$m.num(l.vezes, Number.isInteger(l.vezes) ? 0 : 1)}${l.unidade ? ' ' + l.unidade : 'x'} × ${$m.brl(l.valor, Number.isInteger(l.valor) ? 0 : 2)}` : $m.brl(l.valor, Number.isInteger(l.valor) ? 0 : 2), li); });
+    if (F.nota) mk('div', 'pnt t t2', F.nota, col); }
   return col;
 }
 const KICK = 'tem aqui pra você';
@@ -385,7 +391,7 @@ Motor.molde({
     if (F.conta) {
       const s4 = novo(); mk('div', 'ct tit t seg', 'Fazendo a conta', s4);
       recibo(F, $m, s4);
-      mk('div', 'salva mao t seg', 'salva pra lembrar na hora de pedir', s4);
+      mk('div', 'salva mao t seg', 'salva pra conferir depois', s4);
     }
     vitrine(F, $m, novo(), KICK);
   },

@@ -206,7 +206,8 @@ def calibracao(args: list) -> None:
 MOLDES = "infra/reels/moldes"
 MOLDES_VM = "/opt/a0/usr/moldes"  # /a0/usr/moldes in the container: rendered by plugins/conteudo (22/10)
 MOLDES_TESTES = ("motor/test_validar.py", "motor/test_audio.py", "motor/test_voz.py", "motor/test_patchright.py",
-                 "motor/test_selo_exemplo.py", "motor/test_quadro_inteiro.py", "motor/test_nota_desde_o_preco.py")
+                 "motor/test_selo_exemplo.py", "motor/test_quadro_inteiro.py", "motor/test_nota_desde_o_preco.py",
+                 "motor/test_quiz_capa.py")
 
 
 # onde os moldes rodam: no Hermes (desde 23/10, o A0 parado) ou no A0 (a volta); (container, opções do exec, python)

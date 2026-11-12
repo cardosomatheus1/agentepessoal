@@ -10,7 +10,7 @@
    "tipo": "texto",
    "min": 10,
    "max": 100,
-   "dica": "o mínimo pra pessoa conseguir responder, mostrado antes da pergunta (os valores vão em conta)"
+   "dica": "o mínimo pra pessoa conseguir responder, mostrado antes da pergunta (sem R$: os valores vão em conta)"
   },
   "pergunta": {
    "tipo": "texto",
@@ -21,7 +21,7 @@
   "midia": {
    "tipo": "filmagem",
    "obrigatorio": false,
-   "dica": "foto real do produto ou serviço da pergunta (fotos/x.jpg), mostrada na pista"
+   "dica": "foto real do produto ou serviço da pergunta (fotos/x.jpg), mostrada na pista; obrigatória no carrossel (é a capa)"
   },
   "opcoes": {
    "tipo": "lista",
@@ -82,6 +82,12 @@
    "max": 22,
    "obrigatorio": false,
    "dica": "Preço mínimo"
+  },
+  "nota": {
+   "tipo": "texto",
+   "max": 40,
+   "obrigatorio": false,
+   "dica": "aviso pequeno junto da conta (ex.: valores de exemplo)"
   },
   "assunto": {
    "tipo": "escolha",
