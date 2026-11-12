@@ -205,6 +205,31 @@ class Suite:
         with Image.open(saida) as im:
             ok(im.size == (1080, 1920) and im.format == "JPEG", f"story 1080x1920 em JPEG: {im.size} {im.format}")
 
+    def t_story_que_trava_no_navegador_nao_segura_a_semana(self):
+        # 12/11: a checklist story hung inside the browser for more than ten minutes and held the week's production
+        import sys
+        import time
+        st = _story()
+        saida = Path(tempfile.mkdtemp()) / "s.jpg"
+        campos = {"layout": "dica", "manchete": "Pese a porção de queijo por uma semana.", "texto": "A balança mostra."}
+        st.DESENHO_MAX, st._DESENHO_CMD = 1, [sys.executable, "-c", "import time; time.sleep(30)"]
+        t0 = time.time()
+        try:
+            st.renderizar(campos, str(saida))
+            ok(False, "o desenho travado devia falhar")
+        except RuntimeError as exc:
+            ok("travou" in str(exc) and "duas vezes" in str(exc), str(exc))
+        ok(time.time() - t0 < 10, f"desiste em 2 x DESENHO_MAX, não espera o travado: {time.time() - t0:.1f}s")
+        st._DESENHO_CMD = [sys.executable, "-c", "import sys; open(sys.argv[2], 'w').write('x')"]
+        ok(st.renderizar(campos, str(saida)) == str(saida), "o processo que desenha devolve o arquivo")
+        st._DESENHO_CMD = [sys.executable, "-c", "raise SystemExit('ValueError: foto sumiu')"]
+        saida.unlink()
+        try:
+            st.renderizar(campos, str(saida))
+            ok(False, "o desenho que falha devia falhar")
+        except RuntimeError as exc:
+            ok("foto sumiu" in str(exc), str(exc))
+
     def t_story_um_por_dia_ao_lado_do_post(self):
         # 22/10, Matheus: "story sim todo dia": o story tem a vaga dele, ao lado do post do feed
         c = _modulo()

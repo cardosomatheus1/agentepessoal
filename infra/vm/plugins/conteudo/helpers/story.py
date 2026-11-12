@@ -185,20 +185,42 @@ def _chrome() -> str:
     return achado
 
 
+DESENHO_MAX = 90  # s: a story takes 1 to 3 s to draw
+_DESENHO_CMD = None  # the tests set it (the command that draws); else this file run with --desenhar
+
+
 def renderizar(campos: dict, saida: str) -> str:
-    """Draws one story into `saida` (.jpg). Raises ValueError when the fields break a rule. Playwright's sync API
-    refuses to run where an asyncio loop runs (the agent's own thread): then it draws in a worker thread."""
+    """Draws one story into `saida` (.jpg). Raises ValueError when the fields break a rule.
+    12/11: in the simulated week a checklist story hung inside the browser for more than ten minutes (the same fields
+    draw in 1 s when run again) and held the whole week's production. The drawing runs in a process of its own, killed
+    with its browser after DESENHO_MAX seconds and tried once more; it also keeps Playwright's sync API away from the
+    agent's asyncio loop."""
     erro = validar(campos)
     if erro:
         raise ValueError(erro)
-    import asyncio
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return _desenhar(campos, saida)
-    from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=1) as ex:
-        return ex.submit(_desenhar, campos, saida).result(timeout=180)
+    import signal
+    import subprocess
+    import sys
+    cmd = list(_DESENHO_CMD or [sys.executable, str(Path(__file__).resolve()), "--desenhar"]) + [
+        json.dumps(campos, ensure_ascii=False), str(saida)]
+    falha = ""
+    for _ in range(2):
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+        try:
+            _out, err = proc.communicate(timeout=DESENHO_MAX)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)  # the browser goes with it
+            except OSError:
+                pass
+            proc.communicate()
+            falha = f"o desenho do story travou (mais de {DESENHO_MAX} s)"
+            continue
+        if proc.returncode == 0 and Path(saida).exists():
+            return saida
+        linhas = [x for x in (err or "").strip().splitlines() if x.strip()]
+        raise RuntimeError("o desenho do story falhou: " + (linhas[-1] if linhas else f"código {proc.returncode}")[:300])
+    raise RuntimeError(falha + ", duas vezes")
 
 
 def _desenhar(campos: dict, saida: str) -> str:
@@ -233,3 +255,9 @@ def _desenhar(campos: dict, saida: str) -> str:
     finally:
         shutil.rmtree(trabalho, ignore_errors=True)
     return saida
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) == 4 and sys.argv[1] == "--desenhar":
+        _desenhar(json.loads(sys.argv[2]), sys.argv[3])
