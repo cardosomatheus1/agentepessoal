@@ -2738,7 +2738,8 @@ class Suite:
         def enviar(body, login, tempo=0):
             papel = "critico" if body["instructions"] == esp.PAPEIS["critico"] else "designer"
             recebidos[papel].append(body["input"][0]["content"][0]["text"])
-            texto = '{"veredito": "aprova", "motivos": []}' if papel == "critico" else '{"motor": "molde", "conceito": "x"}'
+            # (a ficha outside the moldes motor: with a molde that renders nothing, the Crítico is not asked, 12/11)
+            texto = '{"veredito": "aprova", "motivos": []}' if papel == "critico" else '{"motor": "carrossel_raiz", "conceito": "x"}'
             return {"output": [{"type": "message", "content": [{"type": "output_text", "text": texto}]}]}
         esp._enviar = enviar
         c.especialistas = lambda: esp

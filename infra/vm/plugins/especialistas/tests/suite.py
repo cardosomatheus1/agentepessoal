@@ -370,7 +370,9 @@ class Suite:
         eq(d["critica"]["veredito"], "aprova", "julgada como a do Designer")
         chamadas.clear()
         d = m.julgar_ficha({"formato": "CARROSSEL"}, {"molde": "frases", "formato": "carrossel", "ficha": {"_marca": "raiz"}})
-        ok(chamadas == ["critico"] and any("pergunta: falta" in f for f in d["falta"]), f"erro volta, sem correção: {chamadas} {d['falta']}")
+        # 12/11: nothing rendered, so the Crítico is not asked: the reason is the ficha's own error
+        ok(chamadas == [] and any("pergunta: falta" in f for f in d["falta"])
+           and any("sem arte para julgar" in x for x in d["critica"]["motivos"]), f"erro volta, sem correção: {chamadas} {d['falta']}")
 
     def t_designer_ilegivel_ou_fora_do_ar_reprova(self):
         m = self._e()
@@ -470,8 +472,49 @@ class Suite:
         # it gives up after CORRECOES tries and says what is still wrong
         respostas[:] = [json.dumps({"molde": "frases", "ficha": {"pergunta": "x" * 30}})] * (m.CORRECOES + 1)
         chamadas.clear()
+        m.REVISOES = 0  # this checks the corrections only (the review round after a reproval has its own tests)
         d = m.desenhar("Carrossel da Raiz")
         ok(sum(p == "designer" for p, _ in chamadas) == m.CORRECOES + 1 and "ficha: pergunta: longo" in d["falta"], d["falta"])
+
+    def t_correcao_ilegivel_pergunta_de_novo_e_sem_arte_nao_chama_o_critico(self):
+        # 12/11, the simulation: three pieces died on "o designer não respondeu à correção (resposta ilegível)" after one
+        # try (the same correction, asked again, came back fine), and the Crítico, with no art, said "a arte não veio"
+        import os
+        m = self._e()
+        eq(m._json('{"molde": "frases", "ficha": {"a": 1}}\nObs.: troquei {x} por {y}.'), {"molde": "frases", "ficha": {"a": 1}},
+           "a ficha seguida de uma nota com chaves")
+        reels = self._reels()
+        m = self._e(reels=reels)
+        m._pode_renderizar = lambda: ""
+        m.renderizar_molde = lambda molde, formato, ficha: (["s1.jpg"], "")
+        respostas = [json.dumps({"marca": "raiz", "molde": "frases", "formato": "carrossel",
+                                 "ficha": {"_marca": "raiz", "pergunta": "x" * 30}}), "Desculpe, não consegui.",
+                     json.dumps({"marca": "raiz", "molde": "frases", "formato": "carrossel",
+                                 "ficha": {"_marca": "raiz", "pergunta": "Quanto sobra?"}})]
+        chamadas = []
+
+        def chamar(papel, tarefa, material, login="matheus"):
+            chamadas.append(papel)
+            return {"texto": respostas.pop(0) if papel == "designer" else APROVA, "erro": "", "imagens": [], "sem_imagem": []}
+        m.chamar = chamar
+        os.environ["ESPECIALISTAS_SAIDA"] = str(Path(tempfile.mkdtemp(dir=self.tmp)))
+        try:
+            d = m.desenhar("Carrossel da Raiz")
+            guardada = list((Path(os.environ["ESPECIALISTAS_SAIDA"]) / "ilegiveis").glob("*.txt"))
+        finally:
+            os.environ.pop("ESPECIALISTAS_SAIDA", None)
+        eq(d["falta"], [], f"a correção ilegível foi pedida de novo e passou: {d['falta']}")
+        ok(guardada and "Desculpe" in guardada[0].read_text(), "a resposta ilegível fica guardada para o operador")
+        # nothing rendered: the reason is what failed, and the Crítico is not asked to judge an empty piece
+        m.renderizar_molde = lambda molde, formato, ficha: ([], "o molde recusou a ficha: imagem: é o caminho de uma imagem")
+        respostas[:] = [json.dumps({"marca": "raiz", "molde": "frases", "formato": "carrossel",
+                                    "ficha": {"_marca": "raiz", "pergunta": "Quanto sobra?"}})] * (m.CORRECOES + 1)
+        chamadas.clear()
+        m.REVISOES = 0
+        d = m.desenhar("Carrossel da Raiz")
+        ok("critico" not in chamadas, f"sem arte, o Crítico não é chamado: {chamadas}")
+        ok(d["critica"]["veredito"] == "reprova" and any("sem arte para julgar" in x and "caminho de uma imagem" in x
+                                                         for x in d["critica"]["motivos"]), d["critica"])
 
     def t_jargao_e_recusa_do_molde_entram_na_correcao(self):
         m = self._e()

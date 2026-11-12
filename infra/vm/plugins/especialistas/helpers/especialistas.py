@@ -408,14 +408,27 @@ def chamar_claude(papel: str, tarefa: str, login: str = "matheus", max_saida: in
 
 
 def _json(saida: str):
-    achado = re.search(r"\{.*\}", saida or "", re.S)
+    """The answer's JSON object. 12/11: besides the whole answer between the first "{" and the last "}", the first
+    object that decodes on its own (a ficha followed by a note with braces, or two objects, used to come out
+    "ilegível")."""
+    saida = saida or ""
+    achado = re.search(r"\{.*\}", saida, re.S)
     if not achado:
         return None
     try:
         d = json.loads(achado.group(0))
+        return d if isinstance(d, dict) else None
     except ValueError:
-        return None
-    return d if isinstance(d, dict) else None
+        pass
+    dec = json.JSONDecoder()
+    for m in re.finditer(r"\{", saida):
+        try:
+            d, _fim = dec.raw_decode(saida, m.start())
+        except ValueError:
+            continue
+        if isinstance(d, dict) and len(d) > 1:
+            return d
+    return None
 
 
 def _lista_textos(v) -> list[str] | None:
@@ -1135,6 +1148,30 @@ def _evitar(material) -> list:
     return list(material.get("evitar_moldes") or []) if isinstance(material, dict) else []
 
 
+def _guardar_ilegivel(r: dict) -> None:
+    """The raw answer that did not parse, kept for the operator (12/11: "resposta ilegível" with nothing to look at)."""
+    try:
+        pasta = Path(os.environ.get("ESPECIALISTAS_SAIDA", "/a0/usr/workdir/especialistas")) / "ilegiveis"
+        pasta.mkdir(parents=True, exist_ok=True)
+        (pasta / f"{time.strftime('%Y%m%d-%H%M%S')}.txt").write_text(f"erro: {r.get('erro')}\n\n{r.get('texto')}", encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _corrigir(spec: dict, falta: list, material, login: str) -> tuple[dict, dict]:
+    """One correction of the ficha by the Designer: (the answer, the new spec or {}). 12/11, the simulation: three
+    pieces of one week died on "o designer não respondeu à correção (resposta ilegível)" after a single try, and the
+    same correction, asked again, came back fine. An unreadable answer is kept and asked once more."""
+    r2 = {}
+    for _ in range(2):
+        r2 = chamar("designer", _tarefa_correcao(spec, falta, _evitar(material)), material, login=login)
+        novo = _spec(r2, spec.get("_formato_pedido", ""))
+        if novo:
+            return r2, novo
+        _guardar_ilegivel(r2)
+    return r2, {}
+
+
 def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes: int | None = None) -> dict:
     """One round: check the ficha (with up to CORRECOES fixes against the template's schema), render it, judge it."""
     falta, arquivos, render = [], [], ""
@@ -1152,8 +1189,7 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes:
         while True:
             while tentativas and spec.get("motor") == "molde" and any(f.startswith("ficha:") for f in falta):
                 tentativas -= 1
-                r2 = chamar("designer", _tarefa_correcao(spec, falta, _evitar(material)), material, login=login)
-                novo = _spec(r2, spec.get("_formato_pedido", ""))
+                r2, novo = _corrigir(spec, falta, material, login)
                 if not novo:
                     falta.append(f"o designer não respondeu à correção ({r2['erro'] or 'resposta ilegível'})")
                     tentativas = 0
@@ -1166,8 +1202,7 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes:
             if not (recusa and tentativas):
                 break
             tentativas -= 1
-            r2 = chamar("designer", _tarefa_correcao(spec, recusa, _evitar(material)), material, login=login)
-            novo = _spec(r2, spec.get("_formato_pedido", ""))
+            r2, novo = _corrigir(spec, recusa, material, login)
             if not novo:
                 falta.append(f"o designer não respondeu à correção ({r2['erro'] or 'resposta ilegível'})")
                 break
@@ -1189,7 +1224,12 @@ def _volta(briefing, material: dict, spec: dict, r: dict, login: str, correcoes:
             "não reprove por falta da aprovação dele.")
     tipo = ("carrossel" if formato == "carrossel" or spec.get("motor") == "carrossel_raiz"
             else "reel" if formato == "reel" else "post")
-    critica = criticar(tipo, julgar, login=login)
+    if spec.get("motor") == "molde" and not arquivos and not previa and falta:
+        # 12/11: with no art the Crítico could only say "a arte não veio" and that became the reason the Gestor and
+        # the next redo read; the real reason is what failed before the render
+        critica = {"veredito": "reprova", "motivos": [f"sem arte para julgar: {uma}" for uma in falta[:3]], "sugestoes": []}
+    else:
+        critica = criticar(tipo, julgar, login=login)
     if not spec and critica["veredito"] == "aprova":  # nothing to approve: fail closed
         critica = {**critica, "veredito": "reprova", "motivos": ["sem ficha do designer"] + critica["motivos"]}
     out = {"spec": spec, "arquivos": arquivos, "critica": critica, "falta": falta, "render": render}
