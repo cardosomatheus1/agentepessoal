@@ -220,8 +220,17 @@ class Suite:
         except RuntimeError as exc:
             ok("travou" in str(exc) and "duas vezes" in str(exc), str(exc))
         ok(time.time() - t0 < 10, f"desiste em 2 x DESENHO_MAX, não espera o travado: {time.time() - t0:.1f}s")
-        st._DESENHO_CMD = [sys.executable, "-c", "import sys; open(sys.argv[2], 'w').write('x')"]
-        ok(st.renderizar(campos, str(saida)) == str(saida), "o processo que desenha devolve o arquivo")
+        st._DESENHO_CMD = [sys.executable, "-c", "import os, sys; open(sys.argv[2], 'w').write(os.environ['TMPDIR'])"]
+        import os
+        os.environ["TMPDIR"], antes = "/opt/data/cache/scratch", os.environ.get("TMPDIR")
+        try:
+            ok(st.renderizar(campos, str(saida)) == str(saida), "o processo que desenha devolve o arquivo")
+        finally:
+            os.environ.pop("TMPDIR") if antes is None else os.environ.__setitem__("TMPDIR", antes)
+        # 12/11: Chromium hung or crashed on the Hermes's scratch TMPDIR; it draws with TMPDIR on /tmp
+        ok(saida.read_text() == "/tmp", f"o navegador desenha com TMPDIR em /tmp: {saida.read_text()}")
+        meme = (RAIZ / "helpers" / "meme.py").read_text(encoding="utf-8")
+        ok('"TMPDIR": "/tmp"' in meme, "o POV também desenha com TMPDIR em /tmp")
         st._DESENHO_CMD = [sys.executable, "-c", "raise SystemExit('ValueError: foto sumiu')"]
         saida.unlink()
         try:

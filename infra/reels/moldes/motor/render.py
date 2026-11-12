@@ -163,7 +163,9 @@ def init_script(ficha, marca, marca_dir, formato, tempos):
 
 
 def abrir(pw, pasta, script, formato):
-    b = pw.chromium.launch(executable_path=chrome(), args=["--allow-file-access-from-files", "--disable-web-security"])
+    # 12/11: the Hermes points TMPDIR at its scratch volume; Chromium keeps its shared memory there and hangs or crashes
+    b = pw.chromium.launch(executable_path=chrome(), args=["--allow-file-access-from-files", "--disable-web-security"],
+                           env={**os.environ, "TMPDIR": "/tmp"})
     pg = b.new_page(viewport={"width": 1080, "height": 1350 if formato == "carrossel" else 1920})
     pg.add_init_script(script)
     falhas = []

@@ -732,7 +732,9 @@ def ambiente_render(pasta: Path) -> dict:
             "AWS_SESSION_TOKEN"}
     return {**{k: v for k, v in os.environ.items() if k not in fora}, "AWS_CONFIG_FILE": str(config),
             "AWS_PROFILE": "voz", "AWS_REGION": "us-east-1", "AWS_SDK_LOAD_CONFIG": "1",
-            "MOLDES_CACHE": os.environ.get("MOLDES_CACHE", "/a0/usr/conteudo/cache-moldes")}
+            "MOLDES_CACHE": os.environ.get("MOLDES_CACHE", "/a0/usr/conteudo/cache-moldes"),
+            # 12/11: not the Hermes's scratch volume, where Chromium hung or crashed the page (a 15-minute render)
+            "TMPDIR": "/tmp"}
 
 
 def _pasta_saida() -> Path:

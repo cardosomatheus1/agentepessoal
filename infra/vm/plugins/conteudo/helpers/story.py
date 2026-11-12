@@ -186,6 +186,13 @@ def _chrome() -> str:
 
 
 DESENHO_MAX = 90  # s: a story takes 1 to 3 s to draw
+
+
+def env_chrome() -> dict:
+    """The environment Chromium runs with. 12/11: the Hermes points TMPDIR at its scratch volume, and Chromium (which,
+    with --disable-dev-shm-usage, keeps its shared memory there) hung or crashed the page on it ("Page.goto: Page
+    crashed", or a story stuck for 16 minutes); with TMPDIR on /tmp it draws in 1 s."""
+    return {**os.environ, "TMPDIR": "/tmp"}
 _DESENHO_CMD = None  # the tests set it (the command that draws); else this file run with --desenhar
 
 
@@ -205,7 +212,8 @@ def renderizar(campos: dict, saida: str) -> str:
         json.dumps(campos, ensure_ascii=False), str(saida)]
     falha = ""
     for _ in range(2):
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True,
+                                env=env_chrome())
         try:
             _out, err = proc.communicate(timeout=DESENHO_MAX)
         except subprocess.TimeoutExpired:
@@ -243,7 +251,7 @@ def _desenhar(campos: dict, saida: str) -> str:
         (trabalho / "s" / "story.html").write_text(pagina, encoding="utf-8")
         png = trabalho / "story.png"
         with sync_playwright() as pw:
-            b = pw.chromium.launch(executable_path=_chrome() or None, args=["--allow-file-access-from-files"])
+            b = pw.chromium.launch(executable_path=_chrome() or None, args=["--allow-file-access-from-files"], env=env_chrome())
             pg = b.new_page(viewport={"width": LARGURA, "height": ALTURA})
             pg.goto(f"file://{trabalho / 's' / 'story.html'}")
             pg.evaluate("document.fonts.ready")

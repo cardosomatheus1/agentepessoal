@@ -29,6 +29,8 @@ def render(ficha: dict) -> tuple[int, str, Path]:
 
 def main() -> int:
     casos = []
+    # 12/11: Chromium on the Hermes's scratch TMPDIR hung (a 15-minute render) or crashed the page
+    casos.append(("o navegador do render usa TMPDIR em /tmp", '"TMPDIR": "/tmp"' in (AQUI / "render.py").read_text(encoding="utf-8")))
     cod, saida, _ = render(dict(BASE, pista="Valores de exemplo: aluguel R$ 1.800, queijo R$ 600. Qual conta vence?"))
     if "Executable" in saida or "executable" in saida or "playwright" in saida.lower() and cod not in (0, 2, 3):
         print("pulado: sem navegador")

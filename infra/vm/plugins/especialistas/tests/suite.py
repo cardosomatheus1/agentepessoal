@@ -933,6 +933,7 @@ class Suite:
                 os.environ.pop(k, None)
         ok(not {"AWS_ENDPOINT_URL_BEDROCK_RUNTIME", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"} & set(env)
            and env["AWS_PROFILE"] == "voz", "a voz não herda o endpoint do proxy nem as chaves falsas")
+        eq(env["TMPDIR"], "/tmp", "12/11: o render (Chromium) não usa o TMPDIR de rascunho do Hermes, onde travava")
         ok(cmds[0][1].endswith("moldes/motor/render.py") and cmds[0][2] == "frases", cmds[0])
         ficha = Path(cmds[0][3])
         eq(json.loads(ficha.read_text()), {"pergunta": "Oi"}, "a ficha vai em arquivo")

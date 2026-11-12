@@ -19,6 +19,7 @@ page is drawn by the same Chrome that draws the stories; ffmpeg lays the meme ov
 """
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -214,7 +215,8 @@ def _quadros(pov: dict, pasta: Path, chrome: str) -> Path:
     q.mkdir()
     with sync_playwright() as pw:
         b = pw.chromium.launch(executable_path=chrome or None,
-                                args=["--allow-file-access-from-files", "--disable-dev-shm-usage", "--disable-gpu"])
+                                args=["--allow-file-access-from-files", "--disable-dev-shm-usage", "--disable-gpu"],
+                                env={**os.environ, "TMPDIR": "/tmp"})  # 12/11: not on the Hermes's scratch (story.env_chrome)
         pg = b.new_page(viewport={"width": LARGURA, "height": ALTURA})
         pg.goto(f"file://{html}")
         pg.evaluate("document.fonts.ready")
