@@ -66,7 +66,7 @@ body::after { content: ''; position: absolute; inset: 0; background: radial-grad
 <body>
 <div class="celular"><div class="tela">
   <div class="ilha"></div>
-  <div class="status"><span>19:45</span><span>5G ▮▮▮</span></div>
+  <div class="status"><span id="relogio">23:48</span><span>5G ▮▮▮</span></div>
   <div class="pagina caderno" id="caderno"><div class="t" id="at"></div><div class="mao" id="al"></div></div>
   <div class="pagina zap" id="zap"><div class="barra"><div class="foto" id="zf"></div><div><div class="nome" id="zn"></div><div class="on">online</div></div></div><div class="msgs" id="zm"></div></div>
   <div class="pagina trava" id="trava"><div class="hora" id="th"></div><div class="data" id="td"></div><div id="tn"></div></div>
@@ -98,6 +98,12 @@ for (const [de, txt, hora] of A.mensagens || []) {
   document.getElementById('zm').appendChild(b);
 }
 T('th', A.hora || '23:47'); T('td', A.data || 'sexta-feira, 31 de outubro');
+// 12/11: the phone's clock said 19:45 over a lock screen at 23:12 and chats at 23:4x (the Crítico reproved the POV):
+// the status bar shows the scene's own hour, a minute after the last thing on screen
+{ const hs = [...document.querySelectorAll('.bolha i')].map(i => i.textContent);
+  const ult = CENA === 'notificacoes' ? (A.hora || '23:47') : (hs.length ? hs[hs.length - 1] : '23:47');
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(ult).trim());
+  if (m) { const t = (+m[1] * 60 + +m[2] + 1) % 1440; T('relogio', String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0')); } }
 for (const [app, txt] of A.itens || []) { const n = el('div', 'notif'); n.appendChild(el('b', '', app)); n.appendChild(el('span', '', txt)); document.getElementById('tn').appendChild(n); }
 T('n1', A.topo); T('n2', A.linha);
 T('at', A.titulo);

@@ -662,7 +662,7 @@ class Suite:
         for n in ("dre.jpg", "curva-abc-custos.jpg", "cmv-real.jpg"):
             (m.PLUGINS / "conteudo" / "story" / "telas" / n).write_bytes(b"x")
         t = m.telas_do_sistema("carrossel")
-        ok("Pizzaria Bella Napoli" in t and "não prometa esconder" in t and "só na legenda não vale" in t
+        ok("Pizzaria Bella Napoli" in t and "não prometa esconder" in t and "pequeno no pé de todo slide" in t
            and "selo" in t, t)
         ok("o resumo do mês" in t and "maior parte do dinheiro" in t and "custo dos ingredientes" in t,
            "a descrição da tela já traz a sigla explicada")

@@ -31,8 +31,16 @@ def test_video_da_raiz_sem_nota_propria_ganha_a_do_kit():
     assert ".nota-kit{" in (MOLDES / "motor" / "motor.css").read_text(encoding="utf-8")
 
 
+def test_slide_da_raiz_com_preco_ganha_a_nota_no_pe():
+    # 12/11: the Designer wrote "Valores de exemplo." after every sentence of a mito carousel to satisfy the rule
+    js = (MOLDES / "motor" / "motor.js").read_text(encoding="utf-8")
+    assert "_notaNosSlides()" in js and js.count("Motor._notaNosSlides();") == 1 and "nota-slide" in js
+    assert ".nota-slide{" in (MOLDES / "motor" / "motor.css").read_text(encoding="utf-8")
+
+
 if __name__ == "__main__":
     test_nota_entra_com_o_preco()
     test_duvida_de_dono_nao_finge_cliente()
     test_video_da_raiz_sem_nota_propria_ganha_a_do_kit()
+    test_slide_da_raiz_com_preco_ganha_a_nota_no_pe()
     print("test_nota_desde_o_preco: ok")

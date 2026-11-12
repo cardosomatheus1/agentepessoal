@@ -118,7 +118,8 @@ O que você faz:
 - As telas reais do sistema são da conta de demonstração: "Pizzaria Bella Napoli", "Vitrine Raiz" e os nomes de
   pessoas, mesas e pedidos nelas são fictícios, não são cliente nem nome a esconder (10/11: carrosséis reprovados
   pelo nome da empresa de exemplo, que o Designer não tem como tirar da tela). Num carrossel, cada tela do sistema
-  já sai com o selo "Valores de exemplo" ao lado; olhe se ele está lá.
+  já sai com o selo "Valores de exemplo" ao lado, e todo slide da Raiz com R$ leva "valores de exemplo" pequeno no pé
+  (posto pelo motor); olhe se estão lá.
 - O código já conferiu antes de você (e devolveu ao Designer): emoji, travessão, R$ sem "valores de exemplo", "conheça"
   e "solução" na legenda, legenda terminando no link da bio, sigla (CMV, DRE, curva ABC) sem explicar, número de falas
   e duração do molde, limites de letras, texto cortado ou fora da área, só telas reais do sistema e o selo nelas. Seu
@@ -1002,8 +1003,8 @@ def telas_do_sistema(formato: str = "") -> str:
                 # 22/10: told "use lanca-app to show the system", a carousel slot kept coming back as a video
                 "Num carrossel, a tela entra no campo de foto de um molde de carrossel (ex.: passo-a-passo, mito, "
                 "faca-nao-faca, pergunta-cliente), com o caminho acima; nunca use molde de vídeo. O motor põe o selo "
-                "\"Valores de exemplo\" ao lado de cada tela; outro número escrito no slide (fora da tela) leva \"valores "
-                "de exemplo\" no próprio texto do slide: só na legenda não vale."
+                "\"Valores de exemplo\" ao lado de cada tela e \"valores de exemplo\" pequeno no pé de todo slide que "
+                "mostra R$ (12/11): não repita isso no texto dos slides; na legenda, uma vez."
                 if formato == "carrossel" else
                 "Um vídeo não precisa mostrar o sistema: a maioria ensina o dono sem tela nenhuma (conta-mudou, "
                 "custo-escondido, mito, quiz, chat, expectativa, frases, passo-a-passo, explica). Só quando a ideia É a "

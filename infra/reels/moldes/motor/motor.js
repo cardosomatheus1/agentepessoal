@@ -136,6 +136,19 @@ const Motor = {
   // 11/11: most video moldes have no "nota" field (explica, mito, quiz, chat...), so a Raiz Reel with numbers had no
   // way to say "valores de exemplo" on screen and the Crítico reproved it (the Reel of the 26 coxinhas). In a video of
   // the Raiz whose molde shows no note of its own, the kit puts one, small, in the lower left corner of the safe area.
+  // 12/11: in a carousel the Designer wrote "Valores de exemplo." after every sentence of a mito (six times in three
+  // slides) to satisfy the rule. Each slide of a Raiz carousel that shows R$ and says nothing of examples gets the note
+  // once, small, at its foot; the text keeps to the content.
+  _notaNosSlides() {
+    if (Motor.FORMATO !== 'carrossel' || (Motor.F || {})._marca !== 'raiz') return;
+    for (const s of Motor._slides) {
+      if (s.classList.contains('slide-final') || s.querySelector('.nota-slide')) continue;
+      const txt = s.textContent || '';
+      if (!/R\$\s*\d/.test(txt) || /exemplo/i.test(txt)) continue;
+      const n = document.createElement('div'); n.className = 'nota-slide'; n.textContent = 'valores de exemplo';
+      s.appendChild(n);
+    }
+  },
   _notaDeExemplo() {
     if (Motor.FORMATO === 'carrossel' || (Motor.F || {})._marca !== 'raiz') return;
     if (!/\d/.test(JSON.stringify(Motor.F || {})) || document.querySelector('.nota, #nota')) return;
@@ -192,7 +205,7 @@ const Motor = {
       await Promise.all([...document.fonts].map(f => f.load().catch(() => {})));
       await Promise.all($$('img').map(i => i.complete ? (i.decode ? i.decode().catch(() => {}) : 0) : new Promise(ok => { i.onload = i.onerror = ok; })));
       $$('.rv').forEach(Motor.palavras);
-      if (Motor.ESTILO === 'kit') { Motor._serifNoDestaque(); Motor._telasInteiras(); Motor._notaDeExemplo(); }
+      if (Motor.ESTILO === 'kit') { Motor._serifNoDestaque(); Motor._telasInteiras(); Motor._notaDeExemplo(); Motor._notaNosSlides(); }
       Motor._caberTudo();
       if (Motor.FORMATO !== 'carrossel') await window.render(0);
       // a photo of the ficha that did not load (wrong path) refuses the template instead of rendering a hole

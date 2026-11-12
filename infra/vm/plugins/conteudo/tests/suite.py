@@ -768,6 +768,26 @@ class Suite:
         layouts = ["post-novo", "video-novo", "bastidor", "post-novo", "oferta", "video-novo", "dica"]
         return [{"layout": l, "manchete": f"Story {n}"} for n, l in enumerate(layouts, start=1)]
 
+    def t_regra_comum_so_afirma_o_que_se_sabe(self):
+        # 12/11: the carousel "Vendeu no app hoje. Quando o dinheiro entra?" came back in three rounds and died each
+        # time on app rules (repasse on Wednesday, estorno) and a feature the Cérebro does not confirm
+        regras = _semana_mod().REGRAS_COMUNS if "_semana_mod" in globals() else None
+        if regras is None:
+            import importlib.util as iu
+            spec = iu.spec_from_file_location("semana_regras_teste", RAIZ / "helpers" / "semana.py")
+            m = iu.module_from_spec(spec)
+            spec.loader.exec_module(m)
+            regras = m.REGRAS_COMUNS
+        ok("regra de app de terceiro" in regras and "confira no contrato do seu app" in regras
+           and "não confirma" in regras, "a regra comum diz o que não se afirma")
+
+    def t_pov_relogio_do_celular_bate_com_a_cena(self):
+        # 12/11: the status bar said 19:45 over a lock screen at 23:12; the Crítico reproved the POV
+        pov = (RAIZ / "meme" / "pov.html").read_text(encoding="utf-8")
+        ok('id="relogio"' in pov and "<span>19:45</span>" not in pov, "o relógio da barra vem da cena, não fixo em 19:45")
+        ok("T('relogio'" in pov and "A.hora" in pov.split("T('relogio'")[0].split("12/11")[-1],
+           "na tela de bloqueio a barra segue a hora dela; na conversa, a última mensagem")
+
     def t_meme_pov_com_o_meme_dentro(self):
         # 05/11, Matheus: "Falei p ter o meme e etc": the humor Reel comes with the meme inside, and with sound
         m = _meme_real()
