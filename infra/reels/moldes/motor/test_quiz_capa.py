@@ -35,8 +35,12 @@ def main() -> int:
     if "Executable" in saida or "executable" in saida or "playwright" in saida.lower() and cod not in (0, 2, 3):
         print("pulado: sem navegador")
         return 0
-    casos.append(("R$ no texto da pista é recusado", cod == 2 and 'pista: sem "R$"' in saida))
     casos.append(("capa do carrossel sem foto é recusada", cod == 2 and 'precisa de foto em "midia"' in saida))
+    # 12/11: one line of R$ 4 and one of R$ 0: the cover showed the answer of the quiz
+    cod2, saida2, _ = render(dict(BASE, pista="Marmita de R$ 25, entrega longe custa R$ 9.", midia="fotos/cantina_marmita.jpg",
+                                  opcoes=["R$ 4", "R$ 5", "R$ 9"], certa="A", conta=[{"rotulo": "Falta da entrega", "valor": 4},
+                                  {"rotulo": "Taxa extra", "valor": 0}], _origem={"conta": "dono"}))
+    casos.append(("conta de uma linha (ou com zero) é recusada", cod2 == 2 and "pelo menos 2 linhas" in saida2 and "valor zero" in saida2))
     boa = dict(BASE, pista="Uma coxinha leva massa, recheio, óleo, gás e embalagem.", midia="fotos/cantina_coxinhas.jpg",
                conta=[{"rotulo": "Massa e recheio", "valor": 1.6}, {"rotulo": "Óleo e gás", "valor": 0.4},
                       {"rotulo": "Embalagem", "valor": 0.31}], nota="valores de exemplo", _origem={"conta": "dono"})

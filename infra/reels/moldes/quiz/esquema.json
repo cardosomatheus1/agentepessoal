@@ -10,7 +10,7 @@
    "tipo": "texto",
    "min": 10,
    "max": 100,
-   "dica": "o mínimo pra pessoa conseguir responder, mostrado antes da pergunta (sem R$: os valores vão em conta)"
+   "dica": "o mínimo pra pessoa conseguir responder, mostrado antes da pergunta (os valores vão em conta)"
   },
   "pergunta": {
    "tipo": "texto",
@@ -75,7 +75,7 @@
      "dica": "o que conta em vezes: h, kg, un"
     }
    },
-   "dica": "linhas somadas pelo código (valor x vezes); o total tem de ser a opção certa"
+   "dica": "linhas somadas pelo código (valor x vezes); o total tem de ser a opção certa; pelo menos 2 linhas com valor, nenhuma de zero (a pessoa faz a soma: com uma linha a capa entrega a resposta)"
   },
   "total_rotulo": {
    "tipo": "texto",

@@ -204,8 +204,10 @@ function checar(F, $m) {
   if (F.fonte && !['dono', 'sistema'].includes((F._origem || {}).fonte)) $m.erro('fonte: dado real sem origem (_origem: dono ou sistema)');
   if (new Set(F.opcoes.map(o => o.trim().toLowerCase())).size < 3) $m.erro('as três opções precisam ser diferentes');
   // 12/11: a Raiz carousel had a cover with only two lines of text at the top ("Valores de exemplo: aluguel R$ 1.800...")
-  // and 70% empty: the clue's numbers go in "conta" (a card the code sums) and the carousel cover needs a photo
-  if (/R\$\s*\d/.test(F.pista)) $m.erro('pista: sem "R$" no texto (vira um parágrafo de números); os valores vão em "conta", que aparece num cartão e o código soma');
+  // and 70% empty: the carousel cover needs a photo (the motor puts "valores de exemplo" at the foot of a slide with R$).
+  // And the clue's lines are the sum the viewer does: one line (or a line of zero) gave the answer away on the cover
+  if (F.conta && F.conta.filter(l => Math.abs(l.valor * (l.vezes ?? 1)) > 0.004).length < 2) $m.erro('conta: pelo menos 2 linhas com valor (sem linha de zero): com uma linha só a capa já mostra a resposta');
+  if (F.conta && F.conta.some(l => Math.abs(l.valor * (l.vezes ?? 1)) <= 0.004)) $m.erro('conta: linha de valor zero não entra (só confunde a conta)');
   if ($m.FORMATO === 'carrossel' && !F.midia) $m.erro('carrossel: a capa (pista) precisa de foto em "midia" (fotos/... do assunto da pergunta); sem ela a capa fica com metade vazia');
   let total = null, dec = 0;
   if (F.conta) {
