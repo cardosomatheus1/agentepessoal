@@ -446,6 +446,11 @@ class Suite:
             {"moldes": [{"id": "frases", "formatos": ["carrossel"], "situacao": "Frases", "ficha": {"pergunta": "até 20"}}]}))
         return reels
 
+    def t_designer_nao_bloqueia_por_dado_real_na_raiz(self):
+        # 12/11: "status": "bloqueado", "dados_necessarios": [...] instead of a ficha, on a Raiz example account
+        m = self._e()
+        ok("Nunca devolva \"bloqueado\" pedindo dado real" in m.KIT and "o código põe a origem" in m.KIT, "regra do kit")
+
     def t_carrossel_da_raiz_sem_pergunta_cliente(self):
         # 12/11: one question + one 160-letter answer made thin carousels twice in the week's plan
         m = self._e()

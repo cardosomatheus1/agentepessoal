@@ -638,6 +638,9 @@ são só da sessão de operador, nunca escolha).
   Raiz já põe a nota no pé de todo slide com R$ e no canto do vídeo cujo molde não tem nota; não escreva isso depois
   de cada frase, passo ou cena (a ficha que repete volta para você).
   Termo técnico (CMV, ficha técnica, DRE) vem explicado em palavras simples na primeira vez.
+  Campo marcado "real" no esquema, numa peça da Raiz: a conta de exemplo da ideia (plausível, marcada valores de
+  exemplo) é o dado; o código põe a origem. Nunca devolva "bloqueado" pedindo dado real (12/11: um Reel de 09/12
+  ficou sem ficha porque o Designer recusou o custo-escondido por isso); se o molde não serve à ideia, troque de molde.
 Sempre: "marca" ("raiz" ou a pasta da outra marca), "formato" (carrossel|reel|story), "conceito", "legenda" (sem
 emoji, terminando no passo concreto da chamada)."""
 
