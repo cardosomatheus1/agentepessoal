@@ -2480,6 +2480,17 @@ class Suite:
             g.rodar("manual", _ts(c, "2026-11-03", "10:00"), modelo=self._modelo([]), contexto={})
         ok("teto do dia" in g.rodar("manual", _ts(c, "2026-11-03", "10:01"), modelo=self._modelo([]), contexto={})["pulou"],
            "teto de execuções por dia")
+        # 12/11: the operator's rehearsal has a ceiling of its own and does not use up the real day's
+        g._em_ensaio = lambda: True
+        r = g.rodar("manual", _ts(c, "2026-11-03", "10:02"), modelo=self._modelo([]), contexto={})
+        ok(not r.get("pulou"), f"no ensaio o teto é outro: {r}")
+        for _ in range(g.MAX_POR_DIA):
+            g.rodar("manual", _ts(c, "2026-11-03", "10:03"), modelo=self._modelo([]), contexto={})
+        ok("teto do dia do ensaio" in (g.rodar("manual", _ts(c, "2026-11-03", "10:04"), modelo=self._modelo([]), contexto={}).get("pulou") or ""),
+           "o ensaio para no teto dele")
+        g._em_ensaio = lambda: False
+        ok("teto do dia (" in g.rodar("manual", _ts(c, "2026-11-03", "10:05"), modelo=self._modelo([]), contexto={})["pulou"],
+           "e o dia real segue com o seu")
 
     def t_gestor_prompt_no_teto_de_custo(self):
         c, g = self._gestor()

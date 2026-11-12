@@ -681,10 +681,21 @@ def _marcar(motivo: str, agora: float) -> None:
     _gravar_estado(e)
 
 
-def _do_dia(agora: float) -> tuple[int, float]:
+def _em_ensaio() -> bool:
+    try:
+        return bool(semana().ensaio())
+    except Exception:
+        return False
+
+
+def _do_dia(agora: float, ensaio: bool = False) -> tuple[int, float]:
+    """Runs and dollars of the day. 12/11: the operator's rehearsals of the week used the whole day's ceiling twice
+    (11 and 12/11) and the Gestor stopped for the real agenda until midnight. Runs while a rehearsal date is on are
+    counted apart, each side with its own ceiling."""
     hoje = _momento(agora).date().isoformat()
     runs = [r for r in _ler_jsonl(_pasta() / "gestor.jsonl", 200)
-            if not r.get("seco") and r.get("uso") and _momento(float(r["em"])).date().isoformat() == hoje]
+            if not r.get("seco") and r.get("uso") and _momento(float(r["em"])).date().isoformat() == hoje
+            and bool(r.get("ensaio")) == ensaio]
     return len(runs), sum(float((r.get("uso") or {}).get("usd") or 0) for r in runs)
 
 
@@ -704,9 +715,10 @@ def rodar(motivo: str = "manual", agora: float | None = None, seco: bool = False
     try:
         if not seco:
             _marcar(motivo, agora)
-            n, gasto = _do_dia(agora)
+            ensaio = _em_ensaio()
+            n, gasto = _do_dia(agora, ensaio)
             if n >= MAX_POR_DIA or gasto >= TETO_DIA_USD:
-                r = {"pulou": f"teto do dia ({n} execuções, US$ {gasto:.2f})"}
+                r = {"pulou": f"teto do dia{' do ensaio' if ensaio else ''} ({n} execuções, US$ {gasto:.2f})"}
                 _registrar(agora, motivo, seco, r)
                 return r
         st = estado(agora, contexto)
@@ -772,6 +784,8 @@ def rodar(motivo: str = "manual", agora: float | None = None, seco: bool = False
 def _registrar(agora: float, motivo: str, seco: bool, r: dict) -> None:
     linha = {"em": agora, "motivo": motivo, "seco": seco, **{k: r[k] for k in ("pulou", "erro", "visto", "uso", "avisou")
                                                             if r.get(k)}}
+    if not seco and _em_ensaio():
+        linha["ensaio"] = True
     if r.get("resultados") is not None:
         linha["feitas"] = [{"acao": x["acao"]["acao"], "itens": _ids(x["acao"]), "ok": x["ok"],
                             "motivo": _curto(x["acao"].get("motivo"), 160)} for x in r["resultados"]]
