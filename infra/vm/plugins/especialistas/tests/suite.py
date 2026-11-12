@@ -148,6 +148,18 @@ class Suite:
         r = m.chamar_claude("gestor", "Decida.")
         eq(enviados, ["high", "low"], "cortado sem texto: mais uma vez, pensando menos")
         ok(r["texto"] == '{"acoes": []}' and r["uso"]["saida"] == 8900 and r["erro"] == "", r)
+        enviados.clear()
+
+        def corta_no_meio(url, body, login, papel, tempo):
+            enviados.append(body["additionalModelRequestFields"]["output_config"]["effort"])
+            if len(enviados) == 1:
+                return {"output": {"message": {"content": [{"text": '{"visto": "a agenda', }]}}, "stopReason": "max_tokens",
+                        "usage": {"inputTokens": 10, "outputTokens": 8000}}
+            return {"output": {"message": {"content": [{"text": '{"acoes": []}'}]}}, "stopReason": "end_turn",
+                    "usage": {"inputTokens": 10, "outputTokens": 900}}
+        m._enviar_claude = corta_no_meio
+        r = m.chamar_claude("gestor", "Decida.")
+        ok(enviados == ["high", "low"] and r["texto"] == '{"acoes": []}', f"JSON cortado no meio também: {enviados} {r}")
 
         def cai(*a):
             raise OSError("sem rede")
