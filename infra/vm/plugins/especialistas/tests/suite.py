@@ -458,6 +458,7 @@ class Suite:
         ok("pergunta-cliente" not in m.moldes_da_marca(cat, "raiz", "carrossel") and "mito" in m.moldes_da_marca(cat, "raiz", "carrossel"),
            "carrossel da Raiz sem pergunta-cliente")
         ok("pergunta-cliente" in m.moldes_da_marca(cat, "doces-da-lu", "carrossel"), "outra marca segue com ele")
+        ok("expectativa" not in m.MOLDES_DA_RAIZ["reel"], "o Reel da Raiz não fecha com produto de loja \"pra você\"")
 
     def t_valores_de_exemplo_nao_se_repete_no_texto(self):
         # 12/11: four "(valores de exemplo)" in the four steps of a Reel; the motor puts the note on screen

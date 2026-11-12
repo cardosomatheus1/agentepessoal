@@ -654,7 +654,9 @@ emoji, terminando no passo concreto da chamada)."""
 # (20/11, "quando o dinheiro do app entra": a non-answer; 04/12: a six-slide plan reduced to "14 x 1,5 min = 21 min").
 MOLDES_DA_RAIZ = {
     "carrossel": ("mito", "quiz", "time", "frases", "passo-a-passo", "faca-nao-faca", "antes-depois"),
-    "reel": ("conta-mudou", "custo-escondido", "mito", "quiz", "chat", "expectativa", "frases", "passo-a-passo",
+    # 12/11: "expectativa" left too: its close is a shop's product "pra você" (a pepperoni pizza "PRA VOCÊ" in the Reel
+    # of 02/12), an ad to the consumer; the owner's "expectativa e realidade" is told with frases or explica
+    "reel": ("conta-mudou", "custo-escondido", "mito", "quiz", "chat", "frases", "passo-a-passo",
              "faca-nao-faca", "explica", "glossario", "sabia-que", "lista-cinco", "piramide", "comparativo", "funil",
              "pergunta-cliente", "time", "lanca-app", "demonstracao", "oferta-completa"),
 }
@@ -1096,7 +1098,7 @@ def telas_do_sistema(formato: str = "") -> str:
                 "mostra R$ (12/11): não repita isso no texto dos slides; na legenda, uma vez."
                 if formato == "carrossel" else
                 "Um vídeo não precisa mostrar o sistema: a maioria ensina o dono sem tela nenhuma (conta-mudou, "
-                "custo-escondido, mito, quiz, chat, expectativa, frases, passo-a-passo, explica). Só quando a ideia É a "
+                "custo-escondido, mito, quiz, chat, frases, passo-a-passo, explica). Só quando a ideia É a "
                 "tela use o molde lanca-app com \"aparelho\": \"computador\" (a câmera dá zoom no \"destaque\" de cada "
                 "tela, em % da tela; demonstracao é moldura de celular), e só com as telas desta lista: não existe tela de "
                 "comanda, de divisão de conta, de cardápio digital nem de estoque.")
