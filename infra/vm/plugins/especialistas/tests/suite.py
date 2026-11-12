@@ -446,6 +446,17 @@ class Suite:
             {"moldes": [{"id": "frases", "formatos": ["carrossel"], "situacao": "Frases", "ficha": {"pergunta": "até 20"}}]}))
         return reels
 
+    def t_valores_de_exemplo_nao_se_repete_no_texto(self):
+        # 12/11: four "(valores de exemplo)" in the four steps of a Reel; the motor puts the note on screen
+        m = self._e()
+        ok(m._exemplo_repetido({"passos": ["Taxa R$ 7 (valores de exemplo)", "Longe R$ 12 (valores de exemplo)"]}),
+           "duas vezes no texto: volta ao Designer")
+        eq(m._exemplo_repetido({"passos": ["Taxa R$ 7", "Longe R$ 12"], "nota": "valores de exemplo"}), [], "no campo nota, ok")
+        eq(m._exemplo_repetido({"pista": "Valores de exemplo: R$ 7"}), [], "uma vez, ok")
+        ok(any("escrito 2 vezes" in f for f in m._conferir_spec({"motor": "molde", "marca": "raiz", "molde": "x", "ficha": {
+            "_marca": "raiz", "itens": [{"a": "R$ 3. Valores de exemplo."}, {"a": "R$ 6. Valores de exemplo."}]}})),
+           "a conferência da ficha da Raiz cobra")
+
     def t_designer_sabe_quais_fotos_existem(self):
         # 12/11, the simulation: "fotos/pizza_cozinha.jpg" (no such photo) and a description in the photo field
         reels = self._reels()

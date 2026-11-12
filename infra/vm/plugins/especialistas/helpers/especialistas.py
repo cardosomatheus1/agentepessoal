@@ -119,7 +119,8 @@ O que você faz:
   pessoas, mesas e pedidos nelas são fictícios, não são cliente nem nome a esconder (10/11: carrosséis reprovados
   pelo nome da empresa de exemplo, que o Designer não tem como tirar da tela). Num carrossel, cada tela do sistema
   já sai com o selo "Valores de exemplo" ao lado, e todo slide da Raiz com R$ leva "valores de exemplo" pequeno no pé
-  (posto pelo motor); olhe se estão lá.
+  (posto pelo motor); olhe se estão lá. No vídeo da Raiz cujo molde não tem nota, o motor põe "valores de exemplo"
+  pequeno no canto de baixo da tela inteira: isso vale para todos os números do vídeo.
 - O código já conferiu antes de você (e devolveu ao Designer): emoji, travessão, R$ sem "valores de exemplo", "conheça"
   e "solução" na legenda, legenda terminando no link da bio, sigla (CMV, DRE, curva ABC) sem explicar, número de falas
   e duração do molde, limites de letras, texto cortado ou fora da área, só telas reais do sistema e o selo nelas. Seu
@@ -633,7 +634,9 @@ são só da sessão de operador, nunca escolha).
   Tela do sistema: só as telas reais, escuras e inteiras de /a0/usr/plugins/conteudo/story/telas/ (no molde
   lanca-app/demonstracao, a câmera dá zoom no "destaque" da tela); toda peça com tela diz "valores de exemplo" na
   própria peça (campo nota do molde que tem nota; no carrossel o motor já põe o selo ao lado de cada tela), nunca só
-  na legenda, e cada fala mostra a tela que prova o que ela diz.
+  na legenda, e cada fala mostra a tela que prova o que ela diz. "Valores de exemplo" aparece UMA vez: o motor da
+  Raiz já põe a nota no pé de todo slide com R$ e no canto do vídeo cujo molde não tem nota; não escreva isso depois
+  de cada frase, passo ou cena (a ficha que repete volta para você).
   Termo técnico (CMV, ficha técnica, DRE) vem explicado em palavras simples na primeira vez.
 Sempre: "marca" ("raiz" ou a pasta da outra marca), "formato" (carrossel|reel|story), "conceito", "legenda" (sem
 emoji, terminando no passo concreto da chamada)."""
@@ -885,6 +888,34 @@ def _texto_dito(ficha: dict) -> dict:
     return limpar(ficha)
 
 
+EXEMPLO_NO_TEXTO = re.compile(r"valores? de exemplo", re.I)
+
+
+def _exemplo_repetido(ficha: dict) -> list[str]:
+    """12/11: the Reel of 29/11 wrote "(valores de exemplo)" after each of its four steps, and a mito carousel after
+    every sentence, to satisfy the rule; the motor already puts the note on screen (at the foot of a carousel slide
+    with R$, in the corner of a video whose molde has no note of its own, or the molde's own "nota" field)."""
+    textos = []
+
+    def andar(v, chave=""):
+        if chave in ("nota", "_origem", "_marca", "selo"):
+            return
+        if isinstance(v, str):
+            textos.append(v)
+        elif isinstance(v, list):
+            for x in v:
+                andar(x)
+        elif isinstance(v, dict):
+            for k, x in v.items():
+                andar(x, str(k))
+    andar(ficha)
+    n = sum(len(EXEMPLO_NO_TEXTO.findall(t)) for t in textos)
+    if n <= 1:
+        return []
+    return [f"ficha: \"valores de exemplo\" escrito {n} vezes no texto da peça; o motor já põe a nota na tela (no pé do "
+            "slide com R$, no canto do vídeo, ou no campo \"nota\" do molde que tem um): tire do texto das cenas e slides"]
+
+
 def _conferir_spec(spec: dict) -> list[str]:
     """Deterministic checks on the Designer's spec; each problem goes to "falta"."""
     problemas = []
@@ -912,6 +943,7 @@ def _conferir_spec(spec: dict) -> list[str]:
                 problemas += _jargao(json.dumps(_texto_dito(spec["ficha"]), ensure_ascii=False))
                 problemas += _legenda_generica(spec)
                 problemas += _telas_desconhecidas(spec["ficha"])
+                problemas += _exemplo_repetido(spec["ficha"])
             pedido = spec.get("_formato_pedido")
             if pedido and str(spec.get("formato") or "").lower() != pedido:
                 problemas.append(f"ficha: formato {spec.get('formato')!r}, mas a vaga da semana é {pedido!r}: use um molde "
