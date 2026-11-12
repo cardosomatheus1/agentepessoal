@@ -2607,6 +2607,20 @@ class Suite:
         st.renderizar({"layout": "dica", "manchete": "Pese a porção de queijo por uma semana.", "texto": "A balança mostra."}, str(pasta / "dica.jpg"))
         with Image.open(pasta / "dica.jpg") as im:
             dica = im.convert("L").resize((108, 192))
+        # 12/11, Matheus: "Em cima e embaixo, mt espaço vazio" (conversa): the chamada sits above the reply box and the
+        # green header ends right under the Instagram profile bar
+        zap = {"manchete": "Quem sabe o custo de cada pizza responde em um minuto.", "destaque": "um minuto",
+               "contato": "Fornecedor Queijos", "mensagens": [["ele", "Boa noite! A mussarela subiu de novo"],
+                                                              ["ele", "Agora é 42 o quilo, a partir de segunda"],
+                                                              ["eu", "De novo? Quanto isso muda na minha pizza?"]]}
+        st.renderizar(dict(zap, layout="conversa"), str(pasta / "zap.jpg"))
+        with Image.open(pasta / "zap.jpg") as im:
+            rgb = im.convert("RGB")
+            faixa = rgb.crop((0, 1560, 1080, 1740)).resize((108, 18))
+            lima = sum(1 for p in faixa.getdata() if p[1] > 200 and p[2] < 160)
+            ok(lima > 40, f"a chamada (lima) fica embaixo, sobre a caixa de resposta: {lima}")
+            verde = rgb.getpixel((540, 330))
+            ok(not (verde[1] < 120 and verde[0] < 80), f"o cabeçalho verde termina antes de 330 px: {verde}")
         for layout, arte in artes.items():  # not "the same art with another text": far from the old dark card
             dif = ImageStat.Stat(ImageChops.difference(arte, dica)).mean[0]
             ok(dif > 12, f"{layout} tem outra cara que a dica antiga: diferença {dif:.1f}")
