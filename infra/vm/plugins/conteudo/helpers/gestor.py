@@ -699,6 +699,41 @@ def _do_dia(agora: float, ensaio: bool = False) -> tuple[int, float]:
     return len(runs), sum(float((r.get("uso") or {}).get("usd") or 0) for r in runs)
 
 
+def _extra_hoje(agora: float) -> dict:
+    """The day's raise (subir_teto_hoje), or {} when there is none for this date."""
+    arq = _pasta() / "gestor_teto_hoje.json"
+    try:
+        x = json.loads(arq.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return x if isinstance(x, dict) and x.get("dia") == _momento(agora).date().isoformat() else {}
+
+
+def tetos_hoje(agora: float | None = None) -> tuple[int, float]:
+    """(runs, dollars) the real day may use today: the fixed ceilings, or the raise for today only."""
+    x = _extra_hoje(time.time() if agora is None else agora)
+    return int(x.get("max_por_dia") or MAX_POR_DIA), float(x.get("usd") or TETO_DIA_USD)
+
+
+def subir_teto_hoje(usd: float, motivo: str, execucoes: int | None = None, agora: float | None = None) -> dict:
+    """12/11, Matheus: "Pode subir por hj". Raises the real day's ceiling for TODAY ONLY (it lapses at midnight by
+    itself); never lowers it below the fixed one and never more than 3x. Journaled with c().AUTOR["quem"]."""
+    agora = time.time() if agora is None else agora
+    usd = float(usd)
+    if not (TETO_DIA_USD < usd <= 3 * TETO_DIA_USD):
+        raise ValueError(f"o teto de hoje vai de mais de US$ {TETO_DIA_USD:.2f} até US$ {3 * TETO_DIA_USD:.2f}")
+    n = int(execucoes or 2 * MAX_POR_DIA)
+    if not (MAX_POR_DIA <= n <= 3 * MAX_POR_DIA):
+        raise ValueError(f"execuções de hoje: de {MAX_POR_DIA} a {3 * MAX_POR_DIA}")
+    x = {"dia": _momento(agora).date().isoformat(), "usd": usd, "max_por_dia": n, "motivo": _curto(motivo, 200),
+         "por": c().AUTOR.get("quem", ""), "em": agora}
+    _pasta().mkdir(parents=True, exist_ok=True)
+    (_pasta() / "gestor_teto_hoje.json").write_text(json.dumps(x, ensure_ascii=False), encoding="utf-8")
+    c()._diario({"gestor": f"teto de hoje ({x['dia']}) subiu para US$ {usd:.2f} e {n} execuções",
+                 "motivo": x["motivo"]})
+    return x
+
+
 def rodar(motivo: str = "manual", agora: float | None = None, seco: bool = False, modelo=None, avisar=None,
           refazer=None, contexto: dict | None = None, criar=None) -> dict:
     """One run. seco=True decides and shows, executing and sending nothing. modelo(tarefa) -> {"texto","erro","uso"}
@@ -717,7 +752,8 @@ def rodar(motivo: str = "manual", agora: float | None = None, seco: bool = False
             _marcar(motivo, agora)
             ensaio = _em_ensaio()
             n, gasto = _do_dia(agora, ensaio)
-            if n >= MAX_POR_DIA or gasto >= TETO_DIA_USD:
+            max_n, max_usd = (MAX_POR_DIA, TETO_DIA_USD) if ensaio else tetos_hoje(agora)
+            if n >= max_n or gasto >= max_usd:
                 r = {"pulou": f"teto do dia{' do ensaio' if ensaio else ''} ({n} execuções, US$ {gasto:.2f})"}
                 _registrar(agora, motivo, seco, r)
                 return r

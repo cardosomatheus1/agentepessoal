@@ -2491,6 +2491,23 @@ class Suite:
         g._em_ensaio = lambda: False
         ok("teto do dia (" in g.rodar("manual", _ts(c, "2026-11-03", "10:05"), modelo=self._modelo([]), contexto={})["pulou"],
            "e o dia real segue com o seu")
+        # 12/11, Matheus: "Pode subir por hj": a raise for today only, which lapses at midnight
+        for ruim in (g.TETO_DIA_USD, 3 * g.TETO_DIA_USD + 1):
+            try:
+                g.subir_teto_hoje(ruim, "teste", agora=_ts(c, "2026-11-03", "10:06"))
+                ok(False, f"teto fora da faixa aceito: {ruim}")
+            except ValueError:
+                pass
+        x = g.subir_teto_hoje(8, "teste", agora=_ts(c, "2026-11-03", "10:06"))
+        ok(x["usd"] == 8 and x["max_por_dia"] == 2 * g.MAX_POR_DIA, x)
+        ok(any("teto de hoje" in str(l.get("gestor")) for l in g._ler_jsonl(c.PASTA / "diario.jsonl", 50)), "no diário")
+        r = g.rodar("manual", _ts(c, "2026-11-03", "10:07"), modelo=self._modelo([]), contexto={})
+        ok(not r.get("pulou"), f"com o teto de hoje, roda: {r}")
+        g._em_ensaio = lambda: True
+        ok("teto do dia do ensaio" in (g.rodar("manual", _ts(c, "2026-11-03", "10:08"), modelo=self._modelo([]), contexto={}).get("pulou") or ""),
+           "a subida não vale para o ensaio")
+        g._em_ensaio = lambda: False
+        ok(g.tetos_hoje(_ts(c, "2026-11-04", "00:01")) == (g.MAX_POR_DIA, g.TETO_DIA_USD), "no dia seguinte volta sozinho")
 
     def t_gestor_prompt_no_teto_de_custo(self):
         c, g = self._gestor()
