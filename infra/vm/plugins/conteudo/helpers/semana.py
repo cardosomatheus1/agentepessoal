@@ -451,7 +451,10 @@ REGRAS_COMUNS = (
     "quando a ideia vem da própria Raiz (o que rendeu, um formato dela) e a proposta diz qual. Inspirar não é "
     "copiar: outro texto, outro exemplo, a cara da Raiz. Nunca citar concorrente nem criador em público.\n"
     "- Mais do mesmo reprova: peça com o mesmo gancho, o mesmo formato e a mesma cara de algo que a Raiz publicou ou "
-    "agendou nos últimos 14 dias (lista abaixo) não sai, mesmo certa. Fora isso, o Crítico só reprova por regra quebrada, "
+    "agendou nos últimos 14 dias (lista abaixo) não sai, mesmo certa. Exceção: o POV de humor é o post de humor de "
+    "toda semana (Matheus, 05/11), e o formato (POV, a conta no chute, a virada \"a Raiz já sabe\") se repete de "
+    "propósito; ele só é mais do mesmo se repetir o assunto e a piada (o mesmo produto, a mesma conta, o mesmo meme). "
+    "Fora isso, o Crítico só reprova por regra quebrada, "
     "informação falsa, texto ilegível ou ideia mole; gosto vai em sugestão.")
 
 

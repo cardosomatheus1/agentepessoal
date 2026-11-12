@@ -768,6 +768,15 @@ class Suite:
         layouts = ["post-novo", "video-novo", "bastidor", "post-novo", "oferta", "video-novo", "dica"]
         return [{"layout": l, "manchete": f"Story {n}"} for n, l in enumerate(layouts, start=1)]
 
+    def t_pov_semanal_nao_e_mais_do_mesmo_pelo_formato(self):
+        # 12/11, rodadas 3 e 4: the weekly humor POV (Matheus, 05/11) was reproved as "mais do mesmo" of last week's POV
+        import importlib.util as iu
+        spec = iu.spec_from_file_location("semana_pov_teste", RAIZ / "helpers" / "semana.py")
+        m = iu.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        ok("o POV de humor é o post de humor de toda semana" in m.REGRAS_COMUNS and "se repete de propósito" in m.REGRAS_COMUNS,
+           "a régua comum diz que o formato do POV semanal não é repetição")
+
     def t_story_refeito_recusado_pelo_codigo_volta_com_o_motivo(self):
         # 12/11, the simulation: "o Designer não devolveu nada utilizável" twice, with no reason anywhere
         c, s, _ = self._semana(reprovar=())
