@@ -134,6 +134,21 @@ class Suite:
         eq(r["uso"]["entrada"], 21004, "a entrada conta o cache que o proxy põe")
         eq(r["uso"]["usd"], round(4 * 4 / 1e6 + 20000 * 5 / 1e6 + 1000 * 0.4 / 1e6 + 1500 * 20 / 1e6, 4), "custo da execução")
 
+        # 12/11: the whole answer went to thinking (max_tokens, no text): asked once more with effort "low"
+        enviados.clear()
+
+        def corta(url, body, login, papel, tempo):
+            enviados.append(body["additionalModelRequestFields"]["output_config"]["effort"])
+            if len(enviados) == 1:
+                return {"output": {"message": {"content": [{"reasoningContent": {}}]}}, "stopReason": "max_tokens",
+                        "usage": {"inputTokens": 10, "outputTokens": 8000}}
+            return {"output": {"message": {"content": [{"text": '{"acoes": []}'}]}}, "stopReason": "end_turn",
+                    "usage": {"inputTokens": 10, "outputTokens": 900}}
+        m._enviar_claude = corta
+        r = m.chamar_claude("gestor", "Decida.")
+        eq(enviados, ["high", "low"], "cortado sem texto: mais uma vez, pensando menos")
+        ok(r["texto"] == '{"acoes": []}' and r["uso"]["saida"] == 8900 and r["erro"] == "", r)
+
         def cai(*a):
             raise OSError("sem rede")
         m._enviar_claude = cai

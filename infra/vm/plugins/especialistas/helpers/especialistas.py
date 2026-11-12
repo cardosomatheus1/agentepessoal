@@ -383,13 +383,30 @@ def _enviar_claude(url: str, body: dict, login: str, papel: str, tempo: int) -> 
         return json.loads(r.read())
 
 
-def chamar_claude(papel: str, tarefa: str, login: str = "matheus", max_saida: int = 8000, tempo: int = 230) -> dict:
-    """One Converse call as `papel` (text only): {"texto", "erro", "uso": {"entrada", "saida", "usd"}}; never raises."""
+def chamar_claude(papel: str, tarefa: str, login: str = "matheus", max_saida: int = 8000, tempo: int = 230,
+                  esforco: str = "") -> dict:
+    """One Converse call as `papel` (text only): {"texto", "erro", "uso": {"entrada", "saida", "usd"}}; never raises.
+    12/11: the Gestor (effort "high") spent its whole answer thinking about four reproved pieces and came back with no
+    text ("max_tokens", US$ 0.37 for nothing; its answers had been growing to 7,962 of 8,000 tokens). An answer cut
+    before any text is asked once more with effort "low"; the cost of both is counted."""
     if papel not in PAPEIS:
         return {"texto": "", "erro": f"papel desconhecido: {papel}", "uso": {}}
+    esforco = esforco or ESFORCO_CLAUDE.get(papel, "medium")
+    r = _chamar_claude(papel, tarefa, login, max_saida, tempo, esforco)
+    if not r["texto"] and "max_tokens" in r["erro"] and esforco != "low":
+        r2 = _chamar_claude(papel, tarefa, login, max_saida, tempo, "low")
+        u1, u2 = r.get("uso") or {}, r2.get("uso") or {}
+        r2["uso"] = {**u2, **{k: (u1.get(k) or 0) + (u2.get(k) or 0) for k in ("entrada", "saida", "cache_lido", "usd")}}
+        if isinstance(r2["uso"].get("usd"), float):
+            r2["uso"]["usd"] = round(r2["uso"]["usd"], 4)
+        return r2
+    return r
+
+
+def _chamar_claude(papel: str, tarefa: str, login: str, max_saida: int, tempo: int, esforco: str) -> dict:
     body = {"system": [{"text": PAPEIS[papel]}], "messages": [{"role": "user", "content": [{"text": tarefa}]}],
             "inferenceConfig": {"maxTokens": int(max_saida)},
-            "additionalModelRequestFields": {"output_config": {"effort": ESFORCO_CLAUDE.get(papel, "medium")}}}
+            "additionalModelRequestFields": {"output_config": {"effort": esforco}}}
     try:
         data = _enviar_claude(f"{PROXY_BEDROCK}/{MODELO_CLAUDE}/converse", body, login, papel, tempo)
     except Exception as exc:
