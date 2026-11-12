@@ -34,6 +34,13 @@ caso("item da lista validado", any("itens[1].nome" in e for e in validar(E, {**b
 caso("data errada", any("AAAA-MM-DD" in e for e in validar(E, {**boa, "quando": "13/10/2026"})))
 caso("campo desconhecido", any("não usa" in e for e in validar(E, {**boa, "extra": 1})))
 caso("formato errado", any("_formato" in e for e in validar(E, {**boa, "_formato": "carrossel"})))
+EF = {"formatos": ["reel"], "campos": {"foto": {"tipo": "foto"}, "fundo": {"tipo": "filmagem"}}}
+caso("foto e filmagem por caminho passam", validar(EF, {"foto": "fotos/bolo.jpg", "fundo": "/a0/usr/plugins/conteudo/story/telas/cmv-real.jpg"}) == [])
+caso("filmagem do banco pelo nome passa", validar(EF, {"foto": "fotos/bolo.jpg", "fundo": "relogio"}) == [])
+caso("descrição no lugar da foto é recusada (12/11)", any("não uma descrição" in e for e in validar(EF, {
+    "foto": "imagem ilustrativa gerada: pizza pronta sobre a bancada", "fundo": "relogio"})))
+caso("descrição no lugar da filmagem é recusada", any("fundo:" in e and "não uma descrição" in e for e in validar(EF, {
+    "foto": "fotos/bolo.jpg", "fundo": "QUADRO 1, de 0 a 3 s: vídeo vertical encenado."})))
 E2 = {"formatos": ["reel"], "campos": {"preco": {"tipo": "dinheiro", "real": True, "obrigatorio": False}}}
 caso("dado real opcional ausente passa", validar(E2, {}) == [])
 caso("dado real opcional presente exige origem", any("sem origem" in e for e in validar(E2, {"preco": 5})))

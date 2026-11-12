@@ -745,11 +745,18 @@ def _pasta_saida() -> Path:
         return Path(tempfile.mkdtemp(prefix="especialistas_"))
 
 
+RENDER_CURTO = 240  # s: a preview or a carousel (they take under 30 s)
+RENDER_VIDEO = 900  # s: the finished video
+
+
 def renderizar_molde(molde: str, formato: str, ficha: dict, previa: bool = False, saida: Path | None = None,
-                     timeout: int = 900, processos: int = 0) -> tuple[list[str], str]:
+                     timeout: int | None = None, processos: int = 0) -> tuple[list[str], str]:
     """Runs moldes/motor/render.py; returns (files, problem). Exit 2 = ficha refused, 3 = the check found problems.
     previa: the check, the contact sheet and the narration only (narracao.m4a), never the video (that comes after the
-    Crítico approves the preview)."""
+    Crítico approves the preview). 12/11: a preview hung in the browser for the whole 15 minutes the finished video
+    gets; previews and carousels take under 30 s, so they get RENDER_CURTO."""
+    if timeout is None:
+        timeout = RENDER_CURTO if previa or formato == "carrossel" else RENDER_VIDEO
     moldes = pasta_moldes()
     saida = saida or _pasta_saida()
     saida.mkdir(parents=True, exist_ok=True)

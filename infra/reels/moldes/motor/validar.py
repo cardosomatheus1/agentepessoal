@@ -10,6 +10,8 @@ from datetime import date
 TRACO = re.compile("[—–]")
 EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿️‍]")
 ORIGENS = {"dono", "sistema"}
+IMAGEM = re.compile(r"\.(jpe?g|png|webp|svg)$", re.I)
+BANCO = re.compile(r"[a-z0-9_-]{2,60}")
 
 
 def _texto(nome, v, regra, erros):
@@ -37,7 +39,13 @@ def _valor(nome, v, regra, erros):
     elif tipo == "hora":
         if not (isinstance(v, str) and re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", v)): erros.append(f"{nome}: hora no formato HH:MM")
     elif tipo in ("foto", "filmagem", "logo"):
-        if not isinstance(v, str) or not v: erros.append(f"{nome}: caminho da {tipo}")
+        if not isinstance(v, str) or not v: erros.append(f"{nome}: caminho da {tipo}"); return
+        # 12/11: the Designer wrote a description ("imagem ilustrativa gerada: pizza pronta...") in a photo field; the
+        # render then hung for 15 minutes in the browser. A photo is a path; footage is a path or a bank name.
+        caminho = bool(IMAGEM.search(v)) and "\n" not in v and len(v) <= 300
+        if not caminho and not (tipo == "filmagem" and BANCO.fullmatch(v)):
+            erros.append(f"{nome}: é o caminho de uma imagem (fotos/x.jpg ou uma tela da lista){' ou o nome de uma filmagem do banco' if tipo == 'filmagem' else ''}, "
+                         f"não uma descrição ({v[:40]!r}): o que a imagem deve mostrar vai no conceito")
     elif tipo == "escolha":
         if v not in regra.get("opcoes", []): erros.append(f"{nome}: escolha entre {regra.get('opcoes')}")
     elif tipo == "booleano":

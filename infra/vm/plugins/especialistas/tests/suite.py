@@ -947,6 +947,18 @@ class Suite:
         arquivos, problema = m.renderizar_molde("frases", "carrossel", {})
         ok(f"RuntimeError: a voz carolina não leu a fala certa depois de 3 tentativas: {fala!r}" in problema,
            f"o erro sai do começo, com a fala que falhou (27/10: o fim do rastro cortava a fala): {problema}")
+        # 12/11: a preview hung for the 15 minutes of the finished video; a carousel or a preview gets the short limit
+        tempos = []
+        m.subprocess = types.SimpleNamespace(run=lambda cmd, **kw: tempos.append(kw.get("timeout")) or run(cmd, **kw))
+        os.environ["ESPECIALISTAS_SAIDA"] = str(saida)
+        try:
+            m.renderizar_molde("frases", "carrossel", {})
+            m.renderizar_molde("frases", "reel", {}, previa=True)
+            m.renderizar_molde("frases", "reel", {})
+        finally:
+            os.environ.pop("ESPECIALISTAS_SAIDA", None)
+        eq(tempos, [m.RENDER_CURTO, m.RENDER_CURTO, m.RENDER_VIDEO], "limite do render: curto na prévia e no carrossel")
+        ok(m.RENDER_CURTO <= 300, "a prévia não espera mais de 5 minutos")
 
     # --- the tool
 
