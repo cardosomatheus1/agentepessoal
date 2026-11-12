@@ -768,6 +768,25 @@ class Suite:
         layouts = ["post-novo", "video-novo", "bastidor", "post-novo", "oferta", "video-novo", "dica"]
         return [{"layout": l, "manchete": f"Story {n}"} for n, l in enumerate(layouts, start=1)]
 
+    def t_story_refeito_recusado_pelo_codigo_volta_com_o_motivo(self):
+        # 12/11, the simulation: "o Designer não devolveu nada utilizável" twice, with no reason anywhere
+        c, s, _ = self._semana(reprovar=())
+        pedidos = []
+
+        class Esp:
+            def chamar(self, papel, tarefa, material):
+                pedidos.append(tarefa)
+                campos = {"layout": "dica", "manchete": "x"} if len(pedidos) == 1 else {"layout": "dica", "manchete": "Bom", "texto": "41%"}
+                return {"texto": json.dumps(campos), "erro": ""}
+
+            def criticar(self, tipo, material):
+                return {"veredito": "aprova", "motivos": []}
+        s._S["fixo"].validar = staticmethod(lambda campos: "" if campos.get("texto") else "texto: falta")
+        r = s._refazer_story(Esp(), {"layout": "dica", "manchete": "a", "texto": "1"}, {"motivos": ["fraco"]},
+                             Path(tempfile.mkdtemp()) / "s.jpg")
+        ok(r is not None and r[0]["manchete"] == "Bom", f"a segunda versão passou: {r}")
+        ok(len(pedidos) == 2 and "recusada pelo código" in pedidos[1] and "texto: falta" in pedidos[1], pedidos[-1][-300:])
+
     def t_regra_comum_so_afirma_o_que_se_sabe(self):
         # 12/11: the carousel "Vendeu no app hoje. Quando o dinheiro entra?" came back in three rounds and died each
         # time on app rules (repasse on Wednesday, estorno) and a feature the Cérebro does not confirm
@@ -785,6 +804,10 @@ class Suite:
         # 12/11: the status bar said 19:45 over a lock screen at 23:12; the Crítico reproved the POV
         pov = (RAIZ / "meme" / "pov.html").read_text(encoding="utf-8")
         ok('id="relogio"' in pov and "<span>19:45</span>" not in pov, "o relógio da barra vem da cena, não fixo em 19:45")
+        ok("white-space: nowrap" in pov.split(".dest b")[1].split("}")[0], "o valor em destaque não quebra em duas linhas")
+        ok("sexta-feira, 31 de outubro" not in pov, "sem data velha embaixo do relógio")
+        mm = _meme_real()
+        ok(mm.QUADRO_2 < mm.TROCA, "o quadro 2 do Crítico é o antes inteiro, não o meio da virada (lida como texto cortado)")
         ok("T('relogio'" in pov and "A.hora" in pov.split("T('relogio'")[0].split("12/11")[-1],
            "na tela de bloqueio a barra segue a hora dela; na conversa, a última mensagem")
 

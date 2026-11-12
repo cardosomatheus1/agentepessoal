@@ -34,7 +34,8 @@ body::after { content: ''; position: absolute; inset: 0; background: radial-grad
 .k b { display: block; margin-top: 6px; font-size: 42px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .dest { margin-top: 16px; background: #27613c; color: #f5f7ed; border-radius: 26px; padding: 24px 26px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .dest p { font-size: 26px; font-weight: 800; color: #c8f17a; letter-spacing: .06em; text-transform: uppercase; }
-.dest b { font-size: 58px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.dest b { font-size: 58px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }  /* 12/11: "R$" and "12,20" broke in two lines */
+.dest p { flex: 1; min-width: 0; }
 .dest small { display: block; font-size: 24px; color: #cfe3c5; font-weight: 600; text-align: right; }
 .exemplo { margin-top: 14px; font-size: 20px; color: #58665e; text-align: center; }
 .selo-pov { position: absolute; left: 0; right: 0; top: 354px; z-index: 7; text-align: center; font-size: 24px; font-weight: 700;
@@ -97,7 +98,7 @@ for (const [de, txt, hora] of A.mensagens || []) {
   const b = el('div', 'bolha ' + (de === 'eu' ? 'eu' : 'ele'), txt); b.appendChild(el('i', '', hora || '23:4' + (document.querySelectorAll('.bolha').length % 10)));
   document.getElementById('zm').appendChild(b);
 }
-T('th', A.hora || '23:47'); T('td', A.data || 'sexta-feira, 31 de outubro');
+T('th', A.hora || '23:47'); T('td', A.data || '');  // 12/11: no stale default date under the lock screen clock
 // 12/11: the phone's clock said 19:45 over a lock screen at 23:12 and chats at 23:4x (the Crítico reproved the POV):
 // the status bar shows the scene's own hour, a minute after the last thing on screen
 { const hs = [...document.querySelectorAll('.bolha i')].map(i => i.textContent);

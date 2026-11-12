@@ -29,6 +29,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
 LARGURA, ALTURA, FPS, DURACAO, TROCA = 1080, 1920, 24, 11.5, 5.2
+QUADRO_2 = TROCA - 0.3  # s: the whole "before" (the swipe takes 0.45 s from TROCA)
 # 05/11, Matheus: "precisa ser outro contexto totalmente diferente, n adianta mostrar msm coisa com outro meme": each
 # scene is a different situation, and the week never repeats last week's scene (semana.py).
 # cena -> (x, y, width, max height) of the meme in the "before"
@@ -284,7 +285,9 @@ def _montar(pov: dict, saida: Path, chrome: str, baixar) -> dict:
                         "-pix_fmt", "yuv420p", "-crf", "20", "-c:a", "aac", "-b:a", "160k", "-t", str(DURACAO),
                         "-movflags", "+faststart", str(video)], check=True, capture_output=True, timeout=600)
         quadros = []
-        for nome, t in (("quadro-1", 2.0), ("quadro-2", TROCA + 0.1), ("capa", DURACAO - 1.0)):
+        # 12/11: the second frame was taken 0.1 s into the swipe to the Raiz screen and the Crítico read the half-way
+        # screens as cut text ("Marmita de frang..."); it is the whole "before", just ahead of the swipe
+        for nome, t in (("quadro-1", 2.0), ("quadro-2", QUADRO_2), ("capa", DURACAO - 1.0)):
             destino = saida / f"{nome}.jpg"
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(t), "-i", str(video), "-frames:v", "1", "-q:v", "3",
                             str(destino)], check=True, capture_output=True, timeout=60)

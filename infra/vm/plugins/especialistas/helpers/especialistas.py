@@ -1016,6 +1016,27 @@ TELAS = {
 }
 
 
+# 12/11, the simulation: the Designer wrote "fotos/pizza_cozinha.jpg" (no such photo) and, before that, a description
+# of the scene in the photo field: it was never told which photos exist. The bank's food photos go with the task.
+FORA_DO_BANCO_DA_RAIZ = ("atelie", "oficina", "salao", "inauguracao_oficina", "inauguracao_salao", "lanca-produto_fds",
+                         "lanca-produto_linho")
+
+
+def fotos_do_banco() -> str:
+    """The photos a Raiz piece may use (moldes/midia/fotos/indice.json, the food ones), by path, with what each shows."""
+    moldes = pasta_moldes()
+    try:
+        indice = json.loads((moldes / "midia" / "fotos" / "indice.json").read_text(encoding="utf-8")) if moldes else {}
+    except (OSError, ValueError):
+        return ""
+    linhas = [f"- fotos/{nome}: {str((info or {}).get('mostra') or '')[:70]}" for nome, info in sorted(indice.items())
+              if not nome.startswith(FORA_DO_BANCO_DA_RAIZ) and isinstance(info, dict)]
+    if not linhas:
+        return ""
+    return ("## Fotos que existem (campo de foto ou filmagem: só estes caminhos ou uma tela da lista; outra foto não "
+            "existe e o molde recusa)\n" + "\n".join(linhas) + "\n\n")
+
+
 def telas_do_sistema(formato: str = "") -> str:
     """The real screens of the system the Designer may use (dark, whole, with the menu: decision #85), by path."""
     pasta = PLUGINS / "conteudo" / "story" / "telas"
@@ -1069,7 +1090,7 @@ def _tarefa_correcao(spec: dict, falta: list, evitar=()) -> str:
                 f"exatamente como está), refaça a ficha com os campos dele e devolva a ficha inteira (com \"motor\": "
                 f"\"molde\"), sem trocar o assunto do briefing.\n\n## Erros\n" + "\n".join(f"- {f}" for f in falta)
                 + f"\n\n## Moldes que servem\n{lista}\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n"
-                + telas_do_sistema(spec.get("_formato_pedido", "")) + "Responda só com o JSON.")
+                + telas_do_sistema(spec.get("_formato_pedido", "")) + fotos_do_banco() + "Responda só com o JSON.")
     if pasta and (pasta / "esquema.json").exists():
         esquema = (pasta / "esquema.json").read_text(encoding="utf-8")[:6000]
         exemplos = sorted((pasta / "exemplos").glob("*.json"))
@@ -1082,6 +1103,7 @@ def _tarefa_correcao(spec: dict, falta: list, evitar=()) -> str:
             + "\n".join(f"- {f}" for f in falta)
             + f"\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n## Esquema do molde\n{esquema}\n\n"
             + (f"## Exemplo de ficha que passa\n{exemplo}\n\n" if exemplo else "") + telas_do_sistema(spec.get("_formato_pedido", ""))
+            + fotos_do_banco()
             + "Responda só com o JSON.")
 
 
@@ -1109,7 +1131,7 @@ def desenhar(briefing, *, login: str = "matheus") -> dict:
     tarefa = (f"Transforme o briefing numa ficha para o motor de render.\n\n{KIT}\n\n"
               f"## Cérebro da Raiz\n{ctx or '(indisponível: ' + nota + ')'}\n\n"
               + (f"## Catálogo de moldes\n{linhas_cat}\n\n" if linhas_cat else "")
-              + telas_do_sistema(pedido) + _chamada_da_marca()
+              + telas_do_sistema(pedido) + fotos_do_banco() + _chamada_da_marca()
               + (f"A vaga é de {pedido}: use só um molde da lista acima, com \"formato\": \"{pedido}\".\n" if pedido else "")
               + "Responda só com o JSON da ficha, com \"motor\".")
     material = {"briefing": briefing} if isinstance(briefing, str) else briefing
@@ -1360,5 +1382,5 @@ def _tarefa_revisao(spec: dict, critica: dict) -> str:
             + "\n".join(f"- {m}" for m in critica.get("motivos") or [])
             + ("\n\n## Sugestões dele\n" + "\n".join(f"- {m}" for m in critica.get("sugestoes") or [])
                if critica.get("sugestoes") else "")
-            + f"\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n{KIT}\n\n" + telas_do_sistema(spec.get("_formato_pedido", ""))
+            + f"\n\n## Sua ficha\n{json.dumps(spec, ensure_ascii=False)[:6000]}\n\n{KIT}\n\n" + telas_do_sistema(spec.get("_formato_pedido", "")) + fotos_do_banco()
             + "Responda só com o JSON.")

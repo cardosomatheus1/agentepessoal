@@ -747,6 +747,40 @@ def _tarefa_story(campos: dict, critica: dict, post: dict | None = None, livres=
             + f"\n\n## Campos atuais\n{json.dumps(campos, ensure_ascii=False)[:3000]}{chama}\n\n{_story_regras()}")
 
 
+def _conferir_story_refeito(r, campos: dict, atual, livres, trocar: str, post, sem_post: bool) -> tuple[dict | None, str]:
+    """(the Designer's new fields, "") or (None, why the code refuses them)."""
+    if (r or {}).get("erro"):
+        return None, f"sem resposta ({r['erro']})"
+    achado = re.search(r"\{.*\}", (r or {}).get("texto") or "", re.S)
+    try:
+        novo = json.loads(achado.group(0)) if achado else None
+    except ValueError:
+        novo = None
+    if not isinstance(novo, dict):
+        return None, "a resposta não era só o JSON dos campos"
+    novo = {k: v for k, v in novo.items() if k in story().CAMPOS}
+    telas = story().PASTA / "telas"  # only the system's own screens, the photo bank or the picture he already had
+    fotos = [Path(f).resolve() for f in getattr(story(), "FOTOS", ())]
+    if novo.get("imagem") not in (None, campos.get("imagem")) and Path(str(novo["imagem"])).resolve().parent not in fotos:
+        return None, f"imagem {novo['imagem']!r}: só fotos do banco de fotos"
+    if novo.get("tela") and Path(str(novo["tela"])).resolve().parent != telas.resolve():
+        return None, f"tela {novo['tela']!r}: só as telas reais do sistema da lista"
+    erro = story().validar(novo)
+    if erro:
+        return None, f"campos: {erro}"
+    # 06/11: a "dica" refeita voltou como "post-novo" ("O carrossel de hoje está no feed") e saiu às 9:00, sem post no
+    # feed e com o carrossel do dia cancelado. Story que não chamava post nunca passa a chamar ao ser refeito.
+    if novo.get("layout") in CHAMA and (campos.get("layout") not in CHAMA or sem_post):
+        return None, f"layout {novo.get('layout')}: este story não chama post"
+    if livres is not None and novo.get("layout") != atual and novo.get("layout") not in livres:
+        return None, f"layout {novo.get('layout')}: neste dia só {', '.join(livres)}"  # 11/11: the variety rule
+    if trocar and novo.get("layout") == atual:
+        return None, f"o layout precisa mudar ({trocar})"
+    if cita_concorrente(json.dumps(novo, ensure_ascii=False)):
+        return None, "cita concorrente"
+    return novo, ""
+
+
 def _refazer_story(esp, campos: dict, critica: dict, saida: Path, post: dict | None = None, dia: str = "",
                    vizinhos: dict | None = None, ctx: dict | None = None, sem_post: bool = False) -> tuple[dict, dict] | None:
     """The Designer rewrites the story's fields with the Crítico's reasons; drawn and judged again. None when he
@@ -762,33 +796,17 @@ def _refazer_story(esp, campos: dict, critica: dict, saida: Path, post: dict | N
             trocar = variedade(atual, dia, vizinhos)
         if trocar and not livres:
             return None
-    r = esp.chamar("designer", _tarefa_story(campos, critica, None if sem_post else post, livres, trocar),
-                   {"story": campos, "imagens": [], **({k: v for k, v in (ctx or {}).items() if v})})
-    achado = re.search(r"\{.*\}", (r or {}).get("texto") or "", re.S) if not (r or {}).get("erro") else None
-    try:
-        novo = json.loads(achado.group(0)) if achado else None
-    except ValueError:
-        novo = None
-    if not isinstance(novo, dict):
-        return None
-    novo = {k: v for k, v in novo.items() if k in story().CAMPOS}
-    telas = story().PASTA / "telas"  # only the system's own screens, the photo bank or the picture he already had
-    fotos = [Path(f).resolve() for f in getattr(story(), "FOTOS", ())]
-    if novo.get("imagem") not in (None, campos.get("imagem")) and Path(str(novo["imagem"])).resolve().parent not in fotos:
-        return None
-    if novo.get("tela") and Path(str(novo["tela"])).resolve().parent != telas.resolve():
-        return None
-    if story().validar(novo):
-        return None
-    # 06/11: a "dica" refeita voltou como "post-novo" ("O carrossel de hoje está no feed") e saiu às 9:00, sem post no
-    # feed e com o carrossel do dia cancelado. Story que não chamava post nunca passa a chamar ao ser refeito.
-    if novo.get("layout") in CHAMA and (campos.get("layout") not in CHAMA or sem_post):
-        return None
-    if livres is not None and novo.get("layout") != atual and novo.get("layout") not in livres:
-        return None  # 11/11: the redo cannot land on a layout the variety rule forbids that day
-    if trocar and novo.get("layout") == atual:
-        return None
-    if cita_concorrente(json.dumps(novo, ensure_ascii=False)):
+    # 12/11, the simulation: a story died on "o Designer não devolveu nada utilizável" twice with no reason anywhere
+    # (his fields broke a rule of the code). What the code refuses goes back to him once, with the reason.
+    tarefa, recusa = _tarefa_story(campos, critica, None if sem_post else post, livres, trocar), ""
+    for _ in range(2):
+        r = esp.chamar("designer", tarefa + (f"\n\n## A versão anterior foi recusada pelo código\n{recusa}\nCorrija isso."
+                                              if recusa else ""),
+                       {"story": campos, "imagens": [], **({k: v for k, v in (ctx or {}).items() if v})})
+        novo, recusa = _conferir_story_refeito(r, campos, atual, livres, trocar, post, sem_post)
+        if novo is not None:
+            break
+    if novo is None:
         return None
     if post and not sem_post and post.get("imagem") and not novo.get("imagem") and campos.get("imagem") == post["imagem"]:
         novo["imagem"] = post["imagem"]
@@ -1054,7 +1072,7 @@ def _pov(esp, briefing: dict, pov: dict, saida: Path) -> dict:
         return {"spec": {"pov": pov}, "arquivos": [], "falta": [motivo],
                 "critica": {"veredito": "reprova", "motivos": [motivo], "sugestoes": []}}
     critica = esp.criticar("post", {"briefing": dict(briefing, meme=m["meme"]), "imagens": m["quadros"],
-                                    "quadros": ["2 s: o caderno no chute com o meme", "5 s: a virada para a Raiz",
+                                    "quadros": ["2 s: o antes (caderno, conversa ou notificações) com o meme", "5 s: o antes inteiro, logo antes da virada para a Raiz",
                                                 "10 s: a tela da Raiz (a capa)"]})
     return {"spec": {"pov": pov, "meme": m["meme"]}, "arquivos": [m["video"], m["capa"]], "critica": critica}
 

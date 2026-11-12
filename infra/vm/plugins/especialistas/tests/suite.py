@@ -434,6 +434,23 @@ class Suite:
             {"moldes": [{"id": "frases", "formatos": ["carrossel"], "situacao": "Frases", "ficha": {"pergunta": "até 20"}}]}))
         return reels
 
+    def t_designer_sabe_quais_fotos_existem(self):
+        # 12/11, the simulation: "fotos/pizza_cozinha.jpg" (no such photo) and a description in the photo field
+        reels = self._reels()
+        (reels / "moldes" / "midia" / "fotos").mkdir(parents=True)
+        (reels / "moldes" / "midia" / "fotos" / "indice.json").write_text(json.dumps(
+            {"cantina_marmita.jpg": {"mostra": "marmita de frango"}, "oficina_pneu.jpg": {"mostra": "pneu"}}))
+        m = self._e(reels=reels)
+        f = m.fotos_do_banco()
+        ok("fotos/cantina_marmita.jpg: marmita de frango" in f and "oficina" not in f, f)
+        tarefas = []
+        m.chamar = lambda papel, tarefa, material, login="matheus": tarefas.append(tarefa) or {
+            "texto": "", "erro": "fora", "imagens": [], "sem_imagem": []}
+        m.desenhar("Carrossel da Raiz")
+        ok("fotos/cantina_marmita.jpg" in tarefas[0], "a lista vai na tarefa do Designer")
+        ok("fotos/cantina_marmita.jpg" in m._tarefa_correcao({"molde": "frases", "ficha": {}}, ["ficha: foto: x"]),
+           "e na correção")
+
     def t_designer_renderiza_molde_de_outra_marca_e_mostra_ao_critico(self):
         reels = self._reels()
         m = self._e(reels=reels)
