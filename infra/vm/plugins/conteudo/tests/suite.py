@@ -2612,7 +2612,9 @@ class Suite:
         vistos = []
         type(c.especialistas()).criticar = lambda self, tipo, material: vistos.append(material) or {"veredito": "reprova", "motivos": ["fraco"]}
         type(c.especialistas()).chamar = lambda self, papel, tarefa, material: {"texto": "", "erro": "sem resposta"}
-        r = s.criar("2026-10-29", "STORY", {"story": {"layout": "quiz", "manchete": "Novo"}}, agora=agora, substitui=velho["id"])
+        from unittest import mock
+        with mock.patch("time.time", return_value=agora):  # the briefing reads the planning clock (12/11: the test broke on the real date)
+            r = s.criar("2026-10-29", "STORY", {"story": {"layout": "quiz", "manchete": "Novo"}}, agora=agora, substitui=velho["id"])
         ok(r["ok"] and "29/10 story" not in vistos[-1]["briefing_comum"] and "28/10 story" in vistos[-1]["briefing_comum"],
            f"o Crítico julga o substituto sem o substituído na lista: {r}")
         nova = next(x for x in s.carregar(r["semana"])["propostas"] if x["n"] == r["n"])
