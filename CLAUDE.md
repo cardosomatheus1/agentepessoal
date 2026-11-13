@@ -53,3 +53,8 @@ que falavam com o A0 param com aviso de legado (`infra/operador/legado_a0.py`) e
 ## Como o Matheus trabalha
 Português, curto, sem jargão. Ele quer coisa feita e testada de verdade, não plano. Pergunte só o que é decisão
 dele.
+
+**O operador faz o pedido dele, não o Hermes** (Matheus, 13/11: "Nunca passe esses pedidos p hermes use estrutura de
+vm dele, q vc tem acesso p vc mesmo fazer, pra ele so as coisas que ele ja faz de rotina"). O que ele pede aqui
+(abrir chamado, entrar num portal, pesquisar, testar) você faz direto com a estrutura da VM (navegador
+`hermes-navegador`, cofre, helpers). Mandar ao Hermes (`mandar_msg.py`) só o que já é rotina dele, ou para testá-lo.
