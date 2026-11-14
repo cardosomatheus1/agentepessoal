@@ -140,6 +140,10 @@ for d in skills:
 checa('[ -e "$SK/$n" ] || { cp -r' in sh and "chown -R 10000:10000" in sh, "skill semeada só se ainda não existe (o curador cuida)")
 checa('grep -qx "$n@$marca .*" "$SEMEADAS"' in sh and "skills_antigas" in sh,
       "ressemear só quando a fonte pede (ressemear: <marca>), uma vez por marca, guardando a do curador")
+prosp_skill = (H / "skills" / "prospeccao-instagram" / "SKILL.md").read_text()
+checa("De 1 a 3 frases, até ~300 caracteres" in prosp_skill and "nunca o catálogo" in prosp_skill
+      and "\nressemear: " in prosp_skill and '"detalha pra ela"' in prosp_skill,
+      "14/11: a continuação pedida pelo Matheus segue o tom curto do playbook (sem lista de funcionalidades)")
 login_skill = (H / "skills" / "login-sites-navegador" / "SKILL.md").read_text()
 checa("resolver_aqui" in login_skill and "tool_search" not in login_skill and "\nressemear: " in login_skill,
       "a skill de login manda usar o resolver_aqui (e é ressemeada)")

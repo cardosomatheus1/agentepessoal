@@ -1,14 +1,21 @@
 ---
 name: prospeccao-instagram
 description: "Como fazer a prospecção da Raiz Connect pela conta @raiz.connect no navegador: achar e avaliar leads, aquecer (seguir, curtir, comentar), mandar mensagens no Direct, ler e registrar respostas, sempre pela ferramenta prospeccao. Vale para as rodadas agendadas e para pedidos avulsos do Matheus."
-version: 5.5.0
+version: 5.6.0
 adaptada_hermes: 2026-10-23
 origem_a0: 5.5.0
+atualizada: 2026-11-14
+ressemear: continuacao-curta-1411
 tags: ["instagram", "prospecção", "prospeccao", "raiz connect", "leads", "direct"]
 trigger_patterns:
   - "prospec"
   - "raiz.connect"
   - "raiz connect"
+  - "detalha pra ela"
+  - "explica pra ela"
+  - "responde ela"
+  - "como funcionaria"
+  - "reunião online"
 ---
 
 # Prospecção da Raiz Connect no navegador
@@ -227,6 +234,26 @@ Não navegue em hashtag ou Explorar para achar leads.
   ordem da nota.
 - **"Responde fulano" / "o que ele disse?":** seção 2 para esse @ e depois a resposta pelo playbook. **"Responde @x:
   <texto ou fato>"** (ele ditou): `propor` a `resposta` com isso, `base` "o Matheus disse: …".
+- **"Detalha pra ela", "explica como funcionaria", "fala de tudo", "puxa pra reunião"** (ele pede a continuação,
+  inclusive pelo Telegram com print da conversa): a resposta segue o mesmo tom do playbook (seções 3 e 6), mesmo
+  quando ele pede "tudo". Matheus, 14/11: "A abordagem do agente no Instagram tá até ok, a continuação que n ta
+  legal". Duas conversas morreram com lista de funcionalidades: a @lulu.confeitaria21 recebeu ~900 caracteres em
+  tópicos (ficha, produção, estoque, custo, pedidos, caixa, Fernanda) + "reunião de 20 minutos?" e respondeu "entro em
+  contato mais pra frente"; a @recanto.delicias disse que já usa planilha e recebeu o catálogo (iFood, QR, comanda,
+  KDS, estoque, CMV, nota) e encerrou com "Ok, muito obrigada!!". Por isso:
+  - **De 1 a 3 frases, até ~300 caracteres**, sem tópicos, sem lista, sem negrito. "Fala de tudo" vira o ponto que
+    mais pesa no negócio dela (o que ela disse ou mostrou no perfil), contado num exemplo dela (ex.: "no festival de
+    fatias, cada fatia que sai já baixa farinha e ovo do estoque e você vê quanto sobrou em cada uma").
+  - **Termine com UMA pergunta fácil** sobre a rotina dela (o que mais toma tempo, como faz hoje), ou com um próximo
+    passo pequeno. Reunião só depois que ela mostrar interesse num ponto concreto ou pedir para ver; aí "posso te
+    mostrar isso em 10 minutos, que dia fica bom?".
+  - **Quem já tem planilha ou sistema:** reconheça em uma frase e faça uma pergunta curiosa (seção 6 do playbook),
+    nunca o catálogo do que a Raiz faz. Se ela agradecer e encerrar, encerre também ("Valeu! Qualquer coisa, tô por
+    aqui.").
+  - **"Agora não / entro em contato depois":** não mande mais explicação; uma frase leve e, se ela abriu a porta
+    ("gostaria de saber mais"), uma pergunta que ela responda quando der.
+  - Mostre ao Matheus o texto proposto já nesse formato. Se ele insistir num texto longo, avise numa linha que
+    mensagem longa em lista costuma matar a conversa e siga o que ele decidir.
 - **"Manda para os parceiros":** `propor` tipo "parceiro" para os parceiros registrados, pelo modelo do playbook.
 - **"Como está a prospecção?":** `hoje` (o dia) ou `metricas` (os números).
 - **"Me manda o cartão do @x":** `cartao`.
