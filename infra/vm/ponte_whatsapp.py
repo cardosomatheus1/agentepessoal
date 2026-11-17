@@ -1820,6 +1820,25 @@ def comando_hermes(usuario: str, chat: str, texto: str) -> bool:
     return False
 
 
+# 17/11 (Matheus: "Manda resolva aq no telegram pra clicar"): a pergunta do operador (Claude Code) vem com botões
+# "op:<pergunta>:<escolha>" (infra/operador/perguntar_matheus.py). O toque não vai ao Hermes (chegaria como "mensagem
+# vazia", sem contexto): fica anotado aqui e o operador lê (perguntar_matheus.py --respostas).
+BOTAO_OPERADOR = "op:"
+RESPOSTAS_OPERADOR = Path("/var/lib/agentepessoal/operador_respostas.jsonl")
+
+
+def resposta_operador(usuario: str, botao: str) -> str:
+    """Anota a escolha da pessoa numa pergunta do operador e devolve o recibo que vai a ela."""
+    try:
+        RESPOSTAS_OPERADOR.parent.mkdir(parents=True, exist_ok=True)
+        with RESPOSTAS_OPERADOR.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"em": time.time(), "usuario": usuario, "botao": botao[:64]}, ensure_ascii=False) + "\n")
+    except OSError as exc:
+        log(f"operador: a resposta {botao[:40]} de {usuario} não foi anotada: {exc}")
+        return "⚠️ Não consegui anotar essa escolha agora. Toque de novo em instantes."
+    return "✅ Anotado. O operador segue com isso."
+
+
 def entregar_hermes(dados: dict, chat: str) -> str:
     """Uma mensagem (ou um botão) da pessoa ao Hermes. Devolve o id do run (ou "" para um botão/comando)."""
     usuario = dados["usuario"]
@@ -1828,6 +1847,9 @@ def entregar_hermes(dados: dict, chat: str) -> str:
         erro = resolver_ok_hermes(botao)
         if erro:
             responder_hermes(usuario, chat, f"⚠️ {erro}.")
+        return ""
+    if botao.startswith(BOTAO_OPERADOR):
+        responder_hermes(usuario, chat, resposta_operador(usuario, botao))
         return ""
     if botao.startswith(BOTOES_HERMES):
         r = botao_hermes(usuario, dados)

@@ -408,6 +408,22 @@ def main() -> int:
                  "/a0/usr/whatsapp/ilia/../../segredos/matheus.json", "/a0/usr/../../etc/passwd"):
         ok(p.arquivo_do_pedido(ruim, "ilia") is None, f"o convidado nunca manda arquivo do Matheus: {ruim}")
     ok(p.arquivo_do_pedido("/a0/usr/prospeccao/matheus.json", "") is not None, "o agente do Matheus manda os dele")
+
+    # 17/11: o botão de uma pergunta do operador fica anotado e não vira pedido ao Hermes ("mensagem vazia")
+    p.RESPOSTAS_OPERADOR = tmp / "operador_respostas.jsonl"
+    n_chamadas, n_enviados = len(chamadas), len(enviados)
+    ok(p.entregar_hermes({"usuario": "matheus", "texto": "", "botao": "op:ses:sim"}, "123") == "",
+       "o botão do operador não abre run")
+    ok(len(chamadas) == n_chamadas, f"nada vai ao Hermes: {chamadas[n_chamadas:]}")
+    linhas = [json.loads(x) for x in p.RESPOSTAS_OPERADOR.read_text().splitlines()]
+    ok(len(linhas) == 1 and linhas[0]["usuario"] == "matheus" and linhas[0]["botao"] == "op:ses:sim",
+       f"a escolha fica anotada para o operador: {linhas}")
+    ok(len(enviados) == n_enviados + 1 and enviados[-1][0] == "123" and "Anotado" in enviados[-1][1],
+       f"a pessoa recebe o recibo: {enviados[n_enviados:]}")
+    p.RESPOSTAS_OPERADOR = tmp / "sem_permissao" / "x.jsonl"
+    (tmp / "sem_permissao").write_text("não é pasta")
+    p.entregar_hermes({"usuario": "matheus", "texto": "", "botao": "op:ses:nao"}, "123")
+    ok("Não consegui anotar" in enviados[-1][1], f"sem anotar, a pessoa sabe que precisa tocar de novo: {enviados[-1]}")
     for f in falhas:
         print("FALHA", f)
     print("ponte_hermes:", "ok" if not falhas else f"{len(falhas)} falha(s)")
