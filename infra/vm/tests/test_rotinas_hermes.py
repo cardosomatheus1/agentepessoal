@@ -37,7 +37,7 @@ def carregar(nome, caminho):
 
 # --- 1. the sources: 23 routines, A0 schedule, nothing of the A0 tools, essentials kept
 fontes = {p.stem: json.loads(p.read_text(encoding="utf-8")) for p in sorted((H / "rotinas").glob("*.json"))}
-checa(len(fontes) == 23, f"as 23 tarefas agendadas do A0 têm a versão do Hermes ({len(fontes)})")
+checa(len(fontes) == 24, f"as 23 tarefas agendadas do A0 têm a versão do Hermes, mais a 🔥 Assuntos do dia ({len(fontes)})")
 ANTIGAS = re.compile(r"`browser`|vision_load|code_execution|search_engine|ferramentas_extras|call_subordinate|notify_user|"
                      r"document_query|`response`|`scheduler`|scheduler/tasks\.json|salvar_rotina|me_mostre|tarefa_limite|"
                      r"criar_gatilho|browser_id|`pesquisar`|`canal`|painel_vivo|skills_tool|memory_save|memory_load")
@@ -82,6 +82,20 @@ checa("nunca um salgado a R$ 0,80" in semana_posts and "com a conta fechando" in
 checa("`web_search`" in semana_posts and '`conteudo` acao "hype"' in semana_posts and "pelo menos uma peça da semana aproveita" in semana_posts
       and semana_posts.index('acao "hype"') < semana_posts.index('3. `conteudo` acao "briefing"'),
       "4qfNuwRX: pesquisa datas e assuntos do momento e registra antes de ler o briefing")
+# 19/11, Matheus: "Não so datas, mas esses hypes mesmo, memes da semana, hypes, assuntos polêmicos": a semana também
+# olha meme, viral e polêmica leve, e uma rotina diária pega o que nasce no meio da semana
+checa("memes da semana" in semana_posts and "trends24.in/brazil" in semana_posts and "tipo (meme" in semana_posts
+      and "nunca política, religião" in semana_posts, "4qfNuwRX: a pesquisa da semana inclui meme, viral e polêmica leve, com régua")
+dia = fontes.get("Hy9dAsTo", {})
+pd = dia.get("pedido", "")
+checa(dia.get("nome") == "🔥 Assuntos do dia" and dia.get("ligada_no_a0") and dia.get("agenda") == "23 9 * * *",
+      "Hy9dAsTo: a rotina diária de assuntos do dia existe, de manhã, e é para ficar ligada")
+checa('`web_search`' in pd and "trends.google.com.br" in pd and "trends24.in/brazil" in pd and '`conteudo` acao "hype"' in pd
+      and "tipo (meme" in pd, "Hy9dAsTo: pesquisa o que está em alta hoje e registra com o tipo")
+checa('`conteudo` acao "cobrir" UMA vez' in pd and "assunto do momento:" in pd and "o Crítico aprova" in pd,
+      "Hy9dAsTo: assunto forte e não aproveitado vai ao gestor (cria e o Crítico decide), uma vez por rodada")
+checa("nunca política, religião, tragédia" in pd and "não manda mensagem a ninguém" in pd and 'exatamente "SEM NOVIDADE"' in pd
+      and pd.index('acao "calendario"') < pd.index('acao "hype" com'), "Hy9dAsTo: régua da polêmica, sem mandar mensagem, quieta quando não há nada")
 checa("SEM NOVIDADE: nada a criar" in semana_posts, "4qfNuwRX: semana cheia fica registrada como nada a criar, não só SEM NOVIDADE")
 checa('`conteudo` acao "cobrir"' in fechamento and "sessão do Claude que cuida" not in fechamento
       and "pedir o post" not in fechamento, "Iq73JPEP: dia sem post vai ao gestor, não ao Matheus nem à sessão do Claude")

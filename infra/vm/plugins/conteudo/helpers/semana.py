@@ -453,7 +453,9 @@ REGRAS_COMUNS = (
     "- Data e assunto do momento (Matheus, 19/11, lançamento do GTA VI): quando a seção \"Datas e assuntos do "
     "momento\" traz algo, pelo menos uma peça da semana aproveita, ligando o assunto à rotina do dono (\"hoje o "
     "Brasil está em casa e pedindo delivery\"). Marca de terceiros só inspira a estética, o meme e as cores; nunca "
-    "logo, personagem, arte, imagem ou fonte oficial. A legenda cita o nome do assunto, a arte não.\n"
+    "logo, personagem, arte, imagem ou fonte oficial. A legenda cita o nome do assunto, a arte não. Meme e viral só no auge (2 a 3 dias; "
+    "passou, é piada velha). Polêmica só a leve, do universo do público (preço do café, taxa de app, golpe do Pix, "
+    "briga de reality); nunca política, religião, tragédia, crime com vítima nem tomar lado contra uma pessoa.\n"
     "- Legenda organizada (Matheus, 19/11: \"sem cara de IA\", e também sem \"desorganização\"): frases completas, "
     "com maiúscula e pontuação, em parágrafos curtos; fala como gente, sem lista de benefícios nem frase de efeito "
     "genérica; uma pergunta que puxe comentário quando couber.\n"
@@ -631,6 +633,16 @@ DATAS_FIXAS = (
 )
 CALENDARIO_DIAS = 10  # quanto à frente a seção olha
 HYPE_MAX = 8  # assuntos do momento no briefing (o resto não cabe no teto do Gestor)
+# 19/11, Matheus: "Não so datas, mas esses hypes mesmo, memes da semana, hypes, assuntos polêmicos"
+HYPE_TIPOS = {"meme": "meme", "viral": "viral", "polemica": "polêmica", "lancamento": "lançamento",
+              "evento": "evento", "clima": "clima", "data": "data"}
+HYPE_CURTOS = {"meme": 5, "viral": 5}  # meme e viral só no auge: no máximo 5 dias
+# polêmica é só a leve, do universo do público; isto não entra nem como meme
+HYPE_PROIBIDO = re.compile(
+    r"\b(pol[ií]tic\w*|elei[cç]\w*|partid\w*|candidat\w*|president\w*|deputad\w*|senador\w*|vereador\w*|"
+    r"prefeit\w*|governador\w*|ministr\w*|stf|lula|bolsonar\w*|esquerda|direita|religi\w*|igreja\w*|evang[eé]lic\w*|"
+    r"cat[oó]lic\w*|mort[eo]s?|morreu|morre|trag[eé]di\w*|acidente\w*|v[ií]tima\w*|assassin\w*|estupr\w*|"
+    r"tiroteio|chacina|guerra\w*|atentado\w*|enchente\w*|desastre\w*|racis\w*|homofob\w*|aborto)\b", re.I)
 
 
 def _pascoa(ano: int) -> dt.date:
@@ -687,16 +699,24 @@ def hypes() -> list[dict]:
 
 
 def registrar_hype(tema: str, de: str, ate: str = "", porque: str = "", como: str = "", fonte: str = "",
-                   quem: str = "rotina da semana") -> dict:
-    """Um assunto do momento que a rotina da semana achou na pesquisa (lançamento, final, reality, show, feriado,
-    clima): entra na seção \"Datas e assuntos do momento\" do briefing comum enquanto estiver na janela."""
+                   tipo: str = "evento", quem: str = "rotina da semana") -> dict:
+    """Um assunto do momento que a pesquisa achou (meme, viral, polêmica leve, lançamento, evento, clima, data):
+    entra na seção \"Datas e assuntos do momento\" do briefing comum enquanto estiver na janela."""
     tema, porque, como, fonte = (" ".join(str(x or "").split()) for x in (tema, porque, como, fonte))
+    tipo = str(tipo or "evento").strip().lower().replace("ê", "e").replace("ç", "c").replace("ã", "a")
+    if tipo not in HYPE_TIPOS:
+        return {"ok": False, "erro": "tipo: " + ", ".join(HYPE_TIPOS)}
+    if HYPE_PROIBIDO.search(" ".join((tema, porque, como))):
+        return {"ok": False, "erro": "fora da régua: nada de política, religião, tragédia, crime com vítima nem "
+                                     "preconceito, nem como meme; polêmica só a leve, do universo do público"}
     try:
         d0 = dt.date.fromisoformat(str(de)); d1 = dt.date.fromisoformat(str(ate or de))
     except ValueError:
         return {"ok": False, "erro": "datas no formato AAAA-MM-DD (de e, se durar mais de um dia, ate)"}
     if d1 < d0 or (d1 - d0).days > 45:
         return {"ok": False, "erro": "o fim vem depois do começo e o assunto dura no máximo 45 dias"}
+    if tipo in HYPE_CURTOS and (d1 - d0).days >= HYPE_CURTOS[tipo]:
+        return {"ok": False, "erro": f"{HYPE_TIPOS[tipo]} só vale no auge: no máximo {HYPE_CURTOS[tipo]} dias"}
     if not (3 <= len(tema) <= 80):
         return {"ok": False, "erro": "tema de 3 a 80 letras"}
     if not como or len(como) > 240 or len(porque) > 240:
@@ -706,7 +726,7 @@ def registrar_hype(tema: str, de: str, ate: str = "", porque: str = "", como: st
     with _exclusivo():
         itens = [h for h in hypes() if not (h["tema"].lower() == tema.lower() and h["de"] == d0.isoformat())]
         item = {"tema": tema, "de": d0.isoformat(), "ate": d1.isoformat(), "porque": porque, "como": como,
-                "fonte": fonte, "quem": quem, "em": time.time()}
+                "fonte": fonte, "tipo": tipo, "quem": quem, "em": time.time()}
         itens.append(item)
         corte = (dt.date.today() - dt.timedelta(days=60)).isoformat()
         itens = [h for h in itens if h["ate"] >= corte][-60:]
@@ -715,7 +735,7 @@ def registrar_hype(tema: str, de: str, ate: str = "", porque: str = "", como: st
         tmp.write_text(json.dumps({"itens": itens}, ensure_ascii=False, indent=1), encoding="utf-8")
         os.replace(tmp, _arq_hypes())
     try:
-        c()._diario({"tipo": "hype", "tema": tema, "de": item["de"], "ate": item["ate"], "quem": quem})
+        c()._diario({"tipo": "hype", "hype": tipo, "tema": tema, "de": item["de"], "ate": item["ate"], "quem": quem})
     except Exception:
         pass
     return {"ok": True, "hype": item}
@@ -731,7 +751,7 @@ def calendario_texto(agora: float | None = None, dias: int = CALENDARIO_DIAS) ->
                    key=lambda h: h["de"])[:HYPE_MAX]
     for h in vivos:
         quando = br(dt.date.fromisoformat(h["de"])) + ("" if h["ate"] == h["de"] else " a " + br(dt.date.fromisoformat(h["ate"])))
-        linhas.append(f"- {quando} {h['tema']} (assunto do momento): {h['como']}" + (f" Por quê: {h['porque']}" if h.get("porque") else ""))
+        linhas.append(f"- {quando} {h['tema']} ({HYPE_TIPOS.get(h.get('tipo'), 'assunto do momento')}): {h['como']}" + (f" Por quê: {h['porque']}" if h.get("porque") else ""))
     return "\n".join(linhas)
 
 

@@ -2949,7 +2949,7 @@ class Suite:
         s.registrar_hype("Final da Libertadores", "2026-11-28", "", "jogo grande no sábado", "pedido em massa na hora do jogo", "https://ge.globo.com/")
         agora = _ts(c, "2026-11-19", "07:47")
         texto = s.calendario_texto(agora)
-        ok("19/11 a 24/11 Lançamento do GTA VI (assunto do momento): o mesmo assunto, revisto" in texto
+        ok("19/11 a 24/11 Lançamento do GTA VI (evento): o mesmo assunto, revisto" in texto
            and "20/11 Dia da Consciência Negra (feriado)" in texto and "27/11 Black Friday" in texto
            and "28/11 Final da Libertadores" in texto, f"a janela de 10 dias: {texto}")
         ok("GTA" not in s.calendario_texto(_ts(c, "2026-11-26", "07:47")), "assunto que passou sai do briefing")
@@ -2960,9 +2960,30 @@ class Suite:
         ok("Marca de terceiros só inspira a estética" in briefing and "Legenda organizada" in briefing,
            "a régua: usa o assunto sem logo nem personagem, e legenda organizada sem cara de IA")
         ok(len(briefing) < 10500, f"cabe no teto do gestor: {len(briefing)} letras")
+        # 19/11, Matheus: "Não so datas, mas esses hypes mesmo, memes da semana, hypes, assuntos polêmicos": o tipo
+        # aparece; meme e viral só no auge; polêmica só a leve (política, religião, tragédia ficam fora, nem como meme)
+        ok(not s.registrar_hype("Meme do café", "2026-11-19", "", "x", "y", "https://x.com", tipo="fofoca")["ok"], "tipo desconhecido não")
+        ok(not s.registrar_hype("Meme do Lula", "2026-11-19", "", "todo mundo comentando", "a conta do restaurante", "https://x.com", tipo="meme")["ok"], "política não, nem como meme")
+        ok(not s.registrar_hype("Briga na igreja", "2026-11-19", "", "viralizou", "o cliente que reclama", "https://x.com", tipo="viral")["ok"], "religião não")
+        ok(not s.registrar_hype("Tragédia na BR", "2026-11-19", "", "comoção", "entrega atrasada", "https://x.com", tipo="viral")["ok"], "tragédia não")
+        ok(not s.registrar_hype("Meme do motoboy", "2026-11-19", "2026-11-25", "viralizou", "o pedido que demora", "https://x.com", tipo="meme")["ok"], "meme não dura uma semana")
+        r = s.registrar_hype("Meme do 'capricha aí'", "2026-11-20", "2026-11-21", "todo mundo usando", "o cliente que pede capricha e o CMV que sobe",
+                             "https://trends24.in/brazil/", tipo="meme")
+        ok(r["ok"] and r["hype"]["tipo"] == "meme", r)
+        r = s.registrar_hype("Preço do café nas alturas", "2026-11-20", "2026-11-26", "a polêmica da semana", "o insumo que sobe e o preço do cardápio parado",
+                             "https://g1.globo.com/", tipo="polêmica")
+        ok(r["ok"] and r["hype"]["tipo"] == "polemica", f"polêmica leve entra, com acento ou sem: {r}")
+        texto = s.calendario_texto(agora)
+        ok("20/11 a 21/11 Meme do 'capricha aí' (meme):" in texto and "Preço do café nas alturas (polêmica):" in texto, texto)
+        with mock.patch("time.time", return_value=agora):
+            briefing = s.briefing_comum(agora)
+        ok("Meme e viral só no auge" in briefing and "Polêmica só a leve" in briefing and "nunca política, religião" in briefing,
+           "a régua do meme e da polêmica está no briefing que os três leem")
+        ok(len(briefing) < 10500, f"com mais assuntos, ainda cabe no teto do gestor: {len(briefing)} letras")
         tool = (RAIZ / "tools" / "conteudo.py").read_text(encoding="utf-8")
         doc = (RAIZ / "prompts" / "agent.system.tool.conteudo.md").read_text(encoding="utf-8")
-        ok('acao == "hype"' in tool and 'acao == "calendario"' in tool and 'acao "hype"' in doc, "a rotina registra e lê pela ferramenta")
+        ok('acao == "hype"' in tool and 'kwargs.get("tipo")' in tool and 'acao == "calendario"' in tool and 'acao "hype"' in doc
+           and "`tipo`" in doc, "a rotina registra (com o tipo) e lê pela ferramenta")
 
     def t_ensaio_com_data_simulada_so_do_operador(self):
         # 11/11, Matheus: "Bom simular ele fazer só e você checar a qualidade": the weekly routine run by hand found
