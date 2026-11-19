@@ -53,6 +53,16 @@ TRANSICOES = {
 }
 
 
+# 19/11, Matheus: "N poste nada em consciência negra, é un tema sensível": dias em que nada sai, nem feed nem story.
+# Ninguém agenda, remarca ou troca para eles, a agenda não os conta como vazios e, se algo estiver lá, não publica.
+DIAS_SEM_POST = {"11-20": "Dia da Consciência Negra: tema sensível, nada se posta (Matheus, 19/11)"}
+
+
+def dia_sem_post(data: str) -> str:
+    """The reason no post goes out on `data` (AAAA-MM-DD), or "" when the day is open."""
+    return DIAS_SEM_POST.get(str(data)[5:10], "")
+
+
 class TransicaoInvalida(ValueError):
     pass
 
@@ -229,6 +239,8 @@ def agendar(itens: list, agora: float | None = None) -> dict:
                         "agente poder refazer se o Crítico reprovar")
             if not erro and it["data"] < hoje:
                 erro = "data no passado"
+            if not erro and dia_sem_post(it["data"]):
+                erro = f"{it['data']}: {dia_sem_post(it['data'])}"
             if not erro and ((it["data"], canal(it)) in ocupadas or (it["data"], canal(it)) in {(n["data"], canal(n)) for n in novos}):
                 erro = f"já existe {'story' if canal(it) == 'story' else 'post'} para {it['data']} (um por dia)"
             if not erro and (not it.get("id") or it["id"] in ids or it["id"] in {n["id"] for n in novos}):
@@ -316,6 +328,8 @@ def remarcar(item_id: str, data: str, hora: str, motivo: str, agora: float | Non
         return {"ok": False, "erro": "data (AAAA-MM-DD) inválida"}
     if not _hora_valida(hora):
         return {"ok": False, "erro": "hora (HH:MM) inválida"}
+    if dia_sem_post(data):
+        return {"ok": False, "erro": f"{data}: {dia_sem_post(data)}"}
     with _exclusivo():
         d = carregar()
         alvo = next((i for i in d["itens"] if i["id"] == item_id), None)
@@ -360,6 +374,9 @@ def trocar_datas(item_a: str, item_b: str, motivo: str, agora: float | None = No
                 return {"ok": False, "erro": f"{i['id']}: sai em menos de {MARGEM_MIN} min"}
         if canal(a) != canal(b):
             return {"ok": False, "erro": "um é story e o outro é post do feed: só troca dentro do mesmo canal"}
+        for i in (a, b):
+            if dia_sem_post(i["data"]):
+                return {"ok": False, "erro": f"{i['data']}: {dia_sem_post(i['data'])}"}
         (a["data"], a["hora"]), (b["data"], b["hora"]) = (b["data"], b["hora"]), (a["data"], a["hora"])
         _gravar(d)
     _diario({"trocados": [item_a, item_b], "motivo": str(motivo)[:300],
@@ -407,9 +424,10 @@ def adiar_a_partir(data: str, dias: int = 1, agora: float | None = None) -> dict
         # one feed post and one story a day: a moved item only collides with a fixed one of the same slot
         fixos = {(i["data"], canal(i)) for i in d["itens"] if i not in mover and i["estado"] not in ("cancelada", "falhou")}
         novas = {i["id"]: (dt.date.fromisoformat(i["data"]) + dt.timedelta(days=int(dias))).isoformat() for i in mover}
-        choque = sorted({data for data, can in {(novas[i["id"]], canal(i)) for i in mover} & fixos})
+        choque = sorted({data for data, can in {(novas[i["id"]], canal(i)) for i in mover} & fixos}
+                        | {n for n in novas.values() if dia_sem_post(n)})
         if choque:
-            return {"ok": False, "erro": f"cairia em dia já ocupado: {', '.join(choque)}"}
+            return {"ok": False, "erro": f"cairia em dia já ocupado ou sem post: {', '.join(choque)}"}
         for i in mover:
             antes = i["data"]
             i["data"] = novas[i["id"]]
@@ -440,7 +458,8 @@ def replanejar(mudancas: list, agora: float | None = None) -> dict:
                 return {"ok": False, "erro": f"{it['id']}: repetido na lista"}
             alvo = dict(it, **{k: m[k] for k in ("data", "legenda", "capa", "capa_ms") if k in m})
             alvo["legenda"] = str(alvo.get("legenda", "")).strip()
-            erro = _validar_item(alvo) or ("data no passado" if alvo["data"] < hoje else "")
+            erro = (_validar_item(alvo) or ("data no passado" if alvo["data"] < hoje else "")
+                    or (f"{alvo['data']}: {dia_sem_post(alvo['data'])}" if "data" in m and dia_sem_post(alvo["data"]) else ""))
             if erro:
                 return {"ok": False, "erro": f"{it['id']}: {erro}"}
             novo[it["id"]] = alvo
@@ -553,6 +572,8 @@ def devido(agora: float | None = None) -> dict | None:
     agora = time.time() if agora is None else agora
     momento = dt.datetime.fromtimestamp(agora, _tz())
     hoje, hora = momento.date().isoformat(), momento.strftime("%H:%M")
+    if dia_sem_post(hoje):
+        return None
     d = carregar()
     do_dia = [i for i in d["itens"] if i["data"] == hoje]
     feitos = {canal(i) for i in do_dia if i["estado"] in ("publicando", "publicada", "incerta")}
@@ -1276,15 +1297,18 @@ def agenda_proxima(dias: int = 7, agora: float | None = None) -> dict:
     for i in carregar()["itens"]:
         if i["estado"] != "cancelada":
             por_dia.setdefault(i["data"], []).append(i)
-    linhas, vazios = [], []
+    linhas, vazios, sem_post = [], [], {}
     for k in range(max(1, int(dias))):
         dia = (hoje + dt.timedelta(days=k)).isoformat()
         its = por_dia.get(dia, [])
-        if not its:
+        if dia_sem_post(dia):
+            sem_post[dia] = dia_sem_post(dia)
+        elif not its:
             vazios.append(dia)
         linhas.append({"data": dia, "itens": [{"id": i["id"], "tipo": i["tipo"], "hora": i["hora"],
-                                               "estado": i["estado"]} for i in its]})
-    return {"dias": linhas, "vazios": vazios}
+                                               "estado": i["estado"]} for i in its],
+                       **({"sem_post": dia_sem_post(dia)} if dia_sem_post(dia) else {})})
+    return {"dias": linhas, "vazios": vazios, **({"sem_post": sem_post} if sem_post else {})}
 
 
 def desempenho(api, dias: int = 7, agora: float | None = None) -> dict:

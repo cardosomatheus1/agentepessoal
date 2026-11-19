@@ -165,7 +165,9 @@ class Suite:
                 os.environ.pop("CONTEUDO_PASTA", None)
             c.PASTA = Path(dados)
             a = p.ler_agenda("matheus")
-            eq((len(a["dias"]), len(a["vazios"])), (7, 7), "agenda: 7 dias, todos vazios sem posts")
+            # 19/11: dia sem post (Consciência Negra) não conta como vazio
+            sem = sum(1 for d in a["dias"] if c.dia_sem_post(d["data"]))
+            eq((len(a["dias"]), len(a["vazios"])), (7, 7 - sem), "agenda: 7 dias, todos vazios sem posts (menos o dia sem post)")
             c.api_do_cofre = lambda login="matheus": None
             try:
                 p.ler_desempenho("matheus")

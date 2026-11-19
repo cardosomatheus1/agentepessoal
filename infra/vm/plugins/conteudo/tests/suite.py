@@ -67,6 +67,10 @@ def _story():
     return m
 
 
+def c_semana_texto() -> str:
+    return (RAIZ / "helpers" / "semana.py").read_text(encoding="utf-8")
+
+
 def _ts(c, data: str, hora: str) -> float:
     return dt.datetime.fromisoformat(f"{data}T{hora}:00").replace(tzinfo=c._tz()).timestamp()
 
@@ -2257,6 +2261,29 @@ class Suite:
         # and the helper itself refuses the agent (only the Gestor or the operator move things)
         ok(not c.segurar("car-ter", "x")["ok"] and not c.remarcar("car-ter", "2026-11-08", "11:45", "x")["ok"]
            and not c.trocar_datas("car-ter", "car-sex", "x")["ok"] and not c.cancelar("car-ter", "x")["ok"], "agente não")
+
+    def t_nada_sai_no_dia_da_consciencia_negra(self):
+        # 19/11, Matheus: "N poste nada em consciência negra, é un tema sensível": ninguém põe peça no dia, a agenda
+        # não o conta como vazio (a rotina do fim do dia não pede ao gestor para cobrir) e, se algo estiver lá, não sai
+        c, g = self._gestor()
+        ok(c.dia_sem_post("2027-11-20") and not c.dia_sem_post("2026-11-21"), "o dia vale todo ano, só ele")
+        r = c.agendar([{"id": "st-20", "ficha": FICHA, "data": "2026-11-20", "hora": "09:00", "tipo": "STORY",
+                        "arquivos": ["conteudo/st/x.jpg"], "legenda": ""}], _ts(c, "2026-11-19", "10:00"))
+        ok(not r["ok"] and "Consciência Negra" in r["erro"], f"não se agenda: {r}")
+        c.AUTOR["quem"] = "operador: teste"
+        try:
+            ok(not c.remarcar("car-sex", "2026-11-20", "11:45", "x", _ts(c, "2026-11-01", "10:00"))["ok"], "não se remarca para o dia")
+            ok(not c.adiar_a_partir("2026-11-06", 14, _ts(c, "2026-11-01", "10:00"))["ok"], "não se adia para o dia")
+            ok(not c.replanejar([{"id": "car-sex", "data": "2026-11-20"}], _ts(c, "2026-11-01", "10:00"))["ok"], "não se replaneja para o dia")
+        finally:
+            c.AUTOR["quem"] = "agente"
+        ag = c.agenda_proxima(3, _ts(c, "2026-11-19", "16:53"))
+        ok("2026-11-20" not in ag["vazios"] and "Consciência Negra" in ag["sem_post"]["2026-11-20"]
+           and "2026-11-21" in ag["vazios"], f"o dia não é vazio a cobrir: {ag}")
+        # o que já estiver no dia (agendado antes da regra) não publica
+        d = c.carregar(); d["itens"][-1]["data"] = "2026-11-20"; c._gravar(d)
+        ok(c.devido(_ts(c, "2026-11-20", "12:00")) is None, "nada publica no dia")
+        ok("NADA se posta" in c_semana_texto(), "o calendário do briefing diz que nada se posta")
 
     def _serie(self):
         """10/11, the real series: the Reel of Sunday 08/11 created by the Gestor on 07/11 08:37 fell on "MOLDE RECUSOU:

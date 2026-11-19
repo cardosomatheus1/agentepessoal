@@ -627,7 +627,7 @@ DATAS_FIXAS = (
     ("09-15", "Dia do Cliente", "fidelizar quem já compra"),
     ("10-12", "Dia das Crianças", "combo infantil, família no salão"),
     ("10-31", "Halloween", "cardápio temático e meme"),
-    ("11-20", "Dia da Consciência Negra (feriado)", "feriado: movimento e escala da equipe"),
+    ("11-20", "Dia da Consciência Negra (feriado)", "NADA se posta neste dia, nem story: tema sensível (Matheus, 19/11); nenhuma peça cita a data"),
     ("12-24", "Véspera de Natal", "encomendas, ceia, pico de pedido"),
     ("12-31", "Réveillon", "encomendas e fechamento do ano"),
 )

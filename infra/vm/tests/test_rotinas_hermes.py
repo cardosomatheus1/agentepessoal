@@ -96,6 +96,9 @@ checa('`conteudo` acao "cobrir" UMA vez' in pd and "assunto do momento:" in pd a
       "Hy9dAsTo: assunto forte e não aproveitado vai ao gestor (cria e o Crítico decide), uma vez por rodada")
 checa("nunca política, religião, tragédia" in pd and "não manda mensagem a ninguém" in pd and 'exatamente "SEM NOVIDADE"' in pd
       and pd.index('acao "calendario"') < pd.index('acao "hype" com'), "Hy9dAsTo: régua da polêmica, sem mandar mensagem, quieta quando não há nada")
+# 19/11, Matheus: "N poste nada em consciência negra, é un tema sensível": as rotinas não cobrem o dia sem post
+checa("`sem_post`" in fechamento and "não cobre nem avisa" in fechamento, "Iq73JPEP: o dia sem post não vai ao gestor")
+checa("`sem_post`" in pd and "Consciência Negra" in pd, "Hy9dAsTo: nunca aciona o gestor para o dia sem post")
 checa("SEM NOVIDADE: nada a criar" in semana_posts, "4qfNuwRX: semana cheia fica registrada como nada a criar, não só SEM NOVIDADE")
 checa('`conteudo` acao "cobrir"' in fechamento and "sessão do Claude que cuida" not in fechamento
       and "pedir o post" not in fechamento, "Iq73JPEP: dia sem post vai ao gestor, não ao Matheus nem à sessão do Claude")
