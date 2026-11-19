@@ -74,6 +74,12 @@ class Conteudo(Tool):
             g = _gestor()
             r = await rodar(None, lambda: g.rodar(motivo, avisar=None, refazer=_semana().refazer_item))
             r = {k: r.get(k) for k in ("pulou", "erro", "visto", "mensagem", "recusadas") if r.get(k)}
+        elif acao == "hype":  # 19/11: assunto do momento que a pesquisa da semana achou (entra no briefing comum)
+            r = await rodar(None, _semana().registrar_hype, str(kwargs.get("tema") or ""), str(kwargs.get("de") or ""),
+                            str(kwargs.get("ate") or ""), str(kwargs.get("porque") or ""), str(kwargs.get("como") or ""),
+                            str(kwargs.get("fonte") or ""))
+        elif acao == "calendario":  # 19/11: as datas e os assuntos do momento que o briefing vai mostrar
+            r = {"calendario": await rodar(None, _semana().calendario_texto) or "(nada nos próximos dias)"}
         elif acao == "briefing":  # 11/11: the one text the creator, the Crítico and the Gestor read
             r = {"briefing": await rodar(None, _semana().briefing_comum)}
         elif acao == "semana":

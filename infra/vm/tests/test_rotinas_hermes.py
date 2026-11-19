@@ -77,6 +77,11 @@ checa("em_producao" in semana_posts and "NÃO chame de novo" in semana_posts and
       "4qfNuwRX: a semana é produzida em segundo plano; a rotina não chama de novo nem espera")
 checa("nunca um salgado a R$ 0,80" in semana_posts and "com a conta fechando" in semana_posts and "nunca para um total em R$" in semana_posts,
       "4qfNuwRX: números concretos e plausíveis em cada cena, e a lupa fora dos totais da conta de exemplo")
+# 19/11, Matheus, depois do reels do lançamento do GTA VI: "nosso agente de conteudo, precisa entender mais essas
+# nuances, de datas, de hypes e etc": a semana começa pesquisando o que vai mexer com o Brasil e registrando
+checa("`web_search`" in semana_posts and '`conteudo` acao "hype"' in semana_posts and "pelo menos uma peça da semana aproveita" in semana_posts
+      and semana_posts.index('acao "hype"') < semana_posts.index('3. `conteudo` acao "briefing"'),
+      "4qfNuwRX: pesquisa datas e assuntos do momento e registra antes de ler o briefing")
 checa("SEM NOVIDADE: nada a criar" in semana_posts, "4qfNuwRX: semana cheia fica registrada como nada a criar, não só SEM NOVIDADE")
 checa('`conteudo` acao "cobrir"' in fechamento and "sessão do Claude que cuida" not in fechamento
       and "pedir o post" not in fechamento, "Iq73JPEP: dia sem post vai ao gestor, não ao Matheus nem à sessão do Claude")

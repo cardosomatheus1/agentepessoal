@@ -2923,6 +2923,47 @@ class Suite:
         # julgar_video: no Crítico or a video that does not open -> None (the advance check judges, as before)
         ok(s.julgar_video(p2, str(video)) is None, "vídeo que não abre: não inventa veredito")
 
+    def t_datas_e_assuntos_do_momento_no_briefing(self):
+        # 19/11, Matheus, depois do reels do lançamento do GTA VI: "nosso agente de conteudo, precisa entender mais
+        # essas nuances, de datas, de hypes e etc, qd for fazer o planejamento semanal". Datas fixas e móveis saem do
+        # código; o assunto do momento a rotina pesquisa e registra; os dois entram no briefing que os três leem
+        c, s, _ = self._semana(reprovar=())
+        D = dt.date
+        moveis = lambda ano: {nome: d for d, nome, _ in s.datas_moveis(ano)}
+        ok(s._pascoa(2026) == D(2026, 4, 5) and s._pascoa(2027) == D(2027, 3, 28), "Páscoa certa")
+        ok(moveis(2027)["Carnaval"] == D(2027, 2, 9) and moveis(2027)["Dia das Mães"] == D(2027, 5, 9)
+           and moveis(2026)["Dia dos Pais"] == D(2026, 8, 9) and moveis(2026)["Black Friday"] == D(2026, 11, 27),
+           f"datas móveis: {moveis(2026)} {moveis(2027)}")
+        virada = [n for d, n, _ in s.datas_na_janela(D(2026, 12, 28), D(2027, 1, 3))]
+        ok(virada == ["Réveillon", "Ano Novo"], f"a janela atravessa o ano: {virada}")
+        # registrar: sem fonte, sem como usar ou com data torta não entra
+        ok(not s.registrar_hype("Lançamento do GTA VI", "2026-11-19", "2026-11-23", "o jogo do ano", "noite de delivery", "")["ok"], "sem fonte não")
+        ok(not s.registrar_hype("Lançamento do GTA VI", "2026-11-19", "", "o jogo do ano", "", "https://x.com")["ok"], "sem como usar não")
+        ok(not s.registrar_hype("GTA", "19/11/2026", "", "x", "y", "https://x.com")["ok"], "data fora do formato não")
+        ok(not s.registrar_hype("Copa", "2026-06-01", "2026-08-30", "x", "y", "https://x.com")["ok"], "mais de 45 dias não")
+        r = s.registrar_hype("Lançamento do GTA VI", "2026-11-19", "2026-11-23", "o jogo do ano: o Brasil em casa jogando",
+                             "noite de delivery lotado: o restaurante com 5 estrelas de procurado", "https://www.b9.com.br/marcas-hype-gta-vi/")
+        ok(r["ok"], r)
+        s.registrar_hype("Lançamento do GTA VI", "2026-11-19", "2026-11-24", "x", "o mesmo assunto, revisto", "https://www.b9.com.br/")
+        ok(sum(1 for h in s.hypes() if "GTA" in h["tema"]) == 1, "o mesmo assunto revisto não duplica")
+        s.registrar_hype("Final da Libertadores", "2026-11-28", "", "jogo grande no sábado", "pedido em massa na hora do jogo", "https://ge.globo.com/")
+        agora = _ts(c, "2026-11-19", "07:47")
+        texto = s.calendario_texto(agora)
+        ok("19/11 a 24/11 Lançamento do GTA VI (assunto do momento): o mesmo assunto, revisto" in texto
+           and "20/11 Dia da Consciência Negra (feriado)" in texto and "27/11 Black Friday" in texto
+           and "28/11 Final da Libertadores" in texto, f"a janela de 10 dias: {texto}")
+        ok("GTA" not in s.calendario_texto(_ts(c, "2026-11-26", "07:47")), "assunto que passou sai do briefing")
+        from unittest import mock
+        with mock.patch("time.time", return_value=agora):
+            briefing = s.briefing_comum(agora)
+        ok("Datas e assuntos do momento (próximos 10 dias):" in briefing and "Lançamento do GTA VI" in briefing, "entra no briefing comum")
+        ok("Marca de terceiros só inspira a estética" in briefing and "Legenda organizada" in briefing,
+           "a régua: usa o assunto sem logo nem personagem, e legenda organizada sem cara de IA")
+        ok(len(briefing) < 10500, f"cabe no teto do gestor: {len(briefing)} letras")
+        tool = (RAIZ / "tools" / "conteudo.py").read_text(encoding="utf-8")
+        doc = (RAIZ / "prompts" / "agent.system.tool.conteudo.md").read_text(encoding="utf-8")
+        ok('acao == "hype"' in tool and 'acao == "calendario"' in tool and 'acao "hype"' in doc, "a rotina registra e lê pela ferramenta")
+
     def t_ensaio_com_data_simulada_so_do_operador(self):
         # 11/11, Matheus: "Bom simular ele fazer só e você checar a qualidade": the weekly routine run by hand found
         # the coming week full and created nothing. The operator can simulate the planning date; nobody else can
